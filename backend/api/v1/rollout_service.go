@@ -428,7 +428,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet")
 	}
@@ -865,8 +865,8 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 				}
-				sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{
-					ID: &sheetIDInt,
+				sheet, err := s.store.GetSheetV2(ctx, &store.FindSheetMessage{
+					UID: &sheetIDInt,
 				}, api.SystemBotID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
@@ -1132,9 +1132,9 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheet, err := s.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.CreateSheetV2(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  project.UID,
+			ProjectUID: project.UID,
 			Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
 			Visibility: api.ProjectSheet,
@@ -1154,7 +1154,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			Collation:    c.Collation,
 			Labels:       labelsJSON,
 			DatabaseName: databaseName,
-			SheetID:      sheet.ID,
+			SheetID:      sheet.UID,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -1244,7 +1244,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1282,7 +1282,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1319,7 +1319,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1382,7 +1382,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -2060,7 +2060,7 @@ func (s *RolloutService) createPipeline(ctx context.Context, creatorID int, pipe
 }
 
 func getResourceNameForSheet(ctx context.Context, s *store.Store, sheetUID int) (string, error) {
-	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetUID}, api.SystemBotID)
+	sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get sheet")
 	}

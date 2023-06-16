@@ -55,7 +55,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get sheet statement of sheet: %d", payload.SheetID)
 	}
-	sheet, err := exec.store.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := exec.store.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get sheet: %d", payload.SheetID)
 	}
@@ -169,8 +169,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		UpdaterID:  api.SystemBotID,
 		DatabaseID: &database.UID,
 	}
-	sheetPatch := &api.SheetPatch{
-		ID:        sheet.UID,
+	sheetPatch := &store.PatchSheetMessage{
+		UID:       sheet.UID,
 		UpdaterID: api.SystemBotID,
 	}
 
@@ -187,7 +187,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
 	}
-	if _, err := exec.store.PatchSheet(ctx, sheetPatch); err != nil {
+	if _, err := exec.store.PatchSheetV2(ctx, sheetPatch); err != nil {
 		return true, nil, errors.Wrapf(err, "failed to update sheet %d after executing the task", sheet.UID)
 	}
 

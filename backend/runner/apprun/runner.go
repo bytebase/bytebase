@@ -54,7 +54,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ticker.C:
 			func() {
 				settingName := api.SettingAppIM
-				setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+				setting, err := r.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
 				if err != nil {
 					if !errors.Is(err, context.Canceled) {
 						log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
@@ -360,7 +360,7 @@ func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *s
 // CancelExternalApproval cancels the active external approval of an issue.
 func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason string) error {
 	settingName := api.SettingAppIM
-	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+	setting, err := r.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get IM setting by settingName %s", string(settingName))
 	}
@@ -622,7 +622,7 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage
 // The approval definition may have changed so we make idempotent POST request to patch the definition.
 func (r *Runner) tryUpdateApprovalDefinition(ctx context.Context) error {
 	settingName := api.SettingAppIM
-	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+	setting, err := r.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			return errors.Wrapf(err, "failed to get IM setting")

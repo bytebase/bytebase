@@ -1490,9 +1490,9 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
-	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  repoInfo.project.UID,
+		ProjectUID: repoInfo.project.UID,
 		Name:       file,
 		Statement:  sdl,
 		Visibility: api.ProjectSheet,
@@ -1509,7 +1509,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
-				SheetID:       sheet.ID,
+				SheetID:       sheet.UID,
 			},
 		)
 		return migrationDetailList, nil
@@ -1526,7 +1526,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
 				DatabaseID:    database.UID,
-				SheetID:       sheet.ID,
+				SheetID:       sheet.UID,
 			},
 		)
 	}
@@ -1557,9 +1557,9 @@ func (s *Server) prepareIssueFromFile(
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
-			sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+			sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 				CreatorID:  api.SystemBotID,
-				ProjectID:  repoInfo.project.UID,
+				ProjectUID: repoInfo.project.UID,
 				Name:       fileInfo.item.FileName,
 				Statement:  content,
 				Visibility: api.ProjectSheet,
@@ -1574,7 +1574,7 @@ func (s *Server) prepareIssueFromFile(
 			return []*api.MigrationDetail{
 				{
 					MigrationType: fileInfo.migrationInfo.Type,
-					SheetID:       sheet.ID,
+					SheetID:       sheet.UID,
 					SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 				},
 			}, nil
@@ -1593,9 +1593,9 @@ func (s *Server) prepareIssueFromFile(
 			}
 		}
 
-		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  repoInfo.project.UID,
+			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  migrationFile.Statement,
 			Visibility: api.ProjectSheet,
@@ -1626,7 +1626,7 @@ func (s *Server) prepareIssueFromFile(
 					&api.MigrationDetail{
 						MigrationType: fileInfo.migrationInfo.Type,
 						DatabaseID:    db.UID,
-						SheetID:       sheet.ID,
+						SheetID:       sheet.UID,
 						SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 					},
 				)
@@ -1643,9 +1643,9 @@ func (s *Server) prepareIssueFromFile(
 	}
 
 	if fileInfo.item.ItemType == vcs.FileItemTypeAdded {
-		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  repoInfo.project.UID,
+			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  content,
 			Visibility: api.ProjectSheet,
@@ -1663,7 +1663,7 @@ func (s *Server) prepareIssueFromFile(
 				&api.MigrationDetail{
 					MigrationType: fileInfo.migrationInfo.Type,
 					DatabaseID:    database.UID,
-					SheetID:       sheet.ID,
+					SheetID:       sheet.UID,
 					SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 				},
 			)
@@ -1717,9 +1717,9 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			return nil
 		}
 
-		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  issue.Project.UID,
+			ProjectUID: issue.Project.UID,
 			Name:       fileName,
 			Statement:  statement,
 			Visibility: api.ProjectSheet,
@@ -1734,7 +1734,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", fileName), zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID))
 		taskPatch := api.TaskPatch{
 			ID:        task.ID,
-			SheetID:   &sheet.ID,
+			SheetID:   &sheet.UID,
 			UpdaterID: api.SystemBotID,
 		}
 		if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {

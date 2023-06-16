@@ -1313,16 +1313,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
 					for migrationDetailIdx, migrationDetail := range migrationDetailList {
-						// CreateSheet for each migration detail.
+						// CreateSheetV2 for each migration detail.
 						sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
-							ProjectUID: project.UID,
-							DatabaseID: &migrationDetail.DatabaseID,
-							CreatorID:  creatorID,
-							Statement:  migrationDetail.Statement,
-							Visibility: api.ProjectSheet,
-							Source:     api.SheetFromBytebaseArtifact,
-							Type:       api.SheetForSQL,
-							Payload:    "",
+							ProjectUID:  project.UID,
+							DatabaseUID: &migrationDetail.DatabaseID,
+							CreatorID:   creatorID,
+							Statement:   migrationDetail.Statement,
+							Visibility:  api.ProjectSheet,
+							Source:      api.SheetFromBytebaseArtifact,
+							Type:        api.SheetForSQL,
+							Payload:     "",
 						})
 						if err != nil {
 							return nil, err
@@ -1564,9 +1564,9 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	if err != nil {
 		return nil, err
 	}
-	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  project.UID,
+		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
 		Statement:  statement,
 		Visibility: api.ProjectSheet,
@@ -1585,7 +1585,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Collation:    c.Collation,
 		Labels:       c.Labels,
 		DatabaseName: databaseName,
-		SheetID:      sheet.ID,
+		SheetID:      sheet.UID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
