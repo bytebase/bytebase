@@ -675,7 +675,7 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 			return true, nil
 		}
 	case *storepb.ApprovalNode_ExternalNodeId:
-		return false, nil
+		return true, nil
 	default:
 		return false, errors.Errorf("invalid node payload type")
 	}

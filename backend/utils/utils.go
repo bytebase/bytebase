@@ -897,6 +897,8 @@ func userCanApprove(node *storepb.ApprovalNode, users []*store.UserMessage, poli
 		}
 	case *storepb.ApprovalNode_Role:
 		return projectRoleExist[val.Role], nil
+	case *storepb.ApprovalNode_ExternalNodeId:
+		return true, nil
 	default:
 		return false, errors.Errorf("invalid node payload type")
 	}
