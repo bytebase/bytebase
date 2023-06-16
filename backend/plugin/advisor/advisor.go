@@ -417,6 +417,9 @@ const (
 
 	// SnowflakeColumnRequirement is an advisor type for Snowflake column requirement.
 	SnowflakeColumnRequirement Type = "bb.plugin.advisor.snowflake.column.require"
+
+	// SnowflakeIdentifierCase is an advisor type for Snowflake identifier case.
+	SnowflakeIdentifierCase Type = "bb.plugin.advisor.snowflake.naming.identifier-case"
 )
 
 // Advice is the result of an advisor.
