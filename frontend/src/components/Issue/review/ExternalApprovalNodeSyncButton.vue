@@ -39,7 +39,7 @@ const issueLogic = useIssueLogic();
 const issue = issueLogic.issue as Ref<Issue>;
 
 const syncNow = async () => {
-  if (synced.value) return;
+  if (syncing.value || synced.value) return;
 
   syncing.value = true;
   try {
