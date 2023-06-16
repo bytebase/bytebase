@@ -27,6 +27,16 @@
     class="!w-auto lg:!max-w-[36rem]"
     @close="viewTemplate = undefined"
   >
+    <template #header>
+      <div>{{ $t("custom-approval.security-rule.template.view") }}</div>
+    </template>
+    <template #subtitle>
+      <div
+        class="text-xs text-control-light mt-1 whitespace-pre-wrap overflow-hidden"
+      >
+        {{ titleOfTemplate(viewTemplate) }}
+      </div>
+    </template>
     <ViewTemplate :template="viewTemplate" />
   </BBModal>
 </template>

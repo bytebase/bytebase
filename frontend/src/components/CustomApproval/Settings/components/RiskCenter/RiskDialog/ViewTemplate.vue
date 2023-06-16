@@ -8,27 +8,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, h } from "vue";
+import { computed } from "vue";
 
-import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { ExprEditor } from "../../common";
-import { type RuleTemplate, titleOfTemplate } from "./template";
+import { type RuleTemplate } from "./template";
 
 const props = defineProps<{
   template: RuleTemplate;
 }>();
-
-useOverrideSubtitle(() => {
-  return h(
-    "div",
-    {
-      class:
-        "text-xs text-control-light mt-1 whitespace-pre-wrap overflow-hidden",
-    },
-    titleOfTemplate(props.template)
-  );
-});
 
 const source = computed(() => {
   const { source } = props.template;
