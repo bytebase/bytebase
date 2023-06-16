@@ -66,7 +66,10 @@ func (r *Runner) CancelExternalApproval(ctx context.Context, issueUID int) {
 		IssueUID: &issueUID,
 	})
 	if err != nil {
-		log.Debug("failed to list external approvals", zap.Error(err))
+		log.Error("failed to list external approvals", zap.Error(err))
+		return
+	}
+	if len(approvals) == 0 {
 		return
 	}
 	for _, approval := range approvals {
@@ -74,8 +77,29 @@ func (r *Runner) CancelExternalApproval(ctx context.Context, issueUID int) {
 			ID:        approval.ID,
 			RowStatus: api.Archived,
 		}); err != nil {
-			log.Debug("failed to archive external approval", zap.Error(err))
+			log.Error("failed to archive external approval", zap.Error(err))
+			continue
 		}
+		payload := &api.ExternalApprovalPayloadRelay{}
+		if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
+			log.Error("failed to unmarshal external approval payload", zap.Error(err))
+			continue
+		}
+		// don't wait for http requests, just fire and forget
+		node, err := getExternalApprovalByID(ctx, r.store, payload.ExternalApprovalNodeID)
+		if err != nil {
+			log.Error("failed to get external approval node", zap.Error(err))
+			continue
+		}
+		if node == nil {
+			log.Error("external approval node not found", zap.String("id", payload.ExternalApprovalNodeID))
+			continue
+		}
+		go func() {
+			if err := r.Client.UpdateStatus(node.Endpoint, payload.URI); err != nil {
+				log.Error("failed to update external approval status", zap.String("endpoint", node.Endpoint), zap.String("uri", payload.URI), zap.Error(err))
+			}
+		}()
 	}
 }
 
