@@ -82,15 +82,15 @@ func (driver *Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+func (*Driver) Execute(ctx context.Context, conn *sql.Conn, statement string, createDatabase bool) (int64, error) {
 	if createDatabase {
-		if _, err := driver.db.ExecContext(ctx, statement); err != nil {
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
 			return 0, err
 		}
 		return 0, nil
 	}
 	totalRowsAffected := int64(0)
-	tx, err := driver.db.BeginTx(ctx, nil)
+	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
