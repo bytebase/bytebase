@@ -776,6 +776,9 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
+			if len(types) == 0 {
+				return nil, status.Errorf(codes.InvalidArgument, "notification types should not be empty")
+			}
 			update.ActivityList = types
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid field %q", path)
