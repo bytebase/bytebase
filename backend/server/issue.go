@@ -1924,6 +1924,7 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
 				"environment_name": fmt.Sprintf("%s%s", "environments/", database.EnvironmentID),
+				"instance_id":      database.InstanceID,
 			},
 		})
 		if err != nil {
