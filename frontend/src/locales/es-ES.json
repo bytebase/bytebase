@@ -2550,7 +2550,7 @@
       "edit": "Editar grupo de tablas"
     },
     "factor": {
-      "resource_instance_id": "Nombre de la instancia",
+      "resource_instance_id": "ID de instancia",
       "resource_database_name": "Nombre de la base de datos",
       "resource_table_name": "Nombre de la tabla"
     },
