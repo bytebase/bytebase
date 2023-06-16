@@ -79,7 +79,12 @@ import { CodeDiff } from "v-code-diff";
 import { useI18n } from "vue-i18n";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { UNKNOWN_ENVIRONMENT_NAME } from "../types";
-import { databaseV1Slug, instanceV1Slug, humanizeTs } from "../utils";
+import {
+  databaseV1Slug,
+  instanceV1Slug,
+  humanizeTs,
+  extractDatabaseResourceName,
+} from "@/utils";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { useEnvironmentV1Store } from "@/store";
 import {
@@ -254,7 +259,9 @@ const action = (anomaly: Anomaly): Action => {
       };
     }
     case Anomaly_AnomalyType.DATABASE_CONNECTION: {
-      const instance = useInstanceV1Store().getInstanceByName(anomaly.resource);
+      const instance = useInstanceV1Store().getInstanceByName(
+        `instances/${extractDatabaseResourceName(anomaly.resource).instance}`
+      );
       return {
         onClick: () => {
           router.push({
