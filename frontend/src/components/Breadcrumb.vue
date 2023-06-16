@@ -174,7 +174,7 @@ export default defineComponent({
             String(idFromSlug(databaseSlug))
           );
           list.push({
-            name: database.name,
+            name: database.databaseName,
             path: `/db/${databaseSlug}`,
           });
         }
