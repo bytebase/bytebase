@@ -908,6 +908,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApprovalRunner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.RelayRunner.Run(ctx, &s.runnerWG)
 
 		s.runnerWG.Add(1)
 		go s.MetricReporter.Run(ctx, &s.runnerWG)
