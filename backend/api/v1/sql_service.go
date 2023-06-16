@@ -157,7 +157,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 	}
 }
 
-func (s *SQLService) postAdminExecute(ctx context.Context, activity *api.Activity, durationNs int64, queryErr error) error {
+func (s *SQLService) postAdminExecute(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	var payload api.ActivitySQLEditorQueryPayload
 	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal activity payload: %v", err)
@@ -185,8 +185,8 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *api.Activit
 
 	payloadString := string(payloadBytes)
 	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
-		UID:        activity.ID,
-		UpdaterUID: activity.CreatorID,
+		UID:        activity.UID,
+		UpdaterUID: activity.CreatorUID,
 		Level:      newLevel,
 		Payload:    &payloadString,
 	}); err != nil {
@@ -202,7 +202,7 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 	return result, time.Now().UnixNano() - start, err
 }
 
-func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExecuteRequest) (*store.InstanceMessage, *store.DatabaseMessage, *api.Activity, error) {
+func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExecuteRequest) (*store.InstanceMessage, *store.DatabaseMessage, *store.ActivityMessage, error) {
 	user, _, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, nil, nil, err
@@ -244,7 +244,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}, nil
 }
 
-func (s *SQLService) postExport(ctx context.Context, activity *api.Activity, durationNs int64, queryErr error) error {
+func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	// Update the activity
 	var payload api.ActivitySQLExportPayload
 	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
@@ -273,8 +273,8 @@ func (s *SQLService) postExport(ctx context.Context, activity *api.Activity, dur
 
 	payloadString := string(payloadBytes)
 	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
-		UID:        activity.ID,
-		UpdaterUID: activity.CreatorID,
+		UID:        activity.UID,
+		UpdaterUID: activity.CreatorUID,
 		Level:      newLevel,
 		Payload:    &payloadString,
 	}); err != nil {
@@ -448,7 +448,7 @@ func (*SQLService) exportJSON(result *v1pb.QueryResult) ([]byte, error) {
 	return protojson.Marshal(result)
 }
 
-func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest) (*store.InstanceMessage, *store.DatabaseMessage, *db.SensitiveSchemaInfo, *api.Activity, error) {
+func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest) (*store.InstanceMessage, *store.DatabaseMessage, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
@@ -499,7 +499,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	return instance, database, sensitiveSchemaInfo, activity, nil
 }
 
-func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLExportPayload) (*api.Activity, error) {
+func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLExportPayload) (*store.ActivityMessage, error) {
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -511,17 +511,17 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   user.ID,
-		Type:        api.ActivitySQLExport,
-		ContainerID: containerID,
-		Level:       level,
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   user.ID,
+		Type:         api.ActivitySQLExport,
+		ContainerUID: containerID,
+		Level:        level,
 		Comment: fmt.Sprintf("Export `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),
 	}
 
-	activity, err := s.store.CreateActivity(ctx, activityCreate)
+	activity, err := s.store.CreateActivityV2(ctx, activityCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create activity: %v", err)
 	}
@@ -575,7 +575,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 // postQuery does the following:
 //  1. Check index hit Explain statements
 //  2. Update SQL query activity
-func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, adviceStatus advisor.Status, adviceList []*v1pb.Advice, _ *store.InstanceMessage, activity *api.Activity, durationNs int64, queryErr error) ([]*v1pb.Advice, error) {
+func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, adviceStatus advisor.Status, adviceList []*v1pb.Advice, _ *store.InstanceMessage, activity *store.ActivityMessage, durationNs int64, queryErr error) ([]*v1pb.Advice, error) {
 	indexHitAdvices, err := s.checkIndexHit()
 	if err != nil {
 		return nil, err
@@ -619,8 +619,8 @@ func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, advice
 
 	payloadString := string(payloadBytes)
 	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
-		UID:        activity.ID,
-		UpdaterUID: activity.CreatorID,
+		UID:        activity.UID,
+		UpdaterUID: activity.CreatorUID,
 		Level:      &newLevel,
 		Payload:    &payloadString,
 	}); err != nil {
@@ -673,7 +673,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 //  3. Run SQL review.
 //  4. Get sensitive schema info.
 //  5. Create query activity.
-func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *api.Activity, error) {
+func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
@@ -743,7 +743,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	return instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, activity, nil
 }
 
-func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) (*api.Activity, error) {
+func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) (*store.ActivityMessage, error) {
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -755,17 +755,17 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   user.ID,
-		Type:        api.ActivitySQLEditorQuery,
-		ContainerID: containerID,
-		Level:       level,
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   user.ID,
+		Type:         api.ActivitySQLEditorQuery,
+		ContainerUID: containerID,
+		Level:        level,
 		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),
 	}
 
-	activity, err := s.store.CreateActivity(ctx, activityCreate)
+	activity, err := s.store.CreateActivityV2(ctx, activityCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create activity: %v", err)
 	}
@@ -1333,12 +1333,12 @@ func (s *SQLService) checkQueryRights(
 			return err
 		}
 		// Post project IAM policy update activity.
-		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: project.UID,
-			Type:        api.ActivityProjectMemberCreate,
-			Level:       api.ActivityInfo,
-			Comment:     fmt.Sprintf("Granted %s to %s (%s).", user.Name, user.Email, api.Role(common.ProjectExporter)),
+		if _, err := s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: project.UID,
+			Type:         api.ActivityProjectMemberCreate,
+			Level:        api.ActivityInfo,
+			Comment:      fmt.Sprintf("Granted %s to %s (%s).", user.Name, user.Email, api.Role(common.ProjectExporter)),
 		}, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))
 		}

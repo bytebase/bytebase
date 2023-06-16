@@ -95,24 +95,6 @@ var (
 	}
 )
 
-// Policy is the API message for a policy.
-type Policy struct {
-	ID int `jsonapi:"primary,policy"`
-
-	// Standard fields
-	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-
-	// Related fields
-	ResourceType PolicyResourceType
-	ResourceID   int          `jsonapi:"attr,resourceId"`
-	Environment  *Environment `jsonapi:"relation,environment"`
-
-	// Domain specific fields
-	InheritFromParent bool       `jsonapi:"attr,inheritFromParent"`
-	Type              PolicyType `jsonapi:"attr,type"`
-	Payload           string     `jsonapi:"attr,payload"`
-}
-
 // PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`

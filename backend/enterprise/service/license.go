@@ -57,11 +57,10 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 			return err
 		}
 	}
-	if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
-		UpdaterID: patch.UpdaterID,
-		Name:      api.SettingEnterpriseLicense,
-		Value:     patch.License,
-	}); err != nil {
+	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
+		Name:  api.SettingEnterpriseLicense,
+		Value: patch.License,
+	}, patch.UpdaterID); err != nil {
 		return err
 	}
 
@@ -145,11 +144,10 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 		return nil, err
 	}
 
-	if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
-		UpdaterID: api.SystemBotID,
-		Name:      api.SettingEnterpriseLicense,
-		Value:     license,
-	}); err != nil {
+	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
+		Name:  api.SettingEnterpriseLicense,
+		Value: license,
+	}, api.SystemBotID); err != nil {
 		return nil, errors.Wrapf(err, "failed to store the license")
 	}
 
@@ -200,7 +198,7 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	// Find enterprise license.
 	settingName := api.SettingEnterpriseLicense
-	setting, err := s.store.GetSetting(ctx, &api.SettingFind{
+	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &settingName,
 	})
 	if err != nil {
@@ -227,7 +225,7 @@ func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterprise
 
 func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	settingName := api.SettingEnterpriseTrial
-	setting, err := s.store.GetSetting(ctx, &api.SettingFind{
+	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &settingName,
 	})
 	if err != nil {

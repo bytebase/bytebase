@@ -709,12 +709,12 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 // HandleIncomingApprovalSteps handles incoming approval steps.
 // - skips approval steps if no user can approve the step
 // - creates external approvals for external approval nodes.
-func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*api.ActivityCreate, error) {
+func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.ActivityMessage, error) {
 	if len(approval.ApprovalTemplates) == 0 {
 		return nil, nil, nil
 	}
 
-	getActivityCreate := func(status storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status, comment string) (*api.ActivityCreate, error) {
+	getActivityCreate := func(status storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status, comment string) (*store.ActivityMessage, error) {
 		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
 			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
 				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
@@ -726,18 +726,18 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 		if err != nil {
 			return nil, err
 		}
-		return &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ActivityInfo,
-			Comment:     comment,
-			Payload:     string(activityPayload),
+		return &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueCommentCreate,
+			Level:        api.ActivityInfo,
+			Comment:      comment,
+			Payload:      string(activityPayload),
 		}, nil
 	}
 
 	var approvers []*storepb.IssuePayloadApproval_Approver
-	var activities []*api.ActivityCreate
+	var activities []*store.ActivityMessage
 
 	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
 	if err != nil {
