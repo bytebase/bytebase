@@ -50,6 +50,48 @@ type Runner struct {
 	Client *relayplugin.Client
 }
 
+const relayRunnerInterval = time.Minute * 10
+
+// Run runs the runner.
+func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(relayRunnerInterval)
+	defer ticker.Stop()
+	defer wg.Done()
+	log.Debug(fmt.Sprintf("Relay runner started and will run every %v", relayRunnerInterval))
+
+	wg.Add(1)
+	go r.listenIssueExternalApprovalRelayCancelChan(ctx, wg)
+
+	for {
+		select {
+		case <-ticker.C:
+			err := func() error {
+				externalApprovalType := api.ExternalApprovalTypeRelay
+				approvals, err := r.store.ListExternalApprovalV2(ctx, &store.ListExternalApprovalMessage{
+					Type: &externalApprovalType,
+				})
+				if err != nil {
+					return err
+				}
+				var errs error
+				for _, approval := range approvals {
+					if err := r.checkExternalApproval(ctx, approval); err != nil {
+						err = errors.Wrapf(err, "failed to check external approval status, issueUID %d", approval.IssueUID)
+						errs = multierr.Append(errs, err)
+					}
+				}
+
+				return errs
+			}()
+			if err != nil {
+				log.Error("relay runner: failed to check external approval", zap.Error(err))
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
 func getExternalApprovalByID(ctx context.Context, s *store.Store, externalApprovalID string) (*storepb.ExternalApprovalSetting_Node, error) {
 	setting, err := s.GetWorkspaceExternalApprovalSetting(ctx)
 	if err != nil {
@@ -375,45 +417,6 @@ func (r *Runner) listenIssueExternalApprovalRelayCancelChan(ctx context.Context,
 		select {
 		case issueUID := <-r.stateCfg.IssueExternalApprovalRelayCancelChan:
 			r.cancelExternalApproval(ctx, issueUID)
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-// Run runs the runner.
-func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	defer wg.Done()
-
-	wg.Add(1)
-	go r.listenIssueExternalApprovalRelayCancelChan(ctx, wg)
-
-	for {
-		select {
-		case <-ticker.C:
-			err := func() error {
-				externalApprovalType := api.ExternalApprovalTypeRelay
-				approvals, err := r.store.ListExternalApprovalV2(ctx, &store.ListExternalApprovalMessage{
-					Type: &externalApprovalType,
-				})
-				if err != nil {
-					return err
-				}
-				var errs error
-				for _, approval := range approvals {
-					if err := r.checkExternalApproval(ctx, approval); err != nil {
-						err = errors.Wrapf(err, "failed to check external approval status, issueUID %d", approval.IssueUID)
-						errs = multierr.Append(errs, err)
-					}
-				}
-
-				return errs
-			}()
-			if err != nil {
-				log.Error("relay runner: failed to check external approval", zap.Error(err))
-			}
 		case <-ctx.Done():
 			return
 		}
