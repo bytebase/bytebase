@@ -159,6 +159,11 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
 	}
 	defer driver.Close(ctx)
+	conn, err := driver.GetDB().Conn(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	defer conn.Close()
 
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
 	log.Debug("Start migration...",
@@ -170,7 +175,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 	)
 
 	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
-		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, stores)
+		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, conn, task, stores)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
@@ -182,7 +187,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
 		executeBeforeCommitTx = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
-	migrationID, schema, err = utils.ExecuteMigrationDefault(ctx, stores, driver, mi, statement, executeBeforeCommitTx)
+	migrationID, schema, err = utils.ExecuteMigrationDefault(ctx, stores, driver, conn, mi, statement, executeBeforeCommitTx)
 	if err != nil {
 		return "", "", err
 	}
@@ -204,7 +209,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
-		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, stores, migrationID)
+		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, conn, task, stores, migrationID)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
@@ -267,23 +272,19 @@ func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage,
 	}
 }
 
-func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {
-	mysqlDriver, ok := driver.(*mysql.Driver)
-	if !ok {
-		return nil, errors.Errorf("failed to cast driver to mysql.Driver")
-	}
+func setThreadIDAndStartBinlogCoordinate(ctx context.Context, conn *sql.Conn, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrap(err, "invalid database data update payload")
 	}
-	connID, err := mysqlDriver.GetMigrationConnID(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get connection ID")
+
+	var connID string
+	if err := conn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&connID); err != nil {
+		return nil, errors.Wrap(err, "failed to get the connection ID")
 	}
 	payload.ThreadID = connID
 
-	db := driver.GetDB()
-	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
+	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}
@@ -311,15 +312,14 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 	return updatedTask, nil
 }
 
-func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *store.TaskMessage, store *store.Store, migrationID string) (*store.TaskMessage, error) {
+func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, conn *sql.Conn, task *store.TaskMessage, store *store.Store, migrationID string) (*store.TaskMessage, error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
 	payload.MigrationID = migrationID
-	db := driver.GetDB()
-	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
+	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}

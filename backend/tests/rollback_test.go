@@ -52,9 +52,12 @@ func TestRollback(t *testing.T) {
 	// Rotate to binlog.000002 so that it's easy to rollback the following transactions and check that the state is the same as now.
 	_, err = db.ExecContext(ctx, "FLUSH BINARY LOGS;")
 	a.NoError(err)
-	_, err = driver.Execute(ctx, "UPDATE user SET balance=0;", false)
+	conn, err := driver.GetDB().Conn(ctx)
 	a.NoError(err)
-	_, err = driver.Execute(ctx, "DELETE FROM user;", false)
+	defer conn.Close()
+	_, err = driver.Execute(ctx, conn, "UPDATE user SET balance=0;", false)
+	a.NoError(err)
+	_, err = driver.Execute(ctx, conn, "DELETE FROM user;", false)
 	a.NoError(err)
 
 	// Restore data using generated rollback SQL.
@@ -64,7 +67,8 @@ func TestRollback(t *testing.T) {
 	tableCatalog := map[string][]string{
 		"user": {"id", "name", "balance"},
 	}
-	threadID, err := mysqlDriver.GetMigrationConnID(ctx)
+	var threadID string
+	err = conn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&threadID)
 	a.NoError(err)
 	const binlogSizeLimit = 8 * 1024 * 1024
 	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogSizeLimit, binlogFileList, 0, math.MaxInt64, threadID, tableCatalog)

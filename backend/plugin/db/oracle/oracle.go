@@ -79,7 +79,7 @@ func (driver *Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (*Driver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
+func (*Driver) Execute(_ context.Context, _ *sql.Conn, _ string, _ bool) (int64, error) {
 	return 0, errors.Errorf("Oracle driver Execute() is not supported")
 }
 
