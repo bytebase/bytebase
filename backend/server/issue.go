@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -1913,21 +1912,10 @@ func convertDatabaseLabels(labelsJSON string) ([]*api.DatabaseLabel, error) {
 
 // TODO(zp): keep this function as same as the one in the project_service.go.
 func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, err
 	}
-	ast, issues := e.Parse(databaseGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
 	var matches []*store.DatabaseMessage
 	var unmatches []*store.DatabaseMessage
 
@@ -1956,19 +1944,9 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 }
 
 func getMatchesAndUnmatchedTables(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	ast, issues := e.Parse(schemaGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	var matched []string
