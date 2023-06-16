@@ -383,6 +383,90 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 	return nil
 }
 
+func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) error {
+	issue, err := r.store.GetIssueV2(ctx, &store.FindIssueMessage{
+		UID: &issueUID,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get issue")
+	}
+	payload := &storepb.IssuePayload{}
+	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+		return status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
+	}
+	if payload.Approval == nil {
+		return status.Errorf(codes.Internal, "issue payload approval is nil")
+	}
+	if !payload.Approval.ApprovalFindingDone {
+		return status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
+	}
+	if payload.Approval.ApprovalFindingError != "" {
+		return status.Errorf(codes.FailedPrecondition, "approval template finding failed: %v", payload.Approval.ApprovalFindingError)
+	}
+	if len(payload.Approval.ApprovalTemplates) != 1 {
+		return status.Errorf(codes.Internal, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
+	}
+
+	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
+	if rejectedStep != nil {
+		return status.Errorf(codes.InvalidArgument, "cannot reject because the review has been rejected")
+	}
+
+	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
+	if step == nil {
+		return status.Errorf(codes.InvalidArgument, "the review has been approved")
+	}
+
+	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
+		Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
+		PrincipalId: int32(api.SystemBotID),
+	})
+
+	payloadBytes, err := protojson.Marshal(payload)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+	}
+	payloadStr := string(payloadBytes)
+
+	issue, err = r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+		Payload: &payloadStr,
+	}, api.SystemBotID)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
+	}
+
+	// It's ok to fail to create activity.
+	if err := func() error {
+		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
+			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
+				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
+					Status: storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED,
+				},
+			},
+			IssueName: issue.Title,
+		})
+		if err != nil {
+			return err
+		}
+		create := &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: issue.UID,
+			Type:        api.ActivityIssueCommentCreate,
+			Level:       api.ActivityInfo,
+			Comment:     "",
+			Payload:     string(activityPayload),
+		}
+		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		log.Error("failed to create activity after rejecting review", zap.Error(err))
+	}
+
+	return nil
+}
+
 func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.ExternalApprovalMessage) error {
 	payload := &api.ExternalApprovalPayloadRelay{}
 	if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
@@ -408,7 +492,15 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 			return err
 		}
 	} else if status == relayplugin.StatusRejected {
-		// TBD
+		if err := r.rejectExternalApprovalNode(ctx, approval.IssueUID); err != nil {
+			return err
+		}
+		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
+			ID:        approval.ID,
+			RowStatus: api.Archived,
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
