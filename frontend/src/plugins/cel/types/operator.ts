@@ -77,7 +77,7 @@ export const OperatorList: Record<Factor, Operator[]> = {
 
   // Database group related fields.
   "resource.environment_name": uniq(["_==_"]),
-  "resource.instance_name": uniq([
+  "resource.instance_id": uniq([
     "_==_",
     "_!=_",
     "startsWith",
