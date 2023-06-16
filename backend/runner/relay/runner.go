@@ -23,7 +23,6 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	relayplugin "github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -43,7 +42,7 @@ type Runner struct {
 	activityManager *activity.Manager
 	taskScheduler   *taskrun.Scheduler
 
-	Client *relay.Client
+	Client *relayplugin.Client
 }
 
 func getExternalApprovalByID(ctx context.Context, s *store.Store, externalApprovalID string) (*storepb.ExternalApprovalSetting_Node, error) {
