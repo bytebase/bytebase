@@ -6,6 +6,7 @@
     <div class="flex flex-col gap-y-1">
       <p class="textlabel">
         {{ $t("common.comment") }}
+        <RequiredStar v-show="props.reviewType === 'SEND_BACK'" />
       </p>
       <AutoHeightTextarea
         v-model:value="comment"
@@ -26,6 +27,7 @@
             ? 'btn-danger'
             : 'btn-normal'
         "
+        :disabled="!allowConfirm"
         @click="handleConfirm"
       >
         {{ okText }}
@@ -35,17 +37,19 @@
 </template>
 
 <script lang="ts" setup>
-import { Ref, ref } from "vue";
+import { Ref, computed, ref } from "vue";
 
 import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
 import { Review_Approver_Status } from "@/types/proto/v1/review_service";
 import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 
 const props = defineProps<{
   okText: string;
   status: Review_Approver_Status;
   buttonStyle: "PRIMARY" | "ERROR" | "NORMAL";
+  reviewType: "APPROVAL" | "SEND_BACK" | "RE_REQUEST_REVIEW";
 }>();
 
 const emit = defineEmits<{
@@ -63,6 +67,14 @@ const emit = defineEmits<{
 const issueContext = useIssueLogic();
 const issue = issueContext.issue as Ref<Issue>;
 const comment = ref("");
+
+const allowConfirm = computed(() => {
+  if (props.reviewType === "SEND_BACK" && comment.value === "") {
+    return false;
+  }
+
+  return true;
+});
 
 const handleConfirm = (e: MouseEvent) => {
   const button = e.target as HTMLElement;
