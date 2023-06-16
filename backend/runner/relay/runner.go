@@ -32,12 +32,21 @@ import (
 // NewRunner creates a new runner instance.
 func NewRunner(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, stateCfg *state.State) *Runner {
 	return &Runner{
-		store:           store,
-		activityManager: activityManager,
-		taskScheduler:   taskScheduler,
-		stateCfg:        stateCfg,
-		Client:          relayplugin.NewClient(),
+		store:                     store,
+		activityManager:           activityManager,
+		taskScheduler:             taskScheduler,
+		stateCfg:                  stateCfg,
+		Client:                    relayplugin.NewClient(),
+		CheckExternalApprovalChan: make(chan CheckExternalApprovalChanMessage, 100),
 	}
+}
+
+// CheckExternalApprovalChanMessage is the message to check external approval status.
+type CheckExternalApprovalChanMessage struct {
+	approval *store.ExternalApprovalMessage
+	// errChan is used to send back the error message.
+	// The channel must be buffered to avoid blocking.
+	errChan chan error
 }
 
 // Runner is the runner for the relay.
@@ -48,6 +57,8 @@ type Runner struct {
 	stateCfg        *state.State
 
 	Client *relayplugin.Client
+
+	CheckExternalApprovalChan chan CheckExternalApprovalChanMessage
 }
 
 const relayRunnerInterval = time.Minute * 10
@@ -61,6 +72,8 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	wg.Add(1)
 	go r.listenIssueExternalApprovalRelayCancelChan(ctx, wg)
+	wg.Add(1)
+	go r.listenCheckExternalApprovalChan(ctx, wg)
 
 	for {
 		select {
@@ -75,17 +88,35 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				var errs error
 				for _, approval := range approvals {
-					if err := r.checkExternalApproval(ctx, approval); err != nil {
+					msg := CheckExternalApprovalChanMessage{
+						approval: approval,
+						errChan:  make(chan error, 1),
+					}
+					r.CheckExternalApprovalChan <- msg
+					err := <-msg.errChan
+					if err != nil {
 						err = errors.Wrapf(err, "failed to check external approval status, issueUID %d", approval.IssueUID)
 						errs = multierr.Append(errs, err)
 					}
 				}
-
 				return errs
 			}()
 			if err != nil {
 				log.Error("relay runner: failed to check external approval", zap.Error(err))
 			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (r *Runner) listenCheckExternalApprovalChan(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for {
+		select {
+		case msg := <-r.CheckExternalApprovalChan:
+			err := r.checkExternalApproval(ctx, msg.approval)
+			msg.errChan <- err
 		case <-ctx.Done():
 			return
 		}
