@@ -79,24 +79,23 @@ func (driver *Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
-	return driver.executeWithBeforeCommitTxFunc(ctx, statement, nil)
+func (*Driver) Execute(_ context.Context, _ *sql.Conn, _ string, _ bool) (int64, error) {
+	return 0, errors.Errorf("unsupported Oracle Execute()")
 }
 
-// executeWithBeforeCommitTxFunc executes the SQL statements and returns the effected rows, `beforeCommitTx` will be called before transaction commit and after executing `statement`.
+// ExecuteMigrationWithBeforeCommitTxFunc executes the migration, `beforeCommitTxFunc` will be called before transaction commit and after executing `statement`.
 //
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
-//
 // Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
-func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, statement string, beforeCommitTx func(tx *sql.Tx) error) (int64, error) {
+func (driver *Driver) ExecuteMigrationWithBeforeCommitTxFunc(ctx context.Context, statement string, beforeCommitTxFunc func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get connection")
+		return "", "", errors.Wrapf(err, "failed to get connection")
 	}
 	defer conn.Close()
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin transaction")
+		return "", "", errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -119,19 +118,17 @@ func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, stateme
 	}
 
 	if _, err := parser.SplitMultiSQLStream(parser.Oracle, strings.NewReader(statement), f); err != nil {
-		return 0, err
+		return "", "", err
 	}
 
-	if beforeCommitTx != nil {
-		if err := beforeCommitTx(tx); err != nil {
-			return 0, errors.Wrapf(err, "failed to execute beforeCommitTx")
-		}
+	if err := beforeCommitTxFunc(tx); err != nil {
+		return "", "", errors.Wrapf(err, "failed to execute beforeCommitTx")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrapf(err, "failed to commit transaction")
+		return "", "", errors.Wrapf(err, "failed to commit transaction")
 	}
-	return totalRowsAffected, nil
+	return "", "", nil
 }
 
 // QueryConn querys a SQL statement in a given connection.

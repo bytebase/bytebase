@@ -493,7 +493,7 @@ type Driver interface {
 	GetType() Type
 	GetDB() *sql.DB
 	// Execute will execute the statement.
-	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
+	Execute(ctx context.Context, conn *sql.Conn, statement string, createDatabase bool) (int64, error)
 	// Used for execute readonly SELECT statement
 	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
 	// Used for execute readonly SELECT statement

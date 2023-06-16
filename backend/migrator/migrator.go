@@ -465,6 +465,11 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 		histories = h
 	}
 
+	conn, err := metadataDriver.GetDB().Conn(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Apply migrations if needed.
 	retVersion := curVer
 	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeProd))
@@ -521,7 +526,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
 				Force:                 true,
 			}
-			if _, _, err := utils.ExecuteMigrationDefault(ctx, storeInstance, metadataDriver, mi, string(buf), nil /* executeBeforeCommitTx */); err != nil {
+			if _, _, err := utils.ExecuteMigrationDefault(ctx, storeInstance, metadataDriver, conn, mi, string(buf), nil /* executeBeforeCommitTx */); err != nil {
 				return err
 			}
 			retVersion = pv.version
@@ -534,7 +539,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 	}
 
 	if mode == common.ReleaseModeDev {
-		if err := migrateDev(ctx, storeInstance, metadataDriver, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
+		if err := migrateDev(ctx, storeInstance, metadataDriver, conn, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
 			return errors.Wrapf(err, "failed to migrate dev schema")
 		}
 	}
@@ -572,7 +577,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 	return patchVersions[len(patchVersions)-1].version, nil
 }
 
-func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*store.InstanceChangeHistoryMessage) error {
+func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, conn *sql.Conn, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*store.InstanceChangeHistoryMessage) error {
 	devMigrations, err := getDevMigrations()
 	if err != nil {
 		return err
@@ -610,7 +615,7 @@ func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver 
 			Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
 			Force:                 true,
 		}
-		if _, _, err := utils.ExecuteMigrationDefault(ctx, storeInstance, metadataDriver, mi, m.statement, nil /* executeBeforeCommitTx */); err != nil {
+		if _, _, err := utils.ExecuteMigrationDefault(ctx, storeInstance, metadataDriver, conn, mi, m.statement, nil /* executeBeforeCommitTx */); err != nil {
 			return err
 		}
 	}
