@@ -331,6 +331,12 @@ func (r *Runner) CheckExternalApproval(ctx context.Context, approval *store.Exte
 		if err := r.approveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
+		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
+			ID:        approval.ID,
+			RowStatus: api.Archived,
+		}); err != nil {
+			return err
+		}
 		// approveIssue
 	}
 	return nil
