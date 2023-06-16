@@ -402,7 +402,6 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 					return nil, status.Errorf(codes.InvalidArgument, "cannot remove %s because it is used by the external approval node in issue %d", payload.ExternalApprovalNodeID, approval.IssueUID)
 				}
 			}
-
 		}
 
 		bytes, err := protojson.Marshal(storeValue)
