@@ -63,6 +63,7 @@
       :status="state.modal.status"
       :ok-text="state.modal.okText"
       :button-style="state.modal.buttonStyle"
+      :review-type="state.modal.reviewType"
       @cancel="state.modal = undefined"
       @confirm="handleModalConfirm"
     />
@@ -93,6 +94,7 @@ type LocalState = {
     status: Review_Approver_Status;
     okText: string;
     buttonStyle: "PRIMARY" | "ERROR" | "NORMAL";
+    reviewType: "APPROVAL" | "SEND_BACK" | "RE_REQUEST_REVIEW";
   };
   loading: boolean;
 };
@@ -170,17 +172,20 @@ const showModal = (status: Review_Approver_Status) => {
     title: "",
     okText: "",
     buttonStyle: "NORMAL",
+    reviewType: "APPROVAL",
   };
   switch (status) {
     case Review_Approver_Status.APPROVED:
       state.modal.title = t("custom-approval.issue-review.approve-issue");
       state.modal.okText = t("common.approval");
       state.modal.buttonStyle = "PRIMARY";
+      state.modal.reviewType = "APPROVAL";
       break;
     case Review_Approver_Status.REJECTED:
       state.modal.title = t("custom-approval.issue-review.send-back-issue");
       state.modal.okText = t("custom-approval.issue-review.send-back");
       state.modal.buttonStyle = "ERROR";
+      state.modal.reviewType = "SEND_BACK";
       break;
     case Review_Approver_Status.PENDING:
       state.modal.title = t(
@@ -188,6 +193,7 @@ const showModal = (status: Review_Approver_Status) => {
       );
       state.modal.okText = t("custom-approval.issue-review.re-request-review");
       state.modal.buttonStyle = "PRIMARY";
+      state.modal.reviewType = "RE_REQUEST_REVIEW";
   }
 };
 
