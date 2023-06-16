@@ -24,13 +24,13 @@ export const useWorkspaceApprovalSettingStore = defineStore(
       unrecognized: [],
     });
 
-    const setConfigSetting = (setting: Setting) => {
+    const setConfigSetting = async (setting: Setting) => {
       const _config = setting.value?.workspaceApprovalSettingValue;
       if (_config) {
         if (_config.rules.length === 0) {
           _config.rules.push(...seedWorkspaceApprovalSetting());
         }
-        config.value = resolveLocalApprovalConfig(_config);
+        config.value = await resolveLocalApprovalConfig(_config);
       }
     };
 
@@ -39,14 +39,14 @@ export const useWorkspaceApprovalSettingStore = defineStore(
         const setting = await settingServiceClient.getSetting({
           name: SETTING_NAME,
         });
-        setConfigSetting(setting);
+        await setConfigSetting(setting);
       } catch (ex) {
         console.error(ex);
       }
     };
 
     const updateConfig = async () => {
-      const setting = buildWorkspaceApprovalSetting(config.value);
+      const setting = await buildWorkspaceApprovalSetting(config.value);
       await settingServiceClient.setSetting({
         setting: {
           name: SETTING_NAME,
