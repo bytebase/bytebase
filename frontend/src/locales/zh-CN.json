@@ -2564,7 +2564,7 @@
       "edit": "编辑表分组"
     },
     "factor": {
-      "resource_instance_name": "实例 ID",
+      "resource_instance_id": "实例 ID",
       "resource_database_name": "数据库名",
       "resource_table_name": "表名"
     },

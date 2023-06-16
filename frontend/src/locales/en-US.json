@@ -2571,7 +2571,7 @@
       "edit": "Edit table group"
     },
     "factor": {
-      "resource_instance_name": "Instance ID",
+      "resource_instance_id": "Instance ID",
       "resource_database_name": "Database name",
       "resource_table_name": "Table name"
     },
