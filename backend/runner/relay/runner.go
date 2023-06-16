@@ -92,6 +92,44 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
+func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.ExternalApprovalMessage) error {
+	payload := &api.ExternalApprovalPayloadRelay{}
+	if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal external approval payload")
+	}
+	node, err := getExternalApprovalByID(ctx, r.store, payload.ExternalApprovalNodeID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get external approval node %s", payload.ExternalApprovalNodeID)
+	}
+	uri := payload.URI
+	status, err := r.Client.GetStatus(node.Endpoint, uri)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, uri: %s", node.Id, node.Endpoint, uri)
+	}
+	if status == relayplugin.StatusApproved {
+		if err := r.approveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
+			return err
+		}
+		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
+			ID:        approval.ID,
+			RowStatus: api.Archived,
+		}); err != nil {
+			return err
+		}
+	} else if status == relayplugin.StatusRejected {
+		if err := r.rejectExternalApprovalNode(ctx, approval.IssueUID); err != nil {
+			return err
+		}
+		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
+			ID:        approval.ID,
+			RowStatus: api.Archived,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func getExternalApprovalByID(ctx context.Context, s *store.Store, externalApprovalID string) (*storepb.ExternalApprovalSetting_Node, error) {
 	setting, err := s.GetWorkspaceExternalApprovalSetting(ctx)
 	if err != nil {
@@ -464,44 +502,6 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 		log.Error("failed to create activity after rejecting review", zap.Error(err))
 	}
 
-	return nil
-}
-
-func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.ExternalApprovalMessage) error {
-	payload := &api.ExternalApprovalPayloadRelay{}
-	if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal external approval payload")
-	}
-	node, err := getExternalApprovalByID(ctx, r.store, payload.ExternalApprovalNodeID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get external approval node %s", payload.ExternalApprovalNodeID)
-	}
-	uri := payload.URI
-	status, err := r.Client.GetStatus(node.Endpoint, uri)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, uri: %s", node.Id, node.Endpoint, uri)
-	}
-	if status == relayplugin.StatusApproved {
-		if err := r.approveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
-			return err
-		}
-		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
-			ID:        approval.ID,
-			RowStatus: api.Archived,
-		}); err != nil {
-			return err
-		}
-	} else if status == relayplugin.StatusRejected {
-		if err := r.rejectExternalApprovalNode(ctx, approval.IssueUID); err != nil {
-			return err
-		}
-		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
-			ID:        approval.ID,
-			RowStatus: api.Archived,
-		}); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
