@@ -28,10 +28,10 @@
       </template>
 
       <div class="flex-1 flex text-sm overflow-hidden" :class="itemClass(step)">
-        <div class="whitespace-nowrap shrink-0">
-          {{ approvalNodeText(step.step.nodes[0]) }}
-        </div>
         <template v-if="!isExternalApprovalStep(step.step)">
+          <div class="whitespace-nowrap shrink-0">
+            {{ approvalNodeText(step.step.nodes[0]) }}
+          </div>
           <div class="mr-1.5 shrink-0">:</div>
           <div class="flex-1 overflow-hidden">
             <NEllipsis
@@ -53,6 +53,12 @@
             <Candidates v-else :step="step" />
           </div>
         </template>
+        <template v-else>
+          <div class="whitespace-nowrap shrink-0">
+            {{ approvalNodeText(step.step.nodes[0]) }}
+          </div>
+          <ExternalApprovalSyncButton />
+        </template>
       </div>
     </NTimelineItem>
   </NTimeline>
@@ -66,6 +72,7 @@ import { approvalNodeText } from "@/utils";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store";
 import Candidates from "./Candidates.vue";
+import ExternalApprovalSyncButton from "./ExternalApprovalNodeSyncButton.vue";
 import { ApprovalStep } from "@/types/proto/v1/review_service";
 
 const USER_SYSTEM_BOT = "users/1";
