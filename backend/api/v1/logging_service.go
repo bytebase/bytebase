@@ -325,7 +325,9 @@ func (s *LoggingService) convertToLogEntity(ctx context.Context, activity *store
 		api.ActivityProjectMemberDelete,
 		api.ActivityProjectMemberRoleUpdate,
 		api.ActivityDatabaseRecoveryPITRDone:
-		project, err := s.store.GetProjectByID(ctx, activity.ContainerUID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID: &activity.ContainerUID,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -336,7 +338,9 @@ func (s *LoggingService) convertToLogEntity(ctx context.Context, activity *store
 	case
 		api.ActivitySQLEditorQuery,
 		api.ActivitySQLExport:
-		instance, err := s.store.GetInstanceByID(ctx, activity.ContainerUID)
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			UID: &activity.ContainerUID,
+		})
 		if err != nil {
 			return nil, err
 		}

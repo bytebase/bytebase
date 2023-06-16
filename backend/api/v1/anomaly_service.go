@@ -156,7 +156,9 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 		if err := json.Unmarshal([]byte(anomaly.Payload), &detail); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal database backup policy violation anomaly payload")
 		}
-		environment, err := s.store.GetEnvironmentByID(ctx, detail.EnvironmentID)
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+			UID: &detail.EnvironmentID,
+		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to find environment with id %d", detail.EnvironmentID)
 		}

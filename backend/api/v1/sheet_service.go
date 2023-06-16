@@ -823,7 +823,9 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 	}
 
-	project, err := s.store.GetProjectByID(ctx, sheet.ProjectUID)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		UID: &sheet.ProjectUID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project: %v", err))
 	}
