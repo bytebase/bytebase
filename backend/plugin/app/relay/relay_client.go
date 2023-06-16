@@ -87,7 +87,7 @@ func (c *Client) UpdateStatus(relayEndpoint string, uri string) error {
 	return nil
 }
 
-// Status is the status of the external approval
+// Status is the status of the external approval.
 type Status string
 
 // GetStatus is the response message to get the status of an external approval.
