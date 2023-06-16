@@ -26,7 +26,7 @@
           :disabled="!isCreating || disableEditDatabaseGroupFields"
           :selected-id="state.environmentId"
           @select-environment-id="
-            (environmentId) => {
+            (environmentId: any) => {
               state.environmentId = environmentId;
             }
           "
@@ -51,7 +51,7 @@
           :environment-id="state.environmentId || ''"
           :selected-id="state.selectedDatabaseGroupId"
           @select-database-group-id="
-            (id) => {
+            (id: any) => {
               state.selectedDatabaseGroupId = id;
             }
           "
@@ -144,7 +144,7 @@ const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   resourceId: "",
   placeholder: "",
-  expr: wrapAsGroup(emptySimpleExpr("_||_"), "_||_"),
+  expr: wrapAsGroup(emptySimpleExpr()),
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const selectedDatabaseGroupName = computed(() => {

@@ -43,9 +43,14 @@ export const convertCELStringToExpr = async (cel: string) => {
   }
 
   try {
-    const { expression: celExpr } = await celServiceClient.parse({
-      expression: cel,
-    });
+    const { expression: celExpr } = await celServiceClient.parse(
+      {
+        expression: cel,
+      },
+      {
+        silent: true,
+      }
+    );
     if (!celExpr || !celExpr.expr) {
       return emptySimpleExpr();
     }
@@ -60,9 +65,14 @@ export const convertCELStringToExpr = async (cel: string) => {
 export const convertDatabaseGroupExprFromCEL = async (
   cel: string
 ): Promise<DatabaseGroupExpr> => {
-  const { expression: celExpr } = await celServiceClient.parse({
-    expression: cel,
-  });
+  const { expression: celExpr } = await celServiceClient.parse(
+    {
+      expression: cel,
+    },
+    {
+      silent: true,
+    }
+  );
 
   if (!celExpr || !celExpr.expr) {
     throw new Error("Invalid CEL expression");
