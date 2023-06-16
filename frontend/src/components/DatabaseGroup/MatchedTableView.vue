@@ -110,7 +110,7 @@ const updateMatchingState = useDebounceFn(async () => {
   state.isRequesting = true;
   try {
     const celString = convertToCELString(props.expr);
-    const validateOnlyResourceId = "creating-schema-group";
+    const validateOnlyResourceId = `creating-schema-group-${Date.now()}`;
     const databaseGroupName = `${props.project.name}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
     const result = await projectServiceClient.createSchemaGroup({
       parent: databaseGroupName,
@@ -127,10 +127,9 @@ const updateMatchingState = useDebounceFn(async () => {
     matchedTableList.value = result.matchedTables;
     unmatchedTableList.value = result.unmatchedTables;
   } catch (error) {
+    console.error(error);
     matchedTableList.value = [];
     unmatchedTableList.value = [];
-    console.error(error);
-    // do nothing else.
   }
   state.isRequesting = false;
 }, 500);
