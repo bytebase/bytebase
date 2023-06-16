@@ -104,12 +104,12 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 		return status.Errorf(codes.Internal, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
 	}
 
-	rejectedStep := FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
+	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if rejectedStep != nil {
 		return status.Errorf(codes.InvalidArgument, "cannot approve because the review has been rejected")
 	}
 
-	step := FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
+	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if step == nil {
 		return status.Errorf(codes.InvalidArgument, "the review has been approved")
 	}
@@ -128,7 +128,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 		PrincipalId: api.SystemBotID,
 	})
 
-	approved, err := CheckApprovalApproved(payload.Approval)
+	approved, err := utils.CheckApprovalApproved(payload.Approval)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to check if the approval is approved, error: %v", err)
 	}
@@ -373,45 +373,4 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		}
 	}
-}
-
-// FindNextPendingStep finds the next pending step in the approval flow.
-func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
-	// We can do the finding like this for now because we are presuming that
-	// one step is approved by one approver.
-	// and the approver status is either
-	// APPROVED or REJECTED.
-	if len(approvers) >= len(template.Flow.Steps) {
-		return nil
-	}
-	return template.Flow.Steps[len(approvers)]
-}
-
-// FindRejectedStep finds the rejected step in the approval flow.
-func FindRejectedStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
-	for i, approver := range approvers {
-		if i >= len(template.Flow.Steps) {
-			return nil
-		}
-		if approver.Status == storepb.IssuePayloadApproval_Approver_REJECTED {
-			return template.Flow.Steps[i]
-		}
-	}
-	return nil
-}
-
-func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error) {
-	if approval == nil || !approval.ApprovalFindingDone {
-		return false, nil
-	}
-	if approval.ApprovalFindingError != "" {
-		return false, nil
-	}
-	if len(approval.ApprovalTemplates) == 0 {
-		return true, nil
-	}
-	if len(approval.ApprovalTemplates) != 1 {
-		return false, errors.Errorf("expecting one approval template but got %d", len(approval.ApprovalTemplates))
-	}
-	return FindRejectedStep(approval.ApprovalTemplates[0], approval.Approvers) == nil && FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers) == nil, nil
 }
