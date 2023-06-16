@@ -15,31 +15,24 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// FindSetting finds a list of Setting instances.
-func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.Setting, error) {
-	findV2 := &FindSettingMessage{Name: find.Name}
-	settings, err := s.ListSettingV2(ctx, findV2)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list setting with [%+v]", findV2)
-	}
-	var settingList []*api.Setting
-	for _, setting := range settings {
-		settingList = append(settingList, setting.toAPISetting())
-	}
-	return settingList, nil
+// FindSettingMessage is the message for finding setting.
+type FindSettingMessage struct {
+	Name    *api.SettingName
+	Enforce bool
 }
 
-// GetSetting gets an instance of Setting.
-func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Setting, error) {
-	findV2 := &FindSettingMessage{Name: find.Name}
-	setting, err := s.GetSettingV2(ctx, findV2)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting with [%+v]", findV2)
-	}
-	if setting == nil {
-		return nil, nil
-	}
-	return setting.toAPISetting(), nil
+// SetSettingMessage is the message for updating setting.
+type SetSettingMessage struct {
+	Name        api.SettingName
+	Value       string
+	Description *string
+}
+
+// SettingMessage is the message of setting.
+type SettingMessage struct {
+	Name        api.SettingName
+	Value       string
+	Description string
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
@@ -118,49 +111,9 @@ func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*store
 	return payload, nil
 }
 
-// PatchSetting patches an instance of Setting.
-func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api.Setting, error) {
-	setting, err := s.UpsertSettingV2(ctx, &SetSettingMessage{
-		Name:  patch.Name,
-		Value: patch.Value,
-	}, patch.UpdaterID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch setting with [%+v]", patch)
-	}
-	return setting.toAPISetting(), nil
-}
-
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	s.settingCache = sync.Map{}
-}
-
-// FindSettingMessage is the message for finding setting.
-type FindSettingMessage struct {
-	Name    *api.SettingName
-	Enforce bool
-}
-
-// SetSettingMessage is the message for updating setting.
-type SetSettingMessage struct {
-	Name        api.SettingName
-	Value       string
-	Description *string
-}
-
-// SettingMessage is the message of setting.
-type SettingMessage struct {
-	Name        api.SettingName
-	Value       string
-	Description string
-}
-
-func (sm *SettingMessage) toAPISetting() *api.Setting {
-	return &api.Setting{
-		Name:        sm.Name,
-		Value:       sm.Value,
-		Description: sm.Description,
-	}
 }
 
 // GetSettingV2 returns the setting by name.

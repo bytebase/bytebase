@@ -28,27 +28,6 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 	return composedProject, nil
 }
 
-// FindProject finds a list of Project instances.
-func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.Project, error) {
-	v2Find := &FindProjectMessage{ShowDeleted: true}
-	projects, err := s.ListProjectV2(ctx, v2Find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Project list with ProjectFind[%+v]", v2Find)
-	}
-	var composedProjects []*api.Project
-	for _, project := range projects {
-		composedProject, err := s.composeProject(project)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
-		}
-		if find.RowStatus != nil && composedProject.RowStatus != *find.RowStatus {
-			continue
-		}
-		composedProjects = append(composedProjects, composedProject)
-	}
-	return composedProjects, nil
-}
-
 func (*Store) composeProject(project *ProjectMessage) (*api.Project, error) {
 	composedProject := &api.Project{
 		ID:               project.UID,

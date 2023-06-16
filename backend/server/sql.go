@@ -239,11 +239,11 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-		Type:        api.ActivitySQLEditorQuery,
-		ContainerID: containerID,
-		Level:       level,
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   c.Get(getPrincipalIDContextKey()).(int),
+		Type:         api.ActivitySQLEditorQuery,
+		ContainerUID: containerID,
+		Level:        level,
 		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),

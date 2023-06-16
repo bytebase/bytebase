@@ -516,12 +516,12 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task sheet: %v", taskPatched.Name).SetInternal(err)
 		}
-		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
-			CreatorID:   taskPatch.UpdaterID,
-			ContainerID: taskPatched.PipelineID,
-			Type:        api.ActivityPipelineTaskStatementUpdate,
-			Payload:     string(payload),
-			Level:       api.ActivityInfo,
+		if _, err := s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
+			CreatorUID:   taskPatch.UpdaterID,
+			ContainerUID: taskPatched.PipelineID,
+			Type:         api.ActivityPipelineTaskStatementUpdate,
+			Payload:      string(payload),
+			Level:        api.ActivityInfo,
 		}, &activity.Metadata{
 			Issue: issue,
 		}); err != nil {
@@ -542,12 +542,12 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal earliest allowed time activity payload: %v", task.Name))
 		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   taskPatch.UpdaterID,
-			ContainerID: taskPatched.PipelineID,
-			Type:        api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
-			Payload:     string(payload),
-			Level:       api.ActivityInfo,
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   taskPatch.UpdaterID,
+			ContainerUID: taskPatched.PipelineID,
+			Type:         api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+			Payload:      string(payload),
+			Level:        api.ActivityInfo,
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 			Issue: issue,
@@ -983,12 +983,12 @@ func (s *Scheduler) createTaskStatusUpdateActivity(ctx context.Context, task *st
 	if taskStatusPatch.Status == api.TaskFailed {
 		level = api.ActivityError
 	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   taskStatusPatch.UpdaterID,
-		ContainerID: task.PipelineID,
-		Type:        api.ActivityPipelineTaskStatusUpdate,
-		Level:       level,
-		Payload:     string(payload),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   taskStatusPatch.UpdaterID,
+		ContainerUID: task.PipelineID,
+		Type:         api.ActivityPipelineTaskStatusUpdate,
+		Level:        level,
+		Payload:      string(payload),
 	}
 	if taskStatusPatch.Comment != nil {
 		activityCreate.Comment = *taskStatusPatch.Comment
@@ -1224,13 +1224,13 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   updaterID,
-		ContainerID: issue.UID,
-		Type:        api.ActivityIssueStatusUpdate,
-		Level:       api.ActivityInfo,
-		Comment:     comment,
-		Payload:     string(payload),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   updaterID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueStatusUpdate,
+		Level:        api.ActivityInfo,
+		Comment:      comment,
+		Payload:      string(payload),
 	}
 
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
@@ -1339,12 +1339,12 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 			if err != nil {
 				return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
 			}
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   api.SystemBotID,
-				ContainerID: *issue.PipelineUID,
-				Type:        api.ActivityPipelineStageStatusUpdate,
-				Level:       api.ActivityInfo,
-				Payload:     string(bytes),
+			activityCreate := &store.ActivityMessage{
+				CreatorUID:   api.SystemBotID,
+				ContainerUID: *issue.PipelineUID,
+				Type:         api.ActivityPipelineStageStatusUpdate,
+				Level:        api.ActivityInfo,
+				Payload:      string(bytes),
 			}
 			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 				Issue: issue,
@@ -1371,12 +1371,12 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 			if err != nil {
 				return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
 			}
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   api.SystemBotID,
-				ContainerID: *issue.PipelineUID,
-				Type:        api.ActivityPipelineStageStatusUpdate,
-				Level:       api.ActivityInfo,
-				Payload:     string(bytes),
+			activityCreate := &store.ActivityMessage{
+				CreatorUID:   api.SystemBotID,
+				ContainerUID: *issue.PipelineUID,
+				Type:         api.ActivityPipelineStageStatusUpdate,
+				Level:        api.ActivityInfo,
+				Payload:      string(bytes),
 			}
 			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 				Issue: issue,
