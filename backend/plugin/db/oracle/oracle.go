@@ -79,15 +79,15 @@ func (driver *Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (*Driver) Execute(_ context.Context, _ *sql.Conn, _ string, _ bool) (int64, error) {
-	return 0, errors.Errorf("unsupported Oracle Execute()")
+func (*Driver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
+	return 0, errors.Errorf("Oracle driver Execute() is not supported")
 }
 
-// ExecuteMigrationWithBeforeCommitTxFunc executes the migration, `beforeCommitTxFunc` will be called before transaction commit and after executing `statement`.
+// ExecuteWithBeforeCommit executes the migration, `beforeCommitTxFunc` will be called before transaction commit and after executing `statement`.
 //
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
 // Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
-func (driver *Driver) ExecuteMigrationWithBeforeCommitTxFunc(ctx context.Context, statement string, beforeCommitTxFunc func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func (driver *Driver) ExecuteWithBeforeCommit(ctx context.Context, statement string, beforeCommitTxFunc func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to get connection")
@@ -121,8 +121,10 @@ func (driver *Driver) ExecuteMigrationWithBeforeCommitTxFunc(ctx context.Context
 		return "", "", err
 	}
 
-	if err := beforeCommitTxFunc(tx); err != nil {
-		return "", "", errors.Wrapf(err, "failed to execute beforeCommitTx")
+	if beforeCommitTxFunc != nil {
+		if err := beforeCommitTxFunc(tx); err != nil {
+			return "", "", errors.Wrapf(err, "failed to execute beforeCommitTx")
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

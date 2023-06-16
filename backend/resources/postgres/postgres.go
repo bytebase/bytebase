@@ -344,9 +344,11 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		return nil
 	}
 
+	// Connect the default postgres database created by initdb.
 	if err := prepareDemoDatabase(ctx, pgUser, host, port, database); err != nil {
 		return err
 	}
+
 	// Connect the just created sample database to load data.
 	driver, err := db.Open(
 		ctx,
@@ -365,11 +367,6 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		return errors.Wrapf(err, "failed to connect sample database")
 	}
 	defer driver.Close(ctx)
-	conn, err := driver.GetDB().Conn(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create connection")
-	}
-	defer conn.Close()
 
 	// Load sample data
 	names, err := fs.Glob(sampleFS, "sample/*.sql")
@@ -382,15 +379,14 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	for _, name := range names {
 		if buf, err := fs.ReadFile(sampleFS, name); err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
-		} else if _, err := driver.Execute(ctx, conn, string(buf), false); err != nil {
+		} else if _, err := driver.Execute(context.Background(), string(buf), false); err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("failed to load sample database data: %s", name))
 		}
 	}
 
 	// Drop the default postgres database, this is to present a cleaner database list to the user.
 	_, err = driver.Execute(
-		ctx,
-		conn,
+		context.Background(),
 		"DROP DATABASE postgres",
 		true)
 	if err != nil {
@@ -420,16 +416,9 @@ func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database strin
 	}
 	defer driver.Close(ctx)
 
-	conn, err := driver.GetDB().Conn(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create connection")
-	}
-	defer conn.Close()
-
 	// Create the sample database.
 	if _, err := driver.Execute(
 		ctx,
-		conn,
 		fmt.Sprintf("CREATE DATABASE %s", database),
 		true); err != nil {
 		return errors.Wrapf(err, "failed to create sample database")
@@ -482,13 +471,8 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 		return errors.Wrapf(err, "failed to connect sample database")
 	}
 	defer driver.Close(ctx)
-	conn, err := driver.GetDB().Conn(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create connection")
-	}
-	defer conn.Close()
 
-	if _, err := driver.Execute(ctx, conn, "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", false); err != nil {
+	if _, err := driver.Execute(context.Background(), "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", false); err != nil {
 		return errors.Wrapf(err, "failed to create pg_stat_statements extension")
 	}
 	log.Info("Successfully created pg_stat_statements extension")

@@ -207,14 +207,6 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if composedInstance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
-	}
-
 	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -235,7 +227,7 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 		}
 
 		// Sync slow queries for instance.
-		s.stateCfg.InstanceSlowQuerySyncChan <- composedInstance
+		s.stateCfg.InstanceSlowQuerySyncChan <- instance.ResourceID
 	case db.Postgres:
 		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
@@ -278,7 +270,7 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 		}
 
 		// Sync slow queries for instance.
-		s.stateCfg.InstanceSlowQuerySyncChan <- composedInstance
+		s.stateCfg.InstanceSlowQuerySyncChan <- instance.ResourceID
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Engine)
 	}

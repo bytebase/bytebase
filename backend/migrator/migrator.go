@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -80,11 +79,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 		return nil, err
 	}
 	defer bytebaseDriver.Close(ctx)
-	bytebasePgDriver := bytebaseDriver.(*pg.Driver)
-
-	if err := migrateOld(ctx, metadataDriver, bytebasePgDriver, databaseName, serverVersion); err != nil {
-		return nil, err
-	}
 
 	verBefore, err := getLatestVersion(ctx, storeInstance)
 	if err != nil {
@@ -109,122 +103,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 	}
 
 	return &verAfter, nil
-}
-
-func hasInstanceChangeTable(ctx context.Context, metadataDriver dbdriver.Driver) (bool, error) {
-	var exists bool
-	if err := metadataDriver.GetDB().QueryRowContext(ctx,
-		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'instance_change_history')`,
-	).Scan(&exists); err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
-// migrates the old Bytebase schema up to where we create the instance_change_history table.
-func migrateOld(ctx context.Context, metadataDriver dbdriver.Driver, bytebasePgDriver *pg.Driver, databaseName, serverVersion string) error {
-	has, err := hasInstanceChangeTable(ctx, metadataDriver)
-	if err != nil {
-		return err
-	}
-	if has {
-		return nil
-	}
-
-	curVer, curSequence, err := getLatestVersionOld(ctx, bytebasePgDriver, databaseName)
-	if err != nil {
-		return err
-	}
-
-	// Apply migrations if needed.
-	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeProd))
-	if err != nil {
-		return err
-	}
-	minorVersions, _, err := getMinorMigrationVersions(names, *curVer)
-	if err != nil {
-		return err
-	}
-	for _, minorVersion := range minorVersions {
-		log.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
-		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeProd, minorVersion.Major, minorVersion.Minor))
-		if err != nil {
-			return err
-		}
-		patchVersions, err := getPatchVersions(minorVersion, *curVer, names)
-		if err != nil {
-			return err
-		}
-
-		for _, pv := range patchVersions {
-			buf, err := fs.ReadFile(migrationFS, pv.filename)
-			if err != nil {
-				return errors.Wrapf(err, "failed to read migration file %q", pv.filename)
-			}
-			log.Info(fmt.Sprintf("Migrating %s...", pv.version))
-			storedVersion, err := util.ToStoredVersion(true /* UseSemanticVersion */, pv.version.String(), common.DefaultMigrationVersion())
-			if err != nil {
-				return err
-			}
-			curSequence++
-			if _, err := metadataDriver.GetDB().ExecContext(ctx, string(buf)); err != nil {
-				return err
-			}
-			const insertHistoryQuery = `
-				INSERT INTO migration_history (
-					created_by,
-					created_ts,
-					updated_by,
-					updated_ts,
-					release_version,
-					namespace,
-					sequence,
-					source,
-					type,
-					status,
-					version,
-					description,
-					statement,
-					` + `"schema",` + `
-					schema_prev,
-					execution_duration_ns,
-					issue_id,
-					payload
-				)
-				VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, $14, $15)
-			`
-			if _, err := bytebasePgDriver.GetDB().ExecContext(ctx, insertHistoryQuery,
-				"", /* created_by */
-				"", /* updated_by */
-				serverVersion,
-				databaseName,
-				curSequence,
-				dbdriver.LIBRARY,
-				dbdriver.Migrate,
-				dbdriver.Done,
-				storedVersion,
-				fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
-				string(buf),
-				"", /* schema */
-				"", /* schema_prev */
-				"", /* issue_id */
-				"", /* payload */
-			); err != nil {
-				return err
-			}
-
-			// Stops the migration after we've reached to the point where we create the instance_change_history table.
-			has, err := hasInstanceChangeTable(ctx, metadataDriver)
-			if err != nil {
-				return err
-			}
-			if has {
-				return nil
-			}
-		}
-	}
-
-	return nil
 }
 
 func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion semver.Version, serverVersion string) error {
@@ -333,49 +211,6 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 	}
 
 	return semver.Version{}, errors.Errorf("failed to find a successful migration history to determine the schema version")
-}
-
-// getLatestVersionOld returns the latest schema version in semantic versioning format.
-// We expect our own migration history to use semantic versions.
-// If there's no migration history, version will be nil.
-func getLatestVersionOld(ctx context.Context, bytebasePgDriver *pg.Driver, database string) (*semver.Version, int, error) {
-	// We look back the past migration history records and return the latest successful (DONE) migration version.
-	history, err := bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-		Database: &database,
-	})
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to get migration history")
-	}
-	if len(history) == 0 {
-		return nil, 0, nil
-	}
-
-	for _, h := range history {
-		if h.Status != dbdriver.Done {
-			stmt := h.Statement
-			// Only print out first 200 chars.
-			if len(stmt) > 200 {
-				stmt = stmt[:200]
-			}
-			// Non-success migration history record is an anomaly, in the case where the actual
-			// migration has been applied, the followup migration will likely fail because the
-			// schema has already been applied. Thus emitting a warning here will assist debugging.
-			log.Warn(fmt.Sprintf("Found %s migration history", h.Status),
-				zap.String("type", string(h.Type)),
-				zap.String("version", h.Version),
-				zap.String("description", h.Description),
-				zap.String("statement", stmt),
-			)
-			continue
-		}
-		v, err := semver.Make(h.Version)
-		if err != nil {
-			return nil, 0, errors.Wrapf(err, "invalid version %q", h.Version)
-		}
-		return &v, h.Sequence, nil
-	}
-
-	return nil, 0, errors.Errorf("failed to find a successful migration history to determine the schema version")
 }
 
 // setupDemoData loads the demo data.
