@@ -1479,7 +1479,7 @@
       "select-users": "Select users",
       "assign-role": "Assign role",
       "never-expires": "Never",
-      "role-never-expires": "This role will never expires.",
+      "role-never-expires": "This role never expires.",
       "add-more": "Add more"
     },
     "mode": {
