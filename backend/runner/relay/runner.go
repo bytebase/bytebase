@@ -13,8 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -228,32 +226,32 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 		return errors.Wrapf(err, "failed to unmarshal issue payload")
 	}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
+		return errors.Wrapf(err, "failed to unmarshal issue payload")
 	}
 	if payload.Approval == nil {
-		return status.Errorf(codes.Internal, "issue payload approval is nil")
+		return errors.Wrapf(err, "issue payload approval is nil")
 	}
 	if !payload.Approval.ApprovalFindingDone {
-		return status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
+		return errors.Wrapf(err, "approval template finding is not done")
 	}
 	if payload.Approval.ApprovalFindingError != "" {
-		return status.Errorf(codes.FailedPrecondition, "approval template finding failed: %v", payload.Approval.ApprovalFindingError)
+		return errors.Wrapf(err, "approval template finding failed: %v", payload.Approval.ApprovalFindingError)
 	}
 	if len(payload.Approval.ApprovalTemplates) != 1 {
-		return status.Errorf(codes.Internal, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
+		return errors.Wrapf(err, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
 	}
 
 	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if rejectedStep != nil {
-		return status.Errorf(codes.InvalidArgument, "cannot approve because the review has been rejected")
+		return errors.Wrapf(err, "cannot approve because the review has been rejected")
 	}
 
 	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if step == nil {
-		return status.Errorf(codes.InvalidArgument, "the review has been approved")
+		return errors.Wrapf(err, "cannot approve because the review has been approved")
 	}
 	if len(step.Nodes) != 1 {
-		return status.Errorf(codes.Internal, "expecting one node but got %v", len(step.Nodes))
+		return errors.Wrapf(err, "expecting one node but got %v", len(step.Nodes))
 	}
 
 	node := step.Nodes[0]
@@ -269,18 +267,18 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 
 	approved, err := utils.CheckApprovalApproved(payload.Approval)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check if the approval is approved, error: %v", err)
+		return errors.Wrapf(err, "failed to check if the approval is approved")
 	}
 
 	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.Client, issue, payload.Approval)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
+		return errors.Wrapf(err, "failed to handle incoming approval steps")
 	}
 
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+		return errors.Wrapf(err, "failed to marshal issue payload")
 	}
 	payloadStr := string(payloadBytes)
 
@@ -288,7 +286,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 		Payload: &payloadStr,
 	}, api.SystemBotID)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
+		return errors.Wrapf(err, "failed to update issue")
 	}
 
 	// It's ok to fail to create activity.
@@ -386,7 +384,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 			return err
 		}
 		if newUser == nil {
-			return status.Errorf(codes.Internal, "user %v not found", userID)
+			return errors.Errorf("user %v not found", userID)
 		}
 		for _, binding := range policy.Bindings {
 			if binding.Role != api.Role(payload.GrantRequest.Role) {
@@ -461,29 +459,32 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 	}
 	payload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
+		return errors.Wrapf(err, "failed to unmarshal issue payload")
+	}
+	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal issue payload")
 	}
 	if payload.Approval == nil {
-		return status.Errorf(codes.Internal, "issue payload approval is nil")
+		return errors.Wrapf(err, "issue payload approval is nil")
 	}
 	if !payload.Approval.ApprovalFindingDone {
-		return status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
+		return errors.Wrapf(err, "approval template finding is not done")
 	}
 	if payload.Approval.ApprovalFindingError != "" {
-		return status.Errorf(codes.FailedPrecondition, "approval template finding failed: %v", payload.Approval.ApprovalFindingError)
+		return errors.Wrapf(err, "approval template finding failed: %v", payload.Approval.ApprovalFindingError)
 	}
 	if len(payload.Approval.ApprovalTemplates) != 1 {
-		return status.Errorf(codes.Internal, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
+		return errors.Wrapf(err, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
 	}
 
 	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if rejectedStep != nil {
-		return status.Errorf(codes.InvalidArgument, "cannot reject because the review has been rejected")
+		return errors.Wrapf(err, "cannot reject because the review has been rejected")
 	}
 
 	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if step == nil {
-		return status.Errorf(codes.InvalidArgument, "the review has been approved")
+		return errors.Wrapf(err, "cannot reject because the review has been approved")
 	}
 
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
@@ -493,7 +494,7 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+		return errors.Wrapf(err, "failed to marshal issue payload")
 	}
 	payloadStr := string(payloadBytes)
 
@@ -501,7 +502,7 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 		Payload: &payloadStr,
 	}, api.SystemBotID)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
+		return errors.Wrapf(err, "failed to update issue")
 	}
 
 	// It's ok to fail to create activity.
