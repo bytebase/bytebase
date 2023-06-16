@@ -345,39 +345,12 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	}
 
 	// Connect the default postgres database created by initdb.
-	driver, err := db.Open(
-		ctx,
-		db.Postgres,
-		db.DriverConfig{},
-		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     host,
-			Port:     port,
-			Database: "postgres",
-		},
-		db.ConnectionContext{},
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed to connect sample instance")
+	if err := prepareDemoDatabase(ctx, pgUser, host, port, database); err != nil {
+		return err
 	}
-
-	// Create the sample database.
-	_, err = driver.Execute(
-		context.Background(),
-		fmt.Sprintf("CREATE DATABASE %s", database),
-		true)
-	if err != nil {
-		driver.Close(ctx)
-		return errors.Wrapf(err, "failed to create sample database")
-	}
-
-	// We are going to drop the default postgres database afterwards, so we need to close the
-	// connection first to avoid "database is being accessed by other users" error.
-	driver.Close(ctx)
 
 	// Connect the just created sample database to load data.
-	driver, err = db.Open(
+	driver, err := db.Open(
 		ctx,
 		db.Postgres,
 		db.DriverConfig{},
@@ -418,6 +391,37 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		true)
 	if err != nil {
 		return errors.Wrapf(err, "failed to drop default postgres database")
+	}
+
+	return nil
+}
+
+func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database string) error {
+	// Connect the default postgres database created by initdb.
+	driver, err := db.Open(
+		ctx,
+		db.Postgres,
+		db.DriverConfig{},
+		db.ConnectionConfig{
+			Username: pgUser,
+			Password: "",
+			Host:     host,
+			Port:     port,
+			Database: "postgres",
+		},
+		db.ConnectionContext{},
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to connect sample instance")
+	}
+	defer driver.Close(ctx)
+
+	// Create the sample database.
+	if _, err := driver.Execute(
+		ctx,
+		fmt.Sprintf("CREATE DATABASE %s", database),
+		true); err != nil {
+		return errors.Wrapf(err, "failed to create sample database")
 	}
 
 	return nil
