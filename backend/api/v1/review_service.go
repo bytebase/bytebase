@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -35,16 +36,19 @@ type ReviewService struct {
 	activityManager    *activity.Manager
 	taskScheduler      *taskrun.Scheduler
 	taskCheckScheduler *taskcheck.Scheduler
+	relayRunner        *relay.Runner
 	stateCfg           *state.State
 }
 
 // NewReviewService creates a new ReviewService.
-func NewReviewService(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, stateCfg *state.State) *ReviewService {
+func NewReviewService(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, relayRunner *relay.Runner, stateCfg *state.State) *ReviewService {
 	return &ReviewService{
-		store:           store,
-		activityManager: activityManager,
-		taskScheduler:   taskScheduler,
-		stateCfg:        stateCfg,
+		store:              store,
+		activityManager:    activityManager,
+		taskScheduler:      taskScheduler,
+		taskCheckScheduler: taskCheckScheduler,
+		relayRunner:        relayRunner,
+		stateCfg:           stateCfg,
 	}
 }
 
@@ -138,6 +142,25 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		return nil, status.Errorf(codes.Internal, "failed to check if the approval is approved, error: %v", err)
 	}
 
+	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, s.store, s.relayRunner.Client, issue, payload.Approval)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
+	}
+
+	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
+	payloadBytes, err := protojson.Marshal(payload)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+	}
+	payloadStr := string(payloadBytes)
+
+	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+		Payload: &payloadStr,
+	}, api.SystemBotID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
+	}
+
 	// Grant the privilege if the issue is approved.
 	if approved && issue.Type == api.IssueGrantRequest {
 		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
@@ -200,25 +223,6 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		}, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))
 		}
-	}
-
-	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, s.store, issue, payload.Approval)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
-	}
-
-	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	payloadStr := string(payloadBytes)
-
-	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
-	}, api.SystemBotID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
 
 	// It's ok to fail to create activity.
@@ -357,10 +361,10 @@ func (s *ReviewService) RejectReview(ctx context.Context, request *v1pb.RejectRe
 
 	canApprove, err := isUserReviewer(step, user, policy)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if principal can approve step, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to check if principal can reject step, error: %v", err)
 	}
 	if !canApprove {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot approve because the user does not have the required permission")
+		return nil, status.Errorf(codes.PermissionDenied, "cannot reject because the user does not have the required permission")
 	}
 
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
@@ -472,6 +476,12 @@ func (s *ReviewService) RequestReview(ctx context.Context, request *v1pb.Request
 	}
 	payload.Approval.Approvers = newApprovers
 
+	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, s.store, s.relayRunner.Client, issue, payload.Approval)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
+	}
+
+	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
@@ -509,9 +519,16 @@ func (s *ReviewService) RequestReview(ctx context.Context, request *v1pb.Request
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
 		}
+
+		for _, create := range activityCreates {
+			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}(); err != nil {
-		log.Error("failed to create activity after requesting review", zap.Error(err))
+		log.Error("failed to create skipping steps activity after approving review", zap.Error(err))
 	}
 
 	review, err := convertToReview(ctx, s.store, issue)
@@ -658,7 +675,7 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 			return true, nil
 		}
 	case *storepb.ApprovalNode_ExternalNodeId:
-		return false, nil
+		return true, nil
 	default:
 		return false, errors.Errorf("invalid node payload type")
 	}
