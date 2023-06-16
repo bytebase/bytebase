@@ -1,0 +1,65 @@
+- statement: |-
+    CREATE TABLE t (
+      id INT PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      age INT,
+      address VARCHAR
+    );
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column AGE is nullable, which is not allowed.
+      line: 4
+      details: ""
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column ADDRESS is nullable, which is not allowed.
+      line: 5
+      details: ""
+- statement: |-
+    CREATE TABLE t (
+      id INT,
+      name VARCHAR(100) NOT NULL,
+      age INT,
+      address VARCHAR,
+      PRIMARY KEY (id, age)
+    )
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column ADDRESS is nullable, which is not allowed.
+      line: 5
+      details: ""
+- statement: |-
+    CREATE TABLE t (
+      id INT NOT NULL,
+      name VARCHAR(100) NOT NULL,
+      age INT NOT NULL,
+      address VARCHAR NOT NULL
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE a ADD COLUMN age INT;
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column AGE is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: ALTER TABLE a ADD COLUMN age INT NOT NULL;
+  want:
+    - status: WARN
+      code: 201
+      title: Syntax error
+      content: line 2:0 mismatched input ';' expecting {'CONSTRAINT', 'FOREIGN', 'PRIMARY', 'REFERENCES', 'UNIQUE'}
+      line: 2
+      details: ""
