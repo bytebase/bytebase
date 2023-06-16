@@ -82,11 +82,15 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 	if ctx.VARCHAR() == nil {
 		return
 	}
-	lengthText := ctx.Num(0).GetText()
-	length, err := strconv.Atoi(lengthText)
-	if err != nil {
-		return
+	length := 16_777_216
+	if v := ctx.Num(0); v != nil {
+		var err error
+		length, err = strconv.Atoi(v.GetText())
+		if err != nil {
+			return
+		}
 	}
+
 	if length > l.maximum {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
