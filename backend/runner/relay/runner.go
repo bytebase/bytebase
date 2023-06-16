@@ -337,7 +337,6 @@ func (r *Runner) CheckExternalApproval(ctx context.Context, approval *store.Exte
 		}); err != nil {
 			return err
 		}
-		// approveIssue
 	}
 	return nil
 }
