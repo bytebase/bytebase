@@ -28,6 +28,7 @@ export const convertCELStringToParsedExpr = async (
 export const convertParsedExprToCELString = async (
   parsedExpr: ParsedExpr
 ): Promise<string> => {
+  if (!parsedExpr.expr) return "";
   try {
     const response = await celServiceClient.deparse(
       {
