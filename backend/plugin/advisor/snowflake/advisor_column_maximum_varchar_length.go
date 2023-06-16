@@ -90,7 +90,6 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 	}
 
 	length := varcharDefaultLength
-
 	if v := ctx.Num(0); v != nil {
 		var err error
 		length, err = strconv.Atoi(v.GetText())
