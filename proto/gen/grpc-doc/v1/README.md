@@ -360,6 +360,7 @@
     - [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest)
     - [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest)
     - [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse)
+    - [CreateReviewCommentRequest](#bytebase-v1-CreateReviewCommentRequest)
     - [CreateReviewRequest](#bytebase-v1-CreateReviewRequest)
     - [GetReviewRequest](#bytebase-v1-GetReviewRequest)
     - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
@@ -368,6 +369,8 @@
     - [RequestReviewRequest](#bytebase-v1-RequestReviewRequest)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
+    - [ReviewComment](#bytebase-v1-ReviewComment)
+    - [UpdateReviewCommentRequest](#bytebase-v1-UpdateReviewCommentRequest)
     - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
   
     - [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue)
@@ -5788,6 +5791,22 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-CreateReviewCommentRequest"></a>
+
+### CreateReviewCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The review name Format: projects/{project}/reviews/{review} |
+| review_comment | [ReviewComment](#bytebase-v1-ReviewComment) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateReviewRequest"></a>
 
 ### CreateReviewRequest
@@ -5933,6 +5952,42 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 
 
 
+<a name="bytebase-v1-ReviewComment"></a>
+
+### ReviewComment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| uid | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
+| payload | [string](#string) |  | TODO: use struct message instead. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateReviewCommentRequest"></a>
+
+### UpdateReviewCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The review name Format: projects/{project}/reviews/{review} |
+| review_comment | [ReviewComment](#bytebase-v1-ReviewComment) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateReviewRequest"></a>
 
 ### UpdateReviewRequest
@@ -6045,6 +6100,8 @@ ANY means approving any node will proceed.
 | CreateReview | [CreateReviewRequest](#bytebase-v1-CreateReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | ListReviews | [ListReviewsRequest](#bytebase-v1-ListReviewsRequest) | [ListReviewsResponse](#bytebase-v1-ListReviewsResponse) |  |
 | UpdateReview | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| CreateReviewComment | [CreateReviewCommentRequest](#bytebase-v1-CreateReviewCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
+| UpdateReviewComment | [UpdateReviewCommentRequest](#bytebase-v1-UpdateReviewCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
 | ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | RejectReview | [RejectReviewRequest](#bytebase-v1-RejectReviewRequest) | [Review](#bytebase-v1-Review) |  |

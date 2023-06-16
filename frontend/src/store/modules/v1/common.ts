@@ -13,6 +13,7 @@ export const databaseGroupNamePrefix = "databaseGroups/";
 export const schemaGroupNamePrefix = "schemaGroups/";
 export const externalVersionControlPrefix = "externalVersionControls/";
 export const logNamePrefix = "logs/";
+export const reviewNamePrefix = "reviews/";
 
 export const getNameParentTokens = (
   name: string,
