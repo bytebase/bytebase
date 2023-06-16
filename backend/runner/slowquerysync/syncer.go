@@ -58,9 +58,9 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			log.Debug("Slow query syncer received context cancellation")
 			return
-		case instance := <-s.stateCfg.InstanceSlowQuerySyncChan:
-			log.Debug("Slow query syncer received instance slow query sync request", zap.String("instance", instance.ResourceID))
-			s.syncSlowQuery(ctx, instance)
+		case instanceResourceID := <-s.stateCfg.InstanceSlowQuerySyncChan:
+			log.Debug("Slow query syncer received instance slow query sync request", zap.String("instance", instanceResourceID))
+			s.syncSlowQuery(ctx, &instanceResourceID)
 		case <-ticker.C:
 			log.Debug("Slow query syncer received tick")
 			s.syncSlowQuery(ctx, nil)
@@ -68,7 +68,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *Syncer) syncSlowQuery(ctx context.Context, instance *api.Instance) {
+func (s *Syncer) syncSlowQuery(ctx context.Context, instanceResourceID *string) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -80,8 +80,8 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, instance *api.Instance) {
 	}()
 
 	find := &store.FindInstanceMessage{}
-	if instance != nil {
-		find.UID = &instance.ID
+	if instanceResourceID != nil {
+		find.ResourceID = instanceResourceID
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {

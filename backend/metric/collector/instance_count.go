@@ -35,7 +35,9 @@ func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 	}
 
 	for _, instanceCountMetric := range instanceCountMetricList {
-		env, err := c.store.GetEnvironmentByID(ctx, instanceCountMetric.EnvironmentID)
+		env, err := c.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+			UID: &instanceCountMetric.EnvironmentID,
+		})
 		if err != nil {
 			log.Debug("failed to get environment by id", zap.Int("id", instanceCountMetric.EnvironmentID))
 			continue
@@ -46,7 +48,7 @@ func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]any{
 				"engine":      string(instanceCountMetric.Engine),
-				"environment": env.Name,
+				"environment": env.Title,
 				"status":      string(instanceCountMetric.RowStatus),
 			},
 		})
