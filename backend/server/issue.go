@@ -304,12 +304,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, payload := range payloadList {
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-				ContainerID: issue.UID,
-				Type:        api.ActivityIssueFieldUpdate,
-				Level:       api.ActivityInfo,
-				Payload:     string(payload),
+			activityCreate := &store.ActivityMessage{
+				CreatorUID:   c.Get(getPrincipalIDContextKey()).(int),
+				ContainerUID: issue.UID,
+				Type:         api.ActivityIssueFieldUpdate,
+				Level:        api.ActivityInfo,
+				Payload:      string(payload),
 			}
 			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 				Issue: updatedIssue,
@@ -499,12 +499,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   creatorID,
-		ContainerID: issue.UID,
-		Type:        api.ActivityIssueCreate,
-		Level:       api.ActivityInfo,
-		Payload:     string(bytes),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
@@ -524,12 +524,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
 		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: *issue.PipelineUID,
-			Type:        api.ActivityPipelineStageStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: *issue.PipelineUID,
+			Type:         api.ActivityPipelineStageStatusUpdate,
+			Level:        api.ActivityInfo,
+			Payload:      string(bytes),
 		}
 		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 			Issue: issue,
@@ -1312,16 +1312,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
 					for migrationDetailIdx, migrationDetail := range migrationDetailList {
-						// CreateSheet for each migration detail.
+						// CreateSheetV2 for each migration detail.
 						sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
-							ProjectUID: project.UID,
-							DatabaseID: &migrationDetail.DatabaseID,
-							CreatorID:  creatorID,
-							Statement:  migrationDetail.Statement,
-							Visibility: api.ProjectSheet,
-							Source:     api.SheetFromBytebaseArtifact,
-							Type:       api.SheetForSQL,
-							Payload:    "",
+							ProjectUID:  project.UID,
+							DatabaseUID: &migrationDetail.DatabaseID,
+							CreatorID:   creatorID,
+							Statement:   migrationDetail.Statement,
+							Visibility:  api.ProjectSheet,
+							Source:      api.SheetFromBytebaseArtifact,
+							Type:        api.SheetForSQL,
+							Payload:     "",
 						})
 						if err != nil {
 							return nil, err
@@ -1563,9 +1563,9 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	if err != nil {
 		return nil, err
 	}
-	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  project.UID,
+		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
 		Statement:  statement,
 		Visibility: api.ProjectSheet,
@@ -1584,7 +1584,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Collation:    c.Collation,
 		Labels:       c.Labels,
 		DatabaseName: databaseName,
-		SheetID:      sheet.ID,
+		SheetID:      sheet.UID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {

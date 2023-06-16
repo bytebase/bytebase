@@ -120,7 +120,7 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 		}
 	}
 
-	instanceList, err := r.store.FindInstance(ctx, &api.InstanceFind{})
+	instanceList, err := r.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
 		log.Error("Failed to find non-archived instances.", zap.Error(err))
 		return
@@ -132,23 +132,23 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
 		if err != nil {
-			log.Error("Failed to get max retention period for MySQL instance", zap.String("instance", instance.Name), zap.Error(err))
+			log.Error("Failed to get max retention period for MySQL instance", zap.String("instance", instance.Title), zap.Error(err))
 			continue
 		}
 		if maxRetentionPeriodTs == math.MaxInt {
 			continue
 		}
-		if err := r.purgeBinlogFiles(ctx, instance.ID, maxRetentionPeriodTs); err != nil {
-			log.Error("Failed to purge binlog files for instance", zap.String("instance", instance.Name), zap.Int("retentionPeriodTs", maxRetentionPeriodTs), zap.Error(err))
+		if err := r.purgeBinlogFiles(ctx, instance.UID, maxRetentionPeriodTs); err != nil {
+			log.Error("Failed to purge binlog files for instance", zap.String("instance", instance.Title), zap.Int("retentionPeriodTs", maxRetentionPeriodTs), zap.Error(err))
 		}
 	}
 }
 
-func (r *Runner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *api.Instance) (int, error) {
-	backupSettingList, err := r.store.ListBackupSettingV2(ctx, &store.FindBackupSettingMessage{InstanceUID: &instance.ID})
+func (r *Runner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *store.InstanceMessage) (int, error) {
+	backupSettingList, err := r.store.ListBackupSettingV2(ctx, &store.FindBackupSettingMessage{InstanceUID: &instance.UID})
 	if err != nil {
-		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
-		return 0, errors.Wrapf(err, "failed to find backup settings for instance %q", instance.Name)
+		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Title), zap.Error(err))
+		return 0, errors.Wrapf(err, "failed to find backup settings for instance %q", instance.Title)
 	}
 	maxRetentionPeriodTs := math.MaxInt
 	for _, bs := range backupSettingList {

@@ -66,7 +66,7 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 	}
 
 	settingName := api.SettingPluginAgent
-	setting, err := p.store.GetSetting(ctx, &api.SettingFind{
+	setting, err := p.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &settingName,
 	})
 	if err != nil {

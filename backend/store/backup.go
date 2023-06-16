@@ -164,24 +164,6 @@ func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	return nil
 }
 
-// ToAPIBackup converts BackupMessage to legacy api Backup.
-func (b *BackupMessage) ToAPIBackup() *api.Backup {
-	return &api.Backup{
-		ID:                      b.UID,
-		RowStatus:               b.RowStatus,
-		CreatedTs:               b.CreatedTs,
-		UpdatedTs:               b.UpdatedTs,
-		Name:                    b.Name,
-		Status:                  b.Status,
-		Type:                    b.BackupType,
-		StorageBackend:          b.StorageBackend,
-		MigrationHistoryVersion: b.MigrationHistoryVersion,
-		Path:                    b.Path,
-		Comment:                 b.Comment,
-		DatabaseID:              b.DatabaseUID,
-	}
-}
-
 // FindBackupMessage is the message for finding backup.
 type FindBackupMessage struct {
 	// DatabaseUID is the UID of the database.
