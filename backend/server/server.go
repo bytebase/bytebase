@@ -327,9 +327,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	s.stateCfg = &state.State{
-		InstanceDatabaseSyncChan:       make(chan *store.InstanceMessage, 100),
-		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
-		InstanceOutstandingConnections: make(map[int]int),
+		InstanceDatabaseSyncChan:             make(chan *store.InstanceMessage, 100),
+		InstanceSlowQuerySyncChan:            make(chan *api.Instance, 100),
+		InstanceOutstandingConnections:       make(map[int]int),
+		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 	}
 	s.store = storeInstance
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
@@ -429,7 +430,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
 
-		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.TaskScheduler)
+		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.TaskScheduler, s.stateCfg)
 
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)

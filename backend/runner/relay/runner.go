@@ -19,6 +19,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/utils"
 
@@ -28,11 +29,12 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func NewRunner(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler) *Runner {
+func NewRunner(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, stateCfg *state.State) *Runner {
 	return &Runner{
 		store:           store,
 		activityManager: activityManager,
 		taskScheduler:   taskScheduler,
+		stateCfg:        stateCfg,
 		Client:          relayplugin.NewClient(),
 	}
 }
@@ -41,6 +43,7 @@ type Runner struct {
 	store           *store.Store
 	activityManager *activity.Manager
 	taskScheduler   *taskrun.Scheduler
+	stateCfg        *state.State
 
 	Client *relayplugin.Client
 }
@@ -340,10 +343,26 @@ func (r *Runner) CheckExternalApproval(ctx context.Context, approval *store.Exte
 	return nil
 }
 
+func (r *Runner) listenIssueExternalApprovalRelayCancelChan(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for {
+		select {
+		case issueUID := <-r.stateCfg.IssueExternalApprovalRelayCancelChan:
+			r.CancelExternalApproval(ctx, issueUID)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	defer wg.Done()
+
+	wg.Add(1)
+	go r.listenIssueExternalApprovalRelayCancelChan(ctx, wg)
+
 	for {
 		select {
 		case <-ticker.C:
