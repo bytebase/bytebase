@@ -455,6 +455,14 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("project with resource id %q is not a VCS enabled project", projectResourceID))
 	}
 
+	projectRoles, err := s.findProjectRoles(ctx, project.UID, currentPrincipalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find roles in the project: %v", err))
+	}
+	if !api.ProjectPermission(api.ProjectPermissionSyncSheet, s.licenseService.GetEffectivePlan(), projectRoles) {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to sync sheet for project")
+	}
+
 	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{ProjectResourceID: &project.ResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find repository for sync sheet: %d", project.UID))
