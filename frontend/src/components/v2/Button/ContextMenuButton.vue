@@ -29,11 +29,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { NButton, NButtonGroup, NPopselect, SelectOption } from "naive-ui";
-import { ContextMenuButtonAction } from "./types";
+import { ref, computed } from "vue";
 import { useLocalStorage } from "@vueuse/core";
-import { computed } from "vue";
+import { head } from "lodash-es";
+import { NButton, NButtonGroup, NPopselect, SelectOption } from "naive-ui";
+
+import { ContextMenuButtonAction } from "./types";
 
 const STORE_PREFIX = "bb.context-menu-button";
 
@@ -77,7 +78,10 @@ const currentActionKey = ref(getDefaultActionKey());
 const currentAction = computed(() => {
   const key = currentActionKey.value;
   if (!key) return undefined;
-  return props.actionList.find((action) => action.key === key);
+  return (
+    props.actionList.find((action) => action.key === key) ??
+    head(props.actionList)
+  );
 });
 
 const options = computed(() => {
