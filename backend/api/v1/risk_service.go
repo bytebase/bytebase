@@ -116,7 +116,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 			patch.Active = &request.Risk.Active
 		case "level":
 			patch.Level = &request.Risk.Level
-		case "expression":
+		case "condition":
 			if _, err := common.ConvertUnparsedRisk(request.Risk.Condition); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
 			}
