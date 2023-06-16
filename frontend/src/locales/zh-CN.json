@@ -1473,7 +1473,9 @@
       "show-inactive": "显示未激活成员",
       "select-users": "选择用户",
       "assign-role": "分配角色",
-      "role-never-expires": "此角色没有过期时间。"
+      "never-expires": "永不过期",
+      "role-never-expires": "此角色没有过期时间。",
+      "add-more": "增加更多"
     },
     "mode": {
       "standard": "标准模式",
