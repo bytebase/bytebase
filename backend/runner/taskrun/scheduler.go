@@ -1212,6 +1212,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
 			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
 		}
+		s.stateCfg.IssueExternalApprovalRelayCancelChan <- issue.UID
 	}
 
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
