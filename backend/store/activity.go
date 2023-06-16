@@ -15,227 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// activityRaw is the store model for an Activity.
-// Fields have exactly the same meanings as Activity.
-type activityRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	// The object where this activity belongs
-	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-	ContainerID int
-
-	// Domain specific fields
-	Type    api.ActivityType
-	Level   api.ActivityLevel
-	Comment string
-	Payload string
-}
-
-// toActivity creates an instance of Activity based on the ActivityRaw.
-// This is intended to be called when we need to compose an Activity relationship.
-func (raw *activityRaw) toActivity() *api.Activity {
-	return &api.Activity{
-		ID: raw.ID,
-
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		ContainerID: raw.ContainerID,
-
-		Type:    raw.Type,
-		Level:   raw.Level,
-		Comment: raw.Comment,
-		Payload: raw.Payload,
-	}
-}
-
-// CreateActivity creates an instance of Activity.
-func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) (*api.Activity, error) {
-	activityRaw, err := s.createActivityRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Activity with ActivityCreate[%+v]", create)
-	}
-	activity, err := s.composeActivity(ctx, activityRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", activityRaw)
-	}
-	return activity, nil
-}
-
-// BatchCreateActivity creates activities in batch.
-func (s *Store) BatchCreateActivity(ctx context.Context, creates []*api.ActivityCreate) ([]*api.Activity, error) {
-	if len(creates) == 0 {
-		return nil, nil
-	}
-	activityRawList, err := s.batchCreateActivityRaw(ctx, creates)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create TaskCheckRun with TaskCheckRunCreates[%+v]", creates)
-	}
-	var activityList []*api.Activity
-	for _, activityRaw := range activityRawList {
-		activity, err := s.composeActivity(ctx, activityRaw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose activity with activityRaw %+v", activityRaw)
-		}
-		activityList = append(activityList, activity)
-	}
-	return activityList, nil
-}
-
-//
-// private function
-//
-
-func (s *Store) batchCreateActivityRaw(ctx context.Context, creates []*api.ActivityCreate) ([]*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	activityRawList, err := createActivityImpl(ctx, tx, creates...)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return activityRawList, nil
-}
-
-// createActivityRaw creates a new activity.
-func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreate) (*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	activityRawList, err := createActivityImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(activityRawList) != 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities, expect 1", len(activityRawList))}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return activityRawList[0], nil
-}
-
-func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Activity, error) {
-	activity := raw.toActivity()
-
-	creator, err := s.GetPrincipalByID(ctx, activity.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	activity.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, activity.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	activity.Updater = updater
-
-	return activity, nil
-}
-
-// createActivityImpl creates activities.
-func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCreate) ([]*activityRaw, error) {
-	var query strings.Builder
-	var values []any
-	var queryValues []string
-
-	if _, err := query.WriteString(
-		`INSERT INTO activity (
-			creator_id,
-			updater_id,
-			container_id,
-			type,
-			level,
-			comment,
-			payload
-		) VALUES
-    `); err != nil {
-		return nil, err
-	}
-	for i, create := range creates {
-		if create.Payload == "" {
-			create.Payload = "{}"
-		}
-		payload, err := convertAPIPayloadToProtoPayload(create.Type, create.Payload)
-		if err != nil {
-			return nil, err
-		}
-		values = append(values,
-			create.CreatorID,
-			create.CreatorID,
-			create.ContainerID,
-			create.Type,
-			create.Level,
-			create.Comment,
-			payload,
-		)
-		const count = 7
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7))
-	}
-	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
-		return nil, err
-	}
-	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload`); err != nil {
-		return nil, err
-	}
-
-	var activityRawList []*activityRaw
-	rows, err := tx.QueryContext(ctx, query.String(), values...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var activityRaw activityRaw
-		var protoPayload string
-		if err := rows.Scan(
-			&activityRaw.ID,
-			&activityRaw.CreatorID,
-			&activityRaw.CreatedTs,
-			&activityRaw.UpdaterID,
-			&activityRaw.UpdatedTs,
-			&activityRaw.ContainerID,
-			&activityRaw.Type,
-			&activityRaw.Level,
-			&activityRaw.Comment,
-			&protoPayload,
-		); err != nil {
-			return nil, err
-		}
-		if activityRaw.Payload, err = convertProtoPayloadToAPIPayload(activityRaw.Type, protoPayload); err != nil {
-			return nil, err
-		}
-		activityRawList = append(activityRawList, &activityRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return activityRawList, nil
-}
-
 func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload string) (string, error) {
 	// TODO(zp): remove here when we migrate all payloads.
 	switch activityType {
@@ -486,6 +265,50 @@ type UpdateActivityMessage struct {
 	Payload    *string
 }
 
+// CreateActivityV2 creates an instance of Activity.
+func (s *Store) CreateActivityV2(ctx context.Context, create *ActivityMessage) (*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	activityList, err := createActivityImplV2(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(activityList) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities, expect 1", len(activityList))}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return activityList[0], nil
+}
+
+// BatchCreateActivityV2 creates activities in batch.
+func (s *Store) BatchCreateActivityV2(ctx context.Context, creates []*ActivityMessage) ([]*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	activityList, err := createActivityImplV2(ctx, tx, creates...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return activityList, nil
+}
+
 // UpdateActivityV2 updates the activity.
 // Returns ENOTFOUND if activity does not exist.
 func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMessage) (*ActivityMessage, error) {
@@ -710,5 +533,84 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 		return nil, err
 	}
 
+	return activityList, nil
+}
+
+func createActivityImplV2(ctx context.Context, tx *Tx, creates ...*ActivityMessage) ([]*ActivityMessage, error) {
+	var query strings.Builder
+	var values []any
+	var queryValues []string
+
+	if _, err := query.WriteString(
+		`INSERT INTO activity (
+			creator_id,
+			updater_id,
+			container_id,
+			type,
+			level,
+			comment,
+			payload
+		) VALUES
+    `); err != nil {
+		return nil, err
+	}
+	for i, create := range creates {
+		if create.Payload == "" {
+			create.Payload = "{}"
+		}
+		payload, err := convertAPIPayloadToProtoPayload(create.Type, create.Payload)
+		if err != nil {
+			return nil, err
+		}
+		values = append(values,
+			create.CreatorUID,
+			create.CreatorUID,
+			create.ContainerUID,
+			create.Type,
+			create.Level,
+			create.Comment,
+			payload,
+		)
+		const count = 7
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7))
+	}
+	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
+		return nil, err
+	}
+	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload`); err != nil {
+		return nil, err
+	}
+
+	var activityList []*ActivityMessage
+	rows, err := tx.QueryContext(ctx, query.String(), values...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var activity ActivityMessage
+		var protoPayload string
+		if err := rows.Scan(
+			&activity.UID,
+			&activity.CreatorUID,
+			&activity.CreatedTs,
+			&activity.UpdaterUID,
+			&activity.UpdatedTs,
+			&activity.ContainerUID,
+			&activity.Type,
+			&activity.Level,
+			&activity.Comment,
+			&protoPayload,
+		); err != nil {
+			return nil, err
+		}
+		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
+			return nil, err
+		}
+		activityList = append(activityList, &activity)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return activityList, nil
 }

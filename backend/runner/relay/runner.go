@@ -273,13 +273,13 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 		if err != nil {
 			return err
 		}
-		create := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ActivityInfo,
-			Comment:     "",
-			Payload:     string(activityPayload),
+		create := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueCommentCreate,
+			Level:        api.ActivityInfo,
+			Comment:      "",
+			Payload:      string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
@@ -317,13 +317,13 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 			return err
 		}
 
-		create := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueApprovalNotify,
-			Level:       api.ActivityInfo,
-			Comment:     "",
-			Payload:     string(activityPayload),
+		create := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueApprovalNotify,
+			Level:        api.ActivityInfo,
+			Comment:      "",
+			Payload:      string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err
@@ -387,12 +387,12 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 			return err
 		}
 		// Post project IAM policy update activity.
-		if _, err := r.activityManager.CreateActivity(ctx, &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: issue.Project.UID,
-			Type:        api.ActivityProjectMemberCreate,
-			Level:       api.ActivityInfo,
-			Comment:     fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, role),
+		if _, err := r.activityManager.CreateActivity(ctx, &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.Project.UID,
+			Type:         api.ActivityProjectMemberCreate,
+			Level:        api.ActivityInfo,
+			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, role),
 		}, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))
 		}
@@ -486,13 +486,13 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 		if err != nil {
 			return err
 		}
-		create := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ActivityInfo,
-			Comment:     "",
-			Payload:     string(activityPayload),
+		create := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueCommentCreate,
+			Level:        api.ActivityInfo,
+			Comment:      "",
+			Payload:      string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err

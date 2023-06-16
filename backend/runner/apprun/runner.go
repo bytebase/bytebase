@@ -242,13 +242,13 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									return errors.Wrap(err, "failed to marshal ActivityIssueExternalApprovalRejectPayload")
 								}
 
-								activityCreate := &api.ActivityCreate{
-									CreatorID:   payload.AssigneeID,
-									ContainerID: issue.UID,
-									Type:        api.ActivityIssueCommentCreate,
-									Level:       api.ActivityInfo,
-									Comment:     "",
-									Payload:     string(activityPayload),
+								activityCreate := &store.ActivityMessage{
+									CreatorUID:   payload.AssigneeID,
+									ContainerUID: issue.UID,
+									Type:         api.ActivityIssueCommentCreate,
+									Level:        api.ActivityInfo,
+									Comment:      "",
+									Payload:      string(activityPayload),
 								}
 
 								if _, err = r.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {

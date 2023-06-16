@@ -87,13 +87,13 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMe
 		return terminated, result, nil
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   task.UpdaterID,
-		ContainerID: issue.Project.UID,
-		Type:        api.ActivityDatabaseRecoveryPITRDone,
-		Level:       api.ActivityInfo,
-		Payload:     string(payload),
-		Comment:     fmt.Sprintf("Restore database %s in instance %s successfully.", database.DatabaseName, instance.Title),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   task.UpdaterID,
+		ContainerUID: issue.Project.UID,
+		Type:         api.ActivityDatabaseRecoveryPITRDone,
+		Level:        api.ActivityInfo,
+		Payload:      string(payload),
+		Comment:      fmt.Sprintf("Restore database %s in instance %s successfully.", database.DatabaseName, instance.Title),
 	}
 	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
 		log.Error("cannot create an pitr activity", zap.Error(err))

@@ -201,12 +201,12 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			return nil, err
 		}
 		// Post project IAM policy update activity.
-		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: issue.Project.UID,
-			Type:        api.ActivityProjectMemberCreate,
-			Level:       api.ActivityInfo,
-			Comment:     fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, role),
+		if _, err := s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.Project.UID,
+			Type:         api.ActivityProjectMemberCreate,
+			Level:        api.ActivityInfo,
+			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, role),
 		}, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))
 		}
@@ -225,13 +225,13 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		if err != nil {
 			return err
 		}
-		create := &api.ActivityCreate{
-			CreatorID:   principalID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ActivityInfo,
-			Comment:     request.Comment,
-			Payload:     string(activityPayload),
+		create := &store.ActivityMessage{
+			CreatorUID:   principalID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueCommentCreate,
+			Level:        api.ActivityInfo,
+			Comment:      request.Comment,
+			Payload:      string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
@@ -269,13 +269,13 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			return err
 		}
 
-		create := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueApprovalNotify,
-			Level:       api.ActivityInfo,
-			Comment:     "",
-			Payload:     string(activityPayload),
+		create := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueApprovalNotify,
+			Level:        api.ActivityInfo,
+			Comment:      "",
+			Payload:      string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err
@@ -378,13 +378,13 @@ func (s *ReviewService) RejectReview(ctx context.Context, request *v1pb.RejectRe
 		if err != nil {
 			return err
 		}
-		create := &api.ActivityCreate{
-			CreatorID:   principalID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ActivityInfo,
-			Comment:     request.Comment,
-			Payload:     string(activityPayload),
+		create := &store.ActivityMessage{
+			CreatorUID:   principalID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueCommentCreate,
+			Level:        api.ActivityInfo,
+			Comment:      request.Comment,
+			Payload:      string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
@@ -481,13 +481,13 @@ func (s *ReviewService) RequestReview(ctx context.Context, request *v1pb.Request
 		if err != nil {
 			return err
 		}
-		create := &api.ActivityCreate{
-			CreatorID:   principalID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ActivityInfo,
-			Comment:     request.Comment,
-			Payload:     string(activityPayload),
+		create := &store.ActivityMessage{
+			CreatorUID:   principalID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueCommentCreate,
+			Level:        api.ActivityInfo,
+			Comment:      request.Comment,
+			Payload:      string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
@@ -583,12 +583,12 @@ func (s *ReviewService) CreateReviewComment(ctx context.Context, request *v1pb.C
 	}
 
 	// TODO: migrate to store v2
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   ctx.Value(common.PrincipalIDContextKey).(int),
-		ContainerID: issue.UID,
-		Type:        api.ActivityIssueCommentCreate,
-		Level:       api.ActivityInfo,
-		Comment:     request.ReviewComment.Comment,
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   ctx.Value(common.PrincipalIDContextKey).(int),
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCommentCreate,
+		Level:        api.ActivityInfo,
+		Comment:      request.ReviewComment.Comment,
 	}
 
 	var payload api.ActivityIssueCommentCreatePayload
@@ -609,7 +609,7 @@ func (s *ReviewService) CreateReviewComment(ctx context.Context, request *v1pb.C
 		return nil, status.Errorf(codes.Internal, "failed to create review comment: %v", err.Error())
 	}
 	return &v1pb.ReviewComment{
-		Uid:        fmt.Sprintf("%d", activity.ID),
+		Uid:        fmt.Sprintf("%d", activity.UID),
 		Comment:    activity.Comment,
 		Payload:    activity.Payload,
 		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),

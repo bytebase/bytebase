@@ -588,29 +588,30 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 
 // CreateIAMPolicyUpdateActivity creates project IAM policy change activities.
 func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remove, add *store.IAMPolicyMessage, project *store.ProjectMessage, creatorUID int) {
-	var activities []*api.ActivityCreate
+	var activities []*store.ActivityMessage
 	for _, binding := range remove.Bindings {
 		for _, member := range binding.Members {
-			activities = append(activities, &api.ActivityCreate{
-				CreatorID:   creatorUID,
-				ContainerID: project.UID,
-				Type:        api.ActivityProjectMemberDelete,
-				Level:       api.ActivityInfo,
-				Comment:     fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
+			activities = append(activities, &store.ActivityMessage{
+				CreatorUID:   creatorUID,
+				ContainerUID: project.UID,
+				Type:         api.ActivityProjectMemberDelete,
+				Level:        api.ActivityInfo,
+				Comment:      fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
 			})
 		}
 	}
 	for _, binding := range add.Bindings {
 		for _, member := range binding.Members {
-			activities = append(activities, &api.ActivityCreate{
-				CreatorID:   creatorUID,
-				ContainerID: project.UID,
-				Type:        api.ActivityProjectMemberCreate,
-				Level:       api.ActivityInfo,
-				Comment:     fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
+			activities = append(activities, &store.ActivityMessage{
+				CreatorUID:   creatorUID,
+				ContainerUID: project.UID,
+				Type:         api.ActivityProjectMemberCreate,
+				Level:        api.ActivityInfo,
+				Comment:      fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
 			})
 		}
 	}
+
 	for _, a := range activities {
 		if _, err := s.activityManager.CreateActivity(ctx, a, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))

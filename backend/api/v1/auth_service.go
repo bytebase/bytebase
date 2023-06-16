@@ -212,14 +212,14 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to construct activity payload, error: %v", err)
 	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   user.ID,
-		ContainerID: user.ID,
-		Type:        api.ActivityMemberCreate,
-		Level:       api.ActivityInfo,
-		Payload:     string(bytes),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   user.ID,
+		ContainerUID: user.ID,
+		Type:         api.ActivityMemberCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
 	}
-	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
+	if _, err := s.store.CreateActivityV2(ctx, activityCreate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
 	}
 	userResponse := convertToUser(user)
