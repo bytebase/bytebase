@@ -101,3 +101,22 @@ func ConvertUnparsedApproval(expression *expr.Expr) (*v1alpha1.ParsedExpr, error
 	}
 	return expr, nil
 }
+
+// ValidateGroupCELExpr validates group expr.
+func ValidateGroupCELExpr(expr string) (cel.Program, error) {
+	e, err := cel.NewEnv(
+		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(expr)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	return prog, nil
+}
