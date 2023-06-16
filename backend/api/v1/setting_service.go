@@ -346,14 +346,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = string(s)
 	case api.SettingWorkspaceExternalApproval:
-		oldSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-			Name: &apiSettingName,
-		})
+		oldSetting, err := s.store.GetWorkspaceExternalApprovalSetting(ctx)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get setting: %v", err)
-		}
-		if oldSetting == nil {
-			return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
+			return nil, status.Errorf(codes.Internal, "failed to get workspace external approval setting: %v", err)
 		}
 
 		externalApprovalSetting := request.Setting.Value.GetExternalApprovalSettingValue()
@@ -361,6 +356,39 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting external approval setting")
 		}
 		storeValue := convertExternalApprovalSetting(externalApprovalSetting)
+
+		newNode := make(map[string]*storepb.ExternalApprovalSetting_Node)
+		for _, node := range storeValue.Nodes {
+			newNode[node.Id] = node
+		}
+		removed := make(map[string]bool)
+		for _, node := range oldSetting.Nodes {
+			if _, ok := newNode[node.Id]; !ok {
+				removed[node.Id] = true
+			}
+		}
+		if len(removed) > 0 {
+			externalApprovalType := api.ExternalApprovalTypeRelay
+			approvals, err := s.store.ListExternalApprovalV2(
+				ctx,
+				&store.ListExternalApprovalMessage{
+					Type: &externalApprovalType,
+				},
+			)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to list external approvals: %v", err)
+			}
+			for _, approval := range approvals {
+				payload := &api.ExternalApprovalPayloadRelay{}
+				if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to unmarshal external approval payload: %v", err)
+				}
+				if removed[payload.ExternalApprovalNodeID] {
+					return nil, status.Errorf(codes.InvalidArgument, "cannot remove %s because it is used by the external approval node in issue %d", payload.ExternalApprovalNodeID, approval.IssueUID)
+				}
+			}
+		}
+
 		bytes, err := protojson.Marshal(storeValue)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
