@@ -23,6 +23,7 @@ const (
 )
 
 type sensitiveFieldExtractor struct {
+	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	currentDatabase    string
 	schemaInfo         *db.SensitiveSchemaInfo
 	outerSchemaInfo    []fieldInfo
@@ -59,6 +60,12 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			return nil, err
 		}
 		return result, nil
+	case db.Oracle:
+		extractor := &sensitiveFieldExtractor{
+			currentDatabase: currentDatabase,
+			schemaInfo:      schemaInfo,
+		}
+		return extractor.extractOracleSensitiveField(statement)
 	default:
 		return nil, nil
 	}
