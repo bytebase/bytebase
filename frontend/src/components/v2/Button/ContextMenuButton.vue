@@ -77,7 +77,9 @@ const currentActionKey = ref(getDefaultActionKey());
 const currentAction = computed(() => {
   const key = currentActionKey.value;
   if (!key) return undefined;
-  return props.actionList.find((action) => action.key === key);
+  return (
+    props.actionList.find((action) => action.key === key) ?? props.actionList[0]
+  );
 });
 
 const options = computed(() => {
