@@ -1,4 +1,4 @@
-// relay is the runner for the relay plugin.
+// Package relay is the runner for the relay plugin.
 package relay
 
 import (
@@ -29,6 +29,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+// NewRunner creates a new runner instance.
 func NewRunner(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, stateCfg *state.State) *Runner {
 	return &Runner{
 		store:           store,
@@ -39,6 +40,7 @@ func NewRunner(store *store.Store, activityManager *activity.Manager, taskSchedu
 	}
 }
 
+// Runner is the runner for the relay.
 type Runner struct {
 	store           *store.Store
 	activityManager *activity.Manager
@@ -61,7 +63,7 @@ func getExternalApprovalByID(ctx context.Context, s *store.Store, externalApprov
 	return nil, nil
 }
 
-func (r *Runner) CancelExternalApproval(ctx context.Context, issueUID int) {
+func (r *Runner) cancelExternalApproval(ctx context.Context, issueUID int) {
 	approvals, err := r.store.ListExternalApprovalV2(ctx, &store.ListExternalApprovalMessage{
 		IssueUID: &issueUID,
 	})
@@ -339,7 +341,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 	return nil
 }
 
-func (r *Runner) CheckExternalApproval(ctx context.Context, approval *store.ExternalApprovalMessage) error {
+func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.ExternalApprovalMessage) error {
 	payload := &api.ExternalApprovalPayloadRelay{}
 	if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal external approval payload")
@@ -372,13 +374,14 @@ func (r *Runner) listenIssueExternalApprovalRelayCancelChan(ctx context.Context,
 	for {
 		select {
 		case issueUID := <-r.stateCfg.IssueExternalApprovalRelayCancelChan:
-			r.CancelExternalApproval(ctx, issueUID)
+			r.cancelExternalApproval(ctx, issueUID)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
+// Run runs the runner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -400,7 +403,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				var errs error
 				for _, approval := range approvals {
-					if err := r.CheckExternalApproval(ctx, approval); err != nil {
+					if err := r.checkExternalApproval(ctx, approval); err != nil {
 						err = errors.Wrapf(err, "failed to check external approval status, issueUID %d", approval.IssueUID)
 						errs = multierr.Append(errs, err)
 					}
