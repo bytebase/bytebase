@@ -42,5 +42,8 @@ type State struct {
 	// InstanceOutstandingConnections is the maximum number of connections per instance.
 	InstanceOutstandingConnections map[int]int
 
+	// IssueExternalApprovalRelayCancelChan cancels the external approval from relay for issue issueUID.
+	IssueExternalApprovalRelayCancelChan chan int
+
 	sync.Mutex
 }

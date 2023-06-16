@@ -361,6 +361,16 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = string(s)
 	case api.SettingWorkspaceExternalApproval:
+		oldSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
+			Name: &apiSettingName,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get setting: %v", err)
+		}
+		if oldSetting == nil {
+			return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
+		}
+
 		externalApprovalSetting := request.Setting.Value.GetExternalApprovalSettingValue()
 		if externalApprovalSetting == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting external approval setting")
