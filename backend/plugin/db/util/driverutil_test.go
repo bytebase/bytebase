@@ -1281,6 +1281,12 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Test for EXPLAIN statements.
+			statement:  "explain plan for select 1 from dual;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  nil,
+		},
 	}
 
 	for _, test := range tests {

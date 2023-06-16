@@ -2,8 +2,6 @@
 package util
 
 import (
-	"fmt"
-
 	"github.com/antlr4-go/antlr/v4"
 	plsql "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
@@ -69,9 +67,9 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractContext(ctx antlr.ParserRu
 	switch ctx := ctx.(type) {
 	case plsql.ISelect_statementContext:
 		return extractor.plsqlExtractSelect(ctx)
+	default:
+		return nil, nil
 	}
-
-	return nil, nil
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractSelect(ctx plsql.ISelect_statementContext) ([]fieldInfo, error) {
@@ -211,7 +209,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractTableRefAuxInternal(ctx pl
 	case *plsql.Table_ref_aux_internal_threeContext:
 		return extractor.plsqlExtractDmlTableExpressionClause(rule.Dml_table_expression_clause())
 	default:
-		return nil, fmt.Errorf("unknown table_ref_aux_internal rule: %T", rule)
+		return nil, errors.Errorf("unknown table_ref_aux_internal rule: %T", rule)
 	}
 }
 
