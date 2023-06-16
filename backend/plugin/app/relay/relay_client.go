@@ -87,35 +87,38 @@ func (c *Client) UpdateStatus(relayEndpoint string, uri string) error {
 	return nil
 }
 
+type Status string
+
 // GetStatus is the response message to get the status of an external approval.
 type GetStatus struct {
-	Status string `json:"status"`
+	Status Status `json:"status"`
 }
 
 const (
-	doneStatus = "DONE"
+	StatusApproved Status = "APPROVED"
+	StatusRejected Status = "REJECTED"
 )
 
 // GetStatus gets the status of an external approval.
-func (c *Client) GetStatus(relayEndpoint string, uri string) (bool, error) {
+func (c *Client) GetStatus(relayEndpoint string, uri string) (Status, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/approvals/status", relayEndpoint), strings.NewReader(""))
 	if err != nil {
-		return false, err
+		return "", err
 	}
 	q := req.URL.Query()
 	q.Add("uri", uri)
 	req.URL.RawQuery = q.Encode()
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return false, err
+		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return false, errors.Errorf("failed to get external approval status with status %v", resp.Status)
+		return "", errors.Errorf("failed to get external approval status with status %v", resp.Status)
 	}
 	responseBody := &GetStatus{}
 	err = json.NewDecoder(resp.Body).Decode(responseBody)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-	return responseBody.Status == doneStatus, nil
+	return responseBody.Status, nil
 }

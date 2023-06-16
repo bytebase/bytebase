@@ -393,11 +393,11 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 		return errors.Wrapf(err, "failed to get external approval node %s", payload.ExternalApprovalNodeID)
 	}
 	uri := payload.URI
-	done, err := r.Client.GetStatus(node.Endpoint, uri)
+	status, err := r.Client.GetStatus(node.Endpoint, uri)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, uri: %s", node.Id, node.Endpoint, uri)
 	}
-	if done {
+	if status == relayplugin.StatusApproved {
 		if err := r.approveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
@@ -407,6 +407,8 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 		}); err != nil {
 			return err
 		}
+	} else if status == relayplugin.StatusRejected {
+		// TBD
 	}
 	return nil
 }
