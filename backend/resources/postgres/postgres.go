@@ -124,9 +124,10 @@ func Start(port int, binDir, dataDir string, serverLog bool) (err error) {
 
 	// See -p -k -h option definitions in the link below.
 	// https://www.postgresql.org/docs/current/app-postgres.html
+	// We also set max_connections to 500 for tests.
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", dataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -h "" -c stats_temp_directory=/tmp`, port, common.GetPostgresSocketDir()))
+		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h "" -c stats_temp_directory=/tmp`, port, common.GetPostgresSocketDir()))
 
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
