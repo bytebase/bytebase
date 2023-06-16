@@ -12,6 +12,12 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 )
 
+const (
+	// varcharDefaultLength is the default length of varchar in Snowflake.
+	// https://docs.snowflake.com/en/sql-reference/data-types-text
+	varcharDefaultLength = 16_777_216
+)
+
 var (
 	_ advisor.Advisor = (*ColumnMaximumVarcharLengthAdvisor)(nil)
 )
@@ -82,11 +88,16 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 	if ctx.VARCHAR() == nil {
 		return
 	}
-	lengthText := ctx.Num(0).GetText()
-	length, err := strconv.Atoi(lengthText)
-	if err != nil {
-		return
+
+	length := varcharDefaultLength
+	if v := ctx.Num(0); v != nil {
+		var err error
+		length, err = strconv.Atoi(v.GetText())
+		if err != nil {
+			return
+		}
 	}
+
 	if length > l.maximum {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

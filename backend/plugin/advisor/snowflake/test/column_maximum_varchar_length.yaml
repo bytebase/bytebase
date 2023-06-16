@@ -14,6 +14,14 @@
       content: The maximum varchar length is 2560.
       line: 1
       details: ""
+- statement: CREATE TABLE CUSTOMER(NAME VARCHAR);
+  want:
+    - status: WARN
+      code: 422
+      title: column.maximum-varchar-length
+      content: The maximum varchar length is 2560.
+      line: 1
+      details: ""
 - statement: ALTER TABLE PUBLIC.CUSTOMER ADD NAME_2 VARCHAR(22225);
   want:
     - status: WARN
