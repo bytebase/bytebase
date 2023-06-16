@@ -43,10 +43,10 @@ func NewRunner(store *store.Store, activityManager *activity.Manager, taskSchedu
 
 // CheckExternalApprovalChanMessage is the message to check external approval status.
 type CheckExternalApprovalChanMessage struct {
-	approval *store.ExternalApprovalMessage
-	// errChan is used to send back the error message.
+	ExternalApproval *store.ExternalApprovalMessage
+	// ErrChan is used to send back the error message.
 	// The channel must be buffered to avoid blocking.
-	errChan chan error
+	ErrChan chan error
 }
 
 // Runner is the runner for the relay.
@@ -89,11 +89,11 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				var errs error
 				for _, approval := range approvals {
 					msg := CheckExternalApprovalChanMessage{
-						approval: approval,
-						errChan:  make(chan error, 1),
+						ExternalApproval: approval,
+						ErrChan:          make(chan error, 1),
 					}
 					r.CheckExternalApprovalChan <- msg
-					err := <-msg.errChan
+					err := <-msg.ErrChan
 					if err != nil {
 						err = errors.Wrapf(err, "failed to check external approval status, issueUID %d", approval.IssueUID)
 						errs = multierr.Append(errs, err)
@@ -115,8 +115,8 @@ func (r *Runner) listenCheckExternalApprovalChan(ctx context.Context, wg *sync.W
 	for {
 		select {
 		case msg := <-r.CheckExternalApprovalChan:
-			err := r.checkExternalApproval(ctx, msg.approval)
-			msg.errChan <- err
+			err := r.checkExternalApproval(ctx, msg.ExternalApproval)
+			msg.ErrChan <- err
 		case <-ctx.Done():
 			return
 		}
