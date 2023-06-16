@@ -17,3 +17,4 @@ export * from "./sheet";
 export * from "./vcs";
 export * from "./review";
 export * from "./changeHistory";
+export * from "./risk";

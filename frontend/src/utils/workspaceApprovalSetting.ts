@@ -9,7 +9,10 @@ import {
   UNKNOWN_USER_NAME,
   UnrecognizedApprovalRule,
 } from "@/types";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import {
+  ParsedExpr,
+  Expr as CELExpr,
+} from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import {
   LocalApprovalConfig,
@@ -39,6 +42,10 @@ import {
   WorkspaceApprovalSetting_Rule as ApprovalRule,
 } from "@/types/proto/v1/setting_service";
 import { userNamePrefix } from "@/store/modules/v1/common";
+import {
+  convertCELStringToParsedExpr,
+  convertParsedExprToCELString,
+} from "./v1";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);
@@ -89,27 +96,34 @@ export const approvalNodeText = (node: ApprovalNode): string => {
     rule,
   }
 */
-export const resolveLocalApprovalConfig = (
+export const resolveLocalApprovalConfig = async (
   config: WorkspaceApprovalSetting
-): LocalApprovalConfig => {
-  const rules = config.rules.map<LocalApprovalRule>((rule) => {
+): Promise<LocalApprovalConfig> => {
+  const rules: LocalApprovalRule[] = [];
+  for (let i = 0; i < config.rules.length; i++) {
+    const rule = config.rules[i];
     const localRule: LocalApprovalRule = {
       uid: uuidv4(),
       expr: undefined,
       template: cloneDeep(rule.template!),
     };
     try {
-      if (rule.expression?.expr) {
-        localRule.expr = resolveCELExpr(rule.expression.expr);
+      if (rule.condition?.expression) {
+        const parsedExpr = await convertCELStringToParsedExpr(
+          rule.condition.expression
+        );
+        localRule.expr = resolveCELExpr(
+          parsedExpr.expr ?? CELExpr.fromJSON({})
+        );
       }
     } catch (err) {
       console.warn(
         "cannot resolve stored CEL expr",
-        JSON.stringify(rule.expression?.expr)
+        JSON.stringify(rule.condition)
       );
     }
-    return localRule;
-  });
+    rules.push(localRule);
+  }
   const { parsed, unrecognized } = resolveApprovalConfigRules(rules);
   return {
     rules,
@@ -171,21 +185,29 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
   return { parsed, unrecognized };
 };
 
-export const buildWorkspaceApprovalSetting = (config: LocalApprovalConfig) => {
+export const buildWorkspaceApprovalSetting = async (
+  config: LocalApprovalConfig
+) => {
   const { rules, parsed } = config;
 
   const parsedMap = toMap(parsed);
 
-  return WorkspaceApprovalSetting.fromJSON({
-    rules: rules.map<ApprovalRule>((rule) => {
-      const { uid, template } = rule;
-      const parsed = parsedMap.get(uid) ?? [];
-      const expression = buildParsedExpression(parsed);
-      return ApprovalRule.fromJSON({
-        expression,
+  const approvalRules: ApprovalRule[] = [];
+  for (let i = 0; i < rules.length; i++) {
+    const rule = rules[i];
+    const { uid, template } = rule;
+    const parsed = parsedMap.get(uid) ?? [];
+    const parsedExpr = buildParsedExpression(parsed);
+    const expression = await convertParsedExprToCELString(parsedExpr);
+    approvalRules.push(
+      ApprovalRule.fromJSON({
+        condition: { expression },
         template,
-      });
-    }),
+      })
+    );
+  }
+  return WorkspaceApprovalSetting.fromJSON({
+    rules: approvalRules,
   });
 };
 

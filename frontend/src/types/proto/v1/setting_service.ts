@@ -1,7 +1,6 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
-import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
 import { ApprovalTemplate } from "./review_service";
@@ -289,7 +288,6 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  expression?: ParsedExpr;
   template?: ApprovalTemplate;
   condition?: Expr;
 }
@@ -1556,14 +1554,11 @@ export const WorkspaceApprovalSetting = {
 };
 
 function createBaseWorkspaceApprovalSetting_Rule(): WorkspaceApprovalSetting_Rule {
-  return { expression: undefined, template: undefined, condition: undefined };
+  return { template: undefined, condition: undefined };
 }
 
 export const WorkspaceApprovalSetting_Rule = {
   encode(message: WorkspaceApprovalSetting_Rule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.expression !== undefined) {
-      ParsedExpr.encode(message.expression, writer.uint32(10).fork()).ldelim();
-    }
     if (message.template !== undefined) {
       ApprovalTemplate.encode(message.template, writer.uint32(18).fork()).ldelim();
     }
@@ -1580,13 +1575,6 @@ export const WorkspaceApprovalSetting_Rule = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.expression = ParsedExpr.decode(reader, reader.uint32());
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1612,7 +1600,6 @@ export const WorkspaceApprovalSetting_Rule = {
 
   fromJSON(object: any): WorkspaceApprovalSetting_Rule {
     return {
-      expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
       template: isSet(object.template) ? ApprovalTemplate.fromJSON(object.template) : undefined,
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
@@ -1620,8 +1607,6 @@ export const WorkspaceApprovalSetting_Rule = {
 
   toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
     const obj: any = {};
-    message.expression !== undefined &&
-      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
     message.template !== undefined &&
       (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
     message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
@@ -1634,9 +1619,6 @@ export const WorkspaceApprovalSetting_Rule = {
 
   fromPartial(object: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
     const message = createBaseWorkspaceApprovalSetting_Rule();
-    message.expression = (object.expression !== undefined && object.expression !== null)
-      ? ParsedExpr.fromPartial(object.expression)
-      : undefined;
     message.template = (object.template !== undefined && object.template !== null)
       ? ApprovalTemplate.fromPartial(object.template)
       : undefined;
