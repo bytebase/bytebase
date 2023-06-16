@@ -74,7 +74,7 @@ import { convertFromCELString } from "@/utils/issue/cel";
 import { Engine } from "@/types/proto/v1/common";
 import dayjs from "dayjs";
 import DatabaseResourceTable from "../table/DatabaseResourceTable.vue";
-import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
+import { DatabaseResource } from "../panel/RequestExportPanel/SelectTableForm/common";
 
 interface LocalState {
   databaseId?: string;

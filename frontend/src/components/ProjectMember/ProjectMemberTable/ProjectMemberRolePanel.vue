@@ -335,7 +335,7 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
     onPositiveClick: async () => {
       const user = `user:${props.member.user.email}`;
       const policy = cloneDeep(iamPolicy.value);
-      let rawBinding = policy.bindings.find((binding) =>
+      const rawBinding = policy.bindings.find((binding) =>
         isEqual(binding, singleBinding.rawBinding)
       );
       if (!rawBinding) {
@@ -358,11 +358,11 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
               (binding) => !isEqual(binding, rawBinding)
             );
           } else {
-            rawBinding = cloneDeep(rawBinding);
-            rawBinding.members = [user];
-            rawBinding.condition!.expression =
+            const newBinding = cloneDeep(rawBinding);
+            newBinding.members = [user];
+            newBinding.condition!.expression =
               stringifyConditionExpression(conditionExpr);
-            policy.bindings.push(rawBinding);
+            policy.bindings.push(newBinding);
           }
         }
       }
