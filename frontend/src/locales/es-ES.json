@@ -1471,7 +1471,9 @@
       "show-inactive": "Mostrar miembros inactivos",
       "select-users": "Seleccionar usuarios",
       "assign-role": "Asignar rol",
-      "role-never-expires": "Este rol nunca expira."
+      "never-expires": "Nunca caduca",
+      "role-never-expires": "Este rol nunca expira.",
+      "add-more": "Más información"
     },
     "mode": {
       "standard": "Modo Estándar",
@@ -2550,7 +2552,7 @@
       "edit": "Editar grupo de tablas"
     },
     "factor": {
-      "resource_instance_name": "Nombre de la instancia",
+      "resource_instance_id": "ID de instancia",
       "resource_database_name": "Nombre de la base de datos",
       "resource_table_name": "Nombre de la tabla"
     },

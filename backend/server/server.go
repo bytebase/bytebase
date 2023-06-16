@@ -1129,27 +1129,27 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	// Create a standalone sample SQL sheet.
 	// This is different from another sample SQL sheet created below, which is created as part of
 	// creating a schema change issue.
-	sheetCreate := &api.SheetCreate{
-		CreatorID:  userID,
-		ProjectID:  project.UID,
-		DatabaseID: &database.UID,
-		Name:       "Sample Sheet",
-		Statement:  "SELECT * FROM salary;",
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebase,
-		Type:       api.SheetForSQL,
+	sheetCreate := &store.SheetMessage{
+		CreatorID:   userID,
+		ProjectUID:  project.UID,
+		DatabaseUID: &database.UID,
+		Name:        "Sample Sheet",
+		Statement:   "SELECT * FROM salary;",
+		Visibility:  api.ProjectSheet,
+		Source:      api.SheetFromBytebase,
+		Type:        api.SheetForSQL,
 	}
-	_, err = s.store.CreateSheet(ctx, sheetCreate)
+	_, err = s.store.CreateSheetV2(ctx, sheetCreate)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create sample sheet")
 	}
 
 	// Create a schema update issue and start with creating the sheet for the schema update.
-	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
-		ProjectID:  project.UID,
-		DatabaseID: &database.UID,
+		ProjectUID:  project.UID,
+		DatabaseUID: &database.UID,
 
 		Name:       "Alter table sheet for Sample Issue",
 		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
@@ -1170,7 +1170,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 					DatabaseID:    database.UID,
 					// This will violate the NOT NULL SQL Review policy configured above and emit a
 					// warning. Thus to demonstrate the SQL Review capability.
-					SheetID: sheet.ID,
+					SheetID: sheet.UID,
 				},
 			},
 		})

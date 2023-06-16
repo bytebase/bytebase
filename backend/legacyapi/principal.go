@@ -80,25 +80,3 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 		ServiceKey: p.ServiceKey,
 	})
 }
-
-// PrincipalCreate is the API message for creating a principal.
-type PrincipalCreate struct {
-	// Domain specific fields
-	Type         PrincipalType `jsonapi:"attr,type"`
-	Name         string        `jsonapi:"attr,name"`
-	Email        string        `jsonapi:"attr,email"`
-	Password     string        `jsonapi:"attr,password"`
-	PasswordHash string
-}
-
-// PrincipalPatch is the API message for patching a principal.
-type PrincipalPatch struct {
-	// Domain specific fields
-	Type         PrincipalType `jsonapi:"attr,type"`
-	Name         *string       `jsonapi:"attr,name"`
-	Email        *string       `jsonapi:"attr,email"`
-	Password     *string       `jsonapi:"attr,password"`
-	PasswordHash *string
-	// RefreshKey is used by SERVICE_ACCOUNT to refresh its password
-	RefreshKey bool `jsonapi:"attr,refreshKey"`
-}

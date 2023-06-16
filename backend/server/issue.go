@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -305,12 +304,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, payload := range payloadList {
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-				ContainerID: issue.UID,
-				Type:        api.ActivityIssueFieldUpdate,
-				Level:       api.ActivityInfo,
-				Payload:     string(payload),
+			activityCreate := &store.ActivityMessage{
+				CreatorUID:   c.Get(getPrincipalIDContextKey()).(int),
+				ContainerUID: issue.UID,
+				Type:         api.ActivityIssueFieldUpdate,
+				Level:        api.ActivityInfo,
+				Payload:      string(payload),
 			}
 			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 				Issue: updatedIssue,
@@ -500,12 +499,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   creatorID,
-		ContainerID: issue.UID,
-		Type:        api.ActivityIssueCreate,
-		Level:       api.ActivityInfo,
-		Payload:     string(bytes),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
@@ -525,12 +524,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
 		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: *issue.PipelineUID,
-			Type:        api.ActivityPipelineStageStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: *issue.PipelineUID,
+			Type:         api.ActivityPipelineStageStatusUpdate,
+			Level:        api.ActivityInfo,
+			Payload:      string(bytes),
 		}
 		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 			Issue: issue,
@@ -1313,16 +1312,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
 					for migrationDetailIdx, migrationDetail := range migrationDetailList {
-						// CreateSheet for each migration detail.
+						// CreateSheetV2 for each migration detail.
 						sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
-							ProjectUID: project.UID,
-							DatabaseID: &migrationDetail.DatabaseID,
-							CreatorID:  creatorID,
-							Statement:  migrationDetail.Statement,
-							Visibility: api.ProjectSheet,
-							Source:     api.SheetFromBytebaseArtifact,
-							Type:       api.SheetForSQL,
-							Payload:    "",
+							ProjectUID:  project.UID,
+							DatabaseUID: &migrationDetail.DatabaseID,
+							CreatorID:   creatorID,
+							Statement:   migrationDetail.Statement,
+							Visibility:  api.ProjectSheet,
+							Source:      api.SheetFromBytebaseArtifact,
+							Type:        api.SheetForSQL,
+							Payload:     "",
 						})
 						if err != nil {
 							return nil, err
@@ -1564,9 +1563,9 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	if err != nil {
 		return nil, err
 	}
-	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  project.UID,
+		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
 		Statement:  statement,
 		Visibility: api.ProjectSheet,
@@ -1585,7 +1584,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Collation:    c.Collation,
 		Labels:       c.Labels,
 		DatabaseName: databaseName,
-		SheetID:      sheet.ID,
+		SheetID:      sheet.UID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
@@ -1913,21 +1912,10 @@ func convertDatabaseLabels(labelsJSON string) ([]*api.DatabaseLabel, error) {
 
 // TODO(zp): keep this function as same as the one in the project_service.go.
 func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, err
 	}
-	ast, issues := e.Parse(databaseGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
 	var matches []*store.DatabaseMessage
 	var unmatches []*store.DatabaseMessage
 
@@ -1936,6 +1924,7 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
 				"environment_name": fmt.Sprintf("%s%s", "environments/", database.EnvironmentID),
+				"instance_id":      database.InstanceID,
 			},
 		})
 		if err != nil {
@@ -1956,19 +1945,9 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 }
 
 func getMatchesAndUnmatchedTables(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	ast, issues := e.Parse(schemaGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	var matched []string

@@ -1478,7 +1478,9 @@
       "show-inactive": "Show inactive members",
       "select-users": "Select users",
       "assign-role": "Assign role",
-      "role-never-expires": "This role will never expires."
+      "never-expires": "Never",
+      "role-never-expires": "This role never expires.",
+      "add-more": "Add more"
     },
     "mode": {
       "standard": "Standard Mode",
@@ -2571,7 +2573,7 @@
       "edit": "Edit table group"
     },
     "factor": {
-      "resource_instance_name": "Instance ID",
+      "resource_instance_id": "Instance ID",
       "resource_database_name": "Database name",
       "resource_table_name": "Table name"
     },

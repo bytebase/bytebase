@@ -31,28 +31,6 @@ func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, err
 	return composedInstance, nil
 }
 
-// FindInstance finds a list of Instance instances.
-func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*api.Instance, error) {
-	v2Find := &FindInstanceMessage{ShowDeleted: true}
-	instances, err := s.ListInstancesV2(ctx, v2Find)
-	if err != nil {
-		return nil, err
-	}
-
-	var composedInstances []*api.Instance
-	for _, instance := range instances {
-		composedInstance, err := s.composeInstance(ctx, instance)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Instance with instance[%+v]", instance)
-		}
-		if find.RowStatus != nil && composedInstance.RowStatus != *find.RowStatus {
-			continue
-		}
-		composedInstances = append(composedInstances, composedInstance)
-	}
-	return composedInstances, nil
-}
-
 // private function.
 func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) (*api.Instance, error) {
 	composedInstance := &api.Instance{

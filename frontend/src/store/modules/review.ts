@@ -38,12 +38,13 @@ export const useReviewStore = defineStore("review", () => {
     reviewsByName.value.set(reviewName(issue), review);
   };
 
-  const fetchReviewByIssue = async (issue: Issue, ignoreCache = false) => {
+  const fetchReviewByIssue = async (issue: Issue, force = false) => {
     const name = reviewName(issue);
 
     try {
       const review = await reviewServiceClient.getReview({
         name,
+        force,
       });
       await setReviewByIssue(issue, review);
       return review;

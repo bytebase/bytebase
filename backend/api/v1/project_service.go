@@ -588,29 +588,30 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 
 // CreateIAMPolicyUpdateActivity creates project IAM policy change activities.
 func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remove, add *store.IAMPolicyMessage, project *store.ProjectMessage, creatorUID int) {
-	var activities []*api.ActivityCreate
+	var activities []*store.ActivityMessage
 	for _, binding := range remove.Bindings {
 		for _, member := range binding.Members {
-			activities = append(activities, &api.ActivityCreate{
-				CreatorID:   creatorUID,
-				ContainerID: project.UID,
-				Type:        api.ActivityProjectMemberDelete,
-				Level:       api.ActivityInfo,
-				Comment:     fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
+			activities = append(activities, &store.ActivityMessage{
+				CreatorUID:   creatorUID,
+				ContainerUID: project.UID,
+				Type:         api.ActivityProjectMemberDelete,
+				Level:        api.ActivityInfo,
+				Comment:      fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
 			})
 		}
 	}
 	for _, binding := range add.Bindings {
 		for _, member := range binding.Members {
-			activities = append(activities, &api.ActivityCreate{
-				CreatorID:   creatorUID,
-				ContainerID: project.UID,
-				Type:        api.ActivityProjectMemberCreate,
-				Level:       api.ActivityInfo,
-				Comment:     fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
+			activities = append(activities, &store.ActivityMessage{
+				CreatorUID:   creatorUID,
+				ContainerUID: project.UID,
+				Type:         api.ActivityProjectMemberCreate,
+				Level:        api.ActivityInfo,
+				Comment:      fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
 			})
 		}
 	}
+
 	for _, a := range activities {
 		if _, err := s.activityManager.CreateActivity(ctx, a, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))
@@ -1394,7 +1395,7 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if request.DatabaseGroup.DatabaseExpr.Expression == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
 	}
-	if _, err := validateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
+	if _, err := common.ValidateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
 	}
 
@@ -1463,7 +1464,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 			if request.DatabaseGroup.DatabaseExpr.Expression == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
 			}
-			if _, err := validateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
+			if _, err := common.ValidateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
 			}
 			updateDatabaseGroup.Expression = request.DatabaseGroup.DatabaseExpr
@@ -1652,7 +1653,7 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 	if request.SchemaGroup.TableExpr.Expression == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
 	}
-	if _, err := validateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
+	if _, err := common.ValidateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid schema group table expression: %v", err)
 	}
 
@@ -1731,7 +1732,7 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 			if request.SchemaGroup.TableExpr.Expression == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "schema group table expression is required")
 			}
-			if _, err := validateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
+			if _, err := common.ValidateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid schema group table expression: %v", err)
 			}
 			updateSchemaGroup.Expression = request.SchemaGroup.TableExpr
@@ -1881,8 +1882,47 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	return s.convertStoreToAPISchemaGroupFull(ctx, schemaGroup, databaseGroup, projectResourceID)
 }
 
+func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
+	if err != nil {
+		return nil, nil, err
+	}
+	var matches []*store.DatabaseMessage
+	var unmatches []*store.DatabaseMessage
+
+	for _, database := range allDatabases {
+		res, _, err := prog.ContextEval(ctx, map[string]any{
+			"resource": map[string]any{
+				"database_name":    database.DatabaseName,
+				"environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, database.EnvironmentID),
+				"instance_id":      database.InstanceID,
+			},
+		})
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		val, err := res.ConvertToNative(reflect.TypeOf(false))
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+		}
+		if boolVal, ok := val.(bool); ok && boolVal {
+			matches = append(matches, database)
+		} else {
+			unmatches = append(unmatches, database)
+		}
+	}
+	return matches, unmatches, nil
+}
+
 func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
-	matches, unmatches, err := s.getMatchedAndUnmatchedDatabases(ctx, databaseGroup, projectResourceID)
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		ProjectID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	matches, unmatches, err := getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
 	if err != nil {
 		return nil, err
 	}
@@ -1902,62 +1942,6 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 		})
 	}
 	return ret, nil
-}
-
-func validateGroupCELExpr(expr string) (cel.Program, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	ast, issues := e.Parse(expr)
-	if issues != nil && issues.Err() != nil {
-		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	return prog, nil
-}
-
-func (s *ProjectService) getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
-		ProjectID: &projectResourceID,
-	})
-	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	prog, err := validateGroupCELExpr(databaseGroup.Expression.Expression)
-	if err != nil {
-		return nil, nil, err
-	}
-	var matches []*store.DatabaseMessage
-	var unmatches []*store.DatabaseMessage
-
-	for _, database := range databases {
-		res, _, err := prog.ContextEval(ctx, map[string]any{
-			"resource": map[string]any{
-				"database_name":    database.DatabaseName,
-				"environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, database.EnvironmentID),
-			},
-		})
-		if err != nil {
-			return nil, nil, status.Errorf(codes.Internal, err.Error())
-		}
-
-		val, err := res.ConvertToNative(reflect.TypeOf(false))
-		if err != nil {
-			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
-		}
-		if boolVal, ok := val.(bool); ok && boolVal {
-			matches = append(matches, database)
-		} else {
-			unmatches = append(unmatches, database)
-		}
-	}
-	return matches, unmatches, nil
 }
 
 func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
@@ -1984,12 +1968,18 @@ func (s *ProjectService) convertStoreToAPISchemaGroupFull(ctx context.Context, s
 }
 
 func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schemaGroup *store.SchemaGroupMessage, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*v1pb.SchemaGroup_Table, []*v1pb.SchemaGroup_Table, error) {
-	matchesDatabases, _, err := s.getMatchedAndUnmatchedDatabases(ctx, databaseGroup, projectResourceID)
+	allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		ProjectID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Internal, err.Error())
+	}
+	matchesDatabases, _, err := getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	prog, err := validateGroupCELExpr(schemaGroup.Expression.Expression)
+	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
 	if err != nil {
 		return nil, nil, err
 	}
