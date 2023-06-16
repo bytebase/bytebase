@@ -5832,6 +5832,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the review to retrieve. Format: projects/{project}/reviews/{review} |
+| force | [bool](#bool) |  |  |
 
 
 
