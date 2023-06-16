@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -19,7 +20,9 @@ type Client struct {
 // NewClient returns a client.
 func NewClient() *Client {
 	return &Client{
-		client: &http.Client{},
+		client: &http.Client{
+			Timeout: 5 * time.Second,
+		},
 	}
 }
 

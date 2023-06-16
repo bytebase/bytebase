@@ -423,6 +423,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
 			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.UID), zap.Error(err))
 		}
+		s.stateCfg.IssueExternalApprovalRelayCancelChan <- issue.UID
 		if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
 				CreatorID: taskPatched.CreatorID,
