@@ -64,8 +64,8 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
           group.args.push(subExpr);
         }
       };
-      sub(left, false);
-      sub(right, true);
+      sub(left, true);
+      sub(right, false);
       return group;
     }
     if (isEqualityOperator(operator)) {
