@@ -184,11 +184,11 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *api.Activit
 	}
 
 	payloadString := string(payloadBytes)
-	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
-		ID:        activity.ID,
-		UpdaterID: activity.CreatorID,
-		Level:     newLevel,
-		Payload:   &payloadString,
+	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
+		UID:        activity.ID,
+		UpdaterUID: activity.CreatorID,
+		Level:      newLevel,
+		Payload:    &payloadString,
 	}); err != nil {
 		return status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
 	}
@@ -272,11 +272,11 @@ func (s *SQLService) postExport(ctx context.Context, activity *api.Activity, dur
 	}
 
 	payloadString := string(payloadBytes)
-	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
-		ID:        activity.ID,
-		UpdaterID: activity.CreatorID,
-		Level:     newLevel,
-		Payload:   &payloadString,
+	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
+		UID:        activity.ID,
+		UpdaterUID: activity.CreatorID,
+		Level:      newLevel,
+		Payload:    &payloadString,
 	}); err != nil {
 		return status.Errorf(codes.Internal, "Failed to update activity after exporting sql statement: %v", err)
 	}
@@ -618,11 +618,11 @@ func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, advice
 	}
 
 	payloadString := string(payloadBytes)
-	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
-		ID:        activity.ID,
-		UpdaterID: activity.CreatorID,
-		Level:     &newLevel,
-		Payload:   &payloadString,
+	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
+		UID:        activity.ID,
+		UpdaterUID: activity.CreatorID,
+		Level:      &newLevel,
+		Payload:    &payloadString,
 	}); err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
 	}

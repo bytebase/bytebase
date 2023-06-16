@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -51,16 +52,9 @@ func NewReviewService(store *store.Store, activityManager *activity.Manager, tas
 // GetReview gets a review.
 // Currently, only review.ApprovalTemplates and review.Approvers are set.
 func (s *ReviewService) GetReview(ctx context.Context, request *v1pb.GetReviewRequest) (*v1pb.Review, error) {
-	reviewID, err := getReviewID(request.Name)
+	issue, err := s.getIssue(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
-	}
-	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
+		return nil, err
 	}
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {
@@ -71,16 +65,9 @@ func (s *ReviewService) GetReview(ctx context.Context, request *v1pb.GetReviewRe
 
 // ApproveReview approves the approval flow of the review.
 func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.ApproveReviewRequest) (*v1pb.Review, error) {
-	reviewID, err := getReviewID(request.Name)
+	issue, err := s.getIssue(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
-	}
-	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
+		return nil, err
 	}
 	payload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
@@ -306,16 +293,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 
 // RejectReview rejects a review.
 func (s *ReviewService) RejectReview(ctx context.Context, request *v1pb.RejectReviewRequest) (*v1pb.Review, error) {
-	reviewID, err := getReviewID(request.Name)
+	issue, err := s.getIssue(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
-	}
-	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
+		return nil, err
 	}
 	payload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
@@ -419,16 +399,9 @@ func (s *ReviewService) RejectReview(ctx context.Context, request *v1pb.RejectRe
 
 // RequestReview requests a review.
 func (s *ReviewService) RequestReview(ctx context.Context, request *v1pb.RequestReviewRequest) (*v1pb.Review, error) {
-	reviewID, err := getReviewID(request.Name)
+	issue, err := s.getIssue(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
-	}
-	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
+		return nil, err
 	}
 	payload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
@@ -528,16 +501,9 @@ func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateRe
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	reviewID, err := getReviewID(request.Review.Name)
+	issue, err := s.getIssue(ctx, request.Review.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
-	}
-	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
+		return nil, err
 	}
 
 	patch := &store.UpdateIssueMessage{}
@@ -589,6 +555,94 @@ func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateRe
 	return review, nil
 }
 
+// CreateReviewComment creates the review comment.
+func (s *ReviewService) CreateReviewComment(ctx context.Context, request *v1pb.CreateReviewCommentRequest) (*v1pb.ReviewComment, error) {
+	if request.ReviewComment.Comment == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "review comment is empty")
+	}
+	issue, err := s.getIssue(ctx, request.Parent)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: migrate to store v2
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   ctx.Value(common.PrincipalIDContextKey).(int),
+		ContainerID: issue.UID,
+		Type:        api.ActivityIssueCommentCreate,
+		Level:       api.ActivityInfo,
+		Comment:     request.ReviewComment.Comment,
+	}
+
+	var payload api.ActivityIssueCommentCreatePayload
+	if activityCreate.Payload != "" {
+		if err := json.Unmarshal([]byte(activityCreate.Payload), &payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal payload: %v", err.Error())
+		}
+	}
+	payload.IssueName = issue.Title
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to marshal payload: %v", err.Error())
+	}
+	activityCreate.Payload = string(bytes)
+
+	activity, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create review comment: %v", err.Error())
+	}
+	return &v1pb.ReviewComment{
+		Uid:        fmt.Sprintf("%d", activity.ID),
+		Comment:    activity.Comment,
+		Payload:    activity.Payload,
+		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
+		UpdateTime: timestamppb.New(time.Unix(activity.UpdatedTs, 0)),
+	}, nil
+}
+
+// UpdateReviewComment updates the review comment.
+func (s *ReviewService) UpdateReviewComment(ctx context.Context, request *v1pb.UpdateReviewCommentRequest) (*v1pb.ReviewComment, error) {
+	if request.UpdateMask.Paths == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
+	}
+	activityUID, err := strconv.Atoi(request.ReviewComment.Uid)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, `invalid comment id "%s": %v`, request.ReviewComment.Uid, err.Error())
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	update := &store.UpdateActivityMessage{
+		UID:        activityUID,
+		CreatorUID: &principalID,
+		UpdaterUID: principalID,
+	}
+
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "comment":
+			update.Comment = &request.ReviewComment.Comment
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask: "%s"`, path)
+		}
+	}
+
+	activity, err := s.store.UpdateActivityV2(ctx, update)
+	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return nil, status.Errorf(codes.NotFound, "cannot found the review comment %s", request.ReviewComment.Uid)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to update the review comment with error: %v", err.Error())
+	}
+
+	return &v1pb.ReviewComment{
+		Uid:        fmt.Sprintf("%d", activity.UID),
+		Comment:    activity.Comment,
+		Payload:    activity.Payload,
+		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
+		UpdateTime: timestamppb.New(time.Unix(activity.UpdatedTs, 0)),
+	}, nil
+}
+
 func (s *ReviewService) onReviewApproved(ctx context.Context, issue *store.IssueMessage) {
 	if issue.Type == api.IssueGrantRequest {
 		if err := func() error {
@@ -610,6 +664,21 @@ func (s *ReviewService) onReviewApproved(ctx context.Context, issue *store.Issue
 			log.Debug("failed to update issue status to done if grant request issue is approved", zap.Error(err))
 		}
 	}
+}
+
+func (s *ReviewService) getIssue(ctx context.Context, name string) (*store.IssueMessage, error) {
+	reviewID, err := getReviewID(name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
+	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
+	}
+	return issue, nil
 }
 
 func canRequestReview(issueCreator *store.UserMessage, user *store.UserMessage) bool {
