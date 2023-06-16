@@ -86,6 +86,8 @@ message GetReviewRequest {
   // The name of the review to retrieve.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  bool force = 2;
 }
 
 message CreateReviewRequest {
