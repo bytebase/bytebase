@@ -37,6 +37,22 @@ service ReviewService {
     option (google.api.method_signature) = "review,update_mask";
   }
 
+  rpc CreateReviewComment(CreateReviewCommentRequest) returns (ReviewComment) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/reviews/*}:comment"
+      body: "review_comment"
+    };
+    option (google.api.method_signature) = "parent,review_comment";
+  }
+
+  rpc UpdateReviewComment(UpdateReviewCommentRequest) returns (ReviewComment) {
+    option (google.api.http) = {
+      patch: "/v1/{parent=projects/*/reviews/*}:comment"
+      body: "review_comment"
+    };
+    option (google.api.method_signature) = "parent,review_comment,update_mask";
+  }
+
   rpc BatchUpdateReviews(BatchUpdateReviewsRequest) returns (BatchUpdateReviewsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/reviews:batchUpdate"
@@ -286,4 +302,36 @@ message ApprovalNode {
     string role = 3;
     string external_node_id = 4;
   }
+}
+
+message CreateReviewCommentRequest {
+  // The review name
+  // Format: projects/{project}/reviews/{review}
+  string parent = 1;
+
+  ReviewComment review_comment = 2;
+}
+
+message UpdateReviewCommentRequest {
+  // The review name
+  // Format: projects/{project}/reviews/{review}
+  string parent = 1;
+
+  ReviewComment review_comment = 2;
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ReviewComment {
+  string uid = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string comment = 2;
+
+  // TODO: use struct message instead.
+  string payload = 3;
+
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -135,7 +135,7 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 			if user == nil {
 				return nil, errors.Errorf("cannot found user %s", creatorEmail)
 			}
-			activityFind.CreatorID = &user.ID
+			activityFind.CreatorUID = &user.ID
 		case "resource":
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "resource" filter`)
@@ -346,7 +346,7 @@ func (s *LoggingService) convertToLogEntity(ctx context.Context, activity *store
 		resource = fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID)
 	}
 
-	user, err := s.store.GetUserByID(ctx, activity.CreatorID)
+	user, err := s.store.GetUserByID(ctx, activity.CreatorUID)
 	if err != nil {
 		return nil, err
 	}
