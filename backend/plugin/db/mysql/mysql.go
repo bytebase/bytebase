@@ -49,10 +49,6 @@ type Driver struct {
 	binlogDir     string
 	db            *sql.DB
 	databaseName  string
-	// migrationConn is used to execute migrations.
-	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
-	// So that it's easy to get the thread ID for rollback SQL.
-	migrationConn *sql.Conn
 	sshClient     *ssh.Client
 
 	replayedBinlogBytes *common.CountingReader
@@ -67,7 +63,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -107,20 +103,12 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	if err != nil {
 		return nil, err
 	}
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		var errList error
-		errList = multierr.Append(errList, err)
-		errList = multierr.Append(errList, db.Close())
-		return nil, errList
-	}
 	driver.dbType = dbType
 	driver.db = db
 	// TODO(d): remove the work-around once we have clean-up the migration connection hack.
 	db.SetConnMaxLifetime(2 * time.Hour)
 	db.SetMaxOpenConns(50)
 	db.SetMaxIdleConns(15)
-	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
 	driver.databaseName = connCfg.Database
@@ -132,7 +120,6 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 func (driver *Driver) Close(context.Context) error {
 	var err error
 	err = multierr.Append(err, driver.db.Close())
-	err = multierr.Append(err, driver.migrationConn.Close())
 	if driver.sshClient != nil {
 		err = multierr.Append(err, driver.sshClient.Close())
 	}
@@ -191,13 +178,13 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
+func (*Driver) Execute(ctx context.Context, conn *sql.Conn, statement string, _ bool) (int64, error) {
 	trunks, err := splitAndTransformDelimiter(statement)
 	if err != nil {
 		return 0, err
 	}
 
-	tx, err := driver.migrationConn.BeginTx(ctx, nil)
+	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")
 	}
@@ -222,15 +209,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	}
 
 	return totalRowsAffected, nil
-}
-
-// GetMigrationConnID gets the ID of the connection executing migrations.
-func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
-	var id string
-	if err := driver.migrationConn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&id); err != nil {
-		return "", errors.Wrap(err, "failed to get the connection ID")
-	}
-	return id, nil
 }
 
 // QueryConn querys a SQL statement in a given connection.

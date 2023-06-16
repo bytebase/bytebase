@@ -188,7 +188,7 @@ func (driver *Driver) GetDB() *sql.DB {
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, conn *sql.Conn, statement string, createDatabase bool) (int64, error) {
 	if createDatabase {
 		databases, err := driver.getDatabases(ctx)
 		if err != nil {
@@ -210,7 +210,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		}
 
 		f := func(stmt string) error {
-			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+			if _, err := conn.ExecContext(ctx, stmt); err != nil {
 				return err
 			}
 			return nil
@@ -257,7 +257,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	}
 
 	if len(remainingStmts) != 0 {
-		tx, err := driver.db.BeginTx(ctx, nil)
+		tx, err := conn.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
 		}
@@ -291,7 +291,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 
 	// Run non-transaction statements at the end.
 	for _, stmt := range nonTransactionStmts {
-		if _, err := driver.db.Exec(stmt); err != nil {
+		if _, err := conn.ExecContext(ctx, stmt); err != nil {
 			return 0, err
 		}
 	}
