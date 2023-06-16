@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ReviewService_GetReview_FullMethodName          = "/bytebase.v1.ReviewService/GetReview"
-	ReviewService_CreateReview_FullMethodName       = "/bytebase.v1.ReviewService/CreateReview"
-	ReviewService_ListReviews_FullMethodName        = "/bytebase.v1.ReviewService/ListReviews"
-	ReviewService_UpdateReview_FullMethodName       = "/bytebase.v1.ReviewService/UpdateReview"
-	ReviewService_BatchUpdateReviews_FullMethodName = "/bytebase.v1.ReviewService/BatchUpdateReviews"
-	ReviewService_ApproveReview_FullMethodName      = "/bytebase.v1.ReviewService/ApproveReview"
-	ReviewService_RejectReview_FullMethodName       = "/bytebase.v1.ReviewService/RejectReview"
-	ReviewService_RequestReview_FullMethodName      = "/bytebase.v1.ReviewService/RequestReview"
+	ReviewService_GetReview_FullMethodName           = "/bytebase.v1.ReviewService/GetReview"
+	ReviewService_CreateReview_FullMethodName        = "/bytebase.v1.ReviewService/CreateReview"
+	ReviewService_ListReviews_FullMethodName         = "/bytebase.v1.ReviewService/ListReviews"
+	ReviewService_UpdateReview_FullMethodName        = "/bytebase.v1.ReviewService/UpdateReview"
+	ReviewService_CreateReviewComment_FullMethodName = "/bytebase.v1.ReviewService/CreateReviewComment"
+	ReviewService_UpdateReviewComment_FullMethodName = "/bytebase.v1.ReviewService/UpdateReviewComment"
+	ReviewService_BatchUpdateReviews_FullMethodName  = "/bytebase.v1.ReviewService/BatchUpdateReviews"
+	ReviewService_ApproveReview_FullMethodName       = "/bytebase.v1.ReviewService/ApproveReview"
+	ReviewService_RejectReview_FullMethodName        = "/bytebase.v1.ReviewService/RejectReview"
+	ReviewService_RequestReview_FullMethodName       = "/bytebase.v1.ReviewService/RequestReview"
 )
 
 // ReviewServiceClient is the client API for ReviewService service.
@@ -37,6 +39,8 @@ type ReviewServiceClient interface {
 	CreateReview(ctx context.Context, in *CreateReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	ListReviews(ctx context.Context, in *ListReviewsRequest, opts ...grpc.CallOption) (*ListReviewsResponse, error)
 	UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error)
+	CreateReviewComment(ctx context.Context, in *CreateReviewCommentRequest, opts ...grpc.CallOption) (*ReviewComment, error)
+	UpdateReviewComment(ctx context.Context, in *UpdateReviewCommentRequest, opts ...grpc.CallOption) (*ReviewComment, error)
 	BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error)
 	ApproveReview(ctx context.Context, in *ApproveReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	RejectReview(ctx context.Context, in *RejectReviewRequest, opts ...grpc.CallOption) (*Review, error)
@@ -87,6 +91,24 @@ func (c *reviewServiceClient) UpdateReview(ctx context.Context, in *UpdateReview
 	return out, nil
 }
 
+func (c *reviewServiceClient) CreateReviewComment(ctx context.Context, in *CreateReviewCommentRequest, opts ...grpc.CallOption) (*ReviewComment, error) {
+	out := new(ReviewComment)
+	err := c.cc.Invoke(ctx, ReviewService_CreateReviewComment_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reviewServiceClient) UpdateReviewComment(ctx context.Context, in *UpdateReviewCommentRequest, opts ...grpc.CallOption) (*ReviewComment, error) {
+	out := new(ReviewComment)
+	err := c.cc.Invoke(ctx, ReviewService_UpdateReviewComment_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *reviewServiceClient) BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error) {
 	out := new(BatchUpdateReviewsResponse)
 	err := c.cc.Invoke(ctx, ReviewService_BatchUpdateReviews_FullMethodName, in, out, opts...)
@@ -131,6 +153,8 @@ type ReviewServiceServer interface {
 	CreateReview(context.Context, *CreateReviewRequest) (*Review, error)
 	ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error)
 	UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error)
+	CreateReviewComment(context.Context, *CreateReviewCommentRequest) (*ReviewComment, error)
+	UpdateReviewComment(context.Context, *UpdateReviewCommentRequest) (*ReviewComment, error)
 	BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error)
 	ApproveReview(context.Context, *ApproveReviewRequest) (*Review, error)
 	RejectReview(context.Context, *RejectReviewRequest) (*Review, error)
@@ -153,6 +177,12 @@ func (UnimplementedReviewServiceServer) ListReviews(context.Context, *ListReview
 }
 func (UnimplementedReviewServiceServer) UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateReview not implemented")
+}
+func (UnimplementedReviewServiceServer) CreateReviewComment(context.Context, *CreateReviewCommentRequest) (*ReviewComment, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateReviewComment not implemented")
+}
+func (UnimplementedReviewServiceServer) UpdateReviewComment(context.Context, *UpdateReviewCommentRequest) (*ReviewComment, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateReviewComment not implemented")
 }
 func (UnimplementedReviewServiceServer) BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateReviews not implemented")
@@ -251,6 +281,42 @@ func _ReviewService_UpdateReview_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReviewService_CreateReviewComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateReviewCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReviewServiceServer).CreateReviewComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReviewService_CreateReviewComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReviewServiceServer).CreateReviewComment(ctx, req.(*CreateReviewCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReviewService_UpdateReviewComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateReviewCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReviewServiceServer).UpdateReviewComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReviewService_UpdateReviewComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReviewServiceServer).UpdateReviewComment(ctx, req.(*UpdateReviewCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ReviewService_BatchUpdateReviews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BatchUpdateReviewsRequest)
 	if err := dec(in); err != nil {
@@ -345,6 +411,14 @@ var ReviewService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateReview",
 			Handler:    _ReviewService_UpdateReview_Handler,
+		},
+		{
+			MethodName: "CreateReviewComment",
+			Handler:    _ReviewService_CreateReviewComment_Handler,
+		},
+		{
+			MethodName: "UpdateReviewComment",
+			Handler:    _ReviewService_UpdateReviewComment_Handler,
 		},
 		{
 			MethodName: "BatchUpdateReviews",

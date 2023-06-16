@@ -156,7 +156,6 @@ import UserAvatar from "../User/UserAvatar.vue";
 import type {
   Issue,
   ActivityIssueFieldUpdatePayload,
-  ActivityCreate,
   IssueSubscriber,
   ActivityIssueCommentCreatePayload,
 } from "@/types";
@@ -164,7 +163,7 @@ import { extractUserResourceName, sizeToFit } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import {
   useIssueSubscriberStore,
-  useActivityLegacyStore,
+  useReviewV1Store,
   useActivityV1Store,
   useCurrentUserV1,
   useCurrentUser,
@@ -185,7 +184,7 @@ interface LocalState {
   activeActivity?: LogEntity;
 }
 
-const activityLegacyStore = useActivityLegacyStore();
+const reviewV1Store = useReviewV1Store();
 const activityV1Store = useActivityV1Store();
 const route = useRoute();
 
@@ -280,30 +279,30 @@ const cancelEditComment = () => {
 };
 
 const doCreateComment = (comment: string, clear = true) => {
-  const createActivity: ActivityCreate = {
-    type: "bb.issue.comment.create",
-    containerId: issue.value.id,
-    comment,
-  };
-  activityLegacyStore.createActivity(createActivity).then(() => {
-    if (clear) {
-      newComment.value = "";
-      nextTick(() => sizeToFit(newCommentTextArea.value));
-    }
-
-    // Because the user just added a comment and we assume she is interested in this
-    // issue, and we add her to the subscriber list if she is not there
-    let isSubscribed = false;
-    for (const subscriber of subscriberList.value) {
-      if (subscriber.subscriber.id == currentUser.value.id) {
-        isSubscribed = true;
-        break;
+  reviewV1Store
+    .createReviewComment({
+      reviewId: issue.value.id,
+      comment,
+    })
+    .then(() => {
+      if (clear) {
+        newComment.value = "";
+        nextTick(() => sizeToFit(newCommentTextArea.value));
       }
-    }
-    if (!isSubscribed) {
-      addSubscriberId(currentUser.value.id);
-    }
-  });
+
+      // Because the user just added a comment and we assume she is interested in this
+      // issue, and we add her to the subscriber list if she is not there
+      let isSubscribed = false;
+      for (const subscriber of subscriberList.value) {
+        if (subscriber.subscriber.id == currentUser.value.id) {
+          isSubscribed = true;
+          break;
+        }
+      }
+      if (!isSubscribed) {
+        addSubscriberId(currentUser.value.id);
+      }
+    });
 };
 
 const allowEditActivity = (activity: LogEntity) => {
@@ -336,11 +335,11 @@ const doUpdateComment = () => {
     return;
   }
   const activityId = getLogId(state.activeActivity.name);
-  activityLegacyStore
-    .updateComment({
-      activityId,
-      issueId: issue.value.id,
-      updatedComment: editComment.value,
+  reviewV1Store
+    .updateReviewComment({
+      commentId: `${activityId}`,
+      reviewId: issue.value.id,
+      comment: editComment.value,
     })
     .then(() => {
       cancelEditComment();

@@ -91,19 +91,6 @@ func (s *Store) BatchCreateActivity(ctx context.Context, creates []*api.Activity
 	return activityList, nil
 }
 
-// PatchActivity patches an instance of Activity.
-func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*api.Activity, error) {
-	activityRaw, err := s.patchActivityRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Activity with ActivityPatch[%+v]", patch)
-	}
-	activity, err := s.composeActivity(ctx, activityRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", activityRaw)
-	}
-	return activity, nil
-}
-
 //
 // private function
 //
@@ -149,27 +136,6 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 	}
 
 	return activityRawList[0], nil
-}
-
-// patchActivityRaw updates an existing activity by ID.
-// Returns ENOTFOUND if activity does not exist.
-func (s *Store) patchActivityRaw(ctx context.Context, patch *api.ActivityPatch) (*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	activity, err := patchActivityImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return activity, nil
 }
 
 func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Activity, error) {
@@ -268,57 +234,6 @@ func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCre
 		return nil, err
 	}
 	return activityRawList, nil
-}
-
-// patchActivityImpl updates a activity by ID. Returns the new state of the activity after update.
-func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*activityRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
-	if v := patch.Comment; v != nil {
-		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, api.Role(*v))
-	}
-	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Level; v != nil {
-		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	var activityRaw activityRaw
-	var protoPayload string
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE activity
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
-	`, len(args)),
-		args...,
-	).Scan(
-		&activityRaw.ID,
-		&activityRaw.CreatorID,
-		&activityRaw.CreatedTs,
-		&activityRaw.UpdaterID,
-		&activityRaw.UpdatedTs,
-		&activityRaw.ContainerID,
-		&activityRaw.Type,
-		&activityRaw.Level,
-		&activityRaw.Comment,
-		&protoPayload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("activity ID not found: %d", patch.ID)}
-		}
-		return nil, err
-	}
-	var err error
-	if activityRaw.Payload, err = convertProtoPayloadToAPIPayload(activityRaw.Type, protoPayload); err != nil {
-		return nil, err
-	}
-
-	return &activityRaw, nil
 }
 
 func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload string) (string, error) {
@@ -531,8 +446,8 @@ type ActivityMessage struct {
 	UpdatedTs int64
 
 	// Related fields
-	CreatorID int
-	UpdaterID int
+	CreatorUID int
+	UpdaterUID int
 	// The object where this activity belongs
 	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
 	ContainerUID int
@@ -547,7 +462,7 @@ type ActivityMessage struct {
 // FindActivityMessage is the API message for listing activities.
 type FindActivityMessage struct {
 	UID             *int
-	CreatorID       *int
+	CreatorUID      *int
 	LevelList       []api.ActivityLevel
 	TypeList        []api.ActivityType
 	ContainerUID    *int
@@ -559,6 +474,88 @@ type FindActivityMessage struct {
 	// Different use cases want different orders.
 	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
 	Order *api.SortOrder
+}
+
+// UpdateActivityMessage updates the activity.
+type UpdateActivityMessage struct {
+	UID        int
+	CreatorUID *int
+	UpdaterUID int
+	Comment    *string
+	Level      *api.ActivityLevel
+	Payload    *string
+}
+
+// UpdateActivityV2 updates the activity.
+// Returns ENOTFOUND if activity does not exist.
+func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMessage) (*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	set, args := []string{"updater_id = $1"}, []any{update.UpdaterUID}
+	if v := update.Comment; v != nil {
+		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := update.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := update.Level; v != nil {
+		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
+	}
+
+	where, args := []string{fmt.Sprintf("id = $%d", len(args)+1)}, append(args, update.UID)
+	if v := update.CreatorUID; v != nil {
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	query := fmt.Sprintf(`
+		UPDATE activity
+		SET %s
+		WHERE %s
+		RETURNING
+			id,
+			creator_id,
+			updater_id,
+			created_ts,
+			updated_ts,
+			container_id,
+			type,
+			level,
+			comment,
+			payload
+	`, strings.Join(set, ", "), strings.Join(where, " AND "))
+
+	var activity ActivityMessage
+	var protoPayload string
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+		&activity.UID,
+		&activity.CreatorUID,
+		&activity.UpdaterUID,
+		&activity.CreatedTs,
+		&activity.UpdatedTs,
+		&activity.ContainerUID,
+		&activity.Type,
+		&activity.Level,
+		&activity.Comment,
+		&protoPayload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found activity with id: %d", update.UID)}
+		}
+		return nil, err
+	}
+	if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &activity, nil
 }
 
 // GetActivityV2 gets the activity.
@@ -627,7 +624,7 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 	if v := find.ContainerUID; v != nil {
 		where, args = append(where, fmt.Sprintf("container_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.CreatorID; v != nil {
+	if v := find.CreatorUID; v != nil {
 		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.LevelList; len(v) > 0 {
@@ -689,8 +686,8 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 		var protoPayload string
 		if err := rows.Scan(
 			&activity.UID,
-			&activity.CreatorID,
-			&activity.UpdaterID,
+			&activity.CreatorUID,
+			&activity.UpdaterUID,
 			&activity.CreatedTs,
 			&activity.UpdatedTs,
 			&activity.ContainerUID,

@@ -212,7 +212,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", activityID))
 			}
 
-			return activity.CreatorID == curPrincipalID, nil
+			return activity.CreatorUID == curPrincipalID, nil
 		}
 	}
 	return false, nil

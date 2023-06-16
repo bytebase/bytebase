@@ -1,7 +1,6 @@
 import { ExternalApprovalEvent } from "./externalApproval";
 import { FieldId } from "../plugins";
 import {
-  ContainerId,
   DatabaseId,
   InstanceId,
   IssueId,
@@ -203,19 +202,6 @@ export type ActionPayloadType =
   | ActivityProjectRepositoryPushPayload
   | ActivityProjectDatabaseTransferPayload
   | ActivitySQLEditorQueryPayload;
-
-export type ActivityCreate = {
-  // Domain specific fields
-  containerId: ContainerId;
-  type: "bb.issue.comment.create";
-  comment: string;
-  payload?: ActionPayloadType;
-};
-
-export type ActivityPatch = {
-  // Domain specific fields
-  comment: string;
-};
 
 export interface FindActivityMessage {
   resource?: string;
