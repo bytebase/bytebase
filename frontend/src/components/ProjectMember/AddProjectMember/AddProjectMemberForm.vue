@@ -108,7 +108,7 @@ const expireDaysOptions = computed(() => [
   },
   {
     value: 0,
-    label: "Never",
+    label: t("project.members.never-expires"),
   },
 ]);
 
