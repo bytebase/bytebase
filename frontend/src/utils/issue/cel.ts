@@ -171,9 +171,14 @@ const convertToCELString = (
 export const convertFromCELString = async (
   cel: string
 ): Promise<ConditionExpression> => {
-  const { expression: celExpr } = await celServiceClient.parse({
-    expression: cel,
-  });
+  const { expression: celExpr } = await celServiceClient.parse(
+    {
+      expression: cel,
+    },
+    {
+      silent: true,
+    }
+  );
 
   if (!celExpr || !celExpr.expr) {
     return {};

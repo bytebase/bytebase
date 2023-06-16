@@ -76,8 +76,31 @@ export const OperatorList: Record<Factor, Operator[]> = {
   ]),
 
   // Database group related fields.
-  "resource.database_name": uniq(["startsWith", "_==_"]),
-  "resource.table_name": uniq(["startsWith", "_==_"]),
+  "resource.environment_name": uniq(["_==_"]),
+  "resource.instance_name": uniq([
+    "_==_",
+    "_!=_",
+    "startsWith",
+    "endsWith",
+    "contains",
+    "matches",
+  ]),
+  "resource.database_name": uniq([
+    "_==_",
+    "_!=_",
+    "startsWith",
+    "endsWith",
+    "contains",
+    "matches",
+  ]),
+  "resource.table_name": uniq([
+    "_==_",
+    "_!=_",
+    "startsWith",
+    "endsWith",
+    "contains",
+    "matches",
+  ]),
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {
