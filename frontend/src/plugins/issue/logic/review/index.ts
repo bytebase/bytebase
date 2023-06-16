@@ -32,10 +32,17 @@ export const extractIssueReviewContext = (
     if (!ready.value) return emptyFlow();
     const { approvalTemplates, approvers } = review.value;
     if (approvalTemplates.length === 0) return emptyFlow();
+
+    const rejectedIndex = approvers.findIndex(
+      (ap) => ap.status === Review_Approver_Status.REJECTED
+    );
+    const currentStepIndex =
+      rejectedIndex >= 0 ? rejectedIndex : approvers.length;
+
     return {
       template: approvalTemplates[0],
       approvers,
-      currentStepIndex: approvers.length,
+      currentStepIndex,
     };
   });
   const status = computed(() => {
