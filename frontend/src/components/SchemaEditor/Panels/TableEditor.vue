@@ -120,7 +120,6 @@
                 trigger="click"
                 :disabled="disableAlterColumn(column)"
                 :options="dataTypeOptions"
-                to="body"
                 @select="(dataType: string) => (column.type = dataType)"
               >
                 <button class="absolute right-5">
@@ -144,7 +143,6 @@
                 trigger="click"
                 :disabled="disableAlterColumn(column)"
                 :options="dataDefaultOptions"
-                to="body"
                 @select="(defaultString:string)=>handleColumnDefaultFieldChange(column, defaultString)"
               >
                 <button class="absolute right-5">
