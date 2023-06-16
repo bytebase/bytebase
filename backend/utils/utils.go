@@ -489,12 +489,12 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 // ExecuteMigrationDefault executes migration.
 func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(execStatement string) error {
-		if driver.GetType() == db.Oracle && executeBeforeCommitTx != nil {
+		if driver.GetType() == db.Oracle {
 			oracleDriver, ok := driver.(*oracle.Driver)
 			if !ok {
 				return errors.New("failed to cast driver to oracle driver")
 			}
-			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, execStatement, executeBeforeCommitTx); err != nil {
+			if _, _, err := oracleDriver.ExecuteWithBeforeCommit(ctx, execStatement, executeBeforeCommitTx); err != nil {
 				return err
 			}
 		} else {
