@@ -486,6 +486,7 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 	if err != nil {
 		return errors.Wrapf(err, "failed to create connection")
 	}
+	defer conn.Close()
 
 	if _, err := driver.Execute(ctx, conn, "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", false); err != nil {
 		return errors.Wrapf(err, "failed to create pg_stat_statements extension")

@@ -558,6 +558,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 	if err != nil {
 		return "", "", err
 	}
+	defer conn.Close()
 
 	migrationID, _, err := utils.ExecuteMigrationDefault(ctx, stores, targetDriver, conn, m, "", nil /* executeBeforeCommitTx */)
 	if err != nil {

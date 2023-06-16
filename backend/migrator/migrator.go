@@ -469,6 +469,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	// Apply migrations if needed.
 	retVersion := curVer
