@@ -11,18 +11,6 @@
       :source-filterable="true"
       :source-filter-placeholder="$t('database.search-database-name')"
     />
-    <div class="flex items-center justify-end gap-x-2">
-      <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
-      <NButton type="primary" :disabled="!allowConfirm" @click="doConfirm">
-        {{ $t("common.confirm") }}
-      </NButton>
-    </div>
-    <div
-      v-if="loading"
-      class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
-    >
-      <BBSpin />
-    </div>
   </div>
 </template>
 
@@ -32,7 +20,6 @@ import { uniq } from "lodash-es";
 import {
   NTransfer,
   TransferRenderSourceList,
-  NButton,
   NTree,
   TreeOption,
 } from "naive-ui";
@@ -56,8 +43,7 @@ const props = defineProps<{
   selectedDatabaseResourceList: DatabaseResource[];
 }>();
 
-const emits = defineEmits<{
-  (e: "close"): void;
+const emit = defineEmits<{
   (e: "update", databaseResourceList: DatabaseResource[]): void;
 }>();
 
@@ -101,6 +87,20 @@ onMounted(async () => {
     }
   }
   loading.value = false;
+
+  const selectedKeyList = [];
+  for (const databaseResource of props.selectedDatabaseResourceList) {
+    let key = "";
+    if (databaseResource.table !== undefined) {
+      key = `t-${databaseResource.databaseName}-${databaseResource.schema}-${databaseResource.table}`;
+    } else if (databaseResource.schema !== undefined) {
+      key = `s-${databaseResource.databaseName}-${databaseResource.schema}`;
+    } else {
+      key = `d-${databaseResource.databaseName}`;
+    }
+    selectedKeyList.push(key);
+  }
+  selectedValueList.value = uniq(selectedKeyList);
 });
 
 const databaseList = computed(() => {
@@ -109,10 +109,6 @@ const databaseList = computed(() => {
   return props.databaseId
     ? list.filter((item) => item.uid === props.databaseId)
     : list;
-});
-
-const allowConfirm = computed(() => {
-  return selectedValueList.value.length > 0;
 });
 
 const sourceTreeOptions = computed(() => {
@@ -173,34 +169,10 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
   });
 };
 
-const doConfirm = () => {
-  const list = selectedValueList.value
-    .map((key) => {
-      return databaseResourceMap.value.get(key);
-    })
-    .filter((item) => item !== undefined);
-  emits("update", list as DatabaseResource[]);
-};
-
-watch(
-  () => props.selectedDatabaseResourceList,
-  () => {
-    const selectedKeyList = [];
-    for (const databaseResource of props.selectedDatabaseResourceList) {
-      let key = "";
-      if (databaseResource.table !== undefined) {
-        key = `t-${databaseResource.databaseName}-${databaseResource.schema}-${databaseResource.table}`;
-      } else if (databaseResource.schema !== undefined) {
-        key = `s-${databaseResource.databaseName}-${databaseResource.schema}`;
-      } else {
-        key = `d-${databaseResource.databaseName}`;
-      }
-      selectedKeyList.push(key);
-    }
-    selectedValueList.value = uniq(selectedKeyList);
-  },
-  {
-    immediate: true,
-  }
-);
+watch(selectedValueList, () => {
+  emit(
+    "update",
+    selectedValueList.value.map((key) => databaseResourceMap.value.get(key)!)
+  );
+});
 </script>

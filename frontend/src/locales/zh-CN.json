@@ -1473,7 +1473,9 @@
       "show-inactive": "显示未激活成员",
       "select-users": "选择用户",
       "assign-role": "分配角色",
-      "role-never-expires": "此角色没有过期时间。"
+      "never-expires": "永不过期",
+      "role-never-expires": "此角色没有过期时间。",
+      "add-more": "增加更多"
     },
     "mode": {
       "standard": "标准模式",
@@ -2564,7 +2566,7 @@
       "edit": "编辑表分组"
     },
     "factor": {
-      "resource_instance_name": "实例 ID",
+      "resource_instance_id": "实例 ID",
       "resource_database_name": "数据库名",
       "resource_table_name": "表名"
     },

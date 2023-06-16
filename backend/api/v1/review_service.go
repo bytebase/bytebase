@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -57,6 +58,36 @@ func NewReviewService(store *store.Store, activityManager *activity.Manager, tas
 // Currently, only review.ApprovalTemplates and review.Approvers are set.
 func (s *ReviewService) GetReview(ctx context.Context, request *v1pb.GetReviewRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssue(ctx, request.Name)
+	if err != nil {
+		return nil, err
+	}
+	if request.Force {
+		externalApprovalType := api.ExternalApprovalTypeRelay
+		approvals, err := s.store.ListExternalApprovalV2(ctx, &store.ListExternalApprovalMessage{
+			Type:     &externalApprovalType,
+			IssueUID: &issue.UID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list external approvals, error: %v", err)
+		}
+		var errs error
+		for _, approval := range approvals {
+			msg := relay.CheckExternalApprovalChanMessage{
+				ExternalApproval: approval,
+				ErrChan:          make(chan error, 1),
+			}
+			s.relayRunner.CheckExternalApprovalChan <- msg
+			err := <-msg.ErrChan
+			if err != nil {
+				err = errors.Wrapf(err, "failed to check external approval status, issueUID %d", approval.IssueUID)
+				errs = multierr.Append(errs, err)
+			}
+		}
+		if errs != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check external approval status, error: %v", errs)
+		}
+	}
+	issue, err = s.getIssue(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}

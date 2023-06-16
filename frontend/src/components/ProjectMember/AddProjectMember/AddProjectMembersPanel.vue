@@ -19,7 +19,9 @@
       </div>
       <div>
         <NButton @click="handleAddMore">
-          <heroicons-solid:plus class="w-5 h-auto" />Add more
+          <heroicons-solid:plus class="w-5 h-auto" />{{
+            $t("project.members.add-more")
+          }}
         </NButton>
       </div>
       <template #footer>

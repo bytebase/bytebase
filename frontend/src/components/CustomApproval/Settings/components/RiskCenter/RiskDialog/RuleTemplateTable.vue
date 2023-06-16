@@ -27,6 +27,16 @@
     class="!w-auto lg:!max-w-[36rem]"
     @close="viewTemplate = undefined"
   >
+    <template #header>
+      <div>{{ $t("custom-approval.security-rule.template.view") }}</div>
+    </template>
+    <template #subtitle>
+      <div
+        class="text-xs text-control-light mt-1 whitespace-pre-wrap overflow-hidden"
+      >
+        {{ titleOfTemplate(viewTemplate) }}
+      </div>
+    </template>
     <ViewTemplate :template="viewTemplate" />
   </BBModal>
 </template>
@@ -43,7 +53,8 @@ import {
   titleOfTemplate,
 } from "./template";
 import { useRiskCenterContext } from "../context";
-import { defer } from "@/utils";
+import { Expr } from "@/types/proto/google/type/expr";
+import { convertParsedExprToCELString, defer } from "@/utils";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
 import { buildCELExpr, ConditionGroupExpr } from "@/plugins/cel";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
@@ -123,10 +134,13 @@ const applyTemplate = async (template: RuleTemplate) => {
   const { expr, source, level } = template;
   const title = titleOfTemplate(template);
   const { mode } = dialog.value!;
-  const overrides: Partial<Risk> = {
-    expression: ParsedExpr.fromJSON({
+  const expression = await convertParsedExprToCELString(
+    ParsedExpr.fromJSON({
       expr: buildCELExpr(expr),
-    }),
+    })
+  );
+  const overrides: Partial<Risk> = {
+    condition: Expr.fromJSON({ expression }),
     level,
     title,
   };

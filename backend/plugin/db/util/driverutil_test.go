@@ -1217,3 +1217,81 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
+
+func TestPLSQLExtractSensitiveField(t *testing.T) {
+	const (
+		defaultSchema = "ROOT"
+	)
+	var (
+		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
+			DatabaseList: []db.DatabaseSchema{
+				{
+					Name: defaultSchema,
+					TableList: []db.TableSchema{
+						{
+							Name: "T",
+							ColumnList: []db.ColumnInfo{
+								{
+									Name:      "A",
+									Sensitive: true,
+								},
+								{
+									Name:      "B",
+									Sensitive: false,
+								},
+								{
+									Name:      "C",
+									Sensitive: false,
+								},
+								{
+									Name:      "D",
+									Sensitive: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	)
+	tests := []struct {
+		statement  string
+		schemaInfo *db.SensitiveSchemaInfo
+		fieldList  []db.SensitiveField
+	}{
+		{
+			statement:  "SELECT * FROM ROOT.T;",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for EXPLAIN statements.
+			statement:  "explain plan for select 1 from dual;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  nil,
+		},
+	}
+
+	for _, test := range tests {
+		res, err := extractSensitiveField(db.Oracle, test.statement, defaultSchema, test.schemaInfo)
+		require.NoError(t, err)
+		require.Equal(t, test.fieldList, res, test.statement)
+	}
+}
