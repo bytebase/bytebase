@@ -17,7 +17,7 @@
               <TenantIcon class="ml-1 w-4 h-4 text-control" />
             </template>
             <span class="whitespace-nowrap">
-              {{ $t("project.mode.tenant") }}
+              {{ $t("project.mode.batch") }}
             </span>
           </NTooltip>
           <NTooltip v-if="project.state === State.DELETED">
