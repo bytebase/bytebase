@@ -75,7 +75,7 @@
             />
             <span class="label">{{ $t("project.mode.batch") }}</span>
             <LearnMoreLink
-              url="https://www.bytebase.com/concepts/batch-model/?source=console"
+              url="https://www.bytebase.com/docs/concepts/batch-mode/?source=console"
             />
             <FeatureBadge
               feature="bb.feature.multi-tenancy"
