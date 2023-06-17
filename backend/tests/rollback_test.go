@@ -32,14 +32,14 @@ func TestRollback(t *testing.T) {
 	stopFn := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopFn()
 
-	db, err := connectTestMySQL(mysqlPort, "")
+	sqlDB, err := connectTestMySQL(mysqlPort, "")
 	a.NoError(err)
-	defer db.Close()
-	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`; CREATE TABLE user (id INT PRIMARY KEY, name VARCHAR(64), balance INT);", database, database))
+	defer sqlDB.Close()
+	_, err = sqlDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`; CREATE TABLE user (id INT PRIMARY KEY, name VARCHAR(64), balance INT);", database, database))
 	a.NoError(err)
-	_, err = db.ExecContext(ctx, "INSERT INTO user VALUES (1, 'alice\nalice', 100), (2, 'bob', 100), (3, 'cindy', 100);")
+	_, err = sqlDB.ExecContext(ctx, "INSERT INTO user VALUES (1, 'alice\nalice', 100), (2, 'bob', 100), (3, 'cindy', 100);")
 	a.NoError(err)
-	_, err = db.ExecContext(ctx, "UPDATE user SET balance=90 WHERE id=1; UPDATE user SET balance=110 WHERE id=2; DELETE FROM user WHERE id=3;")
+	_, err = sqlDB.ExecContext(ctx, "UPDATE user SET balance=90 WHERE id=1; UPDATE user SET balance=110 WHERE id=2; DELETE FROM user WHERE id=3;")
 	a.NoError(err)
 
 	resourceDir := t.TempDir()
@@ -48,16 +48,16 @@ func TestRollback(t *testing.T) {
 	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, binDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
-
-	// Rotate to binlog.000002 so that it's easy to rollback the following transactions and check that the state is the same as now.
-	_, err = db.ExecContext(ctx, "FLUSH BINARY LOGS;")
-	a.NoError(err)
 	conn, err := driver.GetDB().Conn(ctx)
 	a.NoError(err)
 	defer conn.Close()
-	_, err = driver.Execute(ctx, conn, "UPDATE user SET balance=0;", false)
+
+	// Rotate to binlog.000002 so that it's easy to rollback the following transactions and check that the state is the same as now.
+	_, err = sqlDB.ExecContext(ctx, "FLUSH BINARY LOGS;")
 	a.NoError(err)
-	_, err = driver.Execute(ctx, conn, "DELETE FROM user;", false)
+	_, err = driver.Execute(ctx, "UPDATE user SET balance=0;", false, db.ExecuteOptions{})
+	a.NoError(err)
+	_, err = driver.Execute(ctx, "DELETE FROM user;", false, db.ExecuteOptions{})
 	a.NoError(err)
 
 	// Restore data using generated rollback SQL.
@@ -73,11 +73,11 @@ func TestRollback(t *testing.T) {
 	const binlogSizeLimit = 8 * 1024 * 1024
 	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogSizeLimit, binlogFileList, 0, math.MaxInt64, threadID, tableCatalog)
 	a.NoError(err)
-	_, err = db.ExecContext(ctx, rollbackSQL)
+	_, err = sqlDB.ExecContext(ctx, rollbackSQL)
 	a.NoError(err)
 
 	// Check for rollback state.
-	rows, err := db.QueryContext(ctx, "SELECT * FROM user;")
+	rows, err := sqlDB.QueryContext(ctx, "SELECT * FROM user;")
 	a.NoError(err)
 	defer rows.Close()
 	type record struct {
