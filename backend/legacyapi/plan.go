@@ -88,12 +88,12 @@ const (
 	FeatureDBAWorkflow FeatureType = "bb.feature.dba-workflow"
 	// FeatureIMApproval integrates IM approval into Bytebase, allowing users approve Bytebase issues on the IM.
 	FeatureIMApproval FeatureType = "bb.feature.im.approval"
-	// FeatureMultiTenancy allows user to enable tenant mode for the project.
+	// FeatureMultiTenancy allows user to enable batch mode for the project.
 	//
-	// Tenant mode allows user to track a group of homogeneous database changes together.
+	// Batch mode allows user to track a group of homogeneous database changes together.
 	// e.g. A game studio may deploy many servers, each server is fully isolated with its
 	// own database. When a new game version is released, it may require to upgrade the
-	// underlying database schema, then tenant mode will help the studio to track the
+	// underlying database schema, then batch mode will help the studio to track the
 	// schema change across all databases.
 	FeatureMultiTenancy FeatureType = "bb.feature.multi-tenancy"
 	// FeatureOnlineMigration allows user to perform online-migration.
