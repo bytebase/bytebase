@@ -789,8 +789,10 @@ CREATE TABLE instance_change_history (
     -- Record the migration version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
-    -- Record the migration statement
+    -- Record the change statement in preview format.
     statement TEXT NOT NULL,
+    -- Record the sheet for the change statement. Optional.
+    sheet_id BIGINT NULL,
     -- Record the schema after migration
     schema TEXT NOT NULL,
     -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.
