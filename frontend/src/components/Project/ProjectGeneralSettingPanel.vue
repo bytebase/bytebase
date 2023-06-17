@@ -19,11 +19,13 @@
             class="textfield"
           />
         </dd>
-        <ResourceIdField
-          resource-type="project"
-          :value="extractProjectResourceName(project.name)"
-          :readonly="true"
-        />
+        <div class="mt-1">
+          <ResourceIdField
+            resource-type="project"
+            :value="extractProjectResourceName(project.name)"
+            :readonly="true"
+          />
+        </div>
       </dl>
 
       <dl class="">
@@ -62,7 +64,7 @@
             />
             <span class="label">{{ $t("project.mode.standard") }}</span>
           </label>
-          <label class="radio">
+          <label class="radio space-x-1">
             <input
               v-model="state.tenantMode"
               :disabled="!allowEdit"
@@ -71,7 +73,10 @@
               class="btn disabled:opacity-50 disabled:cursor-not-allowed"
               :value="TenantMode.TENANT_MODE_ENABLED"
             />
-            <span class="label">{{ $t("project.mode.tenant") }}</span>
+            <span class="label">{{ $t("project.mode.batch") }}</span>
+            <LearnMoreLink
+              url="https://www.bytebase.com/concepts/batch-model/?source=console"
+            />
             <FeatureBadge
               feature="bb.feature.multi-tenancy"
               class="text-accent"

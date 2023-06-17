@@ -1484,7 +1484,7 @@
     },
     "mode": {
       "standard": "Standard Mode",
-      "tenant": "Tenant Mode"
+      "batch": "Batch Mode"
     },
     "db-name-template": "Tenant Database Name Template",
     "select": "Select project",
@@ -1907,8 +1907,8 @@
         "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
       },
       "bb-feature-multi-tenancy": {
-        "title": "Multi-tenancy",
-        "desc": "Intelligent database management for tenants using identical schemas."
+        "title": "Batch mode",
+        "desc": "Batch changing a group of databases from different tenants or partitions."
       },
       "bb-feature-approval-policy": {
         "title": "Rollout policy",
