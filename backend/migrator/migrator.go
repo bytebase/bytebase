@@ -495,7 +495,7 @@ func getDevMigrations() ([]devMigration, error) {
 
 func migrationExists(statement string, histories []*store.InstanceChangeHistoryMessage) bool {
 	for _, history := range histories {
-		if history.Statement == statement {
+		if history.Statement == statement && history.Status == dbdriver.Done {
 			return true
 		}
 	}
