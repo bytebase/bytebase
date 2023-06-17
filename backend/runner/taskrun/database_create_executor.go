@@ -141,12 +141,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		}
 	}
 	defer defaultDBDriver.Close(ctx)
-	conn, err := defaultDBDriver.GetDB().Conn(ctx)
-	if err != nil {
-		return true, nil, err
-	}
-	defer conn.Close()
-	if _, err := defaultDBDriver.Execute(ctx, conn, statement, true /* createDatabase */); err != nil {
+	if _, err := defaultDBDriver.Execute(ctx, statement, true /* createDatabase */, db.ExecuteOptions{}); err != nil {
 		return true, nil, err
 	}
 
@@ -232,11 +227,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, env
 		return "", "", err
 	}
 	defer driver.Close(ctx)
-	conn, err := driver.GetDB().Conn(ctx)
-	if err != nil {
-		return "", "", err
-	}
-	defer conn.Close()
 
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
@@ -284,7 +274,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, env
 		mi.IssueIDInt = &issue.UID
 	}
 
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, conn, mi, schema, nil /* executeBeforeCommitTx */); err != nil {
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, mi, schema, db.ExecuteOptions{}); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schema, nil

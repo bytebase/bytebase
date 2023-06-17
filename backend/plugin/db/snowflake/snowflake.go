@@ -211,7 +211,7 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (*Driver) Execute(ctx context.Context, conn *sql.Conn, statement string, _ bool) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, _ db.ExecuteOptions) (int64, error) {
 	count := 0
 	f := func(stmt string) error {
 		count++
@@ -226,7 +226,7 @@ func (*Driver) Execute(ctx context.Context, conn *sql.Conn, statement string, _ 
 		return 0, nil
 	}
 
-	tx, err := conn.BeginTx(ctx, nil)
+	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}

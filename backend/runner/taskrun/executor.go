@@ -63,7 +63,7 @@ func RunExecutorOnce(ctx context.Context, exec Executor, task *store.TaskMessage
 	return exec.RunOnce(ctx, task)
 }
 
-func preMigration(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -143,8 +143,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, mi *db.MigrationInfo) (migrationID string, schema string, err error) {
-	statement = strings.TrimSpace(statement)
+func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, mi *db.MigrationInfo) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -159,11 +158,6 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
 	}
 	defer driver.Close(ctx)
-	conn, err := driver.GetDB().Conn(ctx)
-	if err != nil {
-		return "", "", err
-	}
-	defer conn.Close()
 
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
 	log.Debug("Start migration...",
@@ -174,20 +168,24 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		zap.String("statement", statementRecord),
 	)
 
+	var migrationID string
+	opts := db.ExecuteOptions{}
 	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
-		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, conn, task, stores)
-		if err != nil {
-			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+		opts.BeginFunc = func(ctx context.Context, conn *sql.Conn) error {
+			updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, conn, task, stores)
+			if err != nil {
+				return errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+			}
+			task = updatedTask
+			return nil
 		}
-		task = updatedTask
 	}
-
-	var executeBeforeCommitTx func(tx *sql.Tx) error
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.Oracle {
 		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
-		executeBeforeCommitTx = getSetOracleTransactionIDFunc(ctx, task, stores)
+		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
-	migrationID, schema, err = utils.ExecuteMigrationDefault(ctx, stores, driver, conn, mi, statement, executeBeforeCommitTx)
+
+	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, stores, driver, mi, statement, opts)
 	if err != nil {
 		return "", "", err
 	}
@@ -209,6 +207,10 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
+		conn, err := driver.GetDB().Conn(ctx)
+		if err != nil {
+			return "", "", errors.Wrap(err, "failed to create connection")
+		}
 		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, conn, task, stores, migrationID)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
@@ -555,7 +557,7 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 }
 
 func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	mi, err := preMigration(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
+	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
