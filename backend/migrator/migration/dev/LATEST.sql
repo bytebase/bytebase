@@ -790,8 +790,10 @@ CREATE TABLE instance_change_history (
     -- Record the change version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
-    -- Record the change statement
+    -- Record the change statement in preview format.
     statement TEXT NOT NULL,
+    -- Record the sheet for the change statement. Optional.
+    sheet_id BIGINT NULL,
     -- Record the schema after change
     schema TEXT NOT NULL,
     -- Record the schema before change. Though we could also fetch it from the previous change history, it would complicate fetching logic.
