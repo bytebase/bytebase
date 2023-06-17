@@ -112,7 +112,7 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement.
-func (d *Driver) Execute(ctx context.Context, _ *sql.Conn, statement string, createDatabase bool) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
 	if createDatabase {
 		stmts, err := sanitizeSQL(statement)
 		if err != nil {
