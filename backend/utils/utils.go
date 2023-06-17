@@ -4,7 +4,6 @@ package utils
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -24,7 +23,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -487,20 +485,10 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 }
 
 // ExecuteMigrationDefault executes migration.
-func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, conn *sql.Conn, mi *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(execStatement string) error {
-		if driver.GetType() == db.Oracle {
-			oracleDriver, ok := driver.(*oracle.Driver)
-			if !ok {
-				return errors.New("failed to cast driver to oracle driver")
-			}
-			if _, _, err := oracleDriver.ExecuteWithBeforeCommit(ctx, execStatement, executeBeforeCommitTx); err != nil {
-				return err
-			}
-		} else {
-			if _, err := driver.Execute(ctx, conn, execStatement, false /* createDatabase */); err != nil {
-				return err
-			}
+		if _, err := driver.Execute(ctx, execStatement, false /* createDatabase */, opts); err != nil {
+			return err
 		}
 		return nil
 	}

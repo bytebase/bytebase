@@ -155,7 +155,17 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (*Driver) Execute(ctx context.Context, conn *sql.Conn, statement string, _ bool) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opts db.ExecuteOptions) (int64, error) {
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	if opts.BeginFunc != nil {
+		if err := opts.BeginFunc(ctx, conn); err != nil {
+			return 0, err
+		}
+	}
 	trunks, err := splitAndTransformDelimiter(statement)
 	if err != nil {
 		return 0, err
