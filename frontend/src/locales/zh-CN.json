@@ -1479,7 +1479,7 @@
     },
     "mode": {
       "standard": "标准模式",
-      "tenant": "多租户模式"
+      "batch": "批量模式"
     },
     "db-name-template": "租户数据库名称模板",
     "select": "选择项目",
@@ -1902,8 +1902,8 @@
         "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
       },
       "bb-feature-multi-tenancy": {
-        "title": "多租户",
-        "desc": "「多租户功能」可以同时管理多个属于不同租户的同构数据库，帮您更统一和方便地对多个数据库进行管理和表结构变更。"
+        "title": "批量模式",
+        "desc": "批量变更一组属于不同租户或者数据库分库的数据库。"
       },
       "bb-feature-approval-policy": {
         "title": "发布策略",

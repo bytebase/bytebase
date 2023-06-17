@@ -54,7 +54,7 @@
         class="tooltip-wrapper"
       >
         <span class="tooltip whitespace-nowrap">
-          {{ $t("project.mode.tenant") }}
+          {{ $t("project.mode.batch") }}
         </span>
         <TenantIcon class="w-4 h-4 text-control" />
       </div>
