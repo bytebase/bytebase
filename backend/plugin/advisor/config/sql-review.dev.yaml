@@ -44,7 +44,7 @@ ruleList:
     payload:
       number: 1000
   - type: statement.dml-dry-run
-    level: WARNING
+    level: ERROR
   - type: statement.disallow-add-column-with-default
     level: WARNING
   - type: statement.add-check-not-valid
