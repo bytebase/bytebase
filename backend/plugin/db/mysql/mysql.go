@@ -141,29 +141,6 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// getDatabases gets all databases of an instance.
-func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
-	var dbNames []string
-	query := "SHOW DATABASES"
-	rows, err := txn.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, err
-		}
-		dbNames = append(dbNames, name)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	return dbNames, nil
-}
-
 // getVersion gets the version.
 func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
