@@ -361,6 +361,7 @@ ruleList:
       - POSTGRES
       - ORACLE
       - OCEANBASE
+      - SNOWFLAKE
     componentList: []
   - type: column.disallow-change-type
     category: COLUMN

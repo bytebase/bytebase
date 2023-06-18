@@ -394,6 +394,9 @@ const (
 
 	// Snowflake Advisor.
 
+	// SnowflakeSyntax is an advisor type for Snowflake syntax.
+	SnowflakeSyntax Type = "bb.plugin.advisor.snowflake.syntax"
+
 	// SnowflakeNamingTableConvention is an advisor type for Snowflake table naming convention.
 	SnowflakeNamingTableConvention Type = "bb.plugin.advisor.snowflake.naming.table"
 
