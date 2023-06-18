@@ -34,67 +34,69 @@ paths:
   /sql/advise:
     post:
       consumes:
-      - '*/*'
+        - "*/*"
       description: Parse and check the SQL statement according to the SQL review policy.
       parameters:
-      - description: The environment name. Case sensitive.
-        in: body
-        name: environmentName
-        required: true
-        schema:
-          type: string
-      - description: The SQL statement.
-        in: body
-        name: statement
-        required: true
-        schema:
-          type: string
-      - description: The database type. Required if the port, host and database name
-          is not specified.
-        enum:
-        - MYSQL
-        - POSTGRES
-        - TIDB
-        - OCEANBASE
-        in: body
-        name: databaseType
-        schema:
-          type: string
-      - description: The instance host.
-        in: body
-        name: host
-        schema:
-          type: string
-      - description: The instance port.
-        in: body
-        name: port
-        schema:
-          type: string
-      - description: The database name in the instance.
-        in: body
-        name: databaseName
-        schema:
-          type: string
+        - description: The environment name. Case sensitive.
+          in: body
+          name: environmentName
+          required: true
+          schema:
+            type: string
+        - description: The SQL statement.
+          in: body
+          name: statement
+          required: true
+          schema:
+            type: string
+        - description:
+            The database type. Required if the port, host and database name
+            is not specified.
+          enum:
+            - MYSQL
+            - POSTGRES
+            - TIDB
+            - OCEANBASE
+            - SNOWFLAKE
+          in: body
+          name: databaseType
+          schema:
+            type: string
+        - description: The instance host.
+          in: body
+          name: host
+          schema:
+            type: string
+        - description: The instance port.
+          in: body
+          name: port
+          schema:
+            type: string
+        - description: The database name in the instance.
+          in: body
+          name: databaseName
+          schema:
+            type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/advisor.Advice'
+              $ref: "#/definitions/advisor.Advice"
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/echo.HTTPError'
+            $ref: "#/definitions/echo.HTTPError"
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/echo.HTTPError'
+            $ref: "#/definitions/echo.HTTPError"
       summary: Check the SQL statement.
       tags:
-      - SQL review
+        - SQL review
 schemes:
-- http
+  - http
 swagger: "2.0"

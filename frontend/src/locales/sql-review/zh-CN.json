@@ -4,7 +4,8 @@
     "tidb": "TiDB",
     "postgres": "PostgreSQL",
     "oracle": "Oracle",
-    "oceanbase": "OceanBase"
+    "oceanbase": "OceanBase",
+    "snowflake": "Snowflake"
   },
   "category": {
     "engine": "引擎",
