@@ -57,9 +57,17 @@
       details: ""
 - statement: ALTER TABLE a ADD COLUMN age INT NOT NULL;
   want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE a ALTER COLUMN age DROP NOT NULL;
+  want:
     - status: WARN
-      code: 201
-      title: Syntax error
-      content: line 2:0 mismatched input ';' expecting {'CONSTRAINT', 'FOREIGN', 'PRIMARY', 'REFERENCES', 'UNIQUE'}
-      line: 2
+      code: 402
+      title: column.no-null
+      content: After dropping NOT NULL of column AGE, it will be nullable, which is not allowed.
+      line: 1
       details: ""

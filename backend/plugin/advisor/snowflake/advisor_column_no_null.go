@@ -110,9 +110,7 @@ func (l *columnNoNullChecker) EnterFull_col_decl(ctx *parser.Full_col_declContex
 	}
 	for _, constraint := range ctx.AllInline_constraint() {
 		if constraint.PRIMARY() != nil {
-			if _, ok := l.columnNullable[normalizedOriginalColumnID]; ok {
-				delete(l.columnNullable, normalizedOriginalColumnID)
-			}
+			delete(l.columnNullable, normalizedOriginalColumnID)
 			break
 		}
 	}
@@ -127,9 +125,7 @@ func (l *columnNoNullChecker) EnterOut_of_line_constraint(ctx *parser.Out_of_lin
 		for _, columnListInParentheses := range ctx.AllColumn_list_in_parentheses() {
 			for _, column := range columnListInParentheses.Column_list().AllColumn_name() {
 				normalizedOriginalColumnID := normalizeObjectNamePart(column.Id_())
-				if _, ok := l.columnNullable[normalizedOriginalColumnID]; ok {
-					delete(l.columnNullable, normalizedOriginalColumnID)
-				}
+				delete(l.columnNullable, normalizedOriginalColumnID)
 			}
 		}
 	}
@@ -162,7 +158,11 @@ func (l *columnNoNullChecker) EnterTable_column_action(ctx *parser.Table_column_
 	}
 	if ctx.ADD() != nil {
 		normalizedNewColumnName := normalizeObjectNamePart(ctx.Column_name(0).Id_())
-		if !(ctx.Inline_constraint() != nil && (ctx.Inline_constraint().PRIMARY() != nil || (ctx.Inline_constraint().Null_not_null() != nil && ctx.Inline_constraint().Null_not_null().NOT() != nil))) {
+		inlineConstraintHasPK := ctx.Inline_constraint() != nil && ctx.Inline_constraint().PRIMARY() != nil
+		inlineConstraintHasNotNull := ctx.Inline_constraint() != nil && (ctx.Inline_constraint().Null_not_null() != nil && ctx.Inline_constraint().Null_not_null().NOT() != nil)
+		hasNotNull := ctx.Null_not_null() != nil && ctx.Null_not_null().NOT() != nil
+
+		if !(inlineConstraintHasPK || inlineConstraintHasNotNull || hasNotNull) {
 			l.columnNullable[normalizedNewColumnName] = ctx.GetStart().GetLine()
 		}
 		return
@@ -173,5 +173,36 @@ func (l *columnNoNullChecker) EnterTable_column_action(ctx *parser.Table_column_
 			l.columnNullable[normalizedOriginalColumnName] = ctx.GetStart().GetLine()
 		}
 		return
+	}
+}
+
+// EnterAlter_table_alter_column is called when production alter_table_alter_column is entered.
+func (l *columnNoNullChecker) EnterAlter_table_alter_column(ctx *parser.Alter_table_alter_columnContext) {
+	l.currentOriginalTableName = ctx.Object_name().GetText()
+}
+
+// ExitAlter_table_alter_column is called when production alter_table_alter_column is exited.
+func (l *columnNoNullChecker) ExitAlter_table_alter_column(*parser.Alter_table_alter_columnContext) {
+	for normalizedColumnName, columnNullableLine := range l.columnNullable {
+		l.adviceList = append(l.adviceList, advisor.Advice{
+			Status:  l.level,
+			Code:    advisor.ColumnCannotNull,
+			Title:   l.title,
+			Content: fmt.Sprintf("After dropping NOT NULL of column %s, it will be nullable, which is not allowed.", normalizedColumnName),
+			Line:    columnNullableLine,
+		})
+	}
+	l.currentOriginalTableName = ""
+	l.columnNullable = make(map[string]int)
+}
+
+// EnterAlter_column_decl is called when production alter_column_decl is entered.
+func (l *columnNoNullChecker) EnterAlter_column_decl(ctx *parser.Alter_column_declContext) {
+	if l.currentOriginalTableName == "" {
+		return
+	}
+	normalizedNewColumnName := normalizeObjectNamePart(ctx.Column_name().Id_())
+	if ctx.Alter_column_opts().DROP() != nil && ctx.Alter_column_opts().NOT() != nil && ctx.Alter_column_opts().NULL_() != nil {
+		l.columnNullable[normalizedNewColumnName] = ctx.GetStart().GetLine()
 	}
 }
