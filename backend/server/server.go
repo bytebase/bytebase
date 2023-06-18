@@ -113,6 +113,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	// Register oracle advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
+	// Register snowflake advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 
