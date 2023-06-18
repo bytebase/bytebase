@@ -420,6 +420,9 @@ const (
 
 	// SnowflakeIdentifierCase is an advisor type for Snowflake identifier case.
 	SnowflakeIdentifierCase Type = "bb.plugin.advisor.snowflake.naming.identifier-case"
+
+	// SnowflakeColumnNoNull is an advisor type for Snowflake column no NULL value.
+	SnowflakeColumnNoNull Type = "bb.plugin.advisor.snowflake.column.no-null"
 )
 
 // Advice is the result of an advisor.
