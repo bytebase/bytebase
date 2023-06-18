@@ -22,6 +22,7 @@ ruleList:
       - POSTGRES
       - ORACLE
       - OCEANBASE
+      - SNOWFLAKE
     componentList: []
   - type: table.no-foreign-key
     category: TABLE
@@ -31,6 +32,7 @@ ruleList:
       - POSTGRES
       - ORACLE
       - OCEANBASE
+      - SNOWFLAKE
     componentList: []
   - type: table.drop-naming-convention
     category: TABLE
@@ -84,6 +86,7 @@ ruleList:
       - POSTGRES
       - ORACLE
       - OCEANBASE
+      - SNOWFLAKE
     componentList: []
   - type: statement.where.no-leading-wildcard-like
     category: STATEMENT
@@ -193,6 +196,7 @@ ruleList:
       - POSTGRES
       - ORACLE
       - OCEANBASE
+      - SNOWFLAKE
     componentList:
       - key: format
         payload:
@@ -312,16 +316,19 @@ ruleList:
     category: NAMING
     engineList:
       - ORACLE
+      - SNOWFLAKE
     componentList: []
   - type: naming.identifier.no-keyword
     category: NAMING
     engineList:
       - ORACLE
+      - SNOWFLAKE
     componentList: []
   - type: naming.identifier.case
     category: NAMING
     engineList:
       - ORACLE
+      - SNOWFLAKE
     componentList:
       - key: upper
         payload:
@@ -335,6 +342,7 @@ ruleList:
       - POSTGRES
       - ORACLE
       - OCEANBASE
+      - SNOWFLAKE
     componentList:
       - key: list
         payload:
@@ -443,6 +451,7 @@ ruleList:
     category: COLUMN
     engineList:
       - ORACLE
+      - SNOWFLAKE
     componentList:
       - key: number
         payload:
