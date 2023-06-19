@@ -1,7 +1,15 @@
 <template>
   <div class="w-full flex flex-col justify-start items-start gap-y-4">
     <div class="w-full">
-      <span>{{ $t("project.members.select-users") }}</span>
+      <div class="flex items-center justify-between">
+        {{ $t("project.members.select-users") }}
+
+        <NButton v-if="allowRemove" text @click="$emit('remove')">
+          <template #icon>
+            <heroicons:trash class="w-4 h-4" />
+          </template>
+        </NButton>
+      </div>
       <UserSelect
         v-model:users="state.userUidList"
         class="mt-2"
@@ -64,6 +72,11 @@ import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSel
 const props = defineProps<{
   project: ComposedProject;
   binding: Binding;
+  allowRemove: boolean;
+}>();
+
+defineEmits<{
+  (event: "remove"): void;
 }>();
 
 interface LocalState {
