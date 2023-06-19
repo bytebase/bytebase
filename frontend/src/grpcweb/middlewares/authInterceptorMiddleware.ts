@@ -6,7 +6,7 @@ import { router } from "@/router";
 
 export type IgnoreErrorsOptions = {
   /**
-   * if set to true, will NOT handle specified status codes.
+   * If set, will NOT handle specified status codes is this array.
    */
   ignoredCodes?: Status[];
 };
