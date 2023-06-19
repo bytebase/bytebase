@@ -15,6 +15,8 @@ export const useSQLStore = defineStore("sql", () => {
   ): Promise<SQLResultSetV1> => {
     try {
       const response = await sqlServiceClient.query(params, {
+        // Skip global error handling since we will handle and display
+        // errors manually.
         ignoredCodes: [Status.PERMISSION_DENIED],
         silent: true,
       });
