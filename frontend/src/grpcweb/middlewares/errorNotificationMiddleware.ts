@@ -1,4 +1,4 @@
-import { ClientError, ServerError } from "nice-grpc-common";
+import { ClientError, ServerError, Status } from "nice-grpc-common";
 
 import { pushNotification } from "@/store";
 import { t } from "@/plugins/i18n";
@@ -9,6 +9,12 @@ export type SilentRequestOptions = {
    * if set to true, will NOT show push notifications when request error occurs.
    */
   silent?: boolean;
+
+  /**
+   * If set, will NOT handle specified status codes is this array.
+   * Default to [NOT_FOUND], can be override.
+   */
+  ignoredCodes?: Status[];
 };
 
 /**
@@ -33,10 +39,15 @@ export const errorNotificationMiddleware: ClientMiddleware<SilentRequestOptions>
 
     const handleError = async (error: unknown) => {
       if (error instanceof ClientError || error instanceof ServerError) {
-        maybePushNotification(
-          `Code ${error.code}: ${error.message}`,
-          error.details
-        );
+        const { ignoredCodes = [Status.NOT_FOUND] } = options;
+        if (ignoredCodes.includes(error.code)) {
+          // ignored
+        } else {
+          maybePushNotification(
+            `Code ${error.code}: ${error.message}`,
+            error.details
+          );
+        }
       } else {
         // Other non-grpc errors.
         // E.g,. failed to encode protobuf for request data.
