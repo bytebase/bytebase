@@ -96,8 +96,8 @@ export function inboxMessage_StatusToJSON(object: InboxMessage_Status): string {
 }
 
 export interface InboxSummary {
-  hasUnread: boolean;
-  hasUnreadError: boolean;
+  unread: number;
+  unreadError: number;
 }
 
 function createBaseListInboxRequest(): ListInboxRequest {
@@ -464,16 +464,16 @@ export const InboxMessage = {
 };
 
 function createBaseInboxSummary(): InboxSummary {
-  return { hasUnread: false, hasUnreadError: false };
+  return { unread: 0, unreadError: 0 };
 }
 
 export const InboxSummary = {
   encode(message: InboxSummary, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.hasUnread === true) {
-      writer.uint32(8).bool(message.hasUnread);
+    if (message.unread !== 0) {
+      writer.uint32(8).int32(message.unread);
     }
-    if (message.hasUnreadError === true) {
-      writer.uint32(16).bool(message.hasUnreadError);
+    if (message.unreadError !== 0) {
+      writer.uint32(16).int32(message.unreadError);
     }
     return writer;
   },
@@ -490,14 +490,14 @@ export const InboxSummary = {
             break;
           }
 
-          message.hasUnread = reader.bool();
+          message.unread = reader.int32();
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.hasUnreadError = reader.bool();
+          message.unreadError = reader.int32();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -510,15 +510,15 @@ export const InboxSummary = {
 
   fromJSON(object: any): InboxSummary {
     return {
-      hasUnread: isSet(object.hasUnread) ? Boolean(object.hasUnread) : false,
-      hasUnreadError: isSet(object.hasUnreadError) ? Boolean(object.hasUnreadError) : false,
+      unread: isSet(object.unread) ? Number(object.unread) : 0,
+      unreadError: isSet(object.unreadError) ? Number(object.unreadError) : 0,
     };
   },
 
   toJSON(message: InboxSummary): unknown {
     const obj: any = {};
-    message.hasUnread !== undefined && (obj.hasUnread = message.hasUnread);
-    message.hasUnreadError !== undefined && (obj.hasUnreadError = message.hasUnreadError);
+    message.unread !== undefined && (obj.unread = Math.round(message.unread));
+    message.unreadError !== undefined && (obj.unreadError = Math.round(message.unreadError));
     return obj;
   },
 
@@ -528,8 +528,8 @@ export const InboxSummary = {
 
   fromPartial(object: DeepPartial<InboxSummary>): InboxSummary {
     const message = createBaseInboxSummary();
-    message.hasUnread = object.hasUnread ?? false;
-    message.hasUnreadError = object.hasUnreadError ?? false;
+    message.unread = object.unread ?? 0;
+    message.unreadError = object.unreadError ?? 0;
     return message;
   },
 };

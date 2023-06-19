@@ -81,7 +81,7 @@ message InboxMessage {
 }
 
 message InboxSummary {
-  bool has_unread = 1;
+  int32 unread = 1;
 
-  bool has_unread_error = 2;
+  int32 unread_error = 2;
 }

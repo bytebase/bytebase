@@ -3850,8 +3850,8 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| has_unread | [bool](#bool) |  |  |
-| has_unread_error | [bool](#bool) |  |  |
+| unread | [int32](#int32) |  |  |
+| unread_error | [int32](#int32) |  |  |
 
 
 
