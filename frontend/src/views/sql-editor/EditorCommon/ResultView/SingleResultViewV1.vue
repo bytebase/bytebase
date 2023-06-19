@@ -204,7 +204,7 @@ const showSearchFeature = computed(() => {
 });
 
 const showExportButton = computed(() => {
-  if (!featureToRef("bb.feature.custom-role").value) {
+  if (!featureToRef("bb.feature.dba-workflow").value) {
     return true;
   }
   return hasWorkspacePermissionV1(
@@ -215,7 +215,7 @@ const showExportButton = computed(() => {
 
 const showRequestExportButton = computed(() => {
   return (
-    featureToRef("bb.feature.custom-role").value && !showExportButton.value
+    featureToRef("bb.feature.dba-workflow").value && !showExportButton.value
   );
 });
 
