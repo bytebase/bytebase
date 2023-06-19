@@ -184,7 +184,7 @@ const showModal = (status: Review_Approver_Status) => {
     case Review_Approver_Status.REJECTED:
       state.modal.title = t("custom-approval.issue-review.send-back-issue");
       state.modal.okText = t("custom-approval.issue-review.send-back");
-      state.modal.buttonStyle = "ERROR";
+      state.modal.buttonStyle = "PRIMARY";
       state.modal.reviewType = "SEND_BACK";
       break;
     case Review_Approver_Status.PENDING:
