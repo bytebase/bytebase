@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -676,6 +677,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
+	e.Any("/bytebase.v1.SQLService/AdminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(mux)))
 	e.Any("/v1/*", echo.WrapHandler(mux))
 	// GRPC web proxy.
 	options := []grpcweb.Option{
