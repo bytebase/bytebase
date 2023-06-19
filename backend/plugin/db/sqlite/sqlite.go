@@ -111,7 +111,7 @@ func (driver *Driver) getDatabases() ([]string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, conn *sql.Conn, statement string, createDatabase bool) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
 	if createDatabase {
 		parts := strings.Split(statement, `'`)
 		if len(parts) != 3 {
@@ -129,7 +129,7 @@ func (driver *Driver) Execute(ctx context.Context, conn *sql.Conn, statement str
 		return 0, nil
 	}
 
-	tx, err := conn.BeginTx(ctx, nil)
+	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}

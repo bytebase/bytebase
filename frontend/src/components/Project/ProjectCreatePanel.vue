@@ -67,7 +67,7 @@
                 />
                 <label class="label">{{ $t("project.mode.standard") }}</label>
               </div>
-              <div class="radio">
+              <div class="radio space-x-1">
                 <input
                   v-model="state.project.tenantMode"
                   tabindex="-1"
@@ -75,7 +75,10 @@
                   class="btn"
                   :value="TenantMode.TENANT_MODE_ENABLED"
                 />
-                <label class="label">{{ $t("project.mode.tenant") }}</label>
+                <label class="label">{{ $t("project.mode.batch") }}</label>
+                <LearnMoreLink
+                  url="https://www.bytebase.com/docs/concepts/batch-mode/?source=console"
+                />
                 <FeatureBadge
                   feature="bb.feature.multi-tenancy"
                   class="text-accent"

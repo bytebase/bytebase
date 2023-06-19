@@ -493,7 +493,7 @@ type Driver interface {
 	GetType() Type
 	GetDB() *sql.DB
 	// Execute will execute the statement.
-	Execute(ctx context.Context, conn *sql.Conn, statement string, createDatabase bool) (int64, error)
+	Execute(ctx context.Context, statement string, createDatabase bool, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
 	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
 	// Used for execute readonly SELECT statement
@@ -566,6 +566,12 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 	}
 
 	return driver, nil
+}
+
+// ExecuteOptions is the options for execute.
+type ExecuteOptions struct {
+	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
+	EndTransactionFunc func(tx *sql.Tx) error
 }
 
 // FormatParamNameInQuestionMark formats the param name in question mark.

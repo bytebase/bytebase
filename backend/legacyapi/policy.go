@@ -366,6 +366,15 @@ func FlattenSQLReviewRulesWithEngine(policy *advisor.SQLReviewPolicy) *advisor.S
 					Payload: rule.Payload,
 				})
 			}
+			if advisor.RuleExists(rule.Type, db.Snowflake) {
+				ruleList = append(ruleList, &advisor.SQLReviewRule{
+					Type:    rule.Type,
+					Level:   rule.Level,
+					Engine:  db.Snowflake,
+					Comment: rule.Comment,
+					Payload: rule.Payload,
+				})
+			}
 		}
 	}
 

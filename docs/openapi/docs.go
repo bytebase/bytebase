@@ -62,7 +62,8 @@ const docTemplate = `{
                             "MYSQL",
                             "POSTGRES",
                             "TIDB",
-                            "OCEANBASE"
+                            "OCEANBASE",
+                            "SNOWFLAKE"
                         ],
                         "description": "The database type. Required if the port, host and database name is not specified.",
                         "name": "databaseType",
