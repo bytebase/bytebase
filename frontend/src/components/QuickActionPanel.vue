@@ -172,7 +172,7 @@
         </h3>
       </div>
 
-      <template v-if="hasCustomRoleFeature">
+      <template v-if="hasDBAWorkflowFeature">
         <div
           v-if="quickAction === 'quickaction.bb.issue.grant.request.querier'"
           class="flex flex-col items-center w-24"
@@ -321,8 +321,8 @@ const route = useRoute();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionV1Store();
 
-const hasCustomRoleFeature = computed(() => {
-  return subscriptionStore.hasFeature("bb.feature.custom-role");
+const hasDBAWorkflowFeature = computed(() => {
+  return subscriptionStore.hasFeature("bb.feature.dba-workflow");
 });
 
 const state = reactive<LocalState>({

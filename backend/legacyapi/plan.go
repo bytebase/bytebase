@@ -84,7 +84,8 @@ const (
 	//
 	// - Developers can't create and view instances since they are exclusively by DBA, they can
 	//   only access database.
-	// - Developers can submit troubleshooting issue.
+	// - Developers can't create database.
+	// - Developers can't query and export data directly. They must request corresponding permissions first.
 	FeatureDBAWorkflow FeatureType = "bb.feature.dba-workflow"
 	// FeatureIMApproval integrates IM approval into Bytebase, allowing users approve Bytebase issues on the IM.
 	FeatureIMApproval FeatureType = "bb.feature.im.approval"
