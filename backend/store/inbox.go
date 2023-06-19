@@ -26,8 +26,8 @@ type InboxMessage struct {
 // This is used by the frontend to render the inbox sidebar item without fetching the actual inbox items.
 // This returns json instead of jsonapi since it't not dealing with a particular resource.
 type InboxSummaryMessage struct {
-	HasUnread      bool
-	HasUnreadError bool
+	Unread      int
+	UnreadError int
 }
 
 // FindInboxMessage is the API message for finding the inbox.
@@ -111,25 +111,23 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*InboxSu
 	}
 	defer tx.Rollback()
 
-	query := `SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = $1 AND status = 'UNREAD')`
+	query := `SELECT COUNT(*) FROM inbox WHERE receiver_id = $1 AND status = 'UNREAD'`
 	var inboxSummary InboxSummaryMessage
-	if err := tx.QueryRowContext(ctx, query, principalID).Scan(&inboxSummary.HasUnread); err != nil {
+	if err := tx.QueryRowContext(ctx, query, principalID).Scan(&inboxSummary.Unread); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
 	}
 
-	if inboxSummary.HasUnread {
-		query2 := `SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = $1 AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')`
-		if err := tx.QueryRowContext(ctx, query2, principalID).Scan(&inboxSummary.HasUnreadError); err != nil {
+	if inboxSummary.Unread > 0 {
+		query2 := `SELECT COUNT(*) FROM inbox, activity WHERE inbox.receiver_id = $1 AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR'`
+		if err := tx.QueryRowContext(ctx, query2, principalID).Scan(&inboxSummary.UnreadError); err != nil {
 			if err == sql.ErrNoRows {
 				return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
 			}
 			return nil, err
 		}
-	} else {
-		inboxSummary.HasUnreadError = false
 	}
 
 	return &inboxSummary, nil

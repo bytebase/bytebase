@@ -91,26 +91,18 @@ export default {
 
     watchEffect(prepareInboxList);
 
-    const markAllAsRead = () => {
-      let count = state.unreadList.length;
-      const inboxList = state.unreadList.map((item) => item);
-
-      inboxList.forEach((item) => {
-        item.status = InboxMessage_Status.STATUS_READ;
-        inboxV1Store.patchInbox(item).then(() => {
-          const i = state.unreadList.findIndex(
-            (unreadItem) => unreadItem.name == item.name
-          );
-          if (i >= 0) {
-            state.unreadList.splice(i, 1);
-          }
-          count--;
-          if (count == 0) {
-            inboxV1Store.fetchInboxSummary();
-          }
-          state.readList.push(item);
-        });
-      });
+    const markAllAsRead = async () => {
+      const list = await Promise.all(
+        state.unreadList.map(async (item) => {
+          item.status = InboxMessage_Status.STATUS_READ;
+          // TODO: use batch instead.
+          await inboxV1Store.patchInbox(item);
+          return item;
+        })
+      );
+      state.readList.push(...list);
+      state.unreadList = [];
+      await inboxV1Store.fetchInboxSummary();
     };
 
     const viewOlder = () => {
