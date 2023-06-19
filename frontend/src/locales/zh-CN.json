@@ -2441,7 +2441,7 @@
       "external-approval": {
         "self": "外部审批",
         "delete": "删除外部审批节点？",
-        "endpoint": "端点",
+        "endpoint": "Endpoint",
         "view-node": "查看外部审批节点",
         "create-node": "新建外部审批节点",
         "edit-node": "编辑外部审批节点"
