@@ -125,7 +125,26 @@ const handleExecute = async (
   }
 
   console.log("query", { query, config, option });
-  queryState.value.controller.events.emit("query", { query, config, option });
+  // queryState.value.controller.events.emit("query", { query, config, option });
+
+  const url = new URL(
+    `${window.location.origin}/bytebase.v1.SQLService/AdminExecute`
+  );
+  url.protocol = url.protocol.replace("http", "ws");
+  const ws = new WebSocket(url);
+  // ws.binaryType = "arraybuffer";
+
+  ws.addEventListener("open", (event) => {
+    console.log("ws open");
+    // ws.send("content-type: application/json");
+  });
+  ws.addEventListener("message", (event) => {
+    console.log("ws recv message", event.data);
+  });
+
+  ws.addEventListener("close", (event) => {
+    console.log("ws close", event.wasClean, event.reason, event.code);
+  });
 };
 
 const handleClearScreen = () => {

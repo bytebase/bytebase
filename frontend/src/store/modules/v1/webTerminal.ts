@@ -107,22 +107,21 @@ const createStreamingQueryController = (tab: TabInfo) => {
       })
     );
 
-    let response$: Observable<AdminExecuteResponse>;
+    let response$: Observable<AdminExecuteResponse> = from([]);
     try {
-      const requestParamsStream = toAsyncIterable(requestParams$);
-
-      const responseStream = sqlStreamingServiceClient.adminExecute(
-        requestParamsStream,
-        {
-          // metadata: new Metadata().set(
-          //   "cookie",
-          //   `access-token=${accessTokenCopiedFromCookie}; refresh-token=${refreshTokenCopiedFromCookie}`
-          // ),
-          signal: abortController.signal,
-        }
-      );
-      controller.abort = abortController.abort.bind(abortController);
-      response$ = from(responseStream);
+      // const requestParamsStream = toAsyncIterable(requestParams$);
+      // const responseStream = sqlStreamingServiceClient.adminExecute(
+      //   requestParamsStream,
+      //   {
+      //     // metadata: new Metadata().set(
+      //     //   "cookie",
+      //     //   `access-token=${accessTokenCopiedFromCookie}; refresh-token=${refreshTokenCopiedFromCookie}`
+      //     // ),
+      //     signal: abortController.signal,
+      //   }
+      // );
+      // controller.abort = abortController.abort.bind(abortController);
+      // response$ = from(responseStream);
     } catch (err) {
       pushNotification({
         module: "bytebase",
