@@ -126,16 +126,21 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 			if creatorEmail == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
 			}
-			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-				Email: &creatorEmail,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, creatorEmail, err.Error())
+			if creatorEmail == api.SystemBotEmail {
+				botID := api.SystemBotID
+				activityFind.CreatorUID = &botID
+			} else {
+				user, err := s.store.GetUser(ctx, &store.FindUserMessage{
+					Email: &creatorEmail,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, creatorEmail, err.Error())
+				}
+				if user == nil {
+					return nil, errors.Errorf("cannot found user %s", creatorEmail)
+				}
+				activityFind.CreatorUID = &user.ID
 			}
-			if user == nil {
-				return nil, errors.Errorf("cannot found user %s", creatorEmail)
-			}
-			activityFind.CreatorUID = &user.ID
 		case "resource":
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "resource" filter`)
