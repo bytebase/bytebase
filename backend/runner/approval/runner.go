@@ -302,10 +302,14 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 		return nil, err
 	}
 	for _, rule := range approvalSetting.Rules {
-		if rule.Expression == nil || rule.Expression.Expr == nil {
+		if rule.Condition == nil || rule.Condition.Expression == "" {
 			continue
 		}
-		ast := cel.ParsedExprToAst(rule.Expression)
+		ast, issues := e.Compile(rule.Condition.Expression)
+		if issues != nil && issues.Err() != nil {
+			return nil, issues.Err()
+		}
+
 		prg, err := e.Program(ast)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to compile expression")
