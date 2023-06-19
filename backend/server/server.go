@@ -677,7 +677,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(mux)))
+	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(mux, wsproxy.WithTokenCookieName("access-token"))))
 	e.Any("/v1/*", echo.WrapHandler(mux))
 	// GRPC web proxy.
 	options := []grpcweb.Option{
