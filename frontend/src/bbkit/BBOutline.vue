@@ -46,7 +46,7 @@
         class="outline-item group flex justify-between pr-1 py-1"
         :class="'pl-' + (4 + level * 3)"
       >
-        <span class="truncate">{{ item.name }}</span>
+        <span class="truncate" :title="item.name">{{ item.name }}</span>
         <button
           v-if="allowDelete && index == state.hoverIndex"
           class="focus:outline-none"
@@ -55,7 +55,9 @@
           <heroicons-solid:x class="w-4 h-4 hover:text-control-hover" />
         </button>
       </router-link>
-      <span v-else class="pl-1 py-1 truncate">{{ item.name }}</span>
+      <span v-else class="pl-1 py-1 truncate" :title="item.name">{{
+        item.name
+      }}</span>
     </div>
   </div>
 </template>
