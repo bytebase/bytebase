@@ -400,7 +400,7 @@ const saveEdit = async () => {
   if (userPatch.phone !== user.value.phone) {
     updateMask.push("phone");
   }
-  if (userPatch.password !== user.value.email) {
+  if (userPatch.password !== "") {
     updateMask.push("password");
   }
   try {
