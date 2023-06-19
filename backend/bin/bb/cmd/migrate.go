@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
+
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 func newMigrateCmd() *cobra.Command {
@@ -70,12 +72,7 @@ func migrateDatabase(ctx context.Context, u *dburl.URL, sqlReader io.Reader) err
 	if _, err := io.Copy(&buf, sqlReader); err != nil {
 		return errors.Wrap(err, "failed to read sql file")
 	}
-	conn, err := driver.GetDB().Conn(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	if _, err := driver.Execute(ctx, conn, buf.String(), false /* createDatabase */); err != nil {
+	if _, err := driver.Execute(ctx, buf.String(), false /* createDatabase */, db.ExecuteOptions{}); err != nil {
 		return errors.Wrap(err, "failed to migrate database")
 	}
 	return nil

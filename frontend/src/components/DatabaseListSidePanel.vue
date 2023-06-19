@@ -99,7 +99,7 @@ const databaseListByEnvironment = computed(() => {
     if (dbList) {
       dbList.push({
         id: `bb.database.${database.uid}`,
-        name: database.databaseName,
+        name: `${database.databaseName} (${database.instanceEntity.title})`,
         link: `/db/${databaseV1Slug(database)}`,
       });
     }
@@ -148,7 +148,7 @@ const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
         name: project.title,
         childList: databaseList.map<BBOutlineItem>((db) => ({
           id: `bb.project.${project.uid}.database.${db.databaseName}`,
-          name: db.databaseName,
+          name: `${db.databaseName} (${db.instanceEntity.title})`,
           link: `/project/${projectV1Slug(project)}#databases`,
         })),
         childCollapse: true,

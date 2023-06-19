@@ -141,7 +141,7 @@ func (*Driver) GetDB() *sql.DB {
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (d *Driver) Execute(ctx context.Context, _ *sql.Conn, statement string, createDatabase bool) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
 	if createDatabase {
 		return 0, errors.New("redis: cannot create database")
 	}

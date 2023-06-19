@@ -915,6 +915,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLColumnNoNull, nil
 		case db.Oracle:
 			return OracleColumnNoNull, nil
+		case db.Snowflake:
+			return SnowflakeColumnNoNull, nil
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {

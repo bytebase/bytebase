@@ -174,10 +174,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	defer defaultDriver.Close(ctx)
 	// Create a database with release latest schema.
 	databaseName := "hidb"
-	conn, err := defaultDriver.GetDB().Conn(ctx)
-	require.NoError(t, err)
-	defer conn.Close()
-	_, err = defaultDriver.Execute(ctx, conn, fmt.Sprintf("CREATE DATABASE %s", databaseName), true)
+	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true, dbdriver.ExecuteOptions{})
 	require.NoError(t, err)
 
 	metadataConnConfig := connCfg
