@@ -4231,6 +4231,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| activation | [bool](#bool) |  |  |
 
 
 
