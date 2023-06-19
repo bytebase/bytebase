@@ -78,8 +78,8 @@ func (s *InboxService) GetInboxSummary(ctx context.Context, _ *v1pb.GetInboxSumm
 	}
 
 	return &v1pb.InboxSummary{
-		HasUnread:      summary.HasUnread,
-		HasUnreadError: summary.HasUnreadError,
+		Unread:      int32(summary.Unread),
+		UnreadError: int32(summary.UnreadError),
 	}, nil
 }
 

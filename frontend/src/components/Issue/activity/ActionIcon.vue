@@ -58,7 +58,7 @@
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
         <PrincipalAvatar
-          :principal="activity.creator"
+          :username="user?.title"
           override-class="w-7 h-7 font-medium"
           override-text-size="0.8rem"
         />

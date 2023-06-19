@@ -6,6 +6,7 @@ import {
   QueryRequest,
 } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
 
 export const useSQLStore = defineStore("sql", () => {
@@ -13,7 +14,12 @@ export const useSQLStore = defineStore("sql", () => {
     params: QueryRequest
   ): Promise<SQLResultSetV1> => {
     try {
-      const response = await sqlServiceClient.query(params);
+      const response = await sqlServiceClient.query(params, {
+        // Skip global error handling since we will handle and display
+        // errors manually.
+        ignoredCodes: [Status.PERMISSION_DENIED],
+        silent: true,
+      });
 
       return {
         error: "",

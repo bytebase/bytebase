@@ -90,7 +90,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { NButton, NInput } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 
@@ -99,6 +99,7 @@ import {
   Expr as CELExpr,
   ParsedExpr,
 } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/type/expr";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { useRiskCenterContext } from "../context";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
@@ -116,7 +117,6 @@ import {
   convertCELStringToParsedExpr,
   convertParsedExprToCELString,
 } from "@/utils";
-import { watch } from "vue";
 
 type LocalState = {
   risk: Risk;
@@ -177,14 +177,15 @@ const handleUpsert = async () => {
   if (!state.value.expr) return;
 
   const risk = cloneDeep(state.value.risk);
-  if (!risk.condition) return;
 
   const expression = await convertParsedExprToCELString(
     ParsedExpr.fromJSON({
       expr: buildCELExpr(state.value.expr),
     })
   );
-  risk.condition.expression = expression;
+  risk.condition = Expr.fromJSON({
+    expression,
+  });
   emit("save", risk);
 };
 

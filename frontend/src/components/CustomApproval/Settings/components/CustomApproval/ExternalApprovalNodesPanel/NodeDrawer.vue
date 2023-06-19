@@ -26,10 +26,18 @@
         </div>
 
         <div class="space-y-1">
-          <label class="block font-medium text-control space-x-1">
-            <RequiredStar />
-            {{ $t("custom-approval.approval-flow.external-approval.endpoint") }}
-          </label>
+          <div class="flex space-x-2">
+            <label class="block font-medium text-control space-x-1">
+              <RequiredStar />
+              {{
+                $t("custom-approval.approval-flow.external-approval.endpoint")
+              }}
+            </label>
+            <LearnMoreLink
+              url="https://www.bytebase.com/docs/api/external-approval/?source=console"
+              class="text-sm"
+            />
+          </div>
           <div>
             <NInput
               v-model:value="state.node.endpoint"
@@ -40,7 +48,7 @@
               }"
               :disabled="!allowAdmin"
               :allow-input="trimEndpoint"
-              placeholder="https://your-approval-flow-system.com/api...."
+              placeholder="https://approval.acme.com/api/..."
               style="width: 100%"
             />
           </div>

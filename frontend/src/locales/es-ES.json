@@ -2426,7 +2426,7 @@
       "external-approval": {
         "self": "Aprobación externa",
         "delete": "¿Eliminar nodo de aprobación externo?",
-        "endpoint": "punto final",
+        "endpoint": "Endpoint",
         "view-node": "Ver nodo de aprobación externo",
         "create-node": "Crear nodo de aprobación externo",
         "edit-node": "Editar nodo de aprobación externo"
