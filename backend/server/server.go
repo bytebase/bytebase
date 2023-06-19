@@ -360,7 +360,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			// Skip grpc and webhook calls.
 			return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
 				strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix) ||
-				strings.HasPrefix(c.Request().URL.Path, "/api/sheet/")
+				strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute")
 		},
 		Timeout: 30 * time.Second,
 	}))
@@ -677,7 +677,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	e.Any("/bytebase.v1.SQLService/AdminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(mux)))
+	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(mux)))
 	e.Any("/v1/*", echo.WrapHandler(mux))
 	// GRPC web proxy.
 	options := []grpcweb.Option{

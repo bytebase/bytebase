@@ -127,9 +127,7 @@ const handleExecute = async (
   console.log("query", { query, config, option });
   // queryState.value.controller.events.emit("query", { query, config, option });
 
-  const url = new URL(
-    `${window.location.origin}/bytebase.v1.SQLService/AdminExecute`
-  );
+  const url = new URL(`${window.location.origin}/v1:adminExecute`);
   url.protocol = url.protocol.replace("http", "ws");
   const ws = new WebSocket(url);
   // ws.binaryType = "arraybuffer";

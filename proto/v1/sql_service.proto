@@ -29,10 +29,7 @@ service SQLService {
     };
   }
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
-    option (google.api.http) = {
-      post: "/v1:adminExecute"
-      body: "*"
-    };
+    option (google.api.http) = {get: "/v1:adminExecute"};
   }
 }
 
