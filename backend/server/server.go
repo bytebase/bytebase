@@ -1072,7 +1072,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 			},
 		},
 		EnvironmentID: api.DefaultProdEnvironmentID,
-	}, userID)
+	}, userID, -1)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding instance")
 	}

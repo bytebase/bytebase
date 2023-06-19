@@ -181,7 +181,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 			EnvironmentID: instance.EnvironmentID,
 			ResourceID:    instance.ResourceID,
 			EngineVersion: &instanceMeta.Version,
-		}); err != nil {
+		}, -1); err != nil {
 			return nil, err
 		}
 	}
