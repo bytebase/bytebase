@@ -234,7 +234,11 @@ const clickInbox = (inbox: ComposedInbox) => {
   if (inbox.status == InboxMessage_Status.STATUS_UNREAD) {
     inbox.status = InboxMessage_Status.STATUS_READ;
     inboxV1Store.patchInbox(inbox).then(() => {
-      inboxV1Store.fetchInboxSummary();
+      inboxV1Store.updateInboxSummary({
+        unread: -1,
+        unreadError:
+          inbox.activity.level === LogEntity_Level.LEVEL_ERROR ? -1 : 0,
+      });
     });
   }
   const link = actionLink(inbox.activity);

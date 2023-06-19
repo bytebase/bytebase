@@ -119,7 +119,7 @@
         </div>
         <router-link to="/inbox" exact-active-class="">
           <span
-            v-if="inboxSummary.hasUnread"
+            v-if="inboxSummary.unread > 0"
             class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
