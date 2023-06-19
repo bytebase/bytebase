@@ -149,11 +149,59 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuer
 				if err != nil {
 					return nil, err
 				}
+				var fieldName string
+				if element.Column_alias() != nil {
+					fieldName = normalizeColumnAlias(element.Column_alias())
+				} else {
+					fieldName = element.Expression().GetText()
+				}
+				result = append(result, fieldInfo{
+					database:  extractor.currentDatabase,
+					name:      fieldName,
+					sensitive: sensitive,
+				})
 			}
 		}
 	}
 
 	return result, nil
+}
+
+func (extractor *sensitiveFieldExtractor) plsqlCheckFieldSensitive(schemaName string, tableName string, columnName string) bool {
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
+		field := extractor.outerSchemaInfo[i]
+		sameSchema := (schemaName == field.database)
+		sameTable := (tableName == field.table || tableName == "")
+		sameColumn := (columnName == field.name)
+		if sameSchema && sameTable && sameColumn {
+			return field.sensitive
+		}
+	}
+
+	for _, field := range extractor.fromFieldList {
+		sameSchema := (schemaName == field.database)
+		sameTable := (tableName == field.table || tableName == "")
+		sameColumn := (columnName == field.name)
+		if sameSchema && sameTable && sameColumn {
+			return field.sensitive
+		}
+
+	}
+
+	return false
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.ParserRuleContext) (bool, error) {
@@ -162,6 +210,40 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 	}
 
 	switch rule := ctx.(type) {
+	case plsql.IColumn_nameContext:
+		schemaName, tableName, columnName, err := plsqlNormalizeColumnName(extractor.currentDatabase, rule)
+		if err != nil {
+			return false, err
+		}
+		return extractor.plsqlCheckFieldSensitive(schemaName, tableName, columnName), nil
+	case plsql.IIdentifierContext:
+		id := parser.PLSQLNormalizeIdentifierContext(rule)
+		return extractor.plsqlCheckFieldSensitive("", "", id), nil
+	case plsql.IConstantContext:
+		list := rule.AllQuoted_string()
+		if len(list) == 1 && rule.DATE() == nil && rule.TIMESTAMP() == nil && rule.INTERVAL() == nil {
+			// This case may be a column name...
+			return extractor.plsqlIsSensitiveExpression(list[0])
+		}
+	case plsql.IVariable_nameContext:
+		if rule.Bind_variable() != nil {
+			// TODO: handle bind variable
+			return false, nil
+		}
+		var list []string
+		for _, item := range rule.AllId_expression() {
+			list = append(list, parser.PLSQLNormalizeIDExpression(item))
+		}
+		switch len(list) {
+		case 1:
+			return extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", list[0]), nil
+		case 2:
+			return extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, list[0], list[1]), nil
+		case 3:
+			return extractor.plsqlCheckFieldSensitive(list[0], list[1], list[2]), nil
+		default:
+			return false, nil
+		}
 	case plsql.IExpressionContext:
 		if rule.Logical_expression() != nil {
 			return extractor.plsqlIsSensitiveExpression(rule.Logical_expression())
@@ -170,6 +252,25 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		return extractor.plsqlIsSensitiveExpression(rule.Cursor_expression())
 	case plsql.ICursor_expressionContext:
 		return extractor.plsqlIsSensitiveExpression(rule.Subquery())
+	case plsql.IQuery_blockContext:
+		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
+		// So that the subquery can access the outer schema.
+		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
+		subqueryExtractor := &sensitiveFieldExtractor{
+			currentDatabase: extractor.currentDatabase,
+			schemaInfo:      extractor.schemaInfo,
+			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
+		}
+		fieldList, err := subqueryExtractor.plsqlExtractQueryBlock(rule)
+		if err != nil {
+			return false, err
+		}
+		for _, field := range fieldList {
+			if field.sensitive {
+				return true, nil
+			}
+		}
+		return false, nil
 	case plsql.ISubqueryContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
@@ -261,7 +362,6 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Unary_expression() != nil {
 			list = append(list, rule.Unary_expression())
 		}
-		// TODO(rebelice): Add model_expression_element
 		if rule.Model_expression_element() != nil {
 			list = append(list, rule.Model_expression_element())
 		}
@@ -280,7 +380,6 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Case_statement() != nil {
 			list = append(list, rule.Case_statement())
 		}
-		// TODO(rebelice): Add following rules
 		if rule.Quantified_expression() != nil {
 			list = append(list, rule.Quantified_expression())
 		}
@@ -296,7 +395,6 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Simple_case_statement() != nil {
 			list = append(list, rule.Simple_case_statement())
 		}
-		// TODO(rebelice): Add following rules
 		if rule.Searched_case_statement() != nil {
 			list = append(list, rule.Searched_case_statement())
 		}
@@ -309,13 +407,285 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		for _, item := range rule.AllSimple_case_when_part() {
 			list = append(list, item)
 		}
-		// TODO(rebelice): Add following rules
 		if rule.Case_else_part() != nil {
 			list = append(list, rule.Case_else_part())
 		}
 		return extractor.plsqlExistSensitiveExpression(list)
 	case plsql.ISimple_case_when_partContext:
-		// TODO(rebelice): implement this
+		// not handle seq_of_statements
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.ICase_else_partContext:
+		// not handle seq_of_statements
+		return extractor.plsqlExistSensitiveExpression([]antlr.ParserRuleContext{rule.Expression()})
+	case plsql.ISearched_case_statementContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllSearched_case_when_part() {
+			list = append(list, item)
+		}
+		if rule.Case_else_part() != nil {
+			list = append(list, rule.Case_else_part())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.ISearched_case_when_partContext:
+		// not handle seq_of_statements
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IQuantified_expressionContext:
+		var list []antlr.ParserRuleContext
+		if rule.Expression() != nil {
+			list = append(list, rule.Expression())
+		}
+		if rule.Select_only_statement() != nil {
+			list = append(list, rule.Select_only_statement())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.ISelect_only_statementContext:
+		// TODO(rebelice): handle CTE
+		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
+		// So that the subquery can access the outer schema.
+		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
+		subqueryExtractor := &sensitiveFieldExtractor{
+			currentDatabase: extractor.currentDatabase,
+			schemaInfo:      extractor.schemaInfo,
+			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
+		}
+		fieldList, err := subqueryExtractor.plsqlExtractSubquery(rule.Subquery())
+		if err != nil {
+			return false, err
+		}
+		for _, field := range fieldList {
+			if field.sensitive {
+				return true, nil
+			}
+		}
+		return false, nil
+	case plsql.IStandard_functionContext:
+		var list []antlr.ParserRuleContext
+		if rule.String_function() != nil {
+			list = append(list, rule.String_function())
+		}
+		if rule.Numeric_function_wrapper() != nil {
+			list = append(list, rule.Numeric_function_wrapper())
+		}
+		if rule.Json_function() != nil {
+			list = append(list, rule.Json_function())
+		}
+		if rule.Other_function() != nil {
+			list = append(list, rule.Other_function())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IString_functionContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		// TODO(rebelice): handle table_element
+		if rule.Table_element() != nil {
+			list = append(list, rule.Table_element())
+		}
+		if rule.Standard_function() != nil {
+			list = append(list, rule.Standard_function())
+		}
+		if rule.Concatenation() != nil {
+			list = append(list, rule.Concatenation())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.INumeric_function_wrapperContext:
+		var list []antlr.ParserRuleContext
+		if rule.Numeric_function() != nil {
+			list = append(list, rule.Numeric_function())
+		}
+		if rule.Single_column_for_loop() != nil {
+			list = append(list, rule.Single_column_for_loop())
+		}
+		if rule.Multi_column_for_loop() != nil {
+			list = append(list, rule.Multi_column_for_loop())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.INumeric_functionContext:
+		var list []antlr.ParserRuleContext
+		if rule.Expression() != nil {
+			list = append(list, rule.Expression())
+		}
+		if rule.Expressions() != nil {
+			list = append(list, rule.Expressions())
+		}
+		if rule.Concatenation() != nil {
+			list = append(list, rule.Concatenation())
+		}
+		// TODO(rebelice): handle over_clause
+	case plsql.IExpressionsContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.ISingle_column_for_loopContext:
+		var list []antlr.ParserRuleContext
+		if rule.Column_name() != nil {
+			list = append(list, rule.Column_name())
+		}
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IMulti_column_for_loopContext:
+		var list []antlr.ParserRuleContext
+		if rule.Paren_column_list() != nil {
+			list = append(list, rule.Paren_column_list())
+		}
+		if rule.Subquery() != nil {
+			list = append(list, rule.Subquery())
+		}
+		if rule.Expressions() != nil {
+			list = append(list, rule.Expressions())
+		}
+	case plsql.IJson_functionContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllJson_array_element() {
+			list = append(list, item)
+		}
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		if rule.Json_object_content() != nil {
+			list = append(list, rule.Json_object_content())
+		}
+	case plsql.IJson_array_elementContext:
+		var list []antlr.ParserRuleContext
+		if rule.Expression() != nil {
+			list = append(list, rule.Expression())
+		}
+		if rule.Json_function() != nil {
+			list = append(list, rule.Json_function())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IJson_object_contentContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllJson_object_entry() {
+			list = append(list, item)
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IJson_object_entryContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		if rule.Identifier() != nil {
+			list = append(list, rule.Identifier())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IOther_functionContext:
+		var list []antlr.ParserRuleContext
+		if rule.Function_argument_analytic() != nil {
+			list = append(list, rule.Function_argument_analytic())
+		}
+		if rule.Function_argument_modeling() != nil {
+			list = append(list, rule.Function_argument_modeling())
+		}
+		for _, item := range rule.AllConcatenation() {
+			list = append(list, item)
+		}
+		if rule.Subquery() != nil {
+			list = append(list, rule.Subquery())
+		}
+		if rule.Table_element() != nil {
+			list = append(list, rule.Table_element())
+		}
+		if rule.Function_argument() != nil {
+			list = append(list, rule.Function_argument())
+		}
+		if rule.Argument() != nil {
+			list = append(list, rule.Argument())
+		}
+		if rule.Expressions() != nil {
+			list = append(list, rule.Expressions())
+		}
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		// TODO: handle xmltable
+	case plsql.IFunction_argument_analyticContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllArgument() {
+			list = append(list, item)
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IArgumentContext:
+		return extractor.plsqlIsSensitiveExpression(rule.Expression())
+	case plsql.IFunction_argument_modelingContext:
+		// TODO(rebelice): implement standard function with USING
+		return false, nil
+	case plsql.ITable_elementContext:
+		// handled as column name
+		var str []string
+		for _, item := range rule.AllId_expression() {
+			str = append(str, parser.PLSQLNormalizeIDExpression(item))
+		}
+		switch len(str) {
+		case 1:
+			return extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", str[0]), nil
+		case 2:
+			return extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, str[0], str[1]), nil
+		case 3:
+			return extractor.plsqlCheckFieldSensitive(str[0], str[1], str[2]), nil
+		default:
+			return false, nil
+		}
+	case plsql.IFunction_argumentContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllArgument() {
+			list = append(list, item)
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IAtomContext:
+		var list []antlr.ParserRuleContext
+		if rule.Table_element() != nil {
+			list = append(list, rule.Table_element())
+		}
+		if rule.Subquery() != nil {
+			list = append(list, rule.Subquery())
+		}
+		for _, item := range rule.AllSubquery_operation_part() {
+			list = append(list, item)
+		}
+		if rule.Expressions() != nil {
+			list = append(list, rule.Expressions())
+		}
+		if rule.Constant() != nil {
+			list = append(list, rule.Constant())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.ISubquery_operation_partContext:
+		return extractor.plsqlIsSensitiveExpression(rule.Subquery_basic_elements())
+	case plsql.ISubquery_basic_elementsContext:
+		var list []antlr.ParserRuleContext
+		if rule.Query_block() != nil {
+			list = append(list, rule.Query_block())
+		}
+		if rule.Subquery() != nil {
+			list = append(list, rule.Subquery())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IModel_expression_elementContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllExpression() {
+			list = append(list, item)
+		}
+		for _, item := range rule.AllSingle_column_for_loop() {
+			list = append(list, item)
+		}
+		if rule.Multi_column_for_loop() != nil {
+			list = append(list, rule.Multi_column_for_loop())
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
 	}
 
 	return false, nil
@@ -432,6 +802,12 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractDmlTableExpressionClause(c
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlFindTableSchema(schemaName, tableName string) (db.TableSchema, error) {
+	if tableName == "DUAL" {
+		return db.TableSchema{
+			Name:       "DUAL",
+			ColumnList: []db.ColumnInfo{},
+		}, nil
+	}
 	// TODO(rebelice): handle CTE tables
 
 	for _, schema := range extractor.schemaInfo.DatabaseList {
@@ -446,6 +822,40 @@ func (extractor *sensitiveFieldExtractor) plsqlFindTableSchema(schemaName, table
 	}
 
 	return db.TableSchema{}, errors.Errorf("table %s.%s not found", schemaName, tableName)
+}
+
+func plsqlNormalizeColumnName(currentSchema string, ctx plsql.IColumn_nameContext) (string, string, string, error) {
+	var buf []string
+	buf = append(buf, parser.PLSQLNormalizeIdentifierContext(ctx.Identifier()))
+	for _, idExpression := range ctx.AllId_expression() {
+		buf = append(buf, parser.PLSQLNormalizeIDExpression(idExpression))
+	}
+	switch len(buf) {
+	case 1:
+		return currentSchema, "", buf[0], nil
+	case 2:
+		return currentSchema, buf[0], buf[1], nil
+	case 3:
+		return buf[0], buf[1], buf[2], nil
+	default:
+		return "", "", "", errors.Errorf("invalid column name: %s", ctx.GetText())
+	}
+}
+
+func normalizeColumnAlias(ctx plsql.IColumn_aliasContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if ctx.Identifier() != nil {
+		return parser.PLSQLNormalizeIdentifierContext(ctx.Identifier())
+	}
+
+	if ctx.Quoted_string() != nil {
+		return ctx.Quoted_string().GetText()
+	}
+
+	return ""
 }
 
 func normalizeTableAlias(ctx plsql.ITable_aliasContext) string {
