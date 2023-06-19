@@ -1260,6 +1260,29 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for field name.
+			statement:  "select a, t.b, root.t.c, d as d1 from t",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D1",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			statement:  "SELECT * FROM ROOT.T;",
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
@@ -1286,6 +1309,12 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			statement:  "explain plan for select 1 from dual;",
 			schemaInfo: &db.SensitiveSchemaInfo{},
 			fieldList:  nil,
+		},
+		{
+			// Test for no FROM DUAL.
+			statement:  "select 1 from dual;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  []db.SensitiveField{{Name: "1", Sensitive: false}},
 		},
 	}
 
