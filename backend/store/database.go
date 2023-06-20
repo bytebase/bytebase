@@ -285,7 +285,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 			project_id = EXCLUDED.project_id,
 			sync_status = EXCLUDED.sync_status,
 			last_successful_sync_ts = EXCLUDED.last_successful_sync_ts,
-			datashare = EXCLUDED.datashare,
+			datashare = EXCLUDED.datashare
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
