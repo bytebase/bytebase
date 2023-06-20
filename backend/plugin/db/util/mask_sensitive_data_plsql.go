@@ -94,9 +94,38 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubquery(ctx plsql.ISubque
 		return nil, nil
 	}
 
-	// TODO(rebelice): handle SET OPERATORS
+	leftField, err := extractor.plsqlExtractSubqueryBasicElements(subqueryBasicElements)
+	if err != nil {
+		return nil, err
+	}
 
-	return extractor.plsqlExtractSubqueryBasicElements(subqueryBasicElements)
+	for _, part := range ctx.AllSubquery_operation_part() {
+		leftField, err = extractor.plsqlExtractSubqueryOperationPart(part, leftField)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return leftField, nil
+}
+
+func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryOperationPart(ctx plsql.ISubquery_operation_partContext, leftField []fieldInfo) ([]fieldInfo, error) {
+	rightField, err := extractor.plsqlExtractSubqueryBasicElements(ctx.Subquery_basic_elements())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(leftField) != len(rightField) {
+		return nil, errors.Errorf("each UNION/INTERSECT/EXCEPT query must have the same number of columns")
+	}
+
+	for i, field := range rightField {
+		if field.sensitive {
+			leftField[i].sensitive = true
+		}
+	}
+
+	return leftField, nil
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryBasicElements(ctx plsql.ISubquery_basic_elementsContext) ([]fieldInfo, error) {
@@ -111,9 +140,8 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryBasicElements(ctx 
 	return nil, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContext) (result []fieldInfo, err error) {
 	var fromFieldList []fieldInfo
-	var err error
 	fromClause := ctx.From_clause()
 	if fromClause != nil {
 		fromFieldList, err = extractor.plsqlExtractFromClause(fromClause)
@@ -125,8 +153,6 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuer
 	defer func() {
 		extractor.fromFieldList = nil
 	}()
-
-	var result []fieldInfo
 
 	// Extract selected fields
 	selectedList := ctx.Selected_list()
@@ -254,6 +280,13 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		return extractor.plsqlExistSensitiveExpression(list)
 	case plsql.IGeneral_element_partContext:
+		// This case is for functions, such as CONCAT(a, b)
+		if rule.Function_argument() != nil {
+			_, sensitive, err := extractor.plsqlIsSensitiveExpression(rule.Function_argument())
+			return "", sensitive, err
+		}
+
+		// This case is for column names, such as root.a.b
 		var list []string
 		for _, item := range rule.AllId_expression() {
 			list = append(list, parser.PLSQLNormalizeIDExpression(item))
@@ -511,7 +544,6 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
 		}
-		// TODO(rebelice): handle table_element
 		if rule.Table_element() != nil {
 			list = append(list, rule.Table_element())
 		}
@@ -763,14 +795,112 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractFromClause(ctx plsql.IFrom
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractTableRef(ctx plsql.ITable_refContext) ([]fieldInfo, error) {
-	// TODO(rebelice): handle JOIN
-
 	tableRefAux := ctx.Table_ref_aux()
 	if tableRefAux == nil {
 		return nil, nil
 	}
 
-	return extractor.plsqlExtractTableRefAux(tableRefAux)
+	leftField, err := extractor.plsqlExtractTableRefAux(tableRefAux)
+	if err != nil {
+		return nil, err
+	}
+
+	joins := ctx.AllJoin_clause()
+	if len(joins) == 0 {
+		return leftField, nil
+	}
+
+	for _, join := range joins {
+		leftField, err = extractor.plsqlMergeJoin(leftField, join)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return leftField, nil
+}
+
+func (extractor *sensitiveFieldExtractor) plsqlMergeJoin(leftField []fieldInfo, ctx plsql.IJoin_clauseContext) ([]fieldInfo, error) {
+	rightField, err := extractor.plsqlExtractTableRefAux(ctx.Table_ref_aux())
+	if err != nil {
+		return nil, err
+	}
+
+	var result []fieldInfo
+	leftFieldMap := make(map[string]fieldInfo)
+	rightFieldMap := make(map[string]fieldInfo)
+	for _, field := range leftField {
+		leftFieldMap[field.name] = field
+	}
+	for _, field := range rightField {
+		rightFieldMap[field.name] = field
+	}
+
+	if ctx.NATURAL() != nil {
+		// Natural Join will merge the same column name field.
+		for _, field := range leftField {
+			if rField, exists := rightFieldMap[field.name]; exists {
+				result = append(result, fieldInfo{
+					database:  field.database,
+					table:     field.table,
+					name:      field.name,
+					sensitive: field.sensitive || rField.sensitive,
+				})
+			} else {
+				result = append(result, field)
+			}
+
+			for _, field := range rightField {
+				if _, exists := leftFieldMap[field.name]; !exists {
+					result = append(result, field)
+				}
+			}
+		}
+		return result, nil
+	}
+
+	// Why multi-USING part will be here?
+	if len(ctx.AllJoin_using_part()) != 0 {
+		usingMap := make(map[string]bool)
+		for _, part := range ctx.AllJoin_using_part() {
+			for _, column := range part.Paren_column_list().Column_list().AllColumn_name() {
+				_, _, name, err := plsqlNormalizeColumnName(extractor.currentDatabase, column)
+				if err != nil {
+					return nil, err
+				}
+				usingMap[name] = true
+			}
+		}
+
+		for _, field := range leftField {
+			_, existsInUsingMap := usingMap[field.name]
+			rField, existsInRightFieldMap := rightFieldMap[field.name]
+			if existsInUsingMap && existsInRightFieldMap {
+				result = append(result, fieldInfo{
+					database:  field.database,
+					table:     field.table,
+					name:      field.name,
+					sensitive: field.sensitive || rField.sensitive,
+				})
+			} else {
+				result = append(result, field)
+			}
+		}
+
+		for _, field := range rightField {
+			_, existsInUsingMap := usingMap[field.name]
+			_, existsInLeftFieldMap := leftFieldMap[field.name]
+			if existsInUsingMap && existsInLeftFieldMap {
+				continue
+			}
+			result = append(result, field)
+		}
+		return result, nil
+	}
+
+	result = append(result, leftField...)
+	result = append(result, rightField...)
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_auxContext) ([]fieldInfo, error) {
