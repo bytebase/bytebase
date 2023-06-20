@@ -330,7 +330,9 @@ CREATE TABLE instance (
     engine TEXT NOT NULL,
     engine_version TEXT NOT NULL DEFAULT '',
     external_link TEXT NOT NULL DEFAULT '',
-    resource_id TEXT NOT NULL
+    resource_id TEXT NOT NULL,
+    -- activation should set to be TRUE if users assign license to this instance.
+    activation BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
