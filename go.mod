@@ -14,7 +14,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da
 	github.com/bytebase/plsql-parser v0.0.0-20230612081829-80675dfad134
-	github.com/bytebase/snowsql-parser v0.0.0-20230618154456-022b48c8d22f
+	github.com/bytebase/snowsql-parser v0.0.0-20230619103403-e8242fa5f60b
 	github.com/casbin/casbin/v2 v2.66.2
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
