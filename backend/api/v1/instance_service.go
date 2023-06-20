@@ -118,10 +118,21 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return convertToInstance(instanceMessage), nil
 	}
 
+	instanceCountLimit := s.licenseService.LoadSubscription(ctx).InstanceCount
+	if instanceMessage.Activation {
+		if err := s.store.CheckActivationLimit(ctx, instanceCountLimit); err != nil {
+			if common.ErrorCode(err) == common.Invalid {
+				return nil, status.Errorf(codes.ResourceExhausted, err.Error())
+			}
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+	}
+
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	instance, err := s.store.CreateInstanceV2(ctx,
 		instanceMessage,
 		principalID,
+		instanceCountLimit,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -184,10 +195,24 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
 			patch.DataSources = &datasourceList
+		case "activation":
+			patch.Activation = &request.Instance.Activation
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
 	}
 
-	ins, err := s.store.UpdateInstanceV2(ctx, patch)
+	instanceCountLimit := s.licenseService.LoadSubscription(ctx).InstanceCount
+	if v := patch.Activation; v != nil && *v {
+		if err := s.store.CheckActivationLimit(ctx, instanceCountLimit); err != nil {
+			if common.ErrorCode(err) == common.Invalid {
+				return nil, status.Errorf(codes.ResourceExhausted, err.Error())
+			}
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+	}
+
+	ins, err := s.store.UpdateInstanceV2(ctx, patch, instanceCountLimit)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -313,7 +338,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		EnvironmentID: instance.EnvironmentID,
 		ResourceID:    instance.ResourceID,
 		Delete:        &deletePatch,
-	}); err != nil {
+	}, -1 /* don't need to pass the instance limition */); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -335,7 +360,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		EnvironmentID: instance.EnvironmentID,
 		ResourceID:    instance.ResourceID,
 		Delete:        &undeletePatch,
-	})
+	}, -1 /* don't need to pass the instance limition */)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -522,6 +547,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			obfuscated := common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
 			patch.SSHObfuscatedPrivateKey = &obfuscated
 			dataSource.SSHObfuscatedPrivateKey = obfuscated
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
 	}
 
@@ -681,6 +708,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		DataSources:   dataSourceList,
 		State:         convertDeletedToState(instance.Deleted),
 		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
+		Activation:    instance.Activation,
 	}
 }
 
@@ -701,6 +729,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 		ExternalLink:  instance.ExternalLink,
 		DataSources:   datasources,
 		EnvironmentID: environmentID,
+		Activation:    instance.Activation,
 	}, nil
 }
 
