@@ -65,11 +65,14 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		// dismiss stale review, re-find the approval template
 		if taskPatch.SheetID != nil {
-			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: false,
-				},
-			})
+			payload := &storepb.IssuePayload{}
+			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal").SetInternal(err)
+			}
+			payload.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
+			payloadBytes, err := protojson.Marshal(payload)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 			}
@@ -132,11 +135,14 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		// dismiss stale review, re-find the approval template
 		if taskPatch.SheetID != nil && task.Status == api.TaskPendingApproval {
-			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: false,
-				},
-			})
+			payload := &storepb.IssuePayload{}
+			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal").SetInternal(err)
+			}
+			payload.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
+			payloadBytes, err := protojson.Marshal(payload)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 			}
@@ -263,13 +269,16 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", task.PipelineID)).SetInternal(err)
 				}
-				payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
-					Approval: &storepb.IssuePayloadApproval{
-						ApprovalFindingDone: false,
-					},
-				})
+				payload := &storepb.IssuePayload{}
+				if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal").SetInternal(err)
+				}
+				payload.Approval = &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: false,
+				}
+				payloadBytes, err := protojson.Marshal(payload)
 				if err != nil {
-					return errors.Wrap(err, "failed to marshal issue payload")
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 				}
 				payloadStr := string(payloadBytes)
 				issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
