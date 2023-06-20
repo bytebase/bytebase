@@ -209,6 +209,7 @@ export interface Instance {
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
+  activation: boolean;
 }
 
 export interface DataSource {
@@ -1179,6 +1180,7 @@ function createBaseInstance(): Instance {
     externalLink: "",
     dataSources: [],
     environment: "",
+    activation: false,
   };
 }
 
@@ -1210,6 +1212,9 @@ export const Instance = {
     }
     if (message.environment !== "") {
       writer.uint32(74).string(message.environment);
+    }
+    if (message.activation === true) {
+      writer.uint32(80).bool(message.activation);
     }
     return writer;
   },
@@ -1284,6 +1289,13 @@ export const Instance = {
 
           message.environment = reader.string();
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.activation = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1304,6 +1316,7 @@ export const Instance = {
       externalLink: isSet(object.externalLink) ? String(object.externalLink) : "",
       dataSources: Array.isArray(object?.dataSources) ? object.dataSources.map((e: any) => DataSource.fromJSON(e)) : [],
       environment: isSet(object.environment) ? String(object.environment) : "",
+      activation: isSet(object.activation) ? Boolean(object.activation) : false,
     };
   },
 
@@ -1322,6 +1335,7 @@ export const Instance = {
       obj.dataSources = [];
     }
     message.environment !== undefined && (obj.environment = message.environment);
+    message.activation !== undefined && (obj.activation = message.activation);
     return obj;
   },
 
@@ -1340,6 +1354,7 @@ export const Instance = {
     message.externalLink = object.externalLink ?? "";
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.environment = object.environment ?? "";
+    message.activation = object.activation ?? false;
     return message;
   },
 };
