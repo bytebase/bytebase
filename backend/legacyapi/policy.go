@@ -221,7 +221,7 @@ func (p *SensitiveDataPolicy) String() (string, error) {
 	return string(s), nil
 }
 
-// AccessControlPolicy is the policy configuration for database access control.
+// AccessControlPolicy is the policy configuration for data access control.
 // It is only applicable to database and environment resource type.
 // For environment resource type, DisallowRuleList defines the access control rule.
 // For database resource type, the AccessControlPolicy struct itself means allow to access.
