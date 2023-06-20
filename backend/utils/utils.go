@@ -751,7 +751,7 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 		}
 	}
 	for {
-		step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
+		step := FindNextPendingStep(approval.ApprovalTemplates[0], approvers)
 		if step == nil {
 			break
 		}
