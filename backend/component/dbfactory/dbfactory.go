@@ -42,7 +42,11 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if database != nil {
 		databaseName = database.DatabaseName
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, database.DataShare, false /* readOnly */)
+	datashare := false
+	if database != nil && database.DataShare {
+		datashare = true
+	}
+	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, datashare, false /* readOnly */)
 }
 
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
