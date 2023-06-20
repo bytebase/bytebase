@@ -67,8 +67,18 @@
 import { computed, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
-import { ExecuteConfig, ExecuteOption, WebTerminalQueryItemV1 } from "@/types";
-import { useTabStore, useWebTerminalV1Store } from "@/store";
+import {
+  ExecuteConfig,
+  ExecuteOption,
+  UNKNOWN_ID,
+  WebTerminalQueryItemV1,
+} from "@/types";
+import {
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useTabStore,
+  useWebTerminalV1Store,
+} from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
   EditorAction,
@@ -78,6 +88,7 @@ import {
 } from "../EditorCommon";
 import { useHistory } from "./useHistory";
 import { useAttractFocus } from "./useAttractFocus";
+import { AdminExecuteRequest } from "@/types/proto/v1/sql_service";
 
 const tabStore = useTabStore();
 const webTerminalStore = useWebTerminalV1Store();
@@ -130,11 +141,32 @@ const handleExecute = async (
   const url = new URL(`${window.location.origin}/v1:adminExecute`);
   url.protocol = url.protocol.replace("http", "ws");
   const ws = new WebSocket(url);
-  // ws.binaryType = "arraybuffer";
+  ws.binaryType = "arraybuffer";
 
   ws.addEventListener("open", (event) => {
     console.log("ws open");
-    // ws.send("content-type: application/json");
+    const header = [
+      "content-type: application/grpc-web+proto",
+      "x-grpc-web: 1",
+    ].join("\r\n");
+    ws.send(new TextEncoder().encode(header));
+
+    const tab = tabStore.currentTab;
+    const { instanceId, databaseId } = tab.connection;
+    const instance = useInstanceV1Store().getInstanceByUID(instanceId);
+    const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+    const requestParams = AdminExecuteRequest.fromJSON({
+      name: instance.name,
+      connectionDatabase:
+        database.uid === String(UNKNOWN_ID) ? "" : database.databaseName,
+      statement: query,
+    });
+    console.log(
+      "send",
+      JSON.stringify(AdminExecuteRequest.toJSON(requestParams), null, "  ")
+    );
+    const writer = AdminExecuteRequest.encode(requestParams);
+    ws.send(JSON.stringify(requestParams));
   });
   ws.addEventListener("message", (event) => {
     console.log("ws recv message", event.data);

@@ -48,7 +48,7 @@ export default defineConfig(() => {
       port: SERVER_PORT,
       host: "0.0.0.0",
       proxy: {
-        "/bytebase.v1.SQLService/AdminExecute": {
+        "/v1:adminExecute": {
           target: "ws://localhost:8080/",
           changeOrigin: true,
           ws: true,
