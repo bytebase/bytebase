@@ -1260,6 +1260,190 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for UNION.
+			statement:  `select 1 as c1, 2 as c2, 3 as c3, 4 from DUAL UNION ALL select * from t`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "C1",
+					Sensitive: true,
+				},
+				{
+					Name:      "C2",
+					Sensitive: false,
+				},
+				{
+					Name:      "C3",
+					Sensitive: false,
+				},
+				{
+					Name:      "4",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for UNION.
+			statement:  `select * from t UNION ALL select * from t`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for explicit schema name.
+			statement:  `select CONCAT(ROOT.T.A, ROOT.T.B) from T`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "CONCAT(ROOT.T.A,ROOT.T.B)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for associated sub-query.
+			statement:  `select a, (SELECT MAX(B) > Y.A FROM T X) from t y`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "(SELECTMAX(B)>Y.AFROMTX)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for JOIN with ON clause.
+			statement:  `select * from t t1 join t t2 on t1.a = t2.a`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for natural JOIN.
+			statement:  `select * from t t1 natural join t t2`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for JOIN with USING clause.
+			statement:  `select * from t t1 join t t2 using(a)`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for non-associated sub-query
+			statement:  "select t.a, (SELECT MAX(A) FROM T) from t t1 join t on t.a = t1.b",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "(SELECTMAX(A)FROMT)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for functions.
 			statement:  `select A-B, B+C as c1 from (select * from t)`,
 			schemaInfo: defaultDatabaseSchema,
