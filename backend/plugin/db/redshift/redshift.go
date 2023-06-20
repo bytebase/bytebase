@@ -54,6 +54,7 @@ type Driver struct {
 	// Unregister connectionString if we don't need it.
 	connectionString string
 	databaseName     string
+	datashare        bool
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -80,6 +81,9 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	connConfig.Config.User = config.Username
 	connConfig.Config.Password = config.Password
 	connConfig.Config.Database = config.Database
+	if config.ConnectionDatabase != "" {
+		connConfig.Config.Database = config.ConnectionDatabase
+	}
 	if config.TLSConfig.SslCert != "" {
 		cfg, err := config.TLSConfig.GetSslConfig()
 		if err != nil {
@@ -107,14 +111,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	}
 
 	driver.databaseName = config.Database
-	if config.Database == "" {
-		databaseName, cfg, err := guessDSN(connConfig, config.Username)
-		if err != nil {
-			return nil, err
-		}
-		connConfig = cfg
-		driver.databaseName = databaseName
-	}
+	driver.datashare = config.ConnectionDatabase != ""
 	driver.config = config
 
 	driver.connectionString = stdlib.RegisterConnConfig(connConfig)
@@ -131,33 +128,6 @@ type noDeadlineConn struct{ net.Conn }
 func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
 func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
 func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
-
-// guessDSN will guess a valid DB connection and its database name.
-func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.ConnConfig, error) {
-	// Some postgres server default behavior is to use username as the database name if not specified,
-	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
-	guesses := []string{"postgres", username, "template1"}
-	//  dsn+" dbname=bytebase"
-	for _, guessDatabase := range guesses {
-		connConfig := *baseConnConfig
-		connConfig.Database = guessDatabase
-		if err := func() error {
-			connectionString := stdlib.RegisterConnConfig(&connConfig)
-			defer stdlib.UnregisterConnConfig(connectionString)
-			db, err := sql.Open(driverName, connectionString)
-			if err != nil {
-				return err
-			}
-			defer db.Close()
-			return db.Ping()
-		}(); err != nil {
-			log.Debug("guessDSN attempt failed", zap.Error(err))
-			continue
-		}
-		return guessDatabase, &connConfig, nil
-	}
-	return "", nil, errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
-}
 
 // Close closes the database and prevents new queries from starting.
 // Close then waits for all queries that have started processing on the server to finish.
@@ -189,6 +159,9 @@ func (driver *Driver) GetDB() *sql.DB {
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
+	if driver.datashare {
+		return 0, errors.Errorf("datashare database cannot be updated")
+	}
 	if createDatabase {
 		databases, err := driver.getDatabases(ctx)
 		if err != nil {
