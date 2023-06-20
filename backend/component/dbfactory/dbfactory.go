@@ -42,7 +42,11 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if database != nil {
 		databaseName = database.DatabaseName
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, false /* readOnly */)
+	datashare := false
+	if database != nil && database.DataShare {
+		datashare = true
+	}
+	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, datashare, false /* readOnly */)
 }
 
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
@@ -63,11 +67,11 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if database != nil {
 		databaseName = database.DatabaseName
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, true /* readOnly */)
+	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, database.DataShare, true /* readOnly */)
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, readOnly bool) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, datashare, readOnly bool) (db.Driver, error) {
 	dbBinDir := ""
 	switch engine {
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
@@ -81,6 +85,10 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dat
 
 	if databaseName == "" {
 		databaseName = dataSource.Database
+	}
+	connectionDatabase := ""
+	if datashare {
+		connectionDatabase = dataSource.Database
 	}
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, d.secret)
 	if err != nil {
@@ -131,6 +139,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dat
 			Host:                   dataSource.Host,
 			Port:                   dataSource.Port,
 			Database:               databaseName,
+			ConnectionDatabase:     connectionDatabase,
 			SRV:                    dataSource.SRV,
 			AuthenticationDatabase: dataSource.AuthenticationDatabase,
 			SID:                    dataSource.SID,
