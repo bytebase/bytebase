@@ -82,7 +82,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dat
 	if databaseName == "" {
 		databaseName = dataSource.Database
 	}
-	connectionDatabase := databaseName
+	connectionDatabase := ""
 	if datashare {
 		connectionDatabase = dataSource.Database
 	}
