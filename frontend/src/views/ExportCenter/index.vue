@@ -1,7 +1,7 @@
 <template>
   <div class="w-full px-4 py-1 pt-2">
     <div class="w-full flex flex-row justify-between items-center">
-      <div>
+      <div class="flex items-center gap-x-4">
         <NInputGroup>
           <ProjectSelect
             :project="state.filterParams.project?.uid ?? String(UNKNOWN_ID)"
@@ -21,6 +21,13 @@
             @update:database="changeDatabaseId"
           />
         </NInputGroup>
+        <NButton
+          v-if="filterIssueId !== String(UNKNOWN_ID)"
+          @click="clearFilterIssueId"
+        >
+          <span>#{{ filterIssueId }}</span>
+          <heroicons:x-mark class="w-4 h-4 ml-1 -mr-1.5" />
+        </NButton>
       </div>
       <div>
         <NButton @click="state.showRequestExportPanel = true">
@@ -57,6 +64,7 @@ import { ProjectSelect, InstanceSelect, DatabaseSelect } from "@/components/v2";
 import { convertFromExpr } from "@/utils/issue/cel";
 import ExportRecordTable from "./ExportRecordTable.vue";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import { useRoute, useRouter } from "vue-router";
 
 interface LocalState {
   filterParams: FilterParams;
@@ -66,6 +74,8 @@ interface LocalState {
 
 const issueDescriptionRegexp = /^#(\d+)$/;
 
+const route = useRoute();
+const router = useRouter();
 const currentUser = useCurrentUserV1();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const databaseStore = useDatabaseV1Store();
@@ -80,8 +90,23 @@ const state = reactive<LocalState>({
   showRequestExportPanel: false,
 });
 
+const filterIssueId = computed(() => {
+  const hash = route.hash.replace(/^#+/g, "");
+  const maybeIssueId = parseInt(hash, 10);
+  if (!Number.isNaN(maybeIssueId) && maybeIssueId > 0) {
+    return String(maybeIssueId);
+  }
+  return String(UNKNOWN_ID);
+});
+
 const filterExportRecords = computed(() => {
   return state.exportRecords.filter((record) => {
+    if (filterIssueId.value !== String(UNKNOWN_ID)) {
+      if (record.issueId !== filterIssueId.value) {
+        return false;
+      }
+    }
+
     if (state.filterParams.project) {
       if (record.database.project !== state.filterParams.project.name) {
         return false;
@@ -180,5 +205,12 @@ const changeDatabaseId = (uid: string | undefined) => {
   } else {
     state.filterParams.database = undefined;
   }
+};
+
+const clearFilterIssueId = () => {
+  router.replace({
+    ...route,
+    hash: "",
+  });
 };
 </script>
