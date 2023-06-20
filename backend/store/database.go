@@ -276,14 +276,16 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 			sync_status,
 			last_successful_sync_ts,
 			schema_version,
-			secrets
+			secrets,
+			datashare
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			updater_id = EXCLUDED.updater_id,
 			project_id = EXCLUDED.project_id,
 			sync_status = EXCLUDED.sync_status,
-			last_successful_sync_ts = EXCLUDED.last_successful_sync_ts
+			last_successful_sync_ts = EXCLUDED.last_successful_sync_ts,
+			datashare = EXCLUDED.datashare,
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
@@ -296,6 +298,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		0,             /* last_successful_sync_ts */
 		"",            /* schema_version */
 		secretsString, /* secrets */
+		create.DataShare,
 	).Scan(
 		&databaseUID,
 	); err != nil {
