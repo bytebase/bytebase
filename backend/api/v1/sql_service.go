@@ -482,6 +482,11 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
+	case db.Oracle:
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+		}
 	}
 
 	// Create export activity.
@@ -715,6 +720,12 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 			}
+		case db.Oracle:
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+			}
+
 		}
 	}
 
@@ -820,6 +831,38 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
+		}
+
+		if instance.Engine == db.Oracle {
+			for _, schema := range dbSchema.Metadata.Schemas {
+				databaseSchema := db.DatabaseSchema{
+					Name:      schema.Name,
+					TableList: []db.TableSchema{},
+				}
+				for _, table := range schema.Tables {
+					tableSchema := db.TableSchema{
+						Name:       table.Name,
+						ColumnList: []db.ColumnInfo{},
+					}
+					for _, column := range table.Columns {
+						_, sensitive := columnMap[api.SensitiveData{
+							Schema: schema.Name,
+							Table:  table.Name,
+							Column: column.Name,
+						}]
+						tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
+							Name:      column.Name,
+							Sensitive: sensitive,
+						})
+					}
+					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+				}
+				if len(databaseSchema.TableList) > 0 {
+					isEmpty = false
+				}
+				result.DatabaseList = append(result.DatabaseList, databaseSchema)
+			}
+			continue
 		}
 
 		databaseSchema := db.DatabaseSchema{
