@@ -1551,14 +1551,15 @@ func convertToParserEngine(engine db.Type) parser.EngineType {
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
-	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB || dbType == db.Oracle {
+	switch dbType {
+	case db.Postgres, db.MySQL, db.TiDB, db.MariaDB, db.Oracle, db.OceanBase, db.Snowflake:
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false
 		}
 
 		return advisor.IsSQLReviewSupported(advisorDB)
+	default:
+		return false
 	}
-
-	return false
 }
