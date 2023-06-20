@@ -42,7 +42,7 @@ categoryList:
       - dba-workflow
       - environment-tier
       - sensitive-data
-      - database-access-control
+      - data-access-control
       - watermark
       - audit-log
       - anomaly-detection
@@ -260,7 +260,7 @@ planList:
         tooltip: dba-workflow-tooltip
       - type: environment-tier
       - type: sensitive-data
-      - type: database-access-control
+      - type: data-access-control
       - type: watermark
       - type: audit-log
       - type: disallow-signup
@@ -279,6 +279,6 @@ planList:
       - dba-workflow
       - environment-tier
       - sensitive-data
-      - database-access-control
+      - data-access-control
       - roadmap
       - custom-contract
