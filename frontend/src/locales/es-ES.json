@@ -1864,6 +1864,14 @@
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
     "upgrade-now": "Actualizar ahora",
+    "instance-assignment": {
+      "license": "Licencia",
+      "assign-license": "Asignar licencia",
+      "n-license-remain": "permanecer {n}",
+      "manage-license": "Administrar licencia",
+      "available-and-total-license": "Licencia de instancia disponible/total",
+      "success-notification": "Actualizar correctamente la asignación de licencia"
+    },
     "update": {
       "success": {
         "title": "Licencia actualizada con éxito",
