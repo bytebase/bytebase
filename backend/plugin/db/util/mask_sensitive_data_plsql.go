@@ -197,7 +197,6 @@ func (extractor *sensitiveFieldExtractor) plsqlCheckFieldSensitive(schemaName st
 		if sameSchema && sameTable && sameColumn {
 			return field.sensitive
 		}
-
 	}
 
 	return false
