@@ -536,6 +536,7 @@ func updateIssuePayload(ctx context.Context, s *store.Store, issue *store.IssueM
 	if err := protojson.Unmarshal([]byte(issue.Payload), originalPayload); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal original issue payload")
 	}
+  // TODO(xz): need to refactor this to do field-wise payload updates.
 	if originalPayload.Grouping != nil {
 		payload.Grouping = originalPayload.Grouping
 	}
