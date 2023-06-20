@@ -192,10 +192,12 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
+	log.Debug("start to split statement")
 	trunks, err := splitAndTransformDelimiter(statement)
 	if err != nil {
 		return 0, err
 	}
+	log.Debug("finished splitting statements", zap.Int("trunc", len(trunks)))
 
 	tx, err := driver.migrationConn.BeginTx(ctx, nil)
 	if err != nil {
@@ -204,11 +206,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	defer tx.Rollback()
 
 	var totalRowsAffected int64
-	for _, trunk := range trunks {
+	for i, trunk := range trunks {
+		log.Debug("starting to run trunk", zap.Int("iteration", i))
 		sqlResult, err := tx.ExecContext(ctx, trunk)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to execute context in a transaction")
 		}
+		log.Debug("finished run trunk", zap.Int("iteration", i))
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
