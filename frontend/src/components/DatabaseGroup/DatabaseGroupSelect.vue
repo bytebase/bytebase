@@ -8,7 +8,7 @@
     @select-item="(item: DatabaseGroup) => $emit('select-database-group-id', item.name)"
   >
     <template #menuItem="{ item }">
-      {{ getDatabaseGroupTitle(item.name) }}
+      {{ item.databasePlaceholder }}
     </template>
   </BBSelect>
 </template>
@@ -49,10 +49,6 @@ const dbGroupList = computed(() => {
         : true
     );
 });
-
-const getDatabaseGroupTitle = (databaseGroupName: string): string => {
-  return databaseGroupName.split("/").pop() || "";
-};
 
 const invalidateSelectionIfNeeded = () => {
   if (
