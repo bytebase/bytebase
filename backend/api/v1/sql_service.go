@@ -725,7 +725,6 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 			}
-
 		}
 	}
 
