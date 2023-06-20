@@ -1260,6 +1260,82 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for functions.
+			statement:  `select A-B, B+C as c1 from (select * from t)`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A-B",
+					Sensitive: true,
+				},
+				{
+					Name:      "C1",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for functions.
+			statement:  `select MAX(A), min(b) as c1 from (select * from t)`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "MAX(A)",
+					Sensitive: true,
+				},
+				{
+					Name:      "C1",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for sub-query
+			statement:  "select * from (select * from t) where rownum <= 100000;",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for sub-select.
+			statement:  "select * from (select a, t.b, root.t.c, d as d1 from root.t) where ROWNUM <= 100000;",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D1",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for field name.
 			statement:  "select a, t.b, root.t.c, d as d1 from t",
 			schemaInfo: defaultDatabaseSchema,

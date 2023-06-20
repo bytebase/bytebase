@@ -145,14 +145,13 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuer
 					}
 				}
 			} else {
-				sensitive, err := extractor.plsqlIsSensitiveExpression(element.Expression())
+				fieldName, sensitive, err := extractor.plsqlIsSensitiveExpression(element.Expression())
 				if err != nil {
 					return nil, err
 				}
-				var fieldName string
 				if element.Column_alias() != nil {
 					fieldName = normalizeColumnAlias(element.Column_alias())
-				} else {
+				} else if fieldName == "" {
 					fieldName = element.Expression().GetText()
 				}
 				result = append(result, fieldInfo{
@@ -204,31 +203,36 @@ func (extractor *sensitiveFieldExtractor) plsqlCheckFieldSensitive(schemaName st
 	return false
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.ParserRuleContext) (bool, error) {
+func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.ParserRuleContext) (string, bool, error) {
 	if ctx == nil {
-		return false, nil
+		return "", false, nil
 	}
 
 	switch rule := ctx.(type) {
 	case plsql.IColumn_nameContext:
 		schemaName, tableName, columnName, err := plsqlNormalizeColumnName(extractor.currentDatabase, rule)
 		if err != nil {
-			return false, err
+			return "", false, err
 		}
-		return extractor.plsqlCheckFieldSensitive(schemaName, tableName, columnName), nil
+		return columnName, extractor.plsqlCheckFieldSensitive(schemaName, tableName, columnName), nil
 	case plsql.IIdentifierContext:
 		id := parser.PLSQLNormalizeIdentifierContext(rule)
-		return extractor.plsqlCheckFieldSensitive("", "", id), nil
+		return id, extractor.plsqlCheckFieldSensitive("", "", id), nil
 	case plsql.IConstantContext:
 		list := rule.AllQuoted_string()
 		if len(list) == 1 && rule.DATE() == nil && rule.TIMESTAMP() == nil && rule.INTERVAL() == nil {
 			// This case may be a column name...
 			return extractor.plsqlIsSensitiveExpression(list[0])
 		}
+	case plsql.IQuoted_stringContext:
+		if rule.Variable_name() != nil {
+			return extractor.plsqlIsSensitiveExpression(rule.Variable_name())
+		}
+		return "", false, nil
 	case plsql.IVariable_nameContext:
 		if rule.Bind_variable() != nil {
 			// TODO: handle bind variable
-			return false, nil
+			return "", false, nil
 		}
 		var list []string
 		for _, item := range rule.AllId_expression() {
@@ -236,13 +240,34 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		switch len(list) {
 		case 1:
-			return extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", list[0]), nil
+			return list[0], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", list[0]), nil
 		case 2:
-			return extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, list[0], list[1]), nil
+			return list[1], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, list[0], list[1]), nil
 		case 3:
-			return extractor.plsqlCheckFieldSensitive(list[0], list[1], list[2]), nil
+			return list[2], extractor.plsqlCheckFieldSensitive(list[0], list[1], list[2]), nil
 		default:
-			return false, nil
+			return "", false, nil
+		}
+	case plsql.IGeneral_elementContext:
+		var list []antlr.ParserRuleContext
+		for _, item := range rule.AllGeneral_element_part() {
+			list = append(list, item)
+		}
+		return extractor.plsqlExistSensitiveExpression(list)
+	case plsql.IGeneral_element_partContext:
+		var list []string
+		for _, item := range rule.AllId_expression() {
+			list = append(list, parser.PLSQLNormalizeIDExpression(item))
+		}
+		switch len(list) {
+		case 1:
+			return list[0], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", list[0]), nil
+		case 2:
+			return list[1], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, list[0], list[1]), nil
+		case 3:
+			return list[2], extractor.plsqlCheckFieldSensitive(list[0], list[1], list[2]), nil
+		default:
+			return "", false, nil
 		}
 	case plsql.IExpressionContext:
 		if rule.Logical_expression() != nil {
@@ -263,14 +288,14 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractQueryBlock(rule)
 		if err != nil {
-			return false, err
+			return "", false, err
 		}
 		for _, field := range fieldList {
 			if field.sensitive {
-				return true, nil
+				return "", true, nil
 			}
 		}
-		return false, nil
+		return "", false, nil
 	case plsql.ISubqueryContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
@@ -282,14 +307,14 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractSubquery(rule)
 		if err != nil {
-			return false, err
+			return "", false, err
 		}
 		for _, field := range fieldList {
 			if field.sensitive {
-				return true, nil
+				return "", true, nil
 			}
 		}
-		return false, nil
+		return "", false, nil
 	case plsql.ILogical_expressionContext:
 		if rule.Unary_logical_expression() != nil {
 			return extractor.plsqlIsSensitiveExpression(rule.Unary_logical_expression())
@@ -345,6 +370,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
 		}
+		return extractor.plsqlExistSensitiveExpression(list)
 	case plsql.IConcatenationContext:
 		var list []antlr.ParserRuleContext
 		if rule.Model_expression() != nil {
@@ -458,14 +484,14 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractSubquery(rule.Subquery())
 		if err != nil {
-			return false, err
+			return "", false, err
 		}
 		for _, field := range fieldList {
 			if field.sensitive {
-				return true, nil
+				return "", true, nil
 			}
 		}
-		return false, nil
+		return "", false, nil
 	case plsql.IStandard_functionContext:
 		var list []antlr.ParserRuleContext
 		if rule.String_function() != nil {
@@ -521,6 +547,8 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 			list = append(list, rule.Concatenation())
 		}
 		// TODO(rebelice): handle over_clause
+		_, sensitive, err := extractor.plsqlExistSensitiveExpression(list)
+		return "", sensitive, err
 	case plsql.IExpressionsContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
@@ -547,6 +575,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Expressions() != nil {
 			list = append(list, rule.Expressions())
 		}
+		return extractor.plsqlExistSensitiveExpression(list)
 	case plsql.IJson_functionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllJson_array_element() {
@@ -558,6 +587,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Json_object_content() != nil {
 			list = append(list, rule.Json_object_content())
 		}
+		return extractor.plsqlExistSensitiveExpression(list)
 	case plsql.IJson_array_elementContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
@@ -612,6 +642,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 			list = append(list, item)
 		}
 		// TODO: handle xmltable
+		return extractor.plsqlExistSensitiveExpression(list)
 	case plsql.IFunction_argument_analyticContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllArgument() {
@@ -622,7 +653,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		return extractor.plsqlIsSensitiveExpression(rule.Expression())
 	case plsql.IFunction_argument_modelingContext:
 		// TODO(rebelice): implement standard function with USING
-		return false, nil
+		return "", false, nil
 	case plsql.ITable_elementContext:
 		// handled as column name
 		var str []string
@@ -631,13 +662,13 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		switch len(str) {
 		case 1:
-			return extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", str[0]), nil
+			return str[0], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", str[0]), nil
 		case 2:
-			return extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, str[0], str[1]), nil
+			return str[1], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, str[0], str[1]), nil
 		case 3:
-			return extractor.plsqlCheckFieldSensitive(str[0], str[1], str[2]), nil
+			return str[2], extractor.plsqlCheckFieldSensitive(str[0], str[1], str[2]), nil
 		default:
-			return false, nil
+			return "", false, nil
 		}
 	case plsql.IFunction_argumentContext:
 		var list []antlr.ParserRuleContext
@@ -661,6 +692,9 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		if rule.Constant() != nil {
 			list = append(list, rule.Constant())
+		}
+		if rule.General_element() != nil {
+			list = append(list, rule.General_element())
 		}
 		return extractor.plsqlExistSensitiveExpression(list)
 	case plsql.ISubquery_operation_partContext:
@@ -688,20 +722,26 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		return extractor.plsqlExistSensitiveExpression(list)
 	}
 
-	return false, nil
+	return "", false, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExistSensitiveExpression(list []antlr.ParserRuleContext) (bool, error) {
+func (extractor *sensitiveFieldExtractor) plsqlExistSensitiveExpression(list []antlr.ParserRuleContext) (string, bool, error) {
+	var fieldName string
+	var sensitive bool
+	var err error
 	for _, ctx := range list {
-		sensitive, err := extractor.plsqlIsSensitiveExpression(ctx)
+		fieldName, sensitive, err = extractor.plsqlIsSensitiveExpression(ctx)
 		if err != nil {
-			return false, err
+			return "", false, err
+		}
+		if len(list) != 1 {
+			fieldName = ""
 		}
 		if sensitive {
-			return true, nil
+			return fieldName, true, nil
 		}
 	}
-	return false, nil
+	return fieldName, false, nil
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractFromClause(ctx plsql.IFrom_clauseContext) ([]fieldInfo, error) {
@@ -795,6 +835,10 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractDmlTableExpressionClause(c
 			})
 		}
 		return result, nil
+	}
+
+	if ctx.Select_statement() != nil {
+		return extractor.plsqlExtractSelect(ctx.Select_statement())
 	}
 
 	// TODO(rebelice): handle other cases for DML_TABLE_EXPRESSION_CLAUSE
