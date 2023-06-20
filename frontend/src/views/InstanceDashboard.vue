@@ -18,7 +18,10 @@
         :placeholder="$t('instance.search-instance-name')"
       />
     </div>
-    <InstanceV1Table :instance-list="filteredInstanceV1List" />
+    <InstanceV1Table
+      :instance-list="filteredInstanceV1List"
+      :can-assign-license="true"
+    />
   </div>
 </template>
 
