@@ -20,7 +20,7 @@
           class="w-full border-b mb-4 pb-4"
           :project="project"
           :binding="binding"
-          :allow-remove="state.bindings.length > 1"
+          :allow-remove="filteredBindings.length > 1"
           @remove="handleRemove(binding, index)"
         />
       </div>
