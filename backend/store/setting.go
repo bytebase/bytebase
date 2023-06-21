@@ -103,7 +103,7 @@ func (s *Store) GetAppIMApprovalSetting(ctx context.Context) (*api.SettingAppIMV
 		return nil, errors.Errorf("cannot find setting %v", settingName)
 	}
 	if setting.Value == "" {
-		return nil, errors.Errorf("cannot find setting %v", settingName)
+		return nil, nil
 	}
 	var value api.SettingAppIMValue
 	if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {

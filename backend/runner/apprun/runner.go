@@ -69,6 +69,9 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 					return
 				}
+				if setting == nil {
+					return
+				}
 				if !setting.ExternalApproval.Enabled {
 					return
 				}
@@ -359,6 +362,9 @@ func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason
 	if err != nil {
 		return errors.Wrapf(err, "failed to get IM setting")
 	}
+	if setting == nil {
+		return nil
+	}
 	if !setting.ExternalApproval.Enabled {
 		return nil
 	}
@@ -616,6 +622,9 @@ func (r *Runner) tryUpdateApprovalDefinition(ctx context.Context) error {
 	setting, err := r.store.GetAppIMApprovalSetting(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get IM setting")
+	}
+	if setting == nil {
+		return nil
 	}
 	if !setting.ExternalApproval.Enabled {
 		return nil
