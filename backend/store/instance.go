@@ -230,7 +230,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				external_link,
 				activation
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			SELECT $1, $2, $3, $4, $5, $6, $7, $8
 			%s
 			RETURNING id
 		`, where),
