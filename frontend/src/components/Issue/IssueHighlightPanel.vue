@@ -189,7 +189,7 @@ const showReviewButtonGroup = computed(() => {
 /**
  * Rollout / Retry
  * + cancel issue (dropdown)
- * * skip all failed tasks in current stage (dropdown)
+ * + skip all failed tasks in current stage (dropdown)
  */
 const showRolloutButtonGroup = computed(() => {
   if (create.value) return true;
