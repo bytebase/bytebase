@@ -13,7 +13,7 @@ import { Principal } from "./principal";
 import { Project } from "./project";
 import { MigrationType } from "./instance";
 import { Expr } from "./proto/google/type/expr";
-import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
+import { DatabaseResource } from "@/types";
 import { IssuePayload as IssueProtoPayload } from "./proto/store/issue";
 
 type IssueTypeGeneral = "bb.issue.general";
