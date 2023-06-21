@@ -236,7 +236,7 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 
 	// TODO(d): use a Redshift extraction for shared database.
 	if dbType == db.Redshift && queryContext.ShareDB {
-		statement = strings.ReplaceAll(statement, queryContext.CurrentDatabase+".", "")
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
 	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
 	if err != nil {
