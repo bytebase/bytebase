@@ -275,14 +275,14 @@
     <IssueSubscriberPanel
       v-if="!create"
       :issue="(issue as Issue)"
-      @add-subscriber-id="(subscriberId: IdType) => addSubscriberId(subscriberId)"
-      @remove-subscriber-id="(subscriberId: IdType) => removeSubscriberId(subscriberId)"
+      @add-subscriber-id="(subscriberId) => addSubscriberId(subscriberId)"
+      @remove-subscriber-id="(subscriberId) => removeSubscriberId(subscriberId)"
     />
     <FeatureModal
       v-if="state.showFeatureModal"
       :feature="'bb.feature.task-schedule-time'"
-      @cancel="state.showFeatureModal = false"
       :instance="database?.instanceEntity"
+      @cancel="state.showFeatureModal = false"
     />
   </aside>
 </template>
@@ -315,7 +315,6 @@ import {
   StageCreate,
   UNKNOWN_ID,
   ComposedInstance,
-  IdType,
 } from "@/types";
 import {
   allTaskList,

@@ -132,8 +132,8 @@
     <FeatureModal
       v-if="state.showFeatureModal"
       feature="bb.feature.pitr"
-      @cancel="state.showFeatureModal = false"
       :instance="database.instanceEntity"
+      @cancel="state.showFeatureModal = false"
     />
   </div>
 </template>

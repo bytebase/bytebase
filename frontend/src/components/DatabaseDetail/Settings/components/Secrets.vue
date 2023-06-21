@@ -186,8 +186,8 @@
   <FeatureModal
     v-if="showFeatureModal"
     feature="bb.feature.encrypted-secrets"
-    @cancel="showFeatureModal = false"
     :instance="database.instanceEntity"
+    @cancel="showFeatureModal = false"
   />
 </template>
 

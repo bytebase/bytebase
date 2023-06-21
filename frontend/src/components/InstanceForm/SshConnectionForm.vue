@@ -97,8 +97,8 @@
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.instance-ssh-connection"
-    @cancel="state.showFeatureModal = false"
     :instance="instance"
+    @cancel="state.showFeatureModal = false"
   />
 </template>
 

@@ -54,13 +54,13 @@
               :customize-item="true"
               @select-database-id="handleSourceDatabaseSelect"
             >
-              <template #customizeItem="{ database }">
+              <template #customizeItem="{ database: db }">
                 <div class="flex items-center">
-                  <InstanceV1EngineIcon :instance="database.instanceEntity" />
-                  <span class="mx-2">{{ database.databaseName }}</span>
+                  <InstanceV1EngineIcon :instance="db.instanceEntity" />
+                  <span class="mx-2">{{ db.databaseName }}</span>
 
                   <span class="text-gray-400">
-                    ({{ instanceV1Name(database.instanceEntity) }})
+                    ({{ instanceV1Name(db.instanceEntity) }})
                   </span>
                 </div>
               </template>
@@ -126,8 +126,8 @@
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.sync-schema-all-versions"
-    @cancel="state.showFeatureModal = false"
     :instance="database?.instanceEntity"
+    @cancel="state.showFeatureModal = false"
   />
 </template>
 

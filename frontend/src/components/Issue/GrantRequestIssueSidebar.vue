@@ -75,8 +75,8 @@
     <IssueSubscriberPanel
       v-if="!create"
       :issue="(issue as Issue)"
-      @add-subscriber-id="(subscriberId: IdType) => addSubscriberId(subscriberId)"
-      @remove-subscriber-id="(subscriberId: IdType) => removeSubscriberId(subscriberId)"
+      @add-subscriber-id="(subscriberId) => addSubscriberId(subscriberId)"
+      @remove-subscriber-id="(subscriberId) => removeSubscriberId(subscriberId)"
     />
   </aside>
 </template>
@@ -85,7 +85,7 @@
 import { computed } from "vue";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { IdType, Issue, IssueCreate } from "@/types";
+import { Issue, IssueCreate } from "@/types";
 import { useProjectV1Store } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { IssueReviewSidebarSection } from "./review";

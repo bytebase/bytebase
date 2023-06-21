@@ -113,7 +113,6 @@ import {
 } from "@/utils";
 import {
   extractUserEmail,
-  featureToRef,
   pushNotification,
   useCurrentUserV1,
   useProjectIamPolicy,
@@ -147,7 +146,6 @@ const state = reactive<LocalState>({
   showAddMemberPanel: false,
 });
 
-const hasRBACFeature = featureToRef("bb.feature.rbac");
 const userStore = useUserStore();
 
 const allowAdmin = computed(() => {
