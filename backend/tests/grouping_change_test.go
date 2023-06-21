@@ -16,6 +16,10 @@ import (
 )
 
 // TestCreateDatabaseGroup tests creating database and verify the grouping result.
+// For each test case:
+// 1. The test provides a number of sqlite instances equal to the number of prepareInstances and creates the specified matchDatabase and unmatchedDatabase in the corresponding instances.
+// 2. The database group is then created with the specified expr.
+// 3. The results obtained are compared with the results given in prepareInstance and they should be consistent.
 func TestCreateDatabaseGroup(t *testing.T) {
 	type testCasePrepareInstance struct {
 		instanceTitle         string
@@ -222,6 +226,12 @@ func TestCreateDatabaseGroup(t *testing.T) {
 	}
 }
 
+// TestCreateTableGroup tests create table group and verify the grouping result.
+// For each test case:
+// 1. The test provides a number of sqlite instances equal to the number of prepareInstances, creates the specified matchedDatabase and the specified matchedTable and unmatchedTable.
+// 2. The table group and database group is then created with the specified expr.
+// 3. The results obtained are compared with the results given in prepareInstances and they should be consistent.
+// NOTE, matched tables and unmatched tables are all in the matched database, so FOCUS THE UNMATCHED DATABASE IS MEANINGLESS IN THIS TEST(i.e. this test should not contains the unmatched databases in test case and logic).
 func TestCreateTableGroup(t *testing.T) {
 	type tableNames struct {
 		matched   []string
