@@ -3,31 +3,29 @@
   <div class="flex justify-between items-center">
     <div class="textlabel !leading-7">{{ descriptionTitle }}</div>
     <div v-if="!create" class="space-x-2 mt-0.5">
-      <button
+      <NButton
         v-if="allowEditNameAndDescription && !state.editing"
-        type="button"
-        class="btn-icon"
+        size="tiny"
         @click.prevent="beginEdit"
       >
-        <heroicons-solid:pencil class="h-5 w-5" />
-      </button>
-      <button
+        {{ $t("common.edit") }}
+      </NButton>
+      <NButton
         v-if="state.editing"
-        type="button"
-        class="px-2 leading-6 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-        @click.prevent="cancelEdit"
-      >
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        v-if="state.editing"
-        type="button"
-        class="px-2 border leading-6 border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+        size="tiny"
         :disabled="state.editDescription == issue.description"
         @click.prevent="saveEdit"
       >
         {{ $t("common.save") }}
-      </button>
+      </NButton>
+      <NButton
+        v-if="state.editing"
+        size="tiny"
+        quaternary
+        @click.prevent="cancelEdit"
+      >
+        {{ $t("common.cancel") }}
+      </NButton>
     </div>
   </div>
   <div class="mt-2 w-full px-[2px]">
@@ -73,6 +71,8 @@ import {
   computed,
 } from "vue";
 import { useI18n } from "vue-i18n";
+import { NButton } from "naive-ui";
+
 import type { Issue } from "@/types";
 import { isGrantRequestIssueType, sizeToFit } from "@/utils";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";

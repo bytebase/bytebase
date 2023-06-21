@@ -2,87 +2,82 @@
   <div
     class="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-4"
   >
-    <div class="flex space-x-4 flex-1">
-      <div
-        class="py-2 text-sm font-medium"
-        :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
-      >
-        <template v-if="language === 'sql'">
-          {{ $t("common.sql") }}
-        </template>
-        <template v-else>
-          {{ $t("common.statement") }}
-        </template>
-        <span v-if="create" class="text-red-600 ml-1">*</span>
-        <button
+    <div class="flex items-center space-x-4 flex-1">
+      <div class="flex items-center gap-x-1 text-sm font-medium">
+        <span
+          :class="
+            isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'
+          "
+        >
+          <template v-if="language === 'sql'">
+            {{ $t("common.sql") }}
+          </template>
+          <template v-else>
+            {{ $t("common.statement") }}
+          </template>
+        </span>
+        <span v-if="create" class="text-red-600">*</span>
+        <NButton
           v-if="!create && !hasFeature('bb.feature.sql-review')"
-          type="button"
-          class="ml-1 btn-small py-0.5 inline-flex items-center text-accent"
+          size="tiny"
           @click.prevent="state.showFeatureModal = true"
         >
           🎈{{ $t("sql-review.unlock-full-feature") }}
-        </button>
-        <span v-if="sqlHint && !readonly" class="ml-1 text-accent">{{
+        </NButton>
+        <span v-if="sqlHint && !readonly" class="text-accent">{{
           `(${sqlHint})`
         }}</span>
       </div>
-      <button
+      <NButton
         v-if="create && allowApplyTaskStateToOthers"
         :disabled="isEmpty(state.editStatement)"
-        type="button"
-        class="btn-small py-1 px-3 my-auto"
+        size="tiny"
         @click.prevent="applyTaskStateToOthers(selectedTask as TaskCreate)"
       >
         {{ $t("issue.apply-to-other-tasks") }}
-      </button>
+      </NButton>
     </div>
 
     <div class="space-x-2 flex items-center">
       <template v-if="(create || state.editing) && !readonly">
-        <label
+        <NCheckbox
           v-if="allowFormatOnSave"
-          class="mt-0.5 mr-2 inline-flex items-center gap-1"
+          v-model:checked="formatOnSave"
+          size="small"
         >
-          <input
-            v-model="formatOnSave"
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          />
-          <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
-        </label>
+          {{ $t("issue.format-on-save") }}
+        </NCheckbox>
 
-        <UploadProgressButton :upload="handleUploadFile">
+        <UploadProgressButton :upload="handleUploadFile" size="tiny">
           {{ $t("issue.upload-sql") }}
         </UploadProgressButton>
       </template>
 
-      <button
+      <NButton
         v-if="shouldShowStatementEditButtonForUI"
-        type="button"
-        class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed"
+        size="tiny"
         @click.prevent="beginEdit"
       >
         {{ $t("common.edit") }}
-      </button>
+      </NButton>
 
       <template v-else-if="!create">
-        <button
+        <NButton
           v-if="state.editing"
-          type="button"
-          class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed"
+          size="tiny"
           :disabled="!allowSaveSQL"
           @click.prevent="saveEdit"
         >
           {{ $t("common.save") }}
-        </button>
-        <button
+        </NButton>
+        <NButton
           v-if="state.editing"
-          type="button"
-          class="px-4 py-2 cursor-pointer rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+          size="tiny"
+          quaternary
           @click.prevent="cancelEdit"
         >
           {{ $t("common.cancel") }}
-        </button>
+        </NButton>
       </template>
     </div>
   </div>
@@ -120,7 +115,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useDialog } from "naive-ui";
+import { useDialog, NButton, NCheckbox } from "naive-ui";
 import { onMounted, reactive, watch, computed, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import {
