@@ -106,13 +106,14 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 			return &noDeadlineConn{Conn: conn}, nil
 		}
 	}
-	if config.ReadOnly {
-		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
-	}
-
 	driver.databaseName = config.Database
 	driver.datashare = config.ConnectionDatabase != ""
 	driver.config = config
+
+	// Datashare doesn't support read-only transactions.
+	if config.ReadOnly && !driver.datashare {
+		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
+	}
 
 	driver.connectionString = stdlib.RegisterConnConfig(connConfig)
 	db, err := sql.Open(driverName, driver.connectionString)
@@ -399,11 +400,15 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := singleSQL.Text
 	statement = strings.TrimRight(statement, " \n\t;")
 	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
 		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	}
+	// Datashare doesn't support read-only transactions.
+	if driver.datashare {
+		queryContext.ReadOnly = false
 	}
 
 	return util.Query2(ctx, db.Postgres, conn, statement, queryContext)
