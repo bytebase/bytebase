@@ -122,6 +122,10 @@ func (s *Store) FindSheetOrganizerV2(ctx context.Context, find *FindSheetOrganiz
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	if len(sheetOrganizerlist) == 0 {
 		return nil, nil
 	} else if len(sheetOrganizerlist) > 1 {

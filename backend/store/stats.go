@@ -300,5 +300,8 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
