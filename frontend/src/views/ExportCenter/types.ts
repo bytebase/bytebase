@@ -1,5 +1,4 @@
-import { DatabaseResource } from "@/components/Issue/panel/RequestExportPanel/SelectTableForm/common";
-import { ComposedDatabase } from "@/types";
+import { ComposedDatabase, DatabaseResource } from "@/types";
 import { Database } from "@/types/proto/v1/database_service";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { Project } from "@/types/proto/v1/project_service";
