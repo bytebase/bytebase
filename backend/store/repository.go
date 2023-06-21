@@ -103,6 +103,10 @@ func (s *Store) GetRepositoryV2(ctx context.Context, find *FindRepositoryMessage
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
@@ -121,6 +125,10 @@ func (s *Store) ListRepositoryV2(ctx context.Context, find *FindRepositoryMessag
 
 	list, err := s.listRepositoryImplV2(ctx, tx, find)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -159,9 +167,13 @@ func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string
 		return err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
 	s.removeProjectCache(projectResourceID)
 
-	return tx.Commit()
+	return nil
 }
 
 // createRepositoryImplV2 creates a new repository.
