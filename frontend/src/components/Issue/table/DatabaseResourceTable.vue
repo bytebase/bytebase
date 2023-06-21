@@ -34,7 +34,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
-import { DatabaseResource } from "../panel/RequestExportPanel/SelectTableForm/common";
+import { DatabaseResource } from "@/types";
 import { watch } from "vue";
 import { useDatabaseV1Store } from "@/store";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
