@@ -13,12 +13,14 @@
       <div
         v-for="(binding, index) in state.bindings"
         :key="index"
-        class="w-full border-b mb-4 pb-4"
+        class="w-full"
       >
         <AddProjectMemberForm
+          v-if="binding"
+          class="w-full border-b mb-4 pb-4"
           :project="project"
           :binding="binding"
-          :allow-remove="state.bindings.length > 1"
+          :allow-remove="filteredBindings.length > 1"
           @remove="handleRemove(binding, index)"
         />
       </div>
@@ -48,7 +50,7 @@ import { Binding } from "@/types/proto/v1/project_service";
 import { computed, onMounted } from "vue";
 import { reactive } from "vue";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";
-import { cloneDeep, pullAt } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import {
   pushNotification,
   useProjectIamPolicy,
@@ -65,7 +67,7 @@ const emit = defineEmits<{
 }>();
 
 interface LocalState {
-  bindings: Binding[];
+  bindings: (Binding | undefined)[];
 }
 
 const { t } = useI18n();
@@ -75,8 +77,12 @@ const state = reactive<LocalState>({
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
+const filteredBindings = computed(() => {
+  return state.bindings.filter((binding) => binding !== undefined) as Binding[];
+});
+
 const allowConfirm = computed(() => {
-  for (const binding of state.bindings) {
+  for (const binding of filteredBindings.value) {
     if (binding.members.length === 0 || binding.role === "") return false;
   }
   return true;
@@ -91,7 +97,7 @@ const handleAddMore = () => {
 };
 
 const handleRemove = (binding: Binding, index: number) => {
-  pullAt(state.bindings, index);
+  state.bindings[index] = undefined;
 };
 
 const addMembers = async () => {
@@ -100,7 +106,7 @@ const addMembers = async () => {
   }
 
   const policy = cloneDeep(iamPolicy.value);
-  policy.bindings.push(...state.bindings);
+  policy.bindings.push(...filteredBindings.value);
   await useProjectIamPolicyStore().updateProjectIamPolicy(
     projectResourceName.value,
     policy
