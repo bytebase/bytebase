@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="state.isLoaded"
+    v-if="state.isLoaded && schemaGroup"
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
     v-bind="$attrs"
@@ -20,7 +20,7 @@
                 >
                   {{ schemaGroupName }}
                   <BBBadge
-                    text="Schema Group"
+                    text="Table Group"
                     :can-remove="false"
                     class="text-xs"
                   />
@@ -41,7 +41,7 @@
               <span class="textlabel"
                 >{{ $t("database-group.self") }}&nbsp;-&nbsp;</span
               >
-              <DatabaseGroupName :database-group="schemaGroup?.databaseGroup" />
+              <DatabaseGroupName :database-group="schemaGroup.databaseGroup" />
             </dd>
           </dl>
         </div>

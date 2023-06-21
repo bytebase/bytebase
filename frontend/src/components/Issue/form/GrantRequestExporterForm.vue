@@ -57,6 +57,7 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useIssueLogic } from "../logic";
@@ -71,10 +72,9 @@ import {
 import { useDatabaseV1Store } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import { convertFromCELString } from "@/utils/issue/cel";
+import { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import dayjs from "dayjs";
 import DatabaseResourceTable from "../table/DatabaseResourceTable.vue";
-import { DatabaseResource } from "../panel/RequestExportPanel/SelectTableForm/common";
 
 interface LocalState {
   databaseId?: string;

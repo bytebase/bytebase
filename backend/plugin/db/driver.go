@@ -407,12 +407,15 @@ type MigrationHistoryFind struct {
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
-	Host      string
-	Port      string
-	Username  string
-	Password  string
-	Database  string
-	TLSConfig TLSConfig
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Database string
+	// The database used to connect.
+	// It's only set for Redshift datashare database.
+	ConnectionDatabase string
+	TLSConfig          TLSConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
 	// StrictUseDb will only set as true if the user gives only a database instead of a whole instance to access.

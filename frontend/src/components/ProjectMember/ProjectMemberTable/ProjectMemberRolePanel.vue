@@ -129,7 +129,7 @@ import {
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { PresetRoleType } from "@/types";
+import { DatabaseResource, PresetRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { Project } from "@/types/proto/v1/project_service";
 import {
@@ -150,7 +150,6 @@ import {
 } from "@/utils/issue/cel";
 import { ComposedProjectMember, SingleBinding } from "./types";
 import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
-import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
 import RoleDescription from "./RoleDescription.vue";
 import EditProjectMemberPanel from "../AddProjectMember/EditProjectMemberPanel.vue";
 
