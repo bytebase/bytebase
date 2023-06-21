@@ -53,12 +53,14 @@
           :task-status="issueTaskStatus(issue)"
         />
       </BBTableCell>
-      <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500 w-12">
-        <span>{{ issue.project.key }}</span>
-      </BBTableCell>
       <BBTableCell class="table-cell">
         <div class="flex items-center">
-          <div class="mr-2 text-control">#{{ issue.id }}</div>
+          <div class="whitespace-nowrap mr-2 text-control">
+            <template v-if="mode == 'ALL'">
+              {{ issue.project.key }}-{{ issue.id }}
+            </template>
+            <template v-else> #{{ issue.id }} </template>
+          </div>
           <div
             class="truncate"
             :class="{
@@ -171,69 +173,35 @@ import { CurrentApprover } from "../review";
 
 type Mode = "ALL" | "PROJECT";
 
-const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
-  [
-    "ALL",
-    [
-      {
-        title: "issue.table.status",
-      },
-      {
-        title: "issue.table.project",
-      },
-      {
-        title: "issue.table.name",
-      },
-      {
-        title: "issue.table.environment",
-      },
-      {
-        title: "issue.table.progress",
-      },
-      {
-        title: "issue.table.updated",
-      },
-      {
-        title: "issue.table.approver",
-      },
-      {
-        title: "issue.table.assignee",
-      },
-      {
-        title: "issue.table.creator",
-      },
-    ],
-  ],
-  [
-    "PROJECT",
-    [
-      {
-        title: "issue.table.status",
-      },
-      {
-        title: "issue.table.name",
-      },
-      {
-        title: "issue.table.environment",
-      },
-      {
-        title: "issue.table.progress",
-      },
-      {
-        title: "issue.table.updated",
-      },
-      {
-        title: "issue.table.approver",
-      },
-      {
-        title: "issue.table.assignee",
-      },
-      {
-        title: "issue.table.creator",
-      },
-    ],
-  ],
-]);
+const columnList: BBTableColumn[] = [
+  {
+    title: "",
+  },
+  {
+    title: "",
+  },
+  {
+    title: "issue.table.name",
+  },
+  {
+    title: "issue.table.environment",
+  },
+  {
+    title: "issue.table.progress",
+  },
+  {
+    title: "issue.table.updated",
+  },
+  {
+    title: "issue.table.approver",
+  },
+  {
+    title: "issue.table.assignee",
+  },
+  {
+    title: "issue.table.creator",
+  },
+];
 
 interface LocalState {
   dataSource: any[];
@@ -280,10 +248,6 @@ const currentUserV1 = useCurrentUserV1();
 
 const tableRef = ref<HTMLTableElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
-
-const columnList = computed((): BBTableColumn[] => {
-  return [{ title: "" }, ...columnListMap.get(props.mode)!];
-});
 
 const issueSectionList = computed((): BBTableSectionDataSource<Issue>[] => {
   return [
