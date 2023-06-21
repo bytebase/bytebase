@@ -1122,12 +1122,15 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			}
 		}
 	case db.MySQL:
-		tree, _, err := parser.ParseMySQL(statement)
+		trees, err := parser.ParseMySQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
-		if err := parser.MySQLValidateForEditor(tree); err != nil {
-			return status.Errorf(codes.InvalidArgument, err.Error())
+		for _, item := range trees {
+			tree := item.Tree
+			if err := parser.MySQLValidateForEditor(tree); err != nil {
+				return status.Errorf(codes.InvalidArgument, err.Error())
+			}
 		}
 	case db.TiDB:
 		stmtList, err := parser.ParseTiDB(statement, "", "")

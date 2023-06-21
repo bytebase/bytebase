@@ -3,6 +3,8 @@ package parser
 import (
 	"testing"
 
+	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/mysql-parser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,7 +75,7 @@ func TestMySQLParser(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		_, _, err := ParseMySQL(test.statement)
+		_, err := ParseMySQL(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err, i)
 		} else {
@@ -110,9 +112,9 @@ func TestMySQLValidateForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tree, _, err := ParseMySQL(test.statement)
+		trees, err := ParseMySQL(test.statement)
 		require.NoError(t, err)
-		err = MySQLValidateForEditor(tree)
+		err = MySQLValidateForEditor(trees[0].Tree)
 		if test.validate {
 			require.NoError(t, err)
 		} else {
@@ -171,5 +173,54 @@ func TestExtractMySQLResourceList(t *testing.T) {
 		resources, err := extractMySQLResourceList("db", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
+	}
+}
+
+func TestSplitMySQLStatements(t *testing.T) {
+	tests := []struct {
+		statement string
+		expected  []string
+	}{
+		{
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+			expected: []string{
+				"SELECT * FROM t1 WHERE c1 = 1;",
+				" SELECT * FROM t2;",
+			},
+		},
+		{
+			statement: `CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+			  SELECT name INTO name FROM users WHERE id = id;
+			END; SELECT * FROM t2;`,
+			expected: []string{
+				`CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+			  SELECT name INTO name FROM users WHERE id = id;
+			END;`,
+				" SELECT * FROM t2;",
+			},
+		},
+		{
+			statement: `CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+				SELECT IF(id = 1, 'one', 'other') INTO name FROM users;
+			END; SELECT REPEAT('123', a) FROM t2;`,
+			expected: []string{
+				`CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+				SELECT IF(id = 1, 'one', 'other') INTO name FROM users;
+			END;`,
+				" SELECT REPEAT('123', a) FROM t2;",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		lexer := parser.NewMySQLLexer(antlr.NewInputStream(test.statement))
+		stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+		list, err := splitMySQLStatement(stream)
+		require.NoError(t, err)
+		require.Equal(t, test.expected, list)
 	}
 }
