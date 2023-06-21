@@ -12,8 +12,11 @@ export const instanceV1Slug = (instance: Instance): string => {
 
 export function instanceV1Name(instance: Instance) {
   let name = instance.title;
+  // instance cannot be deleted and activated at the same time.
   if (instance.state === State.DELETED) {
     name += " (Archived)";
+  } else if (!instance.activation) {
+    name += " (Deactivate)";
   }
   return name;
 }

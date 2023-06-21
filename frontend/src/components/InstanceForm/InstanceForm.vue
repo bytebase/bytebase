@@ -60,6 +60,27 @@
             />
           </div>
 
+          <div class="sm:col-span-2 ml-0 sm:ml-3">
+            <label for="activation" class="textlabel block">
+              {{ $t("subscription.instance-assignment.assign-license") }}
+              ({{
+                $t("subscription.instance-assignment.n-license-remain", {
+                  n: availableLicenseCount,
+                })
+              }})
+            </label>
+            <BBSwitch
+              class="mt-2"
+              :text="false"
+              :value="basicInfo.activation"
+              :disabled="
+                !allowEdit ||
+                (!basicInfo.activation && availableLicenseCount === 0)
+              "
+              @toggle="(on: boolean) => basicInfo.activation = on"
+            />
+          </div>
+
           <div
             :key="basicInfo.environment"
             class="sm:col-span-3 sm:col-start-1 -mt-4"
@@ -634,6 +655,7 @@ import {
   useActuatorV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
+  useSubscriptionV1Store,
   useGracefulRequest,
   featureToRef,
 } from "@/store";
@@ -707,6 +729,7 @@ const instanceV1Store = useInstanceV1Store();
 const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
 const actuatorStore = useActuatorV1Store();
+const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
   currentDataSourceType: DataSourceType.ADMIN,
@@ -721,6 +744,13 @@ const hasReadonlyReplicaFeature = featureToRef(
   "bb.feature.read-replica-connection"
 );
 
+const availableLicenseCount = computed(() => {
+  return Math.max(
+    0,
+    subscriptionStore.instanceCount - instanceV1Store.activateInstanceCount
+  );
+});
+
 const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   return {
     uid: instance?.uid ?? String(UNKNOWN_ID),
@@ -730,6 +760,7 @@ const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     engine: instance?.engine ?? Engine.MYSQL,
     externalLink: instance?.externalLink ?? "",
     environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
+    activation: instance?.activation ?? false,
   };
 };
 
@@ -1301,6 +1332,9 @@ const doUpdate = async () => {
     }
     if (instancePatch.externalLink !== instance.externalLink) {
       updateMask.push("external_link");
+    }
+    if (instancePatch.activation !== instance.activation) {
+      updateMask.push("activation");
     }
     return await instanceV1Store.updateInstance(instancePatch, updateMask);
   };
