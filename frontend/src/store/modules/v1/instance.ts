@@ -33,6 +33,15 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       return instance.state === State.ACTIVE;
     });
   });
+  const activateInstanceCount = computed(() => {
+    let count = 0;
+    for (const instance of activeInstanceList.value) {
+      if (instance.activation) {
+        count++;
+      }
+    }
+    return count;
+  });
 
   // Actions
   const upsertInstances = async (list: Instance[]) => {
@@ -195,6 +204,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   return {
     instanceList,
     activeInstanceList,
+    activateInstanceCount,
     createInstance,
     updateInstance,
     archiveInstance,

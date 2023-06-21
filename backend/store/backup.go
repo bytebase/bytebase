@@ -85,6 +85,10 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *BackupSe
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return backupSettingList, nil
 }
 

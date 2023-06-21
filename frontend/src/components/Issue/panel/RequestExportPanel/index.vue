@@ -217,6 +217,7 @@ import {
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  DatabaseResource,
   IssueCreate,
   PresetRoleType,
   SQLDialect,
@@ -244,7 +245,6 @@ import { Engine } from "@/types/proto/v1/common";
 import { head } from "lodash-es";
 import { useRouter } from "vue-router";
 import SelectTableForm from "./SelectTableForm/index.vue";
-import { DatabaseResource } from "./SelectTableForm/common";
 import dayjs from "dayjs";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 

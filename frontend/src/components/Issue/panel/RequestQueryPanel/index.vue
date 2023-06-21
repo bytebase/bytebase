@@ -141,7 +141,12 @@ import {
 } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { IssueCreate, PresetRoleType, SYSTEM_BOT_ID } from "@/types";
+import {
+  DatabaseResource,
+  IssueCreate,
+  PresetRoleType,
+  SYSTEM_BOT_ID,
+} from "@/types";
 import { extractUserUID, issueSlug, memberListInProjectV1 } from "@/utils";
 import {
   useCurrentUserV1,
@@ -152,7 +157,6 @@ import {
 import RequiredStar from "@/components/RequiredStar.vue";
 import { head, uniq } from "lodash-es";
 import { useRouter } from "vue-router";
-import { DatabaseResource } from "./SelectTableForm/common";
 import dayjs from "dayjs";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";

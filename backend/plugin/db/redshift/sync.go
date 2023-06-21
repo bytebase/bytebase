@@ -135,6 +135,9 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+	if driver.datashare {
+		return &storepb.DatabaseMetadata{}, nil
+	}
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {

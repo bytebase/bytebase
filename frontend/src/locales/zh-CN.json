@@ -1873,6 +1873,14 @@
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
     "upgrade-now": "现在升级",
+    "instance-assignment": {
+      "license": "证书",
+      "assign-license": "分配证书",
+      "n-license-remain": "剩余 {n}",
+      "manage-license": "管理证书",
+      "available-and-total-license": "可分配数 / 证书总数",
+      "success-notification": "证书分配更新成功"
+    },
     "update": {
       "success": {
         "title": "证书更新成功",

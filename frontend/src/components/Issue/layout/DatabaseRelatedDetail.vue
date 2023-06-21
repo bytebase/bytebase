@@ -31,9 +31,10 @@
           <PipelineSimpleFlow class="border-t border-b" />
         </template>
 
-        <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
-          <IssueStagePanel />
-        </div>
+        <IssueStagePanel
+          v-if="!create"
+          class="px-4 py-4 md:flex md:flex-col border-b"
+        />
       </template>
 
       <!-- Output Panel -->

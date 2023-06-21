@@ -207,6 +207,23 @@
           </h3>
         </div>
       </template>
+
+      <div
+        v-if="quickAction === 'quickaction.bb.subscription.license-assignment'"
+        class="flex flex-col items-center w-24"
+      >
+        <router-link
+          to="/setting/subscription?manageLicense=1"
+          class="btn-icon-primary p-3"
+        >
+          <heroicons-outline:cog class="w-5 h-5" />
+        </router-link>
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
+          {{ $t("subscription.instance-assignment.assign-license") }}
+        </h3>
+      </div>
     </template>
   </div>
 
@@ -314,6 +331,9 @@ const props = defineProps({
     type: Object as PropType<QuickActionType[]>,
   },
 });
+
+console.log("quickActionList");
+console.log(props.quickActionList);
 
 const { t } = useI18n();
 const router = useRouter();
@@ -434,6 +454,14 @@ const QuickActionMap: Record<string, Partial<Action>> = {
   "quickaction.bb.project.database.transfer": {
     name: t("quick-action.transfer-in-db"),
     perform: () => transferDatabase(),
+  },
+  "quickaction.bb.subscription.license-assignment": {
+    name: t("subscription.instance-assignment.manage-license"),
+    perform: () =>
+      router.push({
+        name: "setting.workspace.subscription",
+        query: { manageLicense: 1 },
+      }),
   },
 };
 
