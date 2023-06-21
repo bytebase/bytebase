@@ -43,6 +43,7 @@ import {
   useEnvironmentV1Store,
   useEnvironmentV1List,
   useInstanceV1List,
+  useInstanceV1Store,
 } from "@/store";
 
 interface LocalState {
@@ -50,6 +51,7 @@ interface LocalState {
 }
 
 const subscriptionStore = useSubscriptionV1Store();
+const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
 const router = useRouter();
 const { t } = useI18n();
@@ -106,12 +108,11 @@ const filteredInstanceV1List = computed(() => {
   return sortInstanceV1ListByEnvironmentV1(list, environmentList.value);
 });
 
-const instanceQuota = computed((): number => {
-  return subscriptionStore.instanceCount;
-});
-
 const remainingInstanceCount = computed((): number => {
-  return Math.max(0, instanceQuota.value - rawInstanceV1List.value.length);
+  return Math.max(
+    0,
+    subscriptionStore.instanceCount - instanceV1Store.activateInstanceCount
+  );
 });
 
 const instanceCountAttention = computed((): string => {
@@ -119,12 +120,12 @@ const instanceCountAttention = computed((): string => {
   let status = "";
   if (remainingInstanceCount.value > 0) {
     status = t("subscription.features.bb-feature-instance-count.remaining", {
-      total: instanceQuota.value,
+      total: subscriptionStore.instanceCount,
       count: remainingInstanceCount.value,
     });
   } else {
     status = t("subscription.features.bb-feature-instance-count.runoutof", {
-      total: instanceQuota.value,
+      total: subscriptionStore.instanceCount,
     });
   }
 

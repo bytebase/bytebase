@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/store"
@@ -22,12 +23,19 @@ import (
 )
 
 // NewRunner returns a runner.
-func NewRunner(store *store.Store, activityManager *activity.Manager, feishuProvider *feishu.Provider, profile config.Profile) *Runner {
+func NewRunner(
+	store *store.Store,
+	activityManager *activity.Manager,
+	feishuProvider *feishu.Provider,
+	profile config.Profile,
+	licenseService enterpriseAPI.LicenseService,
+) *Runner {
 	return &Runner{
 		store:           store,
 		activityManager: activityManager,
 		p:               feishuProvider,
 		profile:         profile,
+		licenseService:  licenseService,
 	}
 }
 
@@ -37,6 +45,7 @@ type Runner struct {
 	activityManager *activity.Manager
 	p               *feishu.Provider
 	profile         config.Profile
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // Run runs the ApplicationRunner.
@@ -53,27 +62,17 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			func() {
-				settingName := api.SettingAppIM
-				setting, err := r.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
+				setting, err := r.store.GetAppIMApprovalSetting(ctx)
 				if err != nil {
 					if !errors.Is(err, context.Canceled) {
-						log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+						log.Error("failed to get IM setting", zap.Error(err))
 					}
 					return
 				}
 				if setting == nil {
-					log.Error("cannot find IM setting")
 					return
 				}
-				if setting.Value == "" {
-					return
-				}
-				var value api.SettingAppIMValue
-				if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
-					log.Error("failed to unmarshal IM setting value", zap.String("settingName", string(settingName)), zap.Any("settingValue", setting.Value), zap.Error(err))
-					return
-				}
-				if !value.ExternalApproval.Enabled {
+				if !setting.ExternalApproval.Enabled {
 					return
 				}
 
@@ -100,7 +99,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						return
 					}
 					stagesByPipelineID[*issue.PipelineUID] = stages
-					r.scheduleApproval(ctx, issue, stages, &value)
+					r.scheduleApproval(ctx, issue, stages, setting)
 				}
 
 				externalApprovalType := api.ExternalApprovalTypeFeishu
@@ -147,8 +146,8 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 
 						status, err := r.p.GetExternalApprovalStatus(ctx, feishu.TokenCtx{
-							AppID:     value.AppID,
-							AppSecret: value.AppSecret,
+							AppID:     setting.AppID,
+							AppSecret: setting.AppSecret,
 						}, payload.InstanceCode)
 						if err != nil {
 							if errors.Is(err, context.Canceled) {
@@ -359,22 +358,14 @@ func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *s
 
 // CancelExternalApproval cancels the active external approval of an issue.
 func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason string) error {
-	settingName := api.SettingAppIM
-	setting, err := r.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
+	setting, err := r.store.GetAppIMApprovalSetting(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get IM setting by settingName %s", string(settingName))
+		return errors.Wrapf(err, "failed to get IM setting")
 	}
 	if setting == nil {
-		return errors.New("cannot find IM setting")
-	}
-	if setting.Value == "" {
 		return nil
 	}
-	var value api.SettingAppIMValue
-	if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal IM setting, settingName %s", string(settingName))
-	}
-	if !value.ExternalApproval.Enabled {
+	if !setting.ExternalApproval.Enabled {
 		return nil
 	}
 	approval, err := r.store.GetExternalApprovalByIssueIDV2(ctx, issueID)
@@ -393,18 +384,18 @@ func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason
 	}
 	botID, err := r.p.GetBotID(ctx,
 		feishu.TokenCtx{
-			AppID:     value.AppID,
-			AppSecret: value.AppSecret,
+			AppID:     setting.AppID,
+			AppSecret: setting.AppSecret,
 		})
 	if err != nil {
 		return err
 	}
 	if err := r.p.CancelExternalApproval(ctx,
 		feishu.TokenCtx{
-			AppID:     value.AppID,
-			AppSecret: value.AppSecret,
+			AppID:     setting.AppID,
+			AppSecret: setting.AppSecret,
 		},
-		value.ExternalApproval.ApprovalDefinitionID,
+		setting.ExternalApproval.ApprovalDefinitionID,
 		payload.InstanceCode,
 		payload.RequesterID,
 	); err != nil {
@@ -412,8 +403,8 @@ func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason
 	}
 	return r.p.CreateExternalApprovalComment(ctx,
 		feishu.TokenCtx{
-			AppID:     value.AppID,
-			AppSecret: value.AppSecret,
+			AppID:     setting.AppID,
+			AppSecret: setting.AppSecret,
 		},
 		payload.InstanceCode,
 		botID,
@@ -463,10 +454,17 @@ func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *store.
 			pendingApprovalCount++
 		}
 
-		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID, ShowDeleted: false})
 		if err != nil {
 			return false, err
 		}
+		if instance == nil {
+			return false, nil
+		}
+		if !r.licenseService.IsFeatureEnabledForInstance(api.FeatureIMApproval, instance) {
+			return false, nil
+		}
+
 		ok, err := utils.PassAllCheck(task, api.TaskCheckStatusSuccess, taskCheckRuns, instance.Engine)
 		if err != nil {
 			return false, err
@@ -621,32 +619,21 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *store.IssueMessage
 // tryUpdateApprovalDefinition is run on application runner start.
 // The approval definition may have changed so we make idempotent POST request to patch the definition.
 func (r *Runner) tryUpdateApprovalDefinition(ctx context.Context) error {
-	settingName := api.SettingAppIM
-	setting, err := r.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
+	setting, err := r.store.GetAppIMApprovalSetting(ctx)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			return errors.Wrapf(err, "failed to get IM setting")
-		}
-		return nil
+		return errors.Wrapf(err, "failed to get IM setting")
 	}
 	if setting == nil {
-		return errors.New("cannot find IM setting")
-	}
-	if setting.Value == "" {
 		return nil
 	}
-	var value api.SettingAppIMValue
-	if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal setting value %+v", setting.Value)
-	}
-	if !value.ExternalApproval.Enabled {
+	if !setting.ExternalApproval.Enabled {
 		return nil
 	}
 	// pass in ApprovalDefinitionID so that this would be a PATCH.
 	if _, err := r.p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
-		AppID:     value.AppID,
-		AppSecret: value.AppSecret,
-	}, value.ExternalApproval.ApprovalDefinitionID); err != nil {
+		AppID:     setting.AppID,
+		AppSecret: setting.AppSecret,
+	}, setting.ExternalApproval.ApprovalDefinitionID); err != nil {
 		return errors.Wrap(err, "failed to update approval definition")
 	}
 	return nil

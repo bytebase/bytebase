@@ -4,7 +4,7 @@
     :auto-focus="false"
     width="auto"
     :z-index="30"
-    @update:show="(show) => !show && $emit('close')"
+    @update:show="(show: boolean) => !show && $emit('close')"
   >
     <NDrawerContent
       :title="$t('slow-query.detail')"

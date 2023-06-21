@@ -132,6 +132,7 @@
     <FeatureModal
       v-if="state.showFeatureModal"
       feature="bb.feature.pitr"
+      :instance="database.instanceEntity"
       @cancel="state.showFeatureModal = false"
     />
   </div>
@@ -218,7 +219,10 @@ const allowRestoreInPlace = computed((): boolean => {
   return props.database.instanceEntity.engine === Engine.POSTGRES;
 });
 
-const hasPITRFeature = featureToRef("bb.feature.pitr");
+const hasPITRFeature = featureToRef(
+  "bb.feature.pitr",
+  props.database.instanceEntity
+);
 const createDatabasePrepForm =
   ref<InstanceType<typeof CreateDatabasePrepForm>>();
 

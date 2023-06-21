@@ -1881,6 +1881,7 @@
     "instance-assignment": {
       "license": "证书",
       "assign-license": "分配证书",
+      "missing-license-attention": "请给实例分配证书以解锁该功能。",
       "n-license-remain": "剩余 {n}",
       "manage-license": "管理证书",
       "used-and-total-license": "已分配 / 总实例证书",

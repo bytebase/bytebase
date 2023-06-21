@@ -6,11 +6,15 @@
       :description="$t('anomaly.attention-desc')"
     />
 
-    <FeatureAttention
-      v-if="!hasSchemaDriftFeature"
+    <FeatureAttentionForInstanceLicense
+      v-if="hasSchemaDriftFeature"
       custom-class="mt-5"
       feature="bb.feature.schema-drift"
-      :description="$t('subscription.features.bb-feature-schema-drift.desc')"
+    />
+    <FeatureAttention
+      v-else
+      custom-class="mt-5"
+      feature="bb.feature.schema-drift"
     />
 
     <div class="mt-4 space-y-4">
@@ -400,8 +404,6 @@ export default defineComponent({
       state.searchText = searchText;
     };
 
-    const hasSchemaDriftFeature = featureToRef("bb.feature.schema-drift");
-
     return {
       DATABASE_TAB,
       INSTANCE_TAB,
@@ -412,7 +414,7 @@ export default defineComponent({
       instanceAnomalySummaryList,
       tabItemList,
       changeSearchText,
-      hasSchemaDriftFeature,
+      hasSchemaDriftFeature: featureToRef("bb.feature.schema-drift"),
     };
   },
 });

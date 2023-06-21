@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -89,6 +90,26 @@ func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.Works
 		return nil, err
 	}
 	return payload, nil
+}
+
+// GetAppIMApprovalSetting gets the IM approval setting.
+func (s *Store) GetAppIMApprovalSetting(ctx context.Context) (*api.SettingAppIMValue, error) {
+	settingName := api.SettingAppIM
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{Name: &settingName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return nil, errors.Errorf("cannot find setting %v", settingName)
+	}
+	if setting.Value == "" {
+		return nil, nil
+	}
+	var value api.SettingAppIMValue
+	if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
+		return nil, err
+	}
+	return &value, nil
 }
 
 // GetWorkspaceExternalApprovalSetting gets the workspace external approval setting.

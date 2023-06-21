@@ -154,6 +154,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
@@ -348,6 +349,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})

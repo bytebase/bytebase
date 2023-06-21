@@ -89,6 +89,7 @@ func TestTenant(t *testing.T) {
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 				Engine:      v1pb.Engine_SQLITE,
 				Environment: testEnvironment.Name,
+				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 			},
 		})
@@ -102,6 +103,7 @@ func TestTenant(t *testing.T) {
 				Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 				Engine:      v1pb.Engine_SQLITE,
 				Environment: prodEnvironment.Name,
+				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 			},
 		})
@@ -385,6 +387,7 @@ func TestTenantVCS(t *testing.T) {
 						Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: testEnvironment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
 				})
@@ -398,6 +401,7 @@ func TestTenantVCS(t *testing.T) {
 						Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: prodEnvironment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 					},
 				})
@@ -545,6 +549,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 			Title:       testInstanceName,
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: testEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 		},
 	})
@@ -556,6 +561,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 			Title:       testInstanceName,
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 		},
 	})
@@ -842,6 +848,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 						Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: testEnvironment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
 				})
@@ -855,6 +862,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 						Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: prodEnvironment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 					},
 				})
@@ -1134,6 +1142,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 						Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: testEnvironment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
 				})
@@ -1400,6 +1409,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 						Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: testEnvironment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
 				})

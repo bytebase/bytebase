@@ -117,6 +117,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
@@ -259,6 +260,7 @@ func TestGhostTenant(t *testing.T) {
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 				Engine:      v1pb.Engine_MYSQL,
 				Environment: testEnvironment.Name,
+				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(port), Username: "bytebase", Password: "bytebase"}},
 			},
 		})
@@ -275,6 +277,7 @@ func TestGhostTenant(t *testing.T) {
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 				Engine:      v1pb.Engine_MYSQL,
 				Environment: prodEnvironment.Name,
+				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(port), Username: "bytebase", Password: "bytebase"}},
 			},
 		})

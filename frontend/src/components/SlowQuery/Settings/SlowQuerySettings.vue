@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 pb-4 w-[56rem] max-w-full">
+  <div class="space-y-4 pb-4 max-w-full">
     <div>
       <BBAttention :style="'WARN'" :title="$t('slow-query.report-slow-query')">
         <i18n-t

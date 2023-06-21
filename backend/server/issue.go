@@ -826,9 +826,6 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if c.PointInTimeTs != nil && !s.licenseService.IsFeatureEnabled(api.FeaturePITR) {
-		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
-	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
 	if err != nil {
 		return nil, err
@@ -849,6 +846,9 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	}
+	if c.PointInTimeTs != nil && !s.licenseService.IsFeatureEnabledForInstance(api.FeaturePITR, instance) {
+		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
 	}
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
 	if err != nil {
