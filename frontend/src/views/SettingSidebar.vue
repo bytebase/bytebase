@@ -1,19 +1,18 @@
 <template>
   <!-- Navigation -->
-  <nav class="flex-1 flex flex-col px-2 overflow-y-auto">
-    <BytebaseLogo class="w-full px-2" />
-    <div class="space-y-1">
+  <nav class="flex-1 flex flex-col overflow-y-hidden">
+    <BytebaseLogo class="w-full px-4 shrink-0" />
+    <div class="space-y-1 flex-1 overflow-y-auto px-2 pb-4">
       <button
-        class="group flex items-center px-1 py-2 text-base leading-5 font-normal rounded-md text-gray-700 focus:outline-none"
+        class="group shrink-0 flex items-center px-2 py-2 text-base leading-5 font-normal rounded-md text-gray-700 hover:opacity-80 focus:outline-none"
         @click.prevent="goBack"
       >
         <heroicons-outline:chevron-left
-          class="mr-1 h-6 w-6 text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
+          class="mr-1 w-5 h-auto text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
         />
         {{ $t("common.back") }}
       </button>
-
-      <div class="mt-8">
+      <div>
         <div
           class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
         >
@@ -28,7 +27,7 @@
           >
         </div>
       </div>
-      <div class="mt-8">
+      <div>
         <div
           class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
         >
@@ -75,7 +74,7 @@
           >
         </div>
       </div>
-      <div class="mt-8">
+      <div>
         <div
           class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
         >
@@ -127,7 +126,7 @@
           >
         </div>
       </div>
-      <div v-if="showIntegrationSection" class="mt-8">
+      <div v-if="showIntegrationSection">
         <div
           class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
         >
