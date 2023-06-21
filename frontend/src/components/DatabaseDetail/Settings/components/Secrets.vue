@@ -1,5 +1,9 @@
 <template>
   <div class="space-y-4">
+    <FeatureAttention
+      feature="bb.feature.encrypted-secrets"
+      :instance="database.instanceEntity"
+    />
     <div class="textinfolabel">
       <i18n-t keypath="database.secret.description">
         <template #guide>
@@ -21,6 +25,7 @@
         <FeatureBadge
           feature="bb.feature.encrypted-secrets"
           class="text-accent ml-2"
+          :instance="database.instanceEntity"
         />
       </div>
       <div class="flex justify-end">
@@ -70,7 +75,7 @@
       :show="!!detail"
       width="auto"
       :auto-focus="false"
-      @update:show="(show) => !show && hideDetail()"
+      @update:show="(show: boolean) => !show && hideDetail()"
     >
       <NDrawerContent
         :title="
@@ -182,6 +187,7 @@
     v-if="showFeatureModal"
     feature="bb.feature.encrypted-secrets"
     @cancel="showFeatureModal = false"
+    :instance="database.instanceEntity"
   />
 </template>
 
@@ -197,7 +203,7 @@ import { type ComposedDatabase } from "@/types";
 import {
   pushNotification,
   useDatabaseSecretStore,
-  hasFeature,
+  featureToRef,
   useCurrentUserV1,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
@@ -268,8 +274,13 @@ const extractSecretName = (name: string) => {
   return "";
 };
 
+const hasSecretFeature = featureToRef(
+  "bb.feature.encrypted-secrets",
+  props.database.instanceEntity
+);
+
 const showDetail = (secret?: Secret) => {
-  if (!hasFeature("bb.feature.encrypted-secrets")) {
+  if (!hasSecretFeature.value) {
     showFeatureModal.value = true;
     return;
   }
@@ -355,7 +366,7 @@ const upsertSecret = (secret: Secret) => {
 const handleSave = async () => {
   if (!detail.value) return;
   detail.value.loading = true;
-  if (!hasFeature("bb.feature.encrypted-secrets")) {
+  if (!hasSecretFeature.value) {
     showFeatureModal.value = true;
     return;
   }
@@ -386,7 +397,7 @@ const handleSave = async () => {
 };
 
 const handleDelete = async (secret: Secret) => {
-  if (!hasFeature("bb.feature.encrypted-secrets")) {
+  if (!hasSecretFeature.value) {
     showFeatureModal.value = true;
     return;
   }

@@ -275,12 +275,6 @@
     />
   </Drawer>
 
-  <FeatureModal
-    v-if="state.showFeatureModal && state.featureName !== ''"
-    :feature="state.featureName"
-    @cancel="state.showFeatureModal = false"
-  />
-
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
     @close="state.showRequestQueryPanel = false"
@@ -303,7 +297,6 @@ import { idFromSlug, isDev } from "@/utils";
 import {
   useCommandStore,
   useCurrentUserIamPolicy,
-  useInstanceV1Store,
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
 } from "@/store";
@@ -318,8 +311,6 @@ import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/inde
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 
 interface LocalState {
-  featureName: string;
-  showFeatureModal: boolean;
   quickActionType: QuickActionType | undefined;
   showRequestQueryPanel: boolean;
   showRequestExportPanel: boolean;
@@ -332,9 +323,6 @@ const props = defineProps({
   },
 });
 
-console.log("quickActionList");
-console.log(props.quickActionList);
-
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
@@ -346,8 +334,6 @@ const hasDBAWorkflowFeature = computed(() => {
 });
 
 const state = reactive<LocalState>({
-  featureName: "",
-  showFeatureModal: false,
   quickActionType: undefined,
   showRequestQueryPanel: false,
   showRequestExportPanel: false,
@@ -389,12 +375,6 @@ const transferOutDatabase = () => {
 };
 
 const createInstance = () => {
-  const instanceList = useInstanceV1Store().instanceList;
-  if (subscriptionStore.instanceCount <= instanceList.length) {
-    state.featureName = "bb.feature.instance-count";
-    state.showFeatureModal = true;
-    return;
-  }
   state.quickActionType = "quickaction.bb.instance.create";
 };
 

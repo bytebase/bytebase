@@ -94,6 +94,7 @@ DROP SCHEMA "schema_a";
 			Title:       "pgTestSyncSchema",
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})

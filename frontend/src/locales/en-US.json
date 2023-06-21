@@ -1881,6 +1881,7 @@
     "instance-assignment": {
       "license": "License",
       "assign-license": "Assign License",
+      "missing-license-attention": "You need to assign license to instance to enable this feature.",
       "n-license-remain": "remain {n}",
       "manage-license": "Manage License",
       "available-and-total-license": "Available / Total Instance License",

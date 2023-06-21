@@ -11,19 +11,18 @@
         <heroicons-outline:external-link class="w-4 h-4" />
       </a>
     </div>
-    <FeatureAttention
-      v-if="!hasSQLReviewPolicyFeature"
+    <FeatureAttentionForInstanceLicense
       custom-class="mt-5"
       feature="bb.feature.sql-review"
-      :description="$t('subscription.features.bb-feature-sql-review.desc')"
     />
+
     <SQLReviewPolicyTable class="my-5" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { watchEffect } from "vue";
-import { useSQLReviewStore, featureToRef } from "@/store";
+import { useSQLReviewStore } from "@/store";
 import SQLReviewPolicyTable from "@/components/SQLReview/SQLReviewPolicyTable.vue";
 
 const store = useSQLReviewStore();
@@ -31,6 +30,4 @@ const store = useSQLReviewStore();
 watchEffect(() => {
   store.fetchReviewPolicyList();
 });
-
-const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 </script>

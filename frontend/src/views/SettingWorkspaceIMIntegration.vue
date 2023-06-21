@@ -1,5 +1,6 @@
 <template>
   <div class="w-full mt-4 space-y-4">
+    <FeatureAttentionForInstanceLicense feature="bb.feature.im.approval" />
     <div class="textinfolabel">
       {{ $t("settings.im-integration.description") }}
       <a
@@ -90,7 +91,6 @@ import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification } from "@/store";
 import { BBSwitch } from "@/bbkit";
-import FeatureBadge from "@/components/FeatureBadge.vue";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   AppIMSetting,

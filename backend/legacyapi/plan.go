@@ -320,6 +320,31 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeaturePluginOpenAI: {false, false, true},
 }
 
+// InstanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.
+var InstanceLimitFeature = map[FeatureType]bool{
+	// Change Workflow
+	FeatureIMApproval:       true,
+	FeatureSchemaDrift:      true,
+	FeatureSQLReview:        true,
+	FeatureEncryptedSecrets: true,
+	// VCS Integration
+	FeatureVCSSchemaWriteBack: true,
+	// Database management
+	FeaturePITR:                  true,
+	FeatureReadReplicaConnection: true,
+	// TODO:
+	// FeatureVCSSQLReviewWorkflow: true,
+	// FeatureOnlineMigration:  true,
+	// FeatureMybatisSQLReview: true,
+	// FeatureTaskScheduleTime: true,
+	// FeatureDatabaseGrouping: true,
+	// FeatureInstanceSSHConnection: true,
+	// FeatureSyncSchemaAllVersions: true,
+	// FeatureIndexAdvisor: true,
+	// FeatureSensitiveData:  true,
+	// FeatureCustomApproval: true,
+}
+
 // PlanLimit is the type for plan limits.
 type PlanLimit int
 

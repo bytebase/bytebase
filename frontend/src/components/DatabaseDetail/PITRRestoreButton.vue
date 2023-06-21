@@ -13,13 +13,14 @@
           :disabled="pitrButtonDisabled"
           @pointerenter="showTooltip"
           @pointerleave="hideTooltip"
-          @click="(action) => onClickPITRButton(action as PITRButtonAction)"
+          @click="(action: PITRButtonAction) => onClickPITRButton(action)"
         >
           <template #default="{ action }">
             <span>{{ action.text }}</span>
             <FeatureBadge
               feature="bb.feature.pitr"
               class="text-accent ml-2 -mr-1"
+              :instance="database.instanceEntity"
             />
           </template>
         </BBContextMenuButton>
@@ -138,6 +139,7 @@
     v-if="state.showFeatureModal"
     feature="bb.feature.pitr"
     @cancel="state.showFeatureModal = false"
+    :instance="database.instanceEntity"
   />
 </template>
 
@@ -205,7 +207,10 @@ const state = reactive<LocalState>({
 
 const createDatabaseForm = ref<InstanceType<typeof CreatePITRDatabaseForm>>();
 
-const hasPITRFeature = featureToRef("bb.feature.pitr");
+const hasPITRFeature = featureToRef(
+  "bb.feature.pitr",
+  props.database.instanceEntity
+);
 
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 
