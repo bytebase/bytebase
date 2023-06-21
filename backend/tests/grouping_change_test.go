@@ -418,25 +418,23 @@ func TestCreateTableGroup(t *testing.T) {
 				for preCreateDatabase := range prepareInstance.matchDatabasesNameTableName {
 					err = ctl.createDatabase(ctx, projectUID, instance, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
-					for _, preCreateTable := range prepareInstance.matchDatabasesNameTableName[preCreateDatabase].matched {
-						dbDriver, err := db.Open(ctx, db.SQLite, db.DriverConfig{}, db.ConnectionConfig{
-							Host:     instanceDir,
-							Database: preCreateDatabase,
-						}, db.ConnectionContext{})
-						a.NoError(err)
-						_, err = dbDriver.Execute(ctx, fmt.Sprintf(`CREATE TABLE %s (id INT);`, preCreateTable), false, db.ExecuteOptions{})
-						a.NoError(err)
-					}
+					dbDriver, err := db.Open(ctx, db.SQLite, db.DriverConfig{}, db.ConnectionConfig{
+						Host:     instanceDir,
+						Database: preCreateDatabase,
+					}, db.ConnectionContext{})
+					a.NoError(err)
 
-					for _, preCreateTable := range prepareInstance.matchDatabasesNameTableName[preCreateDatabase].unmatched {
-						dbDriver, err := db.Open(ctx, db.SQLite, db.DriverConfig{}, db.ConnectionConfig{
-							Host:     instanceDir,
-							Database: preCreateDatabase,
-						}, db.ConnectionContext{})
-						a.NoError(err)
+					for _, preCreateTable := range prepareInstance.matchDatabasesNameTableName[preCreateDatabase].matched {
 						_, err = dbDriver.Execute(ctx, fmt.Sprintf(`CREATE TABLE %s (id INT);`, preCreateTable), false, db.ExecuteOptions{})
 						a.NoError(err)
 					}
+					for _, preCreateTable := range prepareInstance.matchDatabasesNameTableName[preCreateDatabase].unmatched {
+						_, err = dbDriver.Execute(ctx, fmt.Sprintf(`CREATE TABLE %s (id INT);`, preCreateTable), false, db.ExecuteOptions{})
+						a.NoError(err)
+					}
+					err = dbDriver.Close(ctx)
+					a.NoError(err)
+
 					_, err = ctl.databaseServiceClient.SyncDatabase(ctx, &v1pb.SyncDatabaseRequest{
 						Name: fmt.Sprintf("%s/databases/%s", instance.Name, preCreateDatabase),
 					})
