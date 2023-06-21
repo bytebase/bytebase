@@ -1,23 +1,25 @@
 <template>
-  <button
-    class="select-none inline-flex items-center space-x-1 border border-control-border rounded-md text-control bg-white hover:bg-control-bg-hover disabled:bg-white disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+  <NButton
     :disabled="disabled"
+    style="--n-icon-margin: 3px"
     @click="handleClick"
   >
-    <slot v-if="!uploading" name="icon">
-      <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
-    </slot>
-    <template v-else>
-      <BBProgressPie
-        v-if="percent > 0"
-        :percent="percent"
-        class="w-5 h-5 text-info"
-      >
-        <template #default="{ percent: displayPercent }">
-          <span class="scale-[66%]">{{ displayPercent }}</span>
-        </template>
-      </BBProgressPie>
-      <BBSpin v-else class="w-5 h-5" />
+    <template #icon>
+      <slot v-if="!uploading" name="icon">
+        <heroicons-outline:arrow-up-tray class="w-4 h-4" />
+      </slot>
+      <template v-else>
+        <BBProgressPie
+          v-if="percent > 0"
+          :percent="percent"
+          class="w-4 h-4 text-info"
+        >
+          <template #default="{ percent: displayPercent }">
+            <span class="scale-[66%]">{{ displayPercent }}</span>
+          </template>
+        </BBProgressPie>
+        <BBSpin v-else class="w-4 h-4" />
+      </template>
     </template>
 
     <span>
@@ -34,11 +36,13 @@
       class="hidden"
       @change="handleUpload"
     />
-  </button>
+  </NButton>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
+import { NButton } from "naive-ui";
+
 import { BBProgressPie } from "@/bbkit";
 
 type Tick = (p: number) => void;
