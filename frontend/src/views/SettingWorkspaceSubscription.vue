@@ -41,18 +41,16 @@
       </div>
       <div class="my-3">
         <dt class="text-gray-400">
-          {{
-            $t("subscription.instance-assignment.available-and-total-license")
-          }}
+          {{ $t("subscription.instance-assignment.used-and-total-license") }}
         </dt>
         <dd
-          class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer"
+          class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
           @click="state.showInstanceAssignmentDrawer = true"
         >
-          <span>{{ availableLicenseCount }}</span>
+          <span class="group-hover:underline">{{ availableLicenseCount }}</span>
           <span class="text-xl">/</span>
-          <span>{{ totalLicenseCount }}</span>
-          <heroicons-outline:cog class="h-6 w-6" />
+          <span class="group-hover:underline">{{ totalLicenseCount }}</span>
+          <heroicons-outline:pencil class="h-6 w-6" />
         </dd>
       </div>
       <div v-if="!subscriptionStore.isFreePlan" class="my-3">
@@ -224,10 +222,7 @@ const totalLicenseCount = computed((): string => {
 
 const availableLicenseCount = computed((): string => {
   if (instanceCount.value > 0) {
-    return `${Math.max(
-      0,
-      instanceCount.value - instanceV1Store.activateInstanceCount
-    )}`;
+    return `${instanceV1Store.activateInstanceCount}`;
   }
   return t("subscription.unlimited");
 });
