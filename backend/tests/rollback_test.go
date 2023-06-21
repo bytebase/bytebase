@@ -139,6 +139,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
 	})
@@ -353,6 +354,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 			Title:       t.Name(),
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
 	})
@@ -575,6 +577,7 @@ func TestRollbackCanceled(t *testing.T) {
 			Title:       t.Name(),
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
 	})

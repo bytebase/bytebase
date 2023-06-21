@@ -503,13 +503,24 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 }
 
 func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *store.RepositoryMessage, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent) (string, error) {
-	if !license.IsFeatureEnabled(api.FeatureVCSSchemaWriteBack) {
-		return "", nil
-	}
 	if task.Type != api.TaskDatabaseSchemaBaseline && task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostCutover {
 		return "", nil
 	}
 	if repo == nil || repo.SchemaPathTemplate == "" {
+		return "", nil
+	}
+
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID:         &task.InstanceID,
+		ShowDeleted: false,
+	})
+	if err != nil {
+		return "", err
+	}
+	if instance == nil {
+		return "", errors.Errorf("cannot found instance %d", task.InstanceID)
+	}
+	if !license.IsFeatureEnabledForInstance(api.FeatureVCSSchemaWriteBack, instance) {
 		return "", nil
 	}
 

@@ -215,7 +215,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 
 	where := ""
 	if instanceCreate.Activation {
-		where = fmt.Sprintf("(%s) < %d", countActivateInstanceQuery, maximumActivation)
+		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
 	}
 
 	var instanceID int
@@ -230,7 +230,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				external_link,
 				activation
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			SELECT $1, $2, $3, $4, $5, $6, $7, $8
 			%s
 			RETURNING id
 		`, where),

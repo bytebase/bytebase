@@ -22,7 +22,11 @@
       </div>
       <div class="mt-3">
         <p class="whitespace-pre-wrap">
-          <template v-if="subscriptionStore.canTrial">
+          <i18n-t
+            v-if="instanceMissingLicense"
+            keypath="subscription.instance-assignment.missing-license-attention"
+          />
+          <template v-else-if="subscriptionStore.canTrial">
             <i18n-t
               v-if="isRequiredInPlan"
               keypath="subscription.required-plan-with-trial"
@@ -106,11 +110,16 @@ import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store, pushNotification } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { Instance } from "@/types/proto/v1/instance_service";
 
 const props = defineProps({
   feature: {
     required: true,
     type: String as PropType<FeatureType>,
+  },
+  instance: {
+    type: Object as PropType<Instance>,
+    default: undefined,
   },
 });
 
@@ -118,11 +127,23 @@ const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
 const router = useRouter();
 
-const ok = () => {
-  router.push({ name: "setting.workspace.subscription" });
-};
-
 const subscriptionStore = useSubscriptionV1Store();
+
+const instanceMissingLicense = subscriptionStore.instanceMissingLicense(
+  props.feature,
+  props.instance
+);
+
+const ok = () => {
+  router.push({
+    name: "setting.workspace.subscription",
+    query: instanceMissingLicense
+      ? {
+          manageLicense: 1,
+        }
+      : {},
+  });
+};
 
 const isRequiredInPlan = Array.isArray(
   subscriptionStore.featureMatrix.get(props.feature)

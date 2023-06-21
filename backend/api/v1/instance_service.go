@@ -87,11 +87,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", request.InstanceId)
 	}
 
-	// Instance limit in the plan.
-	if err := s.instanceCountGuard(ctx); err != nil {
-		return nil, err
-	}
-
 	instanceMessage, err := s.convertToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -396,9 +391,6 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
 		return nil, status.Errorf(codes.InvalidArgument, "only support add read-only data source")
 	}
-	if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
-	}
 
 	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
 	if err != nil {
@@ -411,6 +403,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	}
 	if instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+	}
+
+	if !s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
 	}
 
 	// Test connection.
@@ -459,9 +455,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) && tp == api.RO {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
-	}
 
 	instance, err := s.getInstanceMessage(ctx, request.Instance)
 	if err != nil {
@@ -470,6 +463,11 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	if instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
+
+	if tp == api.RO && !s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
+	}
+
 	// We create a new variable dataSource to not modify existing data source in the memory.
 	var dataSource store.DataSourceMessage
 	found := false
@@ -627,23 +625,6 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	}
 
 	return convertToInstance(instance), nil
-}
-
-func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
-	subscription := s.licenseService.LoadSubscription(ctx)
-	if subscription.InstanceCount == -1 {
-		return nil
-	}
-
-	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
-	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-	if count >= subscription.InstanceCount {
-		return status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", subscription.InstanceCount)
-	}
-
-	return nil
 }
 
 func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {

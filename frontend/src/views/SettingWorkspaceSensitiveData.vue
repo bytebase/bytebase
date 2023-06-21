@@ -1,10 +1,10 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <FeatureAttention
-      v-if="!hasSensitiveDataFeature"
+    <FeatureAttentionForInstanceLicense
+      v-if="hasSensitiveDataFeature"
       feature="bb.feature.sensitive-data"
-      :description="$t('subscription.features.bb-feature-sensitive-data.desc')"
     />
+    <FeatureAttention v-else feature="bb.feature.sensitive-data" />
 
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.description") }}

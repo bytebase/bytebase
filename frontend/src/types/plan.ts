@@ -51,6 +51,30 @@ export type FeatureType =
   // Plugins
   | "bb.feature.plugin.openai";
 
+export const instanceLimitFeature = new Set<FeatureType>([
+  // Change Workflow
+  "bb.feature.im.approval",
+  "bb.feature.schema-drift",
+  "bb.feature.encrypted-secrets",
+  "bb.feature.sql-review",
+  "bb.feature.task-schedule-time",
+  // Database Management
+  "bb.feature.pitr",
+  "bb.feature.read-replica-connection",
+  "bb.feature.instance-ssh-connection",
+  "bb.feature.sync-schema-all-versions",
+  "bb.feature.index-advisor",
+  // Policy Control
+  "bb.feature.sensitive-data",
+  "bb.feature.custom-approval",
+  // TODO:
+  // "bb.feature.vcs-schema-write-back",
+  // "bb.feature.database-grouping",
+  // "bb.feature.mybatis-sql-review",
+  // "bb.feature.online-migration",
+  // "bb.feature.vcs-sql-review",
+]);
+
 export const planTypeToString = (planType: PlanType): string => {
   switch (planType) {
     case PlanType.FREE:

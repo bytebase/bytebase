@@ -310,6 +310,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 			Title:       "DestinationInstance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: dstConnCfg.Host, Port: dstConnCfg.Port, Username: dstConnCfg.Username}},
 		},
 	})
@@ -461,6 +462,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 			Title:       baseName + "_Instance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
 	})

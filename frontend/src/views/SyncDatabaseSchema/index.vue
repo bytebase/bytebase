@@ -54,13 +54,13 @@
               :customize-item="true"
               @select-database-id="handleSourceDatabaseSelect"
             >
-              <template #customizeItem="{ database }">
+              <template #customizeItem="{ database: db }">
                 <div class="flex items-center">
-                  <InstanceV1EngineIcon :instance="database.instanceEntity" />
-                  <span class="mx-2">{{ database.databaseName }}</span>
+                  <InstanceV1EngineIcon :instance="db.instanceEntity" />
+                  <span class="mx-2">{{ db.databaseName }}</span>
 
                   <span class="text-gray-400">
-                    ({{ instanceV1Name(database.instanceEntity) }})
+                    ({{ instanceV1Name(db.instanceEntity) }})
                   </span>
                 </div>
               </template>
@@ -126,6 +126,7 @@
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.sync-schema-all-versions"
+    :instance="database?.instanceEntity"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -138,7 +139,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
-  hasFeature,
+  featureToRef,
   useChangeHistoryStore,
   useDatabaseV1Store,
   useProjectV1Store,
@@ -193,9 +194,18 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const hasSyncSchemaFeature = computed(() => {
-  return hasFeature("bb.feature.sync-schema-all-versions");
+const database = computed(() => {
+  const databaseId = state.sourceSchema.databaseId;
+  if (!isValidId(databaseId)) {
+    return;
+  }
+  return databaseStore.getDatabaseByUID(databaseId);
 });
+
+const hasSyncSchemaFeature = featureToRef(
+  "bb.feature.sync-schema-all-versions",
+  database.value?.instanceEntity
+);
 
 const shouldShowMoreVersionButton = computed(() => {
   return (
