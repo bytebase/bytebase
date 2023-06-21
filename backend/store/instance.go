@@ -215,7 +215,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 
 	where := ""
 	if instanceCreate.Activation {
-		where = fmt.Sprintf("(%s) < %d", countActivateInstanceQuery, maximumActivation)
+		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
 	}
 
 	var instanceID int
