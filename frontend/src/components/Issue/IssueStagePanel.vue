@@ -66,10 +66,7 @@ const flattenTaskRunList = computed(() => {
     return (task.value || stage.value.taskList[0] || unknown("TASK"))
       .taskRunList;
   }
-  if (mode.value === "merged") {
-    return stage.value.taskList.flatMap((task) => task.taskRunList);
-  }
-  if (mode.value === "normal") {
+  if (mode.value === "merged" || mode.value === "normal") {
     return stage.value.taskList.flatMap((task) => task.taskRunList);
   }
   return [];
