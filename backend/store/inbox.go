@@ -79,6 +79,10 @@ func (s *Store) FindInbox(ctx context.Context, find *FindInboxMessage) ([]*Inbox
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return list, nil
 }
 
@@ -128,6 +132,10 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*InboxSu
 			}
 			return nil, err
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	return &inboxSummary, nil
