@@ -2,13 +2,17 @@
   <DrawerContent :title="$t('subscription.instance-assignment.manage-license')">
     <div class="divide-block-border space-y-5 w-[40rem] h-full">
       <div>
-        <div class="text-gray-400">
-          {{
-            $t("subscription.instance-assignment.available-and-total-license")
-          }}
+        <div class="flex space-x-2">
+          <div class="text-gray-400">
+            {{ $t("subscription.instance-assignment.used-and-total-license") }}
+          </div>
+          <LearnMoreLink
+            url="https://www.bytebase.com/docs/administration/license?source=console"
+            class="ml-1 text-sm"
+          />
         </div>
         <div class="mt-1 text-4xl flex items-center gap-x-2">
-          <span>{{ availableLicenseCount }}</span>
+          <span>{{ assignedLicenseCount }}</span>
           <span class="text-xl">/</span>
           <span>{{ totalLicenseCount }}</span>
         </div>
@@ -84,13 +88,13 @@
             </div>
           </BBTableCell>
           <BBTableCell class="bb-grid-cell">
-            {{ hostPortOfInstanceV1(instance) }}
-          </BBTableCell>
-          <BBTableCell class="bb-grid-cell">
             <EnvironmentV1Name
               :environment="instance.environmentEntity"
               :link="false"
             />
+          </BBTableCell>
+          <BBTableCell class="bb-grid-cell">
+            {{ hostPortOfInstanceV1(instance) }}
           </BBTableCell>
         </template>
       </BBTable>
@@ -145,10 +149,10 @@ const columnList: BBTableColumn[] = [
     title: "common.name",
   },
   {
-    title: "common.Address",
+    title: "common.environment",
   },
   {
-    title: "common.environment",
+    title: "common.Address",
   },
 ];
 
@@ -185,9 +189,9 @@ const totalLicenseCount = computed((): string => {
   return t("subscription.unlimited");
 });
 
-const availableLicenseCount = computed((): string => {
+const assignedLicenseCount = computed((): string => {
   if (instanceCount.value > 0) {
-    return `${Math.max(0, instanceCount.value - state.selectedInstance.size)}`;
+    return `${state.selectedInstance.size}`;
   }
   return t("subscription.unlimited");
 });
