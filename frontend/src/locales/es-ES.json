@@ -1448,7 +1448,10 @@
       "archive": {
         "title": "Archivar proyecto",
         "description": "El proyecto archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
-        "btn-text": "Archivar este @.lower:{'common.project'}"
+        "btn-text": "Archivar este @.lower:{'common.project'}",
+        "force": {
+          "description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
+        }
       },
       "restore": {
         "title": "Restaurar proyecto",

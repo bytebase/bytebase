@@ -1450,7 +1450,10 @@
       "archive": {
         "title": "归档项目",
         "description": "已归档的项目将不会显示在日常界面，您可以通过点击页面左下方的 \"归档\"来恢复。",
-        "btn-text": "归档这个@:common.project"
+        "btn-text": "归档这个@:common.project",
+        "force": {
+          "description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
+        }
       },
       "restore": {
         "title": "恢复项目",

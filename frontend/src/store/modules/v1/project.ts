@@ -125,9 +125,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     await upsertProjectMap([updated]);
     return updated;
   };
-  const archiveProject = async (project: Project) => {
+  const archiveProject = async (project: Project, force = false) => {
     await projectServiceClient.deleteProject({
       name: project.name,
+      force,
     });
     project.state = State.DELETED;
     await upsertProjectMap([project]);
