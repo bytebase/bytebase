@@ -54,6 +54,8 @@
     "bookmarks": "书签",
     "quick-action": "快捷操作",
     "archive": "归档",
+    "archived": "已归档",
+    "no-license": "无证书",
     "logout": "登出",
     "close": "关闭",
     "latest": "最新",
@@ -1881,7 +1883,7 @@
       "assign-license": "分配证书",
       "n-license-remain": "剩余 {n}",
       "manage-license": "管理证书",
-      "available-and-total-license": "可分配数 / 证书总数",
+      "used-and-total-license": "已分配 / 总实例证书",
       "success-notification": "证书分配更新成功"
     },
     "update": {

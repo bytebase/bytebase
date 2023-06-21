@@ -54,6 +54,8 @@
     "bookmarks": "Marcadores",
     "quick-action": "Acción rápida",
     "archive": "Archivo",
+    "archived": "Archivada",
+    "no-license": "Sin licencia",
     "logout": "Cerrar sesión",
     "close": "Cerrar",
     "latest": "Último",
@@ -1872,7 +1874,7 @@
       "assign-license": "Asignar licencia",
       "n-license-remain": "permanecer {n}",
       "manage-license": "Administrar licencia",
-      "available-and-total-license": "Licencia de instancia disponible/total",
+      "used-and-total-license": "Licencia asignada / total",
       "success-notification": "Actualizar correctamente la asignación de licencia"
     },
     "update": {

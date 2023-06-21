@@ -1,6 +1,7 @@
 import slug from "slug";
 import { keyBy, orderBy } from "lodash-es";
 
+import { useI18n } from "vue-i18n";
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
@@ -11,12 +12,13 @@ export const instanceV1Slug = (instance: Instance): string => {
 };
 
 export function instanceV1Name(instance: Instance) {
+  const { t } = useI18n();
   let name = instance.title;
   // instance cannot be deleted and activated at the same time.
   if (instance.state === State.DELETED) {
-    name += " (Archived)";
+    name += ` (${t("common.archived")})`;
   } else if (!instance.activation) {
-    name += " (Deactivate)";
+    name += ` (${t("common.no-license")})`;
   }
   return name;
 }
