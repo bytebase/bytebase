@@ -54,6 +54,8 @@
     "bookmarks": "Bookmarks",
     "quick-action": "Quick Action",
     "archive": "Archive",
+    "archived": "Archived",
+    "no-license": "No license",
     "logout": "Logout",
     "close": "Close",
     "latest": "Latest",
@@ -1886,7 +1888,7 @@
       "assign-license": "Assign License",
       "n-license-remain": "remain {n}",
       "manage-license": "Manage License",
-      "available-and-total-license": "Available / Total Instance License",
+      "used-and-total-license": "Assigned / Total Instance License",
       "success-notification": "Successfully update license assignment"
     },
     "update": {
