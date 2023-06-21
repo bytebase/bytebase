@@ -106,6 +106,16 @@ func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) bool {
 	return api.Feature(feature, s.GetEffectivePlan())
 }
 
+// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
+func (s *LicenseService) IsFeatureEnabledForInstance(feature api.FeatureType, instance *store.InstanceMessage) bool {
+	featureEnabledForPlan := s.IsFeatureEnabled(feature)
+	if !api.InstanceLimitFeature[feature] {
+		// If the feature not exists in the limit map, we just need to check the feature for current plan.
+		return featureEnabledForPlan
+	}
+	return featureEnabledForPlan && instance.Activation
+}
+
 // GetEffectivePlan gets the effective plan.
 func (s *LicenseService) GetEffectivePlan() api.PlanType {
 	ctx := context.Background()

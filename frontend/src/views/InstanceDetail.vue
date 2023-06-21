@@ -90,12 +90,6 @@
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </Drawer>
-
-  <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.instance-count"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -116,7 +110,6 @@ import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
 import {
   pushNotification,
-  useSubscriptionV1Store,
   useDBSchemaV1Store,
   useCurrentUserV1,
   useInstanceV1Store,
@@ -129,7 +122,6 @@ import { State } from "@/types/proto/v1/common";
 interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
-  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -141,7 +133,6 @@ const props = defineProps({
 
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
-const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
@@ -149,7 +140,6 @@ const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
-  showFeatureModal: false,
 });
 
 const instanceId = computed(() => {
@@ -226,11 +216,6 @@ const doArchive = async () => {
 };
 
 const doRestore = async () => {
-  const instanceList = instanceV1Store.activeInstanceList;
-  if (subscriptionStore.instanceCount <= instanceList.length) {
-    state.showFeatureModal = true;
-    return;
-  }
   await useGracefulRequest(async () => {
     await instanceV1Store.restoreInstance(instance.value);
 

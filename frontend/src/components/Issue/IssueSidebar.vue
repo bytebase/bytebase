@@ -89,7 +89,7 @@
           <StageSelect
             :pipeline="(issue as Issue).pipeline!"
             :selected-id="(selectedStage as Stage).id as number"
-            @select-stage-id="(stageId) => selectStageOrTask(stageId)"
+            @select-stage-id="(stageId: number) => selectStageOrTask(stageId)"
           />
         </div>
       </template>
@@ -103,7 +103,7 @@
             :pipeline="(issue as Issue).pipeline!"
             :stage="(selectedStage as Stage)"
             :selected-id="(selectedTask as Task).id"
-            @select-task-id="(taskId) => selectTaskId(taskId)"
+            @select-task-id="(taskId: IdType) => selectTaskId(taskId)"
           />
         </div>
       </template>
@@ -281,6 +281,7 @@
     <FeatureModal
       v-if="state.showFeatureModal"
       :feature="'bb.feature.task-schedule-time'"
+      :instance="database?.instanceEntity"
       @cancel="state.showFeatureModal = false"
     />
   </aside>
@@ -302,7 +303,6 @@ import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import TaskRollbackView from "./rollback/TaskRollbackView.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
-import FeatureModal from "../FeatureModal.vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { InputField } from "@/plugins";
 import {
@@ -329,7 +329,7 @@ import {
   databaseV1Slug,
 } from "@/utils";
 import {
-  hasFeature,
+  featureToRef,
   useCurrentUserV1,
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -582,8 +582,13 @@ watchEffect(() => {
 
 const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 
+const hasInstanceFeature = featureToRef(
+  "bb.feature.task-schedule-time",
+  props.database?.instanceEntity
+);
+
 const updateEarliestAllowedTs = (newTimestampMS: number) => {
-  if (!hasFeature("bb.feature.task-schedule-time")) {
+  if (!hasInstanceFeature.value) {
     state.showFeatureModal = true;
     return;
   }

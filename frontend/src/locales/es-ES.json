@@ -1872,6 +1872,7 @@
     "instance-assignment": {
       "license": "Licencia",
       "assign-license": "Asignar licencia",
+      "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
       "n-license-remain": "permanecer {n}",
       "manage-license": "Administrar licencia",
       "used-and-total-license": "Licencia asignada / total",

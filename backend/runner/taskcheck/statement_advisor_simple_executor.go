@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -16,15 +17,17 @@ import (
 )
 
 // NewStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
-func NewStatementAdvisorSimpleExecutor(store *store.Store) Executor {
+func NewStatementAdvisorSimpleExecutor(store *store.Store, licenseService enterpriseAPI.LicenseService) Executor {
 	return &StatementAdvisorSimpleExecutor{
-		store: store,
+		store:          store,
+		licenseService: licenseService,
 	}
 }
 
 // StatementAdvisorSimpleExecutor is the task check statement advisor simple executor.
 type StatementAdvisorSimpleExecutor struct {
-	store *store.Store
+	store          *store.Store
+	licenseService enterpriseAPI.LicenseService
 }
 
 // Run will run the task check statement advisor executor once.
@@ -33,10 +36,29 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 	if err != nil {
 		return nil, err
 	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", task.InstanceID)
+	}
+	if !e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance) {
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusWarn,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.Unsupported.Int(),
+				Title:     "Please assign license to the instance to enable the SQL review feature.",
+				Content:   "",
+			},
+		}, nil
+	}
+
 	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
+	if database == nil {
+		return nil, errors.Errorf("database %v not found", task.DatabaseID)
+	}
+
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, err

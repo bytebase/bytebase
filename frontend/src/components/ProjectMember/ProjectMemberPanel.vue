@@ -1,11 +1,6 @@
 <template>
   <div class="max-w-3xl w-full mx-auto">
-    <FeatureAttention
-      v-if="!hasRBACFeature"
-      custom-class="my-5"
-      feature="bb.feature.rbac"
-      :description="$t('subscription.features.bb-feature-rbac.desc')"
-    />
+    <FeatureAttention custom-class="my-5" feature="bb.feature.rbac" />
 
     <div class="mb-4 w-full flex flex-row justify-between items-center">
       <div>
@@ -117,7 +112,6 @@ import {
 } from "@/utils";
 import {
   extractUserEmail,
-  featureToRef,
   pushNotification,
   useCurrentUserV1,
   useProjectIamPolicy,
@@ -151,7 +145,6 @@ const state = reactive<LocalState>({
   showAddMemberPanel: false,
 });
 
-const hasRBACFeature = featureToRef("bb.feature.rbac");
 const userStore = useUserStore();
 
 const allowAdmin = computed(() => {

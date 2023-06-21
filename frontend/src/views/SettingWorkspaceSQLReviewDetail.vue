@@ -1,10 +1,5 @@
 <template>
-  <FeatureAttention
-    v-if="!hasSQLReviewPolicyFeature"
-    custom-class="my-5"
-    feature="bb.feature.sql-review"
-    :description="$t('subscription.features.bb-feature-sql-review.desc')"
-  />
+  <FeatureAttention custom-class="my-5" feature="bb.feature.sql-review" />
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
@@ -164,7 +159,6 @@ import {
 } from "@/types";
 import { BBTextField } from "@/bbkit";
 import {
-  featureToRef,
   pushNotification,
   useCurrentUserV1,
   useSQLReviewStore,
@@ -215,8 +209,6 @@ const state = reactive<LocalState>({
   rulesUpdated: false,
   updating: false,
 });
-
-const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV1(

@@ -161,10 +161,10 @@ const overusedFeatureList = computed(() => {
   for (const feature of overusedEnterprisePlanFeatureList.value) {
     list.push(t(`subscription.features.${feature.split(".").join("-")}.title`));
   }
-  if (instanceStore.instanceList.length > subscriptionStore.instanceCount) {
+  if (instanceStore.activateInstanceCount >= subscriptionStore.instanceCount) {
     list.push(
       t("subscription.overuse-modal.instance-count-exceeds", {
-        count: instanceStore.instanceList.length,
+        count: instanceStore.activateInstanceCount,
         limit: subscriptionStore.instanceCount,
       })
     );

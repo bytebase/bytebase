@@ -78,16 +78,11 @@
       @add-subscriber-id="(subscriberId) => addSubscriberId(subscriberId)"
       @remove-subscriber-id="(subscriberId) => removeSubscriberId(subscriberId)"
     />
-    <FeatureModal
-      v-if="state.showFeatureModal"
-      :feature="'bb.feature.task-schedule-time'"
-      @cancel="state.showFeatureModal = false"
-    />
   </aside>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed } from "vue";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { Issue, IssueCreate } from "@/types";
@@ -97,23 +92,14 @@ import { IssueReviewSidebarSection } from "./review";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
-import FeatureModal from "../FeatureModal.vue";
 import { ProjectV1Name } from "../v2";
 
 dayjs.extend(isSameOrAfter);
-
-interface LocalState {
-  showFeatureModal: boolean;
-}
 
 const projectV1Store = useProjectV1Store();
 
 const { create, issue } = useIssueLogic();
 const { addSubscriberId, removeSubscriberId } = useExtraIssueLogic();
-
-const state = reactive<LocalState>({
-  showFeatureModal: false,
-});
 
 const project = computed(() => {
   const projectId = create.value
