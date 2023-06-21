@@ -1878,6 +1878,14 @@
     "trial-for-days": "You can start a free trial for {days} days - no credit card required",
     "upgrade-trial": "You can upgrade your free trial to this plan",
     "upgrade-now": "Upgrade Now",
+    "instance-assignment": {
+      "license": "License",
+      "assign-license": "Assign License",
+      "n-license-remain": "remain {n}",
+      "manage-license": "Manage License",
+      "available-and-total-license": "Available / Total Instance License",
+      "success-notification": "Successfully update license assignment"
+    },
     "update": {
       "success": {
         "title": "Successfully updated license",
