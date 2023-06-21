@@ -63,9 +63,17 @@
         </NPopselect>
       </div>
       <div class="bb-grid-cell gap-x-2 justify-end">
-        <NButton v-if="allowAdmin" size="tiny" @click="editingMember = item">
-          <heroicons-outline:pencil-square class="w-4 h-auto" />
-        </NButton>
+        <NTooltip v-if="allowAdmin" trigger="hover">
+          <template #trigger>
+            <button
+              class="cursor-pointer opacity-60 hover:opacity-100"
+              @click="editingMember = item"
+            >
+              <heroicons-outline:pencil class="w-4 h-4" />
+            </button>
+          </template>
+          {{ $t("common.edit") }}
+        </NTooltip>
         <NButton
           v-else-if="allowView(item)"
           size="tiny"
@@ -95,9 +103,9 @@ import { NButton, NPopselect, NTag, SelectOption } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
-import { PresetRoleType } from "@/types";
+import { ComposedProject, PresetRoleType } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import { IamPolicy, Project } from "@/types/proto/v1/project_service";
+import { IamPolicy } from "@/types/proto/v1/project_service";
 import {
   featureToRef,
   useCurrentUserV1,
@@ -120,7 +128,7 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 export type ProjectMemberRow = BBGridRow<ComposedProjectMember>;
 
 const props = defineProps<{
-  project: Project;
+  project: ComposedProject;
   iamPolicy: IamPolicy;
   editable: boolean;
   memberList: ComposedProjectMember[];
