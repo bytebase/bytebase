@@ -129,9 +129,8 @@ import {
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { DatabaseResource, PresetRoleType } from "@/types";
+import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { Project } from "@/types/proto/v1/project_service";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -156,7 +155,7 @@ import EditProjectMemberPanel from "../AddProjectMember/EditProjectMemberPanel.v
 export type SingleBindingRow = BBGridRow<SingleBinding>;
 
 const props = defineProps<{
-  project: Project;
+  project: ComposedProject;
   member: ComposedProjectMember;
 }>();
 
@@ -274,13 +273,6 @@ const handleDeleteRole = (role: string) => {
     content: t("common.cannot-undo-this-action"),
     positiveText: t("common.revoke"),
     negativeText: t("common.cancel"),
-    autoFocus: false,
-    closable: false,
-    maskClosable: false,
-    closeOnEsc: false,
-    onNegativeClick: () => {
-      // nothing to do
-    },
     onPositiveClick: async () => {
       const user = `user:${props.member.user.email}`;
       const policy = cloneDeep(iamPolicy.value);
@@ -324,13 +316,6 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
     content: t("common.cannot-undo-this-action"),
     positiveText: t("common.revoke"),
     negativeText: t("common.cancel"),
-    autoFocus: false,
-    closable: false,
-    maskClosable: false,
-    closeOnEsc: false,
-    onNegativeClick: () => {
-      // nothing to do
-    },
     onPositiveClick: async () => {
       const user = `user:${props.member.user.email}`;
       const policy = cloneDeep(iamPolicy.value);
