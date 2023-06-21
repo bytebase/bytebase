@@ -323,9 +323,6 @@ const props = defineProps({
   },
 });
 
-console.log("quickActionList");
-console.log(props.quickActionList);
-
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
