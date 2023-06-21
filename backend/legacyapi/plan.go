@@ -363,5 +363,9 @@ var PlanLimitValues = map[PlanLimit][3]int64{
 
 // Feature returns whether a particular feature is available in a particular plan.
 func Feature(feature FeatureType, plan PlanType) bool {
-	return FeatureMatrix[feature][plan]
+	matrix, ok := FeatureMatrix[feature]
+	if !ok {
+		return false
+	}
+	return matrix[plan]
 }
