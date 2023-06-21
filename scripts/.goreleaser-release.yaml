@@ -9,9 +9,6 @@ changelog:
 release:
   draft: true
   mode: append
-  extra_files:
-    - glob: ./bytebase-build/**/*
-    - glob: ./bytebase-build/checksums.txt
   name_template: "Release {{.Tag}}"
   header: |
     # What's Changed
