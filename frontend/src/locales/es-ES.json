@@ -54,6 +54,8 @@
     "bookmarks": "Marcadores",
     "quick-action": "Acción rápida",
     "archive": "Archivo",
+    "archived": "Archivada",
+    "no-license": "Sin licencia",
     "logout": "Cerrar sesión",
     "close": "Cerrar",
     "latest": "Último",
@@ -1448,7 +1450,10 @@
       "archive": {
         "title": "Archivar proyecto",
         "description": "El proyecto archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
-        "btn-text": "Archivar este @.lower:{'common.project'}"
+        "btn-text": "Archivar este @.lower:{'common.project'}",
+        "force": {
+          "description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
+        }
       },
       "restore": {
         "title": "Restaurar proyecto",
@@ -1870,7 +1875,7 @@
       "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
       "n-license-remain": "permanecer {n}",
       "manage-license": "Administrar licencia",
-      "available-and-total-license": "Licencia de instancia disponible/total",
+      "used-and-total-license": "Licencia asignada / total",
       "success-notification": "Actualizar correctamente la asignación de licencia"
     },
     "update": {

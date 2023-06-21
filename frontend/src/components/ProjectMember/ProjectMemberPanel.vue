@@ -12,7 +12,6 @@
       </div>
       <div v-if="allowAdmin" class="flex gap-x-2">
         <NButton
-          type=""
           :disabled="state.selectedMemberNameList.size === 0"
           @click="handleRevokeSelectedMembers"
         >
@@ -311,7 +310,7 @@ const handleRevokeSelectedMembers = () => {
     return;
   }
 
-  dialog.warning({
+  dialog.create({
     title: "Revoke these members",
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),

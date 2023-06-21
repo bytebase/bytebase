@@ -216,7 +216,7 @@
           to="/setting/subscription?manageLicense=1"
           class="btn-icon-primary p-3"
         >
-          <heroicons-outline:cog class="w-5 h-5" />
+          <heroicons-outline:academic-cap class="w-5 h-5" />
         </router-link>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
