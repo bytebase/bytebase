@@ -21,7 +21,7 @@
         class="bb-grid-cell text-blue-600 hover:underline"
         @click="gotoIssuePage(item)"
       >
-        #{{ item.issueId }}
+        {{ `#${item.issueId}` }}
       </div>
       <div class="bb-grid-cell">
         {{ item.database.databaseName }}
