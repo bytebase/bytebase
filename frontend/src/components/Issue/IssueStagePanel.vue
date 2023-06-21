@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div v-if="flattenTaskRunList.length > 0" class="space-y-4">
     <template v-if="mode === 'single'">
       <TaskRunTable :task-list="[task || stage.taskList[0]]" />
     </template>
@@ -29,7 +29,7 @@
 <script lang="ts" setup>
 import { computed, Ref } from "vue";
 import TaskRunTable from "./TaskRunTable.vue";
-import { Stage, Task } from "@/types";
+import { Stage, Task, unknown } from "@/types";
 import { useIssueLogic } from "./logic";
 
 type Mode = "normal" | "single" | "merged";
@@ -59,5 +59,19 @@ const mode = computed((): Mode => {
   if (isPITRMode.value) return "merged";
   if (isTenantMode.value) return "single";
   return "single";
+});
+
+const flattenTaskRunList = computed(() => {
+  if (mode.value === "single") {
+    return (task.value || stage.value.taskList[0] || unknown("TASK"))
+      .taskRunList;
+  }
+  if (mode.value === "merged") {
+    return stage.value.taskList.flatMap((task) => task.taskRunList);
+  }
+  if (mode.value === "normal") {
+    return stage.value.taskList.flatMap((task) => task.taskRunList);
+  }
+  return [];
 });
 </script>
