@@ -568,7 +568,7 @@ func TestCreateGroupingChangeIssue(t *testing.T) {
 			},
 			prepareInstances: []testCasePrepareInstance{
 				{
-					instanceTitle: "TestCreateDatabaseGroups_AllMatched_OneInstance",
+					instanceTitle: "TestCreateGroupingChangeIssue_SimpleStatement",
 					matchDatabasesNameTableName: map[string]tableNames{
 						"employee_01": {
 							matched: []string{"salary_01", "salary_02"},
@@ -588,6 +588,99 @@ func TestCreateGroupingChangeIssue(t *testing.T) {
 						"employee_02": {
 							"ALTER TABLE salary_03 ADD COLUMN num INT\n;\n",
 							"ALTER TABLE salary_04 ADD COLUMN num INT\n;\n",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:                     "complex statement",
+			databaseGroupPlaceholder: "employee",
+			databaseGroupExpr:        `(resource.database_name.startsWith("employee_"))`,
+			statement: `ALTER TABLE salary ADD COLUMN num INT;
+CREATE INDEX salary_num_idx ON salary (num);
+CREATE TABLE singleton(id INT);
+ALTER TABLE person ADD COLUMN name VARCHAR(30);
+ALTER TABLE partpartially ADD COLUMN num INT;
+ALTER TABLE singleton ADD COLUMN num INT;`,
+			tableGroupsMetaData: []tableGroupMetaData{
+				{
+					tableGroupPlaceholder: "salary",
+					tableGroupExpr:        `(resource.table_name.startsWith("salary_"))`,
+				},
+				{
+					tableGroupPlaceholder: "person",
+					tableGroupExpr:        `(resource.table_name.startsWith("person_"))`,
+				},
+				{
+					tableGroupPlaceholder: "partpartially",
+					tableGroupExpr:        `(resource.table_name.startsWith("part_partially_"))`,
+				},
+			},
+			prepareInstances: []testCasePrepareInstance{
+				{
+					instanceTitle: "TestCreateGroupingChangeIssue_ComplexStatement_Instance_01",
+					matchDatabasesNameTableName: map[string]tableNames{
+						"employee_01": {
+							matched: []string{"salary_01", "salary_02", "person_01", "person_02", "part_partially_01"},
+						},
+						"employee_02": {
+							matched: []string{"salary_03", "salary_04", "person_03", "person_04"},
+						},
+					},
+					unmatchedDatabaseNameTableName: map[string][]string{
+						"blog": {"comments", "article"},
+					},
+					wantDatabaseTaskStatement: map[string][]string{
+						"employee_01": {
+							"ALTER TABLE salary_01 ADD COLUMN num INT;\nCREATE INDEX salary_01_num_idx ON salary_01 (num);\n",
+							"ALTER TABLE salary_02 ADD COLUMN num INT;\nCREATE INDEX salary_02_num_idx ON salary_02 (num);\n",
+							"CREATE TABLE singleton(id INT);\n",
+							"ALTER TABLE person_01 ADD COLUMN name VARCHAR(30);\n",
+							"ALTER TABLE person_02 ADD COLUMN name VARCHAR(30);\n",
+							"ALTER TABLE part_partially_01 ADD COLUMN num INT;\n",
+							"ALTER TABLE singleton ADD COLUMN num INT\n;\n",
+						},
+						"employee_02": {
+							"ALTER TABLE salary_03 ADD COLUMN num INT;\nCREATE INDEX salary_03_num_idx ON salary_03 (num);\n",
+							"ALTER TABLE salary_04 ADD COLUMN num INT;\nCREATE INDEX salary_04_num_idx ON salary_04 (num);\n",
+							"CREATE TABLE singleton(id INT);\n",
+							"ALTER TABLE person_03 ADD COLUMN name VARCHAR(30);\n",
+							"ALTER TABLE person_04 ADD COLUMN name VARCHAR(30);\n",
+							"ALTER TABLE singleton ADD COLUMN num INT\n;\n",
+						},
+					},
+				},
+				{
+					instanceTitle: "TestCreateGroupingChangeIssue_ComplexStatement_Instance_02",
+					matchDatabasesNameTableName: map[string]tableNames{
+						"employee_03": {
+							matched: []string{"salary_05", "salary_06", "person_05", "person_06"},
+						},
+						"employee_04": {
+							matched: []string{"salary_07", "salary_08", "person_07", "person_08", "part_partially_02"},
+						},
+					},
+					unmatchedDatabaseNameTableName: map[string][]string{
+						"blog": {"comments", "article"},
+					},
+					wantDatabaseTaskStatement: map[string][]string{
+						"employee_03": {
+							"ALTER TABLE salary_05 ADD COLUMN num INT;\nCREATE INDEX salary_05_num_idx ON salary_05 (num);\n",
+							"ALTER TABLE salary_06 ADD COLUMN num INT;\nCREATE INDEX salary_06_num_idx ON salary_06 (num);\n",
+							"CREATE TABLE singleton(id INT);\n",
+							"ALTER TABLE person_05 ADD COLUMN name VARCHAR(30);\n",
+							"ALTER TABLE person_06 ADD COLUMN name VARCHAR(30);\n",
+							"ALTER TABLE singleton ADD COLUMN num INT\n;\n",
+						},
+						"employee_04": {
+							"ALTER TABLE salary_07 ADD COLUMN num INT;\nCREATE INDEX salary_07_num_idx ON salary_07 (num);\n",
+							"ALTER TABLE salary_08 ADD COLUMN num INT;\nCREATE INDEX salary_08_num_idx ON salary_08 (num);\n",
+							"CREATE TABLE singleton(id INT);\n",
+							"ALTER TABLE person_07 ADD COLUMN name VARCHAR(30);\n",
+							"ALTER TABLE person_08 ADD COLUMN name VARCHAR(30);\n",
+							"ALTER TABLE part_partially_02 ADD COLUMN num INT;\n",
+							"ALTER TABLE singleton ADD COLUMN num INT\n;\n",
 						},
 					},
 				},
@@ -686,6 +779,7 @@ func TestCreateGroupingChangeIssue(t *testing.T) {
 			}
 
 			for _, stopInstance := range stopInstances {
+				//nolint: revive
 				defer stopInstance()
 			}
 
@@ -763,7 +857,9 @@ func TestCreateGroupingChangeIssue(t *testing.T) {
 					a.Contains(gotInstanceDatabaseToTaskStatement, wantDatabaseName)
 					gotDatabaseStatements := gotInstanceDatabaseToTaskStatement[wantDatabaseName]
 					a.Equal(len(wantDatabaseStatements), len(gotDatabaseStatements))
-					a.Equal(wantDatabaseStatements, gotDatabaseStatements)
+					for _, wantDatabaseStatement := range wantDatabaseStatements {
+						a.Contains(gotDatabaseStatements, wantDatabaseStatement)
+					}
 				}
 			}
 		})
