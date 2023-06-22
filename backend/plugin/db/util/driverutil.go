@@ -234,11 +234,14 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		return nil, err
 	}
 
+	// TODO(d): use a Redshift extraction for shared database.
+	if dbType == db.Redshift && queryContext.ShareDB {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
+	}
 	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
 	}
-
 	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
 		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
