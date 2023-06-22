@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/server"
 )
@@ -59,9 +58,8 @@ ________________________________________________________________________________
 var (
 	flags struct {
 		// Used for Bytebase command line config
-		port        int
-		externalURL string
-		dataDir     string
+		port    int
+		dataDir string
 		// When we are running in readonly mode:
 		// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
 		// - Requests other than GET will be rejected
@@ -109,11 +107,6 @@ func init() {
 	// Instead they would configure a gateway to forward the traffic to Bytebase. Users need to set --external-url to the address
 	// exposed on that gateway accordingly.
 	//
-	// It's important to set the correct --external-url. This is used for:
-	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
-	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
-	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
-	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
@@ -189,13 +182,6 @@ func start() {
 
 	var err error
 
-	if flags.externalURL != "" {
-		flags.externalURL, err = common.NormalizeExternalURL(flags.externalURL)
-		if err != nil {
-			log.Error("invalid --external-url", zap.Error(err))
-			return
-		}
-	}
 	if err := checkDataDir(); err != nil {
 		log.Error(err.Error())
 		return
