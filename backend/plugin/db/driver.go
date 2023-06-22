@@ -456,6 +456,8 @@ type QueryContext struct {
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string
+	// ShareDB is for Redshift.
+	ShareDB bool
 }
 
 // DatabaseRoleMessage is the API message for database role.
