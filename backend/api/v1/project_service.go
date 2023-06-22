@@ -980,7 +980,11 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 		return nil, err
 	}
 
-	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", setting.ExternalUrl, repository.WebhookEndpointID)
+	endpoint := setting.ExternalUrl
+	if setting.GitopsWebhookUrl != "" {
+		endpoint = setting.GitopsWebhookUrl
+	}
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", endpoint, repository.WebhookEndpointID)
 
 	switch vcs.Type {
 	case vcsPlugin.GitHub:
