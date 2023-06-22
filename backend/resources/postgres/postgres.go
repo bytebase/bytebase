@@ -71,7 +71,7 @@ func Install(resourceDir string) (string, error) {
 	default:
 		return "", errors.Errorf("OS %q is not supported", runtime.GOOS)
 	}
-	version := strings.TrimRight(tarName, ".txz")
+	version := strings.TrimSuffix(tarName, ".txz")
 	pgBaseDir := path.Join(resourceDir, version)
 	pgBinDir := path.Join(pgBaseDir, "bin")
 	pgDumpPath := path.Join(pgBinDir, "pg_dump")
