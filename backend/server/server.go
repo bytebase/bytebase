@@ -342,7 +342,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	config, err := s.getInitSetting(ctx, storeInstance)
+	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
@@ -731,7 +731,7 @@ type workspaceConfig struct {
 	workspaceID string
 }
 
-func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
+func getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
@@ -844,7 +844,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 
 	// initial workspace profile setting
 	settingName := api.SettingWorkspaceProfile
-	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
+	workspaceProfileSetting, err := datastore.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name:    &settingName,
 		Enforce: true,
 	})
@@ -852,16 +852,11 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
-	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
-		ExternalUrl: s.profile.ExternalURL,
-	}
+	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{}
 	if workspaceProfileSetting != nil {
 		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
 		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
 			return nil, err
-		}
-		if s.profile.ExternalURL != "" {
-			workspaceProfilePayload.ExternalUrl = s.profile.ExternalURL
 		}
 	}
 
