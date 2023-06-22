@@ -105,7 +105,7 @@ func (driver *Driver) getDatabases() ([]string, error) {
 		if file.IsDir() || !strings.HasSuffix(file.Name(), ".db") {
 			continue
 		}
-		databases = append(databases, strings.TrimRight(file.Name(), ".db"))
+		databases = append(databases, strings.TrimSuffix(file.Name(), ".db"))
 	}
 	return databases, nil
 }
