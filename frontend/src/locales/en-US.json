@@ -1886,11 +1886,13 @@
     "instance-assignment": {
       "license": "License",
       "assign-license": "Assign License",
-      "missing-license-attention": "You need to assign license to instance to enable this feature.",
+      "require-license": "Require instance license",
+      "missing-license-attention": "You need to assign license to the instance to enable this feature.",
       "n-license-remain": "remain {n}",
       "manage-license": "Manage License",
       "used-and-total-license": "Assigned / Total Instance License",
-      "success-notification": "Successfully update license assignment"
+      "success-notification": "Successfully update license assignment",
+      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature."
     },
     "update": {
       "success": {

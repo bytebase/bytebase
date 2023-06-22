@@ -199,6 +199,25 @@
           class="ml-1"
         />
       </div>
+      <BBAttention
+        v-if="
+          instanceWithoutLicense.length > 0 &&
+          hasFeature('bb.feature.vcs-schema-write-back')
+        "
+        class="my-4"
+        :style="`WARN`"
+        :title="
+          $t('subscription.features.bb-feature-vcs-schema-write-back.title')
+        "
+        :description="
+          $t('subscription.instance-assignment.missing-license-for-instances', {
+            count: instanceWithoutLicense.length,
+            name: instanceWithoutLicense.map((ins) => ins.title).join(','),
+          })
+        "
+        :action-text="$t('subscription.instance-assignment.assign-license')"
+        @click-action="redirectToSubscription"
+      />
       <input
         v-if="hasFeature('bb.feature.vcs-schema-write-back')"
         id="schemapathtemplate"
@@ -305,6 +324,23 @@
           })
         }}
       </div>
+      <BBAttention
+        v-if="
+          instanceWithoutLicense.length > 0 &&
+          hasFeature('bb.feature.vcs-sql-review')
+        "
+        class="my-4"
+        :style="`WARN`"
+        :title="$t('subscription.features.bb-feature-sql-review.title')"
+        :description="
+          $t('subscription.instance-assignment.missing-license-for-instances', {
+            count: instanceWithoutLicense.length,
+            name: instanceWithoutLicense.map((ins) => ins.title).join(','),
+          })
+        "
+        :action-text="$t('subscription.instance-assignment.assign-license')"
+        @click-action="redirectToSubscription"
+      />
       <div class="flex space-x-4 mt-2">
         <BBCheckbox
           :disabled="!allowEdit"
@@ -328,8 +364,13 @@
 <script lang="ts" setup>
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
-import { hasFeature, useSubscriptionV1Store } from "@/store";
+import {
+  hasFeature,
+  useSubscriptionV1Store,
+  useDatabaseV1Store,
+} from "@/store";
 import {
   Project,
   TenantMode,
@@ -390,12 +431,32 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const router = useRouter();
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
 const subscriptionStore = useSubscriptionV1Store();
+
+const databaseV1List = computed(() => {
+  return useDatabaseV1Store().databaseListByProject(props.project.name);
+});
+
+const instanceWithoutLicense = computed(() => {
+  return databaseV1List.value
+    .map((db) => db.instanceEntity)
+    .filter((ins) => !ins.activation);
+});
+
+const redirectToSubscription = () => {
+  router.push({
+    name: "setting.workspace.subscription",
+    query: {
+      manageLicense: 1,
+    },
+  });
+};
 
 const isTenantProject = computed(() => {
   return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;

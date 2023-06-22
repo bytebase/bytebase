@@ -1872,11 +1872,13 @@
     "instance-assignment": {
       "license": "Licencia",
       "assign-license": "Asignar licencia",
+      "require-license": "Requerir licencia de instancia",
       "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
       "n-license-remain": "permanecer {n}",
       "manage-license": "Administrar licencia",
       "used-and-total-license": "Licencia asignada / total",
-      "success-notification": "Actualizar correctamente la asignación de licencia"
+      "success-notification": "Actualizar correctamente la asignación de licencia",
+      "missing-license-for-instances": "Tienes {count} instancias ({name}) a las que les falta la licencia requerida para desbloquear esta función."
     },
     "update": {
       "success": {
