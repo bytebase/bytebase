@@ -11,6 +11,7 @@ on:
 jobs:
   golangci-lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -38,7 +39,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.52.2
-          args: --verbose --timeout 10m --max-same-issues=30
+          args: --verbose --timeout 20m --max-same-issues=30
           skip-cache: true
 
   go-tests:
