@@ -12,8 +12,6 @@ import (
 type Profile struct {
 	// Mode can be "prod" or "dev"
 	Mode common.ReleaseMode
-	// ExternalURL is the URL user visits Bytebase.
-	ExternalURL string
 	// DatastorePort is the binding port for database instance for storing Bytebase metadata.
 	// Only applicable when using embedded PG (PgURL is empty).
 	DatastorePort int

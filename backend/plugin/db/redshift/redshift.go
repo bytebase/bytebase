@@ -409,9 +409,10 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	// Datashare doesn't support read-only transactions.
 	if driver.datashare {
 		queryContext.ReadOnly = false
+		queryContext.ShareDB = true
 	}
 
-	return util.Query2(ctx, db.Postgres, conn, statement, queryContext)
+	return util.Query2(ctx, db.Redshift, conn, statement, queryContext)
 }
 
 // RunStatement runs a SQL statement in a given connection.
