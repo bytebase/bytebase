@@ -1035,8 +1035,11 @@ func convertMethodType(method string) (ast.IndexMethodType, error) {
 		return ast.IndexMethodTypeGin, nil
 	case "brin":
 		return ast.IndexMethodTypeBrin, nil
+	case "ivfflat":
+		return ast.IndexMethodTypeIvfflat, nil
 	default:
-		return ast.IndexMethodTypeBTree, parser.NewConvertErrorf("unsupported index method type: %s", method)
+		// Fallback to btree for index from plugins.
+		return ast.IndexMethodTypeBTree, nil
 	}
 }
 
