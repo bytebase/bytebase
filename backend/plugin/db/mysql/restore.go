@@ -842,7 +842,7 @@ func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]Binlo
 		}
 	}
 	if !findFileName || !findFileSize {
-		return nil, errors.Errorf("cannot find File name and size columns from %q query", query)
+		return nil, errors.Errorf("cannot find file name or size columns from %q query", query)
 	}
 
 	var binlogFiles []BinlogFile
