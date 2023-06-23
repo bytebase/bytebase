@@ -157,7 +157,6 @@ CREATE TABLE book4 (
 )
 
 type controller struct {
-	externalURL              string
 	server                   *server.Server
 	profile                  componentConfig.Profile
 	client                   *http.Client
@@ -266,7 +265,6 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	}
 	ctl.server = server
 	ctl.profile = profile
-	ctl.externalURL = fmt.Sprintf("http://localhost:%d", serverPort)
 
 	metaCtx, err := ctl.start(ctx, serverPort)
 	if err != nil {
@@ -292,7 +290,6 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) (context
 	}
 	ctl.server = server
 	ctl.profile = profile
-	ctl.externalURL = fmt.Sprintf("http://localhost:%d", serverPort)
 
 	return ctl.start(ctx, serverPort)
 }
@@ -304,7 +301,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_WorkspaceProfileSettingValue{
 					WorkspaceProfileSettingValue: &v1pb.WorkspaceProfileSetting{
-						ExternalUrl:    ctl.externalURL,
+						ExternalUrl:    ctl.profile.ExternalURL,
 						DisallowSignup: false,
 					},
 				},
@@ -319,6 +316,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                 testReleaseMode,
+		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:             port + 1,
 		DatastorePort:        port + 2,
 		SampleDatabasePort:   0,
@@ -339,6 +337,7 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string, skipOnboardingData bool) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                       testReleaseMode,
+		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:                   port + 1,
 		SampleDatabasePort:         0,
 		PgUser:                     pgUser,
