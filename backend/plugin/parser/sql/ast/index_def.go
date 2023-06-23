@@ -16,6 +16,10 @@ const (
 	IndexMethodTypeGin
 	// IndexMethodTypeBrin is the index method type for BRIN.
 	IndexMethodTypeBrin
+	// IndexMethodTypeIvfflat is the index method type for ivfflat.
+	// https://github.com/bytebase/bytebase/issues/6783.
+	// https://github.com/pgvector/pgvector.
+	IndexMethodTypeIvfflat
 )
 
 // String implements fmt.Stringer interface.
@@ -33,6 +37,8 @@ func (tp IndexMethodType) String() string {
 		return "gin"
 	case IndexMethodTypeBrin:
 		return "brin"
+	case IndexMethodTypeIvfflat:
+		return "ivfflat"
 	default:
 		return ""
 	}
