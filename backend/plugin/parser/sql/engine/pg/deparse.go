@@ -237,6 +237,8 @@ func deparseIndexMethod(method ast.IndexMethodType, buf *strings.Builder) (err e
 		_, err = buf.WriteString("gin")
 	case ast.IndexMethodTypeBrin:
 		_, err = buf.WriteString("brin")
+	case ast.IndexMethodTypeIvfflat:
+		_, err = buf.WriteString("ivfflat")
 	}
 	return err
 }
