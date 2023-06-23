@@ -827,14 +827,46 @@ func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]Binlo
 	}
 	defer rows.Close()
 
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot get columns from %q query", query)
+	}
+	findFileName := false
+	findFileSize := false
+	for _, columnName := range columns {
+		switch columnName {
+		case "Log_name":
+			findFileName = true
+		case "File_size":
+			findFileSize = true
+		}
+	}
+	if !findFileName || !findFileSize {
+		return nil, errors.Errorf("cannot find File name and size columns from %q query", query)
+	}
+
 	var binlogFiles []BinlogFile
+	var unused any
 	for rows.Next() {
 		var name string
 		var size int64
-		var unused any
-		if err := rows.Scan(&name, &size, &unused /* encrypted column */); err != nil {
-			return nil, err
+		cols := make([]any, len(columns))
+		// The query SHOW BINARY LOGS returns uncertain number of columns because MySQL 5.7 and 8.0 produce different results.
+		// So we have to dynamically scan the columns, and return the error if we cannot find the File and Position columns.
+		for i := 0; i < len(columns); i++ {
+			switch columns[i] {
+			case "Log_name":
+				cols[i] = &name
+			case "File_size":
+				cols[i] = &size
+			default:
+				cols[i] = &unused
+			}
 		}
+		if err := rows.Scan(cols...); err != nil {
+			return nil, errors.Wrapf(err, "cannot scan row from %q query", query)
+		}
+
 		binlogFile, err := newBinlogFile(name, size)
 		if err != nil {
 			return nil, err
