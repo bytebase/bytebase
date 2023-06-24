@@ -2,6 +2,7 @@
 import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
 
@@ -133,6 +134,8 @@ export interface QueryResult {
   masked: boolean[];
   /** The error message if the query failed. */
   error: string;
+  /** The time it takes to execute the query. */
+  latency?: Duration;
 }
 
 export interface QueryRow {
@@ -737,7 +740,7 @@ export const QueryResponse = {
 };
 
 function createBaseQueryResult(): QueryResult {
-  return { columnNames: [], columnTypeNames: [], rows: [], masked: [], error: "" };
+  return { columnNames: [], columnTypeNames: [], rows: [], masked: [], error: "", latency: undefined };
 }
 
 export const QueryResult = {
@@ -758,6 +761,9 @@ export const QueryResult = {
     writer.ldelim();
     if (message.error !== "") {
       writer.uint32(42).string(message.error);
+    }
+    if (message.latency !== undefined) {
+      Duration.encode(message.latency, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -814,6 +820,13 @@ export const QueryResult = {
 
           message.error = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.latency = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -830,6 +843,7 @@ export const QueryResult = {
       rows: Array.isArray(object?.rows) ? object.rows.map((e: any) => QueryRow.fromJSON(e)) : [],
       masked: Array.isArray(object?.masked) ? object.masked.map((e: any) => Boolean(e)) : [],
       error: isSet(object.error) ? String(object.error) : "",
+      latency: isSet(object.latency) ? Duration.fromJSON(object.latency) : undefined,
     };
   },
 
@@ -856,6 +870,7 @@ export const QueryResult = {
       obj.masked = [];
     }
     message.error !== undefined && (obj.error = message.error);
+    message.latency !== undefined && (obj.latency = message.latency ? Duration.toJSON(message.latency) : undefined);
     return obj;
   },
 
@@ -870,6 +885,9 @@ export const QueryResult = {
     message.rows = object.rows?.map((e) => QueryRow.fromPartial(e)) || [];
     message.masked = object.masked?.map((e) => e) || [];
     message.error = object.error ?? "";
+    message.latency = (object.latency !== undefined && object.latency !== null)
+      ? Duration.fromPartial(object.latency)
+      : undefined;
     return message;
   },
 };
