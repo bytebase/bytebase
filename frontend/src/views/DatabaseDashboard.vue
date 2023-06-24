@@ -25,7 +25,7 @@
           </template>
 
           <div class="whitespace-pre-wrap">
-            {{ $t("quick-action.default-db-hint") }}
+            {{ $t("quick-action.unassigned-db-hint") }}
           </div>
         </NTooltip>
 
