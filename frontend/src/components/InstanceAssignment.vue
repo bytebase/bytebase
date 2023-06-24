@@ -200,17 +200,14 @@ watchEffect(() => {
 });
 
 const totalLicenseCount = computed((): string => {
-  if (instanceCount.value > 0) {
-    return `${instanceCount.value}`;
+  if (instanceCount.value === Number.MAX_VALUE) {
+    return t("subscription.unlimited");
   }
-  return t("subscription.unlimited");
+  return `${instanceCount.value}`;
 });
 
 const assignedLicenseCount = computed((): string => {
-  if (instanceCount.value > 0) {
-    return `${state.selectedInstance.size}`;
-  }
-  return t("subscription.unlimited");
+  return `${state.selectedInstance.size}`;
 });
 
 const tableRef = ref<HTMLTableElement>();

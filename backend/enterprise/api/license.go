@@ -71,6 +71,8 @@ type LicenseService interface {
 	GetEffectivePlan() api.PlanType
 	// GetPlanLimitValue gets the limit value for the plan.
 	GetPlanLimitValue(name api.PlanLimit) int64
+	// GetInstanceLicenseCount returns the instance count limit for current subscription.
+	GetInstanceLicenseCount(ctx context.Context) int
 	// RefreshCache will invalidate and refresh the subscription cache.
 	RefreshCache(ctx context.Context)
 }
