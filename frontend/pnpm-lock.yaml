@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -99,8 +99,8 @@ dependencies:
     specifier: ^3.1.1
     version: 3.1.1(ws@8.13.0)
   node-sql-parser:
-    specifier: 4.6.6
-    version: 4.6.6
+    specifier: 4.7.0
+    version: 4.7.0
   normalize-wheel:
     specifier: ^1.0.1
     version: 1.0.1
@@ -3808,8 +3808,8 @@ packages:
     resolution: {integrity: sha512-5GFldHPXVG/YZmFzJvKK2zDSzPKhEp0+ZR5SVaoSag9fsL5YgHbUHDfnG5494ISANDcK4KwPXAx2xqVEydmd7w==}
     dev: true
 
-  /node-sql-parser@4.6.6:
-    resolution: {integrity: sha512-zpash5xnRY6+0C9HFru32iRJV1LTkwtrVpO90i385tYVF6efyXK/B3Nsq/15Fuv2utxrqHNjKtL55OHb8sl+eQ==}
+  /node-sql-parser@4.7.0:
+    resolution: {integrity: sha512-6pKgpQ15gwzDdIZVSDYH/5rVOOEWXzIrVOcq7FLCtoo+AVXTFIDmJjgRZOhTW+mDjj9trSHELXv+2AOK4C2dlQ==}
     engines: {node: '>=8'}
     dependencies:
       big-integer: 1.6.51

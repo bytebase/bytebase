@@ -45,7 +45,7 @@
     "naive-ui": "2.33.5",
     "nice-grpc-common": "^2.0.0",
     "nice-grpc-web": "^3.1.1",
-    "node-sql-parser": "4.6.6",
+    "node-sql-parser": "4.7.0",
     "normalize-wheel": "^1.0.1",
     "papaparse": "5.3.2",
     "pev2": "1.8.0",
