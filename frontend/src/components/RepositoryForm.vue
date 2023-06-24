@@ -216,7 +216,7 @@
           })
         "
         :action-text="$t('subscription.instance-assignment.assign-license')"
-        @click-action="redirectToSubscription"
+        @click-action="state.showInstanceAssignmentDrawer = true"
       />
       <input
         v-if="hasFeature('bb.feature.vcs-schema-write-back')"
@@ -339,7 +339,7 @@
           })
         "
         :action-text="$t('subscription.instance-assignment.assign-license')"
-        @click-action="redirectToSubscription"
+        @click-action="state.showInstanceAssignmentDrawer = true"
       />
       <div class="flex space-x-4 mt-2">
         <BBCheckbox
@@ -359,6 +359,10 @@
       @cancel="state.showFeatureModal = false"
     />
   </div>
+  <InstanceAssignment
+    :show="state.showInstanceAssignmentDrawer"
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -385,9 +389,9 @@ const FILE_OPTIONAL_DIRECTORY_WILDCARD = "*, **";
 const SINGLE_ASTERISK_REGEX = /\/\*\//g;
 const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {
   showFeatureModal: boolean;
+  showInstanceAssignmentDrawer: boolean;
 }
 
 defineEmits<{
@@ -435,6 +439,7 @@ const router = useRouter();
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
+  showInstanceAssignmentDrawer: false,
 });
 
 const subscriptionStore = useSubscriptionV1Store();
@@ -448,15 +453,6 @@ const instanceWithoutLicense = computed(() => {
     .map((db) => db.instanceEntity)
     .filter((ins) => !ins.activation);
 });
-
-const redirectToSubscription = () => {
-  router.push({
-    name: "setting.workspace.subscription",
-    query: {
-      manageLicense: 1,
-    },
-  });
-};
 
 const isTenantProject = computed(() => {
   return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;

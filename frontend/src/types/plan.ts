@@ -65,6 +65,7 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.instance-ssh-connection",
   "bb.feature.sync-schema-all-versions",
   "bb.feature.index-advisor",
+  "bb.feature.database-grouping",
   // Policy Control
   "bb.feature.sensitive-data",
   "bb.feature.custom-approval",
@@ -73,7 +74,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.mybatis-sql-review",
   "bb.feature.vcs-schema-write-back",
   // TODO:
-  // "bb.feature.database-grouping",
   // "bb.feature.online-migration",
 ]);
 

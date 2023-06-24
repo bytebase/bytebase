@@ -132,12 +132,10 @@
     />
   </div>
 
-  <Drawer
+  <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
-    @close="state.showInstanceAssignmentDrawer = false"
-  >
-    <InstanceAssignment @dismiss="state.showInstanceAssignmentDrawer = false" />
-  </Drawer>
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -153,7 +151,6 @@ import {
 } from "@/store";
 import { storeToRefs } from "pinia";
 import { hasWorkspacePermissionV1 } from "@/utils";
-import { Drawer } from "@/components/v2";
 
 interface LocalState {
   loading: boolean;

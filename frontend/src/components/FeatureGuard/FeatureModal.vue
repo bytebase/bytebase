@@ -97,7 +97,11 @@
           </button>
         </template>
         <button v-else type="button" class="btn-primary" @click.prevent="ok">
-          {{ $t("common.learn-more") }}
+          {{
+            instanceMissingLicense
+              ? $t("subscription.instance-assignment.assign-license")
+              : $t("common.learn-more")
+          }}
         </button>
       </div>
     </div>

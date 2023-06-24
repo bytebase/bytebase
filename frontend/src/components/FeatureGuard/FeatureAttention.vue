@@ -8,20 +8,24 @@
     :action-text="actionText"
     @click-action="onClick"
   />
+  <InstanceAssignment
+    :show="state.showInstanceAssignmentDrawer"
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
+import { reactive, PropType, computed } from "vue";
 import { FeatureType, planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-  useSubscriptionV1Store,
-  featureToRef,
-  pushNotification,
-} from "@/store";
+import { useSubscriptionV1Store, pushNotification } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { Instance } from "@/types/proto/v1/instance_service";
+
+interface LocalState {
+  showInstanceAssignmentDrawer: boolean;
+}
 
 const props = defineProps({
   feature: {
@@ -47,8 +51,13 @@ const props = defineProps({
 const router = useRouter();
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
+const state = reactive<LocalState>({
+  showInstanceAssignmentDrawer: false,
+});
 
-const hasFeature = featureToRef(props.feature, props.instance);
+const hasFeature = computed(() => {
+  return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
+});
 
 const instanceMissingLicense = computed(() => {
   return subscriptionStore.instanceMissingLicense(
@@ -109,12 +118,7 @@ const descriptionText = computed(() => {
 
 const onClick = () => {
   if (instanceMissingLicense.value) {
-    router.push({
-      name: "setting.workspace.subscription",
-      query: {
-        manageLicense: 1,
-      },
-    });
+    state.showInstanceAssignmentDrawer = true;
   } else if (subscriptionStore.canTrial) {
     const isUpgrade = subscriptionStore.canUpgradeTrial;
     subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {

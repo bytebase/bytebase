@@ -878,6 +878,15 @@ watch(
   }
 );
 
+watch(
+  () => props.instance?.activation,
+  (val) => {
+    if (val !== undefined) {
+      basicInfo.value.activation = val;
+    }
+  }
+);
+
 const engineList = computed(() => {
   return supportedEngineV1List();
 });
