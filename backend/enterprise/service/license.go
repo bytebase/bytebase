@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -114,6 +115,15 @@ func (s *LicenseService) IsFeatureEnabledForInstance(feature api.FeatureType, in
 		return featureEnabledForPlan
 	}
 	return featureEnabledForPlan && instance.Activation
+}
+
+// GetInstanceLicenseCount returns the instance count limit for current subscription.
+func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
+	instanceCount := s.LoadSubscription(ctx).InstanceCount
+	if instanceCount < 0 {
+		return math.MaxInt
+	}
+	return instanceCount
 }
 
 // GetEffectivePlan gets the effective plan.

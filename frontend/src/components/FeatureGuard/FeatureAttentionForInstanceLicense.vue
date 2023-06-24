@@ -8,13 +8,20 @@
     :action-text="$t('subscription.instance-assignment.assign-license')"
     @click-action="onClick"
   />
+  <InstanceAssignment
+    :show="state.showInstanceAssignmentDrawer"
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
+import { reactive, PropType, computed } from "vue";
 import { FeatureType, instanceLimitFeature } from "@/types";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+
+interface LocalState {
+  showInstanceAssignmentDrawer: boolean;
+}
 
 const props = defineProps({
   feature: {
@@ -28,18 +35,14 @@ const props = defineProps({
   },
 });
 
-const router = useRouter();
 const { t } = useI18n();
-
+const state = reactive<LocalState>({
+  showInstanceAssignmentDrawer: false,
+});
 const featureKey = props.feature.split(".").join("-");
 
 const onClick = () => {
-  router.push({
-    name: "setting.workspace.subscription",
-    query: {
-      manageLicense: 1,
-    },
-  });
+  state.showInstanceAssignmentDrawer = true;
 };
 
 const descriptionText = computed(() => {

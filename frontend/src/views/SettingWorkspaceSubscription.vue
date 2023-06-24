@@ -47,7 +47,7 @@
           class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
           @click="state.showInstanceAssignmentDrawer = true"
         >
-          <span class="group-hover:underline">{{ availableLicenseCount }}</span>
+          <span class="group-hover:underline">{{ activateLicenseCount }}</span>
           <span class="text-xl">/</span>
           <span class="group-hover:underline">{{ totalLicenseCount }}</span>
           <heroicons-outline:pencil class="h-6 w-6" />
@@ -132,12 +132,10 @@
     />
   </div>
 
-  <Drawer
+  <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
-    @close="state.showInstanceAssignmentDrawer = false"
-  >
-    <InstanceAssignment @dismiss="state.showInstanceAssignmentDrawer = false" />
-  </Drawer>
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -153,7 +151,6 @@ import {
 } from "@/store";
 import { storeToRefs } from "pinia";
 import { hasWorkspacePermissionV1 } from "@/utils";
-import { Drawer } from "@/components/v2";
 
 interface LocalState {
   loading: boolean;
@@ -214,17 +211,14 @@ const { expireAt, isTrialing, isExpired, instanceCount } =
   storeToRefs(subscriptionStore);
 
 const totalLicenseCount = computed((): string => {
-  if (instanceCount.value > 0) {
-    return `${instanceCount.value}`;
+  if (instanceCount.value === Number.MAX_VALUE) {
+    return t("subscription.unlimited");
   }
-  return t("subscription.unlimited");
+  return `${instanceCount.value}`;
 });
 
-const availableLicenseCount = computed((): string => {
-  if (instanceCount.value > 0) {
-    return `${instanceV1Store.activateInstanceCount}`;
-  }
-  return t("subscription.unlimited");
+const activateLicenseCount = computed((): string => {
+  return `${instanceV1Store.activateInstanceCount}`;
 });
 
 const currentPlan = computed((): string => {
