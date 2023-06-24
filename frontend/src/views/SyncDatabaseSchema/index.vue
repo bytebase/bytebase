@@ -194,6 +194,13 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
+const isValidId = (id: any): id is string => {
+  if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
+    return false;
+  }
+  return true;
+};
+
 const database = computed(() => {
   const databaseId = state.sourceSchema.databaseId;
   if (!isValidId(databaseId)) {
@@ -289,13 +296,6 @@ const handleSourceDatabaseSelect = async (databaseId: string) => {
 
 const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
   state.sourceSchema.changeHistory = changeHistory;
-};
-
-const isValidId = (id: any): id is string => {
-  if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
-    return false;
-  }
-  return true;
 };
 
 const tryChangeStep = async (
