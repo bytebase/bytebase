@@ -181,6 +181,8 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 
+	// https://github.com/bytebase/bytebase/issues/6663
+	// Invisible columns don't have column ID so that we need to filter out them.
 	query := fmt.Sprintf(`
 		SELECT
 			OWNER,
@@ -191,7 +193,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			DATA_DEFAULT,
 			NULLABLE
 		FROM sys.all_tab_columns
-		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COLUMN_ID IS NOT NULL
 		ORDER BY OWNER, TABLE_NAME, COLUMN_ID`, systemSchema)
 	rows, err := txn.Query(query)
 	if err != nil {
