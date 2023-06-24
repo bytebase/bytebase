@@ -368,7 +368,6 @@
 <script lang="ts" setup>
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import {
   hasFeature,
@@ -435,7 +434,6 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const router = useRouter();
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
