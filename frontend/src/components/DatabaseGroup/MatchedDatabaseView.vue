@@ -73,15 +73,11 @@
       >
         <NEllipsis class="text-sm" line-clamp="1">
           {{ database.databaseName }}
+          ({{ database.instanceEntity.environmentEntity.title }})
         </NEllipsis>
         <div class="flex flex-row justify-end items-center shrink-0">
-          <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <NEllipsis
-            class="ml-1 text-sm text-gray-400 max-w-[124px]"
-            line-clamp="1"
-          >
-            ({{ database.instanceEntity.environmentEntity.title }})
-            {{ database.instanceEntity.title }}
+          <NEllipsis class="ml-1 text-sm text-gray-400" line-clamp="1">
+            <InstanceV1Name :instance="database.instanceEntity" :link="false" />
           </NEllipsis>
         </div>
       </div>
@@ -93,7 +89,11 @@
 import { NEllipsis } from "naive-ui";
 import { ref, watch, reactive } from "vue";
 import { ConditionGroupExpr } from "@/plugins/cel";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import {
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
 import { ComposedDatabase, ComposedProject } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
@@ -119,6 +119,7 @@ const props = defineProps<{
 
 const environmentStore = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
+const subscriptionV1Store = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   isRequesting: false,
   showMatchedDatabaseList: true,
@@ -153,8 +154,19 @@ const updateMatchingState = useDebounceFn(async () => {
   unmatchedDatabaseList.value = [];
   for (const item of result.matchedDatabases) {
     const database = await databaseStore.getOrFetchDatabaseByName(item.name);
-    if (database) {
+    if (!database) {
+      continue;
+    }
+
+    if (
+      subscriptionV1Store.hasInstanceFeature(
+        "bb.feature.database-grouping",
+        database.instanceEntity
+      )
+    ) {
       matchedDatabaseList.value.push(database);
+    } else {
+      unmatchedDatabaseList.value.push(database);
     }
   }
   for (const item of result.unmatchedDatabases) {

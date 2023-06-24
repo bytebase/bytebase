@@ -26,6 +26,7 @@ export type FeatureType =
   | "bb.feature.online-migration"
   | "bb.feature.schema-drift"
   | "bb.feature.sql-review"
+  | "bb.feature.mybatis-sql-review"
   | "bb.feature.task-schedule-time"
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
@@ -64,15 +65,16 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.instance-ssh-connection",
   "bb.feature.sync-schema-all-versions",
   "bb.feature.index-advisor",
+  "bb.feature.database-grouping",
   // Policy Control
   "bb.feature.sensitive-data",
   "bb.feature.custom-approval",
+  // VCS Integration
+  "bb.feature.vcs-sql-review",
+  "bb.feature.mybatis-sql-review",
+  "bb.feature.vcs-schema-write-back",
   // TODO:
-  // "bb.feature.vcs-schema-write-back",
-  // "bb.feature.database-grouping",
-  // "bb.feature.mybatis-sql-review",
   // "bb.feature.online-migration",
-  // "bb.feature.vcs-sql-review",
 ]);
 
 export const planTypeToString = (planType: PlanType): string => {

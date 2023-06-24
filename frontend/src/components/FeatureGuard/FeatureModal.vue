@@ -1,12 +1,13 @@
 <template>
-  <BBModal
-    :title="$t('subscription.disabled-feature')"
-    @close="$emit('cancel')"
-  >
+  <BBModal :title="title" @close="$emit('cancel')">
     <div class="min-w-0 md:min-w-[400px] max-w-4xl">
-      <div class="flex items-start space-x-2">
+      <div class="flex items-start space-x-2 mt-3">
         <div class="flex items-center">
-          <heroicons-solid:sparkles class="h-6 w-6 text-accent" />
+          <heroicons-solid:lock-closed
+            v-if="instanceMissingLicense"
+            class="text-accent w-6 h-6"
+          />
+          <heroicons-solid:sparkles v-else class="h-6 w-6 text-accent" />
         </div>
         <h3
           id="modal-headline"
@@ -96,7 +97,11 @@
           </button>
         </template>
         <button v-else type="button" class="btn-primary" @click.prevent="ok">
-          {{ $t("common.learn-more") }}
+          {{
+            instanceMissingLicense
+              ? $t("subscription.instance-assignment.assign-license")
+              : $t("common.learn-more")
+          }}
         </button>
       </div>
     </div>
@@ -104,7 +109,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
+import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store, pushNotification } from "@/store";
@@ -129,15 +134,24 @@ const router = useRouter();
 
 const subscriptionStore = useSubscriptionV1Store();
 
-const instanceMissingLicense = subscriptionStore.instanceMissingLicense(
-  props.feature,
-  props.instance
-);
+const instanceMissingLicense = computed(() => {
+  return subscriptionStore.instanceMissingLicense(
+    props.feature,
+    props.instance
+  );
+});
+
+const title = computed(() => {
+  if (instanceMissingLicense.value) {
+    return t("subscription.instance-assignment.require-license");
+  }
+  return t("subscription.disabled-feature");
+});
 
 const ok = () => {
   router.push({
     name: "setting.workspace.subscription",
-    query: instanceMissingLicense
+    query: instanceMissingLicense.value
       ? {
           manageLicense: 1,
         }

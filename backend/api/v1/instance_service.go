@@ -113,7 +113,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return convertToInstance(instanceMessage), nil
 	}
 
-	instanceCountLimit := s.licenseService.LoadSubscription(ctx).InstanceCount
+	instanceCountLimit := s.licenseService.GetInstanceLicenseCount(ctx)
 	if instanceMessage.Activation {
 		if err := s.store.CheckActivationLimit(ctx, instanceCountLimit); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
@@ -197,7 +197,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		}
 	}
 
-	instanceCountLimit := s.licenseService.LoadSubscription(ctx).InstanceCount
+	instanceCountLimit := s.licenseService.GetInstanceLicenseCount(ctx)
 	if v := patch.Activation; v != nil && *v {
 		if err := s.store.CheckActivationLimit(ctx, instanceCountLimit); err != nil {
 			if common.ErrorCode(err) == common.Invalid {

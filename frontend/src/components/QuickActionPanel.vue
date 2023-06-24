@@ -212,12 +212,16 @@
         v-if="quickAction === 'quickaction.bb.subscription.license-assignment'"
         class="flex flex-col items-center w-24"
       >
-        <router-link
-          to="/setting/subscription?manageLicense=1"
+        <button
           class="btn-icon-primary p-3"
+          @click.prevent="
+            () =>
+              (state.quickActionType =
+                'quickaction.bb.subscription.license-assignment')
+          "
         >
           <heroicons-outline:academic-cap class="w-5 h-5" />
-        </router-link>
+        </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
@@ -283,6 +287,13 @@
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
     @close="state.showRequestExportPanel = false"
+  />
+
+  <InstanceAssignment
+    :show="
+      state.quickActionType === 'quickaction.bb.subscription.license-assignment'
+    "
+    @dismiss="state.quickActionType = undefined"
   />
 </template>
 
@@ -438,10 +449,8 @@ const QuickActionMap: Record<string, Partial<Action>> = {
   "quickaction.bb.subscription.license-assignment": {
     name: t("subscription.instance-assignment.manage-license"),
     perform: () =>
-      router.push({
-        name: "setting.workspace.subscription",
-        query: { manageLicense: 1 },
-      }),
+      (state.quickActionType =
+        "quickaction.bb.subscription.license-assignment"),
   },
 };
 

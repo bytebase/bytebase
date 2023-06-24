@@ -198,7 +198,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         trial: {
           plan: planType,
           days: this.trialingDays,
-          instanceCount: -1,
+          instanceCount: 20,
         },
       });
       this.setSubscription(subscription);
