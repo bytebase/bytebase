@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -252,7 +253,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Results))
-	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform())
+	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Equal("", diff)
 
 	// Query clone migration history.

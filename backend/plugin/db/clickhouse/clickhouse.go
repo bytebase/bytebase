@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -170,6 +171,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	var results []*v1pb.QueryResult
 	if err := util.ApplyMultiStatements(strings.NewReader(statement), func(stmt string) error {
+		startTime := time.Now()
 		rows, err := conn.QueryContext(ctx, statement)
 		if err != nil {
 			// TODO(d): ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
@@ -178,7 +180,7 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 		}
 		defer rows.Close()
 
-		result, err := convertRowsToQueryResult(rows)
+		result, err := convertRowsToQueryResult(rows, startTime)
 		if err != nil {
 			result = &v1pb.QueryResult{
 				Error: err.Error(),
@@ -215,6 +217,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	startTime := time.Now()
 	statement = strings.TrimRight(statement, " \n\t;")
 
 	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
@@ -238,10 +241,10 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement str
 	}
 	defer rows.Close()
 
-	return convertRowsToQueryResult(rows)
+	return convertRowsToQueryResult(rows, startTime)
 }
 
-func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
+func convertRowsToQueryResult(rows *sql.Rows, startTime time.Time) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -272,6 +275,7 @@ func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
+		Latency:         durationpb.New(time.Since(startTime)),
 	}, nil
 }
 

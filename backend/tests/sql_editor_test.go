@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -228,7 +229,8 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		a.Equal(len(tt.affectedRows), len(results))
 		for idx, result := range results {
 			a.Equal("", result.Error)
-			diff := cmp.Diff(tt.affectedRows[idx], result, protocmp.Transform())
+			result.Latency = nil
+			diff := cmp.Diff(tt.affectedRows[idx], result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 			a.Equal("", diff)
 		}
 	}
