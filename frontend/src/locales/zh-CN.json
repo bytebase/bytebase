@@ -1881,11 +1881,13 @@
     "instance-assignment": {
       "license": "证书",
       "assign-license": "分配证书",
+      "require-license": "需要实例证书",
       "missing-license-attention": "请给实例分配证书以解锁该功能。",
       "n-license-remain": "剩余 {n}",
       "manage-license": "管理证书",
       "used-and-total-license": "已分配 / 总实例证书",
-      "success-notification": "证书分配更新成功"
+      "success-notification": "证书分配更新成功",
+      "missing-license-for-instances": "您有 {count} 个实例（{name}）缺失开启该功能的证书。"
     },
     "update": {
       "success": {

@@ -266,7 +266,8 @@
 }
 
 .tooltip-wrapper:hover .tooltip,
-.tooltip-wrapper:hover .tooltip-left {
+.tooltip-wrapper:hover .tooltip-left,
+.tooltip-wrapper:hover .tooltip-top {
   @apply visible z-50;
 }
 
