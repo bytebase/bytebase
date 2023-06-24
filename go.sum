@@ -150,8 +150,8 @@ github.com/bytebase/tidb v0.0.0-20230329095902-fe196d3c77d0/go.mod h1:xrVXE+0V54
 github.com/bytebase/tidb/parser v0.0.0-20230329095902-fe196d3c77d0 h1:Xdq53fvcG9qeUKkxdNbR9B1JLbfeIjhW2N0xxFbaZNg=
 github.com/bytebase/tidb/parser v0.0.0-20230329095902-fe196d3c77d0/go.mod h1:wjvp+T3/T9XYt0nKqGX3Kc1AKuyUcfno6LTc6b2A6ew=
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
-github.com/casbin/casbin/v2 v2.66.2 h1:C4qtZCs5z3tV6iq92lO9ud/bLdePgbIstFKIiEvcOcA=
-github.com/casbin/casbin/v2 v2.66.2/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
+github.com/casbin/casbin/v2 v2.71.1 h1:LRHyqM0S1LzM/K59PmfUIN0ZJfLgcOjL4OhOQI/FNXU=
+github.com/casbin/casbin/v2 v2.71.1/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
 github.com/cenkalti/backoff/v4 v4.1.1/go.mod h1:scbssz8iZGpm3xbr14ovlUdkxfGXNInqkPWOWmG2CLw=
 github.com/cenkalti/backoff/v4 v4.2.0 h1:HN5dHm3WBOgndBH6E8V0q2jIYIR3s9yglV8k/+MN3u4=
