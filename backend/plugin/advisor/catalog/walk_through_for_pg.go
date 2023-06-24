@@ -946,6 +946,8 @@ func getIndexMethod(method ast.IndexMethodType) string {
 		return "gin"
 	case ast.IndexMethodTypeBrin:
 		return "brin"
+	case ast.IndexMethodTypeIvfflat:
+		return "ivfflat"
 	}
 	return ""
 }

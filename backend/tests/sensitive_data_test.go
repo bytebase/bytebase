@@ -12,6 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -270,7 +271,7 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Results))
-	diff := cmp.Diff(maskedData, queryResp.Results[0], protocmp.Transform())
+	diff := cmp.Diff(maskedData, queryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Equal("", diff)
 
 	// Query origin data.
@@ -279,6 +280,6 @@ func TestSensitiveData(t *testing.T) {
 	a.Len(singleSQLResults, 1)
 	result := singleSQLResults[0]
 	a.Equal("", result.Error)
-	diff = cmp.Diff(originData, result, protocmp.Transform())
+	diff = cmp.Diff(originData, result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Equal("", diff)
 }

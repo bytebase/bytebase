@@ -156,7 +156,7 @@ const options = computed(() => {
       value: project.uid,
       label:
         project.uid === String(DEFAULT_PROJECT_ID)
-          ? t("common.unassigned")
+          ? t("database.unassigned")
           : project.uid === String(UNKNOWN_ID)
           ? t("project.all")
           : project.title,

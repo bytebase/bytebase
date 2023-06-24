@@ -12,9 +12,11 @@
         :raw-database-list="rawDatabaseList"
         :transfer-source="state.transferSource"
         :instance-filter="state.instanceFilter"
+        :project-filter="state.projectFilter"
         :search-text="state.searchText"
         @change="state.transferSource = $event"
         @select-instance="state.instanceFilter = $event"
+        @select-project="state.projectFilter = $event"
         @search-text-change="state.searchText = $event"
       />
     </template>
@@ -58,10 +60,12 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { toRef } from "vue";
+import { Project } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   transferSource: TransferSource;
   instanceFilter: ComposedInstance | undefined;
+  projectFilter: Project | undefined;
   searchText: string;
   loading: boolean;
 }
@@ -84,6 +88,7 @@ const state = reactive<LocalState>({
   transferSource:
     props.projectId === String(DEFAULT_PROJECT_ID) ? "OTHER" : "DEFAULT",
   instanceFilter: undefined,
+  projectFilter: undefined,
   searchText: "",
   loading: false,
 });
@@ -128,10 +133,25 @@ const filteredDatabaseList = computed(() => {
     ])
   );
 
-  const instance = state.instanceFilter;
-  if (instance && instance.name !== UNKNOWN_INSTANCE_NAME) {
-    list = list.filter((db) => db.instance === instance.name);
-  }
+  list = list.filter((db) => {
+    // Default uses instance filter
+    if (state.transferSource === "DEFAULT") {
+      const instance = state.instanceFilter;
+      if (instance && instance.name !== UNKNOWN_INSTANCE_NAME) {
+        return false;
+      }
+    }
+
+    // Other uses project filter
+    if (state.transferSource === "OTHER") {
+      const project = state.projectFilter;
+      if (project && db.project != project.name) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   return sortDatabaseV1List(list);
 });
