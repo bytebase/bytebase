@@ -1823,7 +1823,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf("Error: %s.\nPlease can check the docs at %s#%d",
+			content := fmt.Sprintf("Error: %s.\nPlease check the docs at %s#%d",
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,
