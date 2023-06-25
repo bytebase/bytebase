@@ -507,11 +507,13 @@
               <FeatureBadge
                 feature="bb.feature.instance-ssh-connection"
                 class="text-accent"
+                :instance="instance"
               />
             </div>
             <template v-if="currentDataSource.pendingCreate">
               <SshConnectionForm
                 :value="currentDataSource"
+                :instance="instance"
                 @change="handleCurrentDataSourceSshChange"
               />
             </template>
@@ -519,6 +521,7 @@
               <template v-if="currentDataSource.updateSsh">
                 <SshConnectionForm
                   :value="currentDataSource"
+                  :instance="instance"
                   @change="handleCurrentDataSourceSshChange"
                 />
               </template>
@@ -603,6 +606,7 @@
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.read-replica-connection"
+    :instance="instance"
     @cancel="state.showFeatureModal = false"
   />
 
@@ -661,7 +665,6 @@ import {
 } from "@/store";
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
-import FeatureBadge from "@/components/FeatureBadge.vue";
 import SslCertificateForm from "./SslCertificateForm.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
@@ -741,7 +744,8 @@ const state = reactive<LocalState>({
 });
 
 const hasReadonlyReplicaFeature = featureToRef(
-  "bb.feature.read-replica-connection"
+  "bb.feature.read-replica-connection",
+  props.instance
 );
 
 const availableLicenseCount = computed(() => {
@@ -871,6 +875,15 @@ watch(
   },
   {
     immediate: true,
+  }
+);
+
+watch(
+  () => props.instance?.activation,
+  (val) => {
+    if (val !== undefined) {
+      basicInfo.value.activation = val;
+    }
   }
 );
 

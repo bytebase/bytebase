@@ -8099,6 +8099,8 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
 | masked | [bool](#bool) | repeated | Columns are masked or not. |
 | error | [string](#string) |  | The error message if the query failed. |
+| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
+| statement | [string](#string) |  | The query statement for the result. |
 
 
 

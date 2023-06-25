@@ -1,12 +1,13 @@
 <template>
-  <BBModal
-    :title="$t('subscription.disabled-feature')"
-    @close="$emit('cancel')"
-  >
+  <BBModal :title="title" @close="$emit('cancel')">
     <div class="min-w-0 md:min-w-[400px] max-w-4xl">
-      <div class="flex items-start space-x-2">
+      <div class="flex items-start space-x-2 mt-3">
         <div class="flex items-center">
-          <heroicons-solid:sparkles class="h-6 w-6 text-accent" />
+          <heroicons-solid:lock-closed
+            v-if="instanceMissingLicense"
+            class="text-accent w-6 h-6"
+          />
+          <heroicons-solid:sparkles v-else class="h-6 w-6 text-accent" />
         </div>
         <h3
           id="modal-headline"
@@ -22,7 +23,11 @@
       </div>
       <div class="mt-3">
         <p class="whitespace-pre-wrap">
-          <template v-if="subscriptionStore.canTrial">
+          <i18n-t
+            v-if="instanceMissingLicense"
+            keypath="subscription.instance-assignment.missing-license-attention"
+          />
+          <template v-else-if="subscriptionStore.canTrial">
             <i18n-t
               v-if="isRequiredInPlan"
               keypath="subscription.required-plan-with-trial"
@@ -92,7 +97,11 @@
           </button>
         </template>
         <button v-else type="button" class="btn-primary" @click.prevent="ok">
-          {{ $t("common.learn-more") }}
+          {{
+            instanceMissingLicense
+              ? $t("subscription.instance-assignment.assign-license")
+              : $t("common.learn-more")
+          }}
         </button>
       </div>
     </div>
@@ -100,17 +109,22 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
+import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store, pushNotification } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { Instance } from "@/types/proto/v1/instance_service";
 
 const props = defineProps({
   feature: {
     required: true,
     type: String as PropType<FeatureType>,
+  },
+  instance: {
+    type: Object as PropType<Instance>,
+    default: undefined,
   },
 });
 
@@ -118,11 +132,32 @@ const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
 const router = useRouter();
 
-const ok = () => {
-  router.push({ name: "setting.workspace.subscription" });
-};
-
 const subscriptionStore = useSubscriptionV1Store();
+
+const instanceMissingLicense = computed(() => {
+  return subscriptionStore.instanceMissingLicense(
+    props.feature,
+    props.instance
+  );
+});
+
+const title = computed(() => {
+  if (instanceMissingLicense.value) {
+    return t("subscription.instance-assignment.require-license");
+  }
+  return t("subscription.disabled-feature");
+});
+
+const ok = () => {
+  router.push({
+    name: "setting.workspace.subscription",
+    query: instanceMissingLicense.value
+      ? {
+          manageLicense: 1,
+        }
+      : {},
+  });
+};
 
 const isRequiredInPlan = Array.isArray(
   subscriptionStore.featureMatrix.get(props.feature)

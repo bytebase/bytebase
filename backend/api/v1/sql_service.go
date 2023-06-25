@@ -460,7 +460,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
 		return nil, nil, nil, nil, err
 	}
 
@@ -691,7 +691,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	}
 
 	// Check if the user has permission to execute the query.
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
 		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
@@ -715,7 +715,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 			}
-		case db.Postgres:
+		case db.Postgres, db.Redshift:
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
@@ -874,7 +874,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					Name:       table.Name,
 					ColumnList: []db.ColumnInfo{},
 				}
-				if instance.Engine == db.Postgres {
+				if instance.Engine == db.Postgres || instance.Engine == db.Redshift {
 					tableSchema.Name = fmt.Sprintf("%s.%s", schema.Name, table.Name)
 				}
 				for _, column := range table.Columns {
@@ -1200,7 +1200,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		}
 
 		return result, nil
-	case parser.Postgres:
+	case parser.Postgres, parser.Redshift:
 		list, err := parser.ExtractResourceList(engine, databaseName, "public", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
@@ -1289,6 +1289,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 func (s *SQLService) checkQueryRights(
 	ctx context.Context,
 	databaseName string,
+	datashare bool,
 	statement string,
 	limit int32,
 	user *store.UserMessage,
@@ -1301,7 +1302,12 @@ func (s *SQLService) checkQueryRights(
 		return nil
 	}
 
-	resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), databaseName, statement, instance)
+	// TODO(d): use a Redshift extraction for shared database.
+	extractingStatement := statement
+	if datashare {
+		extractingStatement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", databaseName), "")
+	}
+	resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), databaseName, extractingStatement, instance)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 	}
@@ -1319,6 +1325,14 @@ func (s *SQLService) checkQueryRights(
 		if err != nil {
 			return err
 		}
+		if projectMessage == nil && databaseMessage == nil {
+			// If database not found, skip.
+			continue
+		}
+		if projectMessage == nil {
+			// Never happen
+			return status.Errorf(codes.Internal, "project not found for database: %s", databaseMessage.DatabaseName)
+		}
 		if project == nil {
 			project = projectMessage
 		}
@@ -1328,8 +1342,16 @@ func (s *SQLService) checkQueryRights(
 		databaseMessageMap[database] = databaseMessage
 	}
 
+	if len(databaseMessageMap) == 0 && project == nil {
+		project, _, err = s.getProjectAndDatabaseMessage(ctx, instance, databaseName)
+		if err != nil {
+			return err
+		}
+	}
+
 	if project == nil {
-		return status.Error(codes.NotFound, "project not found")
+		// Never happen
+		return status.Error(codes.Internal, "project not found")
 	}
 
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
@@ -1578,6 +1600,8 @@ func convertToParserEngine(engine db.Type) parser.EngineType {
 	switch engine {
 	case db.Postgres:
 		return parser.Postgres
+	case db.Redshift:
+		return parser.Redshift
 	case db.MySQL:
 		return parser.MySQL
 	case db.TiDB:

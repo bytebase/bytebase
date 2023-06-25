@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -170,6 +171,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	var results []*v1pb.QueryResult
 	if err := util.ApplyMultiStatements(strings.NewReader(statement), func(stmt string) error {
+		startTime := time.Now()
 		rows, err := conn.QueryContext(ctx, statement)
 		if err != nil {
 			// TODO(d): ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
@@ -184,6 +186,9 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 				Error: err.Error(),
 			}
 		}
+		result.Latency = durationpb.New(time.Since(startTime))
+		result.Statement = strings.TrimRight(statement, " \n\t;")
+
 		results = append(results, result)
 		return nil
 	}); err != nil {
@@ -215,10 +220,12 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	startTime := time.Now()
 	statement = strings.TrimRight(statement, " \n\t;")
 
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
@@ -232,13 +239,20 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement str
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, statement)
+	rows, err := tx.QueryContext(ctx, stmt)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, statement)
+		return nil, util.FormatErrorWithQuery(err, stmt)
 	}
 	defer rows.Close()
 
-	return convertRowsToQueryResult(rows)
+	result, err := convertRowsToQueryResult(rows)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+
+	return result, err
 }
 
 func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {

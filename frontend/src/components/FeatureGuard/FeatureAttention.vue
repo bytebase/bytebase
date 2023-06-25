@@ -1,5 +1,6 @@
 <template>
   <BBAttention
+    v-if="!hasFeature"
     :class="customClass"
     :style="`WARN`"
     :title="$t(`subscription.features.${featureKey}.title`)"
@@ -7,15 +8,24 @@
     :action-text="actionText"
     @click-action="onClick"
   />
+  <InstanceAssignment
+    :show="state.showInstanceAssignmentDrawer"
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
+import { reactive, PropType, computed } from "vue";
 import { FeatureType, planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store, pushNotification } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { Instance } from "@/types/proto/v1/instance_service";
+
+interface LocalState {
+  showInstanceAssignmentDrawer: boolean;
+}
 
 const props = defineProps({
   feature: {
@@ -32,13 +42,34 @@ const props = defineProps({
     default: "",
     type: String,
   },
+  instance: {
+    type: Object as PropType<Instance>,
+    default: undefined,
+  },
 });
 
 const router = useRouter();
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
+const state = reactive<LocalState>({
+  showInstanceAssignmentDrawer: false,
+});
+
+const hasFeature = computed(() => {
+  return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
+});
+
+const instanceMissingLicense = computed(() => {
+  return subscriptionStore.instanceMissingLicense(
+    props.feature,
+    props.instance
+  );
+});
 
 const actionText = computed(() => {
+  if (instanceMissingLicense.value) {
+    return t("subscription.instance-assignment.assign-license");
+  }
   if (!subscriptionStore.canTrial) {
     return t("subscription.upgrade");
   }
@@ -50,14 +81,28 @@ const actionText = computed(() => {
   });
 });
 
+const featureKey = props.feature.split(".").join("-");
+
 const descriptionText = computed(() => {
+  let description = props.description;
+  if (!description) {
+    description = t(`subscription.features.${featureKey}.desc`);
+  }
+
+  if (instanceMissingLicense.value) {
+    const attention = t(
+      "subscription.instance-assignment.missing-license-attention"
+    );
+    return `${description}\n${attention}`;
+  }
+
   const startTrial = subscriptionStore.canUpgradeTrial
     ? t("subscription.upgrade-trial")
     : t("subscription.trial-for-days", {
         days: subscriptionStore.trialingDays,
       });
   if (!Array.isArray(subscriptionStore.featureMatrix.get(props.feature))) {
-    return `${props.description}\n${startTrial}`;
+    return `${description}\n${startTrial}`;
   }
 
   const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
@@ -68,11 +113,13 @@ const descriptionText = computed(() => {
     startTrial: startTrial,
   });
 
-  return `${props.description}\n${trialText}`;
+  return `${description}\n${trialText}`;
 });
 
 const onClick = () => {
-  if (subscriptionStore.canTrial) {
+  if (instanceMissingLicense.value) {
+    state.showInstanceAssignmentDrawer = true;
+  } else if (subscriptionStore.canTrial) {
     const isUpgrade = subscriptionStore.canUpgradeTrial;
     subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {
       pushNotification({
@@ -96,6 +143,4 @@ const onClick = () => {
     router.push({ name: "setting.workspace.subscription" });
   }
 };
-
-const featureKey = props.feature.split(".").join("-");
 </script>

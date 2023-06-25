@@ -1,122 +1,134 @@
 <template>
-  <DrawerContent :title="$t('subscription.instance-assignment.manage-license')">
-    <div class="divide-block-border space-y-5 w-[40rem] h-full">
-      <div>
-        <div class="text-gray-400">
-          {{
-            $t("subscription.instance-assignment.available-and-total-license")
-          }}
-        </div>
-        <div class="mt-1 text-4xl flex items-center gap-x-2">
-          <span>{{ availableLicenseCount }}</span>
-          <span class="text-xl">/</span>
-          <span>{{ totalLicenseCount }}</span>
-        </div>
-      </div>
-      <BBTable
-        ref="tableRef"
-        :column-list="columnList"
-        :section-data-source="datasource"
-        :show-header="true"
-        :custom-header="true"
-        :left-bordered="true"
-        :right-bordered="true"
-        :top-bordered="true"
-        :bottom-bordered="true"
-        :compact-section="true"
-        :row-clickable="false"
-      >
-        <template #header>
-          <th
-            v-for="(column, index) in columnList"
-            :key="index"
-            scope="col"
-            class="pl-2 first:pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
-            :class="[column.center && 'text-center pr-2']"
-          >
-            <template v-if="index === 0">
-              <input
-                v-if="instanceList.length > 0"
-                type="checkbox"
-                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                :checked="allSelectionState.checked"
-                :indeterminate="allSelectionState.indeterminate"
-                :disabled="
-                  !allSelectionState.checked &&
-                  instanceList.length > instanceCount
-                "
-                @input="
-                  selectAllInstances(
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-            </template>
-            <template v-else>{{ $t(column.title) }}</template>
-          </th>
-        </template>
-        <template #body="{ rowData: instance }: { rowData: ComposedInstance }">
-          <BBTableCell
-            class="w-[1%]"
-            @click.stop="
-              toggleSelectInstance(instance, !isInstanceSelected(instance))
-            "
-          >
-            <!-- width: 1% means as narrow as possible -->
-            <input
-              type="checkbox"
-              class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-              :checked="isInstanceSelected(instance)"
-              :disabled="state.selectedInstance.size == instanceCount"
-            />
-          </BBTableCell>
-          <BBTableCell class="bb-grid-cell">
-            <div class="flex items-center gap-x-1">
-              <InstanceV1EngineIcon :instance="instance" />
-              <router-link
-                :to="`/instance/${instanceV1Slug(instance)}`"
-                class="hover:underline"
-                active-class="link"
-                exact-active-class="link"
-              >
-                {{ instanceV1Name(instance) }}
-              </router-link>
+  <Drawer :show="show" @close="$emit('dismiss')">
+    <DrawerContent
+      :title="$t('subscription.instance-assignment.manage-license')"
+    >
+      <div class="divide-block-border space-y-5 w-[40rem] h-full">
+        <div>
+          <div class="flex space-x-2">
+            <div class="text-gray-400">
+              {{
+                $t("subscription.instance-assignment.used-and-total-license")
+              }}
             </div>
-          </BBTableCell>
-          <BBTableCell class="bb-grid-cell">
-            {{ hostPortOfInstanceV1(instance) }}
-          </BBTableCell>
-          <BBTableCell class="bb-grid-cell">
-            <EnvironmentV1Name
-              :environment="instance.environmentEntity"
-              :link="false"
+            <LearnMoreLink
+              url="https://www.bytebase.com/docs/administration/license?source=console"
+              class="ml-1 text-sm"
             />
-          </BBTableCell>
-        </template>
-      </BBTable>
-    </div>
-
-    <template #footer>
-      <div class="w-full flex justify-between items-center">
-        <div class="w-full flex justify-end items-center gap-x-3">
-          <NButton @click.prevent="cancel">
-            {{ $t("common.cancel") }}
-          </NButton>
-          <NButton
-            :disabled="
-              !assignmentChanged ||
-              state.processing ||
-              state.selectedInstance.size > instanceCount
-            "
-            type="primary"
-            @click.prevent="updateAssignment"
-          >
-            {{ $t("common.confirm") }}
-          </NButton>
+          </div>
+          <div class="mt-1 text-4xl flex items-center gap-x-2">
+            <span>{{ assignedLicenseCount }}</span>
+            <span class="text-xl">/</span>
+            <span>{{ totalLicenseCount }}</span>
+          </div>
         </div>
+        <BBTable
+          ref="tableRef"
+          :column-list="columnList"
+          :section-data-source="datasource"
+          :show-header="true"
+          :custom-header="true"
+          :left-bordered="true"
+          :right-bordered="true"
+          :top-bordered="true"
+          :bottom-bordered="true"
+          :compact-section="true"
+          :row-clickable="false"
+        >
+          <template #header>
+            <th
+              v-for="(column, index) in columnList"
+              :key="index"
+              scope="col"
+              class="pl-2 first:pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
+              :class="[column.center && 'text-center pr-2']"
+            >
+              <template v-if="index === 0">
+                <input
+                  v-if="instanceList.length > 0"
+                  type="checkbox"
+                  class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                  :checked="allSelectionState.checked"
+                  :indeterminate="allSelectionState.indeterminate"
+                  :disabled="
+                    !allSelectionState.checked &&
+                    instanceList.length > instanceCount
+                  "
+                  @input="
+                    selectAllInstances(
+                      ($event.target as HTMLInputElement).checked
+                    )
+                  "
+                />
+              </template>
+              <template v-else>{{ $t(column.title) }}</template>
+            </th>
+          </template>
+          <template
+            #body="{ rowData: instance }: { rowData: ComposedInstance }"
+          >
+            <BBTableCell
+              class="w-[1%]"
+              @click.stop="
+                toggleSelectInstance(instance, !isInstanceSelected(instance))
+              "
+            >
+              <!-- width: 1% means as narrow as possible -->
+              <input
+                type="checkbox"
+                class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                :checked="isInstanceSelected(instance)"
+                :disabled="state.selectedInstance.size == instanceCount"
+              />
+            </BBTableCell>
+            <BBTableCell class="bb-grid-cell">
+              <div class="flex items-center gap-x-1">
+                <InstanceV1EngineIcon :instance="instance" />
+                <router-link
+                  :to="`/instance/${instanceV1Slug(instance)}`"
+                  class="hover:underline"
+                  active-class="link"
+                  exact-active-class="link"
+                >
+                  {{ instanceV1Name(instance) }}
+                </router-link>
+              </div>
+            </BBTableCell>
+            <BBTableCell class="bb-grid-cell">
+              <EnvironmentV1Name
+                :environment="instance.environmentEntity"
+                :link="false"
+              />
+            </BBTableCell>
+            <BBTableCell class="bb-grid-cell">
+              {{ hostPortOfInstanceV1(instance) }}
+            </BBTableCell>
+          </template>
+        </BBTable>
       </div>
-    </template>
-  </DrawerContent>
+
+      <template #footer>
+        <div class="w-full flex justify-between items-center">
+          <div class="w-full flex justify-end items-center gap-x-3">
+            <NButton @click.prevent="cancel">
+              {{ $t("common.cancel") }}
+            </NButton>
+            <NButton
+              :disabled="
+                !assignmentChanged ||
+                state.processing ||
+                state.selectedInstance.size > instanceCount
+              "
+              type="primary"
+              @click.prevent="updateAssignment"
+            >
+              {{ $t("common.confirm") }}
+            </NButton>
+          </div>
+        </div>
+      </template>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -131,10 +143,18 @@ import {
   useInstanceV1Store,
   useInstanceV1List,
   useSubscriptionV1Store,
+  useDatabaseV1Store,
 } from "@/store";
 import { ComposedInstance } from "@/types";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
+
+defineProps({
+  show: {
+    default: false,
+    type: Boolean,
+  },
+});
 
 const columnList: BBTableColumn[] = [
   {
@@ -145,10 +165,10 @@ const columnList: BBTableColumn[] = [
     title: "common.name",
   },
   {
-    title: "common.Address",
+    title: "common.environment",
   },
   {
-    title: "common.environment",
+    title: "common.Address",
   },
 ];
 
@@ -164,6 +184,7 @@ const state = reactive<LocalState>({
   processing: false,
 });
 const instanceV1Store = useInstanceV1Store();
+const databaseV1Store = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
@@ -179,17 +200,14 @@ watchEffect(() => {
 });
 
 const totalLicenseCount = computed((): string => {
-  if (instanceCount.value > 0) {
-    return `${instanceCount.value}`;
+  if (instanceCount.value === Number.MAX_VALUE) {
+    return t("subscription.unlimited");
   }
-  return t("subscription.unlimited");
+  return `${instanceCount.value}`;
 });
 
-const availableLicenseCount = computed((): string => {
-  if (instanceCount.value > 0) {
-    return `${Math.max(0, instanceCount.value - state.selectedInstance.size)}`;
-  }
-  return t("subscription.unlimited");
+const assignedLicenseCount = computed((): string => {
+  return `${state.selectedInstance.size}`;
 });
 
 const tableRef = ref<HTMLTableElement>();
@@ -271,6 +289,7 @@ const updateAssignment = async () => {
       // deactivate instance
       instance.activation = false;
       await instanceV1Store.updateInstance(instance, ["activation"]);
+      databaseV1Store.updateDatabaseInstance(instance);
     }
     if (instance.activation && selectedInstanceName.has(instance.name)) {
       // remove unchanged
@@ -286,6 +305,7 @@ const updateAssignment = async () => {
     // activate instance
     instance.activation = true;
     await instanceV1Store.updateInstance(instance, ["activation"]);
+    databaseV1Store.updateDatabaseInstance(instance);
   }
 
   pushNotification({

@@ -1,15 +1,15 @@
 <template>
   <div class="radio-set-row mt-2">
-    <label v-for="type in SshTypes" :key="type" class="radio">
+    <label v-for="sshType in SshTypes" :key="sshType" class="radio">
       <input
         type="radio"
         class="btn"
-        :value="type"
-        :checked="state.type === type"
+        :value="sshType"
+        :checked="state.type === sshType"
         @input="handleSelectType"
       />
       <span class="label">
-        {{ getSshTypeLabel(type) }}
+        {{ getSshTypeLabel(sshType) }}
       </span>
     </label>
   </div>
@@ -97,6 +97,7 @@
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.instance-ssh-connection"
+    :instance="instance"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -106,9 +107,9 @@ import { PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 
+import { Instance } from "@/types/proto/v1/instance_service";
 import DroppableTextarea from "../misc/DroppableTextarea.vue";
-import { hasFeature } from "@/store";
-import FeatureModal from "../FeatureModal.vue";
+import { featureToRef } from "@/store";
 
 const SshTypes = ["NONE", "TUNNEL", "TUNNEL+PK"] as const;
 
@@ -134,6 +135,10 @@ const props = defineProps({
     type: Object as PropType<WithSshOptions>,
     required: true,
   },
+  instance: {
+    type: Object as PropType<Instance>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -155,11 +160,16 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
+const hasSSHConnectionFeature = featureToRef(
+  "bb.feature.instance-ssh-connection",
+  props.instance
+);
+
 const handleSelectType = (e: Event) => {
   const radio = e.target as HTMLInputElement;
   const type = radio.value as SshType;
 
-  if (!hasFeature("bb.feature.instance-ssh-connection")) {
+  if (!hasSSHConnectionFeature.value) {
     if (type !== "NONE") {
       state.type = "NONE";
       radio.checked = false;

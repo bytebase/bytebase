@@ -3,11 +3,13 @@ package taskcheck
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -22,17 +24,23 @@ import (
 //   3. Each [db.Type][AdvisorType] maps an advisor.
 
 // NewStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
-func NewStatementAdvisorCompositeExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
+func NewStatementAdvisorCompositeExecutor(
+	store *store.Store,
+	dbFactory *dbfactory.DBFactory,
+	licenseService enterpriseAPI.LicenseService,
+) Executor {
 	return &StatementAdvisorCompositeExecutor{
-		store:     store,
-		dbFactory: dbFactory,
+		store:          store,
+		dbFactory:      dbFactory,
+		licenseService: licenseService,
 	}
 }
 
 // StatementAdvisorCompositeExecutor is the task check statement advisor composite executor with has sub-advisor.
 type StatementAdvisorCompositeExecutor struct {
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
+	store          *store.Store
+	dbFactory      *dbfactory.DBFactory
+	licenseService enterpriseAPI.LicenseService
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
@@ -59,6 +67,22 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	if err != nil {
 		return nil, err
 	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", task.InstanceID)
+	}
+	if err := e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance); err != nil {
+		// nolint:nilerr
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusWarn,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.Unsupported.Int(),
+				Title:     fmt.Sprintf("SQL review disabled for instance %s", instance.ResourceID),
+				Content:   err.Error(),
+			},
+		}, nil
+	}
+
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, err

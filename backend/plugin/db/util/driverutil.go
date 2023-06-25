@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -234,11 +235,14 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		return nil, err
 	}
 
+	// TODO(d): use a Redshift extraction for shared database.
+	if dbType == db.Redshift && queryContext.ShareDB {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
+	}
 	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
 	}
-
 	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
 		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
@@ -293,6 +297,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
+		startTime := time.Now()
 		if singleSQL.Empty {
 			continue
 		}
@@ -323,6 +328,8 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 				ColumnNames:     field,
 				ColumnTypeNames: types,
 				Rows:            rows,
+				Latency:         durationpb.New(time.Since(startTime)),
+				Statement:       strings.TrimRight(singleSQL.Text, " \n\t;"),
 			})
 			continue
 		}
@@ -333,6 +340,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 }
 
 func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.QueryResult {
+	startTime := time.Now()
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return &v1pb.QueryResult{
@@ -347,6 +355,8 @@ func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.Que
 			Error: err.Error(),
 		}
 	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = strings.TrimRight(statement, " \n\t;")
 	return result
 }
 

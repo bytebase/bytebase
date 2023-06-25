@@ -16,6 +16,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -232,6 +233,7 @@ func (*Driver) Restore(context.Context, io.Reader) error {
 
 // QueryConn2 queries a SQL statement in a given connection.
 func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	startTime := time.Now()
 	lines := strings.Split(statement, "\n")
 	for i := range lines {
 		lines[i] = strings.Trim(lines[i], " \n\t\r")
@@ -272,6 +274,8 @@ func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, 
 		ColumnNames:     []string{"result"},
 		ColumnTypeNames: []string{"TEXT"},
 		Rows:            data,
+		Latency:         durationpb.New(time.Since(startTime)),
+		Statement:       statement,
 	}}, nil
 }
 

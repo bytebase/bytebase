@@ -54,6 +54,8 @@
     "bookmarks": "Bookmarks",
     "quick-action": "Quick Action",
     "archive": "Archive",
+    "archived": "Archived",
+    "no-license": "No license",
     "logout": "Logout",
     "close": "Close",
     "latest": "Latest",
@@ -807,12 +809,11 @@
     "troubleshoot": "Troubleshoot",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
-    "from-unassigned-databases": "From unassigned databases",
-    "from-projects": "From projects",
+    "from-unassigned-databases": "Transfer unassigned databases",
+    "from-projects": "Transfer from other projects",
     "transfer-in-db-title": "Transfer in database",
-    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in the default project.",
     "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
-    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in unassigned databases.",
+    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are unassigned at first, and they need to be transferred to a project before they can be used.",
     "transfer-out-db": "Transfer out DB",
     "transfer-out-db-title": "Transfer out database",
     "request-query": "Request Query",
@@ -1240,6 +1241,7 @@
     "doesnt-match-tenant-value": "Doesn't match label value",
     "should-follow-database-name-template": "Should follow tenant database name template",
     "all": "All databases",
+    "unassigned": "Unassigned",
     "show-schemaless-databases": "Show schemaless databases. (Alter Schema is not applicable for schemaless databases.)",
     "secret": {
       "self": "Secret",
@@ -1455,7 +1457,10 @@
       "archive": {
         "title": "Archive project",
         "description": "Archived project will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
-        "btn-text": "Archive this @.lower:{'common.project'}"
+        "btn-text": "Archive this @.lower:{'common.project'}",
+        "force": {
+          "description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
+        }
       },
       "restore": {
         "title": "Restore project",
@@ -1473,7 +1478,7 @@
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
       "cannot-remove-last-owner": "Cannot remove the last owner of a project",
-      "revoke-role-from-user": "Revoke '{role}' from '{user}'",
+      "revoke-role-from-user": "Revocar el '{role}' del usuario '{user}'",
       "inactive-members": "Inactive members",
       "show-inactive": "Show inactive members",
       "select-users": "Select users",
@@ -1748,7 +1753,8 @@
     },
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "run-selected": "Run selected",
-    "clear-screen": "Clear screen"
+    "clear-screen": "Clear screen",
+    "query-time": "Query time"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -1881,10 +1887,13 @@
     "instance-assignment": {
       "license": "License",
       "assign-license": "Assign License",
+      "require-license": "Require instance license",
+      "missing-license-attention": "You need to assign license to the instance to enable this feature.",
       "n-license-remain": "remain {n}",
       "manage-license": "Manage License",
-      "available-and-total-license": "Available / Total Instance License",
-      "success-notification": "Successfully update license assignment"
+      "used-and-total-license": "Assigned / Total Instance License",
+      "success-notification": "Successfully update license assignment",
+      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature."
     },
     "update": {
       "success": {
@@ -2565,7 +2574,8 @@
     "querier": {
       "description": "System defined project querier role"
     },
-    "select-role": "Select role"
+    "select-role": "Select role",
+    "expired-tip": "The role might has been expired."
   },
   "database-group": {
     "self": "Database Group",

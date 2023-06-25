@@ -199,6 +199,25 @@
           class="ml-1"
         />
       </div>
+      <BBAttention
+        v-if="
+          instanceWithoutLicense.length > 0 &&
+          hasFeature('bb.feature.vcs-schema-write-back')
+        "
+        class="my-4"
+        :style="`WARN`"
+        :title="
+          $t('subscription.features.bb-feature-vcs-schema-write-back.title')
+        "
+        :description="
+          $t('subscription.instance-assignment.missing-license-for-instances', {
+            count: instanceWithoutLicense.length,
+            name: instanceWithoutLicense.map((ins) => ins.title).join(','),
+          })
+        "
+        :action-text="$t('subscription.instance-assignment.assign-license')"
+        @click-action="state.showInstanceAssignmentDrawer = true"
+      />
       <input
         v-if="hasFeature('bb.feature.vcs-schema-write-back')"
         id="schemapathtemplate"
@@ -305,6 +324,23 @@
           })
         }}
       </div>
+      <BBAttention
+        v-if="
+          instanceWithoutLicense.length > 0 &&
+          hasFeature('bb.feature.vcs-sql-review')
+        "
+        class="my-4"
+        :style="`WARN`"
+        :title="$t('subscription.features.bb-feature-sql-review.title')"
+        :description="
+          $t('subscription.instance-assignment.missing-license-for-instances', {
+            count: instanceWithoutLicense.length,
+            name: instanceWithoutLicense.map((ins) => ins.title).join(','),
+          })
+        "
+        :action-text="$t('subscription.instance-assignment.assign-license')"
+        @click-action="state.showInstanceAssignmentDrawer = true"
+      />
       <div class="flex space-x-4 mt-2">
         <BBCheckbox
           :disabled="!allowEdit"
@@ -323,13 +359,21 @@
       @cancel="state.showFeatureModal = false"
     />
   </div>
+  <InstanceAssignment
+    :show="state.showInstanceAssignmentDrawer"
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
-import { hasFeature, useSubscriptionV1Store } from "@/store";
+import {
+  hasFeature,
+  useSubscriptionV1Store,
+  useDatabaseV1Store,
+} from "@/store";
 import {
   Project,
   TenantMode,
@@ -344,9 +388,9 @@ const FILE_OPTIONAL_DIRECTORY_WILDCARD = "*, **";
 const SINGLE_ASTERISK_REGEX = /\/\*\//g;
 const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {
   showFeatureModal: boolean;
+  showInstanceAssignmentDrawer: boolean;
 }
 
 defineEmits<{
@@ -393,9 +437,20 @@ const { t } = useI18n();
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
+  showInstanceAssignmentDrawer: false,
 });
 
 const subscriptionStore = useSubscriptionV1Store();
+
+const databaseV1List = computed(() => {
+  return useDatabaseV1Store().databaseListByProject(props.project.name);
+});
+
+const instanceWithoutLicense = computed(() => {
+  return databaseV1List.value
+    .map((db) => db.instanceEntity)
+    .filter((ins) => !ins.activation);
+});
 
 const isTenantProject = computed(() => {
   return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;

@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	// Import go-ora Oracle driver.
 	"github.com/pkg/errors"
 	go_ora "github.com/sijms/go-ora/v2"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -163,10 +165,11 @@ func getOracleStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := singleSQL.Text
-	statement = strings.TrimRight(statement, " \n\t;")
-	if !strings.HasPrefix(strings.ToUpper(statement), "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getOracleStatementWithResultLimit(statement, queryContext.Limit)
+	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+
+	stmt := statement
+	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getOracleStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 
 	if queryContext.ReadOnly {
@@ -174,7 +177,14 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 		queryContext.ReadOnly = false
 	}
 
-	return util.Query2(ctx, db.Oracle, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, db.Oracle, conn, stmt, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.

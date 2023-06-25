@@ -41,18 +41,16 @@
       </div>
       <div class="my-3">
         <dt class="text-gray-400">
-          {{
-            $t("subscription.instance-assignment.available-and-total-license")
-          }}
+          {{ $t("subscription.instance-assignment.used-and-total-license") }}
         </dt>
         <dd
-          class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer"
+          class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
           @click="state.showInstanceAssignmentDrawer = true"
         >
-          <span>{{ availableLicenseCount }}</span>
+          <span class="group-hover:underline">{{ activateLicenseCount }}</span>
           <span class="text-xl">/</span>
-          <span>{{ totalLicenseCount }}</span>
-          <heroicons-outline:cog class="h-6 w-6" />
+          <span class="group-hover:underline">{{ totalLicenseCount }}</span>
+          <heroicons-outline:pencil class="h-6 w-6" />
         </dd>
       </div>
       <div v-if="!subscriptionStore.isFreePlan" class="my-3">
@@ -134,12 +132,10 @@
     />
   </div>
 
-  <Drawer
+  <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
-    @close="state.showInstanceAssignmentDrawer = false"
-  >
-    <InstanceAssignment @dismiss="state.showInstanceAssignmentDrawer = false" />
-  </Drawer>
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -155,7 +151,6 @@ import {
 } from "@/store";
 import { storeToRefs } from "pinia";
 import { hasWorkspacePermissionV1 } from "@/utils";
-import { Drawer } from "@/components/v2";
 
 interface LocalState {
   loading: boolean;
@@ -216,20 +211,14 @@ const { expireAt, isTrialing, isExpired, instanceCount } =
   storeToRefs(subscriptionStore);
 
 const totalLicenseCount = computed((): string => {
-  if (instanceCount.value > 0) {
-    return `${instanceCount.value}`;
+  if (instanceCount.value === Number.MAX_VALUE) {
+    return t("subscription.unlimited");
   }
-  return t("subscription.unlimited");
+  return `${instanceCount.value}`;
 });
 
-const availableLicenseCount = computed((): string => {
-  if (instanceCount.value > 0) {
-    return `${Math.max(
-      0,
-      instanceCount.value - instanceV1Store.activateInstanceCount
-    )}`;
-  }
-  return t("subscription.unlimited");
+const activateLicenseCount = computed((): string => {
+  return `${instanceV1Store.activateInstanceCount}`;
 });
 
 const currentPlan = computed((): string => {

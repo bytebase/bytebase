@@ -21,7 +21,7 @@ import (
 // We also support CTE with SELECT statements, but not with DML statements.
 func ValidateSQLForEditor(engine EngineType, statement string) bool {
 	switch engine {
-	case Postgres:
+	case Postgres, Redshift:
 		return postgresValidateSQLForEditor(statement)
 	case MySQL, TiDB, MariaDB, OceanBase:
 		return mysqlValidateSQLForEditor(statement)

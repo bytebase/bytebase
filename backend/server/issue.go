@@ -444,7 +444,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil {
 		issueCreatePayload.Approval.ApprovalFindingDone = true
 	}
 
@@ -826,9 +826,6 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if c.PointInTimeTs != nil && !s.licenseService.IsFeatureEnabled(api.FeaturePITR) {
-		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
-	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
 	if err != nil {
 		return nil, err
@@ -849,6 +846,11 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	}
+	if c.PointInTimeTs != nil {
+		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeaturePITR, instance); err != nil {
+			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
+		}
 	}
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
 	if err != nil {
@@ -884,7 +886,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		for _, detail := range c.DetailList {
 			if detail.EarliestAllowedTs != 0 {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -943,8 +945,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if emptyDatabaseIDCount > 1 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with empty database ID.")
 	}
-	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+	if project.TenantMode == api.TenantModeTenant {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
+		}
 	}
 	maximumTaskLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumTask)
 	if int64(databaseIDCount) > maximumTaskLimit {
@@ -976,8 +980,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			// We will generate a task for each (database, table).
 			// This means that, assuming the database group has `N` databases and the database group contains `M` table groups,
 			// and each table group has `K` tables on average, we will generate at most `M * K + N` tasks.
-			if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
-				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureDatabaseGrouping.AccessErrorMessage())
+			if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
+				return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 			}
 			parts := strings.Split(migrationDetail.DatabaseGroupName, "/")
 			if len(parts) != 4 {
@@ -1000,7 +1004,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, err
 			}
 			schemaGroups = append(schemaGroups, storeSchemaGroups...)
-			matches, _, err := getMatchedAndUnmatchedDatabases(ctx, databaseGroup, allDatabases)
+			matches, _, err := s.getMatchedAndUnmatchedDatabases(ctx, databaseGroup, allDatabases)
 			if err != nil {
 				return nil, err
 			}
@@ -1522,8 +1526,8 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	if project.TenantMode == api.TenantModeTenant {
-		if !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 		}
 	}
 
@@ -1911,7 +1915,7 @@ func convertDatabaseLabels(labelsJSON string) ([]*api.DatabaseLabel, error) {
 }
 
 // TODO(zp): keep this function as same as the one in the project_service.go.
-func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+func (s *Server) getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
 		return nil, nil, err
@@ -1936,7 +1940,18 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
 		}
 		if boolVal, ok := val.(bool); ok && boolVal {
-			matches = append(matches, database)
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "failed to found instance %s with error: %v", database.InstanceID, err.Error())
+			}
+			if instance == nil {
+				return nil, nil, status.Errorf(codes.Internal, "cannot found instance %s", database.InstanceID)
+			}
+			if s.licenseService.IsFeatureEnabledForInstance(api.FeatureDatabaseGrouping, instance) == nil {
+				matches = append(matches, database)
+			} else {
+				unmatches = append(unmatches, database)
+			}
 		} else {
 			unmatches = append(unmatches, database)
 		}

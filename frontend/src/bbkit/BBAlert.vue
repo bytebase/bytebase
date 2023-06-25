@@ -86,6 +86,9 @@
               </p>
             </div>
           </div>
+          <div class="sm:mt-0 sm:ml-14 sm:text-left">
+            <slot name="default" />
+          </div>
         </div>
         <div class="mt-5 flex flex-col space-y-4">
           <div class="flex justify-end">

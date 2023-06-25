@@ -87,7 +87,7 @@ func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) 
 	return composedInstance, nil
 }
 
-// InstanceMessage is the mssage for instance.
+// InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID   string
 	Title        string
@@ -102,7 +102,7 @@ type InstanceMessage struct {
 	EngineVersion string
 }
 
-// UpdateInstanceMessage is the mssage for updating an instance.
+// UpdateInstanceMessage is the message for updating an instance.
 type UpdateInstanceMessage struct {
 	Title         *string
 	ExternalLink  *string
@@ -215,7 +215,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 
 	where := ""
 	if instanceCreate.Activation {
-		where = fmt.Sprintf("(%s) < %d", countActivateInstanceQuery, maximumActivation)
+		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
 	}
 
 	var instanceID int
@@ -230,7 +230,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				external_link,
 				activation
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			SELECT $1, $2, $3, $4, $5, $6, $7, $8
 			%s
 			RETURNING id
 		`, where),
@@ -349,6 +349,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				resource_id,
 				name,
 				engine,
+				engine_version,
 				external_link,
 				activation,
 				row_status
@@ -359,6 +360,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&instance.ResourceID,
 		&instance.Title,
 		&instance.Engine,
+		&instance.EngineVersion,
 		&instance.ExternalLink,
 		&instance.Activation,
 		&rowStatus,

@@ -938,9 +938,6 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 
 // UpdateSecret updates a secret of a database.
 func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.UpdateSecretRequest) (*v1pb.Secret, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecrets) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecrets.AccessErrorMessage())
-	}
 	if request.Secret == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "secret is required")
 	}
@@ -961,6 +958,11 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
+
+	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureEncryptedSecrets, instance); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
+
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
@@ -1041,10 +1043,6 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 // DeleteSecret deletes a secret of a database.
 func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecrets) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecrets.AccessErrorMessage())
-	}
-
 	instanceID, databaseName, secretName, err := getInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1059,6 +1057,11 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
+
+	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureEncryptedSecrets, instance); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
+
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
@@ -1794,8 +1797,8 @@ func isUpperCaseLetter(c rune) bool {
 
 // AdviseIndex advises the index of a table.
 func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest) (*v1pb.AdviseIndexResponse, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeaturePluginOpenAI.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
 	if err != nil {

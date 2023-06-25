@@ -4,6 +4,7 @@ import { uniq } from "lodash-es";
 
 import { databaseServiceClient } from "@/grpcweb";
 import {
+  ComposedInstance,
   ComposedDatabase,
   emptyDatabase,
   EMPTY_ID,
@@ -47,6 +48,19 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       databaseMapByUID.set(database.uid, database);
     });
     return composedDatabaseList;
+  };
+  const updateDatabaseInstance = (instance: ComposedInstance) => {
+    for (const [_, database] of databaseMapByName) {
+      if (database.instance !== instance.name) {
+        continue;
+      }
+      if (databaseMapByName.has(database.name)) {
+        databaseMapByName.get(database.name)!.instanceEntity = instance;
+      }
+      if (databaseMapByUID.has(database.uid)) {
+        databaseMapByUID.get(database.uid)!.instanceEntity = instance;
+      }
+    }
   };
   const fetchDatabaseList = async (args: Partial<ListDatabasesRequest>) => {
     const { databases } = await databaseServiceClient.listDatabases(args);
@@ -161,6 +175,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     getOrFetchDatabaseByUID,
     updateDatabase,
     fetchDatabaseSchema,
+    updateDatabaseInstance,
   };
 });
 

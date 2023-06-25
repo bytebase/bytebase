@@ -34,8 +34,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
 
-		if taskPatch.EarliestAllowedTs != nil && !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
-			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+		if taskPatch.EarliestAllowedTs != nil {
+			if err := s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime); err != nil {
+				return echo.NewHTTPError(http.StatusForbidden, err.Error())
+			}
 		}
 
 		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &pipelineID})
@@ -51,6 +53,18 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return err
 		}
 		for _, task := range tasks {
+			if taskPatch.EarliestAllowedTs != nil {
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find instance %d", task.InstanceID)).SetInternal(err)
+				}
+				if instance == nil {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the find instance %d", task.InstanceID))
+				}
+				if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureTaskScheduleTime, instance); err != nil {
+					return echo.NewHTTPError(http.StatusForbidden, err.Error())
+				}
+			}
 			// Skip gh-ost cutover task as this task has no statement.
 			if task.Type == api.TaskDatabaseSchemaUpdateGhostCutover {
 				continue
@@ -105,16 +119,25 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
 
-		if taskPatch.EarliestAllowedTs != nil && !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
-			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
-		}
-
 		task, err := s.store.GetTaskV2ByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task").SetInternal(err)
 		}
 		if task == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID not found: %d", taskID))
+		}
+
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find instance %d", task.InstanceID)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the find instance %d", task.InstanceID))
+		}
+		if taskPatch.EarliestAllowedTs != nil {
+			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureTaskScheduleTime, instance); err != nil {
+				return echo.NewHTTPError(http.StatusForbidden, err.Error())
+			}
 		}
 
 		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})

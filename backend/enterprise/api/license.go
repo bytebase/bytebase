@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // validPlans is a string array of valid plan types.
@@ -63,11 +64,15 @@ type LicenseService interface {
 	// LoadSubscription will load subscription.
 	LoadSubscription(ctx context.Context) Subscription
 	// IsFeatureEnabled returns whether a feature is enabled.
-	IsFeatureEnabled(feature api.FeatureType) bool
+	IsFeatureEnabled(feature api.FeatureType) error
+	// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
+	IsFeatureEnabledForInstance(feature api.FeatureType, instance *store.InstanceMessage) error
 	// GetEffectivePlan gets the effective plan.
 	GetEffectivePlan() api.PlanType
 	// GetPlanLimitValue gets the limit value for the plan.
 	GetPlanLimitValue(name api.PlanLimit) int64
+	// GetInstanceLicenseCount returns the instance count limit for current subscription.
+	GetInstanceLicenseCount(ctx context.Context) int
 	// RefreshCache will invalidate and refresh the subscription cache.
 	RefreshCache(ctx context.Context)
 }

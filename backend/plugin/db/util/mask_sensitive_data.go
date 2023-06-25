@@ -45,7 +45,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			schemaInfo:      schemaInfo,
 		}
 		return extractor.extractMySQLSensitiveField(statement)
-	case db.Postgres:
+	case db.Postgres, db.Redshift:
 		extractor := &sensitiveFieldExtractor{
 			schemaInfo: schemaInfo,
 		}

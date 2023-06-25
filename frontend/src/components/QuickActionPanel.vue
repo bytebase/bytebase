@@ -212,12 +212,16 @@
         v-if="quickAction === 'quickaction.bb.subscription.license-assignment'"
         class="flex flex-col items-center w-24"
       >
-        <router-link
-          to="/setting/subscription?manageLicense=1"
+        <button
           class="btn-icon-primary p-3"
+          @click.prevent="
+            () =>
+              (state.quickActionType =
+                'quickaction.bb.subscription.license-assignment')
+          "
         >
-          <heroicons-outline:cog class="w-5 h-5" />
-        </router-link>
+          <heroicons-outline:academic-cap class="w-5 h-5" />
+        </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
@@ -275,12 +279,6 @@
     />
   </Drawer>
 
-  <FeatureModal
-    v-if="state.showFeatureModal && state.featureName !== ''"
-    :feature="state.featureName"
-    @cancel="state.showFeatureModal = false"
-  />
-
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
     @close="state.showRequestQueryPanel = false"
@@ -289,6 +287,13 @@
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
     @close="state.showRequestExportPanel = false"
+  />
+
+  <InstanceAssignment
+    :show="
+      state.quickActionType === 'quickaction.bb.subscription.license-assignment'
+    "
+    @dismiss="state.quickActionType = undefined"
   />
 </template>
 
@@ -303,7 +308,6 @@ import { idFromSlug, isDev } from "@/utils";
 import {
   useCommandStore,
   useCurrentUserIamPolicy,
-  useInstanceV1Store,
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
 } from "@/store";
@@ -318,8 +322,6 @@ import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/inde
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 
 interface LocalState {
-  featureName: string;
-  showFeatureModal: boolean;
   quickActionType: QuickActionType | undefined;
   showRequestQueryPanel: boolean;
   showRequestExportPanel: boolean;
@@ -332,9 +334,6 @@ const props = defineProps({
   },
 });
 
-console.log("quickActionList");
-console.log(props.quickActionList);
-
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
@@ -346,8 +345,6 @@ const hasDBAWorkflowFeature = computed(() => {
 });
 
 const state = reactive<LocalState>({
-  featureName: "",
-  showFeatureModal: false,
   quickActionType: undefined,
   showRequestQueryPanel: false,
   showRequestExportPanel: false,
@@ -389,12 +386,6 @@ const transferOutDatabase = () => {
 };
 
 const createInstance = () => {
-  const instanceList = useInstanceV1Store().instanceList;
-  if (subscriptionStore.instanceCount <= instanceList.length) {
-    state.featureName = "bb.feature.instance-count";
-    state.showFeatureModal = true;
-    return;
-  }
   state.quickActionType = "quickaction.bb.instance.create";
 };
 
@@ -458,10 +449,8 @@ const QuickActionMap: Record<string, Partial<Action>> = {
   "quickaction.bb.subscription.license-assignment": {
     name: t("subscription.instance-assignment.manage-license"),
     perform: () =>
-      router.push({
-        name: "setting.workspace.subscription",
-        query: { manageLicense: 1 },
-      }),
+      (state.quickActionType =
+        "quickaction.bb.subscription.license-assignment"),
   },
 };
 

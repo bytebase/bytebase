@@ -21,7 +21,7 @@
         class="bb-grid-cell text-blue-600 hover:underline"
         @click="gotoIssuePage(item)"
       >
-        #{{ item.issueId }}
+        {{ `#${item.issueId}` }}
       </div>
       <div class="bb-grid-cell">
         {{ item.database.databaseName }}
@@ -86,7 +86,7 @@ const selectedExportRecord = shallowRef<ExportRecord>();
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     { title: "", width: "4rem" },
-    { title: "Issue", width: "1fr" },
+    { title: t("common.issue"), width: "5rem" },
     {
       title: t("common.database"),
       width: "1fr",
@@ -111,7 +111,7 @@ const COLUMN_LIST = computed(() => {
       title: t("common.expiration"),
       width: "1fr",
     },
-    { title: "", width: "1fr" },
+    { title: "", width: "6rem" },
   ];
 
   return columns;
