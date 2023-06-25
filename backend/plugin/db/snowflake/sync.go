@@ -185,7 +185,7 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 //
 // Key: normalized schema name
 //
-// Value: stream list in the schema
+// Value: stream list in the schema.
 func (driver *Driver) getStreamSchema(ctx context.Context, database string) (map[string][]*storepb.StreamMetadata, error) {
 	streamMap := make(map[string][]*storepb.StreamMetadata)
 
@@ -254,7 +254,6 @@ type ArrayString []string
 
 // Scan implements the sql.Scanner interface.
 func (a *ArrayString) Scan(src any) error {
-
 	switch v := src.(type) {
 	case string:
 		return json.Unmarshal([]byte(v), a)
@@ -269,7 +268,7 @@ func (a *ArrayString) Scan(src any) error {
 //
 // Key: normalized schema name
 //
-// Value: stream list in the schema
+// Value: stream list in the schema.
 func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[string][]*storepb.TaskMetadata, error) {
 	taskMap := make(map[string][]*storepb.TaskMetadata)
 
