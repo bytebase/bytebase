@@ -88,7 +88,7 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { ref, watch, reactive } from "vue";
-import { ConditionGroupExpr } from "@/plugins/cel";
+import { ConditionGroupExpr, buildCELExpr } from "@/plugins/cel";
 import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -98,11 +98,13 @@ import { ComposedDatabase, ComposedProject } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
-import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
+import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import { Expr } from "@/types/proto/google/type/expr";
 import { useDebounceFn } from "@vueuse/core";
 import BBLoader from "@/bbkit/BBLoader.vue";
 import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
+import { convertParsedExprToCELString } from "@/utils";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 
 interface LocalState {
   isRequesting: boolean;
@@ -132,10 +134,16 @@ const updateMatchingState = useDebounceFn(async () => {
   state.isRequesting = true;
 
   const environment = environmentStore.getEnvironmentByUID(props.environmentId);
-  const celString = stringifyDatabaseGroupExpr({
-    environmentId: environment.name,
-    conditionGroupExpr: props.expr,
-  });
+  const celString = await convertParsedExprToCELString(
+    ParsedExpr.fromJSON({
+      expr: buildCELExpr(
+        buildDatabaseGroupExpr({
+          environmentId: environment.name,
+          conditionGroupExpr: props.expr,
+        })
+      ),
+    })
+  );
   const validateOnlyResourceId = `creating-database-group-${Date.now()}`;
   const result = await projectServiceClient.createDatabaseGroup({
     parent: props.project.name,
