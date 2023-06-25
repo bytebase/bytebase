@@ -76,9 +76,13 @@
       />
     </div>
 
-    <div class="w-full flex items-center justify-between text-xs mt-0.5">
-      <div></div>
-      <div class="text-control-light">
+    <div
+      class="w-full flex items-center justify-between text-xs mt-0.5 gap-x-4 text-control-light"
+    >
+      <div class="flex-1 truncate">
+        {{ result.statement }}
+      </div>
+      <div class="shrink-0">
         {{ $t("sql-editor.query-time") }}: {{ queryTime }}
       </div>
     </div>
