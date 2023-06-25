@@ -14,6 +14,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -275,7 +276,14 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		queryContext.ReadOnly = false
 	}
 
-	return util.Query2(ctx, driver.dbType, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, driver.dbType, conn, statement, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = singleSQL.Text
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.

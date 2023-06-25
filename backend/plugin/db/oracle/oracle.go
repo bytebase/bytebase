@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	// Import go-ora Oracle driver.
 	"github.com/pkg/errors"
 	go_ora "github.com/sijms/go-ora/v2"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -174,7 +176,14 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 		queryContext.ReadOnly = false
 	}
 
-	return util.Query2(ctx, db.Oracle, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, db.Oracle, conn, statement, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = singleSQL.Text
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.

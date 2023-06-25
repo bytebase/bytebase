@@ -218,7 +218,6 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 // Query2 will execute a readonly / SELECT query.
 // TODO(rebelice): remove Query function and rename Query2 to Query after frontend is ready to use the new API.
 func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
 	if err != nil {
 		return nil, err
@@ -283,7 +282,6 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
 		Masked:          fieldMaskInfo,
-		Latency:         durationpb.New(time.Since(startTime)),
 	}, nil
 }
 

@@ -567,6 +567,7 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 		Rows:            data,
 		Masked:          sensitiveInfo,
 		Latency:         durationpb.New(time.Since(startTime)),
+		Statement:       statement,
 	}, nil
 }
 

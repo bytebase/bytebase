@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	// Import go-ora Oracle driver.
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"go.uber.org/zap"
 
@@ -167,8 +169,14 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 		// MSSQL does not support transaction isolation level for read-only queries.
 		queryContext.ReadOnly = false
 	}
-
-	return util.Query2(ctx, db.MSSQL, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, db.MSSQL, conn, statement, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = singleSQL.Text
+	return result, nil
 }
 
 // RunStatement runs a SQL statement.
