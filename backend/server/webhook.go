@@ -649,7 +649,6 @@ func (s *Server) sqlAdviceForSQLFiles(
 			wg.Add(1)
 			go func(file fileInfo) {
 				defer wg.Done()
-
 				adviceList, err := s.sqlAdviceForFile(ctx, file, externalURL)
 				if err != nil {
 					log.Error(
