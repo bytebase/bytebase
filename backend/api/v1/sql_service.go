@@ -1316,6 +1316,14 @@ func (s *SQLService) checkQueryRights(
 		if err != nil {
 			return err
 		}
+		if projectMessage == nil && databaseMessage == nil {
+			// If database not found, skip.
+			continue
+		}
+		if projectMessage == nil {
+			// Never happen
+			return status.Errorf(codes.Internal, "[UNEXPECTED] project not found for database: %s", databaseMessage.DatabaseName)
+		}
 		if project == nil {
 			project = projectMessage
 		}
@@ -1325,8 +1333,16 @@ func (s *SQLService) checkQueryRights(
 		databaseMessageMap[database] = databaseMessage
 	}
 
+	if len(databaseMessageMap) == 0 && project == nil {
+		project, _, err = s.getProjectAndDatabaseMessage(ctx, instance, databaseName)
+		if err != nil {
+			return err
+		}
+	}
+
 	if project == nil {
-		return status.Error(codes.NotFound, "project not found")
+		// Never happen
+		return status.Error(codes.Internal, "[UNEXPECTED] project not found")
 	}
 
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
