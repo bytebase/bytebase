@@ -649,6 +649,7 @@ func (s *Server) sqlAdviceForSQLFiles(
 			wg.Add(1)
 			go func(file fileInfo) {
 				defer wg.Done()
+
 				adviceList, err := s.sqlAdviceForFile(ctx, file, externalURL)
 				if err != nil {
 					log.Error(
@@ -1795,12 +1796,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 	testsuiteList := []string{}
 	status := advisor.Success
 
-	fileList := []string{}
-	for filePath := range adviceMap {
-		fileList = append(fileList, filePath)
-	}
-	sort.Strings(fileList)
-
+	fileList := getSQLAdviceFileList(adviceMap)
 	for _, filePath := range fileList {
 		adviceList := adviceMap[filePath]
 		testcaseList := []string{}
@@ -1866,12 +1862,7 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 	messageList := []string{}
 	status := advisor.Success
 
-	fileList := []string{}
-	for filePath := range adviceMap {
-		fileList = append(fileList, filePath)
-	}
-	sort.Strings(fileList)
-
+	fileList := getSQLAdviceFileList(adviceMap)
 	for _, filePath := range fileList {
 		adviceList := adviceMap[filePath]
 		for _, advice := range adviceList {
@@ -1914,6 +1905,27 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 		Status:  status,
 		Content: messageList,
 	}
+}
+
+func getSQLAdviceFileList(adviceMap map[string][]advisor.Advice) []string {
+	fileList := []string{}
+	fileToErrorCount := map[string]int{}
+	for filePath, adviceList := range adviceMap {
+		fileList = append(fileList, filePath)
+
+		errorCount := 0
+		for _, advice := range adviceList {
+			if advice.Status == advisor.Error {
+				errorCount++
+			}
+		}
+		fileToErrorCount[filePath] = errorCount
+	}
+	sort.Slice(fileList, func(i int, j int) bool {
+		return fileToErrorCount[fileList[i]] > fileToErrorCount[fileList[j]]
+	})
+
+	return fileList
 }
 
 func filterGitHubBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {
