@@ -147,7 +147,7 @@ Please check the docs at https://www.bytebase.com/docs/reference/error-code/advi
 <testcase name="[ERROR] file1.sql#L2: naming.index.idx" classname="file1.sql" file="file1.sql#L2">
 <failure>
 Error: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "tech_book_id_name".
-Please can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#303
+Please check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#303
 </failure>
 </testcase>
 </testsuite>
