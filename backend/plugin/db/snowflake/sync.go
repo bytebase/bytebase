@@ -249,8 +249,10 @@ func (driver *Driver) getStreamSchema(ctx context.Context, database string) (map
 	return streamMap, nil
 }
 
+// ArrayString is a custom type for scanning array of string.
 type ArrayString []string
 
+// Scan implements the sql.Scanner interface.
 func (a *ArrayString) Scan(src any) error {
 
 	switch v := src.(type) {
