@@ -327,21 +327,22 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureSchemaDrift:      true,
 	FeatureSQLReview:        true,
 	FeatureEncryptedSecrets: true,
+	FeatureTaskScheduleTime: true,
+	FeatureOnlineMigration:  true,
 	// VCS Integration
-	FeatureVCSSchemaWriteBack: true,
+	FeatureVCSSchemaWriteBack:   true,
+	FeatureVCSSQLReviewWorkflow: true,
+	FeatureMybatisSQLReview:     true,
 	// Database management
 	FeaturePITR:                  true,
 	FeatureReadReplicaConnection: true,
+	FeatureInstanceSSHConnection: true,
+	FeatureDatabaseGrouping:      true,
+	FeatureSyncSchemaAllVersions: true,
+	FeatureIndexAdvisor:          true,
+	// Policy Control
+	FeatureSensitiveData: true,
 	// TODO:
-	// FeatureVCSSQLReviewWorkflow: true,
-	// FeatureOnlineMigration:  true,
-	// FeatureMybatisSQLReview: true,
-	// FeatureTaskScheduleTime: true,
-	// FeatureDatabaseGrouping: true,
-	// FeatureInstanceSSHConnection: true,
-	// FeatureSyncSchemaAllVersions: true,
-	// FeatureIndexAdvisor: true,
-	// FeatureSensitiveData:  true,
 	// FeatureCustomApproval: true,
 }
 
