@@ -44,6 +44,46 @@ message SchemaMetadata {
 
   // The streams is the list of streams in a schema, currently, only used for Snowflake.
   repeated StreamMetadata streams = 5;
+
+  // The routines is the list of routines in a schema.
+  repeated TaskMetadata tasks = 6;
+}
+
+message TaskMetadata {
+  // The name is the name of a task.
+  string name = 1;
+
+  // The id is the id of a task.
+  string id = 2;
+
+  // The owner of the task.
+  string owner = 3;
+
+  // The comment of the task.
+  string comment = 4;
+
+  // The warehouse of the task.
+  string warehouse = 5;
+
+  // The schedule interval of the task.
+  string schedule = 6;
+
+  // The predecessor tasks of the task.
+  repeated string predecessors = 7;
+
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_STARTED = 1;
+    STATE_SUSPENDED = 2;
+  }
+  // The state of the task.
+  State state = 8;
+
+  // The condition of the task.
+  string condition = 9;
+
+  // The definition of the task.
+  string definition = 10;
 }
 
 message StreamMetadata {
