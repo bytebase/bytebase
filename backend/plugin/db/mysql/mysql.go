@@ -262,9 +262,11 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		return nil, nil
 	}
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
 		var err error
-		statement, err = driver.getStatementWithResultLimit(statement, queryContext.Limit)
+		stmt, err = driver.getStatementWithResultLimit(stmt, queryContext.Limit)
 		if err != nil {
 			return nil, err
 		}
@@ -277,12 +279,12 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, driver.dbType, conn, statement, queryContext)
+	result, err := util.Query2(ctx, driver.dbType, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = singleSQL.Text
+	result.Statement = statement
 	return result, nil
 }
 

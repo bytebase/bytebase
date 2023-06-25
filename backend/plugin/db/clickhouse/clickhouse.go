@@ -187,7 +187,7 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 			}
 		}
 		result.Latency = durationpb.New(time.Since(startTime))
-		result.Statement = statement
+		result.Statement = strings.TrimRight(statement, " \n\t;")
 
 		results = append(results, result)
 		return nil
@@ -221,8 +221,9 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	startTime := time.Now()
+	statement = strings.TrimRight(statement, " \n\t;")
 
-	stmt := strings.TrimRight(statement, " \n\t;")
+	stmt := statement
 	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
 		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
 	}

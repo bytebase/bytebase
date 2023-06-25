@@ -402,10 +402,11 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := singleSQL.Text
-	statement = strings.TrimRight(statement, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 	// Datashare doesn't support read-only transactions.
 	if driver.datashare {
@@ -414,12 +415,12 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.Redshift, conn, statement, queryContext)
+	result, err := util.Query2(ctx, db.Redshift, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = singleSQL.Text
+	result.Statement = statement
 	return result, nil
 }
 

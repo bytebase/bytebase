@@ -658,6 +658,7 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 			ColumnTypeNames: types,
 			Rows:            rows,
 			Latency:         durationpb.New(time.Since(startTime)),
+			Statement:       statement,
 		})
 	}
 

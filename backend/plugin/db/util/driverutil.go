@@ -329,6 +329,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 				ColumnTypeNames: types,
 				Rows:            rows,
 				Latency:         durationpb.New(time.Since(startTime)),
+				Statement:       strings.TrimRight(singleSQL.Text, " \n\t;"),
 			})
 			continue
 		}
@@ -348,16 +349,18 @@ func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.Que
 	}
 	defer rows.Close()
 
-	result, err := rowsToQueryResult(rows, startTime)
+	result, err := rowsToQueryResult(rows)
 	if err != nil {
 		return &v1pb.QueryResult{
 			Error: err.Error(),
 		}
 	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = strings.TrimRight(statement, " \n\t;")
 	return result
 }
 
-func rowsToQueryResult(rows *sql.Rows, startTime time.Time) (*v1pb.QueryResult, error) {
+func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -388,7 +391,6 @@ func rowsToQueryResult(rows *sql.Rows, startTime time.Time) (*v1pb.QueryResult, 
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
-		Latency:         durationpb.New(time.Since(startTime)),
 	}, nil
 }
 

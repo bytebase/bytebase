@@ -167,7 +167,7 @@ func (*Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string,
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = statement
+	result.Statement = strings.TrimRight(statement, " \n\t;")
 
 	return []*v1pb.QueryResult{result}, nil
 }

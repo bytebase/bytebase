@@ -159,10 +159,11 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := singleSQL.Text
-	statement = strings.TrimRight(statement, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
+	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getMSSQLStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 
 	if queryContext.ReadOnly {
@@ -170,12 +171,12 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 		queryContext.ReadOnly = false
 	}
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.MSSQL, conn, statement, queryContext)
+	result, err := util.Query2(ctx, db.MSSQL, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = singleSQL.Text
+	result.Statement = statement
 	return result, nil
 }
 
