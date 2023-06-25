@@ -361,7 +361,8 @@ type TaskMetadata struct {
 
 	// The name is the name of a task.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The id is the id of a task.
+	// The id is the snowflake-generated id of a task.
+	// Example: 01ad32a0-1bb6-5e93-0000-000000000001
 	Id string `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	// The owner of the task.
 	Owner string `protobuf:"bytes,3,opt,name=owner,proto3" json:"owner,omitempty"`

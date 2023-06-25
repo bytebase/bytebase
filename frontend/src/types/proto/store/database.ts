@@ -45,7 +45,10 @@ export interface SchemaMetadata {
 export interface TaskMetadata {
   /** The name is the name of a task. */
   name: string;
-  /** The id is the id of a task. */
+  /**
+   * The id is the snowflake-generated id of a task.
+   * Example: 01ad32a0-1bb6-5e93-0000-000000000001
+   */
   id: string;
   /** The owner of the task. */
   owner: string;

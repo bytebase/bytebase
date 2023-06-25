@@ -799,7 +799,7 @@ TableMetadata is the metadata for tables.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a task. |
-| id | [string](#string) |  | The id is the id of a task. |
+| id | [string](#string) |  | The id is the snowflake-generated id of a task. Example: 01ad32a0-1bb6-5e93-0000-000000000001 |
 | owner | [string](#string) |  | The owner of the task. |
 | comment | [string](#string) |  | The comment of the task. |
 | warehouse | [string](#string) |  | The warehouse of the task. |
