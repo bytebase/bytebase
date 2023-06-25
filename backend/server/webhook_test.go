@@ -155,7 +155,7 @@ Please check the docs at https://www.bytebase.com/docs/reference/error-code/advi
 <testcase name="[WARN] file2.sql#L1: naming.table" classname="file2.sql" file="file2.sql#L1">
 <failure>
 Error: "techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$".
-Please can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#301
+Please check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#301
 </failure>
 </testcase>
 <testcase name="[ERROR] file2.sql#L4: naming.index.uk" classname="file2.sql" file="file2.sql#L4">
