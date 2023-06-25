@@ -1322,7 +1322,7 @@ func (s *SQLService) checkQueryRights(
 		}
 		if projectMessage == nil {
 			// Never happen
-			return status.Errorf(codes.Internal, "[UNEXPECTED] project not found for database: %s", databaseMessage.DatabaseName)
+			return status.Errorf(codes.Internal, "project not found for database: %s", databaseMessage.DatabaseName)
 		}
 		if project == nil {
 			project = projectMessage
@@ -1342,7 +1342,7 @@ func (s *SQLService) checkQueryRights(
 
 	if project == nil {
 		// Never happen
-		return status.Error(codes.Internal, "[UNEXPECTED] project not found")
+		return status.Error(codes.Internal, "project not found")
 	}
 
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
