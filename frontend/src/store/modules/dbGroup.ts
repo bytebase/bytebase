@@ -23,9 +23,11 @@ import {
   projectNamePrefix,
   schemaGroupNamePrefix,
 } from "./v1/common";
-import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
-import { ConditionGroupExpr, convertToCELString } from "@/plugins/cel";
+import { ConditionGroupExpr, buildCELExpr } from "@/plugins/cel";
 import { Expr } from "@/types/proto/google/type/expr";
+import { convertParsedExprToCELString } from "@/utils";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 
 const composeDatabaseGroup = async (
   databaseGroup: DatabaseGroup
@@ -181,10 +183,16 @@ export const useDBGroupStore = defineStore("db-group", () => {
     const environment =
       useEnvironmentV1Store().getEnvironmentByUID(environmentId);
 
-    const celString = stringifyDatabaseGroupExpr({
-      environmentId: environment.name,
-      conditionGroupExpr: expr,
-    });
+    const celString = await convertParsedExprToCELString(
+      ParsedExpr.fromJSON({
+        expr: buildCELExpr(
+          buildDatabaseGroupExpr({
+            environmentId: environment.name,
+            conditionGroupExpr: expr,
+          })
+        ),
+      })
+    );
 
     const validateOnlyResourceId = `creating-database-group-${Date.now()}`;
 
@@ -349,7 +357,11 @@ export const useDBGroupStore = defineStore("db-group", () => {
     databaseGroupName: string;
     expr: ConditionGroupExpr;
   }) => {
-    const celString = convertToCELString(expr);
+    const celString = await convertParsedExprToCELString(
+      ParsedExpr.fromJSON({
+        expr: buildCELExpr(expr),
+      })
+    );
     const validateOnlyResourceId = `creating-schema-group-${Date.now()}`;
     const parent = `${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
 
