@@ -149,7 +149,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	// - feature is not enabled
 	// - risk source is RiskSourceUnknown
 	// - approval setting rules are empty
-	if !r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) || ((issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(approvalSetting.Rules) == 0) && issue.Type != api.IssueGrantRequest) {
+	if r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil || ((issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(approvalSetting.Rules) == 0) && issue.Type != api.IssueGrantRequest) {
 		if err := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: true,
