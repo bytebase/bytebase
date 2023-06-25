@@ -141,13 +141,13 @@ func TestVCSSQLReview_ConvertSQLAdviceToGitLabCIResult(t *testing.T) {
 <testcase name="[WARN] file1.sql#L1: column.no-null" classname="file1.sql" file="file1.sql#L1">
 <failure>
 Error: Column "id" in "public"."book" cannot have NULL value.
-You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402
+Please can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402
 </failure>
 </testcase>
 <testcase name="[ERROR] file1.sql#L2: naming.index.idx" classname="file1.sql" file="file1.sql#L2">
 <failure>
 Error: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "tech_book_id_name".
-You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#303
+Please can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#303
 </failure>
 </testcase>
 </testsuite>
@@ -155,13 +155,13 @@ You can check the docs at https://www.bytebase.com/docs/reference/error-code/adv
 <testcase name="[WARN] file2.sql#L1: naming.table" classname="file2.sql" file="file2.sql#L1">
 <failure>
 Error: "techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$".
-You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#301
+Please can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#301
 </failure>
 </testcase>
 <testcase name="[ERROR] file2.sql#L4: naming.index.uk" classname="file2.sql" file="file2.sql#L4">
 <failure>
 Error: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name".
-You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#304
+Please can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#304
 </failure>
 </testcase>
 </testsuite>

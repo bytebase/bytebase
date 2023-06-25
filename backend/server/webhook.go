@@ -805,8 +805,8 @@ func (s *Server) sqlAdviceForFile(
 		{
 			Status:  advisor.Warn,
 			Code:    advisor.Unsupported,
-			Title:   "VCS SQL review is disabled",
-			Content: fmt.Sprintf("Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance.", externalURL),
+			Title:   "SQL review is disabled",
+			Content: fmt.Sprintf("Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance", externalURL),
 			Line:    1,
 		},
 	}, nil
@@ -1823,7 +1823,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf("Error: %s.\nYou can check the docs at %s#%d",
+			content := fmt.Sprintf("Error: %s.\nPlease can check the docs at %s#%d",
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,
