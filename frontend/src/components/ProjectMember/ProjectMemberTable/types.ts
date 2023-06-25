@@ -4,7 +4,7 @@ import { Binding } from "@/types/proto/v1/project_service";
 
 export type ComposedProjectMember = {
   user: User;
-  roleList: string[];
+  bindingList: Binding[];
 };
 
 export interface SingleBinding {

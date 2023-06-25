@@ -1478,7 +1478,7 @@
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
       "cannot-remove-last-owner": "Cannot remove the last owner of a project",
-      "revoke-role-from-user": "Revoke '{role}' from '{user}'",
+      "revoke-role-from-user": "Revocar el '{role}' del usuario '{user}'",
       "inactive-members": "Inactive members",
       "show-inactive": "Show inactive members",
       "select-users": "Select users",
@@ -2573,7 +2573,8 @@
     "querier": {
       "description": "System defined project querier role"
     },
-    "select-role": "Select role"
+    "select-role": "Select role",
+    "expired-tip": "The role might has been expired."
   },
   "database-group": {
     "self": "Database Group",
