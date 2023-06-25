@@ -39,14 +39,15 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", task.InstanceID)
 	}
-	if !e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance) {
+	if err := e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance); err != nil {
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusWarn,
 				Namespace: api.AdvisorNamespace,
 				Code:      advisor.Unsupported.Int(),
-				Title:     "Please assign license to the instance to enable the SQL review feature.",
-				Content:   "",
+				Title:     "Missing instance license",
+				Content:   err.Error(),
 			},
 		}, nil
 	}

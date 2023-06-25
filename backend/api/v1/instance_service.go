@@ -405,8 +405,8 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	if !s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 
 	// Test connection.
@@ -464,8 +464,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	if tp == api.RO && !s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
+	if tp == api.RO {
+		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
 	}
 
 	// We create a new variable dataSource to not modify existing data source in the memory.
@@ -547,6 +549,12 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.SSHObfuscatedPrivateKey = obfuscated
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
+		}
+	}
+
+	if patch.SSHHost != nil || patch.SSHPort != nil || patch.SSHUser != nil || patch.SSHObfuscatedPassword != nil || patch.SSHObfuscatedPrivateKey != nil {
+		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureInstanceSSHConnection, instance); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 	}
 
@@ -633,7 +641,9 @@ func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	find := &store.FindInstanceMessage{}
+	find := &store.FindInstanceMessage{
+		ShowDeleted: true,
+	}
 	instanceUID, isNumber := isNumber(instanceID)
 	if isNumber {
 		find.UID = &instanceUID

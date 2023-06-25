@@ -461,7 +461,8 @@ func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *store.
 		if instance == nil {
 			return false, nil
 		}
-		if !r.licenseService.IsFeatureEnabledForInstance(api.FeatureIMApproval, instance) {
+		if err := r.licenseService.IsFeatureEnabledForInstance(api.FeatureIMApproval, instance); err != nil {
+			log.Debug(err.Error(), zap.String("instance", instance.ResourceID))
 			return false, nil
 		}
 
