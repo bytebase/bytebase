@@ -1739,7 +1739,8 @@
     },
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "run-selected": "Ejecutar selección",
-    "clear-screen": "Limpiar pantalla"
+    "clear-screen": "Limpiar pantalla",
+    "query-time": "Tiempo de consulta"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2552,7 +2553,8 @@
     "querier": {
       "description": "Rol de querier del proyecto definido por el sistema"
     },
-    "select-role": "Seleccionar rol"
+    "select-role": "Seleccionar rol",
+    "expired-tip": "El papel puede haber expirado."
   },
   "database-group": {
     "self": "Grupo de bases de datos",

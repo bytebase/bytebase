@@ -1122,12 +1122,15 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			}
 		}
 	case db.MySQL:
-		tree, _, err := parser.ParseMySQL(statement)
+		trees, err := parser.ParseMySQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
-		if err := parser.MySQLValidateForEditor(tree); err != nil {
-			return status.Errorf(codes.InvalidArgument, err.Error())
+		for _, item := range trees {
+			tree := item.Tree
+			if err := parser.MySQLValidateForEditor(tree); err != nil {
+				return status.Errorf(codes.InvalidArgument, err.Error())
+			}
 		}
 	case db.TiDB:
 		stmtList, err := parser.ParseTiDB(statement, "", "")
@@ -1322,6 +1325,14 @@ func (s *SQLService) checkQueryRights(
 		if err != nil {
 			return err
 		}
+		if projectMessage == nil && databaseMessage == nil {
+			// If database not found, skip.
+			continue
+		}
+		if projectMessage == nil {
+			// Never happen
+			return status.Errorf(codes.Internal, "project not found for database: %s", databaseMessage.DatabaseName)
+		}
 		if project == nil {
 			project = projectMessage
 		}
@@ -1331,8 +1342,16 @@ func (s *SQLService) checkQueryRights(
 		databaseMessageMap[database] = databaseMessage
 	}
 
+	if len(databaseMessageMap) == 0 && project == nil {
+		project, _, err = s.getProjectAndDatabaseMessage(ctx, instance, databaseName)
+		if err != nil {
+			return err
+		}
+	}
+
 	if project == nil {
-		return status.Error(codes.NotFound, "project not found")
+		// Never happen
+		return status.Error(codes.Internal, "project not found")
 	}
 
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})

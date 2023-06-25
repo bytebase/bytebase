@@ -87,7 +87,7 @@ func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) 
 	return composedInstance, nil
 }
 
-// InstanceMessage is the mssage for instance.
+// InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID   string
 	Title        string
@@ -102,7 +102,7 @@ type InstanceMessage struct {
 	EngineVersion string
 }
 
-// UpdateInstanceMessage is the mssage for updating an instance.
+// UpdateInstanceMessage is the message for updating an instance.
 type UpdateInstanceMessage struct {
 	Title         *string
 	ExternalLink  *string

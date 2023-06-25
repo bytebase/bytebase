@@ -46,7 +46,10 @@
         class="outline-item group flex justify-between pr-1 py-1"
         :class="'pl-' + (4 + level * 3)"
       >
-        <span class="truncate" :title="item.name">{{ item.name }}</span>
+        <div class="flex flex-row justify-start items-center truncate">
+          <component :is="item.prefix" class="mr-1" />
+          <span class="truncate" :title="item.name">{{ item.name }}</span>
+        </div>
         <button
           v-if="allowDelete && index == state.hoverIndex"
           class="focus:outline-none"

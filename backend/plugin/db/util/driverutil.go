@@ -218,7 +218,6 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 // Query2 will execute a readonly / SELECT query.
 // TODO(rebelice): remove Query function and rename Query2 to Query after frontend is ready to use the new API.
 func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
 	if err != nil {
 		return nil, err
@@ -283,7 +282,6 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
 		Masked:          fieldMaskInfo,
-		Latency:         durationpb.New(time.Since(startTime)),
 	}, nil
 }
 
@@ -303,7 +301,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 		if singleSQL.Empty {
 			continue
 		}
-		if IsAffectedRowsStatement(singleSQL.Text) {
+		if parser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
 			sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
 			if err != nil {
 				return nil, err
@@ -331,6 +329,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 				ColumnTypeNames: types,
 				Rows:            rows,
 				Latency:         durationpb.New(time.Since(startTime)),
+				Statement:       strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t"),
 			})
 			continue
 		}
@@ -350,16 +349,18 @@ func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.Que
 	}
 	defer rows.Close()
 
-	result, err := rowsToQueryResult(rows, startTime)
+	result, err := rowsToQueryResult(rows)
 	if err != nil {
 		return &v1pb.QueryResult{
 			Error: err.Error(),
 		}
 	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
 	return result
 }
 
-func rowsToQueryResult(rows *sql.Rows, startTime time.Time) (*v1pb.QueryResult, error) {
+func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -390,7 +391,6 @@ func rowsToQueryResult(rows *sql.Rows, startTime time.Time) (*v1pb.QueryResult, 
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
-		Latency:         durationpb.New(time.Since(startTime)),
 	}, nil
 }
 
@@ -703,7 +703,7 @@ func FromStoredVersion(storedVersion string) (bool, string, string, error) {
 // IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
 func IsAffectedRowsStatement(stmt string) bool {
 	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
-	upperStatement := strings.ToUpper(stmt)
+	upperStatement := strings.TrimLeft(strings.ToUpper(stmt), " \t\r\n")
 	for _, prefix := range affectedRowsStatementPrefix {
 		if strings.HasPrefix(upperStatement, prefix) {
 			return true

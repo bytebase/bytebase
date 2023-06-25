@@ -52,7 +52,7 @@ import {
 } from "@/types";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { Expr } from "@/types/proto/google/type/expr";
-import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
+import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import {
   pushNotification,
   useDBGroupStore,
@@ -60,10 +60,11 @@ import {
 } from "@/store";
 import { ResourceType } from "./common/ExprEditor/context";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
-import { convertToCELString } from "@/plugins/cel/logic";
+import { buildCELExpr } from "@/plugins/cel/logic";
 import { useRouter } from "vue-router";
-import { projectV1Slug } from "@/utils";
+import { convertParsedExprToCELString, projectV1Slug } from "@/utils";
 import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -202,10 +203,16 @@ const doConfirm = async () => {
         const environment = environmentStore.getEnvironmentByUID(
           formState.environmentId || ""
         );
-        const celString = stringifyDatabaseGroupExpr({
-          environmentId: environment.name,
-          conditionGroupExpr: formState.expr,
-        });
+        const celString = await convertParsedExprToCELString(
+          ParsedExpr.fromJSON({
+            expr: buildCELExpr(
+              buildDatabaseGroupExpr({
+                environmentId: environment.name,
+                conditionGroupExpr: formState.expr,
+              })
+            ),
+          })
+        );
         const resourceId = formState.resourceId;
         await dbGroupStore.createDatabaseGroup({
           projectName: props.project.name,
@@ -222,10 +229,16 @@ const doConfirm = async () => {
         const environment = environmentStore.getEnvironmentByUID(
           formState.environmentId || ""
         );
-        const celString = stringifyDatabaseGroupExpr({
-          environmentId: environment.name,
-          conditionGroupExpr: formState.expr,
-        });
+        const celString = await convertParsedExprToCELString(
+          ParsedExpr.fromJSON({
+            expr: buildCELExpr(
+              buildDatabaseGroupExpr({
+                environmentId: environment.name,
+                conditionGroupExpr: formState.expr,
+              })
+            ),
+          })
+        );
         await dbGroupStore.updateDatabaseGroup({
           ...props.databaseGroup!,
           databasePlaceholder: formState.placeholder,
@@ -240,7 +253,11 @@ const doConfirm = async () => {
           return;
         }
 
-        const celString = convertToCELString(formState.expr);
+        const celString = await convertParsedExprToCELString(
+          ParsedExpr.fromJSON({
+            expr: buildCELExpr(formState.expr),
+          })
+        );
         const resourceId = formState.resourceId;
         await dbGroupStore.createSchemaGroup({
           dbGroupName: formState.selectedDatabaseGroupId,
@@ -254,7 +271,11 @@ const doConfirm = async () => {
           schemaGroupId: resourceId,
         });
       } else {
-        const celString = convertToCELString(formState.expr);
+        const celString = await convertParsedExprToCELString(
+          ParsedExpr.fromJSON({
+            expr: buildCELExpr(formState.expr),
+          })
+        );
         await dbGroupStore.updateSchemaGroup({
           ...props.databaseGroup!,
           tablePlaceholder: formState.placeholder,

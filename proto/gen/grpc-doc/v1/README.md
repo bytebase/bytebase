@@ -8100,6 +8100,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | masked | [bool](#bool) | repeated | Columns are masked or not. |
 | error | [string](#string) |  | The error message if the query failed. |
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
+| statement | [string](#string) |  | The query statement for the result. |
 
 
 
