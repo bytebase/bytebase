@@ -162,7 +162,12 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
     if (!args || args.length === 0) return fail(expr, rule);
 
     for (let i = 0; i < args.length; i++) {
-      resolveLogicAndExpr(args[i], rule);
+      if (args[i].operator === "_&&_") {
+        resolveLogicAndExpr(args[i], rule);
+      }
+      if (args[i].operator === "_||_") {
+        resolveLogicOrExpr(args[i], rule);
+      }
     }
   };
 
