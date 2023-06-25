@@ -1753,7 +1753,8 @@
     },
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "run-selected": "Run selected",
-    "clear-screen": "Clear screen"
+    "clear-screen": "Clear screen",
+    "query-time": "Query time"
   },
   "schema-editor": {
     "self": "Schema Editor",
