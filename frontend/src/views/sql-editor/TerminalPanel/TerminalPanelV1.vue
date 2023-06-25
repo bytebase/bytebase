@@ -145,11 +145,6 @@ const handleExecute = async (
 
   ws.addEventListener("open", (event) => {
     console.log("ws open");
-    const header = [
-      "content-type: application/grpc-web+proto",
-      "x-grpc-web: 1",
-    ].join("\r\n");
-    ws.send(new TextEncoder().encode(header));
 
     const tab = tabStore.currentTab;
     const { instanceId, databaseId } = tab.connection;
