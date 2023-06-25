@@ -695,7 +695,7 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 }
 
 // HandleIncomingApprovalSteps handles incoming approval steps.
-// - skips approval steps if no user can approve the step
+// - Blocks approval steps if no user can approve the step.
 // - creates external approvals for external approval nodes.
 func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.ActivityMessage, error) {
 	if len(approval.ApprovalTemplates) == 0 {
@@ -727,73 +727,29 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 	var approvers []*storepb.IssuePayloadApproval_Approver
 	var activities []*store.ActivityMessage
 
-	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get project policy for project %d", issue.Project.UID)
+	step := FindNextPendingStep(approval.ApprovalTemplates[0], approvers)
+	if step == nil {
+		return nil, nil, nil
 	}
-
-	var users []*store.UserMessage
-	roles := []api.Role{api.Owner, api.DBA}
-	for _, role := range roles {
-		principalType := api.EndUser
-		limit := 1
-		role := role
-		userMessages, err := s.ListUsers(ctx, &store.FindUserMessage{
-			Role:  &role,
-			Type:  &principalType,
-			Limit: &limit,
-		})
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to list users for role %s", role)
-		}
-		if len(userMessages) != 0 {
-			users = append(users, userMessages[0])
-		}
+	if len(step.Nodes) != 1 {
+		return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
-	for {
-		step := FindNextPendingStep(approval.ApprovalTemplates[0], approvers)
-		if step == nil {
-			break
-		}
-		if len(step.Nodes) != 1 {
-			return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
-		}
-		if step.Type != storepb.ApprovalStep_ANY {
-			return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
-		}
-		node := step.Nodes[0]
-		if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
-			if err := handleApprovalNodeExternalNode(ctx, s, relayClient, issue, v.ExternalNodeId); err != nil {
-				approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
-					Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
-					PrincipalId: api.SystemBotID,
-				})
-				activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
-				if err != nil {
-					return nil, nil, err
-				}
-				activities = append(activities, activity)
+	if step.Type != storepb.ApprovalStep_ANY {
+		return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
+	}
+	node := step.Nodes[0]
+	if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
+		if err := handleApprovalNodeExternalNode(ctx, s, relayClient, issue, v.ExternalNodeId); err != nil {
+			approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
+				Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
+				PrincipalId: api.SystemBotID,
+			})
+			activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
+			if err != nil {
+				return nil, nil, err
 			}
-			break
+			activities = append(activities, activity)
 		}
-
-		hasApprover, err := userCanApprove(node, users, policy)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to check if user can approve")
-		}
-		if hasApprover {
-			break
-		}
-
-		approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
-			Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
-			PrincipalId: api.SystemBotID,
-		})
-		activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED, "")
-		if err != nil {
-			return nil, nil, err
-		}
-		activities = append(activities, activity)
 	}
 	return approvers, activities, nil
 }
@@ -839,61 +795,6 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 		return errors.Wrapf(err, "failed to create external approval")
 	}
 	return nil
-}
-
-func userCanApprove(node *storepb.ApprovalNode, users []*store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
-	if node.Type != storepb.ApprovalNode_ANY_IN_GROUP {
-		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
-	}
-
-	hasOwner := false
-	hasDBA := false
-	for _, user := range users {
-		if user.Role == api.Owner {
-			hasOwner = true
-		}
-		if user.Role == api.DBA {
-			hasDBA = true
-		}
-		if hasOwner && hasDBA {
-			break
-		}
-	}
-
-	projectRoleExist := make(map[string]bool)
-	for _, binding := range policy.Bindings {
-		if len(binding.Members) > 0 {
-			projectRoleExist[convertToRoleName(binding.Role)] = true
-		}
-	}
-
-	switch val := node.Payload.(type) {
-	case *storepb.ApprovalNode_GroupValue_:
-		switch val.GroupValue {
-		case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
-			return false, errors.Errorf("invalid group value")
-		case storepb.ApprovalNode_WORKSPACE_OWNER:
-			return hasOwner, nil
-		case storepb.ApprovalNode_WORKSPACE_DBA:
-			return hasDBA, nil
-		case storepb.ApprovalNode_PROJECT_OWNER:
-			return projectRoleExist[convertToRoleName(api.Owner)], nil
-		case storepb.ApprovalNode_PROJECT_MEMBER:
-			return projectRoleExist[convertToRoleName(api.Developer)], nil
-		default:
-			return false, errors.Errorf("invalid group value")
-		}
-	case *storepb.ApprovalNode_Role:
-		return projectRoleExist[val.Role], nil
-	case *storepb.ApprovalNode_ExternalNodeId:
-		return true, nil
-	default:
-		return false, errors.Errorf("invalid node payload type")
-	}
-}
-
-func convertToRoleName(role api.Role) string {
-	return fmt.Sprintf("roles/%s", role)
 }
 
 // RenderStatement renders the given template statement with the given key-value map.
