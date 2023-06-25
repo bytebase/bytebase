@@ -1,7 +1,7 @@
 <template>
   <div class="mb-2 flex flex-row items-center">
     <span class="text-lg mr-2">{{ $t("common.databases") }}</span>
-    <BBLoader v-show="state.isRequesting" class="opacity-60" />
+    <BBLoader v-show="loading" class="opacity-60" />
   </div>
   <div
     class="w-full border rounded min-h-[20rem] max-h-[24rem] overflow-y-auto"
@@ -28,12 +28,17 @@
       <div
         v-for="database in matchedDatabaseList"
         :key="database.name"
-        class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
+        class="w-full flex flex-row justify-start items-center px-2 py-1 gap-x-2"
       >
         <NEllipsis class="text-sm" line-clamp="1">
           {{ database.databaseName }}
         </NEllipsis>
-        <div class="flex flex-row justify-end items-center shrink-0">
+        <div class="flex-1 flex flex-row justify-end items-center shrink-0">
+          <FeatureBadge
+            feature="bb.feature.database-grouping"
+            custom-class="mr-2"
+            :instance="database.instanceEntity"
+          />
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
           <NEllipsis
             class="ml-1 text-sm text-gray-400 max-w-[124px]"
@@ -87,103 +92,24 @@
 
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
-import { ref, watch, reactive } from "vue";
-import { ConditionGroupExpr } from "@/plugins/cel";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
-import { ComposedDatabase, ComposedProject } from "@/types";
+import { reactive } from "vue";
+import { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
-import { DatabaseGroup } from "@/types/proto/v1/project_service";
-import { projectServiceClient } from "@/grpcweb";
-import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
-import { Expr } from "@/types/proto/google/type/expr";
-import { useDebounceFn } from "@vueuse/core";
 import BBLoader from "@/bbkit/BBLoader.vue";
-import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 
 interface LocalState {
-  isRequesting: boolean;
   showMatchedDatabaseList: boolean;
   showUnmatchedDatabaseList: boolean;
 }
 
-const props = defineProps<{
-  project: ComposedProject;
-  environmentId: string;
-  expr: ConditionGroupExpr;
-  databaseGroup?: DatabaseGroup;
+defineProps<{
+  loading: boolean;
+  matchedDatabaseList: ComposedDatabase[];
+  unmatchedDatabaseList: ComposedDatabase[];
 }>();
 
-const environmentStore = useEnvironmentV1Store();
-const databaseStore = useDatabaseV1Store();
-const subscriptionV1Store = useSubscriptionV1Store();
 const state = reactive<LocalState>({
-  isRequesting: false,
   showMatchedDatabaseList: true,
   showUnmatchedDatabaseList: true,
-});
-const matchedDatabaseList = ref<ComposedDatabase[]>([]);
-const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
-
-const updateMatchingState = useDebounceFn(async () => {
-  state.isRequesting = true;
-
-  const environment = environmentStore.getEnvironmentByUID(props.environmentId);
-  const celString = stringifyDatabaseGroupExpr({
-    environmentId: environment.name,
-    conditionGroupExpr: props.expr,
-  });
-  const validateOnlyResourceId = `creating-database-group-${Date.now()}`;
-  const result = await projectServiceClient.createDatabaseGroup({
-    parent: props.project.name,
-    databaseGroup: {
-      name: `${props.project.name}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
-      databasePlaceholder: validateOnlyResourceId,
-      databaseExpr: Expr.fromJSON({
-        expression: celString,
-      }),
-    },
-    databaseGroupId: validateOnlyResourceId,
-    validateOnly: true,
-  });
-
-  matchedDatabaseList.value = [];
-  unmatchedDatabaseList.value = [];
-  for (const item of result.matchedDatabases) {
-    const database = await databaseStore.getOrFetchDatabaseByName(item.name);
-    if (!database) {
-      continue;
-    }
-
-    if (
-      subscriptionV1Store.hasInstanceFeature(
-        "bb.feature.database-grouping",
-        database.instanceEntity
-      )
-    ) {
-      matchedDatabaseList.value.push(database);
-    } else {
-      unmatchedDatabaseList.value.push(database);
-    }
-  }
-  for (const item of result.unmatchedDatabases) {
-    const database = await databaseStore.getOrFetchDatabaseByName(item.name);
-    if (
-      database &&
-      database.instanceEntity.environmentEntity.uid === props.environmentId
-    ) {
-      unmatchedDatabaseList.value.push(database);
-    }
-  }
-
-  state.isRequesting = false;
-}, 500);
-
-watch(() => props, updateMatchingState, {
-  immediate: true,
-  deep: true,
 });
 </script>

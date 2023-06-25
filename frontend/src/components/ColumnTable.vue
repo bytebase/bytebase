@@ -14,19 +14,26 @@
         class="w-[1%] text-center"
       >
         <!-- width: 1% means as narrow as possible -->
-        <input
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          :disabled="!allowAdmin"
-          :checked="isSensitiveColumn(column)"
-          @input="
-            toggleSensitiveColumn(
-              column,
-              ($event.target as HTMLInputElement).checked,
-              $event
-            )
-          "
-        />
+        <div class="flex items-center justify-center">
+          <FeatureBadge
+            feature="bb.feature.sensitive-data"
+            custom-class="mr-2"
+            :instance="database.instanceEntity"
+          />
+          <input
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            :disabled="!allowAdmin || instanceMissingLicense"
+            :checked="isSensitiveColumn(column)"
+            @input="
+              toggleSensitiveColumn(
+                column,
+                ($event.target as HTMLInputElement).checked,
+                $event
+              )
+            "
+          />
+        </div>
       </BBTableCell>
       <BBTableCell class="w-16" :left-padding="showSensitiveColumn ? 2 : 4">
         {{ column.name }}
@@ -65,6 +72,7 @@
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.sensitive-data"
+    :instance="database.instanceEntity"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -75,7 +83,7 @@ import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Column, ComposedDatabase } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { featureToRef, useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { BBTableColumn } from "@/bbkit/types";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
@@ -120,8 +128,18 @@ const state = reactive<LocalState>({
 const engine = computed(() => {
   return props.database.instanceEntity.engine;
 });
+const subscriptionV1Store = useSubscriptionV1Store();
 
-const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const instanceMissingLicense = computed(() => {
+  return subscriptionV1Store.instanceMissingLicense(
+    "bb.feature.sensitive-data",
+    props.database.instanceEntity
+  );
+});
+const hasSensitiveDataFeature = computed(() => {
+  return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
+});
+
 const showSensitiveColumn = computed(() => {
   return (
     hasSensitiveDataFeature.value &&
@@ -255,7 +273,7 @@ const isSensitiveColumn = (column: Column) => {
 };
 
 const toggleSensitiveColumn = (column: Column, on: boolean, e: Event) => {
-  if (!hasSensitiveDataFeature.value) {
+  if (!hasSensitiveDataFeature.value || instanceMissingLicense.value) {
     state.showFeatureModal = true;
 
     // Revert UI states

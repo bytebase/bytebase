@@ -4,15 +4,28 @@ import { ref } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
-import { useEnvironmentV1Store, useProjectV1Store } from "./v1";
-import { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
+import {
+  useEnvironmentV1Store,
+  useProjectV1Store,
+  useDatabaseV1Store,
+} from "./v1";
+import {
+  ComposedSchemaGroupTable,
+  ComposedDatabaseGroup,
+  ComposedSchemaGroup,
+  ComposedDatabase,
+} from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
   getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
   projectNamePrefix,
+  schemaGroupNamePrefix,
 } from "./v1/common";
+import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
+import { ConditionGroupExpr, convertToCELString } from "@/plugins/cel";
+import { Expr } from "@/types/proto/google/type/expr";
 
 const composeDatabaseGroup = async (
   databaseGroup: DatabaseGroup
@@ -126,24 +139,94 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return dbGroupMapByName.value.get(name);
   };
 
-  const createDatabaseGroup = async (
-    projectName: string,
+  const createDatabaseGroup = async ({
+    projectName,
+    databaseGroup,
+    databaseGroupId,
+    validateOnly = false,
+  }: {
+    projectName: string;
     databaseGroup: Pick<
       DatabaseGroup,
       "name" | "databasePlaceholder" | "databaseExpr"
-    >,
-    name: string
-  ) => {
+    >;
+    databaseGroupId: string;
+    validateOnly?: boolean;
+  }) => {
     const createdDatabaseGroup = await projectServiceClient.createDatabaseGroup(
       {
         parent: projectName,
         databaseGroup,
-        databaseGroupId: name,
+        databaseGroupId,
+        validateOnly,
       }
     );
-    const composedData = await composeDatabaseGroup(createdDatabaseGroup);
-    dbGroupMapByName.value.set(createdDatabaseGroup.name, composedData);
+
+    if (!validateOnly) {
+      const composedData = await composeDatabaseGroup(createdDatabaseGroup);
+      dbGroupMapByName.value.set(createdDatabaseGroup.name, composedData);
+    }
     return createdDatabaseGroup;
+  };
+
+  const fetchDatabaseGroupMatchList = async ({
+    projectName,
+    environmentId,
+    expr,
+  }: {
+    projectName: string;
+    environmentId: string;
+    expr: ConditionGroupExpr;
+  }) => {
+    const environment =
+      useEnvironmentV1Store().getEnvironmentByUID(environmentId);
+
+    const celString = stringifyDatabaseGroupExpr({
+      environmentId: environment.name,
+      conditionGroupExpr: expr,
+    });
+
+    const validateOnlyResourceId = `creating-database-group-${Date.now()}`;
+
+    const result = await createDatabaseGroup({
+      projectName: projectName,
+      databaseGroup: {
+        name: `${projectName}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
+        databasePlaceholder: validateOnlyResourceId,
+        databaseExpr: Expr.fromJSON({
+          expression: celString,
+        }),
+      },
+      databaseGroupId: validateOnlyResourceId,
+      validateOnly: true,
+    });
+
+    const matchedDatabaseList: ComposedDatabase[] = [];
+    const unmatchedDatabaseList: ComposedDatabase[] = [];
+    const databaseStore = useDatabaseV1Store();
+
+    for (const item of result.matchedDatabases) {
+      const database = await databaseStore.getOrFetchDatabaseByName(item.name);
+      if (!database) {
+        continue;
+      }
+
+      matchedDatabaseList.push(database);
+    }
+    for (const item of result.unmatchedDatabases) {
+      const database = await databaseStore.getOrFetchDatabaseByName(item.name);
+      if (
+        database &&
+        database.instanceEntity.environmentEntity.uid === environmentId
+      ) {
+        unmatchedDatabaseList.push(database);
+      }
+    }
+
+    return {
+      matchedDatabaseList,
+      unmatchedDatabaseList,
+    };
   };
 
   const updateDatabaseGroup = async (
@@ -233,19 +316,95 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return schemaGroupMapByName.value.get(name);
   };
 
-  const createSchemaGroup = async (
-    dbGroupName: string,
-    schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">,
-    name: string
-  ) => {
+  const createSchemaGroup = async ({
+    dbGroupName,
+    schemaGroup,
+    schemaGroupId,
+    validateOnly = false,
+  }: {
+    dbGroupName: string;
+    schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">;
+    schemaGroupId: string;
+    validateOnly?: boolean;
+  }) => {
     const createdSchemaGroup = await projectServiceClient.createSchemaGroup({
       parent: dbGroupName,
       schemaGroup,
-      schemaGroupId: name,
+      schemaGroupId,
+      validateOnly,
     });
     const composedData = await composeSchemaGroup(createdSchemaGroup);
-    schemaGroupMapByName.value.set(composedData.name, composedData);
+    if (!validateOnly) {
+      schemaGroupMapByName.value.set(composedData.name, composedData);
+    }
     return composedData;
+  };
+
+  const fetchSchemaGroupMatchList = async ({
+    projectName,
+    databaseGroupName,
+    expr,
+  }: {
+    projectName: string;
+    databaseGroupName: string;
+    expr: ConditionGroupExpr;
+  }) => {
+    const celString = convertToCELString(expr);
+    const validateOnlyResourceId = `creating-schema-group-${Date.now()}`;
+    const parent = `${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
+
+    try {
+      const result = await createSchemaGroup({
+        dbGroupName: parent,
+        schemaGroup: {
+          name: `${databaseGroupName}/${schemaGroupNamePrefix}${validateOnlyResourceId}`,
+          tablePlaceholder: validateOnlyResourceId,
+          tableExpr: Expr.fromJSON({
+            expression: celString || "true",
+          }),
+        },
+        schemaGroupId: validateOnlyResourceId,
+        validateOnly: true,
+      });
+
+      const matchedTableList: ComposedSchemaGroupTable[] = [];
+      const unmatchedTableList: ComposedSchemaGroupTable[] = [];
+      const databaseStore = useDatabaseV1Store();
+
+      for (const item of result.matchedTables) {
+        const database = await databaseStore.getOrFetchDatabaseByName(
+          item.database
+        );
+        if (!database) {
+          continue;
+        }
+
+        matchedTableList.push({
+          ...item,
+          databaseEntity: database,
+        });
+      }
+      for (const item of result.unmatchedTables) {
+        const database = await databaseStore.getOrFetchDatabaseByName(
+          item.database
+        );
+        unmatchedTableList.push({
+          ...item,
+          databaseEntity: database,
+        });
+      }
+
+      return {
+        matchedTableList,
+        unmatchedTableList,
+      };
+    } catch (e) {
+      console.error(e);
+      return {
+        matchedTableList: [],
+        unmatchedTableList: [],
+      };
+    }
   };
 
   const updateSchemaGroup = async (
@@ -297,5 +456,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     createSchemaGroup,
     updateSchemaGroup,
     deleteSchemaGroup,
+    fetchDatabaseGroupMatchList,
+    fetchSchemaGroupMatchList,
   };
 });

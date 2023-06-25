@@ -139,10 +139,10 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
-  featureToRef,
   useChangeHistoryStore,
   useDatabaseV1Store,
   useProjectV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import DatabaseSelect from "@/components/DatabaseSelect.vue";
@@ -186,6 +186,7 @@ const dialog = useDialog();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
+const subscriptionV1Store = useSubscriptionV1Store();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
@@ -209,10 +210,12 @@ const database = computed(() => {
   return databaseStore.getDatabaseByUID(databaseId);
 });
 
-const hasSyncSchemaFeature = featureToRef(
-  "bb.feature.sync-schema-all-versions",
-  database.value?.instanceEntity
-);
+const hasSyncSchemaFeature = computed(() => {
+  return subscriptionV1Store.hasInstanceFeature(
+    "bb.feature.sync-schema-all-versions",
+    database.value?.instanceEntity
+  );
+});
 
 const shouldShowMoreVersionButton = computed(() => {
   return (
@@ -234,7 +237,8 @@ const allowNext = computed(() => {
     return (
       isValidId(state.sourceSchema.environmentId) &&
       isValidId(state.sourceSchema.databaseId) &&
-      !isUndefined(state.sourceSchema.changeHistory)
+      !isUndefined(state.sourceSchema.changeHistory) &&
+      hasSyncSchemaFeature.value
     );
   } else {
     if (!targetDatabaseViewRef.value) {
@@ -285,11 +289,16 @@ const handleSourceEnvironmentSelect = async (environmentId: string) => {
 const handleSourceDatabaseSelect = async (databaseId: string) => {
   if (isValidId(databaseId)) {
     const database = databaseStore.getDatabaseByUID(databaseId);
-    if (database) {
-      state.projectId = database.projectEntity.uid;
-      state.sourceSchema.environmentId =
-        database.instanceEntity.environmentEntity.uid;
-      state.sourceSchema.databaseId = databaseId;
+    if (!database) {
+      return;
+    }
+    state.projectId = database.projectEntity.uid;
+    state.sourceSchema.environmentId =
+      database.instanceEntity.environmentEntity.uid;
+    state.sourceSchema.databaseId = databaseId;
+
+    if (!hasSyncSchemaFeature.value) {
+      state.showFeatureModal = true;
     }
   }
 };

@@ -13,7 +13,13 @@
               <span
                 class="underline cursor-pointer hover:opacity-60"
                 @click="state.showModal = true"
-                >{{ neededPlan }}</span
+                >{{
+                  t("subscription.plan-features", {
+                    plan: t(
+                      `subscription.plan.${planTypeToString(neededPlan)}.title`
+                    ),
+                  })
+                }}</span
               >
             </template>
             <template #currentPlan>
@@ -43,8 +49,10 @@
     </p>
     <div class="pl-4 my-2">
       <ul class="list-disc list-inside">
-        <li v-for="feature in overusedFeatureList" :key="feature">
-          {{ feature }}
+        <li v-for="feature in overUsedFeatureList" :key="feature">
+          {{
+            $t(`subscription.features.${feature.split(".").join("-")}.title`)
+          }}
         </li>
       </ul>
     </div>
@@ -65,6 +73,13 @@ import {
   useIdentityProviderStore,
   useInstanceV1Store,
   useSubscriptionV1Store,
+  usePolicyV1Store,
+  useSettingV1Store,
+  defaultBackupSchedule,
+  defaultApprovalStrategy,
+  useDBGroupStore,
+  useDatabaseV1Store,
+  useDatabaseSecretStore,
 } from "@/store";
 import { onMounted } from "vue";
 import { computed } from "vue";
@@ -74,7 +89,7 @@ import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { useI18n } from "vue-i18n";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { useRouter } from "vue-router";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 
 interface LocalState {
   showModal: boolean;
@@ -91,85 +106,120 @@ const idpStore = useIdentityProviderStore();
 const settingV1Store = useSettingV1Store();
 const instanceStore = useInstanceV1Store();
 const environmentV1Store = useEnvironmentV1Store();
+const policyV1Store = usePolicyV1Store();
+const dbV1Store = useDatabaseV1Store();
+const dbSecretStore = useDatabaseSecretStore();
+const dbGroupStore = useDBGroupStore();
 
-const showBanner = computed(() => {
-  return (
-    subscriptionStore.currentPlan !== PlanType.ENTERPRISE &&
-    overusedFeatureList.value.length > 0
+const usedFeatureList = computed(() => {
+  const set: Set<FeatureType> = new Set();
+
+  if (idpStore.identityProviderList.length > 0) {
+    set.add("bb.feature.sso");
+  }
+
+  // setting
+  if (settingV1Store.brandingLogo) {
+    set.add("bb.feature.branding");
+  }
+  const watermarkSetting = settingV1Store.getSettingByName(
+    "bb.workspace.watermark"
   );
+  if (watermarkSetting?.value?.stringValue === "1") {
+    set.add("bb.feature.watermark");
+  }
+  if (settingV1Store.workspaceProfileSetting?.disallowSignup ?? false) {
+    set.add("bb.feature.disallow-signup");
+  }
+  if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
+    set.add("bb.feature.2fa");
+  }
+  const openAIKeySetting = settingV1Store.getSettingByName(
+    "bb.plugin.openai.key"
+  );
+  if (openAIKeySetting?.value?.stringValue) {
+    set.add("bb.feature.plugin.openai");
+  }
+  const imSetting = settingV1Store.getSettingByName("bb.app.im");
+  if (imSetting?.value?.appImSettingValue?.appId) {
+    set.add("bb.feature.im.approval");
+  }
+
+  // environment
+  for (const environment of environmentV1Store.environmentList) {
+    if (environment.tier === EnvironmentTier.PROTECTED) {
+      set.add("bb.feature.environment-tier-policy");
+    }
+    const backupPolicy = policyV1Store.getPolicyByParentAndType({
+      parentPath: environment.name,
+      policyType: PolicyType.BACKUP_PLAN,
+    });
+    if (
+      backupPolicy?.backupPlanPolicy?.schedule ??
+      defaultBackupSchedule !== defaultBackupSchedule
+    ) {
+      set.add("bb.feature.backup-policy");
+    }
+
+    const approvalPolicy = policyV1Store.getPolicyByParentAndType({
+      parentPath: environment.name,
+      policyType: PolicyType.DEPLOYMENT_APPROVAL,
+    });
+    if (
+      approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy ??
+      defaultApprovalStrategy !== defaultApprovalStrategy
+    ) {
+      set.add("bb.feature.approval-policy");
+    }
+  }
+
+  // database
+  for (const databse of dbV1Store.databaseList) {
+    const list = dbSecretStore.getSecretListByDatabase(databse.name);
+    if (list.length > 0) {
+      set.add("bb.feature.encrypted-secrets");
+      break;
+    }
+  }
+  if (dbGroupStore.getAllDatabaseGroupList().length > 0) {
+    set.add("bb.feature.database-grouping");
+  }
+
+  return [...set.values()];
+});
+
+const overUsedFeatureList = computed(() => {
+  const currentPlan = subscriptionStore.currentPlan;
+  return usedFeatureList.value.filter((feature) => {
+    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(feature);
+    return requiredPlan > currentPlan;
+  });
 });
 
 const neededPlan = computed(() => {
-  let plan = PlanType.TEAM;
-  if (overusedEnterprisePlanFeatureList.value.length > 0) {
-    plan = PlanType.ENTERPRISE;
+  let plan = PlanType.FREE;
+
+  for (const feature of usedFeatureList.value) {
+    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(feature);
+    if (requiredPlan > plan) {
+      plan = requiredPlan;
+    }
   }
-  return t("subscription.plan-features", {
-    plan: t(`subscription.plan.${planTypeToString(plan)}.title`),
-  });
+
+  return plan;
+});
+
+const showBanner = computed(() => {
+  return (
+    overUsedFeatureList.value.length > 0 &&
+    neededPlan.value > subscriptionStore.currentPlan
+  );
 });
 
 const currentPlan = computed(() => {
   return t(
     `subscription.plan.${planTypeToString(subscriptionStore.currentPlan)}.title`
   );
-});
-
-const overusedEnterprisePlanFeatureList = computed(() => {
-  if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
-    return [];
-  }
-
-  const list: FeatureType[] = [];
-
-  if (idpStore.identityProviderList.length > 0) {
-    list.push("bb.feature.sso");
-  }
-  if (settingV1Store.brandingLogo) {
-    list.push("bb.feature.branding");
-  }
-  const watermarkSetting = settingV1Store.getSettingByName(
-    "bb.workspace.watermark"
-  );
-  if (watermarkSetting && watermarkSetting.value?.stringValue === "1") {
-    list.push("bb.feature.watermark");
-  }
-  if (settingV1Store.workspaceProfileSetting?.disallowSignup ?? false) {
-    list.push("bb.feature.disallow-signup");
-  }
-  if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
-    list.push("bb.feature.2fa");
-  }
-  const openAIKeySetting = settingV1Store.getSettingByName(
-    "bb.plugin.openai.key"
-  );
-  if (openAIKeySetting && openAIKeySetting.value?.stringValue) {
-    list.push("bb.feature.plugin.openai");
-  }
-  for (const environment of environmentV1Store.environmentList) {
-    if (environment.tier === EnvironmentTier.PROTECTED) {
-      list.push("bb.feature.environment-tier-policy");
-      break;
-    }
-  }
-
-  return list;
-});
-
-const overusedFeatureList = computed(() => {
-  const list: string[] = [];
-  for (const feature of overusedEnterprisePlanFeatureList.value) {
-    list.push(t(`subscription.features.${feature.split(".").join("-")}.title`));
-  }
-  if (instanceStore.activateInstanceCount >= subscriptionStore.instanceCount) {
-    list.push(
-      t("subscription.overuse-modal.instance-count-exceeds", {
-        count: instanceStore.activateInstanceCount,
-        limit: subscriptionStore.instanceCount,
-      })
-    );
-  }
-  return list;
 });
 
 onMounted(() => {
@@ -180,8 +230,29 @@ onMounted(() => {
   Promise.all([
     idpStore.fetchIdentityProviderList(),
     settingV1Store.fetchSettingList(),
-    environmentV1Store.fetchEnvironments(),
+    environmentV1Store.fetchEnvironments().then((list) => {
+      return list.map((env) => {
+        Promise.all([
+          policyV1Store.getOrFetchPolicyByParentAndType({
+            parentPath: env.name,
+            policyType: PolicyType.DEPLOYMENT_APPROVAL,
+          }),
+          policyV1Store.getOrFetchPolicyByParentAndType({
+            parentPath: env.name,
+            policyType: PolicyType.BACKUP_PLAN,
+          }),
+        ]);
+      });
+    }),
     instanceStore.fetchInstanceList(),
+    dbV1Store
+      .fetchDatabaseList({
+        parent: "instances/-",
+      })
+      .then((list) => {
+        return list.map((db) => dbSecretStore.fetchSecretList(db.name));
+      }),
+    dbGroupStore.fetchAllDatabaseGroupList(),
   ]).catch(() => {
     // ignore
   });

@@ -9,6 +9,7 @@ import {
   hasFeature,
   useCurrentUserIamPolicy,
   useEnvironmentV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "../role";
 import { Engine, State } from "@/types/proto/v1/common";
@@ -179,9 +180,14 @@ const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
 export function allowGhostMigrationV1(
   databaseList: ComposedDatabase[]
 ): boolean {
+  const subscriptionV1Store = useSubscriptionV1Store();
   return databaseList.every((db) => {
     return (
       db.instanceEntity.engine === Engine.MYSQL &&
+      subscriptionV1Store.hasInstanceFeature(
+        "bb.feature.online-migration",
+        db.instanceEntity
+      ) &&
       semverCompare(
         db.instanceEntity.engineVersion,
         MIN_GHOST_SUPPORT_MYSQL_VERSION,

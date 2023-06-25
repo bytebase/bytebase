@@ -506,7 +506,6 @@
               </label>
               <FeatureBadge
                 feature="bb.feature.instance-ssh-connection"
-                class="text-accent"
                 :instance="instance"
               />
             </div>
