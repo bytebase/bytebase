@@ -408,7 +408,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		sqlFileName2Advice := s.sqlAdviceForSQLFiles(ctx, repositoryList, prFiles, setting.ExternalUrl)
 
-		if s.licenseService.IsFeatureEnabled(api.FeatureMybatisSQLReview) {
+		if s.licenseService.IsFeatureEnabled(api.FeatureMybatisSQLReview) == nil {
 			// If the commit file list contains the file which extension is xml and the content
 			// contains "https://mybatis.org/dtd/mybatis-3-mapper.dtd", we will try to apply
 			// sql-review to it.
@@ -738,9 +738,20 @@ func (s *Server) sqlAdviceForFile(
 		if err != nil {
 			return nil, err
 		}
+		if instance == nil {
+			return nil, errors.Errorf("cannot found instance %s", database.InstanceID)
+		}
+		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureVCSSQLReviewWorkflow, instance); err != nil {
+			log.Debug(err.Error(), zap.String("instance", instance.ResourceID))
+			continue
+		}
+
 		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 		if err != nil {
 			return nil, err
+		}
+		if environment == nil {
+			return nil, errors.Errorf("cannot found environment %s", instance.EnvironmentID)
 		}
 		policy, err := s.store.GetSQLReviewPolicy(ctx, environment.UID)
 		if err != nil {
@@ -793,9 +804,9 @@ func (s *Server) sqlAdviceForFile(
 	return []advisor.Advice{
 		{
 			Status:  advisor.Warn,
-			Code:    advisor.NotFound,
-			Title:   "SQL review policy not found",
-			Content: fmt.Sprintf("You can configure the SQL review policy on %s/setting/sql-review", externalURL),
+			Code:    advisor.Unsupported,
+			Title:   "SQL review is disabled",
+			Content: fmt.Sprintf("Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance", externalURL),
 			Line:    1,
 		},
 	}, nil
@@ -1175,8 +1186,10 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
 func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
-	if repoInfo.project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-		return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+	if repoInfo.project.TenantMode == api.TenantModeTenant {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
+		}
 	}
 
 	var migrationDetailList []*api.MigrationDetail
@@ -1810,7 +1823,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf("Error: %s.\nYou can check the docs at %s#%d",
+			content := fmt.Sprintf("Error: %s.\nPlease check the docs at %s#%d",
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,

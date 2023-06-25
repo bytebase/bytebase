@@ -572,7 +572,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
-	if s.licenseService.IsFeatureEnabled(api.Feature2FA) && !mfaSecondLogin && userMFAEnabled {
+	if s.licenseService.IsFeatureEnabled(api.Feature2FA) == nil && !mfaSecondLogin && userMFAEnabled {
 		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
@@ -757,8 +757,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 	var user *store.UserMessage
 	if len(users) == 0 {
-		if !s.licenseService.IsFeatureEnabled(api.FeatureSSO) {
-			return nil, status.Errorf(codes.PermissionDenied, "SSO is not available in your license")
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		// Create new user from identity provider.
 		password, err := common.RandomString(20)

@@ -349,6 +349,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				resource_id,
 				name,
 				engine,
+				engine_version,
 				external_link,
 				activation,
 				row_status
@@ -359,6 +360,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&instance.ResourceID,
 		&instance.Title,
 		&instance.Engine,
+		&instance.EngineVersion,
 		&instance.ExternalLink,
 		&instance.Activation,
 		&rowStatus,

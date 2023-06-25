@@ -1367,8 +1367,8 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 
 // CreateDatabaseGroup creates a database group.
 func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	projectResourceID, err := getProjectID(request.Parent)
 	if err != nil {
@@ -1423,8 +1423,8 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 
 // UpdateDatabaseGroup updates a database group.
 func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
 	if err != nil {
@@ -1616,8 +1616,8 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 
 // CreateSchemaGroup creates a database group.
 func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.CreateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
@@ -1681,8 +1681,8 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 
 // UpdateSchemaGroup updates a schema group.
 func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.UpdateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
 	if err != nil {
@@ -1886,7 +1886,7 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	return s.convertStoreToAPISchemaGroupFull(ctx, schemaGroup, databaseGroup, projectResourceID)
 }
 
-func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+func (s *ProjectService) getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
 		return nil, nil, err
@@ -1911,7 +1911,18 @@ func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
 		}
 		if boolVal, ok := val.(bool); ok && boolVal {
-			matches = append(matches, database)
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "failed to found instance %s with error: %v", database.InstanceID, err.Error())
+			}
+			if instance == nil {
+				return nil, nil, status.Errorf(codes.Internal, "cannot found instance %s", database.InstanceID)
+			}
+			if s.licenseService.IsFeatureEnabledForInstance(api.FeatureDatabaseGrouping, instance) == nil {
+				matches = append(matches, database)
+			} else {
+				unmatches = append(unmatches, database)
+			}
 		} else {
 			unmatches = append(unmatches, database)
 		}
@@ -1926,7 +1937,8 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	matches, unmatches, err := getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
+
+	matches, unmatches, err := s.getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
 	if err != nil {
 		return nil, err
 	}
@@ -1978,7 +1990,7 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
-	matchesDatabases, _, err := getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+	matchesDatabases, _, err := s.getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
 	if err != nil {
 		return nil, nil, err
 	}
