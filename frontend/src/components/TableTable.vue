@@ -163,9 +163,11 @@ const mixedTableList = computed(() => {
 
 const clickTable = (_: number, row: number, e: MouseEvent) => {
   const table = mixedTableList.value[row];
-  let url = `/db/${databaseV1Slug(props.database)}/table/${table.name}`;
+  let url = `/db/${databaseV1Slug(props.database)}/table/${encodeURIComponent(
+    table.name
+  )}`;
   if (props.schemaName !== "") {
-    url = url + `?schema=${props.schemaName}`;
+    url = url + `?schema=${encodeURIComponent(props.schemaName)}`;
   }
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
