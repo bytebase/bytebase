@@ -45,6 +45,9 @@
             class="border"
           >
             <template #item="{ item }: SingleBindingRow">
+              <div class="bb-grid-cell !p-0 items-center justify-center">
+                <RoleExpiredTip v-if="checkRoleExpired(item)" />
+              </div>
               <div class="bb-grid-cell">
                 {{ extractDatabaseName(item.databaseResource) }}
                 <template v-if="item.databaseResource">
@@ -69,7 +72,7 @@
               <div class="bb-grid-cell">
                 <RoleDescription :description="item.description || ''" />
               </div>
-              <div class="bb-grid-cell w-12 space-x-1">
+              <div class="bb-grid-cell space-x-1">
                 <NTooltip v-if="allowAdmin" trigger="hover">
                   <template #trigger>
                     <button
@@ -151,6 +154,7 @@ import { ComposedProjectMember, SingleBinding } from "./types";
 import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
 import RoleDescription from "./RoleDescription.vue";
 import EditProjectMemberPanel from "../AddProjectMember/EditProjectMemberPanel.vue";
+import RoleExpiredTip from "./RoleExpiredTip.vue";
 
 export type SingleBindingRow = BBGridRow<SingleBinding>;
 
@@ -188,6 +192,10 @@ const panelTitle = computed(() => {
 const COLUMNS = computed(() => {
   const columns: BBGridColumn[] = [
     {
+      title: "",
+      width: "2rem",
+    },
+    {
       title: t("common.database"),
       width: "1fr",
     },
@@ -205,11 +213,11 @@ const COLUMNS = computed(() => {
     },
     {
       title: t("common.description"),
-      width: "1fr",
+      width: "6rem",
     },
     {
       title: "",
-      width: "3rem",
+      width: "4rem",
     },
   ];
   return columns;
@@ -415,6 +423,13 @@ const extractExpiration = (expiration?: Date) => {
     return "*";
   }
   return expiration.toLocaleString();
+};
+
+const checkRoleExpired = (role: SingleBinding) => {
+  if (!role.expiration) {
+    return false;
+  }
+  return role.expiration < new Date();
 };
 
 watch(

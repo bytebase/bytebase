@@ -195,26 +195,33 @@ const composedMemberList = computed(() => {
 
   const usersByRole = iamPolicy.value.bindings.map((binding) => {
     return {
+      binding: binding,
       role: binding.role,
       users: new Set(binding.members.map(extractUserEmail)),
     };
   });
+
   const userRolesList = userList.map<ComposedProjectMember>((user) => {
-    const roleList = uniq(
+    const bindingList = uniq(
       usersByRole
-        .filter((binding) => binding.users.has(user.email))
-        .map((binding) => binding.role)
+        .filter((item) => item.users.has(user.email))
+        .map((item) => item.binding)
     );
     return {
       user,
-      roleList,
+      bindingList,
     };
   });
 
   return orderBy(
     userRolesList,
     [
-      (item) => (item.roleList.includes(PresetRoleType.OWNER) ? 0 : 1),
+      (item) =>
+        item.bindingList.find(
+          (binding) => binding.role === PresetRoleType.OWNER
+        )
+          ? 0
+          : 1,
       (item) => parseInt(extractUserUID(item.user.name), 10),
     ],
     ["asc", "asc"]
