@@ -46,6 +46,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 							},
 						},
 					},
+					Statement: "INSERT INTO tbl VALUES(1)",
 				},
 			},
 		},
@@ -65,6 +66,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 							},
 						},
 					},
+					Statement: "INSERT INTO tbl VALUES(1)",
 				},
 				{
 					ColumnNames:     []string{"Affected Rows"},
@@ -76,6 +78,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 							},
 						},
 					},
+					Statement: "DELETE FROM tbl WHERE id = 1",
 				},
 			},
 		},
@@ -95,6 +98,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 							},
 						},
 					},
+					Statement: "INSERT INTO tbl VALUES(1),(2)",
 				},
 			},
 		},
@@ -104,7 +108,9 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
 			affectedRows: []*v1pb.QueryResult{
-				{},
+				{
+					Statement: "ALTER TABLE tbl ADD COLUMN name VARCHAR(255)",
+				},
 			},
 		},
 	}
