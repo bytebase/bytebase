@@ -22,7 +22,7 @@ func newParser() *tidbparser.Parser {
 }
 
 func parseStatement(statement string, charset string, collation string) ([]ast.StmtNode, []advisor.Advice) {
-	tree, tokens, err := parser.ParseMySQL(statement)
+	treeList, err := parser.ParseMySQL(statement)
 	if err != nil {
 		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
 			return nil, []advisor.Advice{
@@ -45,40 +45,44 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 			},
 		}
 	}
-	if tree == nil {
+	if len(treeList) == 0 {
 		return nil, nil
 	}
 
 	var returnNodes []ast.StmtNode
 	var adviceList []advisor.Advice
 	p := newParser()
-	for _, child := range tree.GetChildren() {
-		if child == nil {
-			continue
-		}
+	for _, item := range treeList {
+		tree := item.Tree
+		tokens := item.Tokens
+		for _, child := range tree.GetChildren() {
+			if child == nil {
+				continue
+			}
 
-		if query, ok := child.(mysqlparser.IQueryContext); ok {
-			text := tokens.GetTextFromRuleContext(query)
-			lastLine := query.GetStop().GetLine()
-			if nodes, _, err := p.Parse(text, charset, collation); err == nil {
-				if len(nodes) != 1 {
-					continue
-				}
-				node := nodes[0]
-				node.SetText(nil, text)
-				node.SetOriginTextPosition(lastLine)
-				if n, ok := node.(*ast.CreateTableStmt); ok {
-					if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
-						return nil, append(adviceList, advisor.Advice{
-							Status:  advisor.Error,
-							Code:    advisor.Internal,
-							Title:   "Set line error",
-							Content: err.Error(),
-							Line:    lastLine,
-						})
+			if query, ok := child.(mysqlparser.IQueryContext); ok {
+				text := tokens.GetTextFromRuleContext(query)
+				lastLine := query.GetStop().GetLine() + item.BaseLine
+				if nodes, _, err := p.Parse(text, charset, collation); err == nil {
+					if len(nodes) != 1 {
+						continue
 					}
+					node := nodes[0]
+					node.SetText(nil, text)
+					node.SetOriginTextPosition(lastLine)
+					if n, ok := node.(*ast.CreateTableStmt); ok {
+						if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+							return nil, append(adviceList, advisor.Advice{
+								Status:  advisor.Error,
+								Code:    advisor.Internal,
+								Title:   "Set line error",
+								Content: err.Error(),
+								Line:    lastLine,
+							})
+						}
+					}
+					returnNodes = append(returnNodes, node)
 				}
-				returnNodes = append(returnNodes, node)
 			}
 		}
 	}
