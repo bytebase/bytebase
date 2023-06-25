@@ -122,7 +122,7 @@ const allowApproveOrReject = computed(() => {
   const index = flow.value.currentStepIndex;
   const steps = flow.value.template.flow?.steps ?? [];
   const step = steps[index];
-  if (!step) return [];
+  if (!step) return false;
   const candidates = candidatesOfApprovalStep(issue.value, step);
   return candidates.includes(currentUserV1.value.name);
 });
