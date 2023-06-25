@@ -55,7 +55,7 @@ func TestTransform(t *testing.T) {
 		");" + "\n" +
 		"\n" +
 		"CREATE INDEX `idx_name` ON `t` (`name`);" + "\n" +
-		"\n" +
+		"\n\n\t\t\n\t\t" +
 		"CREATE PROCEDURE p1()" + "\n" +
 		"		BEGIN" + "\n" +
 		"			SELECT * FROM t;" + "\n" +
