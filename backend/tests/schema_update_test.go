@@ -56,6 +56,7 @@ var (
 				},
 			},
 		},
+		Statement: "SELECT * FROM book",
 	}
 )
 
