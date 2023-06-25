@@ -329,7 +329,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 				ColumnTypeNames: types,
 				Rows:            rows,
 				Latency:         durationpb.New(time.Since(startTime)),
-				Statement:       strings.TrimRight(singleSQL.Text, " \n\t;"),
+				Statement:       strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t"),
 			})
 			continue
 		}
@@ -356,7 +356,7 @@ func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.Que
 		}
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = strings.TrimRight(statement, " \n\t;")
+	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
 	return result
 }
 

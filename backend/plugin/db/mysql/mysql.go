@@ -261,7 +261,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	if singleSQL.Empty {
 		return nil, nil
 	}
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
 
 	stmt := statement
 	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
