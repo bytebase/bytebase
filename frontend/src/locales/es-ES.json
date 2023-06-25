@@ -54,6 +54,8 @@
     "bookmarks": "Marcadores",
     "quick-action": "Acción rápida",
     "archive": "Archivo",
+    "archived": "Archivada",
+    "no-license": "Sin licencia",
     "logout": "Cerrar sesión",
     "close": "Cerrar",
     "latest": "Último",
@@ -800,12 +802,11 @@
     "troubleshoot": "Solucionar problemas",
     "transfer-in-db": "Transferir BD",
     "request-db": "Solicitar BD",
-    "from-unassigned-databases": "De bases de datos no asignadas",
-    "from-projects": "De proyectos",
+    "from-unassigned-databases": "Transferir bases de datos no asignadas",
+    "from-projects": "Transfer from other projects",
     "transfer-in-db-title": "Transferir base de datos",
-    "default-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en el proyecto predeterminado.",
     "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
-    "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en bases de datos no asignadas.",
+    "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas no están asignadas al principio y deben transferirse a un proyecto antes de que puedan usarse.",
     "transfer-out-db": "Transferir base de datos",
     "transfer-out-db-title": "Transferir la base de datos",
     "request-export": "Solicitar exportación",
@@ -1233,6 +1234,7 @@
     "doesnt-match-tenant-value": "No coincide con el valor de la etiqueta",
     "should-follow-database-name-template": "Debe seguir la plantilla de nombre de base de datos de inquilino",
     "all": "Todas las bases de datos",
+    "unassigned": "No asignado",
     "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Alter Schema no se aplica a las bases de datos sin esquema).",
     "secret": {
       "self": "Secreto",
@@ -1448,7 +1450,10 @@
       "archive": {
         "title": "Archivar proyecto",
         "description": "El proyecto archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
-        "btn-text": "Archivar este @.lower:{'common.project'}"
+        "btn-text": "Archivar este @.lower:{'common.project'}",
+        "force": {
+          "description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
+        }
       },
       "restore": {
         "title": "Restaurar proyecto",
@@ -1734,7 +1739,8 @@
     },
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "run-selected": "Ejecutar selección",
-    "clear-screen": "Limpiar pantalla"
+    "clear-screen": "Limpiar pantalla",
+    "query-time": "Tiempo de consulta"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -1864,6 +1870,17 @@
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
     "upgrade-now": "Actualizar ahora",
+    "instance-assignment": {
+      "license": "Licencia",
+      "assign-license": "Asignar licencia",
+      "require-license": "Requerir licencia de instancia",
+      "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
+      "n-license-remain": "permanecer {n}",
+      "manage-license": "Administrar licencia",
+      "used-and-total-license": "Licencia asignada / total",
+      "success-notification": "Actualizar correctamente la asignación de licencia",
+      "missing-license-for-instances": "Tienes {count} instancias ({name}) a las que les falta la licencia requerida para desbloquear esta función."
+    },
     "update": {
       "success": {
         "title": "Licencia actualizada con éxito",
@@ -2426,7 +2443,7 @@
       "external-approval": {
         "self": "Aprobación externa",
         "delete": "¿Eliminar nodo de aprobación externo?",
-        "endpoint": "punto final",
+        "endpoint": "Endpoint",
         "view-node": "Ver nodo de aprobación externo",
         "create-node": "Crear nodo de aprobación externo",
         "edit-node": "Editar nodo de aprobación externo"
@@ -2536,7 +2553,8 @@
     "querier": {
       "description": "Rol de querier del proyecto definido por el sistema"
     },
-    "select-role": "Seleccionar rol"
+    "select-role": "Seleccionar rol",
+    "expired-tip": "El papel puede haber expirado."
   },
   "database-group": {
     "self": "Grupo de bases de datos",

@@ -34,10 +34,14 @@
 import dayjs from "dayjs";
 import { onMounted, reactive } from "vue";
 import { useIssueLogic } from "../logic";
-import { GrantRequestPayload, Issue, PresetRoleType } from "@/types";
+import {
+  DatabaseResource,
+  GrantRequestPayload,
+  Issue,
+  PresetRoleType,
+} from "@/types";
 import { convertFromCELString } from "@/utils/issue/cel";
 import DatabaseResourceTable from "../table/DatabaseResourceTable.vue";
-import { DatabaseResource } from "../panel/RequestQueryPanel/SelectTableForm/common";
 
 interface LocalState {
   projectId?: string;

@@ -46,6 +46,7 @@
     "
     @cancel="state.showModal = false"
   >
+    <slot name="default" />
   </BBAlert>
 </template>
 

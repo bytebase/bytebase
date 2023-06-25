@@ -1,10 +1,10 @@
-import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
+import { DatabaseResource } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { Binding } from "@/types/proto/v1/project_service";
 
 export type ComposedProjectMember = {
   user: User;
-  roleList: string[];
+  bindingList: Binding[];
 };
 
 export interface SingleBinding {

@@ -54,6 +54,7 @@
         >
           <template #table="{ issueList, loading }">
             <IssueTable
+              :mode="'PROJECT'"
               :show-placeholder="!loading"
               :title="$t('issue.waiting-approval')"
               :issue-list="issueList"

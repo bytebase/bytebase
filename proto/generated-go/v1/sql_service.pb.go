@@ -10,6 +10,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	reflect "reflect"
 	sync "sync"
@@ -536,6 +537,10 @@ type QueryResult struct {
 	Masked []bool `protobuf:"varint,4,rep,packed,name=masked,proto3" json:"masked,omitempty"`
 	// The error message if the query failed.
 	Error string `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	// The time it takes to execute the query.
+	Latency *durationpb.Duration `protobuf:"bytes,6,opt,name=latency,proto3" json:"latency,omitempty"`
+	// The query statement for the result.
+	Statement string `protobuf:"bytes,7,opt,name=statement,proto3" json:"statement,omitempty"`
 }
 
 func (x *QueryResult) Reset() {
@@ -601,6 +606,20 @@ func (x *QueryResult) GetMasked() []bool {
 func (x *QueryResult) GetError() string {
 	if x != nil {
 		return x.Error
+	}
+	return ""
+}
+
+func (x *QueryResult) GetLatency() *durationpb.Duration {
+	if x != nil {
+		return x.Latency
+	}
+	return nil
+}
+
+func (x *QueryResult) GetStatement() string {
+	if x != nil {
+		return x.Statement
 	}
 	return ""
 }
@@ -1086,6 +1105,8 @@ var file_v1_sql_service_proto_rawDesc = []byte{
 	0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x1a, 0x1f, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x66, 0x69,
 	0x65, 0x6c, 0x64, 0x5f, 0x62, 0x65, 0x68, 0x61, 0x76, 0x69, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x1a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x62, 0x75, 0x66, 0x2f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x62, 0x75, 0x66, 0x2f, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x1a, 0x0f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74,
@@ -1137,7 +1158,7 @@ var file_v1_sql_service_proto_rawDesc = []byte{
 	0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x07, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x12, 0x2d,
 	0x0a, 0x07, 0x61, 0x64, 0x76, 0x69, 0x63, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32,
 	0x13, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x64,
-	0x76, 0x69, 0x63, 0x65, 0x52, 0x07, 0x61, 0x64, 0x76, 0x69, 0x63, 0x65, 0x73, 0x22, 0xb5, 0x01,
+	0x76, 0x69, 0x63, 0x65, 0x52, 0x07, 0x61, 0x64, 0x76, 0x69, 0x63, 0x65, 0x73, 0x22, 0x88, 0x02,
 	0x0a, 0x0b, 0x51, 0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x21, 0x0a,
 	0x0c, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x18, 0x01, 0x20,
 	0x03, 0x28, 0x09, 0x52, 0x0b, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x73,
@@ -1273,9 +1294,10 @@ var file_v1_sql_service_proto_goTypes = []interface{}{
 	(*Advice)(nil),               // 11: bytebase.v1.Advice
 	(*PrettyRequest)(nil),        // 12: bytebase.v1.PrettyRequest
 	(*PrettyResponse)(nil),       // 13: bytebase.v1.PrettyResponse
-	(structpb.NullValue)(0),      // 14: google.protobuf.NullValue
-	(*structpb.Value)(nil),       // 15: google.protobuf.Value
-	(Engine)(0),                  // 16: bytebase.v1.Engine
+	(*durationpb.Duration)(nil),  // 14: google.protobuf.Duration
+	(structpb.NullValue)(0),      // 15: google.protobuf.NullValue
+	(*structpb.Value)(nil),       // 16: google.protobuf.Value
+	(Engine)(0),                  // 17: bytebase.v1.Engine
 }
 var file_v1_sql_service_proto_depIdxs = []int32{
 	8,  // 0: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
@@ -1283,24 +1305,25 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	8,  // 2: bytebase.v1.QueryResponse.results:type_name -> bytebase.v1.QueryResult
 	11, // 3: bytebase.v1.QueryResponse.advices:type_name -> bytebase.v1.Advice
 	9,  // 4: bytebase.v1.QueryResult.rows:type_name -> bytebase.v1.QueryRow
-	10, // 5: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
-	14, // 6: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
-	15, // 7: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
-	1,  // 8: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Status
-	16, // 9: bytebase.v1.PrettyRequest.engine:type_name -> bytebase.v1.Engine
-	12, // 10: bytebase.v1.SQLService.Pretty:input_type -> bytebase.v1.PrettyRequest
-	6,  // 11: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
-	4,  // 12: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
-	2,  // 13: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
-	13, // 14: bytebase.v1.SQLService.Pretty:output_type -> bytebase.v1.PrettyResponse
-	7,  // 15: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	5,  // 16: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	3,  // 17: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	14, // [14:18] is the sub-list for method output_type
-	10, // [10:14] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	14, // 5: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
+	10, // 6: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
+	15, // 7: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
+	16, // 8: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
+	1,  // 9: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Status
+	17, // 10: bytebase.v1.PrettyRequest.engine:type_name -> bytebase.v1.Engine
+	12, // 11: bytebase.v1.SQLService.Pretty:input_type -> bytebase.v1.PrettyRequest
+	6,  // 12: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
+	4,  // 13: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
+	2,  // 14: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
+	13, // 15: bytebase.v1.SQLService.Pretty:output_type -> bytebase.v1.PrettyResponse
+	7,  // 16: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	5,  // 17: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	3,  // 18: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	15, // [15:19] is the sub-list for method output_type
+	11, // [11:15] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_v1_sql_service_proto_init() }

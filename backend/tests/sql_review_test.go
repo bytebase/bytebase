@@ -21,6 +21,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
@@ -154,6 +155,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
@@ -272,6 +274,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 					},
 				},
 			},
+			Statement: "SELECT count(*) FROM test WHERE 1=1",
 		}
 	)
 
@@ -348,6 +351,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
@@ -414,7 +418,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 	a.Equal(1, len(originQueryResp.Results))
-	diff := cmp.Diff(wantQueryResult, originQueryResp.Results[0], protocmp.Transform())
+	diff := cmp.Diff(wantQueryResult, originQueryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Equal("", diff)
 
 	createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, dmlSQL, false /* wait */)
@@ -424,7 +428,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 	a.Equal(1, len(finalQueryResp.Results))
-	diff = cmp.Diff(wantQueryResult, finalQueryResp.Results[0], protocmp.Transform())
+	diff = cmp.Diff(wantQueryResult, finalQueryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Equal("", diff)
 
 	// disable the SQL review policy

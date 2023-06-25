@@ -3,7 +3,6 @@
     <FeatureAttention
       v-if="!hasAccessControlFeature"
       feature="bb.feature.access-control"
-      :description="$t('subscription.features.bb-feature-access-control.desc')"
     />
     <div class="flex justify-between">
       <i18n-t
@@ -13,7 +12,7 @@
       >
         <template #link>
           <LearnMoreLink
-            url="https://www.bytebase.com/docs/security/database-access-control"
+            url="https://www.bytebase.com/docs/security/data-access-control"
           />
         </template>
       </i18n-t>

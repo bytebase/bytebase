@@ -56,6 +56,6 @@
 import { defineComponent } from "vue";
 
 export default defineComponent({
-  name: "TenantIcon",
+  name: "DatabaseGroupIcon",
 });
 </script>

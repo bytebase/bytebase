@@ -2,7 +2,6 @@
 package mysql
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -166,11 +166,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 			return 0, err
 		}
 	}
-	trunks, err := splitAndTransformDelimiter(statement)
-	if err != nil {
-		return 0, err
-	}
-
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")
@@ -178,18 +173,16 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	defer tx.Rollback()
 
 	var totalRowsAffected int64
-	for _, trunk := range trunks {
-		sqlResult, err := tx.ExecContext(ctx, trunk)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to execute context in a transaction")
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
-		}
-		totalRowsAffected += rowsAffected
+	sqlResult, err := tx.ExecContext(ctx, statement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to execute context in a transaction")
 	}
+	rowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		log.Debug("rowsAffected returns error", zap.Error(err))
+	}
+	totalRowsAffected += rowsAffected
 
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit execute transaction")
@@ -225,34 +218,6 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		return []any{field, types, rows}, nil
 	}
 	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
-}
-
-const querySize = 2 * 1024 * 1024 // 2M.
-
-// splitAndTransformDelimiter transform the delimiter to the MySQL default delimiter.
-func splitAndTransformDelimiter(statement string) ([]string, error) {
-	var trunks []string
-
-	var out bytes.Buffer
-	statements, err := bbparser.SplitMultiSQLAndNormalize(bbparser.MySQL, statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split SQL statements")
-	}
-	for _, singleSQL := range statements {
-		stmt := singleSQL.Text
-		if _, err = out.Write([]byte(stmt)); err != nil {
-			return nil, errors.Wrapf(err, "failed to write SQL statement")
-		}
-
-		if out.Len() > querySize {
-			trunks = append(trunks, out.String())
-			out.Reset()
-		}
-	}
-	if out.Len() > 0 {
-		trunks = append(trunks, out.String())
-	}
-	return trunks, nil
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
@@ -297,9 +262,11 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		return nil, nil
 	}
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
 		var err error
-		statement, err = driver.getStatementWithResultLimit(statement, queryContext.Limit)
+		stmt, err = driver.getStatementWithResultLimit(stmt, queryContext.Limit)
 		if err != nil {
 			return nil, err
 		}
@@ -311,7 +278,14 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		queryContext.ReadOnly = false
 	}
 
-	return util.Query2(ctx, driver.dbType, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, driver.dbType, conn, stmt, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.

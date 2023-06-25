@@ -1,11 +1,6 @@
 <template>
   <div class="max-w-3xl w-full mx-auto">
-    <FeatureAttention
-      v-if="!hasRBACFeature"
-      custom-class="my-5"
-      feature="bb.feature.rbac"
-      :description="$t('subscription.features.bb-feature-rbac.desc')"
-    />
+    <FeatureAttention custom-class="my-5" feature="bb.feature.rbac" />
 
     <div class="mb-4 w-full flex flex-row justify-between items-center">
       <div>
@@ -17,7 +12,6 @@
       </div>
       <div v-if="allowAdmin" class="flex gap-x-2">
         <NButton
-          type=""
           :disabled="state.selectedMemberNameList.size === 0"
           @click="handleRevokeSelectedMembers"
         >
@@ -118,7 +112,6 @@ import {
 } from "@/utils";
 import {
   extractUserEmail,
-  featureToRef,
   pushNotification,
   useCurrentUserV1,
   useProjectIamPolicy,
@@ -152,7 +145,6 @@ const state = reactive<LocalState>({
   showAddMemberPanel: false,
 });
 
-const hasRBACFeature = featureToRef("bb.feature.rbac");
 const userStore = useUserStore();
 
 const allowAdmin = computed(() => {
@@ -203,26 +195,33 @@ const composedMemberList = computed(() => {
 
   const usersByRole = iamPolicy.value.bindings.map((binding) => {
     return {
+      binding: binding,
       role: binding.role,
       users: new Set(binding.members.map(extractUserEmail)),
     };
   });
+
   const userRolesList = userList.map<ComposedProjectMember>((user) => {
-    const roleList = uniq(
+    const bindingList = uniq(
       usersByRole
-        .filter((binding) => binding.users.has(user.email))
-        .map((binding) => binding.role)
+        .filter((item) => item.users.has(user.email))
+        .map((item) => item.binding)
     );
     return {
       user,
-      roleList,
+      bindingList,
     };
   });
 
   return orderBy(
     userRolesList,
     [
-      (item) => (item.roleList.includes(PresetRoleType.OWNER) ? 0 : 1),
+      (item) =>
+        item.bindingList.find(
+          (binding) => binding.role === PresetRoleType.OWNER
+        )
+          ? 0
+          : 1,
       (item) => parseInt(extractUserUID(item.user.name), 10),
     ],
     ["asc", "asc"]
@@ -318,7 +317,7 @@ const handleRevokeSelectedMembers = () => {
     return;
   }
 
-  dialog.warning({
+  dialog.create({
     title: "Revoke these members",
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),

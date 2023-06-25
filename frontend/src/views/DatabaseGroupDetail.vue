@@ -67,6 +67,11 @@
 
       <hr class="my-4" />
 
+      <FeatureAttentionForInstanceLicense
+        custom-class="m-5"
+        feature="bb.feature.database-grouping"
+      />
+
       <div class="w-full px-3 max-w-5xl grid grid-cols-5 gap-x-6">
         <div class="col-span-3">
           <p class="pl-1 text-lg mb-2">

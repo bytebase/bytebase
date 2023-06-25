@@ -4231,6 +4231,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| activation | [bool](#bool) |  |  |
 
 
 
@@ -8098,6 +8099,8 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
 | masked | [bool](#bool) | repeated | Columns are masked or not. |
 | error | [string](#string) |  | The error message if the query failed. |
+| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
+| statement | [string](#string) |  | The query statement for the result. |
 
 
 

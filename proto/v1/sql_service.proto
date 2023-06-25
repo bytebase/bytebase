@@ -4,6 +4,7 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "v1/common.proto";
 
@@ -126,6 +127,12 @@ message QueryResult {
 
   // The error message if the query failed.
   string error = 5;
+
+  // The time it takes to execute the query.
+  google.protobuf.Duration latency = 6;
+
+  // The query statement for the result.
+  string statement = 7;
 }
 
 message QueryRow {

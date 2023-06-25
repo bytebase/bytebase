@@ -54,6 +54,8 @@
     "bookmarks": "书签",
     "quick-action": "快捷操作",
     "archive": "归档",
+    "archived": "已归档",
+    "no-license": "无证书",
     "logout": "登出",
     "close": "关闭",
     "latest": "最新",
@@ -804,12 +806,11 @@
     "troubleshoot": "问题排查",
     "transfer-in-db": "转移数据库",
     "request-db": "申请数据库",
-    "from-unassigned-databases": "从未分配的数据库",
-    "from-projects": "从其他项目",
+    "from-unassigned-databases": "转移未分配的数据库",
+    "from-projects": "从其他项目转移",
     "transfer-in-db-title": "转移数据库",
-    "default-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库会放在默认项目中。",
     "transfer-in-db-alert": "您确定要转移 \"{ dbName }\" 到我们的项目中吗？",
-    "unassigned-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库会放在未分配数据库中。",
+    "unassigned-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库起先是未分配的状态。需要把数据库转移到项目后，才能使用。",
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
     "request-query": "申请查询权限",
@@ -1236,6 +1237,7 @@
     "doesnt-match-tenant-value": "与租户标签值不匹配",
     "should-follow-database-name-template": "需要遵循租户数据库名称模板",
     "all": "所有数据库",
+    "unassigned": "不再分配",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "secret": {
       "new": "新增保密变量",
@@ -1450,7 +1452,10 @@
       "archive": {
         "title": "归档项目",
         "description": "已归档的项目将不会显示在日常界面，您可以通过点击页面左下方的 \"归档\"来恢复。",
-        "btn-text": "归档这个@:common.project"
+        "btn-text": "归档这个@:common.project",
+        "force": {
+          "description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
+        }
       },
       "restore": {
         "title": "恢复项目",
@@ -1468,7 +1473,7 @@
       "view-by-principals": "按负责人查看",
       "view-by-roles": "按角色查看",
       "cannot-remove-last-owner": "无法移除项目的最后一个所有者",
-      "revoke-role-from-user": "从'{user}'撤销'{role}'",
+      "revoke-role-from-user": "删除'{user}'{role}的角色",
       "inactive-members": "未激活成员",
       "show-inactive": "显示未激活成员",
       "select-users": "选择用户",
@@ -1743,7 +1748,8 @@
     },
     "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "run-selected": "运行选中的语句",
-    "clear-screen": "清屏"
+    "clear-screen": "清屏",
+    "query-time": "查询时间"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -1873,6 +1879,17 @@
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
     "upgrade-now": "现在升级",
+    "instance-assignment": {
+      "license": "证书",
+      "assign-license": "分配证书",
+      "require-license": "需要实例证书",
+      "missing-license-attention": "请给实例分配证书以解锁该功能。",
+      "n-license-remain": "剩余 {n}",
+      "manage-license": "管理证书",
+      "used-and-total-license": "已分配 / 总实例证书",
+      "success-notification": "证书分配更新成功",
+      "missing-license-for-instances": "您有 {count} 个实例（{name}）缺失开启该功能的证书。"
+    },
     "update": {
       "success": {
         "title": "证书更新成功",
@@ -2441,7 +2458,7 @@
       "external-approval": {
         "self": "外部审批",
         "delete": "删除外部审批节点？",
-        "endpoint": "端点",
+        "endpoint": "Endpoint",
         "view-node": "查看外部审批节点",
         "create-node": "新建外部审批节点",
         "edit-node": "编辑外部审批节点"
@@ -2550,7 +2567,8 @@
     "querier": {
       "description": "系统定义的项目数据查询者角色"
     },
-    "select-role": "选择角色"
+    "select-role": "选择角色",
+    "expired-tip": "该角色可能已经过期。"
   },
   "database-group": {
     "self": "数据库分组",

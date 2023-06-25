@@ -24,7 +24,7 @@
           />
         </div>
       </BBTableCell>
-      <BBTableCell v-if="!isPostgres" class="w-[14%]">
+      <BBTableCell v-if="hasEngineProperty" class="w-[14%]">
         {{ table.engine }}
       </BBTableCell>
       <BBTableCell class="w-[14%]">
@@ -64,6 +64,7 @@ import { TableMetadata } from "@/types/proto/store/database";
 import { bytesToString, databaseV1Slug, isGhostTable } from "@/utils";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { Engine } from "@/types/proto/v1/common";
+import { BBTableColumn } from "@/bbkit";
 
 type LocalState = {
   showReservedTableList: boolean;
@@ -104,44 +105,40 @@ const hasSchemaProperty = computed(() => {
   );
 });
 
+const hasEngineProperty = computed(() => {
+  return !isPostgres.value;
+});
+
 const columnList = computed(() => {
+  const SCHEMA: BBTableColumn = {
+    title: t("common.schema"),
+  };
+  const NAME: BBTableColumn = {
+    title: t("common.name"),
+  };
+  const ENGINE: BBTableColumn = {
+    title: t("database.engine"),
+  };
+  const ROW_COUNT_EST: BBTableColumn = {
+    title: t("database.row-count-est"),
+  };
+  const DATA_SIZE: BBTableColumn = {
+    title: t("database.data-size"),
+  };
+  const INDEX_SIZE: BBTableColumn = {
+    title: t("database.index-size"),
+  };
+  const columns: BBTableColumn[] = [];
   if (hasSchemaProperty.value) {
-    return [
-      {
-        title: t("common.schema"),
-      },
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("database.row-count-est"),
-      },
-      {
-        title: t("database.data-size"),
-      },
-      {
-        title: t("database.index-size"),
-      },
-    ];
-  } else {
-    return [
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("database.engine"),
-      },
-      {
-        title: t("database.row-count-est"),
-      },
-      {
-        title: t("database.data-size"),
-      },
-      {
-        title: t("database.index-size"),
-      },
-    ];
+    columns.push(SCHEMA);
   }
+  columns.push(NAME);
+  if (hasEngineProperty.value) {
+    columns.push(ENGINE);
+  }
+  columns.push(ROW_COUNT_EST, DATA_SIZE, INDEX_SIZE);
+
+  return columns;
 });
 
 const regularTableList = computed(() =>
@@ -163,9 +160,11 @@ const mixedTableList = computed(() => {
 
 const clickTable = (_: number, row: number, e: MouseEvent) => {
   const table = mixedTableList.value[row];
-  let url = `/db/${databaseV1Slug(props.database)}/table/${table.name}`;
+  let url = `/db/${databaseV1Slug(props.database)}/table/${encodeURIComponent(
+    table.name
+  )}`;
   if (props.schemaName !== "") {
-    url = url + `?schema=${props.schemaName}`;
+    url = url + `?schema=${encodeURIComponent(props.schemaName)}`;
   }
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");

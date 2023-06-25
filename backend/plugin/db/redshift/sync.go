@@ -161,17 +161,26 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	}
 	defer txn.Rollback()
 
-	schemaList, err := getSchemas(txn)
+	schemaList, err := driver.getSchemas(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
-	tableMap, err := getTables(txn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
-	}
-	viewMap, err := getViews(txn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
+	var tableMap map[string][]*storepb.TableMetadata
+	var viewMap map[string][]*storepb.ViewMetadata
+	if driver.datashare {
+		tableMap, err = driver.getDatashareTables(txn)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get tables from datashare database %q", driver.databaseName)
+		}
+	} else {
+		tableMap, err = getTables(txn)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
+		}
+		viewMap, err = getViews(txn)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
+		}
 	}
 
 	if err := txn.Commit(); err != nil {
@@ -344,17 +353,16 @@ func formatTableNameFromRegclass(name string) string {
 	return strings.Trim(name, `"`)
 }
 
-func getSchemas(txn *sql.Tx) ([]string, error) {
-	// For Redshift, we will filter out the schema which owner is 'rdsdb' excluding 'public' or name prefix with 'pg_'.
+func (driver *Driver) getSchemas(txn *sql.Tx) ([]string, error) {
 	query := `
 		SELECT
-			n.nspname
+			schema_name
 		FROM
-			pg_catalog.pg_namespace AS n
+			SVV_ALL_SCHEMAS
 		WHERE
-			n.nspname = 'public' OR (n.nspname !~ '^pg_' AND pg_catalog.pg_get_userbyid(n.nspowner) <> 'rdsdb');
+			database_name = $1;
 	`
-	rows, err := txn.Query(query)
+	rows, err := txn.Query(query, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -484,6 +492,97 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 		}
 		column.Collation = collation.String
 		column.Comment = comment.String
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		columnsMap[key] = append(columnsMap[key], column)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return columnsMap, nil
+}
+
+// getDatashareTables gets all tables of a datashare database.
+func (driver *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
+	columnMap, err := driver.getDatashareTableColumns(txn)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get table columns")
+	}
+
+	tableMap := make(map[string][]*storepb.TableMetadata)
+
+	// table_type
+	query := `
+	SELECT
+		schema_name,
+		table_name
+	FROM SVV_ALL_TABLES
+	WHERE database_name = $1;`
+	rows, err := txn.Query(query, driver.databaseName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		table := &storepb.TableMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &table.Name); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: schemaName, Table: table.Name}
+		table.Columns = columnMap[key]
+
+		tableMap[schemaName] = append(tableMap[schemaName], table)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tableMap, nil
+}
+
+// getDatashareTableColumns gets the columns of tables in datashare database.
+func (driver *Driver) getDatashareTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+
+	query := `
+	SELECT
+		schema_name,
+		table_name,
+		column_name,
+		data_type,
+		ordinal_position,
+		column_default,
+		is_nullable,
+		character_maximum_length
+	FROM SVV_ALL_COLUMNS
+	WHERE database_name = $1;`
+	rows, err := txn.Query(query, driver.databaseName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		column := &storepb.ColumnMetadata{}
+		var schemaName, tableName, nullable string
+		var defaultStr sql.NullString
+		var varcharMaxLength sql.NullInt32
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable, &varcharMaxLength); err != nil {
+			return nil, err
+		}
+		if defaultStr.Valid {
+			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
+		}
+		isNullBool, err := util.ConvertYesNo(nullable)
+		if err != nil {
+			return nil, err
+		}
+		column.Nullable = isNullBool
+		if column.Type == "character varying" && varcharMaxLength.Valid {
+			column.Type = fmt.Sprintf("varchar(%d)", varcharMaxLength.Int32)
+		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		columnsMap[key] = append(columnsMap[key], column)

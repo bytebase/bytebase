@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	spanner "cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -20,6 +21,7 @@ import (
 
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 var (
@@ -520,6 +522,7 @@ func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, 
 }
 
 func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
+	startTime := time.Now()
 	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
 	defer iter.Stop()
 
@@ -563,6 +566,8 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
 		Masked:          sensitiveInfo,
+		Latency:         durationpb.New(time.Since(startTime)),
+		Statement:       statement,
 	}, nil
 }
 
@@ -588,6 +593,7 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 
 	var results []*v1pb.QueryResult
 	for _, statement := range stmts {
+		startTime := time.Now()
 		if isSelect(statement) {
 			result, err := d.querySingleSQL(ctx, statement)
 			if err != nil {
@@ -651,6 +657,8 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 			ColumnNames:     field,
 			ColumnTypeNames: types,
 			Rows:            rows,
+			Latency:         durationpb.New(time.Since(startTime)),
+			Statement:       statement,
 		})
 	}
 

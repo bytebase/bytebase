@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -22,17 +23,23 @@ import (
 //   3. Each [db.Type][AdvisorType] maps an advisor.
 
 // NewStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
-func NewStatementAdvisorCompositeExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
+func NewStatementAdvisorCompositeExecutor(
+	store *store.Store,
+	dbFactory *dbfactory.DBFactory,
+	licenseService enterpriseAPI.LicenseService,
+) Executor {
 	return &StatementAdvisorCompositeExecutor{
-		store:     store,
-		dbFactory: dbFactory,
+		store:          store,
+		dbFactory:      dbFactory,
+		licenseService: licenseService,
 	}
 }
 
 // StatementAdvisorCompositeExecutor is the task check statement advisor composite executor with has sub-advisor.
 type StatementAdvisorCompositeExecutor struct {
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
+	store          *store.Store
+	dbFactory      *dbfactory.DBFactory
+	licenseService enterpriseAPI.LicenseService
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
@@ -59,6 +66,21 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	if err != nil {
 		return nil, err
 	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", task.InstanceID)
+	}
+	if !e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance) {
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusWarn,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.Unsupported.Int(),
+				Title:     "Please assign license to the instance to enable the SQL review feature.",
+				Content:   "",
+			},
+		}, nil
+	}
+
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, err

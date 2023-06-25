@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -55,6 +56,7 @@ var (
 				},
 			},
 		},
+		Statement: "SELECT * FROM book",
 	}
 )
 
@@ -92,6 +94,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 		},
 	})
@@ -251,7 +254,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Results))
-	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform())
+	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Equal("", diff)
 
 	// Query clone migration history.
@@ -507,6 +510,7 @@ func TestVCS(t *testing.T) {
 					Title:       instanceName,
 					Engine:      v1pb.Engine_SQLITE,
 					Environment: prodEnvironment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 				},
 			})
@@ -932,6 +936,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 					Title:       "pgInstance",
 					Engine:      v1pb.Engine_POSTGRES,
 					Environment: prodEnvironment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 				},
 			})
@@ -1419,6 +1424,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					Title:       instanceName,
 					Engine:      v1pb.Engine_SQLITE,
 					Environment: environment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 				},
 			})
@@ -1633,6 +1639,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Title:       "pgInstance",
 					Engine:      v1pb.Engine_POSTGRES,
 					Environment: prodEnvironment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 				},
 			})
@@ -2139,6 +2146,7 @@ CREATE TABLE public.book (
 						Title:       test.name,
 						Engine:      v1pb.Engine_POSTGRES,
 						Environment: environment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(dbPort), Username: "root"}},
 					},
 				})
@@ -2149,6 +2157,7 @@ CREATE TABLE public.book (
 						Title:       "mysqlInstance",
 						Engine:      v1pb.Engine_MYSQL,
 						Environment: environment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(dbPort), Username: "root"}},
 					},
 				})
@@ -2262,6 +2271,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 		},
 	})
@@ -2522,6 +2532,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 					Title:       "mysqlInstance",
 					Engine:      v1pb.Engine_MYSQL,
 					Environment: prodEnvironment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 				},
 			})

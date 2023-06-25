@@ -27,11 +27,11 @@ import {
   useDBSchemaV1Store,
   useProjectV1Store,
 } from "@/store";
+import { DatabaseResource } from "@/types";
 import {
   flattenTreeOptions,
   mapTreeOptions,
   DatabaseTreeOption,
-  DatabaseResource,
 } from "./common";
 import Label from "./Label.vue";
 

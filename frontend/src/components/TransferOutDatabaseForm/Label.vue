@@ -6,14 +6,13 @@
   />
   <template v-if="database">
     <div class="flex items-center gap-x-1">
-      <InstanceV1Name
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <span class="truncate" v-html="databaseName" />
+      -<InstanceV1Name
         :instance="database.instanceEntity"
         :link="false"
         class="whitespace-nowrap"
       />
-      <heroicons:chevron-right class="shrink-0 h-3 w-3 opacity-70" />
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <span class="truncate" v-html="databaseName" />
     </div>
   </template>
 </template>

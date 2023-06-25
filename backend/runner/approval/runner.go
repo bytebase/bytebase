@@ -150,7 +150,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	// - risk source is RiskSourceUnknown
 	// - approval setting rules are empty
 	if !r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) || ((issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(approvalSetting.Rules) == 0) && issue.Type != api.IssueGrantRequest) {
-		if err := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+		if err := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: true,
 				ApprovalTemplates:   nil,
@@ -185,7 +185,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		riskLevel, done, err := getIssueRiskLevel(ctx, r.store, issue, risks)
 		if err != nil {
 			err = errors.Wrap(err, "failed to get issue risk level")
-			if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+			if updateErr := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
 				Approval: &storepb.IssuePayloadApproval{
 					ApprovalFindingDone:  true,
 					ApprovalFindingError: err.Error(),
@@ -202,7 +202,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		approvalTemplate, err = getApprovalTemplate(approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
 		if err != nil {
 			err = errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
-			if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+			if updateErr := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
 				Approval: &storepb.IssuePayloadApproval{
 					ApprovalFindingDone:  true,
 					ApprovalFindingError: err.Error(),
@@ -226,7 +226,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to handle incoming approval steps")
-		if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+		if updateErr := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone:  true,
 				ApprovalFindingError: err.Error(),
@@ -238,7 +238,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
-	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {
+	if err := updateIssuePayload(ctx, r.store, issue, payload); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
 	}
 
@@ -531,13 +531,21 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 	return maxRisk, true, nil
 }
 
-func updateIssuePayload(ctx context.Context, s *store.Store, issueID int, payload *storepb.IssuePayload) error {
+func updateIssuePayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, payload *storepb.IssuePayload) error {
+	originalPayload := &storepb.IssuePayload{}
+	if err := protojson.Unmarshal([]byte(issue.Payload), originalPayload); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal original issue payload")
+	}
+	// TODO(xz): need to refactor this to do field-wise payload updates.
+	if originalPayload.Grouping != nil {
+		payload.Grouping = originalPayload.Grouping
+	}
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal issue payload")
+		return errors.Wrapf(err, "failed to marshal payload")
 	}
 	payloadStr := string(payloadBytes)
-	if _, err := s.UpdateIssueV2(ctx, issueID, &store.UpdateIssueMessage{
+	if _, err := s.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 		Payload: &payloadStr,
 	}, api.SystemBotID); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")

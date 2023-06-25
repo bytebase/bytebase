@@ -75,6 +75,13 @@
         :keyword="state.search"
       />
     </div>
+
+    <div class="w-full flex items-center justify-between text-xs mt-0.5">
+      <div></div>
+      <div class="text-control-light">
+        {{ $t("sql-editor.query-time") }}: {{ queryTime }}
+      </div>
+    </div>
   </template>
   <template v-else-if="viewMode === 'AFFECTED-ROWS'">
     <div
@@ -204,7 +211,7 @@ const showSearchFeature = computed(() => {
 });
 
 const showExportButton = computed(() => {
-  if (!featureToRef("bb.feature.custom-role").value) {
+  if (!featureToRef("bb.feature.dba-workflow").value) {
     return true;
   }
   return hasWorkspacePermissionV1(
@@ -215,7 +222,7 @@ const showExportButton = computed(() => {
 
 const showRequestExportButton = computed(() => {
   return (
-    featureToRef("bb.feature.custom-role").value && !showExportButton.value
+    featureToRef("bb.feature.dba-workflow").value && !showExportButton.value
   );
 });
 
@@ -361,4 +368,17 @@ const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {
   const explain = lines.map((line) => line[0]).join("\n");
   return explain;
 };
+
+const queryTime = computed(() => {
+  const { latency } = props.result;
+  if (!latency) return "-";
+
+  const { seconds, nanos } = latency;
+  const totalSeconds = seconds + nanos / 1e9;
+  if (totalSeconds < 1) {
+    const totalMS = Math.round(totalSeconds * 1000);
+    return `${totalMS} ms`;
+  }
+  return `${totalSeconds.toFixed(2)} s`;
+});
 </script>

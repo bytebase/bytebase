@@ -172,7 +172,7 @@
         </h3>
       </div>
 
-      <template v-if="hasCustomRoleFeature">
+      <template v-if="hasDBAWorkflowFeature">
         <div
           v-if="quickAction === 'quickaction.bb.issue.grant.request.querier'"
           class="flex flex-col items-center w-24"
@@ -207,6 +207,27 @@
           </h3>
         </div>
       </template>
+
+      <div
+        v-if="quickAction === 'quickaction.bb.subscription.license-assignment'"
+        class="flex flex-col items-center w-24"
+      >
+        <button
+          class="btn-icon-primary p-3"
+          @click.prevent="
+            () =>
+              (state.quickActionType =
+                'quickaction.bb.subscription.license-assignment')
+          "
+        >
+          <heroicons-outline:academic-cap class="w-5 h-5" />
+        </button>
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
+          {{ $t("subscription.instance-assignment.assign-license") }}
+        </h3>
+      </div>
     </template>
   </div>
 
@@ -258,12 +279,6 @@
     />
   </Drawer>
 
-  <FeatureModal
-    v-if="state.showFeatureModal && state.featureName !== ''"
-    :feature="state.featureName"
-    @cancel="state.showFeatureModal = false"
-  />
-
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
     @close="state.showRequestQueryPanel = false"
@@ -272,6 +287,13 @@
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
     @close="state.showRequestExportPanel = false"
+  />
+
+  <InstanceAssignment
+    :show="
+      state.quickActionType === 'quickaction.bb.subscription.license-assignment'
+    "
+    @dismiss="state.quickActionType = undefined"
   />
 </template>
 
@@ -286,7 +308,6 @@ import { idFromSlug, isDev } from "@/utils";
 import {
   useCommandStore,
   useCurrentUserIamPolicy,
-  useInstanceV1Store,
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
 } from "@/store";
@@ -301,8 +322,6 @@ import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/inde
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 
 interface LocalState {
-  featureName: string;
-  showFeatureModal: boolean;
   quickActionType: QuickActionType | undefined;
   showRequestQueryPanel: boolean;
   showRequestExportPanel: boolean;
@@ -321,13 +340,11 @@ const route = useRoute();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionV1Store();
 
-const hasCustomRoleFeature = computed(() => {
-  return subscriptionStore.hasFeature("bb.feature.custom-role");
+const hasDBAWorkflowFeature = computed(() => {
+  return subscriptionStore.hasFeature("bb.feature.dba-workflow");
 });
 
 const state = reactive<LocalState>({
-  featureName: "",
-  showFeatureModal: false,
   quickActionType: undefined,
   showRequestQueryPanel: false,
   showRequestExportPanel: false,
@@ -369,12 +386,6 @@ const transferOutDatabase = () => {
 };
 
 const createInstance = () => {
-  const instanceList = useInstanceV1Store().instanceList;
-  if (subscriptionStore.instanceCount <= instanceList.length) {
-    state.featureName = "bb.feature.instance-count";
-    state.showFeatureModal = true;
-    return;
-  }
   state.quickActionType = "quickaction.bb.instance.create";
 };
 
@@ -434,6 +445,12 @@ const QuickActionMap: Record<string, Partial<Action>> = {
   "quickaction.bb.project.database.transfer": {
     name: t("quick-action.transfer-in-db"),
     perform: () => transferDatabase(),
+  },
+  "quickaction.bb.subscription.license-assignment": {
+    name: t("subscription.instance-assignment.manage-license"),
+    perform: () =>
+      (state.quickActionType =
+        "quickaction.bb.subscription.license-assignment"),
   },
 };
 

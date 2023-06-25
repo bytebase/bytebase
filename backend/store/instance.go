@@ -94,6 +94,7 @@ type InstanceMessage struct {
 	Engine       db.Type
 	ExternalLink string
 	DataSources  []*DataSourceMessage
+	Activation   bool
 	// Output only.
 	EnvironmentID string
 	UID           int
@@ -108,6 +109,7 @@ type UpdateInstanceMessage struct {
 	Delete        *bool
 	DataSources   *[]*DataSourceMessage
 	EngineVersion *string
+	Activation    *bool
 
 	// Output only.
 	UpdaterID     int
@@ -189,7 +191,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 }
 
 // CreateInstanceV2 creates the instance.
-func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage, creatorID int) (*InstanceMessage, error) {
+func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage, creatorID, maximumActivation int) (*InstanceMessage, error) {
 	if err := validateDataSourceList(instanceCreate.DataSources); err != nil {
 		return nil, err
 	}
@@ -211,8 +213,13 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		return nil, common.Errorf(common.NotFound, "environment %s not found", instanceCreate.EnvironmentID)
 	}
 
+	where := ""
+	if instanceCreate.Activation {
+		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
+	}
+
 	var instanceID int
-	if err := tx.QueryRowContext(ctx, `
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			INSERT INTO instance (
 				resource_id,
 				creator_id,
@@ -220,11 +227,13 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				environment_id,
 				name,
 				engine,
-				external_link
+				external_link,
+				activation
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			SELECT $1, $2, $3, $4, $5, $6, $7, $8
+			%s
 			RETURNING id
-		`,
+		`, where),
 		instanceCreate.ResourceID,
 		creatorID,
 		creatorID,
@@ -232,6 +241,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		instanceCreate.Title,
 		instanceCreate.Engine,
 		instanceCreate.ExternalLink,
+		instanceCreate.Activation,
 	).Scan(&instanceID); err != nil {
 		return nil, err
 	}
@@ -264,6 +274,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		Engine:        instanceCreate.Engine,
 		ExternalLink:  instanceCreate.ExternalLink,
 		DataSources:   dataSources,
+		Activation:    instanceCreate.Activation,
 	}
 	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
@@ -271,14 +282,14 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 }
 
 // UpdateInstanceV2 updates an instance.
-func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
+func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage, maximumActivation int) (*InstanceMessage, error) {
 	if patch.DataSources != nil {
 		if err := validateDataSourceList(*patch.DataSources); err != nil {
 			return nil, err
 		}
 	}
 
-	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", patch.UpdaterID)}
+	set, args, where := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", patch.UpdaterID)}, []string{}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -288,10 +299,20 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if v := patch.EngineVersion; v != nil {
 		set, args = append(set, fmt.Sprintf("engine_version = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Activation; v != nil {
+		set, args = append(set, fmt.Sprintf("activation = $%d", len(args)+1)), append(args, *v)
+		if *v {
+			where = append(where, fmt.Sprintf("(%s) < %d", countActivateInstanceQuery, maximumActivation))
+		}
+	}
 	if v := patch.Delete; v != nil {
+		if patch.Activation != nil {
+			return nil, errors.Errorf(`cannot set "activation" and "row_status" at the same time`)
+		}
 		rowStatus := api.Normal
 		if *patch.Delete {
 			rowStatus = api.Archived
+			set, args = append(set, fmt.Sprintf("activation = $%d", len(args)+1)), append(args, false)
 		}
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
@@ -314,34 +335,36 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	args = append(args, patch.ResourceID, environment.UID)
+	where = append(where, fmt.Sprintf("resource_id = $%d", len(args)-1), fmt.Sprintf("environment_id = $%d", len(args)))
 
 	instance := &InstanceMessage{
 		EnvironmentID: patch.EnvironmentID,
 	}
-	var rowStatus string
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	query := fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
-			WHERE resource_id = $%d AND environment_id = $%d
+			WHERE %s
 			RETURNING
 				id,
 				resource_id,
 				name,
 				engine,
 				external_link,
+				activation,
 				row_status
-		`, len(args)-1, len(args)),
-		args...,
-	).Scan(
+		`, strings.Join(where, " AND "))
+	var rowStatus string
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&instance.UID,
 		&instance.ResourceID,
 		&instance.Title,
 		&instance.Engine,
 		&instance.ExternalLink,
+		&instance.Activation,
 		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
 	}
@@ -408,6 +431,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			engine,
 			engine_version,
 			external_link,
+			activation,
 			instance.row_status AS row_status
 		FROM instance
 		LEFT JOIN environment ON environment.id = instance.environment_id
@@ -429,6 +453,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			&instanceMessage.Engine,
 			&instanceMessage.EngineVersion,
 			&instanceMessage.ExternalLink,
+			&instanceMessage.Activation,
 			&rowStatus,
 		); err != nil {
 			return nil, err
@@ -491,6 +516,21 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context) ([]*I
 		instances = append(instances, instance)
 	}
 	return instances, nil
+}
+
+var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE"
+
+// CheckActivationLimit checks if activation instance count reaches the limit.
+func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int) error {
+	count := 0
+	if err := s.db.db.QueryRowContext(ctx, countActivateInstanceQuery).Scan(&count); err != nil {
+		return err
+	}
+
+	if count >= maximumActivation {
+		return common.Errorf(common.Invalid, "activation instance count reaches the limitation")
+	}
+	return nil
 }
 
 func validateDataSourceList(dataSources []*DataSourceMessage) error {

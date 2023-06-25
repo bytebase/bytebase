@@ -4,12 +4,6 @@ import { useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { hasSchemaProperty } from "@/utils";
 
-export interface DatabaseResource {
-  databaseName: string;
-  schema?: string;
-  table?: string;
-}
-
 export interface DatabaseTreeOption<L = "database" | "schema" | "table">
   extends TreeOption {
   level: L;

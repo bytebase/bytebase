@@ -44,7 +44,6 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { NButton } from "naive-ui";
 
 import { RoleTable, RolePanel } from "./components";
-import FeatureModal from "@/components/FeatureModal.vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
 import { useWorkspacePermissionV1 } from "@/utils";

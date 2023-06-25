@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -104,6 +105,25 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 // IsFeatureEnabled returns whether a feature is enabled.
 func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) bool {
 	return api.Feature(feature, s.GetEffectivePlan())
+}
+
+// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
+func (s *LicenseService) IsFeatureEnabledForInstance(feature api.FeatureType, instance *store.InstanceMessage) bool {
+	featureEnabledForPlan := s.IsFeatureEnabled(feature)
+	if !api.InstanceLimitFeature[feature] {
+		// If the feature not exists in the limit map, we just need to check the feature for current plan.
+		return featureEnabledForPlan
+	}
+	return featureEnabledForPlan && instance.Activation
+}
+
+// GetInstanceLicenseCount returns the instance count limit for current subscription.
+func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
+	instanceCount := s.LoadSubscription(ctx).InstanceCount
+	if instanceCount < 0 {
+		return math.MaxInt
+	}
+	return instanceCount
 }
 
 // GetEffectivePlan gets the effective plan.
