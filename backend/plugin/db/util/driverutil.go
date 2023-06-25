@@ -301,7 +301,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 		if singleSQL.Empty {
 			continue
 		}
-		if IsAffectedRowsStatement(singleSQL.Text) {
+		if parser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
 			sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
 			if err != nil {
 				return nil, err
@@ -329,7 +329,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 				ColumnTypeNames: types,
 				Rows:            rows,
 				Latency:         durationpb.New(time.Since(startTime)),
-				Statement:       strings.TrimRight(singleSQL.Text, " \n\t;"),
+				Statement:       strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t"),
 			})
 			continue
 		}
@@ -356,7 +356,7 @@ func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.Que
 		}
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = strings.TrimRight(statement, " \n\t;")
+	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
 	return result
 }
 
@@ -703,7 +703,7 @@ func FromStoredVersion(storedVersion string) (bool, string, string, error) {
 // IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
 func IsAffectedRowsStatement(stmt string) bool {
 	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
-	upperStatement := strings.ToUpper(stmt)
+	upperStatement := strings.TrimLeft(strings.ToUpper(stmt), " \t\r\n")
 	for _, prefix := range affectedRowsStatementPrefix {
 		if strings.HasPrefix(upperStatement, prefix) {
 			return true
