@@ -1323,37 +1323,42 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	tree, tokens, err := parser.ParseMySQL(statement)
+	treeList, err := parser.ParseMySQL(statement)
 	if err != nil {
 		return nil, NewParseError(err.Error())
 	}
-	if tree == nil {
+	if len(treeList) == 0 {
 		return nil, nil
 	}
 
 	var returnNodes []tidbast.StmtNode
-	for _, child := range tree.GetChildren() {
-		if child == nil {
-			continue
-		}
+	for _, item := range treeList {
+		tree := item.Tree
+		tokens := item.Tokens
 
-		if query, ok := child.(mysqlparser.IQueryContext); ok {
-			text := tokens.GetTextFromRuleContext(query)
-			lastLine := query.GetStop().GetLine()
+		for _, child := range tree.GetChildren() {
+			if child == nil {
+				continue
+			}
 
-			if nodes, _, err := p.Parse(text, "", ""); err == nil {
-				if len(nodes) != 1 {
-					continue
-				}
-				node := nodes[0]
-				node.SetText(nil, text)
-				node.SetOriginTextPosition(lastLine)
-				if n, ok := node.(*tidbast.CreateTableStmt); ok {
-					if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
-						return nil, NewParseError(err.Error())
+			if query, ok := child.(mysqlparser.IQueryContext); ok {
+				text := tokens.GetTextFromRuleContext(query)
+				lastLine := query.GetStop().GetLine() + item.BaseLine
+
+				if nodes, _, err := p.Parse(text, "", ""); err == nil {
+					if len(nodes) != 1 {
+						continue
 					}
+					node := nodes[0]
+					node.SetText(nil, text)
+					node.SetOriginTextPosition(lastLine)
+					if n, ok := node.(*tidbast.CreateTableStmt); ok {
+						if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+							return nil, NewParseError(err.Error())
+						}
+					}
+					returnNodes = append(returnNodes, node)
 				}
-				returnNodes = append(returnNodes, node)
 			}
 		}
 	}
