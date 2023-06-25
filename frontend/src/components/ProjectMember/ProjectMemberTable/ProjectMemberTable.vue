@@ -47,20 +47,16 @@
         </div>
       </div>
       <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
-        <NTag v-for="role in item.roleList" :key="role">
-          {{ displayRoleTitle(role) }}
-        </NTag>
-        <NPopselect
-          v-if="allowAddRole(item)"
-          :options="getRoleOptions(item)"
-          :scrollable="true"
-          trigger="click"
-          @update:value="(value: any) => addRole(item, value)"
+        <NTag
+          v-for="binding in getFormatedBindingList(item.bindingList)"
+          :key="binding.role"
+          class="flex flex-row justify-start items-center"
         >
-          <NButton quaternary size="tiny">
-            <heroicons-outline:plus />
-          </NButton>
-        </NPopselect>
+          <template v-if="isBindingExpired(binding)" #avatar>
+            <RoleExpiredTip />
+          </template>
+          {{ displayRoleTitle(binding.role) }}
+        </NTag>
       </div>
       <div class="bb-grid-cell gap-x-2 justify-end">
         <NTooltip v-if="allowAdmin" trigger="hover">
@@ -99,31 +95,23 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { NButton, NPopselect, NTag, SelectOption } from "naive-ui";
-import { cloneDeep } from "lodash-es";
+import { NButton, NTag } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { ComposedProject, PresetRoleType } from "@/types";
+import { ComposedProject } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import { IamPolicy } from "@/types/proto/v1/project_service";
-import {
-  featureToRef,
-  useCurrentUserV1,
-  useProjectIamPolicy,
-  useProjectIamPolicyStore,
-  useRoleStore,
-} from "@/store";
+import { Binding, IamPolicy } from "@/types/proto/v1/project_service";
+import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
 import {
   hasWorkspacePermissionV1,
   displayRoleTitle,
-  addRoleToProjectIamPolicy,
   hasPermissionInProjectV1,
   extractUserUID,
 } from "@/utils";
-import { State } from "@/types/proto/v1/common";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel.vue";
 import { ComposedProjectMember } from "./types";
 import UserAvatar from "@/components/User/UserAvatar.vue";
+import { convertFromExpr } from "@/utils/issue/cel";
 
 export type ProjectMemberRow = BBGridRow<ComposedProjectMember>;
 
@@ -138,10 +126,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const hasRBACFeature = featureToRef("bb.feature.rbac");
-const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const currentUserV1 = useCurrentUserV1();
-const roleStore = useRoleStore();
-const projectIamPolicyStore = useProjectIamPolicyStore();
 const editingMember = ref<ComposedProjectMember | null>(null);
 
 const projectResourceName = computed(() => props.project.name);
@@ -204,40 +189,46 @@ const allowView = (item: ComposedProjectMember) => {
   return item.user.name === currentUserV1.value.name;
 };
 
-const allowAddRole = (item: ComposedProjectMember) => {
-  if (!allowAdmin.value) return false;
-  if (props.project.state === State.DELETED) {
-    return false;
+const getFormatedBindingList = (bindingList: Binding[]) => {
+  const bindingMap = new Map<string, Binding>();
+  for (const binding of bindingList) {
+    const key = binding.role;
+    const oldBinding = bindingMap.get(key);
+
+    if (oldBinding) {
+      const expiredTime = getExpiredTime(binding);
+      const oldExpiredTime = getExpiredTime(oldBinding);
+      if (!oldExpiredTime) {
+        bindingMap.set(key, binding);
+      } else {
+        if (expiredTime && expiredTime < oldExpiredTime) {
+          bindingMap.set(key, binding);
+        }
+      }
+    } else {
+      bindingMap.set(key, binding);
+    }
   }
 
-  return item.roleList.length < roleStore.roleList.length;
+  return Array.from(bindingMap.values());
 };
 
-const getRoleOptions = (item: ComposedProjectMember) => {
-  let roleList = useRoleStore().roleList.filter((role) => {
-    return !item.roleList.includes(role.name);
-  });
-  // For enterprise plan, we don't allow to add exporter role.
-  if (hasCustomRoleFeature.value) {
-    roleList = roleList.filter((role) => {
-      return role.name !== PresetRoleType.EXPORTER;
-    });
+const getExpiredTime = (binding: Binding) => {
+  const parsedExpr = binding.parsedExpr;
+  if (parsedExpr?.expr) {
+    const expression = convertFromExpr(parsedExpr.expr);
+    if (expression.expiredTime) {
+      return expression.expiredTime;
+    }
   }
-  return roleList.map<SelectOption>((role) => {
-    return {
-      label: displayRoleTitle(role.name),
-      value: role.name,
-    };
-  });
+  return null;
 };
 
-const addRole = async (item: ComposedProjectMember, role: string) => {
-  const user = `user:${item.user.email}`;
-  const policy = cloneDeep(props.iamPolicy);
-  addRoleToProjectIamPolicy(policy, user, role);
-  await projectIamPolicyStore.updateProjectIamPolicy(
-    projectResourceName.value,
-    policy
-  );
+const isBindingExpired = (binding: Binding) => {
+  const expiredTime = getExpiredTime(binding);
+  if (expiredTime) {
+    return new Date(expiredTime).getTime() < Date.now();
+  }
+  return false;
 };
 </script>
