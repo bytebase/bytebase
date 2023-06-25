@@ -161,7 +161,7 @@ Please check the docs at https://www.bytebase.com/docs/reference/error-code/advi
 <testcase name="[ERROR] file2.sql#L4: naming.index.uk" classname="file2.sql" file="file2.sql#L4">
 <failure>
 Error: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name".
-Please can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#304
+Please check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#304
 </failure>
 </testcase>
 </testsuite>
