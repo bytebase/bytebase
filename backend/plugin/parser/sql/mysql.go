@@ -12,6 +12,7 @@ import (
 	parser "github.com/bytebase/mysql-parser"
 )
 
+// MySQLParseResult is the result of parsing a MySQL statement.
 type MySQLParseResult struct {
 	Tree     antlr.Tree
 	Tokens   *antlr.CommonTokenStream
