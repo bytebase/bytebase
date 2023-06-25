@@ -93,6 +93,28 @@ func ParseMySQLStream(src io.Reader) ([]*MySQLParseResult, error) {
 	return ParseMySQL(text)
 }
 
+func getDefaultChannelTokenType(tokens []antlr.Token, base int, offset int) int {
+	current := base
+	step := 1
+	remaining := offset
+	if offset < 0 {
+		step = -1
+		remaining = -offset
+	}
+	for remaining != 0 {
+		current += step
+		if current < 0 || current >= len(tokens) {
+			return parser.MySQLParserEOF
+		}
+
+		if tokens[current].GetChannel() == antlr.TokenDefaultChannel {
+			remaining--
+		}
+	}
+
+	return tokens[current].GetTokenType()
+}
+
 func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 	var result []SingleSQL
 	stream.Fill()
@@ -111,68 +133,68 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 	for i := 0; i < len(tokens); i++ {
 		switch tokens[i].GetTokenType() {
 		case parser.MySQLParserBEGIN_SYMBOL:
-			isBeginWork := i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserWORK_SYMBOL
-			isBeginWork = isBeginWork || (i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserSEMICOLON_SYMBOL)
-			isBeginWork = isBeginWork || (i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserEOF)
+			isBeginWork := getDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserWORK_SYMBOL
+			isBeginWork = isBeginWork || (getDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserSEMICOLON_SYMBOL)
+			isBeginWork = isBeginWork || (getDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserEOF)
 			if isBeginWork {
 				continue
 			}
 
-			isXa := i-1 > 0 && tokens[i-1].GetTokenType() == parser.MySQLParserXA_SYMBOL
+			isXa := getDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserXA_SYMBOL
 			if isXa {
 				continue
 			}
 
 			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserCASE_SYMBOL:
-			isEndCase := i-1 > 0 && tokens[i-1].GetTokenType() == parser.MySQLParserEND_SYMBOL
+			isEndCase := getDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
 			if isEndCase {
 				continue
 			}
 
 			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserIF_SYMBOL:
-			isEndIf := i-1 > 0 && tokens[i-1].GetTokenType() == parser.MySQLParserEND_SYMBOL
+			isEndIf := getDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
 			if isEndIf {
 				continue
 			}
 
-			isIfExists := i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserEXISTS_SYMBOL
+			isIfExists := getDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserEXISTS_SYMBOL
 			if isIfExists {
 				continue
 			}
 
-			isIfNotExists := i+2 < len(tokens) &&
-				(tokens[i+1].GetTokenType() == parser.MySQLParserNOT_SYMBOL || tokens[i+1].GetTokenType() == parser.MySQLParserNOT2_SYMBOL) &&
-				tokens[i+2].GetTokenType() == parser.MySQLParserEXISTS_SYMBOL
+			isIfNotExists := (getDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserNOT_SYMBOL ||
+				getDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserNOT2_SYMBOL) &&
+				getDefaultChannelTokenType(tokens, i, 2) == parser.MySQLParserEXISTS_SYMBOL
 			if isIfNotExists {
 				continue
 			}
 
 			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserLOOP_SYMBOL:
-			isEndLoop := i-1 > 0 && tokens[i-1].GetTokenType() == parser.MySQLParserEND_SYMBOL
+			isEndLoop := getDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
 			if isEndLoop {
 				continue
 			}
 
 			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserWHILE_SYMBOL:
-			isEndWhile := i-1 > 0 && tokens[i-1].GetTokenType() == parser.MySQLParserEND_SYMBOL
+			isEndWhile := getDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
 			if isEndWhile {
 				continue
 			}
 
 			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserREPEAT_SYMBOL:
-			isEndRepeat := i-1 > 0 && tokens[i-1].GetTokenType() == parser.MySQLParserUNTIL_SYMBOL
+			isEndRepeat := getDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserUNTIL_SYMBOL
 			if isEndRepeat {
 				continue
 			}
 
 			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserEND_SYMBOL:
-			isXa := i-1 > 0 && tokens[i-1].GetTokenType() == parser.MySQLParserXA_SYMBOL
+			isXa := getDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserXA_SYMBOL
 			if isXa {
 				continue
 			}
@@ -186,7 +208,9 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 				return nil, errors.New("invalid statement: failed to split multiple statements")
 			}
 
-			isEndIf := i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserIF_SYMBOL
+			nextDefaultChannelTokenType := getDefaultChannelTokenType(tokens, i, 1)
+
+			isEndIf := nextDefaultChannelTokenType == parser.MySQLParserIF_SYMBOL
 			if isEndIf {
 				if stack[len(stack)-1].tokenType != parser.MySQLParserIF_SYMBOL {
 					// Backtracking the process.
@@ -198,7 +222,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 				continue
 			}
 
-			isEndCase := i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserCASE_SYMBOL
+			isEndCase := nextDefaultChannelTokenType == parser.MySQLParserCASE_SYMBOL
 			if isEndCase {
 				if stack[len(stack)-1].tokenType != parser.MySQLParserCASE_SYMBOL {
 					// Backtracking the process.
@@ -210,7 +234,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 				continue
 			}
 
-			isEndLoop := i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserLOOP_SYMBOL
+			isEndLoop := nextDefaultChannelTokenType == parser.MySQLParserLOOP_SYMBOL
 			if isEndLoop {
 				if stack[len(stack)-1].tokenType != parser.MySQLParserLOOP_SYMBOL {
 					// Backtracking the process.
@@ -222,7 +246,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 				continue
 			}
 
-			isEndWhile := i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserWHILE_SYMBOL
+			isEndWhile := nextDefaultChannelTokenType == parser.MySQLParserWHILE_SYMBOL
 			if isEndWhile {
 				if stack[len(stack)-1].tokenType != parser.MySQLParserWHILE_SYMBOL {
 					// Backtracking the process.
@@ -234,7 +258,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 				continue
 			}
 
-			isEndRepeat := i+1 < len(tokens) && tokens[i+1].GetTokenType() == parser.MySQLParserREPEAT_SYMBOL
+			isEndRepeat := nextDefaultChannelTokenType == parser.MySQLParserREPEAT_SYMBOL
 			if isEndRepeat {
 				if stack[len(stack)-1].tokenType != parser.MySQLParserREPEAT_SYMBOL {
 					// Backtracking the process.
@@ -462,4 +486,25 @@ func normalizeMySQLIdentifier(identifier parser.IIdentifierContext) string {
 		return text[1 : len(text)-1]
 	}
 	return identifier.GetText()
+}
+
+// IsMySQLAffectedRowsStatement returns true if the given statement is an affected rows statement.
+func IsMySQLAffectedRowsStatement(statement string) bool {
+	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+
+	for _, token := range tokens {
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			switch token.GetTokenType() {
+			case parser.MySQLParserDELETE_SYMBOL, parser.MySQLParserINSERT_SYMBOL, parser.MySQLParserREPLACE_SYMBOL, parser.MySQLParserUPDATE_SYMBOL:
+				return true
+			default:
+				return false
+			}
+		}
+	}
+
+	return false
 }

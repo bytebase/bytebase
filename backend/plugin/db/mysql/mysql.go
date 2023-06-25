@@ -201,7 +201,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	}
 	// https://dev.mysql.com/doc/c-api/8.0/en/mysql-affected-rows.html
 	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
-	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
+	if len(singleSQLs) == 1 && bbparser.IsMySQLAffectedRowsStatement(singleSQLs[0].Text) {
 		sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
 		if err != nil {
 			return nil, err

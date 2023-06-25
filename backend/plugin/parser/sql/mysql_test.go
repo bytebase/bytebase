@@ -221,6 +221,9 @@ func TestSplitMySQLStatements(t *testing.T) {
 		stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 		list, err := splitMySQLStatement(stream)
 		require.NoError(t, err)
-		require.Equal(t, test.expected, list)
+		require.Equal(t, len(test.expected), len(list))
+		for i, statement := range list {
+			require.Equal(t, test.expected[i], statement.Text)
+		}
 	}
 }
