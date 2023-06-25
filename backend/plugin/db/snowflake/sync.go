@@ -3,6 +3,7 @@ package snowflake
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/pkg/errors"
+	"github.com/snowflakedb/gosnowflake"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -87,6 +89,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	if err != nil {
 		return nil, err
 	}
+	streamMap, err := driver.getStreamSchema(ctx, driver.databaseName)
+	if err != nil {
+		return nil, err
+	}
+	taskMap, err := driver.getTaskSchema(ctx, driver.databaseName)
+	if err != nil {
+		return nil, err
+	}
+
 	schemaNameMap := make(map[string]bool)
 	for _, schemaName := range schemaList {
 		schemaNameMap[schemaName] = true
@@ -97,6 +108,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	for schemaName := range viewMap {
 		schemaNameMap[schemaName] = true
 	}
+	for schemaName := range streamMap {
+		schemaNameMap[schemaName] = true
+	}
 	var schemaNames []string
 	for schemaName := range schemaNameMap {
 		schemaNames = append(schemaNames, schemaName)
@@ -105,6 +119,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	for _, schemaName := range schemaNames {
 		var tables []*storepb.TableMetadata
 		var views []*storepb.ViewMetadata
+		var streams []*storepb.StreamMetadata
+		var tasks []*storepb.TaskMetadata
 		var exists bool
 		if tables, exists = tableMap[schemaName]; !exists {
 			tables = []*storepb.TableMetadata{}
@@ -112,13 +128,20 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		if views, exists = viewMap[schemaName]; !exists {
 			views = []*storepb.ViewMetadata{}
 		}
+		if streams, exists = streamMap[schemaName]; !exists {
+			streams = []*storepb.StreamMetadata{}
+		}
+		if tasks, exists = taskMap[schemaName]; !exists {
+			tasks = []*storepb.TaskMetadata{}
+		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-			Name:   schemaName,
-			Tables: tables,
-			Views:  views,
+			Name:    schemaName,
+			Tables:  tables,
+			Views:   views,
+			Streams: streams,
+			Tasks:   tasks,
 		})
 	}
-
 	return databaseMetadata, nil
 }
 
@@ -156,6 +179,161 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 	}
 
 	return result, nil
+}
+
+// getStreamSchema returns the stream map of the given database.
+//
+// Key: normalized schema name
+//
+// Value: stream list in the schema.
+func (driver *Driver) getStreamSchema(ctx context.Context, database string) (map[string][]*storepb.StreamMetadata, error) {
+	streamMap := make(map[string][]*storepb.StreamMetadata)
+
+	streamQuery := fmt.Sprintf(`SHOW STREAMS IN DATABASE "%s";`, database)
+	streamMetaRows, err := driver.db.QueryContext(ctx, streamQuery)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, streamQuery)
+	}
+	defer streamMetaRows.Close()
+	for streamMetaRows.Next() {
+		var schemaName, streamName, tableName, owner, comment, tp, mode string
+		var stale bool
+		var unused any
+		if err := streamMetaRows.Scan(&unused, &streamName, &unused, &schemaName, &owner, &comment, &tableName, &unused, &unused, &tp, &stale, &mode, &unused, &unused); err != nil {
+			return nil, err
+		}
+		storePbStreamType := storepb.StreamMetadata_TYPE_UNSPECIFIED
+		if tp == "DELTA" {
+			storePbStreamType = storepb.StreamMetadata_TYPE_DELTA
+		}
+		storePbMode := storepb.StreamMetadata_MODE_UNSPECIFIED
+		switch mode {
+		case "DEFAULT":
+			storePbMode = storepb.StreamMetadata_MODE_DEFAULT
+		case "APPEND_ONLY":
+			storePbMode = storepb.StreamMetadata_MODE_APPEND_ONLY
+		case "INSERT_ONLY":
+			storePbMode = storepb.StreamMetadata_MODE_INSERT_ONLY
+		}
+		streamMetadata := &storepb.StreamMetadata{
+			Name:      streamName,
+			TableName: tableName,
+			Owner:     owner,
+			Comment:   comment,
+			Type:      storePbStreamType,
+			Stale:     stale,
+			Mode:      storePbMode,
+		}
+		streamMap[schemaName] = append(streamMap[schemaName], streamMetadata)
+	}
+	if err := streamMetaRows.Err(); err != nil {
+		return nil, err
+	}
+
+	for schemaName, streamList := range streamMap {
+		for _, stream := range streamList {
+			definitionQuery := fmt.Sprintf("SELECT GET_DDL('STREAM', %s, TRUE);", fmt.Sprintf(`'"%s"."%s"."%s"'`, database, schemaName, stream.Name))
+			var definition string
+			if err := driver.db.QueryRow(definitionQuery).Scan(&definition); err != nil {
+				return nil, err
+			}
+			stream.Definition = definition
+		}
+	}
+
+	for _, streamList := range streamMap {
+		sort.Slice(streamList, func(i, j int) bool {
+			return streamList[i].Name < streamList[j].Name
+		})
+	}
+	return streamMap, nil
+}
+
+// ArrayString is a custom type for scanning array of string.
+type ArrayString []string
+
+// Scan implements the sql.Scanner interface.
+func (a *ArrayString) Scan(src any) error {
+	switch v := src.(type) {
+	case string:
+		return json.Unmarshal([]byte(v), a)
+	case []byte:
+		return json.Unmarshal(v, a)
+	default:
+		return errors.New("invalid type")
+	}
+}
+
+// getTaskSchema returns the task map of the given database.
+//
+// Key: normalized schema name
+//
+// Value: stream list in the schema.
+func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[string][]*storepb.TaskMetadata, error) {
+	taskMap := make(map[string][]*storepb.TaskMetadata)
+
+	taskQuery := fmt.Sprintf(`SHOW TASKS IN DATABASE "%s";`, database)
+	streamMetaRows, err := driver.db.QueryContext(ctx, taskQuery)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, taskQuery)
+	}
+	defer streamMetaRows.Close()
+	for streamMetaRows.Next() {
+		var schemaName, taskName, id, owner, comment, warehouse, state string
+		var nullSchedule, nullCondition sql.NullString
+		var predecessors ArrayString
+		var unused any
+		if err := streamMetaRows.Scan(&unused, &taskName, &id, &unused, &schemaName, &owner, &comment, &warehouse, &nullSchedule, &gosnowflake.DataTypeArray, &state, &unused, &nullCondition, &unused, &unused, &unused, &unused); err != nil {
+			return nil, err
+		}
+		storePbState := storepb.TaskMetadata_STATE_UNSPECIFIED
+		switch state {
+		case "started":
+			storePbState = storepb.TaskMetadata_STATE_STARTED
+		case "suspended":
+			storePbState = storepb.TaskMetadata_STATE_SUSPENDED
+		}
+		var schedule, condition string
+		if nullSchedule.Valid {
+			schedule = nullSchedule.String
+		}
+		if nullCondition.Valid {
+			condition = nullCondition.String
+		}
+		taskMetadata := &storepb.TaskMetadata{
+			Name:         taskName,
+			Id:           id,
+			Owner:        owner,
+			Comment:      comment,
+			Warehouse:    warehouse,
+			Schedule:     schedule,
+			Predecessors: predecessors,
+			State:        storePbState,
+			Condition:    condition,
+		}
+		taskMap[schemaName] = append(taskMap[schemaName], taskMetadata)
+	}
+	if err := streamMetaRows.Err(); err != nil {
+		return nil, err
+	}
+
+	for schemaName, taskList := range taskMap {
+		for _, task := range taskList {
+			definitionQuery := fmt.Sprintf("SELECT GET_DDL('TASK', %s, TRUE);", fmt.Sprintf(`'"%s"."%s"."%s"'`, database, schemaName, task.Name))
+			var definition string
+			if err := driver.db.QueryRow(definitionQuery).Scan(&definition); err != nil {
+				return nil, err
+			}
+			task.Definition = definition
+		}
+	}
+
+	for _, taskList := range taskMap {
+		sort.Slice(taskList, func(i, j int) bool {
+			return taskList[i].Name < taskList[j].Name
+		})
+	}
+	return taskMap, nil
 }
 
 func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ViewMetadata, error) {

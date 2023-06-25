@@ -703,7 +703,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
-| tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema. |
+| tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 
 
 
@@ -842,8 +842,9 @@ ViewMetadata is the metadata for views.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | MODE_UNSPECIFIED | 0 |  |
-| MODE_APPEND_ONLY | 1 |  |
-| MODE_INSERT_ONLY | 2 |  |
+| MODE_DEFAULT | 1 |  |
+| MODE_APPEND_ONLY | 2 |  |
+| MODE_INSERT_ONLY | 3 |  |
 
 
 
