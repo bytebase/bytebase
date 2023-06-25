@@ -45,7 +45,7 @@ message SchemaMetadata {
   // The streams is the list of streams in a schema, currently, only used for Snowflake.
   repeated StreamMetadata streams = 5;
 
-  // The routines is the list of routines in a schema.
+  // The routines is the list of routines in a schema, currently, only used for Snowflake.
   repeated TaskMetadata tasks = 6;
 }
 
@@ -112,8 +112,9 @@ message StreamMetadata {
 
   enum Mode {
     MODE_UNSPECIFIED = 0;
-    MODE_APPEND_ONLY = 1;
-    MODE_INSERT_ONLY = 2;
+    MODE_DEFAULT = 1;
+    MODE_APPEND_ONLY = 2;
+    MODE_INSERT_ONLY = 3;
   }
   // The mode of the stream.
   Mode mode = 7;
