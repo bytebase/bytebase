@@ -136,6 +136,8 @@ export interface QueryResult {
   error: string;
   /** The time it takes to execute the query. */
   latency?: Duration;
+  /** The query statement for the result. */
+  statement: string;
 }
 
 export interface QueryRow {
@@ -740,7 +742,7 @@ export const QueryResponse = {
 };
 
 function createBaseQueryResult(): QueryResult {
-  return { columnNames: [], columnTypeNames: [], rows: [], masked: [], error: "", latency: undefined };
+  return { columnNames: [], columnTypeNames: [], rows: [], masked: [], error: "", latency: undefined, statement: "" };
 }
 
 export const QueryResult = {
@@ -764,6 +766,9 @@ export const QueryResult = {
     }
     if (message.latency !== undefined) {
       Duration.encode(message.latency, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.statement !== "") {
+      writer.uint32(58).string(message.statement);
     }
     return writer;
   },
@@ -827,6 +832,13 @@ export const QueryResult = {
 
           message.latency = Duration.decode(reader, reader.uint32());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -844,6 +856,7 @@ export const QueryResult = {
       masked: Array.isArray(object?.masked) ? object.masked.map((e: any) => Boolean(e)) : [],
       error: isSet(object.error) ? String(object.error) : "",
       latency: isSet(object.latency) ? Duration.fromJSON(object.latency) : undefined,
+      statement: isSet(object.statement) ? String(object.statement) : "",
     };
   },
 
@@ -871,6 +884,7 @@ export const QueryResult = {
     }
     message.error !== undefined && (obj.error = message.error);
     message.latency !== undefined && (obj.latency = message.latency ? Duration.toJSON(message.latency) : undefined);
+    message.statement !== undefined && (obj.statement = message.statement);
     return obj;
   },
 
@@ -888,6 +902,7 @@ export const QueryResult = {
     message.latency = (object.latency !== undefined && object.latency !== null)
       ? Duration.fromPartial(object.latency)
       : undefined;
+    message.statement = object.statement ?? "";
     return message;
   },
 };

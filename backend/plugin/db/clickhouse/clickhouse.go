@@ -180,12 +180,15 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 		}
 		defer rows.Close()
 
-		result, err := convertRowsToQueryResult(rows, startTime)
+		result, err := convertRowsToQueryResult(rows)
 		if err != nil {
 			result = &v1pb.QueryResult{
 				Error: err.Error(),
 			}
 		}
+		result.Latency = durationpb.New(time.Since(startTime))
+		result.Statement = strings.TrimRight(statement, " \n\t;")
+
 		results = append(results, result)
 		return nil
 	}); err != nil {
@@ -220,8 +223,9 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement str
 	startTime := time.Now()
 	statement = strings.TrimRight(statement, " \n\t;")
 
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
@@ -235,16 +239,23 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement str
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, statement)
+	rows, err := tx.QueryContext(ctx, stmt)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, statement)
+		return nil, util.FormatErrorWithQuery(err, stmt)
 	}
 	defer rows.Close()
 
-	return convertRowsToQueryResult(rows, startTime)
+	result, err := convertRowsToQueryResult(rows)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+
+	return result, err
 }
 
-func convertRowsToQueryResult(rows *sql.Rows, startTime time.Time) (*v1pb.QueryResult, error) {
+func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -275,7 +286,6 @@ func convertRowsToQueryResult(rows *sql.Rows, startTime time.Time) (*v1pb.QueryR
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
-		Latency:         durationpb.New(time.Since(startTime)),
 	}, nil
 }
 

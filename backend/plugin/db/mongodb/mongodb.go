@@ -250,6 +250,7 @@ func (driver *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement str
 		ColumnTypeNames: types,
 		Rows:            rows,
 		Latency:         durationpb.New(time.Since(startTime)),
+		Statement:       statement,
 	}}, nil
 }
 
