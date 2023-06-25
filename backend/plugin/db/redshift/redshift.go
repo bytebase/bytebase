@@ -16,6 +16,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -401,10 +402,11 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := singleSQL.Text
-	statement = strings.TrimRight(statement, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 	// Datashare doesn't support read-only transactions.
 	if driver.datashare {
@@ -412,7 +414,14 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		queryContext.ShareDB = true
 	}
 
-	return util.Query2(ctx, db.Redshift, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, db.Redshift, conn, stmt, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.
