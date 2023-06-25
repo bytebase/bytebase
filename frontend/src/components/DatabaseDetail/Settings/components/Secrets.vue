@@ -203,7 +203,6 @@ import { type ComposedDatabase } from "@/types";
 import {
   pushNotification,
   useDatabaseSecretStore,
-  featureToRef,
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
