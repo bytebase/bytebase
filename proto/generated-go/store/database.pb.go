@@ -21,6 +21,101 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type StreamMetadata_Type int32
+
+const (
+	StreamMetadata_TYPE_UNSPECIFIED StreamMetadata_Type = 0
+	StreamMetadata_TYPE_DELTA       StreamMetadata_Type = 1
+)
+
+// Enum value maps for StreamMetadata_Type.
+var (
+	StreamMetadata_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
+		1: "TYPE_DELTA",
+	}
+	StreamMetadata_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED": 0,
+		"TYPE_DELTA":       1,
+	}
+)
+
+func (x StreamMetadata_Type) Enum() *StreamMetadata_Type {
+	p := new(StreamMetadata_Type)
+	*p = x
+	return p
+}
+
+func (x StreamMetadata_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (StreamMetadata_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_database_proto_enumTypes[0].Descriptor()
+}
+
+func (StreamMetadata_Type) Type() protoreflect.EnumType {
+	return &file_store_database_proto_enumTypes[0]
+}
+
+func (x StreamMetadata_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use StreamMetadata_Type.Descriptor instead.
+func (StreamMetadata_Type) EnumDescriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{2, 0}
+}
+
+type StreamMetadata_Mode int32
+
+const (
+	StreamMetadata_MODE_UNSPECIFIED StreamMetadata_Mode = 0
+	StreamMetadata_MODE_APPEND_ONLY StreamMetadata_Mode = 1
+	StreamMetadata_MODE_INSERT_ONLY StreamMetadata_Mode = 2
+)
+
+// Enum value maps for StreamMetadata_Mode.
+var (
+	StreamMetadata_Mode_name = map[int32]string{
+		0: "MODE_UNSPECIFIED",
+		1: "MODE_APPEND_ONLY",
+		2: "MODE_INSERT_ONLY",
+	}
+	StreamMetadata_Mode_value = map[string]int32{
+		"MODE_UNSPECIFIED": 0,
+		"MODE_APPEND_ONLY": 1,
+		"MODE_INSERT_ONLY": 2,
+	}
+)
+
+func (x StreamMetadata_Mode) Enum() *StreamMetadata_Mode {
+	p := new(StreamMetadata_Mode)
+	*p = x
+	return p
+}
+
+func (x StreamMetadata_Mode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (StreamMetadata_Mode) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_database_proto_enumTypes[1].Descriptor()
+}
+
+func (StreamMetadata_Mode) Type() protoreflect.EnumType {
+	return &file_store_database_proto_enumTypes[1]
+}
+
+func (x StreamMetadata_Mode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use StreamMetadata_Mode.Descriptor instead.
+func (StreamMetadata_Mode) EnumDescriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{2, 1}
+}
+
 // DatabaseMetadata is the metadata for databases.
 type DatabaseMetadata struct {
 	state         protoimpl.MessageState
@@ -130,6 +225,8 @@ type SchemaMetadata struct {
 	Views []*ViewMetadata `protobuf:"bytes,3,rep,name=views,proto3" json:"views,omitempty"`
 	// The functions is the list of functions in a schema.
 	Functions []*FunctionMetadata `protobuf:"bytes,4,rep,name=functions,proto3" json:"functions,omitempty"`
+	// The streams is the list of streams in a schema, currently, only used for Snowflake.
+	Streams []*StreamMetadata `protobuf:"bytes,5,rep,name=streams,proto3" json:"streams,omitempty"`
 }
 
 func (x *SchemaMetadata) Reset() {
@@ -192,6 +289,124 @@ func (x *SchemaMetadata) GetFunctions() []*FunctionMetadata {
 	return nil
 }
 
+func (x *SchemaMetadata) GetStreams() []*StreamMetadata {
+	if x != nil {
+		return x.Streams
+	}
+	return nil
+}
+
+type StreamMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name is the name of a stream.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The table_name is the name of the table/view that the stream is created on.
+	TableName string `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	// The owner of the stream.
+	Owner string `protobuf:"bytes,3,opt,name=owner,proto3" json:"owner,omitempty"`
+	// The comment of the stream.
+	Comment string `protobuf:"bytes,4,opt,name=comment,proto3" json:"comment,omitempty"`
+	// The type of the stream.
+	Type StreamMetadata_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.StreamMetadata_Type" json:"type,omitempty"`
+	// Indicates whether the stream was last read before the `stale_after` time.
+	Stale bool `protobuf:"varint,6,opt,name=stale,proto3" json:"stale,omitempty"`
+	// The mode of the stream.
+	Mode StreamMetadata_Mode `protobuf:"varint,7,opt,name=mode,proto3,enum=bytebase.store.StreamMetadata_Mode" json:"mode,omitempty"`
+	// The definition of the stream.
+	Definition string `protobuf:"bytes,8,opt,name=definition,proto3" json:"definition,omitempty"`
+}
+
+func (x *StreamMetadata) Reset() {
+	*x = StreamMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_database_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StreamMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamMetadata) ProtoMessage() {}
+
+func (x *StreamMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_store_database_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamMetadata.ProtoReflect.Descriptor instead.
+func (*StreamMetadata) Descriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *StreamMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StreamMetadata) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *StreamMetadata) GetOwner() string {
+	if x != nil {
+		return x.Owner
+	}
+	return ""
+}
+
+func (x *StreamMetadata) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+func (x *StreamMetadata) GetType() StreamMetadata_Type {
+	if x != nil {
+		return x.Type
+	}
+	return StreamMetadata_TYPE_UNSPECIFIED
+}
+
+func (x *StreamMetadata) GetStale() bool {
+	if x != nil {
+		return x.Stale
+	}
+	return false
+}
+
+func (x *StreamMetadata) GetMode() StreamMetadata_Mode {
+	if x != nil {
+		return x.Mode
+	}
+	return StreamMetadata_MODE_UNSPECIFIED
+}
+
+func (x *StreamMetadata) GetDefinition() string {
+	if x != nil {
+		return x.Definition
+	}
+	return ""
+}
+
 // TableMetadata is the metadata for tables.
 type TableMetadata struct {
 	state         protoimpl.MessageState
@@ -227,7 +442,7 @@ type TableMetadata struct {
 func (x *TableMetadata) Reset() {
 	*x = TableMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[2]
+		mi := &file_store_database_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -240,7 +455,7 @@ func (x *TableMetadata) String() string {
 func (*TableMetadata) ProtoMessage() {}
 
 func (x *TableMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[2]
+	mi := &file_store_database_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -253,7 +468,7 @@ func (x *TableMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableMetadata.ProtoReflect.Descriptor instead.
 func (*TableMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{2}
+	return file_store_database_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *TableMetadata) GetName() string {
@@ -367,7 +582,7 @@ type ColumnMetadata struct {
 func (x *ColumnMetadata) Reset() {
 	*x = ColumnMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[3]
+		mi := &file_store_database_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -380,7 +595,7 @@ func (x *ColumnMetadata) String() string {
 func (*ColumnMetadata) ProtoMessage() {}
 
 func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[3]
+	mi := &file_store_database_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -393,7 +608,7 @@ func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnMetadata.ProtoReflect.Descriptor instead.
 func (*ColumnMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{3}
+	return file_store_database_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ColumnMetadata) GetName() string {
@@ -471,7 +686,7 @@ type ViewMetadata struct {
 func (x *ViewMetadata) Reset() {
 	*x = ViewMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[4]
+		mi := &file_store_database_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -484,7 +699,7 @@ func (x *ViewMetadata) String() string {
 func (*ViewMetadata) ProtoMessage() {}
 
 func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[4]
+	mi := &file_store_database_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -497,7 +712,7 @@ func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ViewMetadata.ProtoReflect.Descriptor instead.
 func (*ViewMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{4}
+	return file_store_database_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ViewMetadata) GetName() string {
@@ -545,7 +760,7 @@ type DependentColumn struct {
 func (x *DependentColumn) Reset() {
 	*x = DependentColumn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[5]
+		mi := &file_store_database_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -558,7 +773,7 @@ func (x *DependentColumn) String() string {
 func (*DependentColumn) ProtoMessage() {}
 
 func (x *DependentColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[5]
+	mi := &file_store_database_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -571,7 +786,7 @@ func (x *DependentColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DependentColumn.ProtoReflect.Descriptor instead.
 func (*DependentColumn) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{5}
+	return file_store_database_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DependentColumn) GetSchema() string {
@@ -610,7 +825,7 @@ type FunctionMetadata struct {
 func (x *FunctionMetadata) Reset() {
 	*x = FunctionMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[6]
+		mi := &file_store_database_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -623,7 +838,7 @@ func (x *FunctionMetadata) String() string {
 func (*FunctionMetadata) ProtoMessage() {}
 
 func (x *FunctionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[6]
+	mi := &file_store_database_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -636,7 +851,7 @@ func (x *FunctionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FunctionMetadata.ProtoReflect.Descriptor instead.
 func (*FunctionMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{6}
+	return file_store_database_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *FunctionMetadata) GetName() string {
@@ -679,7 +894,7 @@ type IndexMetadata struct {
 func (x *IndexMetadata) Reset() {
 	*x = IndexMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[7]
+		mi := &file_store_database_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -692,7 +907,7 @@ func (x *IndexMetadata) String() string {
 func (*IndexMetadata) ProtoMessage() {}
 
 func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[7]
+	mi := &file_store_database_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -705,7 +920,7 @@ func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IndexMetadata.ProtoReflect.Descriptor instead.
 func (*IndexMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{7}
+	return file_store_database_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *IndexMetadata) GetName() string {
@@ -776,7 +991,7 @@ type ExtensionMetadata struct {
 func (x *ExtensionMetadata) Reset() {
 	*x = ExtensionMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[8]
+		mi := &file_store_database_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -789,7 +1004,7 @@ func (x *ExtensionMetadata) String() string {
 func (*ExtensionMetadata) ProtoMessage() {}
 
 func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[8]
+	mi := &file_store_database_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -802,7 +1017,7 @@ func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtensionMetadata.ProtoReflect.Descriptor instead.
 func (*ExtensionMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{8}
+	return file_store_database_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ExtensionMetadata) GetName() string {
@@ -863,7 +1078,7 @@ type ForeignKeyMetadata struct {
 func (x *ForeignKeyMetadata) Reset() {
 	*x = ForeignKeyMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[9]
+		mi := &file_store_database_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -876,7 +1091,7 @@ func (x *ForeignKeyMetadata) String() string {
 func (*ForeignKeyMetadata) ProtoMessage() {}
 
 func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[9]
+	mi := &file_store_database_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -889,7 +1104,7 @@ func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ForeignKeyMetadata.ProtoReflect.Descriptor instead.
 func (*ForeignKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{9}
+	return file_store_database_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ForeignKeyMetadata) GetName() string {
@@ -963,7 +1178,7 @@ type InstanceRoleMetadata struct {
 func (x *InstanceRoleMetadata) Reset() {
 	*x = InstanceRoleMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[10]
+		mi := &file_store_database_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -976,7 +1191,7 @@ func (x *InstanceRoleMetadata) String() string {
 func (*InstanceRoleMetadata) ProtoMessage() {}
 
 func (x *InstanceRoleMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[10]
+	mi := &file_store_database_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -989,7 +1204,7 @@ func (x *InstanceRoleMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceRoleMetadata.ProtoReflect.Descriptor instead.
 func (*InstanceRoleMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{10}
+	return file_store_database_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *InstanceRoleMetadata) GetName() string {
@@ -1018,7 +1233,7 @@ type Secrets struct {
 func (x *Secrets) Reset() {
 	*x = Secrets{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[11]
+		mi := &file_store_database_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1031,7 +1246,7 @@ func (x *Secrets) String() string {
 func (*Secrets) ProtoMessage() {}
 
 func (x *Secrets) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[11]
+	mi := &file_store_database_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1044,7 +1259,7 @@ func (x *Secrets) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Secrets.ProtoReflect.Descriptor instead.
 func (*Secrets) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{11}
+	return file_store_database_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Secrets) GetItems() []*SecretItem {
@@ -1070,7 +1285,7 @@ type SecretItem struct {
 func (x *SecretItem) Reset() {
 	*x = SecretItem{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[12]
+		mi := &file_store_database_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1083,7 +1298,7 @@ func (x *SecretItem) String() string {
 func (*SecretItem) ProtoMessage() {}
 
 func (x *SecretItem) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[12]
+	mi := &file_store_database_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1096,7 +1311,7 @@ func (x *SecretItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretItem.ProtoReflect.Descriptor instead.
 func (*SecretItem) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{12}
+	return file_store_database_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SecretItem) GetName() string {
@@ -1143,7 +1358,7 @@ var file_store_database_proto_rawDesc = []byte{
 	0x65, 0x2e, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x64,
 	0x61, 0x74, 0x61, 0x52, 0x0a, 0x65, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12,
 	0x1c, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x73, 0x68, 0x61, 0x72, 0x65, 0x18, 0x06, 0x20, 0x01,
-	0x28, 0x08, 0x52, 0x09, 0x64, 0x61, 0x74, 0x61, 0x73, 0x68, 0x61, 0x72, 0x65, 0x22, 0xcf, 0x01,
+	0x28, 0x08, 0x52, 0x09, 0x64, 0x61, 0x74, 0x61, 0x73, 0x68, 0x61, 0x72, 0x65, 0x22, 0x89, 0x02,
 	0x0a, 0x0e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
 	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
 	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x35, 0x0a, 0x06, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x18, 0x02,
@@ -1156,7 +1371,36 @@ var file_store_database_proto_rawDesc = []byte{
 	0x3e, 0x0a, 0x09, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x04, 0x20, 0x03,
 	0x28, 0x0b, 0x32, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74,
 	0x6f, 0x72, 0x65, 0x2e, 0x46, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x4d, 0x65, 0x74, 0x61,
-	0x64, 0x61, 0x74, 0x61, 0x52, 0x09, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22,
+	0x64, 0x61, 0x74, 0x61, 0x52, 0x09, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12,
+	0x38, 0x0a, 0x07, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
+	0x52, 0x07, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x22, 0x93, 0x03, 0x0a, 0x0e, 0x53, 0x74,
+	0x72, 0x65, 0x61, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x12, 0x1d, 0x0a, 0x0a, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12,
+	0x14, 0x0a, 0x05, 0x6f, 0x77, 0x6e, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x6f, 0x77, 0x6e, 0x65, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x12,
+	0x37, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x23, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x53,
+	0x74, 0x72, 0x65, 0x61, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x2e, 0x54, 0x79,
+	0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x6c,
+	0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x73, 0x74, 0x61, 0x6c, 0x65, 0x12, 0x37,
+	0x0a, 0x04, 0x6d, 0x6f, 0x64, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x23, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x74,
+	0x72, 0x65, 0x61, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x2e, 0x4d, 0x6f, 0x64,
+	0x65, 0x52, 0x04, 0x6d, 0x6f, 0x64, 0x65, 0x12, 0x1e, 0x0a, 0x0a, 0x64, 0x65, 0x66, 0x69, 0x6e,
+	0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x64, 0x65, 0x66,
+	0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x2c, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12,
+	0x14, 0x0a, 0x10, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46,
+	0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0e, 0x0a, 0x0a, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x44, 0x45,
+	0x4c, 0x54, 0x41, 0x10, 0x01, 0x22, 0x48, 0x0a, 0x04, 0x4d, 0x6f, 0x64, 0x65, 0x12, 0x14, 0x0a,
+	0x10, 0x4d, 0x4f, 0x44, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45,
+	0x44, 0x10, 0x00, 0x12, 0x14, 0x0a, 0x10, 0x4d, 0x4f, 0x44, 0x45, 0x5f, 0x41, 0x50, 0x50, 0x45,
+	0x4e, 0x44, 0x5f, 0x4f, 0x4e, 0x4c, 0x59, 0x10, 0x01, 0x12, 0x14, 0x0a, 0x10, 0x4d, 0x4f, 0x44,
+	0x45, 0x5f, 0x49, 0x4e, 0x53, 0x45, 0x52, 0x54, 0x5f, 0x4f, 0x4e, 0x4c, 0x59, 0x10, 0x02, 0x22,
 	0xca, 0x03, 0x0a, 0x0d, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
 	0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x38, 0x0a, 0x07, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73,
@@ -1291,40 +1535,47 @@ func file_store_database_proto_rawDescGZIP() []byte {
 	return file_store_database_proto_rawDescData
 }
 
-var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_store_database_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_store_database_proto_goTypes = []interface{}{
-	(*DatabaseMetadata)(nil),       // 0: bytebase.store.DatabaseMetadata
-	(*SchemaMetadata)(nil),         // 1: bytebase.store.SchemaMetadata
-	(*TableMetadata)(nil),          // 2: bytebase.store.TableMetadata
-	(*ColumnMetadata)(nil),         // 3: bytebase.store.ColumnMetadata
-	(*ViewMetadata)(nil),           // 4: bytebase.store.ViewMetadata
-	(*DependentColumn)(nil),        // 5: bytebase.store.DependentColumn
-	(*FunctionMetadata)(nil),       // 6: bytebase.store.FunctionMetadata
-	(*IndexMetadata)(nil),          // 7: bytebase.store.IndexMetadata
-	(*ExtensionMetadata)(nil),      // 8: bytebase.store.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),     // 9: bytebase.store.ForeignKeyMetadata
-	(*InstanceRoleMetadata)(nil),   // 10: bytebase.store.InstanceRoleMetadata
-	(*Secrets)(nil),                // 11: bytebase.store.Secrets
-	(*SecretItem)(nil),             // 12: bytebase.store.SecretItem
-	(*wrapperspb.StringValue)(nil), // 13: google.protobuf.StringValue
+	(StreamMetadata_Type)(0),       // 0: bytebase.store.StreamMetadata.Type
+	(StreamMetadata_Mode)(0),       // 1: bytebase.store.StreamMetadata.Mode
+	(*DatabaseMetadata)(nil),       // 2: bytebase.store.DatabaseMetadata
+	(*SchemaMetadata)(nil),         // 3: bytebase.store.SchemaMetadata
+	(*StreamMetadata)(nil),         // 4: bytebase.store.StreamMetadata
+	(*TableMetadata)(nil),          // 5: bytebase.store.TableMetadata
+	(*ColumnMetadata)(nil),         // 6: bytebase.store.ColumnMetadata
+	(*ViewMetadata)(nil),           // 7: bytebase.store.ViewMetadata
+	(*DependentColumn)(nil),        // 8: bytebase.store.DependentColumn
+	(*FunctionMetadata)(nil),       // 9: bytebase.store.FunctionMetadata
+	(*IndexMetadata)(nil),          // 10: bytebase.store.IndexMetadata
+	(*ExtensionMetadata)(nil),      // 11: bytebase.store.ExtensionMetadata
+	(*ForeignKeyMetadata)(nil),     // 12: bytebase.store.ForeignKeyMetadata
+	(*InstanceRoleMetadata)(nil),   // 13: bytebase.store.InstanceRoleMetadata
+	(*Secrets)(nil),                // 14: bytebase.store.Secrets
+	(*SecretItem)(nil),             // 15: bytebase.store.SecretItem
+	(*wrapperspb.StringValue)(nil), // 16: google.protobuf.StringValue
 }
 var file_store_database_proto_depIdxs = []int32{
-	1,  // 0: bytebase.store.DatabaseMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
-	8,  // 1: bytebase.store.DatabaseMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
-	2,  // 2: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
-	4,  // 3: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
-	6,  // 4: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
-	3,  // 5: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	7,  // 6: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	9,  // 7: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
-	13, // 8: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
-	5,  // 9: bytebase.store.ViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
-	12, // 10: bytebase.store.Secrets.items:type_name -> bytebase.store.SecretItem
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	3,  // 0: bytebase.store.DatabaseMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
+	11, // 1: bytebase.store.DatabaseMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
+	5,  // 2: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
+	7,  // 3: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
+	9,  // 4: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
+	4,  // 5: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
+	0,  // 6: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
+	1,  // 7: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
+	6,  // 8: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	10, // 9: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	12, // 10: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
+	16, // 11: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
+	8,  // 12: bytebase.store.ViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
+	15, // 13: bytebase.store.Secrets.items:type_name -> bytebase.store.SecretItem
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_store_database_proto_init() }
@@ -1358,7 +1609,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableMetadata); i {
+			switch v := v.(*StreamMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1370,7 +1621,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnMetadata); i {
+			switch v := v.(*TableMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1382,7 +1633,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ViewMetadata); i {
+			switch v := v.(*ColumnMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1394,7 +1645,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DependentColumn); i {
+			switch v := v.(*ViewMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1406,7 +1657,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FunctionMetadata); i {
+			switch v := v.(*DependentColumn); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1418,7 +1669,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*IndexMetadata); i {
+			switch v := v.(*FunctionMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1430,7 +1681,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ExtensionMetadata); i {
+			switch v := v.(*IndexMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1442,7 +1693,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ForeignKeyMetadata); i {
+			switch v := v.(*ExtensionMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1454,7 +1705,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*InstanceRoleMetadata); i {
+			switch v := v.(*ForeignKeyMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1466,7 +1717,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Secrets); i {
+			switch v := v.(*InstanceRoleMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1478,6 +1729,18 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Secrets); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_database_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SecretItem); i {
 			case 0:
 				return &v.state
@@ -1495,13 +1758,14 @@ func file_store_database_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_database_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   13,
+			NumEnums:      2,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_database_proto_goTypes,
 		DependencyIndexes: file_store_database_proto_depIdxs,
+		EnumInfos:         file_store_database_proto_enumTypes,
 		MessageInfos:      file_store_database_proto_msgTypes,
 	}.Build()
 	File_store_database_proto = out.File

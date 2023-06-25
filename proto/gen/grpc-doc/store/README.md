@@ -46,8 +46,12 @@
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
+    - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableMetadata](#bytebase-store-TableMetadata)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
+  
+    - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
+    - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
   
 - [store/idp.proto](#store_idp-proto)
     - [FieldMapping](#bytebase-store-FieldMapping)
@@ -696,6 +700,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | tables | [TableMetadata](#bytebase-store-TableMetadata) | repeated | The tables is the list of tables in a schema. |
 | views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+| streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 
 
 
@@ -728,6 +733,28 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | items | [SecretItem](#bytebase-store-SecretItem) | repeated | The list of secrets. |
+
+
+
+
+
+
+<a name="bytebase-store-StreamMetadata"></a>
+
+### StreamMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a stream. |
+| table_name | [string](#string) |  | The table_name is the name of the table/view that the stream is created on. |
+| owner | [string](#string) |  | The owner of the stream. |
+| comment | [string](#string) |  | The comment of the stream. |
+| type | [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type) |  | The type of the stream. |
+| stale | [bool](#bool) |  | Indicates whether the stream was last read before the `stale_after` time. |
+| mode | [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode) |  | The mode of the stream. |
+| definition | [string](#string) |  | The definition of the stream. |
 
 
 
@@ -778,6 +805,31 @@ ViewMetadata is the metadata for views.
 
 
  
+
+
+<a name="bytebase-store-StreamMetadata-Mode"></a>
+
+### StreamMetadata.Mode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MODE_UNSPECIFIED | 0 |  |
+| MODE_APPEND_ONLY | 1 |  |
+| MODE_INSERT_ONLY | 2 |  |
+
+
+
+<a name="bytebase-store-StreamMetadata-Type"></a>
+
+### StreamMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_DELTA | 1 |  |
+
 
  
 

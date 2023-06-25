@@ -36,6 +36,99 @@ export interface SchemaMetadata {
   views: ViewMetadata[];
   /** The functions is the list of functions in a schema. */
   functions: FunctionMetadata[];
+  /** The streams is the list of streams in a schema, currently, only used for Snowflake. */
+  streams: StreamMetadata[];
+}
+
+export interface StreamMetadata {
+  /** The name is the name of a stream. */
+  name: string;
+  /** The table_name is the name of the table/view that the stream is created on. */
+  tableName: string;
+  /** The owner of the stream. */
+  owner: string;
+  /** The comment of the stream. */
+  comment: string;
+  /** The type of the stream. */
+  type: StreamMetadata_Type;
+  /** Indicates whether the stream was last read before the `stale_after` time. */
+  stale: boolean;
+  /** The mode of the stream. */
+  mode: StreamMetadata_Mode;
+  /** The definition of the stream. */
+  definition: string;
+}
+
+export enum StreamMetadata_Type {
+  TYPE_UNSPECIFIED = 0,
+  TYPE_DELTA = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function streamMetadata_TypeFromJSON(object: any): StreamMetadata_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return StreamMetadata_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "TYPE_DELTA":
+      return StreamMetadata_Type.TYPE_DELTA;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return StreamMetadata_Type.UNRECOGNIZED;
+  }
+}
+
+export function streamMetadata_TypeToJSON(object: StreamMetadata_Type): string {
+  switch (object) {
+    case StreamMetadata_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case StreamMetadata_Type.TYPE_DELTA:
+      return "TYPE_DELTA";
+    case StreamMetadata_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum StreamMetadata_Mode {
+  MODE_UNSPECIFIED = 0,
+  MODE_APPEND_ONLY = 1,
+  MODE_INSERT_ONLY = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function streamMetadata_ModeFromJSON(object: any): StreamMetadata_Mode {
+  switch (object) {
+    case 0:
+    case "MODE_UNSPECIFIED":
+      return StreamMetadata_Mode.MODE_UNSPECIFIED;
+    case 1:
+    case "MODE_APPEND_ONLY":
+      return StreamMetadata_Mode.MODE_APPEND_ONLY;
+    case 2:
+    case "MODE_INSERT_ONLY":
+      return StreamMetadata_Mode.MODE_INSERT_ONLY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return StreamMetadata_Mode.UNRECOGNIZED;
+  }
+}
+
+export function streamMetadata_ModeToJSON(object: StreamMetadata_Mode): string {
+  switch (object) {
+    case StreamMetadata_Mode.MODE_UNSPECIFIED:
+      return "MODE_UNSPECIFIED";
+    case StreamMetadata_Mode.MODE_APPEND_ONLY:
+      return "MODE_APPEND_ONLY";
+    case StreamMetadata_Mode.MODE_INSERT_ONLY:
+      return "MODE_INSERT_ONLY";
+    case StreamMetadata_Mode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 /** TableMetadata is the metadata for tables. */
@@ -332,7 +425,7 @@ export const DatabaseMetadata = {
 };
 
 function createBaseSchemaMetadata(): SchemaMetadata {
-  return { name: "", tables: [], views: [], functions: [] };
+  return { name: "", tables: [], views: [], functions: [], streams: [] };
 }
 
 export const SchemaMetadata = {
@@ -348,6 +441,9 @@ export const SchemaMetadata = {
     }
     for (const v of message.functions) {
       FunctionMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.streams) {
+      StreamMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -387,6 +483,13 @@ export const SchemaMetadata = {
 
           message.functions.push(FunctionMetadata.decode(reader, reader.uint32()));
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -402,6 +505,7 @@ export const SchemaMetadata = {
       tables: Array.isArray(object?.tables) ? object.tables.map((e: any) => TableMetadata.fromJSON(e)) : [],
       views: Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
       functions: Array.isArray(object?.functions) ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e)) : [],
+      streams: Array.isArray(object?.streams) ? object.streams.map((e: any) => StreamMetadata.fromJSON(e)) : [],
     };
   },
 
@@ -423,6 +527,11 @@ export const SchemaMetadata = {
     } else {
       obj.functions = [];
     }
+    if (message.streams) {
+      obj.streams = message.streams.map((e) => e ? StreamMetadata.toJSON(e) : undefined);
+    } else {
+      obj.streams = [];
+    }
     return obj;
   },
 
@@ -436,6 +545,156 @@ export const SchemaMetadata = {
     message.tables = object.tables?.map((e) => TableMetadata.fromPartial(e)) || [];
     message.views = object.views?.map((e) => ViewMetadata.fromPartial(e)) || [];
     message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
+    message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseStreamMetadata(): StreamMetadata {
+  return { name: "", tableName: "", owner: "", comment: "", type: 0, stale: false, mode: 0, definition: "" };
+}
+
+export const StreamMetadata = {
+  encode(message: StreamMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.tableName !== "") {
+      writer.uint32(18).string(message.tableName);
+    }
+    if (message.owner !== "") {
+      writer.uint32(26).string(message.owner);
+    }
+    if (message.comment !== "") {
+      writer.uint32(34).string(message.comment);
+    }
+    if (message.type !== 0) {
+      writer.uint32(40).int32(message.type);
+    }
+    if (message.stale === true) {
+      writer.uint32(48).bool(message.stale);
+    }
+    if (message.mode !== 0) {
+      writer.uint32(56).int32(message.mode);
+    }
+    if (message.definition !== "") {
+      writer.uint32(66).string(message.definition);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): StreamMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStreamMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tableName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.stale = reader.bool();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.mode = reader.int32() as any;
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StreamMetadata {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      tableName: isSet(object.tableName) ? String(object.tableName) : "",
+      owner: isSet(object.owner) ? String(object.owner) : "",
+      comment: isSet(object.comment) ? String(object.comment) : "",
+      type: isSet(object.type) ? streamMetadata_TypeFromJSON(object.type) : 0,
+      stale: isSet(object.stale) ? Boolean(object.stale) : false,
+      mode: isSet(object.mode) ? streamMetadata_ModeFromJSON(object.mode) : 0,
+      definition: isSet(object.definition) ? String(object.definition) : "",
+    };
+  },
+
+  toJSON(message: StreamMetadata): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.tableName !== undefined && (obj.tableName = message.tableName);
+    message.owner !== undefined && (obj.owner = message.owner);
+    message.comment !== undefined && (obj.comment = message.comment);
+    message.type !== undefined && (obj.type = streamMetadata_TypeToJSON(message.type));
+    message.stale !== undefined && (obj.stale = message.stale);
+    message.mode !== undefined && (obj.mode = streamMetadata_ModeToJSON(message.mode));
+    message.definition !== undefined && (obj.definition = message.definition);
+    return obj;
+  },
+
+  create(base?: DeepPartial<StreamMetadata>): StreamMetadata {
+    return StreamMetadata.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<StreamMetadata>): StreamMetadata {
+    const message = createBaseStreamMetadata();
+    message.name = object.name ?? "";
+    message.tableName = object.tableName ?? "";
+    message.owner = object.owner ?? "";
+    message.comment = object.comment ?? "";
+    message.type = object.type ?? 0;
+    message.stale = object.stale ?? false;
+    message.mode = object.mode ?? 0;
+    message.definition = object.definition ?? "";
     return message;
   },
 };

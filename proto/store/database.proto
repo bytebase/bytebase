@@ -41,6 +41,44 @@ message SchemaMetadata {
 
   // The functions is the list of functions in a schema.
   repeated FunctionMetadata functions = 4;
+
+  // The streams is the list of streams in a schema, currently, only used for Snowflake.
+  repeated StreamMetadata streams = 5;
+}
+
+message StreamMetadata {
+  // The name is the name of a stream.
+  string name = 1;
+
+  // The table_name is the name of the table/view that the stream is created on.
+  string table_name = 2;
+
+  // The owner of the stream.
+  string owner = 3;
+
+  // The comment of the stream.
+  string comment = 4;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_DELTA = 1;
+  }
+  // The type of the stream.
+  Type type = 5;
+
+  // Indicates whether the stream was last read before the `stale_after` time.
+  bool stale = 6;
+
+  enum Mode {
+    MODE_UNSPECIFIED = 0;
+    MODE_APPEND_ONLY = 1;
+    MODE_INSERT_ONLY = 2;
+  }
+  // The mode of the stream.
+  Mode mode = 7;
+
+  // The definition of the stream.
+  string definition = 8;
 }
 
 // TableMetadata is the metadata for tables.
