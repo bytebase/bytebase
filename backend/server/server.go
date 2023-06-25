@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net"
 	"net/http"
 	"runtime"
@@ -1074,7 +1075,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 			},
 		},
 		EnvironmentID: api.DefaultProdEnvironmentID,
-	}, userID, -1)
+		Activation:    true,
+	}, userID, math.MaxInt)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding instance")
 	}

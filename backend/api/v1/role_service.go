@@ -44,8 +44,8 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *v1pb.ListRolesRequest) (
 
 // CreateRole creates a new role.
 func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRequest) (*v1pb.Role, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomRole) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomRole.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomRole); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	create := &store.RoleMessage{
@@ -62,8 +62,8 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 
 // UpdateRole updates an existing role.
 func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.Role, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomRole) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomRole.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomRole); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")

@@ -17,14 +17,13 @@ import (
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
 
-	mysqlparser "github.com/bytebase/mysql-parser"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
 // SingleSQL is a separate SQL split from multi-SQL.
 type SingleSQL struct {
 	Text     string
+	BaseLine int
 	LastLine int
 	// The sql is empty, such as `/* comments */;` or just `;`.
 	Empty bool
@@ -397,7 +396,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 		t := newTokenizer(statement)
 		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
-		return splitMySQLMultiSQL(statement)
+		return SplitMySQL(statement)
 	case TiDB:
 		t := newTokenizer(statement)
 		list, err = t.splitTiDBMultiSQL()
@@ -429,55 +428,20 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	return result, nil
 }
 
-func splitMySQLMultiSQL(statement string) ([]SingleSQL, error) {
-	tree, tokens, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	if tree == nil {
-		return nil, nil
-	}
-
-	var result []SingleSQL
-	for _, node := range tree.GetChildren() {
-		if query, ok := node.(mysqlparser.IQueryContext); ok {
-			result = append(result, SingleSQL{
-				Text:     tokens.GetTextFromRuleContext(query),
-				LastLine: query.GetStop().GetLine(),
-				Empty:    false,
-			})
-		}
-	}
-
-	return result, nil
-}
-
 // Note that the reader is read completely into memory and so it must actually
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
 func splitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]SingleSQL, error) {
-	tree, tokens, err := ParseMySQLStream(src)
+	result, err := SplitMySQLStream(src)
 	if err != nil {
 		return nil, err
 	}
-	if tree == nil {
-		return nil, nil
-	}
 
-	var result []SingleSQL
-	for _, node := range tree.GetChildren() {
-		if query, ok := node.(mysqlparser.IQueryContext); ok {
-			text := tokens.GetTextFromRuleContext(query)
-			if f != nil {
-				if err := f(text); err != nil {
-					return nil, err
-				}
+	for _, sql := range result {
+		if f != nil {
+			if err := f(sql.Text); err != nil {
+				return nil, err
 			}
-			result = append(result, SingleSQL{
-				Text:     text,
-				LastLine: query.GetStop().GetLine(),
-				Empty:    false,
-			})
 		}
 	}
 

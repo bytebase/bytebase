@@ -87,7 +87,7 @@ func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) 
 	return composedInstance, nil
 }
 
-// InstanceMessage is the mssage for instance.
+// InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID   string
 	Title        string
@@ -102,7 +102,7 @@ type InstanceMessage struct {
 	EngineVersion string
 }
 
-// UpdateInstanceMessage is the mssage for updating an instance.
+// UpdateInstanceMessage is the message for updating an instance.
 type UpdateInstanceMessage struct {
 	Title         *string
 	ExternalLink  *string
@@ -349,6 +349,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				resource_id,
 				name,
 				engine,
+				engine_version,
 				external_link,
 				activation,
 				row_status
@@ -359,6 +360,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&instance.ResourceID,
 		&instance.Title,
 		&instance.Engine,
+		&instance.EngineVersion,
 		&instance.ExternalLink,
 		&instance.Activation,
 		&rowStatus,

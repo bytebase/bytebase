@@ -122,7 +122,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 			ApprovalFindingDone: false,
 		},
 	}
-	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil {
 		issueCreatePayload.Approval.ApprovalFindingDone = true
 	}
 
@@ -1017,7 +1017,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 }
 
 func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.Plan_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
 			return nil, nil, errors.Errorf(api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
@@ -1091,8 +1091,8 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
-			if !licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-				return nil, errors.Errorf(api.FeatureMultiTenancy.AccessErrorMessage())
+			if err := licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+				return nil, err
 			}
 		}
 

@@ -3,6 +3,7 @@ package taskcheck
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -69,14 +70,15 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", task.InstanceID)
 	}
-	if !e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance) {
+	if err := e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance); err != nil {
+		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusWarn,
 				Namespace: api.AdvisorNamespace,
 				Code:      advisor.Unsupported.Int(),
-				Title:     "Please assign license to the instance to enable the SQL review feature.",
-				Content:   "",
+				Title:     fmt.Sprintf("SQL review disabled for instance %s", instance.ResourceID),
+				Content:   err.Error(),
 			},
 		}, nil
 	}
