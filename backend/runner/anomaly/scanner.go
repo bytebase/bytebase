@@ -236,7 +236,7 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 	}
 
 	// Check schema drift
-	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance); err == nil {
+	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance) == nil {
 		// Redis and MongoDB are schemaless.
 		if disableSchemaDriftAnomalyCheck(instance.Engine) {
 			return

@@ -208,9 +208,7 @@ func (s *EnvironmentService) getEnvironmentMessage(ctx context.Context, name str
 	}
 
 	environmentUID, isNumber := isNumber(environmentID)
-	find := &store.FindEnvironmentMessage{
-		ShowDeleted: true,
-	}
+	find := &store.FindEnvironmentMessage{}
 	if isNumber {
 		find.UID = &environmentUID
 	} else {

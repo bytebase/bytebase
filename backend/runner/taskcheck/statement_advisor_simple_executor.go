@@ -3,6 +3,7 @@ package taskcheck
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -46,7 +47,7 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 				Status:    api.TaskCheckStatusWarn,
 				Namespace: api.AdvisorNamespace,
 				Code:      advisor.Unsupported.Int(),
-				Title:     "Missing instance license",
+				Title:     fmt.Sprintf("SQL review disabled for instance %s", instance.ResourceID),
 				Content:   err.Error(),
 			},
 		}, nil

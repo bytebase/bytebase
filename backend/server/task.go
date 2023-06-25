@@ -53,14 +53,14 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return err
 		}
 		for _, task := range tasks {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find instance %d", task.InstanceID)).SetInternal(err)
-			}
-			if instance == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the find instance %d", task.InstanceID))
-			}
 			if taskPatch.EarliestAllowedTs != nil {
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find instance %d", task.InstanceID)).SetInternal(err)
+				}
+				if instance == nil {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the find instance %d", task.InstanceID))
+				}
 				if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureTaskScheduleTime, instance); err != nil {
 					return echo.NewHTTPError(http.StatusForbidden, err.Error())
 				}

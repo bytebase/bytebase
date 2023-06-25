@@ -1141,7 +1141,7 @@ func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int,
 		}
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
 		// the assignee group is the project owner.
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureRBAC); err != nil {
+		if s.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
 			// nolint:nilerr
 			return true, nil
 		}
