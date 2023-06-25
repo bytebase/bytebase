@@ -38,7 +38,7 @@ export interface SchemaMetadata {
   functions: FunctionMetadata[];
   /** The streams is the list of streams in a schema, currently, only used for Snowflake. */
   streams: StreamMetadata[];
-  /** The routines is the list of routines in a schema. */
+  /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
   tasks: TaskMetadata[];
 }
 
@@ -161,8 +161,9 @@ export function streamMetadata_TypeToJSON(object: StreamMetadata_Type): string {
 
 export enum StreamMetadata_Mode {
   MODE_UNSPECIFIED = 0,
-  MODE_APPEND_ONLY = 1,
-  MODE_INSERT_ONLY = 2,
+  MODE_DEFAULT = 1,
+  MODE_APPEND_ONLY = 2,
+  MODE_INSERT_ONLY = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -172,9 +173,12 @@ export function streamMetadata_ModeFromJSON(object: any): StreamMetadata_Mode {
     case "MODE_UNSPECIFIED":
       return StreamMetadata_Mode.MODE_UNSPECIFIED;
     case 1:
+    case "MODE_DEFAULT":
+      return StreamMetadata_Mode.MODE_DEFAULT;
+    case 2:
     case "MODE_APPEND_ONLY":
       return StreamMetadata_Mode.MODE_APPEND_ONLY;
-    case 2:
+    case 3:
     case "MODE_INSERT_ONLY":
       return StreamMetadata_Mode.MODE_INSERT_ONLY;
     case -1:
@@ -188,6 +192,8 @@ export function streamMetadata_ModeToJSON(object: StreamMetadata_Mode): string {
   switch (object) {
     case StreamMetadata_Mode.MODE_UNSPECIFIED:
       return "MODE_UNSPECIFIED";
+    case StreamMetadata_Mode.MODE_DEFAULT:
+      return "MODE_DEFAULT";
     case StreamMetadata_Mode.MODE_APPEND_ONLY:
       return "MODE_APPEND_ONLY";
     case StreamMetadata_Mode.MODE_INSERT_ONLY:
