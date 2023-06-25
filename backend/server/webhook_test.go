@@ -141,7 +141,7 @@ func TestVCSSQLReview_ConvertSQLAdviceToGitLabCIResult(t *testing.T) {
 <testcase name="[WARN] file1.sql#L1: column.no-null" classname="file1.sql" file="file1.sql#L1">
 <failure>
 Error: Column "id" in "public"."book" cannot have NULL value.
-Please can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402
+Please check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402
 </failure>
 </testcase>
 <testcase name="[ERROR] file1.sql#L2: naming.index.idx" classname="file1.sql" file="file1.sql#L2">
