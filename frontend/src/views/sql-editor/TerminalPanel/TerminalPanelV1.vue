@@ -67,18 +67,8 @@
 import { computed, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
-import {
-  ExecuteConfig,
-  ExecuteOption,
-  UNKNOWN_ID,
-  WebTerminalQueryItemV1,
-} from "@/types";
-import {
-  useDatabaseV1Store,
-  useInstanceV1Store,
-  useTabStore,
-  useWebTerminalV1Store,
-} from "@/store";
+import { ExecuteConfig, ExecuteOption, WebTerminalQueryItemV1 } from "@/types";
+import { useTabStore, useWebTerminalV1Store } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
   EditorAction,
@@ -88,7 +78,6 @@ import {
 } from "../EditorCommon";
 import { useHistory } from "./useHistory";
 import { useAttractFocus } from "./useAttractFocus";
-import { AdminExecuteRequest } from "@/types/proto/v1/sql_service";
 
 const tabStore = useTabStore();
 const webTerminalStore = useWebTerminalV1Store();
@@ -135,41 +124,15 @@ const handleExecute = async (
     return;
   }
 
-  console.log("query", { query, config, option });
-  // queryState.value.controller.events.emit("query", { query, config, option });
-
-  const url = new URL(`${window.location.origin}/v1:adminExecute`);
-  url.protocol = url.protocol.replace("http", "ws");
-  const ws = new WebSocket(url);
-  ws.binaryType = "arraybuffer";
-
-  ws.addEventListener("open", (event) => {
-    console.log("ws open");
-
-    const tab = tabStore.currentTab;
-    const { instanceId, databaseId } = tab.connection;
-    const instance = useInstanceV1Store().getInstanceByUID(instanceId);
-    const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
-    const requestParams = AdminExecuteRequest.fromJSON({
-      name: instance.name,
-      connectionDatabase:
-        database.uid === String(UNKNOWN_ID) ? "" : database.databaseName,
-      statement: query,
-    });
-    console.log(
-      "send",
-      JSON.stringify(AdminExecuteRequest.toJSON(requestParams), null, "  ")
-    );
-    const writer = AdminExecuteRequest.encode(requestParams);
-    ws.send(JSON.stringify(requestParams));
-  });
-  ws.addEventListener("message", (event) => {
-    console.log("ws recv message", event.data);
-  });
-
-  ws.addEventListener("close", (event) => {
-    console.log("ws close", event.wasClean, event.reason, event.code);
-  });
+  // console.log("query", { query, config, option });
+  queryState.value.controller.events.emit("query", { query, config, option });
+  // if (query.includes("sleep")) {
+  //   console.log("will abort after 2000 ms");
+  //   setTimeout(() => {
+  //     console.log("aborted");
+  //     queryState.value.controller.abort();
+  //   }, 2000);
+  // }
 };
 
 const handleClearScreen = () => {

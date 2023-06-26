@@ -1,7 +1,6 @@
-import { computed, markRaw, reactive, ref } from "vue";
+import { markRaw, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { uniqueId } from "lodash-es";
-import { Metadata } from "nice-grpc-web";
 
 import {
   StreamingQueryController,
@@ -13,8 +12,7 @@ import {
 } from "@/types";
 import Emittery from "emittery";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
-import { from, fromEventPattern, map, Observable } from "rxjs";
-import { defer } from "@/utils";
+import { fromEventPattern, map, Observable, Subscription } from "rxjs";
 import {
   AdminExecuteRequest,
   AdminExecuteResponse,
@@ -22,10 +20,11 @@ import {
 } from "@/types/proto/v1/sql_service";
 import { useDatabaseV1Store } from "./database";
 import { useInstanceV1Store } from "./instance";
-import { sqlStreamingServiceClient } from "@/grpcweb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-import { pushNotification } from "../notification";
+import { ClientError, Status } from "nice-grpc-common";
 
+const ENDPOINT = "/v1:adminExecute";
+const SIG_ABORT = 3000 + Status.ABORTED;
 const QUERY_TIMEOUT_MS = 5000;
 const MAX_QUERY_ITEM_COUNT = 20;
 
@@ -107,30 +106,59 @@ const createStreamingQueryController = (tab: TabInfo) => {
       })
     );
 
-    let response$: Observable<AdminExecuteResponse> = from([]);
-    try {
-      // const requestParamsStream = toAsyncIterable(requestParams$);
-      // const responseStream = sqlStreamingServiceClient.adminExecute(
-      //   requestParamsStream,
-      //   {
-      //     // metadata: new Metadata().set(
-      //     //   "cookie",
-      //     //   `access-token=${accessTokenCopiedFromCookie}; refresh-token=${refreshTokenCopiedFromCookie}`
-      //     // ),
-      //     signal: abortController.signal,
-      //   }
-      // );
-      // controller.abort = abortController.abort.bind(abortController);
-      // response$ = from(responseStream);
-    } catch (err) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Connection failed",
-        description: extractGrpcErrorMessage(err),
+    const url = new URL(`${window.location.origin}${ENDPOINT}`);
+    url.protocol = url.protocol.replace(/^http/, "ws");
+    const ws = new WebSocket(url);
+
+    const response$ = new Observable<AdminExecuteResponse>((subscriber) => {
+      let requestSubscription: Subscription;
+
+      ws.addEventListener("open", (event) => {
+        console.log("ws open");
+        requestSubscription = requestParams$.subscribe({
+          next(request) {
+            console.log("will send", JSON.stringify(request));
+            ws.send(JSON.stringify(request));
+          },
+        });
       });
-      response$ = new Observable<AdminExecuteResponse>();
-    }
+      ws.addEventListener("message", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const response = AdminExecuteResponse.fromJSON(data.result ?? {});
+          subscriber.next(response);
+        } catch (err) {
+          subscriber.error(err);
+          subscriber.complete();
+        }
+      });
+      ws.addEventListener("error", (event) => {
+        console.log("error", event);
+        subscriber.complete();
+      });
+      ws.addEventListener("close", (event) => {
+        console.log("ws close", event.wasClean, event.reason, event.code);
+        if (event.code === SIG_ABORT) {
+          console.log("1");
+          subscriber.error(
+            new ClientError(ENDPOINT, Status.ABORTED, event.reason)
+          );
+        }
+        console.log("2");
+        requestSubscription.unsubscribe();
+        subscriber.complete();
+      });
+
+      return () => {
+        console.log("teardown");
+        requestSubscription.unsubscribe();
+      };
+    });
+    abortController.signal.addEventListener("abort", (e) => {
+      console.log("abort", e);
+      ws.close(SIG_ABORT, abortController.signal.reason);
+    });
+    controller.abort = abortController.abort.bind(abortController);
 
     response$.subscribe({
       next(response) {
@@ -150,6 +178,9 @@ const createStreamingQueryController = (tab: TabInfo) => {
         // if (retries < 5) {
         //   connect(retries + 1);
         // }
+      },
+      complete() {
+        console.log("complete");
       },
     });
   };
@@ -209,46 +240,41 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
   });
 };
 
-async function* toAsyncIterable<T>(
-  observable: Observable<T>
-): AsyncIterable<T> {
-  const state = {
-    curr: defer<T>(),
-    finished: false,
-  };
+// async function* toAsyncIterable<T>(
+//   observable: Observable<T>
+// ): AsyncIterable<T> {
+//   const state = {
+//     curr: defer<T>(),
+//     finished: false,
+//   };
 
-  const subscription = observable.subscribe({
-    next(value) {
-      const d = state.curr;
-      state.curr = defer<T>();
-      d.resolve(value);
-    },
-    error(error: unknown) {
-      const d = state.curr;
-      state.curr = defer<T>();
-      d.reject(error instanceof Error ? error : new Error(String(error)));
-    },
-    complete() {
-      state.finished = true;
-      state.curr.resolve(undefined as any);
-    },
-  });
+//   const subscription = observable.subscribe({
+//     next(value) {
+//       const d = state.curr;
+//       state.curr = defer<T>();
+//       d.resolve(value);
+//     },
+//     error(error: unknown) {
+//       const d = state.curr;
+//       state.curr = defer<T>();
+//       d.reject(error instanceof Error ? error : new Error(String(error)));
+//     },
+//     complete() {
+//       state.finished = true;
+//       state.curr.resolve(undefined as any);
+//     },
+//   });
 
-  try {
-    while (true) {
-      const value = await state.curr.promise;
-      if (state.finished) break;
-      yield value;
-    }
-  } finally {
-    subscription.unsubscribe();
-  }
-}
-
-const accessTokenCopiedFromCookie =
-  "eyJhbGciOiJIUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJuYW1lIjoiSmltIExpdSIsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMTAxIiwiYXVkIjpbImJiLnVzZXIuYWNjZXNzLmRldiJdLCJleHAiOjE2ODcyMzcyOTQsImlhdCI6MTY4NzE1MDg5NH0.Zs5uinQhwY82W6kjMozTHyQykV52sw3baCAvX-kqtnI";
-const refreshTokenCopiedFromCookie =
-  "eyJhbGciOiJIUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJuYW1lIjoiSmltIExpdSIsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMTAxIiwiYXVkIjpbImJiLnVzZXIucmVmcmVzaC5kZXYiXSwiZXhwIjoxNjg3NzU1Njk0LCJpYXQiOjE2ODcxNTA4OTR9.2pRgUrBpM0AoPzXeD6Da4SU6hOBzpO5U2vccRTyJ0qI";
+//   try {
+//     while (true) {
+//       const value = await state.curr.promise;
+//       if (state.finished) break;
+//       yield value;
+//     }
+//   } finally {
+//     subscription.unsubscribe();
+//   }
+// }
 
 export const mockAffectedV1Rows0 = (): QueryResult => {
   return {
@@ -256,6 +282,7 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
     columnTypeNames: ["BIGINT"],
     masked: [false],
     error: "",
+    statement: "",
     rows: [
       {
         values: [
