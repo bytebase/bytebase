@@ -175,6 +175,9 @@ type snowsqlResourceExtractListener struct {
 
 func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refContext) {
 	objectName := ctx.Object_name()
+	if objectName == nil {
+		return
+	}
 
 	var parts []string
 	database := l.currentDatabase
