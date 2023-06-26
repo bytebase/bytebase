@@ -28,7 +28,7 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

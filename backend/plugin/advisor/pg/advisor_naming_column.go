@@ -25,7 +25,7 @@ type NamingColumnConventionAdvisor struct {
 }
 
 // Check checks for column naming convention.
-func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

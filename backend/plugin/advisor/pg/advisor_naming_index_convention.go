@@ -26,7 +26,7 @@ type NamingIndexConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (*NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingIndexConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

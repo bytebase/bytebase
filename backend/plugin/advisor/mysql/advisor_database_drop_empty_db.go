@@ -28,7 +28,7 @@ type DatabaseAllowDropIfEmptyAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

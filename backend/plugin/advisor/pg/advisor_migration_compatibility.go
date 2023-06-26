@@ -24,7 +24,7 @@ type CompatibilityAdvisor struct {
 }
 
 // Check checks schema backward compatibility.
-func (*CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*CompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

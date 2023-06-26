@@ -24,7 +24,7 @@ type StatementDisallowAddColumnWithDefaultAdvisor struct {
 }
 
 // Check checks for to disallow add column with default.
-func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

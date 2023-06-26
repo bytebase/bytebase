@@ -27,7 +27,7 @@ type TableNoFKAdvisor struct {
 }
 
 // Check checks table disallow foreign key.
-func (*TableNoFKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableNoFKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

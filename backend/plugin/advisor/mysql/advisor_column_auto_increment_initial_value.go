@@ -29,7 +29,7 @@ type ColumnAutoIncrementInitialValueAdvisor struct {
 }
 
 // Check checks for auto-increment column initial value.
-func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

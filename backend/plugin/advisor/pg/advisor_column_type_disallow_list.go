@@ -20,7 +20,7 @@ type ColumnTypeDisallowListAdvisor struct {
 }
 
 // Check checks for column type restriction.
-func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

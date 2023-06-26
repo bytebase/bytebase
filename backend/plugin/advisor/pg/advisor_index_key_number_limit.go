@@ -24,7 +24,7 @@ type IndexKeyNumberLimitAdvisor struct {
 }
 
 // Check checks for index key number limit.
-func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

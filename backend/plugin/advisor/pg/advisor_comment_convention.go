@@ -26,7 +26,7 @@ type CommentConventionAdvisor struct {
 }
 
 // Check checks for comment convention.
-func (*CommentConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*CommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

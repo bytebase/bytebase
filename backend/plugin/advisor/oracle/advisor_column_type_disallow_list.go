@@ -26,7 +26,7 @@ type ColumnTypeDisallowListAdvisor struct {
 }
 
 // Check checks for column type disallow list.
-func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

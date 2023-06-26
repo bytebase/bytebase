@@ -30,7 +30,7 @@ type IndexPrimaryKeyTypeAllowlistAdvisor struct {
 }
 
 // Check checks for primary key type allowlist.
-func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

@@ -32,7 +32,7 @@ type UseInnoDBAdvisor struct {
 }
 
 // Check checks for using InnoDB engine.
-func (*UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

@@ -24,7 +24,7 @@ type StatementAddCheckNotValidAdvisor struct {
 }
 
 // Check checks for to add check not valid.
-func (*StatementAddCheckNotValidAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*StatementAddCheckNotValidAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

@@ -25,7 +25,7 @@ type TableRequirePkAdvisor struct {
 }
 
 // Check checks for table require primary key.
-func (*TableRequirePkAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableRequirePkAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

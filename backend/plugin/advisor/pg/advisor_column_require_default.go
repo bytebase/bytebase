@@ -28,7 +28,7 @@ type ColumnRequireDefaultAdvisor struct {
 }
 
 // Check checks for column default requirement.
-func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

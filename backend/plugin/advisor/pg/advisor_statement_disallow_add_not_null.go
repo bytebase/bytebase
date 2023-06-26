@@ -26,7 +26,7 @@ type StatementDisallowAddNotNullAdvisor struct {
 }
 
 // Check checks for to disallow add not null.
-func (*StatementDisallowAddNotNullAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*StatementDisallowAddNotNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
