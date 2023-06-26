@@ -113,7 +113,7 @@ func (s *Store) GetAccessControlPolicy(ctx context.Context, resourceType api.Pol
 
 	accessControlPolicy, err := api.UnmarshalAccessControlPolicy(policy.Payload)
 	if err != nil {
-		// For access constrol policy, the default value for InheritFromParent is true.
+		// For access control policy, the default value for InheritFromParent is true.
 		return nil, true, err
 	}
 	return accessControlPolicy, policy.InheritFromParent, nil
