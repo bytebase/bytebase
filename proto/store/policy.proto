@@ -22,7 +22,6 @@ message Binding {
   //
   // * `allUsers`: A special identifier that represents anyone.
   // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-  //
   repeated string members = 2;
 
   // The condition that is associated with this binding.
