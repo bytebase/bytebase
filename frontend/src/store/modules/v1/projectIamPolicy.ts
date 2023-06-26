@@ -1,7 +1,7 @@
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { defineStore } from "pinia";
 
-import { IamPolicy } from "@/types/proto/v1/project_service";
+import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import { projectServiceClient } from "@/grpcweb";
 import { ComposedDatabase, MaybeRef, PresetRoleType } from "@/types";
 import { useProjectV1Store } from "./project";
