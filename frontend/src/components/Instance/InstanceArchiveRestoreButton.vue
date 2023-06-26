@@ -80,7 +80,7 @@ const currentUserV1 = useCurrentUserV1();
 const instanceStore = useInstanceV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
-// const force = ref(false);
+const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
   return hasWorkspacePermissionV1(
