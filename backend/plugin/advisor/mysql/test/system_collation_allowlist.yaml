@@ -34,7 +34,8 @@
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "ALTER TABLE t COLLATE latin1_bin
+        "
+        ALTER TABLE t COLLATE latin1_bin
         ;" used disabled collation 'latin1_bin'
       line: 3
       details: ""
@@ -66,7 +67,8 @@
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
+        "
+        ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
         ;" used disabled collation 'latin1_bin'
       line: 3
       details: ""
@@ -78,7 +80,8 @@
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
+        "
+        ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
         ;" used disabled collation 'latin1_bin'
       line: 3
       details: ""
@@ -90,7 +93,8 @@
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
+        "
+        ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
         ;" used disabled collation 'latin1_bin'
       line: 3
       details: ""

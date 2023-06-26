@@ -256,7 +256,7 @@
       status: ERROR
       title: statement.where.require
       content: |-
-        "DELETE FROM tech_book
+        "        DELETE FROM tech_book
         ;" requires WHERE clause
       line: 2
       details: ""
@@ -265,7 +265,7 @@
       status: ERROR
       title: statement.dml-dry-run
       content: |-
-        "DELETE FROM tech_book
+        "        DELETE FROM tech_book
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
       details: ""
@@ -274,7 +274,7 @@
       status: WARN
       title: statement.affected-row-limit
       content: |-
-        "DELETE FROM tech_book
+        "        DELETE FROM tech_book
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
       details: ""
@@ -316,7 +316,7 @@
       status: ERROR
       title: statement.select.no-select-all
       content: |-
-        "INSERT INTO t_copy SELECT * FROM t
+        "        INSERT INTO t_copy SELECT * FROM t
         ;" uses SELECT all
       line: 2
       details: ""
@@ -325,7 +325,7 @@
       status: ERROR
       title: statement.where.require
       content: |-
-        "INSERT INTO t_copy SELECT * FROM t
+        "        INSERT INTO t_copy SELECT * FROM t
         ;" requires WHERE clause
       line: 2
       details: ""
@@ -334,7 +334,7 @@
       status: ERROR
       title: statement.dml-dry-run
       content: |-
-        "INSERT INTO t_copy SELECT * FROM t
+        "        INSERT INTO t_copy SELECT * FROM t
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
       line: 2
       details: ""
@@ -343,7 +343,7 @@
       status: WARN
       title: statement.insert.row-limit
       content: |-
-        "INSERT INTO t_copy SELECT * FROM t
+        "        INSERT INTO t_copy SELECT * FROM t
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
       line: 2
       details: ""
@@ -352,7 +352,7 @@
       status: WARN
       title: statement.insert.must-specify-column
       content: |-
-        The INSERT statement must specify columns but "INSERT INTO t_copy SELECT * FROM t
+        The INSERT statement must specify columns but "        INSERT INTO t_copy SELECT * FROM t
         ;" does not
       line: 2
       details: ""
@@ -364,7 +364,7 @@
       status: ERROR
       title: statement.dml-dry-run
       content: |-
-        "INSERT INTO t VALUES (1, 1, now(), 1, now())
+        "        INSERT INTO t VALUES (1, 1, now(), 1, now())
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist
       line: 2
       details: ""
@@ -373,7 +373,7 @@
       status: WARN
       title: statement.insert.must-specify-column
       content: |-
-        The INSERT statement must specify columns but "INSERT INTO t VALUES (1, 1, now(), 1, now())
+        The INSERT statement must specify columns but "        INSERT INTO t VALUES (1, 1, now(), 1, now())
         ;" does not
       line: 2
       details: ""
@@ -513,14 +513,14 @@
       status: WARN
       title: table.disallow-partition
       content: |-
-        Table partition is forbidden, but "ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8
+        Table partition is forbidden, but "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8
         ;" creates
       line: 2
       details: ""
   run: false
-- statement: |4-
-      ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
-      ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
+- statement: |-
+    ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
+    ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
   result:
     - namespace: bb.advisor
       code: 207
@@ -572,7 +572,7 @@
       status: WARN
       title: schema.backward-compatibility
       content: |-
-        "DROP TABLE user
+        "        DROP TABLE user
         ;" may cause incompatibility with the existing data and code
       line: 2
       details: ""
