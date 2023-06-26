@@ -68,7 +68,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { reactive, watch, ref } from "vue";
 import {
   useIdentityProviderStore,
   useInstanceV1Store,
@@ -93,6 +93,7 @@ import { PolicyType } from "@/types/proto/v1/org_policy_service";
 
 interface LocalState {
   showModal: boolean;
+  ready: boolean;
 }
 
 const { t } = useI18n();
@@ -100,6 +101,7 @@ const router = useRouter();
 const subscriptionStore = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   showModal: false,
+  ready: false,
 });
 
 const idpStore = useIdentityProviderStore();
@@ -111,82 +113,95 @@ const dbV1Store = useDatabaseV1Store();
 const dbSecretStore = useDatabaseSecretStore();
 const dbGroupStore = useDBGroupStore();
 
-const usedFeatureList = computed(() => {
-  const set: Set<FeatureType> = new Set();
+const usedFeatureList = ref<FeatureType[]>([]);
 
-  if (idpStore.identityProviderList.length > 0) {
-    set.add("bb.feature.sso");
-  }
-
-  // setting
-  if (settingV1Store.brandingLogo) {
-    set.add("bb.feature.branding");
-  }
-  const watermarkSetting = settingV1Store.getSettingByName(
-    "bb.workspace.watermark"
-  );
-  if (watermarkSetting?.value?.stringValue === "1") {
-    set.add("bb.feature.watermark");
-  }
-  if (settingV1Store.workspaceProfileSetting?.disallowSignup ?? false) {
-    set.add("bb.feature.disallow-signup");
-  }
-  if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
-    set.add("bb.feature.2fa");
-  }
-  const openAIKeySetting = settingV1Store.getSettingByName(
-    "bb.plugin.openai.key"
-  );
-  if (openAIKeySetting?.value?.stringValue) {
-    set.add("bb.feature.plugin.openai");
-  }
-  const imSetting = settingV1Store.getSettingByName("bb.app.im");
-  if (imSetting?.value?.appImSettingValue?.appId) {
-    set.add("bb.feature.im.approval");
-  }
-
-  // environment
-  for (const environment of environmentV1Store.environmentList) {
-    if (environment.tier === EnvironmentTier.PROTECTED) {
-      set.add("bb.feature.environment-tier-policy");
+watch(
+  () => state.ready,
+  async (ready) => {
+    if (!ready) {
+      return;
     }
-    const backupPolicy = policyV1Store.getPolicyByParentAndType({
-      parentPath: environment.name,
-      policyType: PolicyType.BACKUP_PLAN,
-    });
-    if (
-      backupPolicy?.backupPlanPolicy?.schedule ??
-      defaultBackupSchedule !== defaultBackupSchedule
-    ) {
-      set.add("bb.feature.backup-policy");
+    const set: Set<FeatureType> = new Set();
+
+    if (idpStore.identityProviderList.length > 0) {
+      set.add("bb.feature.sso");
     }
 
-    const approvalPolicy = policyV1Store.getPolicyByParentAndType({
-      parentPath: environment.name,
-      policyType: PolicyType.DEPLOYMENT_APPROVAL,
-    });
-    if (
-      approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy ??
-      defaultApprovalStrategy !== defaultApprovalStrategy
-    ) {
-      set.add("bb.feature.approval-policy");
+    // setting
+    if (settingV1Store.brandingLogo) {
+      set.add("bb.feature.branding");
     }
-  }
-
-  // database
-  for (const databse of dbV1Store.databaseList) {
-    const list = dbSecretStore.getSecretListByDatabase(databse.name);
-    if (list.length > 0) {
-      set.add("bb.feature.encrypted-secrets");
-      break;
+    const watermarkSetting = settingV1Store.getSettingByName(
+      "bb.workspace.watermark"
+    );
+    if (watermarkSetting?.value?.stringValue === "1") {
+      set.add("bb.feature.watermark");
     }
-  }
-  if (dbGroupStore.getAllDatabaseGroupList().length > 0) {
-    set.add("bb.feature.database-grouping");
-  }
+    if (settingV1Store.workspaceProfileSetting?.disallowSignup ?? false) {
+      set.add("bb.feature.disallow-signup");
+    }
+    if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
+      set.add("bb.feature.2fa");
+    }
+    const openAIKeySetting = settingV1Store.getSettingByName(
+      "bb.plugin.openai.key"
+    );
+    if (openAIKeySetting?.value?.stringValue) {
+      set.add("bb.feature.plugin.openai");
+    }
+    const imSetting = settingV1Store.getSettingByName("bb.app.im");
+    if (imSetting?.value?.appImSettingValue?.appId) {
+      set.add("bb.feature.im.approval");
+    }
 
-  return [...set.values()];
-});
+    for (const environment of environmentV1Store.environmentList) {
+      if (environment.tier === EnvironmentTier.PROTECTED) {
+        set.add("bb.feature.environment-tier-policy");
+      }
+      if (!set.has("bb.feature.backup-policy")) {
+        const backupPolicy =
+          await policyV1Store.getOrFetchPolicyByParentAndType({
+            parentPath: environment.name,
+            policyType: PolicyType.BACKUP_PLAN,
+          });
+        if (
+          backupPolicy?.backupPlanPolicy?.schedule ??
+          defaultBackupSchedule !== defaultBackupSchedule
+        ) {
+          set.add("bb.feature.backup-policy");
+        }
+      }
+
+      if (!set.has("bb.feature.approval-policy")) {
+        const approvalPolicy =
+          await policyV1Store.getOrFetchPolicyByParentAndType({
+            parentPath: environment.name,
+            policyType: PolicyType.DEPLOYMENT_APPROVAL,
+          });
+        if (
+          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy ??
+          defaultApprovalStrategy !== defaultApprovalStrategy
+        ) {
+          set.add("bb.feature.approval-policy");
+        }
+      }
+    }
+
+    // database
+    for (const databse of dbV1Store.databaseList) {
+      const list = await dbSecretStore.fetchSecretList(databse.name);
+      if (list.length > 0) {
+        set.add("bb.feature.encrypted-secrets");
+        break;
+      }
+    }
+    if (dbGroupStore.getAllDatabaseGroupList().length > 0) {
+      set.add("bb.feature.database-grouping");
+    }
+
+    usedFeatureList.value = [...set.values()];
+  }
+);
 
 const overUsedFeatureList = computed(() => {
   const currentPlan = subscriptionStore.currentPlan;
@@ -223,39 +238,23 @@ const currentPlan = computed(() => {
 });
 
 onMounted(() => {
-  if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
+  if (subscriptionStore.currentPlan !== PlanType.FREE) {
     return;
   }
 
   Promise.all([
     idpStore.fetchIdentityProviderList(),
     settingV1Store.fetchSettingList(),
-    environmentV1Store.fetchEnvironments().then((list) => {
-      return list.map((env) => {
-        Promise.all([
-          policyV1Store.getOrFetchPolicyByParentAndType({
-            parentPath: env.name,
-            policyType: PolicyType.DEPLOYMENT_APPROVAL,
-          }),
-          policyV1Store.getOrFetchPolicyByParentAndType({
-            parentPath: env.name,
-            policyType: PolicyType.BACKUP_PLAN,
-          }),
-        ]);
-      });
-    }),
+    environmentV1Store.fetchEnvironments(),
     instanceStore.fetchInstanceList(),
-    dbV1Store
-      .fetchDatabaseList({
-        parent: "instances/-",
-      })
-      .then((list) => {
-        return list.map((db) => dbSecretStore.fetchSecretList(db.name));
-      }),
     dbGroupStore.fetchAllDatabaseGroupList(),
-  ]).catch(() => {
-    // ignore
-  });
+  ])
+    .catch(() => {
+      // ignore
+    })
+    .finally(() => {
+      state.ready = true;
+    });
 });
 
 const gotoSubscriptionPage = () => {
