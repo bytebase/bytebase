@@ -41,10 +41,15 @@
       />
     </template>
   </template>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.instance-count"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, reactive } from "vue";
 import { NCheckbox } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
@@ -52,20 +57,30 @@ import {
   useCurrentUserV1,
   useInstanceV1Store,
   pushNotification,
+  useSubscriptionV1Store,
 } from "@/store";
 import { ComposedInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
+interface LocalState {
+  showFeatureModal: boolean;
+}
+
 const props = defineProps<{
   instance: ComposedInstance;
 }>();
 
+const state = reactive<LocalState>({
+  showFeatureModal: false,
+});
+
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const instanceStore = useInstanceV1Store();
+const subscriptionStore = useSubscriptionV1Store();
 
-const force = ref(false);
+// const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
   return hasWorkspacePermissionV1(
@@ -85,6 +100,11 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
       ]),
     });
   } else {
+    const instanceList = instanceV1Store.activeInstanceList;
+    if (subscriptionStore.instanceCountLimit <= instanceList.length) {
+      state.showFeatureModal = true;
+      return;
+    }
     await instanceStore.restoreInstance(props.instance);
     pushNotification({
       module: "bytebase",

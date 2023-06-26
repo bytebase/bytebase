@@ -58,12 +58,6 @@
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </Drawer>
-
-  <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.instance-count"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -96,7 +90,6 @@ import { State } from "@/types/proto/v1/common";
 interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
-  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -115,7 +108,6 @@ const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
-  showFeatureModal: false,
 });
 
 const instanceId = computed(() => {
