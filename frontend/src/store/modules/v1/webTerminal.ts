@@ -125,8 +125,17 @@ const createStreamingQueryController = (tab: TabInfo) => {
       ws.addEventListener("message", (event) => {
         try {
           const data = JSON.parse(event.data);
-          const response = AdminExecuteResponse.fromJSON(data.result ?? {});
-          subscriber.next(response);
+          if (data.result) {
+            const response = AdminExecuteResponse.fromJSON(data.result ?? {});
+            subscriber.next(response);
+          } else if (data.error) {
+            const err = new ClientError(
+              ENDPOINT,
+              data.error.code,
+              data.error.message
+            );
+            subscriber.error(err);
+          }
         } catch (err) {
           subscriber.error(err);
         }
