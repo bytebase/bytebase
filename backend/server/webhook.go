@@ -1920,7 +1920,11 @@ func getSQLAdviceFileList(adviceMap map[string][]advisor.Advice) []string {
 		}
 		fileToErrorCount[filePath] = errorCount
 	}
+	sort.Strings(fileList)
 	sort.Slice(fileList, func(i int, j int) bool {
+		if fileToErrorCount[fileList[i]] == fileToErrorCount[fileList[j]] {
+			return i < j
+		}
 		return fileToErrorCount[fileList[i]] > fileToErrorCount[fileList[j]]
 	})
 
