@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/common.proto";
 import "v1/deployment.proto";
+import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
 
@@ -200,31 +201,33 @@ message Policy {
   PolicyType type = 5;
 
   oneof policy {
-    DeploymentApprovalPolicy deployment_approval_policy = 6;
-    BackupPlanPolicy backup_plan_policy = 7;
-    SensitiveDataPolicy sensitive_data_policy = 8;
-    AccessControlPolicy access_control_policy = 9;
-    SQLReviewPolicy sql_review_policy = 10;
-    SlowQueryPolicy slow_query_policy = 11;
+    IamPolicy workspace_iam_policy = 6;
+    DeploymentApprovalPolicy deployment_approval_policy = 7;
+    BackupPlanPolicy backup_plan_policy = 8;
+    SensitiveDataPolicy sensitive_data_policy = 9;
+    AccessControlPolicy access_control_policy = 10;
+    SQLReviewPolicy sql_review_policy = 11;
+    SlowQueryPolicy slow_query_policy = 12;
   }
 
-  bool enforce = 12;
+  bool enforce = 13;
 
   // The resource type for the policy.
-  PolicyResourceType resource_type = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  PolicyResourceType resource_type = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The system-assigned, unique identifier for the resource.
-  string resource_uid = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string resource_uid = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0;
-  DEPLOYMENT_APPROVAL = 1;
-  BACKUP_PLAN = 2;
-  SQL_REVIEW = 3;
-  SENSITIVE_DATA = 4;
-  ACCESS_CONTROL = 5;
-  SLOW_QUERY = 6;
+  WORKSPACE_IAM = 1;
+  DEPLOYMENT_APPROVAL = 2;
+  BACKUP_PLAN = 3;
+  SQL_REVIEW = 4;
+  SENSITIVE_DATA = 5;
+  ACCESS_CONTROL = 6;
+  SLOW_QUERY = 7;
 }
 
 enum PolicyResourceType {

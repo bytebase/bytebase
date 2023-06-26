@@ -4,7 +4,8 @@ import { orderBy, uniq } from "lodash-es";
 import { DEFAULT_PROJECT_V1_NAME, PresetRoleType, UNKNOWN_ID } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { IamPolicy, Project } from "@/types/proto/v1/project_service";
+import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { Project } from "@/types/proto/v1/project_service";
 import {
   extractRoleResourceName,
   hasProjectPermission,

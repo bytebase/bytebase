@@ -65,7 +65,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
 import { ComposedProject } from "@/types";
-import { Binding } from "@/types/proto/v1/project_service";
+import { Binding } from "@/types/proto/v1/iam_policy";
 import { Expr } from "@/types/proto/google/type/expr";
 import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 
