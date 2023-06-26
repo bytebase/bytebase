@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/common.proto";
 import "v1/deployment.proto";
+import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
 
@@ -225,6 +226,7 @@ enum PolicyType {
   SENSITIVE_DATA = 4;
   ACCESS_CONTROL = 5;
   SLOW_QUERY = 6;
+  DATA_ACCESS_CONTROL = 7;
 }
 
 enum PolicyResourceType {
@@ -317,4 +319,8 @@ enum SQLReviewRuleLevel {
   ERROR = 1;
   WARNING = 2;
   DISABLED = 3;
+}
+
+message DataAccessControlPolicy {
+  IamPolicy iam_policy = 1;
 }
