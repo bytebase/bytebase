@@ -648,7 +648,7 @@ func extractOracleResourceList(currentDatabase string, currentSchema string, sta
 		return nil, err
 	}
 
-	l := &resourceExtractListener{
+	l := &plsqlResourceExtractListener{
 		currentDatabase: currentDatabase,
 		currentSchema:   currentSchema,
 		resourceMap:     make(map[string]SchemaResource),
@@ -667,7 +667,7 @@ func extractOracleResourceList(currentDatabase string, currentSchema string, sta
 	return result, nil
 }
 
-type resourceExtractListener struct {
+type plsqlResourceExtractListener struct {
 	*parser.BasePlSqlParserListener
 
 	currentDatabase string
@@ -675,7 +675,7 @@ type resourceExtractListener struct {
 	resourceMap     map[string]SchemaResource
 }
 
-func (l *resourceExtractListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
+func (l *plsqlResourceExtractListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
 	if ctx.Identifier() == nil {
 		return
 	}
