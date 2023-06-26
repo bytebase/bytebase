@@ -950,7 +950,8 @@
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
     "create-gcp-credentials": "创建凭据的方法见",
     "used-for-testing-connection": "仅作测试连接用",
-    "all": "所有实例"
+    "all": "所有实例",
+    "force-archive-description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
   },
   "environment": {
     "id": "环境 ID",
