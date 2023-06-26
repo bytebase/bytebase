@@ -69,7 +69,7 @@
 
 <script lang="ts" setup>
 import { ref, watch, reactive } from "vue";
-import { ConditionGroupExpr, convertToCELString } from "@/plugins/cel";
+import { ConditionGroupExpr, buildCELExpr } from "@/plugins/cel";
 import { ComposedProject } from "@/types";
 import { DatabaseView } from "../v2";
 import {
@@ -84,6 +84,8 @@ import {
   schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
 import BBLoader from "@/bbkit/BBLoader.vue";
+import { convertParsedExprToCELString } from "@/utils";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 
 interface LocalState {
   isRequesting: boolean;
@@ -109,7 +111,11 @@ const unmatchedTableList = ref<SchemaGroup_Table[]>([]);
 const updateMatchingState = useDebounceFn(async () => {
   state.isRequesting = true;
   try {
-    const celString = convertToCELString(props.expr);
+    const celString = await convertParsedExprToCELString(
+      ParsedExpr.fromJSON({
+        expr: buildCELExpr(props.expr),
+      })
+    );
     const validateOnlyResourceId = `creating-schema-group-${Date.now()}`;
     const databaseGroupName = `${props.project.name}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
     const result = await projectServiceClient.createSchemaGroup({
