@@ -7945,6 +7945,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The timeout for the request. |
 
 
 
@@ -8065,6 +8066,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The timeout for the request. |
 
 
 
