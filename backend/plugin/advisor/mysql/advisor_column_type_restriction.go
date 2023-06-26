@@ -30,9 +30,9 @@ type ColumnTypeRestrictionAdvisor struct {
 
 // Check checks for column type restriction.
 func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
-	if errAdvice != nil {
-		return errAdvice, nil
+	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert to StmtNode")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

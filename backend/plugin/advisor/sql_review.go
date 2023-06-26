@@ -13,9 +13,14 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	tidbparser "github.com/pingcap/tidb/parser"
+	tidbast "github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
 // How to add a SQL review rule:
@@ -472,9 +477,221 @@ type SQLReviewCheckContext struct {
 	CurrentSchema string
 }
 
+func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []Advice) {
+	switch checkContext.DbType {
+	case db.MySQL, db.MariaDB, db.OceanBase, db.TiDB:
+		return mysqlSyntaxCheck(statement)
+	case db.Postgres:
+		return postgresSyntaxCheck(statement)
+	case db.Oracle:
+		return oracleSyntaxCheck(statement)
+	case db.Snowflake:
+		return snowflakeSyntaxCheck(statement)
+	}
+	return nil, []Advice{
+		{
+			Status:  Error,
+			Code:    Unsupported,
+			Title:   "Unsupported database type",
+			Content: fmt.Sprintf("Unsupported database type %s", checkContext.DbType),
+			Line:    1,
+		},
+	}
+}
+
+func snowflakeSyntaxCheck(statement string) (any, []Advice) {
+	tree, err := parser.ParseSnowSQL(statement + ";")
+	if err != nil {
+		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    StatementSyntaxError,
+					Title:   SyntaxErrorTitle,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	return tree, nil
+}
+
+func oracleSyntaxCheck(statement string) (any, []Advice) {
+	tree, err := parser.ParsePLSQL(statement + ";")
+	if err != nil {
+		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    StatementSyntaxError,
+					Title:   SyntaxErrorTitle,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	return tree, nil
+}
+
+func postgresSyntaxCheck(statement string) (any, []Advice) {
+	nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+	if err != nil {
+		if _, ok := err.(*parser.ConvertError); ok {
+			return nil, []Advice{
+				{
+					Status:  Error,
+					Code:    Internal,
+					Title:   "Parser conversion error",
+					Content: err.Error(),
+					Line:    calculatePostgresErrorLine(statement),
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Error,
+				Code:    StatementSyntaxError,
+				Title:   SyntaxErrorTitle,
+				Content: err.Error(),
+				Line:    calculatePostgresErrorLine(statement),
+			},
+		}
+	}
+	var res []ast.Node
+	for _, node := range nodes {
+		if node != nil {
+			res = append(res, node)
+		}
+	}
+	return res, nil
+}
+
+func calculatePostgresErrorLine(statement string) int {
+	statementList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		// nolint:nilerr
+		return 1
+	}
+
+	for _, stmt := range statementList {
+		if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, stmt.Text); err != nil {
+			return stmt.LastLine
+		}
+	}
+
+	return 0
+}
+
+func newTiDBParser() *tidbparser.Parser {
+	p := tidbparser.New()
+
+	// To support MySQL8 window function syntax.
+	// See https://github.com/bytebase/bytebase/issues/175.
+	p.EnableWindowFunc(true)
+
+	return p
+}
+
+func mysqlSyntaxCheck(statement string) (any, []Advice) {
+	list, err := parser.SplitMySQL(statement)
+	if err != nil {
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Syntax error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	p := newTiDBParser()
+	var returnNodes []tidbast.StmtNode
+	var adviceList []Advice
+	for _, item := range list {
+		nodes, _, err := p.Parse(item.Text, "", "")
+		if err != nil {
+			// TiDB parser doesn't fully support MySQL syntax, so we need to use MySQL parser to parse the statement.
+			// But MySQL parser has some performance issue, so we only use it to parse the statement after TiDB parser failed.
+			if _, err := parser.ParseMySQL(item.Text); err != nil {
+				if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+					return nil, []Advice{
+						{
+							Status:  Error,
+							Code:    StatementSyntaxError,
+							Title:   SyntaxErrorTitle,
+							Content: syntaxErr.Message,
+							Line:    syntaxErr.Line,
+						},
+					}
+				}
+				return nil, []Advice{
+					{
+						Status:  Warn,
+						Code:    Internal,
+						Title:   "Parse error",
+						Content: err.Error(),
+						Line:    1,
+					},
+				}
+			}
+			// If MySQL parser can parse the statement, but TiDB parser can't, we just ignore the statement.
+			continue
+		}
+
+		if len(nodes) != 1 {
+			continue
+		}
+
+		node := nodes[0]
+		node.SetText(nil, item.Text)
+		node.SetOriginTextPosition(item.LastLine)
+		if n, ok := node.(*tidbast.CreateTableStmt); ok {
+			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+				return nil, append(adviceList, Advice{
+					Status:  Error,
+					Code:    Internal,
+					Title:   "Set line error",
+					Content: err.Error(),
+					Line:    item.LastLine,
+				})
+			}
+		}
+		returnNodes = append(returnNodes, node)
+	}
+
+	return returnNodes, adviceList
+}
+
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
-	var result []Advice
+	ast, result := syntaxCheck(statements, checkContext)
+	if ast == nil || len(ruleList) == 0 {
+		return result, nil
+	}
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
@@ -506,6 +723,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 			Context{
 				Charset:       checkContext.Charset,
 				Collation:     checkContext.Collation,
+				AST:           ast,
 				Rule:          rule,
 				Catalog:       finder,
 				Driver:        checkContext.Driver,

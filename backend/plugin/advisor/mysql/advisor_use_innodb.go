@@ -32,9 +32,9 @@ type UseInnoDBAdvisor struct {
 
 // Check checks for using InnoDB engine.
 func (*UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
-	if errAdvice != nil {
-		return errAdvice, nil
+	root, ok := ctx.AST.([]ast.StmtNode)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert to StmtNode")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

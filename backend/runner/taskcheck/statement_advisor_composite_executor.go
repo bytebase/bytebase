@@ -118,15 +118,10 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusSuccess,
-					Namespace: api.AdvisorNamespace,
-					Code:      common.Ok.Int(),
-					Title:     "Empty SQL review policy or disabled",
-					Content:   "",
-				},
-			}, nil
+			policy = &advisor.SQLReviewPolicy{
+				Name:     "Default",
+				RuleList: []*advisor.SQLReviewRule{},
+			}
 		}
 		return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
 	}
