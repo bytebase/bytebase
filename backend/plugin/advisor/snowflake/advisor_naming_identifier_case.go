@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 var (
@@ -107,7 +108,7 @@ func (l *namingIdentifierCaseChecker) EnterColumn_decl_item_list(ctx *parser.Col
 	for _, item := range allItems {
 		if fullColDecl := item.Full_col_decl(); fullColDecl != nil {
 			originalID := fullColDecl.Col_decl().Column_name().Id_()
-			originalColName := normalizeObjectNamePart(originalID)
+			originalColName := snowsqlparser.NormalizeObjectNamePart(originalID)
 			if strings.ToUpper(originalColName) != originalColName {
 				l.adviceList = append(l.adviceList, advisor.Advice{
 					Status:  l.level,
@@ -128,7 +129,7 @@ func (l *namingIdentifierCaseChecker) EnterAlter_table(ctx *parser.Alter_tableCo
 	}
 	l.currentOriginalTableName = ctx.Object_name(0).GetText()
 	renameToID := ctx.Table_column_action().Column_name(1).Id_()
-	renameToColName := normalizeObjectNamePart(renameToID)
+	renameToColName := snowsqlparser.NormalizeObjectNamePart(renameToID)
 	if strings.ToUpper(renameToColName) != renameToColName {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
