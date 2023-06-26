@@ -4,7 +4,6 @@ categoryList:
       - user-count
       - environment-count
       - instance-count
-      - user-count
       - state-based-change
       - migration-based-change
       - sql-check
@@ -69,11 +68,9 @@ planList:
     featureList:
       # Change Management
       - type: user-count
-        content: user-unlimited
+        content: user-maximum-20
       - type: instance-count
         content: instance-maximum-20
-      - type: user-count
-        content: user-maximum-20
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
@@ -143,8 +140,6 @@ planList:
       - type: instance-count
         content: instance-maximum-20
         tooltip: instance-maximum-20-tooltip
-      - type: user-count
-        content: user-unlimited
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
@@ -214,8 +209,6 @@ planList:
         content: user-unlimited
       - type: instance-count
         content: instance-unlimited
-      - type: user-count
-        content: user-unlimited
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
