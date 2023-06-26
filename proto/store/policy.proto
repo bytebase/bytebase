@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "google/type/expr.proto";
+
+option go_package = "generated-go/store";
+
+message IamPolicy {
+  // Collection of binding.
+  repeated Binding bindings = 1;
+}
+
+// Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#binding
+message Binding {
+  // Role that is assigned to the list of members.
+  // Format: roles/{role}
+  string role = 1;
+
+  // Specifies the principals requesting access for a Bytebase resource.
+  // `members` can have the following values:
+  //
+  // * `allUsers`: A special identifier that represents anyone.
+  // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+  repeated string members = 2;
+
+  // The condition that is associated with this binding.
+  // If the condition evaluates to true, then this binding applies to the current request.
+  // If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
+  google.type.Expr condition = 3;
+}
