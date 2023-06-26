@@ -443,20 +443,6 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		if err != nil {
 			return err
 		}
-		if api.IsSyntaxCheckSupported(instance.Engine) {
-			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
-				CreatorID: taskPatched.CreatorID,
-				TaskID:    task.ID,
-				Type:      api.TaskCheckDatabaseStatementSyntax,
-			}); err != nil {
-				// It's OK if we failed to trigger a check, just emit an error log
-				log.Error("Failed to trigger syntax check after changing the task statement",
-					zap.Int("task_id", task.ID),
-					zap.String("task_name", task.Name),
-					zap.Error(err),
-				)
-			}
-		}
 
 		if api.IsSQLReviewSupported(instance.Engine) {
 			if err := s.triggerDatabaseStatementAdviseTask(ctx, taskPatched); err != nil {
