@@ -145,13 +145,26 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			return err
 		}
 
+		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
-			return status.Errorf(codes.Internal, "failed to execute statement: %v", queryErr)
+			response.Results = []*v1pb.QueryResult{
+				{
+					Error: err.Error(),
+				},
+			}
+		} else {
+			response.Results = result
 		}
 
-		if err := server.Send(&v1pb.AdminExecuteResponse{
-			Results: result,
-		}); err != nil {
+		if proto.Size(response) > maximumSQLResultSize {
+			response.Results = []*v1pb.QueryResult{
+				{
+					Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
+				},
+			}
+		}
+
+		if err := server.Send(response); err != nil {
 			return status.Errorf(codes.Internal, "failed to send response: %v", err)
 		}
 	}
