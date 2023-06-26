@@ -22,7 +22,7 @@ import (
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 
-	// register pg parser
+	// register pg parser.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
