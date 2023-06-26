@@ -207,15 +207,16 @@ message Policy {
     AccessControlPolicy access_control_policy = 9;
     SQLReviewPolicy sql_review_policy = 10;
     SlowQueryPolicy slow_query_policy = 11;
+    DataAccessControlPolicy data_access_control_policy = 12;
   }
 
-  bool enforce = 12;
+  bool enforce = 13;
 
   // The resource type for the policy.
-  PolicyResourceType resource_type = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  PolicyResourceType resource_type = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The system-assigned, unique identifier for the resource.
-  string resource_uid = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string resource_uid = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum PolicyType {
