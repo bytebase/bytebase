@@ -1181,11 +1181,10 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 
 		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 		if err != nil {
-			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-				// If database not found, skip.
-				return nil, nil
-			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+		if databaseMessage == nil {
+			return nil, nil
 		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
@@ -1226,11 +1225,10 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 
 		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 		if err != nil {
-			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-				// If database not found, skip.
-				return nil, nil
-			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+		if databaseMessage == nil {
+			return nil, nil
 		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
@@ -1525,11 +1523,10 @@ func evaluateCondition(expression string, attributes map[string]any) (bool, erro
 func (s *SQLService) getProjectAndDatabaseMessage(ctx context.Context, instance *store.InstanceMessage, database string) (*store.ProjectMessage, *store.DatabaseMessage, error) {
 	databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &database})
 	if err != nil {
-		if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-			// If database not found, skip.
-			return nil, nil, nil
-		}
 		return nil, nil, err
+	}
+	if databaseMessage == nil {
+		return nil, nil, nil
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &databaseMessage.ProjectID})
