@@ -678,6 +678,8 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 //  3. Run SQL review.
 //  4. Get sensitive schema info.
 //  5. Create query activity.
+//
+// Due to the performance consideration, we DO NOT get the sensitive schema info if there are advice error in SQL review.
 func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
