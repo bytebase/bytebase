@@ -43,40 +43,8 @@
           <InstanceRoleTable :instance-role-list="instanceRoleList" />
         </NTabPane>
       </NTabs>
-      <template v-if="allowArchiveOrRestore">
-        <template v-if="instance.state === State.ACTIVE">
-          <BBButtonConfirm
-            :style="'ARCHIVE'"
-            :button-text="$t('instance.archive-this-instance')"
-            :ok-text="$t('common.archive')"
-            :require-confirm="true"
-            :confirm-title="
-              $t('instance.archive-instance-instance-name', [instance.title])
-            "
-            :confirm-description="
-              $t(
-                'instance.archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page'
-              )
-            "
-            @confirm="doArchive"
-          />
-        </template>
-        <template v-else-if="instance.state === State.DELETED">
-          <BBButtonConfirm
-            :style="'RESTORE'"
-            :button-text="$t('instance.restore-this-instance')"
-            :ok-text="$t('instance.restore')"
-            :require-confirm="true"
-            :confirm-title="
-              $t('instance.restore-instance-instance-name-to-normal-state', [
-                instance.title,
-              ])
-            "
-            :confirm-description="''"
-            @confirm="doRestore"
-          />
-        </template>
-      </template>
+
+      <InstanceArchiveRestoreButton :instance="instance" />
     </div>
   </div>
 
@@ -113,6 +81,7 @@ import {
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import InstanceForm from "@/components/InstanceForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import { InstanceArchiveRestoreButton } from "@/components/Instance";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
 import {
   pushNotification,
@@ -120,9 +89,7 @@ import {
   useCurrentUserV1,
   useInstanceV1Store,
   useEnvironmentV1Store,
-  useGracefulRequest,
   useDatabaseV1Store,
-  useSubscriptionV1Store,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
 
@@ -144,7 +111,6 @@ const databaseStore = useDatabaseV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
-const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
@@ -203,46 +169,6 @@ const allowEdit = computed(() => {
     )
   );
 });
-
-const allowArchiveOrRestore = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    currentUserV1.value.userRole
-  );
-});
-
-const doArchive = async () => {
-  await useGracefulRequest(async () => {
-    await instanceV1Store.archiveInstance(instance.value);
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("instance.successfully-archived-instance-updatedinstance-name", [
-        instance.value.title,
-      ]),
-    });
-  });
-};
-
-const doRestore = async () => {
-  const instanceList = instanceV1Store.activeInstanceList;
-  if (subscriptionStore.instanceCountLimit <= instanceList.length) {
-    state.showFeatureModal = true;
-    return;
-  }
-  await useGracefulRequest(async () => {
-    await instanceV1Store.restoreInstance(instance.value);
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("instance.successfully-archived-instance-updatedinstance-name", [
-        instance.value.title,
-      ]),
-    });
-  });
-};
 
 const syncSchema = async () => {
   state.syncingSchema = true;

@@ -25,8 +25,9 @@ import {
   defaultApprovalStrategy,
 } from "@/store/modules/v1/policy";
 import { useEnvironmentV1Store } from "@/store";
-import { IamPolicy, Project } from "@/types/proto/v1/project_service";
+import { Project } from "@/types/proto/v1/project_service";
 import { User } from "@/types/proto/v1/auth_service";
+import { IamPolicy } from "@/types/proto/v1/iam_policy";
 
 export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const { create, issue, activeStageOfPipeline } = useIssueLogic();

@@ -77,9 +77,10 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composed = await upsertInstances([updatedInstance]);
     return composed[0];
   };
-  const archiveInstance = async (instance: Instance) => {
+  const archiveInstance = async (instance: Instance, force = false) => {
     await instanceServiceClient.deleteInstance({
       name: instance.name,
+      force,
     });
     instance.state = State.DELETED;
     const composed = await upsertInstances([instance]);
