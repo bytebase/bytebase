@@ -481,6 +481,7 @@ type Context struct {
 	SyntaxMode SyntaxMode
 
 	// SQL review rule special fields.
+	AST     any
 	Rule    *SQLReviewRule
 	Catalog *catalog.Finder
 	Driver  *sql.DB
