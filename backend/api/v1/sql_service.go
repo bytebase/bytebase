@@ -1206,6 +1206,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 					continue
 				}
 				result = append(result, resource)
+				continue
+			}
+			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+				// If table not found, skip.
+				continue
 			}
 			result = append(result, resource)
 		}
@@ -1337,6 +1342,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 					continue
 				}
 				result = append(result, resource)
+				continue
+			}
+			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+				// If table not found, skip.
+				continue
 			}
 			result = append(result, resource)
 		}
