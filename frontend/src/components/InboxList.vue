@@ -11,7 +11,7 @@
         <PrincipalAvatar
           :username="getUser(inbox.activity)?.title"
           :size="'SMALL'"
-          :class="inbox.activity.comment ? '' : '-mt-0.5'"
+          :class="inbox.activity?.comment ? '' : '-mt-0.5'"
         />
         <div class="flex-1 space-y-1">
           <div class="flex w-full justify-between space-x-2">
@@ -28,14 +28,14 @@
               </template>
               <span> {{ actionSentence(inbox.activity) }}</span>
               <template
-                v-if="inbox.activity.level == LogEntity_Level.LEVEL_WARNING"
+                v-if="inbox.activity?.level == LogEntity_Level.LEVEL_WARNING"
               >
                 <heroicons-outline:exclamation
                   class="ml-1 h-6 w-6 text-warning"
                 />
               </template>
               <template
-                v-else-if="inbox.activity.level == LogEntity_Level.LEVEL_ERROR"
+                v-else-if="inbox.activity?.level == LogEntity_Level.LEVEL_ERROR"
               >
                 <heroicons-outline:exclamation-circle
                   class="ml-1 w-6 h-6 text-error"
@@ -44,11 +44,11 @@
             </h3>
             <p class="text-sm text-control whitespace-nowrap">
               {{
-                humanizeTs((inbox.activity.createTime?.getTime() ?? 0) / 1000)
+                humanizeTs((inbox.activity?.createTime?.getTime() ?? 0) / 1000)
               }}
             </p>
           </div>
-          <div v-if="inbox.activity.comment" class="text-sm text-control">
+          <div v-if="inbox.activity?.comment" class="text-sm text-control">
             {{ inbox.activity.comment }}
           </div>
         </div>
@@ -69,7 +69,6 @@ import {
   ActivityTaskStatusUpdatePayload,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
-  ComposedInbox,
 } from "../types";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
@@ -85,11 +84,12 @@ import {
 import { extractUserResourceName, extractUserUID } from "@/utils";
 import { useUserStore } from "@/store";
 import { InboxMessage_Status } from "@/types/proto/v1/inbox_service";
+import { InboxMessage } from "@/types/proto/v1/inbox_service";
 
 defineProps({
   inboxList: {
     required: true,
-    type: Object as PropType<ComposedInbox[]>,
+    type: Object as PropType<InboxMessage[]>,
   },
 });
 
@@ -98,17 +98,20 @@ const inboxV1Store = useInboxV1Store();
 const activityV1Store = useActivityV1Store();
 const router = useRouter();
 
-const getUser = (activity: LogEntity) => {
-  const email = extractUserResourceName(activity.creator);
+const getUser = (activity: LogEntity | undefined) => {
+  const email = extractUserResourceName(activity?.creator ?? "");
   return useUserStore().getUserByEmail(email);
 };
 
-const getUserId = (activity: LogEntity) => {
+const getUserId = (activity: LogEntity | undefined) => {
   const username = getUser(activity)?.name ?? "";
   return extractUserUID(username);
 };
 
-const actionLink = (activity: LogEntity): string => {
+const actionLink = (activity: LogEntity | undefined): string => {
+  if (!activity) {
+    return "";
+  }
   if (activity.resource.startsWith("issues")) {
     return `/issue/${activityV1Store.getResourceId(activity)}`;
   } else if (
@@ -125,17 +128,18 @@ const actionLink = (activity: LogEntity): string => {
   return "";
 };
 
-const showCreator = (activity: LogEntity): boolean => {
+const showCreator = (activity: LogEntity | undefined): boolean => {
   return (
-    activity.resource.startsWith("issues") ||
-    activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE ||
-    activity.action ==
+    activity?.resource.startsWith("issues") ||
+    activity?.action ==
+      LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE ||
+    activity?.action ==
       LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE
   );
 };
 
-const actionSentence = (activity: LogEntity): string => {
-  if (activity.resource.startsWith("issues")) {
+const actionSentence = (activity: LogEntity | undefined): string => {
+  if (activity?.resource.startsWith("issues")) {
     const [tid, params] = issueActivityActionSentence(activity);
     const actionStr = t(tid, params);
     switch (activity.action) {
@@ -166,7 +170,7 @@ const actionSentence = (activity: LogEntity): string => {
     }
     return actionStr;
   }
-  switch (activity.action) {
+  switch (activity?.action) {
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE: {
       const payload = JSON.parse(
         activity.payload
@@ -230,14 +234,14 @@ const actionSentence = (activity: LogEntity): string => {
   return "";
 };
 
-const clickInbox = (inbox: ComposedInbox) => {
+const clickInbox = (inbox: InboxMessage) => {
   if (inbox.status == InboxMessage_Status.STATUS_UNREAD) {
     inbox.status = InboxMessage_Status.STATUS_READ;
     inboxV1Store.patchInbox(inbox).then(() => {
       inboxV1Store.updateInboxSummary({
         unread: -1,
         unreadError:
-          inbox.activity.level === LogEntity_Level.LEVEL_ERROR ? -1 : 0,
+          inbox.activity?.level === LogEntity_Level.LEVEL_ERROR ? -1 : 0,
       });
     });
   }
