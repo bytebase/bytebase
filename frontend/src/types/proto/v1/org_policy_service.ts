@@ -6,17 +6,19 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
+import { IamPolicy } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
-  DEPLOYMENT_APPROVAL = 1,
-  BACKUP_PLAN = 2,
-  SQL_REVIEW = 3,
-  SENSITIVE_DATA = 4,
-  ACCESS_CONTROL = 5,
-  SLOW_QUERY = 6,
+  WORKSPACE_IAM = 1,
+  DEPLOYMENT_APPROVAL = 2,
+  BACKUP_PLAN = 3,
+  SQL_REVIEW = 4,
+  SENSITIVE_DATA = 5,
+  ACCESS_CONTROL = 6,
+  SLOW_QUERY = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -26,21 +28,24 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case "POLICY_TYPE_UNSPECIFIED":
       return PolicyType.POLICY_TYPE_UNSPECIFIED;
     case 1:
+    case "WORKSPACE_IAM":
+      return PolicyType.WORKSPACE_IAM;
+    case 2:
     case "DEPLOYMENT_APPROVAL":
       return PolicyType.DEPLOYMENT_APPROVAL;
-    case 2:
+    case 3:
     case "BACKUP_PLAN":
       return PolicyType.BACKUP_PLAN;
-    case 3:
+    case 4:
     case "SQL_REVIEW":
       return PolicyType.SQL_REVIEW;
-    case 4:
+    case 5:
     case "SENSITIVE_DATA":
       return PolicyType.SENSITIVE_DATA;
-    case 5:
+    case 6:
     case "ACCESS_CONTROL":
       return PolicyType.ACCESS_CONTROL;
-    case 6:
+    case 7:
     case "SLOW_QUERY":
       return PolicyType.SLOW_QUERY;
     case -1:
@@ -54,6 +59,8 @@ export function policyTypeToJSON(object: PolicyType): string {
   switch (object) {
     case PolicyType.POLICY_TYPE_UNSPECIFIED:
       return "POLICY_TYPE_UNSPECIFIED";
+    case PolicyType.WORKSPACE_IAM:
+      return "WORKSPACE_IAM";
     case PolicyType.DEPLOYMENT_APPROVAL:
       return "DEPLOYMENT_APPROVAL";
     case PolicyType.BACKUP_PLAN:
@@ -437,6 +444,7 @@ export interface Policy {
   uid: string;
   inheritFromParent: boolean;
   type: PolicyType;
+  workspaceIamPolicy?: IamPolicy | undefined;
   deploymentApprovalPolicy?: DeploymentApprovalPolicy | undefined;
   backupPlanPolicy?: BackupPlanPolicy | undefined;
   sensitiveDataPolicy?: SensitiveDataPolicy | undefined;
@@ -978,6 +986,7 @@ function createBasePolicy(): Policy {
     uid: "",
     inheritFromParent: false,
     type: 0,
+    workspaceIamPolicy: undefined,
     deploymentApprovalPolicy: undefined,
     backupPlanPolicy: undefined,
     sensitiveDataPolicy: undefined,
@@ -1004,32 +1013,35 @@ export const Policy = {
     if (message.type !== 0) {
       writer.uint32(40).int32(message.type);
     }
+    if (message.workspaceIamPolicy !== undefined) {
+      IamPolicy.encode(message.workspaceIamPolicy, writer.uint32(50).fork()).ldelim();
+    }
     if (message.deploymentApprovalPolicy !== undefined) {
-      DeploymentApprovalPolicy.encode(message.deploymentApprovalPolicy, writer.uint32(50).fork()).ldelim();
+      DeploymentApprovalPolicy.encode(message.deploymentApprovalPolicy, writer.uint32(58).fork()).ldelim();
     }
     if (message.backupPlanPolicy !== undefined) {
-      BackupPlanPolicy.encode(message.backupPlanPolicy, writer.uint32(58).fork()).ldelim();
+      BackupPlanPolicy.encode(message.backupPlanPolicy, writer.uint32(66).fork()).ldelim();
     }
     if (message.sensitiveDataPolicy !== undefined) {
-      SensitiveDataPolicy.encode(message.sensitiveDataPolicy, writer.uint32(66).fork()).ldelim();
+      SensitiveDataPolicy.encode(message.sensitiveDataPolicy, writer.uint32(74).fork()).ldelim();
     }
     if (message.accessControlPolicy !== undefined) {
-      AccessControlPolicy.encode(message.accessControlPolicy, writer.uint32(74).fork()).ldelim();
+      AccessControlPolicy.encode(message.accessControlPolicy, writer.uint32(82).fork()).ldelim();
     }
     if (message.sqlReviewPolicy !== undefined) {
-      SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(82).fork()).ldelim();
+      SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(90).fork()).ldelim();
     }
     if (message.slowQueryPolicy !== undefined) {
-      SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(90).fork()).ldelim();
+      SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(98).fork()).ldelim();
     }
     if (message.enforce === true) {
-      writer.uint32(96).bool(message.enforce);
+      writer.uint32(104).bool(message.enforce);
     }
     if (message.resourceType !== 0) {
-      writer.uint32(104).int32(message.resourceType);
+      writer.uint32(112).int32(message.resourceType);
     }
     if (message.resourceUid !== "") {
-      writer.uint32(114).string(message.resourceUid);
+      writer.uint32(122).string(message.resourceUid);
     }
     return writer;
   },
@@ -1074,59 +1086,66 @@ export const Policy = {
             break;
           }
 
-          message.deploymentApprovalPolicy = DeploymentApprovalPolicy.decode(reader, reader.uint32());
+          message.workspaceIamPolicy = IamPolicy.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.backupPlanPolicy = BackupPlanPolicy.decode(reader, reader.uint32());
+          message.deploymentApprovalPolicy = DeploymentApprovalPolicy.decode(reader, reader.uint32());
           continue;
         case 8:
           if (tag !== 66) {
             break;
           }
 
-          message.sensitiveDataPolicy = SensitiveDataPolicy.decode(reader, reader.uint32());
+          message.backupPlanPolicy = BackupPlanPolicy.decode(reader, reader.uint32());
           continue;
         case 9:
           if (tag !== 74) {
             break;
           }
 
-          message.accessControlPolicy = AccessControlPolicy.decode(reader, reader.uint32());
+          message.sensitiveDataPolicy = SensitiveDataPolicy.decode(reader, reader.uint32());
           continue;
         case 10:
           if (tag !== 82) {
             break;
           }
 
-          message.sqlReviewPolicy = SQLReviewPolicy.decode(reader, reader.uint32());
+          message.accessControlPolicy = AccessControlPolicy.decode(reader, reader.uint32());
           continue;
         case 11:
           if (tag !== 90) {
             break;
           }
 
-          message.slowQueryPolicy = SlowQueryPolicy.decode(reader, reader.uint32());
+          message.sqlReviewPolicy = SQLReviewPolicy.decode(reader, reader.uint32());
           continue;
         case 12:
-          if (tag !== 96) {
+          if (tag !== 98) {
             break;
           }
 
-          message.enforce = reader.bool();
+          message.slowQueryPolicy = SlowQueryPolicy.decode(reader, reader.uint32());
           continue;
         case 13:
           if (tag !== 104) {
             break;
           }
 
-          message.resourceType = reader.int32() as any;
+          message.enforce = reader.bool();
           continue;
         case 14:
-          if (tag !== 114) {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.resourceType = reader.int32() as any;
+          continue;
+        case 15:
+          if (tag !== 122) {
             break;
           }
 
@@ -1147,6 +1166,7 @@ export const Policy = {
       uid: isSet(object.uid) ? String(object.uid) : "",
       inheritFromParent: isSet(object.inheritFromParent) ? Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
+      workspaceIamPolicy: isSet(object.workspaceIamPolicy) ? IamPolicy.fromJSON(object.workspaceIamPolicy) : undefined,
       deploymentApprovalPolicy: isSet(object.deploymentApprovalPolicy)
         ? DeploymentApprovalPolicy.fromJSON(object.deploymentApprovalPolicy)
         : undefined,
@@ -1171,6 +1191,8 @@ export const Policy = {
     message.uid !== undefined && (obj.uid = message.uid);
     message.inheritFromParent !== undefined && (obj.inheritFromParent = message.inheritFromParent);
     message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
+    message.workspaceIamPolicy !== undefined &&
+      (obj.workspaceIamPolicy = message.workspaceIamPolicy ? IamPolicy.toJSON(message.workspaceIamPolicy) : undefined);
     message.deploymentApprovalPolicy !== undefined && (obj.deploymentApprovalPolicy = message.deploymentApprovalPolicy
       ? DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy)
       : undefined);
@@ -1202,6 +1224,9 @@ export const Policy = {
     message.uid = object.uid ?? "";
     message.inheritFromParent = object.inheritFromParent ?? false;
     message.type = object.type ?? 0;
+    message.workspaceIamPolicy = (object.workspaceIamPolicy !== undefined && object.workspaceIamPolicy !== null)
+      ? IamPolicy.fromPartial(object.workspaceIamPolicy)
+      : undefined;
     message.deploymentApprovalPolicy =
       (object.deploymentApprovalPolicy !== undefined && object.deploymentApprovalPolicy !== null)
         ? DeploymentApprovalPolicy.fromPartial(object.deploymentApprovalPolicy)

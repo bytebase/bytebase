@@ -52,6 +52,9 @@ message AdminExecuteRequest {
 
   // The maximum number of rows to return.
   int32 limit = 4;
+
+  // The timeout for the request.
+  google.protobuf.Duration timeout = 5;
 }
 
 message AdminExecuteResponse {
@@ -104,6 +107,9 @@ message QueryRequest {
 
   // The maximum number of rows to return.
   int32 limit = 4;
+
+  // The timeout for the request.
+  google.protobuf.Duration timeout = 5;
 }
 
 message QueryResponse {

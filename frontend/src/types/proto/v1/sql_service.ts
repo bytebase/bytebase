@@ -24,6 +24,8 @@ export interface AdminExecuteRequest {
   statement: string;
   /** The maximum number of rows to return. */
   limit: number;
+  /** The timeout for the request. */
+  timeout?: Duration;
 }
 
 export interface AdminExecuteResponse {
@@ -111,6 +113,8 @@ export interface QueryRequest {
   statement: string;
   /** The maximum number of rows to return. */
   limit: number;
+  /** The timeout for the request. */
+  timeout?: Duration;
 }
 
 export interface QueryResponse {
@@ -242,7 +246,7 @@ export interface PrettyResponse {
 }
 
 function createBaseAdminExecuteRequest(): AdminExecuteRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0 };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined };
 }
 
 export const AdminExecuteRequest = {
@@ -258,6 +262,9 @@ export const AdminExecuteRequest = {
     }
     if (message.limit !== 0) {
       writer.uint32(32).int32(message.limit);
+    }
+    if (message.timeout !== undefined) {
+      Duration.encode(message.timeout, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -297,6 +304,13 @@ export const AdminExecuteRequest = {
 
           message.limit = reader.int32();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timeout = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -312,6 +326,7 @@ export const AdminExecuteRequest = {
       connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
+      timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
     };
   },
 
@@ -321,6 +336,7 @@ export const AdminExecuteRequest = {
     message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
+    message.timeout !== undefined && (obj.timeout = message.timeout ? Duration.toJSON(message.timeout) : undefined);
     return obj;
   },
 
@@ -334,6 +350,9 @@ export const AdminExecuteRequest = {
     message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
+    message.timeout = (object.timeout !== undefined && object.timeout !== null)
+      ? Duration.fromPartial(object.timeout)
+      : undefined;
     return message;
   },
 };
@@ -566,7 +585,7 @@ export const ExportResponse = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0 };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined };
 }
 
 export const QueryRequest = {
@@ -582,6 +601,9 @@ export const QueryRequest = {
     }
     if (message.limit !== 0) {
       writer.uint32(32).int32(message.limit);
+    }
+    if (message.timeout !== undefined) {
+      Duration.encode(message.timeout, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -621,6 +643,13 @@ export const QueryRequest = {
 
           message.limit = reader.int32();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timeout = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -636,6 +665,7 @@ export const QueryRequest = {
       connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
+      timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
     };
   },
 
@@ -645,6 +675,7 @@ export const QueryRequest = {
     message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
+    message.timeout !== undefined && (obj.timeout = message.timeout ? Duration.toJSON(message.timeout) : undefined);
     return obj;
   },
 
@@ -658,6 +689,9 @@ export const QueryRequest = {
     message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
+    message.timeout = (object.timeout !== undefined && object.timeout !== null)
+      ? Duration.fromPartial(object.timeout)
+      : undefined;
     return message;
   },
 };

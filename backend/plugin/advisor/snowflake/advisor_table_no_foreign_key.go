@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 var (
@@ -105,7 +106,7 @@ func (l *tableNoForeignKeyChecker) generateAdvice() ([]advisor.Advice, error) {
 // EnterCreate_table is called when production create_table is entered.
 func (l *tableNoForeignKeyChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	originalTableName := ctx.Object_name()
-	normalizedTableName := normalizeObjectName(originalTableName)
+	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName)
 
 	l.tableForeignKeyTimes[normalizedTableName] = 0
 	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()
@@ -166,7 +167,7 @@ func (l *tableNoForeignKeyChecker) EnterAlter_table(ctx *parser.Alter_tableConte
 		return
 	}
 	originalTableName := ctx.Object_name(0)
-	normalizedTableName := normalizeObjectName(originalTableName)
+	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName)
 
 	l.currentNormalizedTableName = normalizedTableName
 	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()

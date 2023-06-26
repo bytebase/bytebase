@@ -70,11 +70,12 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 	case Postgres:
 		// The resource list for Postgres may contains table, view and temporary table.
 		return extractPostgresResourceList(currentDatabase, "public", sql)
+	case Snowflake:
+		return extractSnowflakeResourceList(currentDatabase, "PUBLIC", sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
 		}
-
 		return []SchemaResource{{Database: currentDatabase}}, nil
 	}
 }

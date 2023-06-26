@@ -1,4 +1,4 @@
-package snowflake
+package parser
 
 import (
 	"testing"
@@ -35,7 +35,7 @@ func TestExtractOrdinaryIdentifier(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := extractOrdinaryIdentifier(tc.name)
+			got := ExtractOrdinaryIdentifier(tc.name)
 			require.Equal(t, tc.want, got, tc.description)
 		})
 	}
