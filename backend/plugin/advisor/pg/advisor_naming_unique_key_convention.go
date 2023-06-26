@@ -25,9 +25,9 @@ type NamingUKConventionAdvisor struct {
 
 // Check checks for unique key naming convention.
 func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	root, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+	root, ok := ctx.AST.([]ast.Node)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert to Node")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

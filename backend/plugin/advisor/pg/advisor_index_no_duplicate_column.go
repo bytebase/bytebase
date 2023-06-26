@@ -18,9 +18,9 @@ type IndexNoDuplicateColumnAdvisor struct {
 
 // Check checks for no duplicate columns in index.
 func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	stmtList, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+	stmtList, ok := ctx.AST.([]ast.Node)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert to Node")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

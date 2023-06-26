@@ -21,6 +21,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
 // How to add a SQL review rule:

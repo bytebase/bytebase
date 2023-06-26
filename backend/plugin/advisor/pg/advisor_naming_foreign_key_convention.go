@@ -25,9 +25,9 @@ type NamingFKConventionAdvisor struct {
 
 // Check checks for foreign key naming convention.
 func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	root, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+	root, ok := ctx.AST.([]ast.Node)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert to Node")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

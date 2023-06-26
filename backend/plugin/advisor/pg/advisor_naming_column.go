@@ -24,9 +24,9 @@ type NamingColumnConventionAdvisor struct {
 
 // Check checks for column naming convention.
 func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	stmts, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+	stmts, ok := ctx.AST.([]ast.Node)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert to Node")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
