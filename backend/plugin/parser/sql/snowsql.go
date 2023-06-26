@@ -173,8 +173,8 @@ type snowsqlResourceExtractListener struct {
 	resourceMap     map[string]SchemaResource
 }
 
-func (l *snowsqlResourceExtractListener) EnterTable_source_item_joined(ctx *parser.Table_source_item_joinedContext) {
-	objectName := ctx.Object_ref().Object_name()
+func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refContext) {
+	objectName := ctx.Object_name()
 
 	var parts []string
 	database := l.currentDatabase
