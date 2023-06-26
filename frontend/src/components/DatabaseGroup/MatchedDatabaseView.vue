@@ -93,10 +93,7 @@
 import { NEllipsis } from "naive-ui";
 import { ref, watch, reactive } from "vue";
 import { ConditionGroupExpr, buildCELExpr } from "@/plugins/cel";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase, ComposedProject } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
