@@ -60,7 +60,10 @@
             />
           </div>
 
-          <div class="sm:col-span-2 ml-0 sm:ml-3">
+          <div
+            class="sm:col-span-2 ml-0 sm:ml-3"
+            v-if="subscriptionStore.currentPlan !== PlanType.FREE"
+          >
             <label for="activation" class="textlabel block">
               {{ $t("subscription.instance-assignment.assign-license") }}
               ({{
@@ -679,6 +682,7 @@ import {
 } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { instanceServiceClient } from "@/grpcweb";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const props = defineProps({
   instance: {
@@ -750,7 +754,8 @@ const hasReadonlyReplicaFeature = featureToRef(
 const availableLicenseCount = computed(() => {
   return Math.max(
     0,
-    subscriptionStore.instanceCount - instanceV1Store.activateInstanceCount
+    subscriptionStore.instanceLicenseCount -
+      instanceV1Store.activateInstanceCount
   );
 });
 
@@ -763,7 +768,9 @@ const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     engine: instance?.engine ?? Engine.MYSQL,
     externalLink: instance?.externalLink ?? "",
     environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
-    activation: instance?.activation ?? false,
+    activation: instance
+      ? instance.activation
+      : availableLicenseCount.value > 0,
   };
 };
 

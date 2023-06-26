@@ -68,7 +68,7 @@ planList:
     featureList:
       # Change Management
       - type: user-count
-        content: user-unlimited
+        content: user-maximum-20
       - type: instance-count
         content: instance-maximum-20
       - type: environment-count

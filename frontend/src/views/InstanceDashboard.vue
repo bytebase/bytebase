@@ -45,6 +45,7 @@ import {
   useInstanceV1List,
   useInstanceV1Store,
 } from "@/store";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   searchText: string;
@@ -109,24 +110,57 @@ const filteredInstanceV1List = computed(() => {
 });
 
 const remainingInstanceCount = computed((): number => {
+  if (subscriptionStore.currentPlan === PlanType.FREE) {
+    return Math.max(
+      0,
+      subscriptionStore.instanceCountLimit -
+        instanceV1Store.activeInstanceList.length
+    );
+  }
+
   return Math.max(
     0,
-    subscriptionStore.instanceCount - instanceV1Store.activateInstanceCount
+    subscriptionStore.instanceLicenseCount -
+      instanceV1Store.activateInstanceCount
   );
 });
 
 const instanceCountAttention = computed((): string => {
   const upgrade = t("subscription.features.bb-feature-instance-count.upgrade");
   let status = "";
-  if (remainingInstanceCount.value > 0) {
-    status = t("subscription.features.bb-feature-instance-count.remaining", {
-      total: subscriptionStore.instanceCount,
-      count: remainingInstanceCount.value,
-    });
-  } else {
-    status = t("subscription.features.bb-feature-instance-count.runoutof", {
-      total: subscriptionStore.instanceCount,
-    });
+
+  switch (subscriptionStore.currentPlan) {
+    case PlanType.FREE:
+      if (remainingInstanceCount.value > 0) {
+        status = t(
+          "subscription.features.bb-feature-instance-count.remaining",
+          {
+            total: subscriptionStore.instanceCountLimit,
+            count: remainingInstanceCount.value,
+          }
+        );
+      } else {
+        status = t("subscription.features.bb-feature-instance-count.runoutof", {
+          total: subscriptionStore.instanceCountLimit,
+        });
+      }
+      break;
+    case PlanType.TEAM:
+    case PlanType.ENTERPRISE:
+      if (remainingInstanceCount.value > 0) {
+        status = t(
+          "subscription.features.bb-feature-instance-count.remaining",
+          {
+            total: subscriptionStore.instanceLicenseCount,
+            count: remainingInstanceCount.value,
+          }
+        );
+      } else {
+        status = t("subscription.features.bb-feature-instance-count.runoutof", {
+          total: subscriptionStore.instanceLicenseCount,
+        });
+      }
+      break;
   }
 
   return `${status} ${upgrade}`;

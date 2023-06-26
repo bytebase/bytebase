@@ -2,6 +2,7 @@
   "current": "当前版本",
   "unlimited": "无限制",
   "instance-count": "实例数",
+  "user-count": "用户数",
   "expires-at": "过期时间",
   "start-free-trial": "开始免费试用",
   "free-trial": "您可以免费试用 14 天 - 无需信用卡或预付费",
@@ -52,6 +53,7 @@
       "title": "变更管理",
       "features": {
         "user-count": "用户数",
+        "user-maximum-20": "不超过 20 个",
         "user-unlimited": "无限制",
         "instance-count": "实例数",
         "instance-customized": "自定义",

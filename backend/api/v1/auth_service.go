@@ -89,6 +89,10 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 
 // CreateUser creates a user.
 func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRequest) (*v1pb.User, error) {
+	if err := s.userCountGuard(ctx); err != nil {
+		return nil, err
+	}
+
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
@@ -868,4 +872,18 @@ func generateRecoveryCodes(n int) ([]string, error) {
 		recoveryCodes[i] = code
 	}
 	return recoveryCodes, nil
+}
+
+func (s *AuthService) userCountGuard(ctx context.Context) error {
+	userLimit := s.licenseService.GetPlanLimitValue(enterpriseAPI.PlanLimitMaximumUser)
+
+	count, err := s.store.CountPrincipal(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	if int64(count) >= userLimit {
+		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
+	}
+
+	return nil
 }
