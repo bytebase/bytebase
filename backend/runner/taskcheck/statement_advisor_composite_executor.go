@@ -122,8 +122,9 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 				Name:     "Default",
 				RuleList: []*advisor.SQLReviewRule{},
 			}
+		} else {
+			return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
 		}
-		return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
 	}
 
 	catalog, err := e.store.NewCatalog(ctx, *task.DatabaseID, instance.Engine, task.GetSyntaxMode())

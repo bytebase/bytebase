@@ -38,9 +38,9 @@ var (
 	noSQLReviewPolicy = []api.TaskCheckResult{
 		{
 			Status:    api.TaskCheckStatusSuccess,
-			Namespace: api.AdvisorNamespace,
+			Namespace: api.BBNamespace,
 			Code:      common.Ok.Int(),
-			Title:     "Empty SQL review policy or disabled",
+			Title:     "OK",
 			Content:   "",
 		},
 	}
