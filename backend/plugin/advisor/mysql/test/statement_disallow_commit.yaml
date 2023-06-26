@@ -7,7 +7,8 @@
       code: 206
       title: statement.disallow-commit
       content: |-
-        Commit is not allowed, related statement: "COMMIT
+        Commit is not allowed, related statement: "
+        COMMIT
         ;"
       line: 4
       details: ""
@@ -23,14 +24,17 @@
     - status: WARN
       code: 206
       title: statement.disallow-commit
-      content: 'Commit is not allowed, related statement: "COMMIT;"'
+      content: |-
+        Commit is not allowed, related statement: "
+        COMMIT;"
       line: 3
       details: ""
     - status: WARN
       code: 206
       title: statement.disallow-commit
       content: |-
-        Commit is not allowed, related statement: "COMMIT
+        Commit is not allowed, related statement: "
+        COMMIT
         ;"
       line: 8
       details: ""
