@@ -129,12 +129,11 @@ const createStreamingQueryController = (tab: TabInfo) => {
           subscriber.next(response);
         } catch (err) {
           subscriber.error(err);
-          subscriber.complete();
         }
       });
       ws.addEventListener("error", (event) => {
         console.log("error", event);
-        subscriber.complete();
+        subscriber.error(event);
       });
       ws.addEventListener("close", (event) => {
         console.log("ws close", event.wasClean, event.reason, event.code);
@@ -143,10 +142,11 @@ const createStreamingQueryController = (tab: TabInfo) => {
           subscriber.error(
             new ClientError(ENDPOINT, Status.ABORTED, event.reason)
           );
+          requestSubscription.unsubscribe();
+          return;
         }
         console.log("2");
-        requestSubscription.unsubscribe();
-        subscriber.complete();
+        subscriber.error(event);
       });
 
       return () => {
