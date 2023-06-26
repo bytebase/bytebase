@@ -96,12 +96,14 @@ const databaseListByEnvironment = computed(() => {
   list.sort((a: any, b: any) => {
     return a.name.localeCompare(b.name);
   });
+  const databaseEntityTitle: string[] = [];
   for (const database of list) {
     const dbList = envToDbMap.get(
       String(database.instanceEntity.environmentEntity.uid)
     )!;
     // dbList may be undefined if the environment is archived
     if (dbList) {
+      databaseEntityTitle.push(`${database.instanceEntity.title}`);
       dbList.push({
         id: `bb.database.${database.uid}`,
         name: `${database.databaseName} (${database.instanceEntity.title})`,
@@ -119,12 +121,33 @@ const databaseListByEnvironment = computed(() => {
       return {
         id: `bb.env.${environment.uid}`,
         name: environmentV1Name(environment),
-        childList: envToDbMap.get(environment.uid),
+        // childList: envToDbMap.get(environment.uid),
+        childList: databaseMenuList(envToDbMap.get(environment.uid), databaseEntityTitle),
         childCollapse: true,
       };
     });
 });
 
+const databaseMenuList = (props: any, title: any) => {
+  const regex = /\((.+?)\)/g;
+  const titleSet = [...new Set(title)];
+  const arr: any[] = [];
+  titleSet.map((title: any) => {
+    arr.push({
+      id: `bb.example.${title}`,
+      name: title,
+      childList: props.filter((item: any) => {
+        const itemTitle = item.name.match(regex)[0].replace("(","").replace(")","");
+        return itemTitle === title
+      }),
+      childCollapse: true,
+    })
+  })
+  return arr.filter(child => {
+    return child.childList.length > 0
+  });
+}
+  
 const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
   const dbList = databaseList.value.filter(
     (db) => db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
