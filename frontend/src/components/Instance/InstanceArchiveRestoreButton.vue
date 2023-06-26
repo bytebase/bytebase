@@ -100,7 +100,7 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
       ]),
     });
   } else {
-    const instanceList = instanceV1Store.activeInstanceList;
+    const instanceList = instanceStore.activeInstanceList;
     if (subscriptionStore.instanceCountLimit <= instanceList.length) {
       state.showFeatureModal = true;
       return;
