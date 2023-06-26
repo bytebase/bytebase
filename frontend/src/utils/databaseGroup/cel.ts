@@ -2,7 +2,6 @@ import { celServiceClient } from "@/grpcweb";
 import {
   ConditionGroupExpr,
   SimpleExpr,
-  convertToCELString,
   emptySimpleExpr,
   resolveCELExpr,
   wrapAsGroup,
@@ -13,12 +12,12 @@ interface DatabaseGroupExpr {
   conditionGroupExpr: ConditionGroupExpr;
 }
 
-export const stringifyDatabaseGroupExpr = (
+export const buildDatabaseGroupExpr = (
   databaseGroupExpr: DatabaseGroupExpr
-): string => {
+): SimpleExpr => {
   const { environmentId, conditionGroupExpr } = databaseGroupExpr;
   if (conditionGroupExpr.args.length > 0) {
-    return convertToCELString({
+    return {
       operator: "_&&_",
       args: [
         // Make the environment ID a condition first to avoid confusion when converting from CEL string.
@@ -28,12 +27,12 @@ export const stringifyDatabaseGroupExpr = (
         },
         conditionGroupExpr,
       ],
-    });
+    };
   } else {
-    return convertToCELString({
+    return {
       operator: "_==_",
       args: ["resource.environment_name", environmentId],
-    });
+    };
   }
 };
 
