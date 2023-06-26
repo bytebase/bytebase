@@ -269,14 +269,6 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, task *store.TaskMessage, c
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
 
-	create, err = getSyntaxCheckTaskCheck(task, instance)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
-	}
-	if create != nil {
-		createList = append(createList, create...)
-	}
-
 	create, err = s.getSQLReviewTaskCheck(task, instance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
@@ -343,19 +335,6 @@ func (*Scheduler) getSQLReviewTaskCheck(task *store.TaskMessage, instance *store
 			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementAdvise,
-		},
-	}, nil
-}
-
-func getSyntaxCheckTaskCheck(task *store.TaskMessage, instance *store.InstanceMessage) ([]*store.TaskCheckRunMessage, error) {
-	if !api.IsSyntaxCheckSupported(instance.Engine) {
-		return nil, nil
-	}
-	return []*store.TaskCheckRunMessage{
-		{
-			CreatorID: api.SystemBotID,
-			TaskID:    task.ID,
-			Type:      api.TaskCheckDatabaseStatementSyntax,
 		},
 	}, nil
 }

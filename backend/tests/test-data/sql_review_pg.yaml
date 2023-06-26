@@ -25,7 +25,7 @@
       status: ERROR
       title: Syntax error
       content: syntax error at or near "user"
-      line: 0
+      line: 1
   run: false
 - statement: |-
     CREATE TABLE "userTable"(

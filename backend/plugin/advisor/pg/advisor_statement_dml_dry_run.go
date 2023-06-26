@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -26,10 +28,10 @@ type StatementDmlDryRunAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	stmtList, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	stmtList, ok := ctx.AST.([]ast.Node)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to Node")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
