@@ -49,10 +49,17 @@
     </p>
     <div class="pl-4 my-2">
       <ul class="list-disc list-inside">
-        <li v-for="feature in overUsedFeatureList" :key="feature">
+        <li v-for="item in overUsedFeatureList" :key="item.feature">
           {{
-            $t(`subscription.features.${feature.split(".").join("-")}.title`)
+            $t(
+              `subscription.features.${item.feature.split(".").join("-")}.title`
+            )
           }}
+          ({{
+            $t(
+              `subscription.plan.${planTypeToString(item.requiredPlan)}.title`
+            )
+          }})
         </li>
       </ul>
     </div>
@@ -205,10 +212,17 @@ watch(
 
 const overUsedFeatureList = computed(() => {
   const currentPlan = subscriptionStore.currentPlan;
-  return usedFeatureList.value.filter((feature) => {
+  const resp = [];
+  for (const feature of usedFeatureList.value) {
     const requiredPlan = subscriptionStore.getMinimumRequiredPlan(feature);
-    return requiredPlan > currentPlan;
-  });
+    if (requiredPlan > currentPlan) {
+      resp.push({
+        feature,
+        requiredPlan,
+      });
+    }
+  }
+  return resp;
 });
 
 const neededPlan = computed(() => {
