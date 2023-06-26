@@ -2,7 +2,9 @@
 package parser
 
 import (
+	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
@@ -161,4 +163,144 @@ func IsSnowflakeKeyword(s string, caseSensitive bool) bool {
 		s = strings.ToUpper(s)
 	}
 	return snowflakeKeyword[s]
+}
+
+type snowsqlResourceExtractListener struct {
+	*parser.BaseSnowflakeParserListener
+
+	currentDatabase string
+	currentSchema   string
+	resourceMap     map[string]SchemaResource
+}
+
+func (l *snowsqlResourceExtractListener) EnterTable_source_item_joined(ctx *parser.Table_source_item_joinedContext) {
+	objectName := ctx.Object_ref().Object_name()
+
+	var parts []string
+	database := l.currentDatabase
+	if d := objectName.GetD(); d != nil {
+		normalizedD := NormalizeObjectNamePart(d)
+		if normalizedD != "" {
+			database = normalizedD
+		}
+	}
+	parts = append(parts, database)
+
+	schema := l.currentSchema
+	if s := objectName.GetS(); s != nil {
+		normalizedS := NormalizeObjectNamePart(s)
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	}
+	parts = append(parts, schema)
+
+	var table string
+	if o := objectName.GetO(); o != nil {
+		normalizedO := NormalizeObjectNamePart(o)
+		if normalizedO != "" {
+			table = normalizedO
+		}
+	}
+	parts = append(parts, table)
+
+	normalizedObjectName := strings.Join(parts, ".")
+	l.resourceMap[normalizedObjectName] = SchemaResource{
+		Database: database,
+		Schema:   schema,
+		Table:    table,
+	}
+}
+
+func extractSnowflakeResourceList(currentDatabase string, currentSchema string, statement string) ([]SchemaResource, error) {
+	tree, err := ParseSnowSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	l := &snowsqlResourceExtractListener{
+		currentDatabase: currentDatabase,
+		currentSchema:   currentSchema,
+		resourceMap:     make(map[string]SchemaResource),
+	}
+
+	var result []SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+// NormalizeObjectName normalizes the given object name.
+func NormalizeObjectName(objectName parser.IObject_nameContext) string {
+	var parts []string
+
+	if d := objectName.GetD(); d != nil {
+		normalizedD := NormalizeObjectNamePart(d)
+		if normalizedD != "" {
+			parts = append(parts, normalizedD)
+		}
+	}
+
+	var schema string
+	if s := objectName.GetS(); s != nil {
+		normalizedS := NormalizeObjectNamePart(s)
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	}
+	if schema == "" {
+		// Backfill default schema "PUBLIC" if schema is not specified.
+		schema = "PUBLIC"
+	}
+	parts = append(parts, schema)
+
+	if o := objectName.GetO(); o != nil {
+		normalizedO := NormalizeObjectNamePart(o)
+		if normalizedO != "" {
+			parts = append(parts, normalizedO)
+		}
+	}
+	return strings.Join(parts, ".")
+}
+
+// NormalizeObjectNamePart normalizes the object name part.
+func NormalizeObjectNamePart(part parser.IId_Context) string {
+	if part == nil {
+		return ""
+	}
+	return ExtractOrdinaryIdentifier(part.GetText())
+}
+
+// ExtractOrdinaryIdentifier extracts the ordinary object name from a string. It follows the following rules:
+//
+// 1. If there are no double quotes on either side, it will be converted to uppercase.
+//
+// 2. If there are double quotes on both sides, the case will not change, the double quotes on both sides will be removed, and `""` in content will be converted to `"`.
+//
+// Caller MUST ensure the identifier is VALID.
+func ExtractOrdinaryIdentifier(identifier string) string {
+	quoted := strings.HasPrefix(identifier, `"`) && strings.HasSuffix(identifier, `"`)
+	if quoted {
+		identifier = identifier[1 : len(identifier)-1]
+	}
+	runeObjectName := []rune(identifier)
+	var result []rune
+	for i := 0; i < len(runeObjectName); i++ {
+		newRune := runeObjectName[i]
+		if i+1 < len(runeObjectName) && runeObjectName[i] == '"' && runeObjectName[i+1] == '"' && quoted {
+			newRune = '"'
+			i++
+		} else if !quoted {
+			newRune = unicode.ToUpper(newRune)
+		}
+		result = append(result, newRune)
+	}
+	return string(result)
 }
