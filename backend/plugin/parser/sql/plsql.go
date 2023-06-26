@@ -411,7 +411,7 @@ func (*ParseErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa
 // ParsePLSQL parses the given PLSQL.
 func ParsePLSQL(sql string) (antlr.Tree, error) {
 	// The antlr parser requires a semicolon at the end of the SQL.
-	sql = strings.TrimRight(sql, " \t\n\r\f;") + ";"
+	sql = strings.TrimRight(sql, " \t\n\r\f;") + "\n;"
 	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(sql))
 	steam := antlr.NewCommonTokenStream(lexer, 0)
 	p := parser.NewPlSqlParser(steam)
@@ -680,9 +680,9 @@ func (l *resourceExtractListener) EnterTableview_name(ctx *parser.Tableview_name
 		return
 	}
 
-	result := []string{normalizeIdentifierContext(ctx.Identifier())}
+	result := []string{PLSQLNormalizeIdentifierContext(ctx.Identifier())}
 	if ctx.Id_expression() != nil {
-		result = append(result, normalizeIDExpression(ctx.Id_expression()))
+		result = append(result, PLSQLNormalizeIDExpression(ctx.Id_expression()))
 	}
 	if len(result) == 1 {
 		result = []string{l.currentSchema, result[0]}
@@ -696,15 +696,17 @@ func (l *resourceExtractListener) EnterTableview_name(ctx *parser.Tableview_name
 	l.resourceMap[resource.String()] = resource
 }
 
-func normalizeIdentifierContext(identifier parser.IIdentifierContext) string {
+// PLSQLNormalizeIdentifierContext returns the normalized identifier from the given context.
+func PLSQLNormalizeIdentifierContext(identifier parser.IIdentifierContext) string {
 	if identifier == nil {
 		return ""
 	}
 
-	return normalizeIDExpression(identifier.Id_expression())
+	return PLSQLNormalizeIDExpression(identifier.Id_expression())
 }
 
-func normalizeIDExpression(idExpression parser.IId_expressionContext) string {
+// PLSQLNormalizeIDExpression returns the normalized identifier from the given context.
+func PLSQLNormalizeIDExpression(idExpression parser.IId_expressionContext) string {
 	if idExpression == nil {
 		return ""
 	}

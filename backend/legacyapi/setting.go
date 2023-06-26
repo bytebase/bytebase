@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -20,6 +18,8 @@ const (
 	SettingWorkspaceProfile SettingName = "bb.workspace.profile"
 	// SettingWorkspaceApproval is the setting name for workspace approval config.
 	SettingWorkspaceApproval SettingName = "bb.workspace.approval"
+	// SettingWorkspaceExternalApproval is the setting name for workspace external approval config.
+	SettingWorkspaceExternalApproval SettingName = "bb.workspace.approval.external"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.
@@ -45,46 +45,6 @@ type IMType string
 
 // IMTypeFeishu is IM feishu.
 const IMTypeFeishu IMType = "im.feishu"
-
-// Setting is the API message for a setting.
-type Setting struct {
-	// Domain specific fields
-	Name        SettingName `jsonapi:"attr,name"`
-	Value       string      `jsonapi:"attr,value"`
-	Description string      `jsonapi:"attr,description"`
-}
-
-// SettingCreate is the API message for creating a setting.
-type SettingCreate struct {
-	CreatorID   int
-	Name        SettingName
-	Value       string
-	Description string
-}
-
-// SettingFind is the API message for finding settings.
-type SettingFind struct {
-	Name *SettingName
-}
-
-// SettingPatch is the API message for patching a setting.
-type SettingPatch struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	Name         SettingName
-	Value        string `jsonapi:"attr,value"`
-	ValidateOnly bool   `jsonapi:"attr,validateOnly"`
-}
-
-func (find *SettingFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
 
 // ExternalApproval is the external approval setting for app IM.
 type ExternalApproval struct {

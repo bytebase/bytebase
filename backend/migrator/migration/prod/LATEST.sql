@@ -329,7 +329,9 @@ CREATE TABLE instance (
     engine TEXT NOT NULL,
     engine_version TEXT NOT NULL DEFAULT '',
     external_link TEXT NOT NULL DEFAULT '',
-    resource_id TEXT NOT NULL
+    resource_id TEXT NOT NULL,
+    -- activation should set to be TRUE if users assign license to this instance.
+    activation BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
@@ -382,7 +384,8 @@ CREATE TABLE db (
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
-    secrets JSONB NOT NULL DEFAULT '{}'
+    secrets JSONB NOT NULL DEFAULT '{}',
+    datashare BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE INDEX idx_db_instance_id ON db(instance_id);
@@ -788,8 +791,10 @@ CREATE TABLE instance_change_history (
     -- Record the migration version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
-    -- Record the migration statement
+    -- Record the change statement in preview format.
     statement TEXT NOT NULL,
+    -- Record the sheet for the change statement. Optional.
+    sheet_id BIGINT NULL,
     -- Record the schema after migration
     schema TEXT NOT NULL,
     -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.

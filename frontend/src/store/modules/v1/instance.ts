@@ -33,6 +33,15 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       return instance.state === State.ACTIVE;
     });
   });
+  const activateInstanceCount = computed(() => {
+    let count = 0;
+    for (const instance of activeInstanceList.value) {
+      if (instance.activation) {
+        count++;
+      }
+    }
+    return count;
+  });
 
   // Actions
   const upsertInstances = async (list: Instance[]) => {
@@ -84,22 +93,32 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composed = await upsertInstances([instance]);
     return composed[0];
   };
-  const fetchInstanceByName = async (name: string) => {
-    const instance = await instanceServiceClient.getInstance({
-      name,
+  const syncInstance = async (instance: Instance) => {
+    await instanceServiceClient.syncInstance({
+      name: instance.name,
     });
+  };
+  const fetchInstanceByName = async (name: string, silent = false) => {
+    const instance = await instanceServiceClient.getInstance(
+      {
+        name,
+      },
+      {
+        silent,
+      }
+    );
     const composed = await upsertInstances([instance]);
     return composed[0];
   };
   const getInstanceByName = (name: string) => {
     return instanceMapByName.get(name) ?? unknownInstance();
   };
-  const getOrFetchInstanceByName = async (name: string) => {
+  const getOrFetchInstanceByName = async (name: string, silent = false) => {
     const cached = instanceMapByName.get(name);
     if (cached) {
       return cached;
     }
-    await fetchInstanceByName(name);
+    await fetchInstanceByName(name, silent);
     return getInstanceByName(name);
   };
   const fetchInstanceByUID = async (uid: string) => {
@@ -185,10 +204,12 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   return {
     instanceList,
     activeInstanceList,
+    activateInstanceCount,
     createInstance,
     updateInstance,
     archiveInstance,
     restoreInstance,
+    syncInstance,
     fetchInstanceList,
     fetchInstanceByName,
     getInstanceByName,

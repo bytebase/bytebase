@@ -213,6 +213,29 @@ export interface ProjectGitOpsInfo {
   refreshToken: string;
 }
 
+export interface ExchangeTokenRequest {
+  exchangeToken?: ExchangeToken;
+}
+
+export interface ExchangeToken {
+  /**
+   * The name of the external version control to retrieve the linked projects.
+   * Format: externalVersionControls/{externalVersionControl}
+   */
+  name: string;
+  code: string;
+  type: ExternalVersionControl_Type;
+  instanceUrl: string;
+  clientId: string;
+  clientSecret: string;
+}
+
+export interface OAuthToken {
+  accessToken: string;
+  refreshToken: string;
+  expiresTime?: Date;
+}
+
 function createBaseCreateExternalVersionControlRequest(): CreateExternalVersionControlRequest {
   return { externalVersionControl: undefined };
 }
@@ -1406,6 +1429,272 @@ export const ProjectGitOpsInfo = {
   },
 };
 
+function createBaseExchangeTokenRequest(): ExchangeTokenRequest {
+  return { exchangeToken: undefined };
+}
+
+export const ExchangeTokenRequest = {
+  encode(message: ExchangeTokenRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.exchangeToken !== undefined) {
+      ExchangeToken.encode(message.exchangeToken, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExchangeTokenRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExchangeTokenRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.exchangeToken = ExchangeToken.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExchangeTokenRequest {
+    return { exchangeToken: isSet(object.exchangeToken) ? ExchangeToken.fromJSON(object.exchangeToken) : undefined };
+  },
+
+  toJSON(message: ExchangeTokenRequest): unknown {
+    const obj: any = {};
+    message.exchangeToken !== undefined &&
+      (obj.exchangeToken = message.exchangeToken ? ExchangeToken.toJSON(message.exchangeToken) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExchangeTokenRequest>): ExchangeTokenRequest {
+    return ExchangeTokenRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExchangeTokenRequest>): ExchangeTokenRequest {
+    const message = createBaseExchangeTokenRequest();
+    message.exchangeToken = (object.exchangeToken !== undefined && object.exchangeToken !== null)
+      ? ExchangeToken.fromPartial(object.exchangeToken)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseExchangeToken(): ExchangeToken {
+  return { name: "", code: "", type: 0, instanceUrl: "", clientId: "", clientSecret: "" };
+}
+
+export const ExchangeToken = {
+  encode(message: ExchangeToken, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.code !== "") {
+      writer.uint32(18).string(message.code);
+    }
+    if (message.type !== 0) {
+      writer.uint32(24).int32(message.type);
+    }
+    if (message.instanceUrl !== "") {
+      writer.uint32(34).string(message.instanceUrl);
+    }
+    if (message.clientId !== "") {
+      writer.uint32(42).string(message.clientId);
+    }
+    if (message.clientSecret !== "") {
+      writer.uint32(50).string(message.clientSecret);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExchangeToken {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExchangeToken();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.instanceUrl = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.clientId = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.clientSecret = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExchangeToken {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      code: isSet(object.code) ? String(object.code) : "",
+      type: isSet(object.type) ? externalVersionControl_TypeFromJSON(object.type) : 0,
+      instanceUrl: isSet(object.instanceUrl) ? String(object.instanceUrl) : "",
+      clientId: isSet(object.clientId) ? String(object.clientId) : "",
+      clientSecret: isSet(object.clientSecret) ? String(object.clientSecret) : "",
+    };
+  },
+
+  toJSON(message: ExchangeToken): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.code !== undefined && (obj.code = message.code);
+    message.type !== undefined && (obj.type = externalVersionControl_TypeToJSON(message.type));
+    message.instanceUrl !== undefined && (obj.instanceUrl = message.instanceUrl);
+    message.clientId !== undefined && (obj.clientId = message.clientId);
+    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExchangeToken>): ExchangeToken {
+    return ExchangeToken.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExchangeToken>): ExchangeToken {
+    const message = createBaseExchangeToken();
+    message.name = object.name ?? "";
+    message.code = object.code ?? "";
+    message.type = object.type ?? 0;
+    message.instanceUrl = object.instanceUrl ?? "";
+    message.clientId = object.clientId ?? "";
+    message.clientSecret = object.clientSecret ?? "";
+    return message;
+  },
+};
+
+function createBaseOAuthToken(): OAuthToken {
+  return { accessToken: "", refreshToken: "", expiresTime: undefined };
+}
+
+export const OAuthToken = {
+  encode(message: OAuthToken, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.accessToken !== "") {
+      writer.uint32(10).string(message.accessToken);
+    }
+    if (message.refreshToken !== "") {
+      writer.uint32(18).string(message.refreshToken);
+    }
+    if (message.expiresTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.expiresTime), writer.uint32(122).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): OAuthToken {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOAuthToken();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.accessToken = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.refreshToken = reader.string();
+          continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.expiresTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OAuthToken {
+    return {
+      accessToken: isSet(object.accessToken) ? String(object.accessToken) : "",
+      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : "",
+      expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
+    };
+  },
+
+  toJSON(message: OAuthToken): unknown {
+    const obj: any = {};
+    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
+    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
+    message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
+    return obj;
+  },
+
+  create(base?: DeepPartial<OAuthToken>): OAuthToken {
+    return OAuthToken.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<OAuthToken>): OAuthToken {
+    const message = createBaseOAuthToken();
+    message.accessToken = object.accessToken ?? "";
+    message.refreshToken = object.refreshToken ?? "";
+    message.expiresTime = object.expiresTime ?? undefined;
+    return message;
+  },
+};
+
 export type ExternalVersionControlServiceDefinition = typeof ExternalVersionControlServiceDefinition;
 export const ExternalVersionControlServiceDefinition = {
   name: "ExternalVersionControlService",
@@ -1730,6 +2019,106 @@ export const ExternalVersionControlServiceDefinition = {
         },
       },
     },
+    exchangeToken: {
+      name: "ExchangeToken",
+      requestType: ExchangeTokenRequest,
+      requestStream: false,
+      responseType: OAuthToken,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              83,
+              58,
+              14,
+              101,
+              120,
+              99,
+              104,
+              97,
+              110,
+              103,
+              101,
+              95,
+              116,
+              111,
+              107,
+              101,
+              110,
+              34,
+              65,
+              47,
+              118,
+              49,
+              47,
+              123,
+              101,
+              120,
+              99,
+              104,
+              97,
+              110,
+              103,
+              101,
+              95,
+              116,
+              111,
+              107,
+              101,
+              110,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              120,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              86,
+              101,
+              114,
+              115,
+              105,
+              111,
+              110,
+              67,
+              111,
+              110,
+              116,
+              114,
+              111,
+              108,
+              115,
+              47,
+              42,
+              125,
+              58,
+              101,
+              120,
+              99,
+              104,
+              97,
+              110,
+              103,
+              101,
+              84,
+              111,
+              107,
+              101,
+              110,
+            ]),
+          ],
+        },
+      },
+    },
     deleteExternalVersionControl: {
       name: "DeleteExternalVersionControl",
       requestType: DeleteExternalVersionControlRequest,
@@ -1939,6 +2328,7 @@ export interface ExternalVersionControlServiceImplementation<CallContextExt = {}
     request: UpdateExternalVersionControlRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ExternalVersionControl>>;
+  exchangeToken(request: ExchangeTokenRequest, context: CallContext & CallContextExt): Promise<DeepPartial<OAuthToken>>;
   deleteExternalVersionControl(
     request: DeleteExternalVersionControlRequest,
     context: CallContext & CallContextExt,
@@ -1970,6 +2360,10 @@ export interface ExternalVersionControlServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UpdateExternalVersionControlRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ExternalVersionControl>;
+  exchangeToken(
+    request: DeepPartial<ExchangeTokenRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<OAuthToken>;
   deleteExternalVersionControl(
     request: DeepPartial<DeleteExternalVersionControlRequest>,
     options?: CallOptions & CallOptionsExt,

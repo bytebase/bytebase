@@ -19,7 +19,7 @@
           >
           <router-link
             v-if="showAuditLogItem"
-            to="/setting/audit-log?type=bb.sql-editor.query"
+            :to="`/setting/audit-log?type=${sqlQueryAction}`"
             class="router-link"
             exact-active-class="anchor-link"
             >{{ $t("settings.sidebar.audit-log") }}</router-link
@@ -31,7 +31,7 @@
       <div class="flex items-center space-x-3">
         <router-link to="/inbox">
           <span
-            v-if="inboxSummary.hasUnread"
+            v-if="inboxSummary.unread > 0"
             class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
@@ -77,7 +77,7 @@
     </router-link>
     <router-link
       v-if="showAuditLogItem"
-      to="/setting/audit-log?type=bb.sql-editor.query"
+      :to="`/setting/audit-log?type=${sqlQueryAction}`"
       class="bar-link rounded-md block px-3 py-2"
     >
       {{ $t("settings.sidebar.audit-log") }}
@@ -96,9 +96,10 @@ import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "@/components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
-import { useCurrentUser, useCurrentUserV1, useInboxStore } from "@/store";
+import { useCurrentUser, useCurrentUserV1, useInboxV1Store } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -109,7 +110,7 @@ export default defineComponent({
   components: { BytebaseLogo, ProfileBrandingLogo, ProfileDropdown },
   setup() {
     const { t, availableLocales, locale } = useI18n();
-    const inboxStore = useInboxStore();
+    const inboxV1Store = useInboxV1Store();
     const settingV1Store = useSettingV1Store();
     const router = useRouter();
 
@@ -134,14 +135,14 @@ export default defineComponent({
     const prepareInboxSummary = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
+        inboxV1Store.fetchInboxSummary();
       }
     };
 
     watchEffect(prepareInboxSummary);
 
     const inboxSummary = computed(() => {
-      return inboxStore.getInboxSummaryByUser(currentUser.value.id);
+      return inboxV1Store.inboxSummary;
     });
 
     const kbarActions = computed(() => [
@@ -206,6 +207,7 @@ export default defineComponent({
       inboxSummary,
       logoUrl,
       goBack,
+      sqlQueryAction: LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY,
     };
   },
 });

@@ -1,10 +1,8 @@
 import { cloneDeep, last } from "lodash-es";
-import { getDatabaseIdByName } from "./expr";
-import { celServiceClient } from "@/grpcweb";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
-import { useDatabaseV1Store } from "@/store";
-import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
+import { DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { celServiceClient } from "@/grpcweb";
 
 interface DatabaseLevelCondition {
   database: string[];
@@ -38,25 +36,21 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   const conditionList: DatabaseResourceCondition[] = [];
 
   for (const resource of resources) {
-    const database = useDatabaseV1Store().getDatabaseByUID(
-      String(resource.databaseId)
-    );
-    const databaseName = database.name;
     if (resource.table === undefined && resource.schema === undefined) {
       // Database level
       conditionList.push({
-        database: [databaseName],
+        database: [resource.databaseName],
       });
     } else if (resource.schema !== undefined && resource.table === undefined) {
       // Schema level
       conditionList.push({
-        database: databaseName,
+        database: resource.databaseName,
         schema: [resource.schema],
       });
     } else if (resource.schema !== undefined && resource.table !== undefined) {
       // Table level
       conditionList.push({
-        database: databaseName,
+        database: resource.databaseName,
         schema: resource.schema,
         table: [resource.table],
       });
@@ -86,7 +80,7 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
     )
   ).filter((condition) => condition.table.length > 0);
 
-  const cel = convertToCEL([
+  const cel = convertToCELString([
     ...databaseLevelConditionList,
     ...schemaLevelConditionList,
     ...tableLevelConditionList,
@@ -127,7 +121,7 @@ export const stringifyConditionExpression = (
   return expression.join(" && ");
 };
 
-const convertToCEL = (
+const convertToCELString = (
   conditions: (
     | DatabaseLevelCondition
     | SchemaLevelCondition
@@ -174,12 +168,17 @@ const convertToCEL = (
   return `(${topLevelCondition})`;
 };
 
-export const convertFromCEL = async (
+export const convertFromCELString = async (
   cel: string
 ): Promise<ConditionExpression> => {
-  const { expression: celExpr } = await celServiceClient.parse({
-    expression: cel,
-  });
+  const { expression: celExpr } = await celServiceClient.parse(
+    {
+      expression: cel,
+    },
+    {
+      silent: true,
+    }
+  );
 
   if (!celExpr || !celExpr.expr) {
     return {};
@@ -200,9 +199,7 @@ export const convertFromCEL = async (
       if (typeof property === "string" && Array.isArray(values)) {
         if (property === "resource.database") {
           for (const value of values) {
-            const databaseId = await getDatabaseIdByName(value as string);
             const databaseResource: DatabaseResource = {
-              databaseId: databaseId,
               databaseName: value as string,
             };
             conditionExpression.databaseResources!.push(databaseResource);
@@ -236,9 +233,7 @@ export const convertFromCEL = async (
       if (typeof left === "string") {
         if (typeof right === "string") {
           if (left === "resource.database") {
-            const databaseId = await getDatabaseIdByName(right);
             const databaseResource: DatabaseResource = {
-              databaseId: databaseId,
               databaseName: right,
             };
             conditionExpression.databaseResources!.push(databaseResource);
@@ -272,7 +267,7 @@ export const convertFromCEL = async (
   return conditionExpression;
 };
 
-export const convertFromSimpleExpr = (expr: Expr): ConditionExpression => {
+export const convertFromExpr = (expr: Expr): ConditionExpression => {
   const simpleExpr = resolveCELExpr(expr);
   const conditionExpression: ConditionExpression = {
     databaseResources: [],
@@ -289,7 +284,6 @@ export const convertFromSimpleExpr = (expr: Expr): ConditionExpression => {
         if (property === "resource.database") {
           for (const value of values) {
             const databaseResource: DatabaseResource = {
-              databaseId: "",
               databaseName: value as string,
             };
             conditionExpression.databaseResources!.push(databaseResource);
@@ -324,7 +318,6 @@ export const convertFromSimpleExpr = (expr: Expr): ConditionExpression => {
         if (typeof right === "string") {
           if (left === "resource.database") {
             const databaseResource: DatabaseResource = {
-              databaseId: "",
               databaseName: right,
             };
             conditionExpression.databaseResources!.push(databaseResource);

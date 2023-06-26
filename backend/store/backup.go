@@ -85,6 +85,10 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *BackupSe
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return backupSettingList, nil
 }
 
@@ -162,24 +166,6 @@ func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 		arr.AppendString(fmt.Sprintf("{name:%s, id:%d, payload:%s}", backup.Name, backup.UID, payload))
 	}
 	return nil
-}
-
-// ToAPIBackup converts BackupMessage to legacy api Backup.
-func (b *BackupMessage) ToAPIBackup() *api.Backup {
-	return &api.Backup{
-		ID:                      b.UID,
-		RowStatus:               b.RowStatus,
-		CreatedTs:               b.CreatedTs,
-		UpdatedTs:               b.UpdatedTs,
-		Name:                    b.Name,
-		Status:                  b.Status,
-		Type:                    b.BackupType,
-		StorageBackend:          b.StorageBackend,
-		MigrationHistoryVersion: b.MigrationHistoryVersion,
-		Path:                    b.Path,
-		Comment:                 b.Comment,
-		DatabaseID:              b.DatabaseUID,
-	}
 }
 
 // FindBackupMessage is the message for finding backup.

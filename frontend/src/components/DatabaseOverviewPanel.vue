@@ -145,14 +145,15 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { computed, reactive, watchEffect, PropType } from "vue";
-import { Anomaly, ComposedDatabase, DataSource } from "../types";
-import { useAnomalyList, useDBSchemaStore } from "@/store";
+import { ComposedDatabase, DataSource } from "../types";
+import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyTable.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
 import { Engine, State } from "@/types/proto/v1/common";
+import { Anomaly } from "@/types/proto/v1/anomaly_service";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -170,7 +171,7 @@ const state = reactive<LocalState>({
   selectedSchemaName: "",
 });
 
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 
 const databaseEngine = computed(() => {
   return props.database.instanceEntity.engine;
@@ -187,9 +188,7 @@ const hasSchemaProperty = computed(() => {
 });
 
 const prepareDatabaseMetadata = async () => {
-  await dbSchemaStore.getOrFetchDatabaseMetadataById(
-    Number(props.database.uid)
-  );
+  await dbSchemaStore.getOrFetchDatabaseMetadata(props.database.name);
   if (hasSchemaProperty.value && schemaList.value.length > 0) {
     state.selectedSchemaName = head(schemaList.value)?.name || "";
   }
@@ -197,8 +196,8 @@ const prepareDatabaseMetadata = async () => {
 
 watchEffect(prepareDatabaseMetadata);
 
-const anomalyList = useAnomalyList(
-  computed(() => ({ databaseId: Number(props.database.uid) }))
+const anomalyList = useAnomalyV1List(
+  computed(() => ({ database: props.database.name }))
 );
 
 const anomalySectionList = computed((): BBTableSectionDataSource<Anomaly>[] => {
@@ -213,7 +212,7 @@ const anomalySectionList = computed((): BBTableSectionDataSource<Anomaly>[] => {
 });
 
 const schemaList = computed(() => {
-  return dbSchemaStore.getSchemaListByDatabaseId(Number(props.database.uid));
+  return dbSchemaStore.getSchemaList(props.database.name);
 });
 
 const schemaNameList = computed(() => {
@@ -221,9 +220,7 @@ const schemaNameList = computed(() => {
 });
 
 const databaseSchemaMetadata = computed(() => {
-  return dbSchemaStore.getDatabaseMetadataByDatabaseId(
-    Number(props.database.uid)
-  );
+  return dbSchemaStore.getDatabaseMetadata(props.database.name);
 });
 
 const tableList = computed(() => {
@@ -234,7 +231,7 @@ const tableList = computed(() => {
       )?.tables || []
     );
   }
-  return dbSchemaStore.getTableListByDatabaseId(Number(props.database.uid));
+  return dbSchemaStore.getTableList(props.database.name);
 });
 
 const viewList = computed(() => {
@@ -245,11 +242,11 @@ const viewList = computed(() => {
       )?.views || []
     );
   }
-  return dbSchemaStore.getViewListByDatabaseId(Number(props.database.uid));
+  return dbSchemaStore.getViewList(props.database.name);
 });
 
 const dbExtensionList = computed(() => {
-  return dbSchemaStore.getExtensionListByDatabaseId(Number(props.database.uid));
+  return dbSchemaStore.getExtensionList(props.database.name);
 });
 
 const functionList = computed(() => {
@@ -260,6 +257,6 @@ const functionList = computed(() => {
       )?.functions || []
     );
   }
-  return dbSchemaStore.getFunctionListByDatabaseId(Number(props.database.uid));
+  return dbSchemaStore.getFunctionList(props.database.name);
 });
 </script>

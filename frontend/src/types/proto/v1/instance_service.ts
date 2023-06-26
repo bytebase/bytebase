@@ -129,6 +129,17 @@ export interface UndeleteInstanceRequest {
   name: string;
 }
 
+export interface SyncInstanceRequest {
+  /**
+   * The name of instance.
+   * Format: instances/{instance}
+   */
+  name: string;
+}
+
+export interface SyncInstanceResponse {
+}
+
 export interface AddDataSourceRequest {
   /**
    * The name of the instance to add a data source to.
@@ -198,6 +209,7 @@ export interface Instance {
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
+  activation: boolean;
 }
 
 export interface DataSource {
@@ -740,6 +752,106 @@ export const UndeleteInstanceRequest = {
   },
 };
 
+function createBaseSyncInstanceRequest(): SyncInstanceRequest {
+  return { name: "" };
+}
+
+export const SyncInstanceRequest = {
+  encode(message: SyncInstanceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SyncInstanceRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncInstanceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SyncInstanceRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: SyncInstanceRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SyncInstanceRequest>): SyncInstanceRequest {
+    return SyncInstanceRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SyncInstanceRequest>): SyncInstanceRequest {
+    const message = createBaseSyncInstanceRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseSyncInstanceResponse(): SyncInstanceResponse {
+  return {};
+}
+
+export const SyncInstanceResponse = {
+  encode(_: SyncInstanceResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SyncInstanceResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncInstanceResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): SyncInstanceResponse {
+    return {};
+  },
+
+  toJSON(_: SyncInstanceResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<SyncInstanceResponse>): SyncInstanceResponse {
+    return SyncInstanceResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<SyncInstanceResponse>): SyncInstanceResponse {
+    const message = createBaseSyncInstanceResponse();
+    return message;
+  },
+};
+
 function createBaseAddDataSourceRequest(): AddDataSourceRequest {
   return { instance: "", dataSource: undefined, validateOnly: false };
 }
@@ -1068,6 +1180,7 @@ function createBaseInstance(): Instance {
     externalLink: "",
     dataSources: [],
     environment: "",
+    activation: false,
   };
 }
 
@@ -1099,6 +1212,9 @@ export const Instance = {
     }
     if (message.environment !== "") {
       writer.uint32(74).string(message.environment);
+    }
+    if (message.activation === true) {
+      writer.uint32(80).bool(message.activation);
     }
     return writer;
   },
@@ -1173,6 +1289,13 @@ export const Instance = {
 
           message.environment = reader.string();
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.activation = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1193,6 +1316,7 @@ export const Instance = {
       externalLink: isSet(object.externalLink) ? String(object.externalLink) : "",
       dataSources: Array.isArray(object?.dataSources) ? object.dataSources.map((e: any) => DataSource.fromJSON(e)) : [],
       environment: isSet(object.environment) ? String(object.environment) : "",
+      activation: isSet(object.activation) ? Boolean(object.activation) : false,
     };
   },
 
@@ -1211,6 +1335,7 @@ export const Instance = {
       obj.dataSources = [];
     }
     message.environment !== undefined && (obj.environment = message.environment);
+    message.activation !== undefined && (obj.activation = message.activation);
     return obj;
   },
 
@@ -1229,6 +1354,7 @@ export const Instance = {
     message.externalLink = object.externalLink ?? "";
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.environment = object.environment ?? "";
+    message.activation = object.activation ?? false;
     return message;
   },
 };
@@ -1823,6 +1949,54 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    syncInstance: {
+      name: "SyncInstance",
+      requestType: SyncInstanceRequest,
+      requestStream: false,
+      responseType: SyncInstanceResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              32,
+              58,
+              1,
+              42,
+              34,
+              27,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              115,
+              121,
+              110,
+              99,
+            ]),
+          ],
+        },
+      },
+    },
     addDataSource: {
       name: "AddDataSource",
       requestType: AddDataSourceRequest,
@@ -2091,6 +2265,10 @@ export interface InstanceServiceImplementation<CallContextExt = {}> {
     request: UndeleteInstanceRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Instance>>;
+  syncInstance(
+    request: SyncInstanceRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<SyncInstanceResponse>>;
   addDataSource(request: AddDataSourceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
   removeDataSource(
     request: RemoveDataSourceRequest,
@@ -2122,6 +2300,10 @@ export interface InstanceServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UndeleteInstanceRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Instance>;
+  syncInstance(
+    request: DeepPartial<SyncInstanceRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<SyncInstanceResponse>;
   addDataSource(request: DeepPartial<AddDataSourceRequest>, options?: CallOptions & CallOptionsExt): Promise<Instance>;
   removeDataSource(
     request: DeepPartial<RemoveDataSourceRequest>,

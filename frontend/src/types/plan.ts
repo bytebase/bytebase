@@ -19,7 +19,6 @@ export type FeatureType =
   // Branding
   | "bb.feature.branding"
   // Change Workflow
-  | "bb.feature.data-source"
   | "bb.feature.dba-workflow"
   | "bb.feature.lgtm"
   | "bb.feature.im.approval"
@@ -27,6 +26,7 @@ export type FeatureType =
   | "bb.feature.online-migration"
   | "bb.feature.schema-drift"
   | "bb.feature.sql-review"
+  | "bb.feature.mybatis-sql-review"
   | "bb.feature.task-schedule-time"
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
@@ -51,6 +51,30 @@ export type FeatureType =
   | "bb.feature.shared-sql-script"
   // Plugins
   | "bb.feature.plugin.openai";
+
+export const instanceLimitFeature = new Set<FeatureType>([
+  // Change Workflow
+  "bb.feature.im.approval",
+  "bb.feature.schema-drift",
+  "bb.feature.encrypted-secrets",
+  "bb.feature.sql-review",
+  "bb.feature.task-schedule-time",
+  "bb.feature.online-migration",
+  // Database Management
+  "bb.feature.pitr",
+  "bb.feature.read-replica-connection",
+  "bb.feature.instance-ssh-connection",
+  "bb.feature.sync-schema-all-versions",
+  "bb.feature.index-advisor",
+  "bb.feature.database-grouping",
+  // Policy Control
+  "bb.feature.sensitive-data",
+  "bb.feature.custom-approval",
+  // VCS Integration
+  "bb.feature.vcs-sql-review",
+  "bb.feature.mybatis-sql-review",
+  "bb.feature.vcs-schema-write-back",
+]);
 
 export const planTypeToString = (planType: PlanType): string => {
   switch (planType) {

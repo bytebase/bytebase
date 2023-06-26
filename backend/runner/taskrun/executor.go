@@ -63,7 +63,7 @@ func RunExecutorOnce(ctx context.Context, exec Executor, task *store.TaskMessage
 	return exec.RunOnce(ctx, task)
 }
 
-func preMigration(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -143,8 +143,7 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, mi *db.MigrationInfo) (migrationID string, schema string, err error) {
-	statement = strings.TrimSpace(statement)
+func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, mi *db.MigrationInfo) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -154,7 +153,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		return "", "", err
 	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
 	}
@@ -169,20 +168,24 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		zap.String("statement", statementRecord),
 	)
 
+	var migrationID string
+	opts := db.ExecuteOptions{}
 	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
-		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, stores)
-		if err != nil {
-			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+		opts.BeginFunc = func(ctx context.Context, conn *sql.Conn) error {
+			updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, conn, task, stores)
+			if err != nil {
+				return errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+			}
+			task = updatedTask
+			return nil
 		}
-		task = updatedTask
 	}
-
-	var executeBeforeCommitTx func(tx *sql.Tx) error
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.Oracle {
 		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
-		executeBeforeCommitTx = getSetOracleTransactionIDFunc(ctx, task, stores)
+		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
-	migrationID, schema, err = utils.ExecuteMigrationDefault(ctx, stores, driver, mi, statement, executeBeforeCommitTx)
+
+	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, stores, driver, mi, statement, opts)
 	if err != nil {
 		return "", "", err
 	}
@@ -204,7 +207,11 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
-		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, stores, migrationID)
+		conn, err := driver.GetDB().Conn(ctx)
+		if err != nil {
+			return "", "", errors.Wrap(err, "failed to create connection")
+		}
+		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, conn, task, stores, migrationID)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
@@ -267,23 +274,19 @@ func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage,
 	}
 }
 
-func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {
-	mysqlDriver, ok := driver.(*mysql.Driver)
-	if !ok {
-		return nil, errors.Errorf("failed to cast driver to mysql.Driver")
-	}
+func setThreadIDAndStartBinlogCoordinate(ctx context.Context, conn *sql.Conn, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrap(err, "invalid database data update payload")
 	}
-	connID, err := mysqlDriver.GetMigrationConnID(ctx)
-	if err != nil {
-		return nil, err
+
+	var connID string
+	if err := conn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&connID); err != nil {
+		return nil, errors.Wrap(err, "failed to get the connection ID")
 	}
 	payload.ThreadID = connID
 
-	db := driver.GetDB()
-	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
+	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}
@@ -311,15 +314,14 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 	return updatedTask, nil
 }
 
-func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *store.TaskMessage, store *store.Store, migrationID string) (*store.TaskMessage, error) {
+func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, conn *sql.Conn, task *store.TaskMessage, store *store.Store, migrationID string) (*store.TaskMessage, error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
 	payload.MigrationID = migrationID
-	db := driver.GetDB()
-	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
+	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}
@@ -399,7 +401,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 	if writebackBranch != "" {
 		// Transform the schema to standard style for SDL mode.
-		if instance.Engine == db.MySQL || instance.Engine == db.MariaDB {
+		if instance.Engine == db.MySQL || instance.Engine == db.MariaDB || instance.Engine == db.OceanBase {
 			standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to transform to standard schema for database %q", database.DatabaseName)
@@ -453,11 +455,11 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 				)
 			}
 
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   task.CreatorID,
-				ContainerID: task.PipelineID,
-				Type:        api.ActivityPipelineTaskFileCommit,
-				Level:       api.ActivityInfo,
+			activityCreate := &store.ActivityMessage{
+				CreatorUID:   task.CreatorID,
+				ContainerUID: task.PipelineID,
+				Type:         api.ActivityPipelineTaskFileCommit,
+				Level:        api.ActivityInfo,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
 					mi.Version,
 					mi.Database,
@@ -501,13 +503,25 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 }
 
 func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *store.RepositoryMessage, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent) (string, error) {
-	if !license.IsFeatureEnabled(api.FeatureVCSSchemaWriteBack) {
-		return "", nil
-	}
 	if task.Type != api.TaskDatabaseSchemaBaseline && task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostCutover {
 		return "", nil
 	}
 	if repo == nil || repo.SchemaPathTemplate == "" {
+		return "", nil
+	}
+
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID:         &task.InstanceID,
+		ShowDeleted: false,
+	})
+	if err != nil {
+		return "", err
+	}
+	if instance == nil {
+		return "", errors.Errorf("cannot found instance %d", task.InstanceID)
+	}
+	if err := license.IsFeatureEnabledForInstance(api.FeatureVCSSchemaWriteBack, instance); err != nil {
+		log.Debug(err.Error(), zap.String("instance", instance.ResourceID))
 		return "", nil
 	}
 
@@ -555,7 +569,7 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 }
 
 func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	mi, err := preMigration(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
+	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}

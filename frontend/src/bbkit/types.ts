@@ -1,5 +1,6 @@
 import { VueClass } from "@/utils";
 import { ColumnWidth } from "./BBGrid";
+import { VNode } from "vue";
 
 export type BBButtonType =
   | "NORMAL"
@@ -80,6 +81,7 @@ export type BBOutlineItem = {
   childList?: BBOutlineItem[];
   // Only applicable if childList is specified.
   childCollapse?: boolean;
+  prefix?: VNode;
 };
 
 export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";

@@ -275,6 +275,7 @@ import { cloneDeep, isUndefined, flatten } from "lodash-es";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { NDropdown } from "naive-ui";
 import {
   generateUniqueTabId,
   useNotificationStore,

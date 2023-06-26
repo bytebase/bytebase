@@ -18,10 +18,7 @@
             $t("settings.general.workspace.plugin.openai.openai-key.self")
           }}</span>
 
-          <FeatureBadge
-            feature="bb.feature.plugin.openai"
-            class="text-accent"
-          />
+          <FeatureBadge feature="bb.feature.plugin.openai" />
 
           <span
             v-if="!allowEdit"
@@ -63,10 +60,7 @@
             $t("settings.general.workspace.plugin.openai.openai-endpoint.self")
           }}</span>
 
-          <FeatureBadge
-            feature="bb.feature.plugin.openai"
-            class="text-accent"
-          />
+          <FeatureBadge feature="bb.feature.plugin.openai" />
 
           <span
             v-if="!allowEdit"
@@ -114,8 +108,6 @@ import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
-import FeatureBadge from "@/components/FeatureBadge.vue";
-import FeatureModal from "@/components/FeatureModal.vue";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 

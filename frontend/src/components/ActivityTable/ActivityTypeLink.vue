@@ -15,57 +15,54 @@
   </template>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
+<script lang="ts" setup>
+import { computed, PropType } from "vue";
 import { head } from "lodash-es";
 
 import {
-  Activity,
   ActivityProjectRepositoryPushPayload,
   ActivityProjectDatabaseTransferPayload,
 } from "../../types";
 import { Link } from "./types";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 
-export default defineComponent({
-  name: "ActivityTypeLink",
-  props: {
-    activity: {
-      type: Object as PropType<Activity>,
-      required: true,
-    },
+const props = defineProps({
+  activity: {
+    type: Object as PropType<LogEntity>,
+    required: true,
   },
-  setup(props) {
-    const link = computed((): Link | undefined => {
-      const { activity } = props;
-      switch (activity.type) {
-        case "bb.project.repository.push": {
-          const payload =
-            activity.payload as ActivityProjectRepositoryPushPayload;
-          const commit =
-            head(payload.pushEvent.commits) ?? payload.pushEvent.fileCommit;
-          if (commit && commit.id && commit.url) {
-            return {
-              title: commit.id.substring(0, 7),
-              path: commit.url,
-              external: true,
-            };
-          }
-          // Downgrade for legacy data.
-          return undefined;
-        }
-        case "bb.project.database.transfer": {
-          const payload =
-            activity.payload as ActivityProjectDatabaseTransferPayload;
-          return {
-            title: payload.databaseName,
-            path: `/db/${payload.databaseId}`,
-            external: false,
-          };
-        }
+});
+
+const link = computed((): Link | undefined => {
+  const { activity } = props;
+  switch (activity.action) {
+    case LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityProjectRepositoryPushPayload;
+      const commit =
+        head(payload.pushEvent.commits) ?? payload.pushEvent.fileCommit;
+      if (commit && commit.id && commit.url) {
+        return {
+          title: commit.id.substring(0, 7),
+          path: commit.url,
+          external: true,
+        };
       }
+      // Downgrade for legacy data.
       return undefined;
-    });
-    return { link };
-  },
+    }
+    case LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityProjectDatabaseTransferPayload;
+      return {
+        title: payload.databaseName,
+        path: `/db/${payload.databaseId}`,
+        external: false,
+      };
+    }
+  }
+  return undefined;
 });
 </script>

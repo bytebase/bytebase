@@ -4,7 +4,6 @@ package utils
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -22,8 +21,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -486,20 +485,10 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 }
 
 // ExecuteMigrationDefault executes migration.
-func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(execStatement string) error {
-		if driver.GetType() == db.Oracle && executeBeforeCommitTx != nil {
-			oracleDriver, ok := driver.(*oracle.Driver)
-			if !ok {
-				return errors.New("failed to cast driver to oracle driver")
-			}
-			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, execStatement, executeBeforeCommitTx); err != nil {
-				return err
-			}
-		} else {
-			if _, err := driver.Execute(ctx, execStatement, false /* createDatabase */); err != nil {
-				return err
-			}
+		if _, err := driver.Execute(ctx, execStatement, false /* createDatabase */, opts); err != nil {
+			return err
 		}
 		return nil
 	}
@@ -658,10 +647,25 @@ func EndMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
 	// We can do the finding like this for now because we are presuming that
 	// one step is approved by one approver.
+	// and the approver status is either
+	// APPROVED or REJECTED.
 	if len(approvers) >= len(template.Flow.Steps) {
 		return nil
 	}
 	return template.Flow.Steps[len(approvers)]
+}
+
+// FindRejectedStep finds the rejected step in the approval flow.
+func FindRejectedStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
+	for i, approver := range approvers {
+		if i >= len(template.Flow.Steps) {
+			return nil
+		}
+		if approver.Status == storepb.IssuePayloadApproval_Approver_REJECTED {
+			return template.Flow.Steps[i]
+		}
+	}
+	return nil
 }
 
 // CheckApprovalApproved checks if the approval is approved.
@@ -678,7 +682,7 @@ func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error)
 	if len(approval.ApprovalTemplates) != 1 {
 		return false, errors.Errorf("expecting one approval template but got %d", len(approval.ApprovalTemplates))
 	}
-	return FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers) == nil, nil
+	return FindRejectedStep(approval.ApprovalTemplates[0], approval.Approvers) == nil && FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers) == nil, nil
 }
 
 // CheckIssueApproved checks if the issue is approved.
@@ -690,116 +694,107 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	return CheckApprovalApproved(issuePayload.Approval)
 }
 
-// SkipApprovalStepIfNeeded skips approval steps if no user can approve the step.
-func SkipApprovalStepIfNeeded(ctx context.Context, s *store.Store, projectUID int, approval *storepb.IssuePayloadApproval) (int, error) {
+// HandleIncomingApprovalSteps handles incoming approval steps.
+// - Blocks approval steps if no user can approve the step.
+// - creates external approvals for external approval nodes.
+func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.ActivityMessage, error) {
 	if len(approval.ApprovalTemplates) == 0 {
-		return 0, nil
+		return nil, nil, nil
 	}
 
-	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get project policy for project %d", projectUID)
-	}
-
-	var users []*store.UserMessage
-	roles := []api.Role{api.Owner, api.DBA}
-	for _, role := range roles {
-		principalType := api.EndUser
-		limit := 1
-		role := role
-		userMessages, err := s.ListUsers(ctx, &store.FindUserMessage{
-			Role:  &role,
-			Type:  &principalType,
-			Limit: &limit,
+	getActivityCreate := func(status storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status, comment string) (*store.ActivityMessage, error) {
+		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
+			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
+				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
+					Status: status,
+				},
+			},
+			IssueName: issue.Title,
 		})
 		if err != nil {
-			return 0, errors.Wrapf(err, "failed to list users for role %s", role)
+			return nil, err
 		}
-		if len(userMessages) != 0 {
-			users = append(users, userMessages[0])
-		}
+		return &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueCommentCreate,
+			Level:        api.ActivityInfo,
+			Comment:      comment,
+			Payload:      string(activityPayload),
+		}, nil
 	}
-	stepsSkipped := 0
-	for {
-		step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
-		if step == nil {
-			break
-		}
-		hasApprover, err := userCanApprove(step, users, policy)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to check if user can approve")
-		}
-		if hasApprover {
-			break
-		}
 
-		stepsSkipped++
-		approval.Approvers = append(approval.Approvers, &storepb.IssuePayloadApproval_Approver{
-			Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
-			PrincipalId: api.SystemBotID,
-		})
+	var approvers []*storepb.IssuePayloadApproval_Approver
+	var activities []*store.ActivityMessage
+
+	step := FindNextPendingStep(approval.ApprovalTemplates[0], approvers)
+	if step == nil {
+		return nil, nil, nil
 	}
-	return stepsSkipped, nil
-}
-
-func userCanApprove(step *storepb.ApprovalStep, users []*store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
 	if len(step.Nodes) != 1 {
-		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+		return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
 	if step.Type != storepb.ApprovalStep_ANY {
-		return false, errors.Errorf("expecting ANY step type but got %v", step.Type)
+		return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
 	}
 	node := step.Nodes[0]
-	if node.Type != storepb.ApprovalNode_ANY_IN_GROUP {
-		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
-	}
-
-	hasOwner := false
-	hasDBA := false
-	for _, user := range users {
-		if user.Role == api.Owner {
-			hasOwner = true
-		}
-		if user.Role == api.DBA {
-			hasDBA = true
-		}
-		if hasOwner && hasDBA {
-			break
+	if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
+		if err := handleApprovalNodeExternalNode(ctx, s, relayClient, issue, v.ExternalNodeId); err != nil {
+			approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
+				Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
+				PrincipalId: api.SystemBotID,
+			})
+			activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
+			if err != nil {
+				return nil, nil, err
+			}
+			activities = append(activities, activity)
 		}
 	}
-
-	projectRoleExist := make(map[string]bool)
-	for _, binding := range policy.Bindings {
-		if len(binding.Members) > 0 {
-			projectRoleExist[convertToRoleName(binding.Role)] = true
-		}
-	}
-
-	switch val := node.Payload.(type) {
-	case *storepb.ApprovalNode_GroupValue_:
-		switch val.GroupValue {
-		case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
-			return false, errors.Errorf("invalid group value")
-		case storepb.ApprovalNode_WORKSPACE_OWNER:
-			return hasOwner, nil
-		case storepb.ApprovalNode_WORKSPACE_DBA:
-			return hasDBA, nil
-		case storepb.ApprovalNode_PROJECT_OWNER:
-			return projectRoleExist[convertToRoleName(api.Owner)], nil
-		case storepb.ApprovalNode_PROJECT_MEMBER:
-			return projectRoleExist[convertToRoleName(api.Developer)], nil
-		default:
-			return false, errors.Errorf("invalid group value")
-		}
-	case *storepb.ApprovalNode_Role:
-		return projectRoleExist[val.Role], nil
-	default:
-		return false, errors.Errorf("invalid node payload type")
-	}
+	return approvers, activities, nil
 }
 
-func convertToRoleName(role api.Role) string {
-	return fmt.Sprintf("roles/%s", role)
+func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, externalNodeID string) error {
+	getExternalApprovalByID := func(ctx context.Context, s *store.Store, externalApprovalID string) (*storepb.ExternalApprovalSetting_Node, error) {
+		setting, err := s.GetWorkspaceExternalApprovalSetting(ctx)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get workspace external approval setting")
+		}
+		for _, node := range setting.Nodes {
+			if node.Id == externalApprovalID {
+				return node, nil
+			}
+		}
+		return nil, nil
+	}
+	node, err := getExternalApprovalByID(ctx, s, externalNodeID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get external approval node %s", externalNodeID)
+	}
+	if node == nil {
+		return errors.Errorf("external approval node %s not found", externalNodeID)
+	}
+	uri, err := relayClient.Create(node.Endpoint, relay.CreatePayload{})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create external approval")
+	}
+	payload, err := json.Marshal(&api.ExternalApprovalPayloadRelay{
+		ExternalApprovalNodeID: node.Id,
+		URI:                    uri,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal external approval payload")
+	}
+	if _, err := s.CreateExternalApprovalV2(ctx, &store.ExternalApprovalMessage{
+		IssueUID:     issue.UID,
+		ApproverUID:  api.SystemBotID,
+		Type:         api.ExternalApprovalTypeRelay,
+		Payload:      string(payload),
+		RequesterUID: api.SystemBotID,
+	}); err != nil {
+		return errors.Wrapf(err, "failed to create external approval")
+	}
+	return nil
 }
 
 // RenderStatement renders the given template statement with the given key-value map.

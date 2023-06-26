@@ -45,7 +45,7 @@ func (s *InstanceRoleService) GetInstanceRole(ctx context.Context, request *v1pb
 	}
 
 	role, err := func() (*db.DatabaseRoleMessage, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
 			return nil, err
 		}
@@ -93,10 +93,11 @@ func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1
 				Attribute: &u.Grant,
 			})
 		}
+		return response, nil
 	}
 
 	roleList, err := func() ([]*db.DatabaseRoleMessage, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +147,7 @@ func (s *InstanceRoleService) CreateInstanceRole(ctx context.Context, request *v
 	}
 
 	role, err := func() (*db.DatabaseRoleMessage, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
 			return nil, err
 		}
@@ -207,7 +208,7 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 	}
 
 	role, err := func() (*db.DatabaseRoleMessage, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
 			return nil, err
 		}
@@ -243,7 +244,7 @@ func (s *InstanceRoleService) DeleteInstanceRole(ctx context.Context, request *v
 	}
 
 	if err := func() error {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
 			return err
 		}

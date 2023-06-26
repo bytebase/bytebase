@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/pkg/errors"
 
@@ -309,7 +310,9 @@ func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName
 		// Replace _ with space
 		mi.Description = strings.ReplaceAll(mi.Description, "_", " ")
 		// Capitalize first letter
-		mi.Description = strings.ToUpper(mi.Description[:1]) + mi.Description[1:]
+		description := []rune(mi.Description)
+		description[0] = unicode.ToUpper(description[0])
+		mi.Description = string(description)
 	}
 
 	return mi, nil
@@ -404,12 +407,15 @@ type MigrationHistoryFind struct {
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
-	Host      string
-	Port      string
-	Username  string
-	Password  string
-	Database  string
-	TLSConfig TLSConfig
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Database string
+	// The database used to connect.
+	// It's only set for Redshift datashare database.
+	ConnectionDatabase string
+	TLSConfig          TLSConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
 	// StrictUseDb will only set as true if the user gives only a database instead of a whole instance to access.
@@ -450,6 +456,8 @@ type QueryContext struct {
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string
+	// ShareDB is for Redshift.
+	ShareDB bool
 }
 
 // DatabaseRoleMessage is the API message for database role.
@@ -490,7 +498,7 @@ type Driver interface {
 	GetType() Type
 	GetDB() *sql.DB
 	// Execute will execute the statement.
-	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
+	Execute(ctx context.Context, statement string, createDatabase bool, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
 	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
 	// Used for execute readonly SELECT statement
@@ -563,6 +571,12 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 	}
 
 	return driver, nil
+}
+
+// ExecuteOptions is the options for execute.
+type ExecuteOptions struct {
+	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
+	EndTransactionFunc func(tx *sql.Tx) error
 }
 
 // FormatParamNameInQuestionMark formats the param name in question mark.

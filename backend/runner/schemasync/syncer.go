@@ -164,7 +164,7 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 
 // SyncInstance syncs the schema for all databases in an instance.
 func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) ([]string, error) {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 			EnvironmentID: instance.EnvironmentID,
 			ResourceID:    instance.ResourceID,
 			EngineVersion: &instanceMeta.Version,
-		}); err != nil {
+		}, -1); err != nil {
 			return nil, err
 		}
 	}
@@ -215,6 +215,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				EnvironmentID: instance.EnvironmentID,
 				InstanceID:    instance.ResourceID,
 				DatabaseName:  databaseMetadata.Name,
+				DataShare:     databaseMetadata.Datashare,
 			}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}
@@ -257,7 +258,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if instance == nil {
 		return errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return err
 	}
@@ -286,6 +287,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		DatabaseName:         database.DatabaseName,
 		SyncState:            &syncStatus,
 		SuccessfulSyncTimeTs: &ts,
+		DataShare:            &database.DataShare,
 		SchemaVersion:        patchSchemaVersion,
 	}, api.SystemBotID); err != nil {
 		return errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)

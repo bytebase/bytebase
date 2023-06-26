@@ -158,6 +158,9 @@ export const useSheetV1Store = defineStore("sheet_v1", {
       }
     },
     async getOrFetchSheetByUid(uid: SheetId) {
+      if (uid === UNKNOWN_ID) {
+        return;
+      }
       const sheet = this.getSheetByUid(uid);
       if (sheet) {
         return sheet;
@@ -168,15 +171,10 @@ export const useSheetV1Store = defineStore("sheet_v1", {
         return cached;
       }
 
-      const runner = async () => {
-        try {
-          const sheet = await sheetServiceClient.getSheet({
-            name: `${projectNamePrefix}-/${sheetNamePrefix}${uid}`,
-          });
-          return sheet;
-        } catch {
-          return;
-        }
+      const runner = () => {
+        return this.fetchSheetByName(
+          `${projectNamePrefix}-/${sheetNamePrefix}${uid}`
+        );
       };
 
       const request = runner();
@@ -263,12 +261,6 @@ const getUpdateMaskForSheet = (
     !isEqual(origin.visibility, update.visibility)
   ) {
     updateMask.push("visibility");
-  }
-  if (
-    !isUndefined(update.starred) &&
-    !isEqual(origin.starred, update.starred)
-  ) {
-    updateMask.push("starred");
   }
   if (
     !isUndefined(update.payload) &&

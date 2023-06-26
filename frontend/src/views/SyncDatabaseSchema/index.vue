@@ -54,13 +54,13 @@
               :customize-item="true"
               @select-database-id="handleSourceDatabaseSelect"
             >
-              <template #customizeItem="{ database }">
+              <template #customizeItem="{ database: db }">
                 <div class="flex items-center">
-                  <InstanceV1EngineIcon :instance="database.instanceEntity" />
-                  <span class="mx-2">{{ database.databaseName }}</span>
+                  <InstanceV1EngineIcon :instance="db.instanceEntity" />
+                  <span class="mx-2">{{ db.databaseName }}</span>
 
                   <span class="text-gray-400">
-                    ({{ instanceV1Name(database.instanceEntity) }})
+                    ({{ instanceV1Name(db.instanceEntity) }})
                   </span>
                 </div>
               </template>
@@ -126,6 +126,7 @@
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.sync-schema-all-versions"
+    :instance="database?.instanceEntity"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -138,10 +139,10 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
-  hasFeature,
   useChangeHistoryStore,
   useDatabaseV1Store,
   useProjectV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import DatabaseSelect from "@/components/DatabaseSelect.vue";
@@ -185,6 +186,7 @@ const dialog = useDialog();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
+const subscriptionV1Store = useSubscriptionV1Store();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
@@ -193,8 +195,26 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
+const isValidId = (id: any): id is string => {
+  if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
+    return false;
+  }
+  return true;
+};
+
+const database = computed(() => {
+  const databaseId = state.sourceSchema.databaseId;
+  if (!isValidId(databaseId)) {
+    return;
+  }
+  return databaseStore.getDatabaseByUID(databaseId);
+});
+
 const hasSyncSchemaFeature = computed(() => {
-  return hasFeature("bb.feature.sync-schema-all-versions");
+  return subscriptionV1Store.hasInstanceFeature(
+    "bb.feature.sync-schema-all-versions",
+    database.value?.instanceEntity
+  );
 });
 
 const shouldShowMoreVersionButton = computed(() => {
@@ -217,7 +237,8 @@ const allowNext = computed(() => {
     return (
       isValidId(state.sourceSchema.environmentId) &&
       isValidId(state.sourceSchema.databaseId) &&
-      !isUndefined(state.sourceSchema.changeHistory)
+      !isUndefined(state.sourceSchema.changeHistory) &&
+      hasSyncSchemaFeature.value
     );
   } else {
     if (!targetDatabaseViewRef.value) {
@@ -268,24 +289,22 @@ const handleSourceEnvironmentSelect = async (environmentId: string) => {
 const handleSourceDatabaseSelect = async (databaseId: string) => {
   if (isValidId(databaseId)) {
     const database = databaseStore.getDatabaseByUID(databaseId);
-    if (database) {
-      state.projectId = database.projectEntity.uid;
-      state.sourceSchema.environmentId =
-        database.instanceEntity.environmentEntity.uid;
-      state.sourceSchema.databaseId = databaseId;
+    if (!database) {
+      return;
+    }
+    state.projectId = database.projectEntity.uid;
+    state.sourceSchema.environmentId =
+      database.instanceEntity.environmentEntity.uid;
+    state.sourceSchema.databaseId = databaseId;
+
+    if (!hasSyncSchemaFeature.value) {
+      state.showFeatureModal = true;
     }
   }
 };
 
 const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
   state.sourceSchema.changeHistory = changeHistory;
-};
-
-const isValidId = (id: any): id is string => {
-  if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
-    return false;
-  }
-  return true;
 };
 
 const tryChangeStep = async (

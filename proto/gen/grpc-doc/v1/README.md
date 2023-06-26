@@ -14,6 +14,42 @@
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
+- [v1/common.proto](#v1_common-proto)
+    - [Engine](#bytebase-v1-Engine)
+    - [State](#bytebase-v1-State)
+  
+- [v1/deployment.proto](#v1_deployment-proto)
+    - [DeploymentType](#bytebase-v1-DeploymentType)
+  
+- [v1/org_policy_service.proto](#v1_org_policy_service-proto)
+    - [AccessControlPolicy](#bytebase-v1-AccessControlPolicy)
+    - [AccessControlRule](#bytebase-v1-AccessControlRule)
+    - [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy)
+    - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
+    - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
+    - [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy)
+    - [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy)
+    - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
+    - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
+    - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
+    - [Policy](#bytebase-v1-Policy)
+    - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
+    - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
+    - [SensitiveData](#bytebase-v1-SensitiveData)
+    - [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy)
+    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
+    - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
+  
+    - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
+    - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
+    - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
+    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
+    - [PolicyType](#bytebase-v1-PolicyType)
+    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
+    - [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType)
+  
+    - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
+  
 - [v1/anomaly_service.proto](#v1_anomaly_service-proto)
     - [Anomaly](#bytebase-v1-Anomaly)
     - [Anomaly.DatabaseBackupMissingDetail](#bytebase-v1-Anomaly-DatabaseBackupMissingDetail)
@@ -26,13 +62,8 @@
   
     - [Anomaly.AnomalySeverity](#bytebase-v1-Anomaly-AnomalySeverity)
     - [Anomaly.AnomalyType](#bytebase-v1-Anomaly-AnomalyType)
-    - [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule)
   
     - [AnomalyService](#bytebase-v1-AnomalyService)
-  
-- [v1/common.proto](#v1_common-proto)
-    - [Engine](#bytebase-v1-Engine)
-    - [State](#bytebase-v1-State)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
@@ -121,6 +152,8 @@
     - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
     - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
     - [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics)
+    - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
+    - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
@@ -135,9 +168,6 @@
     - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
-  
-- [v1/deployment.proto](#v1_deployment-proto)
-    - [DeploymentType](#bytebase-v1-DeploymentType)
   
 - [v1/environment_service.proto](#v1_environment_service-proto)
     - [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest)
@@ -158,12 +188,15 @@
 - [v1/externalvs_service.proto](#v1_externalvs_service-proto)
     - [CreateExternalVersionControlRequest](#bytebase-v1-CreateExternalVersionControlRequest)
     - [DeleteExternalVersionControlRequest](#bytebase-v1-DeleteExternalVersionControlRequest)
+    - [ExchangeToken](#bytebase-v1-ExchangeToken)
+    - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
     - [ExternalVersionControl](#bytebase-v1-ExternalVersionControl)
     - [GetExternalVersionControlRequest](#bytebase-v1-GetExternalVersionControlRequest)
     - [ListExternalVersionControlsRequest](#bytebase-v1-ListExternalVersionControlsRequest)
     - [ListExternalVersionControlsResponse](#bytebase-v1-ListExternalVersionControlsResponse)
     - [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest)
     - [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse)
+    - [OAuthToken](#bytebase-v1-OAuthToken)
     - [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo)
     - [SearchExternalVersionControlProjectsRequest](#bytebase-v1-SearchExternalVersionControlProjectsRequest)
     - [SearchExternalVersionControlProjectsResponse](#bytebase-v1-SearchExternalVersionControlProjectsResponse)
@@ -195,6 +228,29 @@
   
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
+- [v1/logging_service.proto](#v1_logging_service-proto)
+    - [GetLogRequest](#bytebase-v1-GetLogRequest)
+    - [ListLogsRequest](#bytebase-v1-ListLogsRequest)
+    - [ListLogsResponse](#bytebase-v1-ListLogsResponse)
+    - [LogEntity](#bytebase-v1-LogEntity)
+  
+    - [LogEntity.Action](#bytebase-v1-LogEntity-Action)
+    - [LogEntity.Level](#bytebase-v1-LogEntity-Level)
+  
+    - [LoggingService](#bytebase-v1-LoggingService)
+  
+- [v1/inbox_service.proto](#v1_inbox_service-proto)
+    - [GetInboxSummaryRequest](#bytebase-v1-GetInboxSummaryRequest)
+    - [InboxMessage](#bytebase-v1-InboxMessage)
+    - [InboxSummary](#bytebase-v1-InboxSummary)
+    - [ListInboxRequest](#bytebase-v1-ListInboxRequest)
+    - [ListInboxResponse](#bytebase-v1-ListInboxResponse)
+    - [UpdateInboxRequest](#bytebase-v1-UpdateInboxRequest)
+  
+    - [InboxMessage.Status](#bytebase-v1-InboxMessage-Status)
+  
+    - [InboxService](#bytebase-v1-InboxService)
+  
 - [v1/instance_role_service.proto](#v1_instance_role_service-proto)
     - [CreateInstanceRoleRequest](#bytebase-v1-CreateInstanceRoleRequest)
     - [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest)
@@ -217,6 +273,8 @@
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
+    - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
+    - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
     - [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest)
     - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
     - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
@@ -225,45 +283,6 @@
     - [DataSourceType](#bytebase-v1-DataSourceType)
   
     - [InstanceService](#bytebase-v1-InstanceService)
-  
-- [v1/logging_service.proto](#v1_logging_service-proto)
-    - [ListLogsRequest](#bytebase-v1-ListLogsRequest)
-    - [ListLogsResponse](#bytebase-v1-ListLogsResponse)
-    - [LogEntry](#bytebase-v1-LogEntry)
-  
-    - [LogEntry.Action](#bytebase-v1-LogEntry-Action)
-    - [LogEntry.Level](#bytebase-v1-LogEntry-Level)
-  
-    - [LoggingService](#bytebase-v1-LoggingService)
-  
-- [v1/org_policy_service.proto](#v1_org_policy_service-proto)
-    - [AccessControlPolicy](#bytebase-v1-AccessControlPolicy)
-    - [AccessControlRule](#bytebase-v1-AccessControlRule)
-    - [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy)
-    - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
-    - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
-    - [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy)
-    - [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy)
-    - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
-    - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
-    - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
-    - [Policy](#bytebase-v1-Policy)
-    - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
-    - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
-    - [SensitiveData](#bytebase-v1-SensitiveData)
-    - [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy)
-    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
-    - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
-  
-    - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
-    - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
-    - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
-    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
-    - [PolicyType](#bytebase-v1-PolicyType)
-    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
-    - [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType)
-  
-    - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
@@ -341,12 +360,17 @@
     - [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest)
     - [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest)
     - [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse)
+    - [CreateReviewCommentRequest](#bytebase-v1-CreateReviewCommentRequest)
     - [CreateReviewRequest](#bytebase-v1-CreateReviewRequest)
     - [GetReviewRequest](#bytebase-v1-GetReviewRequest)
     - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
     - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
+    - [RejectReviewRequest](#bytebase-v1-RejectReviewRequest)
+    - [RequestReviewRequest](#bytebase-v1-RequestReviewRequest)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
+    - [ReviewComment](#bytebase-v1-ReviewComment)
+    - [UpdateReviewCommentRequest](#bytebase-v1-UpdateReviewCommentRequest)
     - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
   
     - [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue)
@@ -442,6 +466,8 @@
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
+    - [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting)
+    - [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
@@ -650,6 +676,513 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
+<a name="v1_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/common.proto
+
+
+ 
+
+
+<a name="bytebase-v1-Engine"></a>
+
+### Engine
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENGINE_UNSPECIFIED | 0 |  |
+| CLICKHOUSE | 1 |  |
+| MYSQL | 2 |  |
+| POSTGRES | 3 |  |
+| SNOWFLAKE | 4 |  |
+| SQLITE | 5 |  |
+| TIDB | 6 |  |
+| MONGODB | 7 |  |
+| REDIS | 8 |  |
+| ORACLE | 9 |  |
+| SPANNER | 10 |  |
+| MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
+
+
+
+<a name="bytebase-v1-State"></a>
+
+### State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| ACTIVE | 1 |  |
+| DELETED | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v1_deployment-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/deployment.proto
+
+
+ 
+
+
+<a name="bytebase-v1-DeploymentType"></a>
+
+### DeploymentType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DEPLOYMENT_TYPE_UNSPECIFIED | 0 |  |
+| DATABASE_CREATE | 1 |  |
+| DATABASE_DDL | 2 |  |
+| DATABASE_DDL_GHOST | 3 |  |
+| DATABASE_DML | 4 |  |
+| DATABASE_RESTORE_PITR | 5 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v1_org_policy_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/org_policy_service.proto
+
+
+
+<a name="bytebase-v1-AccessControlPolicy"></a>
+
+### AccessControlPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disallow_rules | [AccessControlRule](#bytebase-v1-AccessControlRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AccessControlRule"></a>
+
+### AccessControlRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| full_database | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BackupPlanPolicy"></a>
+
+### BackupPlanPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  |  |
+| retention_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CreatePolicyRequest"></a>
+
+### CreatePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
+| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeletePolicyRequest"></a>
+
+### DeletePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeploymentApprovalPolicy"></a>
+
+### DeploymentApprovalPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| default_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
+| deployment_approval_strategies | [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeploymentApprovalStrategy"></a>
+
+### DeploymentApprovalStrategy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| deployment_type | [DeploymentType](#bytebase-v1-DeploymentType) |  |  |
+| approval_group | [ApprovalGroup](#bytebase-v1-ApprovalGroup) |  |  |
+| approval_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetPolicyRequest"></a>
+
+### GetPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the policy to retrieve. Format: {resource type}/{resource id}/policies/{policy type} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPoliciesRequest"></a>
+
+### ListPoliciesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id}/policies/{policy type} |
+| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
+| page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPoliciesResponse"></a>
+
+### ListPoliciesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policies | [Policy](#bytebase-v1-Policy) | repeated | The policies from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Policy"></a>
+
+### Policy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
+| inherit_from_parent | [bool](#bool) |  |  |
+| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
+| deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
+| backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
+| sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
+| access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
+| sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
+| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
+| enforce | [bool](#bool) |  |  |
+| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
+| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewPolicy"></a>
+
+### SQLReviewPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule"></a>
+
+### SQLReviewRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) |  |  |
+| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  |  |
+| payload | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SensitiveData"></a>
+
+### SensitiveData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| mask_type | [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SensitiveDataPolicy"></a>
+
+### SensitiveDataPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sensitive_data | [SensitiveData](#bytebase-v1-SensitiveData) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SlowQueryPolicy"></a>
+
+### SlowQueryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdatePolicyRequest"></a>
+
+### UpdatePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
+
+The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-ApprovalGroup"></a>
+
+### ApprovalGroup
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ASSIGNEE_GROUP_UNSPECIFIED | 0 |  |
+| APPROVAL_GROUP_DBA | 1 |  |
+| APPROVAL_GROUP_PROJECT_OWNER | 2 |  |
+
+
+
+<a name="bytebase-v1-ApprovalStrategy"></a>
+
+### ApprovalStrategy
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| APPROVAL_STRATEGY_UNSPECIFIED | 0 |  |
+| AUTOMATIC | 1 |  |
+| MANUAL | 2 |  |
+
+
+
+<a name="bytebase-v1-BackupPlanSchedule"></a>
+
+### BackupPlanSchedule
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEDULE_UNSPECIFIED | 0 |  |
+| UNSET | 1 |  |
+| DAILY | 2 |  |
+| WEEKLY | 3 |  |
+
+
+
+<a name="bytebase-v1-PolicyResourceType"></a>
+
+### PolicyResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
+| WORKSPACE | 1 |  |
+| ENVIRONMENT | 2 |  |
+| PROJECT | 3 |  |
+| INSTANCE | 4 |  |
+| DATABASE | 5 |  |
+
+
+
+<a name="bytebase-v1-PolicyType"></a>
+
+### PolicyType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| POLICY_TYPE_UNSPECIFIED | 0 |  |
+| DEPLOYMENT_APPROVAL | 1 |  |
+| BACKUP_PLAN | 2 |  |
+| SQL_REVIEW | 3 |  |
+| SENSITIVE_DATA | 4 |  |
+| ACCESS_CONTROL | 5 |  |
+| SLOW_QUERY | 6 |  |
+
+
+
+<a name="bytebase-v1-SQLReviewRuleLevel"></a>
+
+### SQLReviewRuleLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| DISABLED | 3 |  |
+
+
+
+<a name="bytebase-v1-SensitiveDataMaskType"></a>
+
+### SensitiveDataMaskType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASK_TYPE_UNSPECIFIED | 0 |  |
+| DEFAULT | 1 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-OrgPolicyService"></a>
+
+### OrgPolicyService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetPolicy | [GetPolicyRequest](#bytebase-v1-GetPolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| ListPolicies | [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest) | [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse) |  |
+| CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
 <a name="v1_anomaly_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -673,6 +1206,8 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | database_backup_policy_violation_detail | [Anomaly.DatabaseBackupPolicyViolationDetail](#bytebase-v1-Anomaly-DatabaseBackupPolicyViolationDetail) |  |  |
 | database_backup_missing_detail | [Anomaly.DatabaseBackupMissingDetail](#bytebase-v1-Anomaly-DatabaseBackupMissingDetail) |  |  |
 | database_schema_drift_detail | [Anomaly.DatabaseSchemaDriftDetail](#bytebase-v1-Anomaly-DatabaseSchemaDriftDetail) |  |  |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -687,7 +1222,7 @@ DatabaseBackupMissingDetail is the detail for database backup missing anomaly.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| expected_schedule | [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the database. |
+| expected_schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the database. |
 | latest_backup_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_backup_time is the latest backup time in the database. |
 
 
@@ -704,8 +1239,8 @@ DatabaseBackupPolicyViolationDetail is the detail for database backup policy vio
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | parent is the parent of the database. Format: environments/{environment} |
-| expected_schedule | [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the parent. |
-| actual_schedule | [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule) |  | actual_schedule is the actual backup plan schedule in the database. |
+| expected_schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the parent. |
+| actual_schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  | actual_schedule is the actual backup plan schedule in the database. |
 
 
 
@@ -834,20 +1369,6 @@ DATABASE_BACKUP_POLICY_VIOLATION is the anomaly type for database backup policy 
 | DATABASE_SCHEMA_DRIFT | 6 | DATABASE_SCHEMA_DRIFT is the anomaly type for database schema drift, e.g. the database schema had been changed without bytebase migration. |
 
 
-
-<a name="bytebase-v1-Anomaly-BackupPlanSchedule"></a>
-
-### Anomaly.BackupPlanSchedule
-BackupPlanSchedule is the backup plan schedule.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| BACKUP_PLAN_SCHEDULE_UNSPECIFIED | 0 | Unspecified backup plan schedule. |
-| UNSET | 1 | UNSET is the unset backup plan schedule. |
-| DAILY | 2 | DAILY is the daily backup plan schedule. |
-| WEEKLY | 3 | WEEKLY is the weekly backup plan schedule. |
-
-
  
 
  
@@ -861,60 +1382,6 @@ BackupPlanSchedule is the backup plan schedule.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | SearchAnomalies | [SearchAnomaliesRequest](#bytebase-v1-SearchAnomaliesRequest) | [SearchAnomaliesResponse](#bytebase-v1-SearchAnomaliesResponse) |  |
-
- 
-
-
-
-<a name="v1_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/common.proto
-
-
- 
-
-
-<a name="bytebase-v1-Engine"></a>
-
-### Engine
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENGINE_UNSPECIFIED | 0 |  |
-| CLICKHOUSE | 1 |  |
-| MYSQL | 2 |  |
-| POSTGRES | 3 |  |
-| SNOWFLAKE | 4 |  |
-| SQLITE | 5 |  |
-| TIDB | 6 |  |
-| MONGODB | 7 |  |
-| REDIS | 8 |  |
-| ORACLE | 9 |  |
-| SPANNER | 10 |  |
-| MSSQL | 11 |  |
-| REDSHIFT | 12 |  |
-| MARIADB | 13 |  |
-| OCEANBASE | 14 |  |
-
-
-
-<a name="bytebase-v1-State"></a>
-
-### State
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATE_UNSPECIFIED | 0 |  |
-| ACTIVE | 1 |  |
-| DELETED | 2 |  |
-
-
- 
-
- 
 
  
 
@@ -1227,7 +1694,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the bookmark. Format: users/{user}/bookmarks/{bookmark}, user and bookmark are server-generated unique IDs. |
+| name | [string](#string) |  | The name of the bookmark. Format: bookmarks/{bookmark}, user and bookmark are server-generated unique IDs. |
 | title | [string](#string) |  | The title of the bookmark. |
 | link | [string](#string) |  | The resource link of the bookmark. Only support issue link for now. Format: Issue: /issue/slug(issue_name)-{issue_uid} Example: /issue/start-here-add-email-column-to-employee-table-101 |
 
@@ -1244,7 +1711,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the bookmark. Format: users/{user}, user is a server-generated unique IDs. |
 | bookmark | [Bookmark](#bytebase-v1-Bookmark) |  | The bookmark to create. |
 
 
@@ -1260,7 +1726,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the bookmark to delete. Format: users/{user}/bookmarks/{bookmark}, user and bookmark are server-generated unique IDs. |
+| name | [string](#string) |  | The name of the bookmark to delete. Format: bookmarks/{bookmark} |
 
 
 
@@ -1275,7 +1741,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the bookmark. Format: users/{user}, user is a server-generated unique ID. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of bookmarks to return. The service may return fewer than this value. If unspecified, at most 50 bookmarks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBookmarks` call. Provide this to retrieve the subsequent page.
 
@@ -1317,7 +1782,7 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 | ----------- | ------------ | ------------- | ------------|
 | CreateBookmark | [CreateBookmarkRequest](#bytebase-v1-CreateBookmarkRequest) | [Bookmark](#bytebase-v1-Bookmark) | CreateBookmark creates a new bookmark. |
 | DeleteBookmark | [DeleteBookmarkRequest](#bytebase-v1-DeleteBookmarkRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | DeleteBookmark deletes a bookmark. |
-| ListBookmarks | [ListBookmarksRequest](#bytebase-v1-ListBookmarksRequest) | [ListBookmarksResponse](#bytebase-v1-ListBookmarksResponse) | ListBookmark lists bookmarks. |
+| ListBookmarks | [ListBookmarksRequest](#bytebase-v1-ListBookmarksRequest) | [ListBookmarksResponse](#bytebase-v1-ListBookmarksResponse) | ListBookmarks lists bookmarks. |
 
  
 
@@ -2261,6 +2726,31 @@ SlowQueryStatistics is the statistics of the slow query log.
 
 
 
+<a name="bytebase-v1-SyncDatabaseRequest"></a>
+
+### SyncDatabaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to sync. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncDatabaseResponse"></a>
+
+### SyncDatabaseResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-TableMetadata"></a>
 
 ### TableMetadata
@@ -2459,6 +2949,7 @@ The type of the backup.
 | SearchDatabases | [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest) | [SearchDatabasesResponse](#bytebase-v1-SearchDatabasesResponse) | Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. |
 | UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) |  |
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
+| SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
@@ -2472,38 +2963,6 @@ The type of the backup.
 | AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
 | ListChangeHistories | [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest) | [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse) |  |
 | GetChangeHistory | [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest) | [ChangeHistory](#bytebase-v1-ChangeHistory) |  |
-
- 
-
-
-
-<a name="v1_deployment-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/deployment.proto
-
-
- 
-
-
-<a name="bytebase-v1-DeploymentType"></a>
-
-### DeploymentType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DEPLOYMENT_TYPE_UNSPECIFIED | 0 |  |
-| DATABASE_CREATE | 1 |  |
-| DATABASE_DDL | 2 |  |
-| DATABASE_DDL_GHOST | 3 |  |
-| DATABASE_DML | 4 |  |
-| DATABASE_RESTORE_PITR | 5 |  |
-
-
- 
-
- 
 
  
 
@@ -2758,6 +3217,41 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
+<a name="bytebase-v1-ExchangeToken"></a>
+
+### ExchangeToken
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the external version control to retrieve the linked projects. Format: externalVersionControls/{externalVersionControl} |
+| code | [string](#string) |  |  |
+| type | [ExternalVersionControl.Type](#bytebase-v1-ExternalVersionControl-Type) |  |  |
+| instance_url | [string](#string) |  |  |
+| client_id | [string](#string) |  |  |
+| client_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ExchangeTokenRequest"></a>
+
+### ExchangeTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| exchange_token | [ExchangeToken](#bytebase-v1-ExchangeToken) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ExternalVersionControl"></a>
 
 ### ExternalVersionControl
@@ -2850,6 +3344,23 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) | repeated | The binding between external version control and project. |
+
+
+
+
+
+
+<a name="bytebase-v1-OAuthToken"></a>
+
+### OAuthToken
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_token | [string](#string) |  |  |
+| refresh_token | [string](#string) |  |  |
+| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -2983,6 +3494,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | ListExternalVersionControls | [ListExternalVersionControlsRequest](#bytebase-v1-ListExternalVersionControlsRequest) | [ListExternalVersionControlsResponse](#bytebase-v1-ListExternalVersionControlsResponse) |  |
 | CreateExternalVersionControl | [CreateExternalVersionControlRequest](#bytebase-v1-CreateExternalVersionControlRequest) | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |
 | UpdateExternalVersionControl | [UpdateExternalVersionControlRequest](#bytebase-v1-UpdateExternalVersionControlRequest) | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |
+| ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [OAuthToken](#bytebase-v1-OAuthToken) |  |
 | DeleteExternalVersionControl | [DeleteExternalVersionControlRequest](#bytebase-v1-DeleteExternalVersionControlRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | SearchExternalVersionControlProjects | [SearchExternalVersionControlProjectsRequest](#bytebase-v1-SearchExternalVersionControlProjectsRequest) | [SearchExternalVersionControlProjectsResponse](#bytebase-v1-SearchExternalVersionControlProjectsResponse) |  |
 | ListProjectGitOpsInfo | [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest) | [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse) |  |
@@ -3296,6 +3808,294 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 
 
+<a name="v1_logging_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/logging_service.proto
+
+
+
+<a name="bytebase-v1-GetLogRequest"></a>
+
+### GetLogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the log to retrieve. Format: logs/{uid} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListLogsRequest"></a>
+
+### ListLogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  | filter is the filter to apply on the list logs request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - creator, example: - creator = &#34;users/{email}&#34; - resource, example: - resource = &#34;projects/{project resource id}&#34; - level, example: - level = &#34;INFO&#34; - level = &#34;ERROR | WARN&#34; - action, example: - action = &#34;ACTION_MEMBER_CREATE&#34; | &#34;ACTION_ISSUE_CREATE&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; For example: List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, resource=&#34;issue/123&#34;&#39; |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| page_size | [int32](#int32) |  | Not used. The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListLogs` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListLogsResponse"></a>
+
+### ListLogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log_entities | [LogEntity](#bytebase-v1-LogEntity) | repeated | The list of log entities. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entities. |
+
+
+
+
+
+
+<a name="bytebase-v1-LogEntity"></a>
+
+### LogEntity
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the log. Format: logs/{uid} |
+| creator | [string](#string) |  | The creator of the log entity. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| action | [LogEntity.Action](#bytebase-v1-LogEntity-Action) |  |  |
+| level | [LogEntity.Level](#bytebase-v1-LogEntity-Level) |  |  |
+| resource | [string](#string) |  | The name of the resource associated with this log entity. For example, the resource user associated with log entity type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue uid} For ACTION_PIPELINE_*: pipelines/{pipeline uid} For ACTION_PROJECT_*: projects/{project resource id} For ACTION_DATABASE_*: instances/{instance resource id} |
+| payload | [string](#string) |  | The payload of the log entity. TODO: use oneof |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-LogEntity-Action"></a>
+
+### LogEntity.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 | In worksapce resource only. |
+| ACTION_MEMBER_CREATE | 1 | Member related activity types. Enum value 1 - 20
+
+ACTION_MEMBER_CREATE is the type for creating a new member. |
+| ACTION_MEMBER_ROLE_UPDATE | 2 | ACTION_MEMBER_ROLE_UPDATE is the type for updating a member&#39;s role. |
+| ACTION_MEMBER_ACTIVATE | 3 | ACTION_MEMBER_ACTIVATE_UPDATE is the type for activating members. |
+| ACTION_MEMBER_DEACTIVE | 4 | ACTION_MEMBER_DEACTIVE is the type for deactiving members. |
+| ACTION_ISSUE_CREATE | 21 | Issue related activity types. Enum value 21 - 40
+
+ACTION_ISSUE_CREATE is the type for creating a new issue. |
+| ACTION_ISSUE_COMMENT_CREATE | 22 | ACTION_ISSUE_COMMENT_CREATE is the type for creating a new comment on an issue. |
+| ACTION_ISSUE_FIELD_UPDATE | 23 | ACTION_ISSUE_FIELD_UPDATE is the type for updating an issue&#39;s field. |
+| ACTION_ISSUE_STATUS_UPDATE | 24 | ACTION_ISSUE_STATUS_UPDATE is the type for updating an issue&#39;s status. |
+| ACTION_ISSUE_APPROVAL_NOTIFY | 25 | ACTION_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ACTION_PIPELINE_STAGE_STATUS_UPDATE | 31 | ACTION_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
+| ACTION_PIPELINE_TASK_STATUS_UPDATE | 32 | ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
+| ACTION_PIPELINE_TASK_FILE_COMMIT | 33 | ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
+| ACTION_PIPELINE_TASK_STATEMENT_UPDATE | 34 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. |
+| ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE | 35 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. |
+| ACTION_PROJECT_REPOSITORY_PUSH | 41 | Project related activity types. Enum value 41 - 60
+
+ACTION_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository. |
+| ACTION_PROJECT_MEMBER_CREATE | 42 | ACTION_PROJECT_MEMBER_CREATE represents adding a member to the project. |
+| ACTION_PROJECT_MEMBER_DELETE | 43 | ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. |
+| ACTION_PROJECT_MEMBER_ROLE_UPDATE | 44 | ACTION_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. |
+| ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE | 45 | ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. |
+| ACTION_PROJECT_DATABASE_TRANSFER | 46 | ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. |
+| ACTION_DATABASE_SQL_EDITOR_QUERY | 61 | Database related activity types. Enum value 61 - 80
+
+ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
+| ACTION_DATABASE_SQL_EXPORT | 62 | ACTION_DATABASE_SQL_EXPORT is the type for exporting SQL. |
+
+
+
+<a name="bytebase-v1-LogEntity-Level"></a>
+
+### LogEntity.Level
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| LEVEL_INFO | 1 | LEVEL_INFO is the type for information. |
+| LEVEL_WARNING | 2 | LEVEL_WARNING is the type for warning. |
+| LEVEL_ERROR | 3 | LEVEL_ERROR is the type for error. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-LoggingService"></a>
+
+### LoggingService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
+| GetLog | [GetLogRequest](#bytebase-v1-GetLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
+
+ 
+
+
+
+<a name="v1_inbox_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/inbox_service.proto
+
+
+
+<a name="bytebase-v1-GetInboxSummaryRequest"></a>
+
+### GetInboxSummaryRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-InboxMessage"></a>
+
+### InboxMessage
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The message name in inbox/{uid} format. |
+| activity_uid | [string](#string) |  |  |
+| status | [InboxMessage.Status](#bytebase-v1-InboxMessage-Status) |  |  |
+| activity | [LogEntity](#bytebase-v1-LogEntity) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-InboxSummary"></a>
+
+### InboxSummary
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| unread | [int32](#int32) |  |  |
+| unread_error | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInboxRequest"></a>
+
+### ListInboxRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  | filter is the filter to apply on the list inbox request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - &#34;create_time&#34; with &#34;&gt;=&#34; operator, example: - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; |
+| page_size | [int32](#int32) |  | Not used. The maximum number of inbox to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListInbox` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInboxResponse"></a>
+
+### ListInboxResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| inbox_messages | [InboxMessage](#bytebase-v1-InboxMessage) | repeated | The list of inbox messages. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of inbox. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entities. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateInboxRequest"></a>
+
+### UpdateInboxRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| inbox_message | [InboxMessage](#bytebase-v1-InboxMessage) |  | The inbox message to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-InboxMessage-Status"></a>
+
+### InboxMessage.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| STATUS_UNREAD | 1 |  |
+| STATUS_READ | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-InboxService"></a>
+
+### InboxService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListInbox | [ListInboxRequest](#bytebase-v1-ListInboxRequest) | [ListInboxResponse](#bytebase-v1-ListInboxResponse) |  |
+| GetInboxSummary | [GetInboxSummaryRequest](#bytebase-v1-GetInboxSummaryRequest) | [InboxSummary](#bytebase-v1-InboxSummary) |  |
+| UpdateInbox | [UpdateInboxRequest](#bytebase-v1-UpdateInboxRequest) | [InboxMessage](#bytebase-v1-InboxMessage) |  |
+
+ 
+
+
+
 <a name="v1_instance_role_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3586,6 +4386,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| activation | [bool](#bool) |  |  |
 
 
 
@@ -3637,6 +4438,31 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
 | data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncInstanceRequest"></a>
+
+### SyncInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of instance. Format: instances/{instance} |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncInstanceResponse"></a>
+
+### SyncInstanceResponse
+
 
 
 
@@ -3741,563 +4567,11 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
 | AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | SyncSlowQueries | [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
-<a name="v1_logging_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/logging_service.proto
-
-
-
-<a name="bytebase-v1-ListLogsRequest"></a>
-
-### ListLogsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource name. Format: projects/{project} workspaces/{workspace} |
-| filter | [string](#string) |  | filter is the filter to apply on the list logs request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - creator - container - level - action For example: List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, container=&#34;issue/123&#34;&#39; |
-| page_size | [int32](#int32) |  | Not used. The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListLogs` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListLogsResponse"></a>
-
-### ListLogsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| log_entries | [LogEntry](#bytebase-v1-LogEntry) | repeated | The list of log entries. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of log entries. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entries. |
-
-
-
-
-
-
-<a name="bytebase-v1-LogEntry"></a>
-
-### LogEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| creator | [string](#string) |  | The creator of the log entry. Format: users/{emailid} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initally. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was updated. |
-| action | [LogEntry.Action](#bytebase-v1-LogEntry-Action) |  |  |
-| level | [LogEntry.Level](#bytebase-v1-LogEntry-Level) |  |  |
-| resource_name | [string](#string) |  | The name of the resource associated with this log entry. For example, the resource user associated with log entry type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue} For ACTION_PIPELINE_*: pipelines/{pipeline} For ACTION_PROJECT_*: projects/{project} For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project} |
-| json_payload | [google.protobuf.Struct](#google-protobuf-Struct) |  | The payload of the log entry. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-LogEntry-Action"></a>
-
-### LogEntry.Action
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| ACTION_MEMBER_CREATE | 1 | In worksapce resource only.
-
-ACTION_MEMBER_CREATE is the type for creating a new member. |
-| ACTION_MEMBER_ROLE_UPDATE | 2 | ACTION_MEMBER_ROLE_UPDATE is the type for updating a member&#39;s role. |
-| ACTION_MEMBER_ACTIVATE | 3 | ACTION_MEMBER_ACTIVATE_UPDATE is the type for activating members. |
-| ACTION_MEMBER_DEACTIVE | 4 | ACTION_MEMBER_DEACTIVE is the type for deactiving members. |
-| ACTION_ISSUE_CREATE | 5 | In project resource only.
-
-ACTION_ISSUE_CREATE is the type for creating a new issue. |
-| ACTION_ISSUE_COMMENT_CREATE | 6 | ACTION_ISSUE_COMMENT_CREATE is the type for creating a new comment on an issue. |
-| ACTION_ISSUE_FIELD_UPDATE | 7 | ACTION_ISSUE_FIELD_UPDATE is the type for updating an issue&#39;s field. |
-| ACTION_ISSUE_STATUS_UPDATE | 8 | ACTION_ISSUE_STATUS_UPDATE is the type for updating an issue&#39;s status. |
-| ACTION_PIPELINE_STAGE_STATUS_UPDATE | 9 | ACTION_PIPELINE_STAGE_STATUS_UPDATE is the type for stage begins or ends. |
-| ACTION_PIPELINE_TASK_STATUS_UPDATE | 10 | ACTION_PIPELINE_TASK_STATUS_UPDATE is the type for updating pipeline task status. |
-| ACTION_PIPELINE_TASK_FILE_COMMIT | 11 | ACTION_PIPELINE_TASK_FILE_COMMIT is the type for committing pipeline task files. |
-| ACTION_PIPELINE_TASK_STATEMENT_UPDATE | 12 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE is the type for updating pipeline task SQL statement. |
-| ACITON_PIPELINE_TASK_EARLIEST_ALLOWED_DATE_UPDATE | 13 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_DATE_UPDATE is the type for updating pipeline task the earliest allowed time. |
-| ACTION_PROJECT_MEMBER_CREATE | 14 | ACTION_PROJECT_MEMBER_CREATE is the type for creating a new project member. |
-| ACTION_PROJECT_MEMBER_ROLE_UPDATE | 15 | ACTION_PROJECT_MEMBER_ROLE_UPDATE is the type for updating a project member&#39;s role. |
-| ACTION_PROJECT_MEMBER_DELETE | 16 | ACTION_PROJECT_MEMBER_DELETE is the type for deleting a project member. |
-| ACTION_PROJECT_REPOSITORY_PUSH | 17 | ACTION_PROJECT_REPOSITORY_PUSH is the type for pushing to a project repository. |
-| ACTION_PROJECT_DTABASE_TRANSFER | 18 | ACTION_PROJECT_DATABASE_TRANSFER is the type for transferring a database to a project. |
-| ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE | 19 | ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. |
-| ACTION_SQL_EDITOR_QUERY | 20 | Both in workspace and project resource.
-
-ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Read-only mode, this action will belong to project resource. If user runs SQL in Read-write mode, this action will belong to workspace resource. |
-
-
-
-<a name="bytebase-v1-LogEntry-Level"></a>
-
-### LogEntry.Level
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 |  |
-| LEVEL_INFO | 1 | LEVEL_INFO is the type for information. |
-| LEVEL_WARNING | 2 | LEVEL_WARNING is the type for warning. |
-| LEVEL_ERROR | 3 | LEVEL_ERROR is the type for error. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-LoggingService"></a>
-
-### LoggingService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
-
- 
-
-
-
-<a name="v1_org_policy_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/org_policy_service.proto
-
-
-
-<a name="bytebase-v1-AccessControlPolicy"></a>
-
-### AccessControlPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow_rules | [AccessControlRule](#bytebase-v1-AccessControlRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AccessControlRule"></a>
-
-### AccessControlRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| full_database | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BackupPlanPolicy"></a>
-
-### BackupPlanPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  |  |
-| retention_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CreatePolicyRequest"></a>
-
-### CreatePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
-| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeletePolicyRequest"></a>
-
-### DeletePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentApprovalPolicy"></a>
-
-### DeploymentApprovalPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| default_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
-| deployment_approval_strategies | [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentApprovalStrategy"></a>
-
-### DeploymentApprovalStrategy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| deployment_type | [DeploymentType](#bytebase-v1-DeploymentType) |  |  |
-| approval_group | [ApprovalGroup](#bytebase-v1-ApprovalGroup) |  |  |
-| approval_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetPolicyRequest"></a>
-
-### GetPolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy to retrieve. Format: {resource type}/{resource id}/policies/{policy type} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPoliciesRequest"></a>
-
-### ListPoliciesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id}/policies/{policy type} |
-| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
-| page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPoliciesResponse"></a>
-
-### ListPoliciesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policies | [Policy](#bytebase-v1-Policy) | repeated | The policies from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-Policy"></a>
-
-### Policy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| inherit_from_parent | [bool](#bool) |  |  |
-| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
-| deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
-| backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
-| sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
-| access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
-| sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
-| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
-| enforce | [bool](#bool) |  |  |
-| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
-| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
-
-
-
-
-
-
-<a name="bytebase-v1-SQLReviewPolicy"></a>
-
-### SQLReviewPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SQLReviewRule"></a>
-
-### SQLReviewRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [string](#string) |  |  |
-| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  |  |
-| payload | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SensitiveData"></a>
-
-### SensitiveData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| mask_type | [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SensitiveDataPolicy"></a>
-
-### SensitiveDataPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sensitive_data | [SensitiveData](#bytebase-v1-SensitiveData) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryPolicy"></a>
-
-### SlowQueryPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdatePolicyRequest"></a>
-
-### UpdatePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
-
-The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-ApprovalGroup"></a>
-
-### ApprovalGroup
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ASSIGNEE_GROUP_UNSPECIFIED | 0 |  |
-| APPROVAL_GROUP_DBA | 1 |  |
-| APPROVAL_GROUP_PROJECT_OWNER | 2 |  |
-
-
-
-<a name="bytebase-v1-ApprovalStrategy"></a>
-
-### ApprovalStrategy
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| APPROVAL_STRATEGY_UNSPECIFIED | 0 |  |
-| AUTOMATIC | 1 |  |
-| MANUAL | 2 |  |
-
-
-
-<a name="bytebase-v1-BackupPlanSchedule"></a>
-
-### BackupPlanSchedule
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SCHEDULE_UNSPECIFIED | 0 |  |
-| UNSET | 1 |  |
-| DAILY | 2 |  |
-| WEEKLY | 3 |  |
-
-
-
-<a name="bytebase-v1-PolicyResourceType"></a>
-
-### PolicyResourceType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
-| WORKSPACE | 1 |  |
-| ENVIRONMENT | 2 |  |
-| PROJECT | 3 |  |
-| INSTANCE | 4 |  |
-| DATABASE | 5 |  |
-
-
-
-<a name="bytebase-v1-PolicyType"></a>
-
-### PolicyType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| POLICY_TYPE_UNSPECIFIED | 0 |  |
-| DEPLOYMENT_APPROVAL | 1 |  |
-| BACKUP_PLAN | 2 |  |
-| SQL_REVIEW | 3 |  |
-| SENSITIVE_DATA | 4 |  |
-| ACCESS_CONTROL | 5 |  |
-| SLOW_QUERY | 6 |  |
-
-
-
-<a name="bytebase-v1-SQLReviewRuleLevel"></a>
-
-### SQLReviewRuleLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
-| DISABLED | 3 |  |
-
-
-
-<a name="bytebase-v1-SensitiveDataMaskType"></a>
-
-### SensitiveDataMaskType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASK_TYPE_UNSPECIFIED | 0 |  |
-| DEFAULT | 1 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-OrgPolicyService"></a>
-
-### OrgPolicyService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetPolicy | [GetPolicyRequest](#bytebase-v1-GetPolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| ListPolicies | [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest) | [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse) |  |
-| CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
@@ -5431,6 +5705,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | type | [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue) |  |  |
 | role | [string](#string) |  | Format: roles/{role} |
+| external_node_id | [string](#string) |  |  |
 
 
 
@@ -5480,6 +5755,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the review to add an approver. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
 
 
 
@@ -5517,6 +5793,22 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-CreateReviewCommentRequest"></a>
+
+### CreateReviewCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The review name Format: projects/{project}/reviews/{review} |
+| review_comment | [ReviewComment](#bytebase-v1-ReviewComment) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateReviewRequest"></a>
 
 ### CreateReviewRequest
@@ -5542,6 +5834,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the review to retrieve. Format: projects/{project}/reviews/{review} |
+| force | [bool](#bool) |  |  |
 
 
 
@@ -5577,6 +5870,38 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | ----- | ---- | ----- | ----------- |
 | reviews | [Review](#bytebase-v1-Review) | repeated | The reviews from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-RejectReviewRequest"></a>
+
+### RejectReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review to add an rejecting reviewer. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestReviewRequest"></a>
+
+### RequestReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review to request a review. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
 
 
 
@@ -5624,6 +5949,42 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | ----- | ---- | ----- | ----------- |
 | status | [Review.Approver.Status](#bytebase-v1-Review-Approver-Status) |  | The new status. |
 | principal | [string](#string) |  | Format: users/hello@world.com |
+
+
+
+
+
+
+<a name="bytebase-v1-ReviewComment"></a>
+
+### ReviewComment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| uid | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
+| payload | [string](#string) |  | TODO: use struct message instead. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateReviewCommentRequest"></a>
+
+### UpdateReviewCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The review name Format: projects/{project}/reviews/{review} |
+| review_comment | [ReviewComment](#bytebase-v1-ReviewComment) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
 
@@ -5709,6 +6070,7 @@ ANY means approving any node will proceed.
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
+| REJECTED | 3 |  |
 
 
 
@@ -5741,8 +6103,12 @@ ANY means approving any node will proceed.
 | CreateReview | [CreateReviewRequest](#bytebase-v1-CreateReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | ListReviews | [ListReviewsRequest](#bytebase-v1-ListReviewsRequest) | [ListReviewsResponse](#bytebase-v1-ListReviewsResponse) |  |
 | UpdateReview | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| CreateReviewComment | [CreateReviewCommentRequest](#bytebase-v1-CreateReviewCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
+| UpdateReviewComment | [UpdateReviewCommentRequest](#bytebase-v1-UpdateReviewCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
 | ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| RejectReview | [RejectReviewRequest](#bytebase-v1-RejectReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| RequestReview | [RequestReviewRequest](#bytebase-v1-RequestReviewRequest) | [Review](#bytebase-v1-Review) |  |
 
  
 
@@ -5832,7 +6198,6 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | source | [Risk.Source](#bytebase-v1-Risk-Source) |  |  |
 | title | [string](#string) |  |  |
 | level | [int64](#int64) |  |  |
-| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | active | [bool](#bool) |  |  |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 
@@ -5872,6 +6237,8 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | DDL | 1 |  |
 | DML | 2 |  |
 | CREATE_DATABASE | 3 |  |
+| QUERY | 4 |  |
+| EXPORT | 5 |  |
 
 
  
@@ -6994,6 +7361,38 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-ExternalApprovalSetting"></a>
+
+### ExternalApprovalSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| nodes | [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ExternalApprovalSetting-Node"></a>
+
+### ExternalApprovalSetting.Node
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. We will also include the id in the message sending to the external relay service to identify the node. |
+| title | [string](#string) |  | The title of the node. |
+| endpoint | [string](#string) |  | The external endpoint for the relay service, e.g. &#34;http://hello:1234&#34;. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetSettingRequest"></a>
 
 ### GetSettingRequest
@@ -7132,6 +7531,7 @@ The data in setting value.
 | workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  |  |
 | workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
 | workspace_trial_setting_value | [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting) |  |  |
+| external_approval_setting_value | [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting) |  |  |
 
 
 
@@ -7161,7 +7561,6 @@ The data in setting value.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 
@@ -7701,6 +8100,8 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
 | masked | [bool](#bool) | repeated | Columns are masked or not. |
 | error | [string](#string) |  | The error message if the query failed. |
+| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
+| statement | [string](#string) |  | The query statement for the result. |
 
 
 

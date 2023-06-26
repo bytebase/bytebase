@@ -47,6 +47,13 @@ service DatabaseService {
     };
   }
 
+  rpc SyncDatabase(SyncDatabaseRequest) returns (SyncDatabaseResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*}:sync"
+      body: "*"
+    };
+  }
+
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
   }
@@ -213,6 +220,14 @@ message BatchUpdateDatabasesResponse {
   // Databases updated.
   repeated Database databases = 1;
 }
+
+message SyncDatabaseRequest {
+  // The name of the database to sync.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SyncDatabaseResponse {}
 
 message GetDatabaseMetadataRequest {
   // The name of the database to retrieve metadata.

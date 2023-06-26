@@ -1,7 +1,6 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
-import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
 import { ApprovalTemplate } from "./review_service";
@@ -82,6 +81,7 @@ export interface Value {
   workspaceProfileSettingValue?: WorkspaceProfileSetting | undefined;
   workspaceApprovalSettingValue?: WorkspaceApprovalSetting | undefined;
   workspaceTrialSettingValue?: WorkspaceTrialSetting | undefined;
+  externalApprovalSettingValue?: ExternalApprovalSetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -288,9 +288,24 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  expression?: ParsedExpr;
   template?: ApprovalTemplate;
   condition?: Expr;
+}
+
+export interface ExternalApprovalSetting {
+  nodes: ExternalApprovalSetting_Node[];
+}
+
+export interface ExternalApprovalSetting_Node {
+  /**
+   * A unique identifier for a node in UUID format.
+   * We will also include the id in the message sending to the external relay service to identify the node.
+   */
+  id: string;
+  /** The title of the node. */
+  title: string;
+  /** The external endpoint for the relay service, e.g. "http://hello:1234". */
+  endpoint: string;
 }
 
 export interface WorkspaceTrialSetting {
@@ -715,6 +730,7 @@ function createBaseValue(): Value {
     workspaceProfileSettingValue: undefined,
     workspaceApprovalSettingValue: undefined,
     workspaceTrialSettingValue: undefined,
+    externalApprovalSettingValue: undefined,
   };
 }
 
@@ -740,6 +756,9 @@ export const Value = {
     }
     if (message.workspaceTrialSettingValue !== undefined) {
       WorkspaceTrialSetting.encode(message.workspaceTrialSettingValue, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.externalApprovalSettingValue !== undefined) {
+      ExternalApprovalSetting.encode(message.externalApprovalSettingValue, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -800,6 +819,13 @@ export const Value = {
 
           message.workspaceTrialSettingValue = WorkspaceTrialSetting.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.externalApprovalSettingValue = ExternalApprovalSetting.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -828,6 +854,9 @@ export const Value = {
       workspaceTrialSettingValue: isSet(object.workspaceTrialSettingValue)
         ? WorkspaceTrialSetting.fromJSON(object.workspaceTrialSettingValue)
         : undefined,
+      externalApprovalSettingValue: isSet(object.externalApprovalSettingValue)
+        ? ExternalApprovalSetting.fromJSON(object.externalApprovalSettingValue)
+        : undefined,
     };
   },
 
@@ -854,6 +883,10 @@ export const Value = {
     message.workspaceTrialSettingValue !== undefined &&
       (obj.workspaceTrialSettingValue = message.workspaceTrialSettingValue
         ? WorkspaceTrialSetting.toJSON(message.workspaceTrialSettingValue)
+        : undefined);
+    message.externalApprovalSettingValue !== undefined &&
+      (obj.externalApprovalSettingValue = message.externalApprovalSettingValue
+        ? ExternalApprovalSetting.toJSON(message.externalApprovalSettingValue)
         : undefined);
     return obj;
   },
@@ -887,6 +920,10 @@ export const Value = {
     message.workspaceTrialSettingValue =
       (object.workspaceTrialSettingValue !== undefined && object.workspaceTrialSettingValue !== null)
         ? WorkspaceTrialSetting.fromPartial(object.workspaceTrialSettingValue)
+        : undefined;
+    message.externalApprovalSettingValue =
+      (object.externalApprovalSettingValue !== undefined && object.externalApprovalSettingValue !== null)
+        ? ExternalApprovalSetting.fromPartial(object.externalApprovalSettingValue)
         : undefined;
     return message;
   },
@@ -1517,14 +1554,11 @@ export const WorkspaceApprovalSetting = {
 };
 
 function createBaseWorkspaceApprovalSetting_Rule(): WorkspaceApprovalSetting_Rule {
-  return { expression: undefined, template: undefined, condition: undefined };
+  return { template: undefined, condition: undefined };
 }
 
 export const WorkspaceApprovalSetting_Rule = {
   encode(message: WorkspaceApprovalSetting_Rule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.expression !== undefined) {
-      ParsedExpr.encode(message.expression, writer.uint32(10).fork()).ldelim();
-    }
     if (message.template !== undefined) {
       ApprovalTemplate.encode(message.template, writer.uint32(18).fork()).ldelim();
     }
@@ -1541,13 +1575,6 @@ export const WorkspaceApprovalSetting_Rule = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.expression = ParsedExpr.decode(reader, reader.uint32());
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1573,7 +1600,6 @@ export const WorkspaceApprovalSetting_Rule = {
 
   fromJSON(object: any): WorkspaceApprovalSetting_Rule {
     return {
-      expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
       template: isSet(object.template) ? ApprovalTemplate.fromJSON(object.template) : undefined,
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
@@ -1581,8 +1607,6 @@ export const WorkspaceApprovalSetting_Rule = {
 
   toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
     const obj: any = {};
-    message.expression !== undefined &&
-      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
     message.template !== undefined &&
       (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
     message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
@@ -1595,15 +1619,158 @@ export const WorkspaceApprovalSetting_Rule = {
 
   fromPartial(object: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
     const message = createBaseWorkspaceApprovalSetting_Rule();
-    message.expression = (object.expression !== undefined && object.expression !== null)
-      ? ParsedExpr.fromPartial(object.expression)
-      : undefined;
     message.template = (object.template !== undefined && object.template !== null)
       ? ApprovalTemplate.fromPartial(object.template)
       : undefined;
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseExternalApprovalSetting(): ExternalApprovalSetting {
+  return { nodes: [] };
+}
+
+export const ExternalApprovalSetting = {
+  encode(message: ExternalApprovalSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.nodes) {
+      ExternalApprovalSetting_Node.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExternalApprovalSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExternalApprovalSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.nodes.push(ExternalApprovalSetting_Node.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExternalApprovalSetting {
+    return {
+      nodes: Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ExternalApprovalSetting_Node.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ExternalApprovalSetting): unknown {
+    const obj: any = {};
+    if (message.nodes) {
+      obj.nodes = message.nodes.map((e) => e ? ExternalApprovalSetting_Node.toJSON(e) : undefined);
+    } else {
+      obj.nodes = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExternalApprovalSetting>): ExternalApprovalSetting {
+    return ExternalApprovalSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExternalApprovalSetting>): ExternalApprovalSetting {
+    const message = createBaseExternalApprovalSetting();
+    message.nodes = object.nodes?.map((e) => ExternalApprovalSetting_Node.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseExternalApprovalSetting_Node(): ExternalApprovalSetting_Node {
+  return { id: "", title: "", endpoint: "" };
+}
+
+export const ExternalApprovalSetting_Node = {
+  encode(message: ExternalApprovalSetting_Node, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.endpoint !== "") {
+      writer.uint32(26).string(message.endpoint);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExternalApprovalSetting_Node {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExternalApprovalSetting_Node();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.endpoint = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExternalApprovalSetting_Node {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      endpoint: isSet(object.endpoint) ? String(object.endpoint) : "",
+    };
+  },
+
+  toJSON(message: ExternalApprovalSetting_Node): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.endpoint !== undefined && (obj.endpoint = message.endpoint);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExternalApprovalSetting_Node>): ExternalApprovalSetting_Node {
+    return ExternalApprovalSetting_Node.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExternalApprovalSetting_Node>): ExternalApprovalSetting_Node {
+    const message = createBaseExternalApprovalSetting_Node();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.endpoint = object.endpoint ?? "";
     return message;
   },
 };

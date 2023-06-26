@@ -12,8 +12,6 @@ export type MemberId = IdType;
 
 export type SettingId = IdType;
 
-export type BookmarkId = IdType;
-
 export type PolicyId = IdType;
 
 export type ProjectId = IdType;
@@ -31,10 +29,6 @@ export type TaskId = IdType;
 export type TaskRunId = IdType;
 
 export type TaskCheckRunId = IdType;
-
-export type ActivityId = IdType;
-
-export type InboxId = IdType;
 
 export type EnvironmentId = IdType;
 
@@ -55,8 +49,6 @@ export type MigrationHistoryId = string;
 export type BackupId = IdType;
 
 export type BackupSettingId = IdType;
-
-export type AnomalyId = IdType;
 
 export type CommandId = string;
 export type CommandRegisterId = string;

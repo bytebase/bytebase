@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -234,11 +235,14 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		return nil, err
 	}
 
+	// TODO(d): use a Redshift extraction for shared database.
+	if dbType == db.Redshift && queryContext.ShareDB {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
+	}
 	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
 	}
-
 	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
 		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
@@ -293,10 +297,11 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
+		startTime := time.Now()
 		if singleSQL.Empty {
 			continue
 		}
-		if IsAffectedRowsStatement(singleSQL.Text) {
+		if parser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
 			sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
 			if err != nil {
 				return nil, err
@@ -323,6 +328,8 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 				ColumnNames:     field,
 				ColumnTypeNames: types,
 				Rows:            rows,
+				Latency:         durationpb.New(time.Since(startTime)),
+				Statement:       strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t"),
 			})
 			continue
 		}
@@ -333,6 +340,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 }
 
 func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.QueryResult {
+	startTime := time.Now()
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return &v1pb.QueryResult{
@@ -347,6 +355,8 @@ func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.Que
 			Error: err.Error(),
 		}
 	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
 	return result
 }
 
@@ -431,6 +441,11 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 // TODO(rebelice): remove the readRows and rename readRows2 to readRows if legacy API is deprecated.
 func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
+	if len(columnTypes) == 0 {
+		// No rows.
+		// The oracle driver will panic if there is no rows such as EXPLAIN PLAN FOR statement.
+		return data, nil
+	}
 	for rows.Next() {
 		scanArgs := make([]any, len(columnTypes))
 		for i, v := range columnTypeNames {
@@ -688,7 +703,7 @@ func FromStoredVersion(storedVersion string) (bool, string, string, error) {
 // IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
 func IsAffectedRowsStatement(stmt string) bool {
 	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
-	upperStatement := strings.ToUpper(stmt)
+	upperStatement := strings.TrimLeft(strings.ToUpper(stmt), " \t\r\n")
 	for _, prefix := range affectedRowsStatementPrefix {
 		if strings.HasPrefix(upperStatement, prefix) {
 			return true

@@ -9,78 +9,34 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// sheetOrganizerRaw is the store model for SheetOrganizer.
-type sheetOrganizerRaw struct {
-	ID int
+// SheetOrganizerMessage is the store message for sheet organizer.
+type SheetOrganizerMessage struct {
+	UID int
 
 	// Related fields
-	SheetID     int
-	PrincipalID int
-	Starred     bool
-	Pinned      bool
+	SheetUID     int
+	PrincipalUID int
+	Starred      bool
+	Pinned       bool
 }
 
-// toSheetOrganizer creates an instance of SheetOrganizer based on the sheetOrganizerRaw.
-func (raw *sheetOrganizerRaw) toSheetOrganizer() *api.SheetOrganizer {
-	return &api.SheetOrganizer{
-		ID:          raw.ID,
-		SheetID:     raw.SheetID,
-		PrincipalID: raw.PrincipalID,
-		Starred:     raw.Starred,
-		Pinned:      raw.Pinned,
-	}
+// FindSheetOrganizerMessage is the store message to find sheet organizer.
+type FindSheetOrganizerMessage struct {
+	// Related fields
+	SheetUID     int
+	PrincipalUID int
 }
 
-// UpsertSheetOrganizer upserts a new SheetOrganizer.
-func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrganizerUpsert) (*api.SheetOrganizer, error) {
+// UpsertSheetOrganizerV2 upserts a new SheetOrganizerMessage.
+func (s *Store) UpsertSheetOrganizerV2(ctx context.Context, organizer *SheetOrganizerMessage) (*SheetOrganizerMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	sheetOrganizerRaw, err := upsertSheetOrganizerImpl(ctx, tx, upsert)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	sheetOrganizer := sheetOrganizerRaw.toSheetOrganizer()
-
-	return sheetOrganizer, nil
-}
-
-// FindSheetOrganizer retrieves a SheetOrganizer.
-func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizerFind) (*api.SheetOrganizer, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	sheetOrganizerRawlist, err := findSheetOrganizerListImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(sheetOrganizerRawlist) == 0 {
-		return nil, nil
-	} else if len(sheetOrganizerRawlist) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d sheet organizer with filter %+v, expect 1. ", len(sheetOrganizerRawlist), find)}
-	}
-
-	sheetOrganizer := sheetOrganizerRawlist[0].toSheetOrganizer()
-
-	return sheetOrganizer, nil
-}
-
-func upsertSheetOrganizerImpl(ctx context.Context, tx *Tx, upsert *api.SheetOrganizerUpsert) (*sheetOrganizerRaw, error) {
 	query := `
 	  INSERT INTO sheet_organizer (
 			sheet_id,
@@ -94,31 +50,43 @@ func upsertSheetOrganizerImpl(ctx context.Context, tx *Tx, upsert *api.SheetOrga
 			pinned = EXCLUDED.pinned
 		RETURNING id, sheet_id, principal_id, starred, pinned
 	`
-	var sheetOrganizerRaw sheetOrganizerRaw
+	var sheetOrganizer SheetOrganizerMessage
 	if err := tx.QueryRowContext(ctx, query,
-		upsert.SheetID,
-		upsert.PrincipalID,
-		upsert.Starred,
-		upsert.Pinned,
+		organizer.SheetUID,
+		organizer.PrincipalUID,
+		organizer.Starred,
+		organizer.Pinned,
 	).Scan(
-		&sheetOrganizerRaw.ID,
-		&sheetOrganizerRaw.SheetID,
-		&sheetOrganizerRaw.PrincipalID,
-		&sheetOrganizerRaw.Starred,
-		&sheetOrganizerRaw.Pinned,
+		&sheetOrganizer.UID,
+		&sheetOrganizer.SheetUID,
+		&sheetOrganizer.PrincipalUID,
+		&sheetOrganizer.Starred,
+		&sheetOrganizer.Pinned,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
 	}
-	return &sheetOrganizerRaw, nil
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &sheetOrganizer, nil
 }
 
-func findSheetOrganizerListImpl(ctx context.Context, tx *Tx, find *api.SheetOrganizerFind) ([]*sheetOrganizerRaw, error) {
+// FindSheetOrganizerV2 retrieves a SheetOrganizerMessage.
+func (s *Store) FindSheetOrganizerV2(ctx context.Context, find *FindSheetOrganizerMessage) (*SheetOrganizerMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("sheet_id = $%d", len(args)+1)), append(args, find.SheetID)
-	where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, find.PrincipalID)
+	where, args = append(where, fmt.Sprintf("sheet_id = $%d", len(args)+1)), append(args, find.SheetUID)
+	where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, find.PrincipalUID)
 
 	rows, err := tx.QueryContext(ctx, `
 	SELECT
@@ -136,23 +104,33 @@ func findSheetOrganizerListImpl(ctx context.Context, tx *Tx, find *api.SheetOrga
 	}
 	defer rows.Close()
 
-	var sheetOrganizerRawList []*sheetOrganizerRaw
+	var sheetOrganizerlist []*SheetOrganizerMessage
 	for rows.Next() {
-		var sheetOrganizerRaw sheetOrganizerRaw
+		var sheetOrganizer SheetOrganizerMessage
 		if err := rows.Scan(
-			&sheetOrganizerRaw.ID,
-			&sheetOrganizerRaw.SheetID,
-			&sheetOrganizerRaw.PrincipalID,
-			&sheetOrganizerRaw.Starred,
-			&sheetOrganizerRaw.Pinned,
+			&sheetOrganizer.UID,
+			&sheetOrganizer.SheetUID,
+			&sheetOrganizer.PrincipalUID,
+			&sheetOrganizer.Starred,
+			&sheetOrganizer.Pinned,
 		); err != nil {
 			return nil, err
 		}
-		sheetOrganizerRawList = append(sheetOrganizerRawList, &sheetOrganizerRaw)
+		sheetOrganizerlist = append(sheetOrganizerlist, &sheetOrganizer)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return sheetOrganizerRawList, nil
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	if len(sheetOrganizerlist) == 0 {
+		return nil, nil
+	} else if len(sheetOrganizerlist) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d sheet organizer with filter %+v, expect 1. ", len(sheetOrganizerlist), find)}
+	}
+
+	return sheetOrganizerlist[0], nil
 }

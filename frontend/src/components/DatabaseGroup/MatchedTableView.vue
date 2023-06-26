@@ -1,7 +1,7 @@
 <template>
   <div class="mb-2 flex flex-row items-center">
     <span class="text-lg mr-2">{{ $t("db.tables") }}</span>
-    <BBLoader v-show="state.isRequesting" class="opacity-60" />
+    <BBLoader v-show="loading" class="opacity-60" />
   </div>
   <div
     class="w-full border rounded min-h-[20rem] max-h-[24rem] overflow-y-auto"
@@ -30,7 +30,7 @@
       >
         <span class="text-sm">{{ table.table }}</span>
         <div class="flex flex-row justify-end items-center">
-          <DatabaseView :database-name="table.database" />
+          <DatabaseView :database="table.databaseEntity" />
         </div>
       </div>
     </div>
@@ -60,7 +60,7 @@
       >
         <span class="text-sm">{{ table.table }}</span>
         <div class="flex flex-row justify-end items-center">
-          <DatabaseView :database-name="table.database" />
+          <DatabaseView :database="table.databaseEntity" />
         </div>
       </div>
     </div>
@@ -68,75 +68,24 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, reactive } from "vue";
-import { ConditionGroupExpr, convertToCELString } from "@/plugins/cel";
-import { ComposedProject } from "@/types";
+import { reactive } from "vue";
+import { ComposedSchemaGroupTable } from "@/types";
 import { DatabaseView } from "../v2";
-import {
-  SchemaGroup,
-  SchemaGroup_Table,
-} from "@/types/proto/v1/project_service";
-import { projectServiceClient } from "@/grpcweb";
-import { Expr } from "@/types/proto/google/type/expr";
-import { useDebounceFn } from "@vueuse/core";
-import {
-  databaseGroupNamePrefix,
-  schemaGroupNamePrefix,
-} from "@/store/modules/v1/common";
 import BBLoader from "@/bbkit/BBLoader.vue";
 
 interface LocalState {
-  isRequesting: boolean;
   showMatchedTableList: boolean;
   showUnmatchedTableList: boolean;
 }
 
-const props = defineProps<{
-  project: ComposedProject;
-  databaseGroupName: string;
-  expr: ConditionGroupExpr;
-  schemaGroup?: SchemaGroup;
+defineProps<{
+  loading: boolean;
+  matchedTableList: ComposedSchemaGroupTable[];
+  unmatchedTableList: ComposedSchemaGroupTable[];
 }>();
 
 const state = reactive<LocalState>({
-  isRequesting: false,
   showMatchedTableList: true,
   showUnmatchedTableList: true,
-});
-const matchedTableList = ref<SchemaGroup_Table[]>([]);
-const unmatchedTableList = ref<SchemaGroup_Table[]>([]);
-
-const updateMatchingState = useDebounceFn(async () => {
-  state.isRequesting = true;
-  try {
-    const celString = convertToCELString(props.expr);
-    const validateOnlyResourceId = "creating-schema-group";
-    const databaseGroupName = `${props.project.name}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
-    const result = await projectServiceClient.createSchemaGroup({
-      parent: databaseGroupName,
-      schemaGroup: {
-        name: `${databaseGroupName}/${schemaGroupNamePrefix}${validateOnlyResourceId}`,
-        tablePlaceholder: validateOnlyResourceId,
-        tableExpr: Expr.fromJSON({
-          expression: celString || "true",
-        }),
-      },
-      schemaGroupId: validateOnlyResourceId,
-      validateOnly: true,
-    });
-    matchedTableList.value = result.matchedTables;
-    unmatchedTableList.value = result.unmatchedTables;
-  } catch (error) {
-    matchedTableList.value = [];
-    unmatchedTableList.value = [];
-    console.error(error);
-    // do nothing else.
-  }
-  state.isRequesting = false;
-}, 500);
-
-watch(() => props, updateMatchingState, {
-  immediate: true,
-  deep: true,
 });
 </script>

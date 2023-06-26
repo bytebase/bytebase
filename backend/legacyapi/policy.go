@@ -95,24 +95,6 @@ var (
 	}
 )
 
-// Policy is the API message for a policy.
-type Policy struct {
-	ID int `jsonapi:"primary,policy"`
-
-	// Standard fields
-	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-
-	// Related fields
-	ResourceType PolicyResourceType
-	ResourceID   int          `jsonapi:"attr,resourceId"`
-	Environment  *Environment `jsonapi:"relation,environment"`
-
-	// Domain specific fields
-	InheritFromParent bool       `jsonapi:"attr,inheritFromParent"`
-	Type              PolicyType `jsonapi:"attr,type"`
-	Payload           string     `jsonapi:"attr,payload"`
-}
-
 // PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`
@@ -239,7 +221,7 @@ func (p *SensitiveDataPolicy) String() (string, error) {
 	return string(s), nil
 }
 
-// AccessControlPolicy is the policy configuration for database access control.
+// AccessControlPolicy is the policy configuration for data access control.
 // It is only applicable to database and environment resource type.
 // For environment resource type, DisallowRuleList defines the access control rule.
 // For database resource type, the AccessControlPolicy struct itself means allow to access.
@@ -380,6 +362,15 @@ func FlattenSQLReviewRulesWithEngine(policy *advisor.SQLReviewPolicy) *advisor.S
 					Type:    rule.Type,
 					Level:   rule.Level,
 					Engine:  db.OceanBase,
+					Comment: rule.Comment,
+					Payload: rule.Payload,
+				})
+			}
+			if advisor.RuleExists(rule.Type, db.Snowflake) {
+				ruleList = append(ruleList, &advisor.SQLReviewRule{
+					Type:    rule.Type,
+					Level:   rule.Level,
+					Engine:  db.Snowflake,
 					Comment: rule.Comment,
 					Payload: rule.Payload,
 				})

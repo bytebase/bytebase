@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -29,20 +27,4 @@ type Instance struct {
 	Username string `jsonapi:"attr,username"`
 	// Password is not returned to the client
 	Password string
-}
-
-// InstanceFind is the API message for finding instances.
-type InstanceFind struct {
-	ID *int
-
-	// Standard fields
-	RowStatus *RowStatus
-}
-
-func (find *InstanceFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
 }

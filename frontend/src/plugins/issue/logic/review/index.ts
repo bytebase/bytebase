@@ -2,7 +2,11 @@ import { computed, watch, type ComputedRef, unref } from "vue";
 import type Emittery from "emittery";
 
 import type { Issue, MaybeRef, ReviewFlow, WrappedReviewStep } from "@/types";
-import { Review } from "@/types/proto/v1/review_service";
+import {
+  ApprovalTemplate,
+  Review,
+  Review_Approver_Status,
+} from "@/types/proto/v1/review_service";
 import {
   candidatesOfApprovalStep,
   useAuthStore,
@@ -10,7 +14,6 @@ import {
   useUserStore,
 } from "@/store";
 import { IssueReviewContext, provideIssueReviewContext } from "./context";
-import { ApprovalTemplate } from "@/types/proto/store/approval";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { extractUserResourceName } from "@/utils";
 
@@ -29,20 +32,54 @@ export const extractIssueReviewContext = (
     if (!ready.value) return emptyFlow();
     const { approvalTemplates, approvers } = review.value;
     if (approvalTemplates.length === 0) return emptyFlow();
+
+    const rejectedIndex = approvers.findIndex(
+      (ap) => ap.status === Review_Approver_Status.REJECTED
+    );
+    const currentStepIndex =
+      rejectedIndex >= 0 ? rejectedIndex : approvers.length;
+
     return {
       template: approvalTemplates[0],
       approvers,
-      currentStepIndex: approvers.length,
+      currentStepIndex,
     };
   });
-  const done = computed(() => {
-    if (!ready.value) return false;
-    if (review.value.approvalFindingError) return false;
+  const status = computed(() => {
+    if (!ready.value) {
+      return Review_Approver_Status.PENDING;
+    }
+    if (review.value.approvalFindingError) {
+      return Review_Approver_Status.PENDING;
+    }
 
     const { template, approvers } = flow.value;
     const steps = template.flow?.steps ?? [];
-    if (steps.length === 0) return true;
-    return approvers.length === steps.length;
+
+    if (steps.length === 0) {
+      // No review flow steps. That means need not manual review.
+      return Review_Approver_Status.APPROVED;
+    }
+
+    if (
+      approvers.some((app) => app.status === Review_Approver_Status.REJECTED)
+    ) {
+      // If any of the approvers down voted, the overall status should be 'REJECTED'
+      return Review_Approver_Status.REJECTED;
+    }
+
+    // For an N-steps approval flow, we need exactly N upvote approvals to
+    // pass the entire flow.
+    const upVotes = approvers.filter(
+      (app) => app.status === Review_Approver_Status.APPROVED
+    );
+    if (upVotes.length === steps.length) {
+      return Review_Approver_Status.APPROVED;
+    }
+    return Review_Approver_Status.PENDING;
+  });
+  const done = computed(() => {
+    return status.value === Review_Approver_Status.APPROVED;
   });
   const error = computed(() => {
     return review.value.approvalFindingError;
@@ -52,6 +89,7 @@ export const extractIssueReviewContext = (
     review,
     ready,
     flow,
+    status,
     done,
     error,
   };
@@ -111,16 +149,31 @@ export const useWrappedReviewSteps = (
   return computed(() => {
     const { flow, done } = context;
     const steps = flow.value.template.flow?.steps;
+    const approvers = flow.value.approvers;
     const currentStepIndex = flow.value.currentStepIndex ?? -1;
 
     const statusOfStep = (index: number) => {
-      if (done.value) return "DONE";
-      if (index < currentStepIndex) return "DONE";
-      if (index === currentStepIndex) return "CURRENT";
+      if (done.value) {
+        return "APPROVED";
+      }
+      if (index >= (steps?.length ?? 0)) {
+        // Out of index
+        return "PENDING";
+      }
+      const approval = approvers[index];
+      if (approval && approval.status === Review_Approver_Status.REJECTED) {
+        return "REJECTED";
+      }
+      if (index < currentStepIndex) {
+        return "APPROVED";
+      }
+      if (index === currentStepIndex) {
+        return "CURRENT";
+      }
       return "PENDING";
     };
     const approverOfStep = (index: number) => {
-      const principal = flow.value.approvers[index]?.principal;
+      const principal = approvers[index]?.principal;
       if (!principal) return undefined;
       const email = extractUserResourceName(principal);
       return userStore.getUserByEmail(email);

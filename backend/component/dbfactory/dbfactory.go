@@ -33,18 +33,26 @@ func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret string) *DBFactory 
 
 // GetAdminDatabaseDriver gets the admin database driver using the instance's admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
-func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, databaseName string) (db.Driver, error) {
+func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) (db.Driver, error) {
 	dataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if dataSource == nil {
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, false /* readOnly */)
+	databaseName := ""
+	if database != nil {
+		databaseName = database.DatabaseName
+	}
+	datashare := false
+	if database != nil && database.DataShare {
+		datashare = true
+	}
+	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, datashare, false /* readOnly */)
 }
 
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
 // If the read-only data source is not defined, we will fallback to admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
-func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, databaseName string) (db.Driver, error) {
+func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) (db.Driver, error) {
 	dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	// If there are no read-only data source, fall back to admin data source.
@@ -55,11 +63,15 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		return nil, common.Errorf(common.Internal, "data source not found for instance %q", instance.Title)
 	}
 
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, true /* readOnly */)
+	databaseName := ""
+	if database != nil {
+		databaseName = database.DatabaseName
+	}
+	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, database.DataShare, true /* readOnly */)
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, readOnly bool) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, datashare, readOnly bool) (db.Driver, error) {
 	dbBinDir := ""
 	switch engine {
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
@@ -73,6 +85,10 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dat
 
 	if databaseName == "" {
 		databaseName = dataSource.Database
+	}
+	connectionDatabase := ""
+	if datashare {
+		connectionDatabase = dataSource.Database
 	}
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, d.secret)
 	if err != nil {
@@ -123,6 +139,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dat
 			Host:                   dataSource.Host,
 			Port:                   dataSource.Port,
 			Database:               databaseName,
+			ConnectionDatabase:     connectionDatabase,
 			SRV:                    dataSource.SRV,
 			AuthenticationDatabase: dataSource.AuthenticationDatabase,
 			SID:                    dataSource.SID,

@@ -3,7 +3,6 @@
     <FeatureAttention
       v-if="!hasAccessControlFeature"
       feature="bb.feature.access-control"
-      :description="$t('subscription.features.bb-feature-access-control.desc')"
     />
     <div class="flex justify-between">
       <i18n-t
@@ -13,7 +12,7 @@
       >
         <template #link>
           <LearnMoreLink
-            url="https://www.bytebase.com/docs/security/database-access-control"
+            url="https://www.bytebase.com/docs/security/data-access-control"
           />
         </template>
       </i18n-t>
@@ -188,9 +187,8 @@
     @cancel="state.showFeatureModal = false"
   />
 
-  <BBModal
-    v-if="state.showAddRuleModal"
-    :title="$t('settings.access-control.add-rule')"
+  <Drawer
+    :show="state.showAddRuleModal"
     @close="state.showAddRuleModal = false"
   >
     <AddRuleForm
@@ -199,7 +197,7 @@
       @cancel="state.showAddRuleModal = false"
       @add="handleAddRule"
     />
-  </BBModal>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -212,6 +210,7 @@ import { featureToRef, useCurrentUserV1, useDatabaseV1Store } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { BBTableColumn } from "@/bbkit/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import { Drawer } from "@/components/v2";
 import AddRuleForm from "@/components/AccessControl/AddRuleForm.vue";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import {

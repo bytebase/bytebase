@@ -41,6 +41,13 @@
       :allow-edit="allowEdit"
     />
   </template>
+  <template v-if="!isDefaultProject && hash === 'members'">
+    <ProjectMemberPanel
+      id="setting"
+      :project="project"
+      :allow-edit="allowEdit"
+    />
+  </template>
   <template v-if="!isDefaultProject && hash === 'setting'">
     <ProjectSettingPanel
       id="setting"
@@ -63,6 +70,7 @@ import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
 import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
 import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
+import ProjectMemberPanel from "../components/ProjectMember/ProjectMemberPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import {

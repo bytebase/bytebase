@@ -46,7 +46,7 @@ import {
   useActuatorV1Store,
   useLegacyInstanceStore,
   useRouterStore,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useConnectionTreeStore,
   useOnboardingStateStore,
   useTabStore,
@@ -797,7 +797,13 @@ const routes: Array<RouteRecordRaw> = [
               title: () => t("common.instances"),
               quickActionListByRole: () => {
                 return new Map([
-                  ["OWNER", ["quickaction.bb.instance.create"]],
+                  [
+                    "OWNER",
+                    [
+                      "quickaction.bb.instance.create",
+                      "quickaction.bb.subscription.license-assignment",
+                    ],
+                  ],
                   ["DBA", ["quickaction.bb.instance.create"]],
                 ]);
               },
@@ -968,8 +974,8 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "database-groups/:databaseGroupName/schema-groups/:schemaGroupName",
-                name: "workspace.database-group.schema-group.detail",
+                path: "database-groups/:databaseGroupName/table-groups/:schemaGroupName",
+                name: "workspace.database-group.table-group.detail",
                 components: {
                   content: () => import("../views/SchemaGroupDetail.vue"),
                   leftSidebar: DashboardSidebar,
@@ -1068,7 +1074,7 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
   const authStore = useAuthStore();
-  const dbSchemaStore = useDBSchemaStore();
+  const dbSchemaStore = useDBSchemaV1Store();
   const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
   const projectV1Store = useProjectV1Store();
@@ -1289,22 +1295,6 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if (to.name?.toString().startsWith("workspace.database.datasource")) {
-    if (
-      !hasFeature("bb.feature.data-source") ||
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-instance",
-        currentUserV1.value.userRole
-      )
-    ) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
   if (
     to.name === "error.403" ||
     to.name === "error.404" ||
@@ -1462,7 +1452,7 @@ router.beforeEach((to, from, next) => {
       .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
       .then((database) => {
         dbSchemaStore
-          .getOrFetchDatabaseMetadataById(Number(database.uid), true)
+          .getOrFetchDatabaseMetadata(database.name, true)
           .then(() => {
             if (!dataSourceSlug) {
               next();

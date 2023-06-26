@@ -13,9 +13,9 @@ import type {
   CompareExpr,
   EqualityExpr,
   StringExpr,
+  LogicalOperator,
 } from "../types";
 import {
-  LogicalOperatorList,
   isEqualityOperator,
   isConditionGroupExpr,
   isCollectionOperator,
@@ -28,10 +28,13 @@ import {
 } from "../types";
 
 // For simplify UI implementation, the "root" condition need to be a group.
-export const wrapAsGroup = (expr: SimpleExpr): ConditionGroupExpr => {
+export const wrapAsGroup = (
+  expr: SimpleExpr,
+  operator: LogicalOperator = "_&&_"
+): ConditionGroupExpr => {
   if (isConditionGroupExpr(expr)) return expr;
   return {
-    operator: "_&&_",
+    operator,
     args: [expr],
   };
 };
@@ -61,8 +64,8 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
           group.args.push(subExpr);
         }
       };
-      sub(left, false);
-      sub(right, true);
+      sub(left, true);
+      sub(right, false);
       return group;
     }
     if (isEqualityOperator(operator)) {
@@ -162,9 +165,11 @@ const resolveCollectionExpr = (expr: CELExpr): CollectionExpr => {
   throw new Error(`cannot resolve expr ${JSON.stringify(expr)}`);
 };
 
-export const emptySimpleExpr = (): ConditionGroupExpr => {
+export const emptySimpleExpr = (
+  operator: LogicalOperator = "_&&_"
+): ConditionGroupExpr => {
   return {
-    operator: LogicalOperatorList[0],
+    operator: operator,
     args: [],
   };
 };

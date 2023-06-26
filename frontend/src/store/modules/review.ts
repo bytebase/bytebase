@@ -38,12 +38,13 @@ export const useReviewStore = defineStore("review", () => {
     reviewsByName.value.set(reviewName(issue), review);
   };
 
-  const fetchReviewByIssue = async (issue: Issue, ignoreCache = false) => {
+  const fetchReviewByIssue = async (issue: Issue, force = false) => {
     const name = reviewName(issue);
 
     try {
       const review = await reviewServiceClient.getReview({
         name,
+        force,
       });
       await setReviewByIssue(issue, review);
       return review;
@@ -52,9 +53,26 @@ export const useReviewStore = defineStore("review", () => {
     }
   };
 
-  const approveReview = async (issue: Issue) => {
+  const approveReview = async (issue: Issue, comment?: string) => {
     const review = await reviewServiceClient.approveReview({
       name: reviewName(issue),
+      comment,
+    });
+    await setReviewByIssue(issue, review);
+  };
+
+  const rejectReview = async (issue: Issue, comment?: string) => {
+    const review = await reviewServiceClient.rejectReview({
+      name: reviewName(issue),
+      comment,
+    });
+    await setReviewByIssue(issue, review);
+  };
+
+  const requestReview = async (issue: Issue, comment?: string) => {
+    const review = await reviewServiceClient.requestReview({
+      name: reviewName(issue),
+      comment,
     });
     await setReviewByIssue(issue, review);
   };
@@ -74,6 +92,8 @@ export const useReviewStore = defineStore("review", () => {
     getReviewByIssue,
     fetchReviewByIssue,
     approveReview,
+    rejectReview,
+    requestReview,
     regenerateReview,
   };
 });

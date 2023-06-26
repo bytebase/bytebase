@@ -29,7 +29,11 @@
   <div v-else-if="!hasIndexAdvisorFeature">
     <div class="btn btn-primary !w-auto" @click="state.showFeatureModal = true">
       {{ $t("subscription.features.bb-feature-index-advisor.title") }}
-      <FeatureBadge class="ml-1" feature="bb.feature.index-advisor" />
+      <FeatureBadge
+        custom-class="ml-1"
+        feature="bb.feature.index-advisor"
+        :instance="slowQueryLog.database.instanceEntity"
+      />
     </div>
   </div>
   <div v-else-if="!hasOpenAIKeySetup">
@@ -41,6 +45,7 @@
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.index-advisor"
+    :instance="slowQueryLog.database.instanceEntity"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -54,7 +59,6 @@ import { databaseServiceClient } from "@/grpcweb";
 import { getErrorCode } from "@/utils/grpcweb";
 import { Status } from "nice-grpc-common";
 import { featureToRef, hasFeature } from "@/store";
-import FeatureBadge from "@/components/FeatureBadge.vue";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 const props = defineProps<{
@@ -78,7 +82,10 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 const settingV1Store = useSettingV1Store();
-const hasIndexAdvisorFeature = featureToRef("bb.feature.index-advisor");
+const hasIndexAdvisorFeature = featureToRef(
+  "bb.feature.index-advisor",
+  props.slowQueryLog.database.instanceEntity
+);
 const hasOpenAIKeySetup = computed(() => {
   const openAIKeySetting = settingV1Store.getSettingByName(
     "bb.plugin.openai.key"

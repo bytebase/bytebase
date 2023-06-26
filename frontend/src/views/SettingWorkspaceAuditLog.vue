@@ -1,10 +1,6 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <FeatureAttention
-      v-if="!hasAuditLogFeature"
-      feature="bb.feature.audit-log"
-      :description="$t('subscription.features.bb-feature-audit-log.desc')"
-    />
+    <FeatureAttention feature="bb.feature.audit-log" />
     <div class="flex justify-end items-center mt-1">
       <MemberSelect
         class="w-52"
@@ -33,25 +29,25 @@
         </NDatePicker>
       </div>
     </div>
-    <PagedAuditLogTable
+    <PagedActivityTable
       v-if="hasAuditLogFeature"
       :activity-find="{
-        typePrefix:
+        action:
           selectedAuditTypeList.length > 0
             ? selectedAuditTypeList
-            : typePrefixList,
-        user: parseInt(selectedUserUID, 10) > 0 ? selectedUserUID : undefined,
-        order: 'DESC',
+            : AuditActivityTypeList,
+        creatorEmail: selectedUserEmail,
+        order: 'desc',
         createdTsAfter: selectedTimeRange ? selectedTimeRange[0] : undefined,
         createdTsBefore: selectedTimeRange ? selectedTimeRange[1] : undefined,
       }"
-      session-key="settings-audit-log-table"
+      session-key="bb.page-audit-log-table.settings-audit-log-table"
       :page-size="10"
     >
       <template #table="{ list }">
         <AuditLogTable :audit-log-list="list" @view-detail="handleViewDetail" />
       </template>
-    </PagedAuditLogTable>
+    </PagedActivityTable>
     <template v-else>
       <AuditLogTable :audit-log-list="[]" />
       <div class="w-full h-full flex flex-col items-center justify-center">
@@ -82,13 +78,7 @@
               </NGi>
               <NGi span="17">
                 <span v-if="value !== ''">
-                  {{
-                    (key as string).includes("Ts")
-                      ? dayjs
-                          .unix(value as number)
-                          .format("YYYY-MM-DD HH:mm:ss Z")
-                      : value
-                  }}
+                  {{ value }}
                 </span>
                 <span v-else class="italic text-gray-500">
                   {{ $t("audit-log.table.empty") }}
@@ -106,10 +96,20 @@
 import { reactive, ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { NGrid, NGi, NDatePicker } from "naive-ui";
+import dayjs from "dayjs";
 import { useI18n } from "vue-i18n";
 import { BBDialog } from "@/bbkit";
-import { AuditActivityType, UNKNOWN_ID } from "@/types";
-import { featureToRef } from "@/store";
+import {
+  AuditActivityTypeList,
+  UNKNOWN_ID,
+  AuditActivityTypeI18nNameMap,
+} from "@/types";
+import { featureToRef, useUserStore } from "@/store";
+import {
+  LogEntity,
+  LogEntity_Action,
+  logEntity_LevelToJSON,
+} from "@/types/proto/v1/logging_service";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 const state = reactive({
@@ -120,21 +120,18 @@ const state = reactive({
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore();
 
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 
 const logKeyMap = {
   createdTs: t("audit-log.table.created-time"),
   level: t("audit-log.table.level"),
-  type: t("audit-log.table.type"),
+  action: t("audit-log.table.type"),
   creator: t("audit-log.table.actor"),
   comment: t("audit-log.table.comment"),
   payload: t("audit-log.table.payload"),
 };
-
-const typePrefixList = (
-  Object.keys(AuditActivityType) as Array<keyof typeof AuditActivityType>
-).map((key) => AuditActivityType[key]);
 
 const selectedUserUID = computed((): string => {
   const id = route.query.user as string;
@@ -144,13 +141,19 @@ const selectedUserUID = computed((): string => {
   return String(UNKNOWN_ID);
 });
 
-const selectedAuditTypeList = computed((): AuditActivityType[] => {
+const selectedUserEmail = computed((): string => {
+  const id = route.query.user as string;
+  const selected = userStore.getUserById(id);
+  return selected?.email ?? "";
+});
+
+const selectedAuditTypeList = computed((): LogEntity_Action[] => {
   const typeList = route.query.type as string;
   if (typeList) {
     if (typeList.includes(",")) {
-      return typeList.split(",") as AuditActivityType[];
+      return typeList.split(",").map((n) => Number(n) as LogEntity_Action);
     } else {
-      return [typeList as AuditActivityType];
+      return [Number(typeList) as LogEntity_Action];
     }
   }
   return [];
@@ -169,10 +172,31 @@ const selectedTimeRange = computed((): [number, number] => {
   return defaultTimeRange;
 });
 
-const handleViewDetail = (log: any) => {
+const handleViewDetail = (log: LogEntity) => {
   // Display detail fields in the same order as logKeyMap.
   state.modalContent = Object.fromEntries(
-    Object.keys(logKeyMap).map((logKey) => [logKey, log[logKey]])
+    Object.keys(logKeyMap)
+      .map((logKey) => {
+        switch (logKey) {
+          case "createdTs":
+            return [
+              logKey,
+              dayjs(log.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
+            ];
+          case "level":
+            return [logKey, logEntity_LevelToJSON(log.level)];
+          case "action":
+            return [logKey, t(AuditActivityTypeI18nNameMap[log.action])];
+          case "creator":
+            return [logKey, log.creator];
+          case "comment":
+            return [logKey, log.comment];
+          case "payload":
+            return [logKey, log.payload];
+        }
+        return [];
+      })
+      .filter((arr) => arr.length === 2)
   );
   state.showModal = true;
   dialog.value!.open();
@@ -188,7 +212,7 @@ const selectUser = (user: string) => {
   });
 };
 
-const selectAuditType = (typeList: AuditActivityType[]) => {
+const selectAuditType = (typeList: LogEntity_Action[]) => {
   if (typeList.length === 0) {
     // Clear `type=` query string if no type selected.
     const query = Object.assign({}, route.query);

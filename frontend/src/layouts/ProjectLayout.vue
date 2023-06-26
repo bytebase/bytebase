@@ -13,7 +13,7 @@
       v-if="isTenantProject"
       class="text-sm font-normal px-2 ml-2 rounded whitespace-nowrap inline-flex items-center bg-gray-200"
     >
-      {{ $t("project.mode.tenant") }}
+      {{ $t("project.mode.batch") }}
     </span>
   </h1>
   <BBAttention
@@ -109,7 +109,12 @@ const projectTabItemList = computed((): ProjectTabItem[] => {
   ) {
     const list = [{ name: t("common.databases"), hash: "databases" }];
     if (!isDefaultProject.value) {
-      list.push({ name: t("common.settings"), hash: "setting" });
+      list.push(
+        ...[
+          { name: t("common.members"), hash: "members" },
+          { name: t("common.settings"), hash: "setting" },
+        ]
+      );
     }
     return list;
   }
@@ -135,6 +140,9 @@ const projectTabItemList = computed((): ProjectTabItem[] => {
     isDefaultProject.value
       ? null
       : { name: t("common.webhooks"), hash: "webhook" },
+    isDefaultProject.value
+      ? null
+      : { name: t("common.members"), hash: "members" },
     isDefaultProject.value
       ? null
       : { name: t("common.settings"), hash: "setting" },

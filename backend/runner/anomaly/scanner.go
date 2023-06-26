@@ -150,7 +150,7 @@ func (s *Scanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.InstanceMessage) {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 
 	// Check connection
 	if err != nil {
@@ -165,9 +165,9 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.Inst
 				zap.Error(err))
 		} else {
 			if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
-				InstanceUID: instance.UID,
-				Type:        api.AnomalyInstanceConnection,
-				Payload:     string(payload),
+				InstanceID: instance.ResourceID,
+				Type:       api.AnomalyInstanceConnection,
+				Payload:    string(payload),
 			}); err != nil {
 				log.Error("Failed to create anomaly",
 					zap.String("instance", instance.ResourceID),
@@ -180,8 +180,8 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.Inst
 
 	defer driver.Close(ctx)
 	err = s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
-		InstanceUID: &instance.UID,
-		Type:        api.AnomalyInstanceConnection,
+		InstanceID: &instance.ResourceID,
+		Type:       api.AnomalyInstanceConnection,
 	})
 	if err != nil && common.ErrorCode(err) != common.NotFound {
 		log.Error("Failed to close anomaly",
@@ -192,7 +192,7 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *store.Inst
 }
 
 func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 
 	// Check connection
 	if err != nil {
@@ -208,7 +208,7 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 				zap.Error(err))
 		} else {
 			if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
-				InstanceUID: instance.UID,
+				InstanceID:  instance.ResourceID,
 				DatabaseUID: &database.UID,
 				Type:        api.AnomalyDatabaseConnection,
 				Payload:     string(payload),
@@ -236,7 +236,7 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 	}
 
 	// Check schema drift
-	if s.licenseService.IsFeatureEnabled(api.FeatureSchemaDrift) {
+	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance) == nil {
 		// Redis and MongoDB are schemaless.
 		if disableSchemaDriftAnomalyCheck(instance.Engine) {
 			return
@@ -289,7 +289,7 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 						zap.Error(err))
 				} else {
 					if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
-						InstanceUID: instance.UID,
+						InstanceID:  instance.ResourceID,
 						DatabaseUID: &database.UID,
 						Type:        api.AnomalyDatabaseSchemaDrift,
 						Payload:     string(payload),
@@ -373,7 +373,7 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 					zap.Error(err))
 			} else {
 				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
-					InstanceUID: instance.UID,
+					InstanceID:  instance.ResourceID,
 					DatabaseUID: &database.UID,
 					Type:        api.AnomalyDatabaseBackupPolicyViolation,
 					Payload:     string(payload),
@@ -455,7 +455,7 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.Env
 					zap.Error(err))
 			} else {
 				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
-					InstanceUID: instance.UID,
+					InstanceID:  instance.ResourceID,
 					DatabaseUID: &database.UID,
 					Type:        api.AnomalyDatabaseBackupMissing,
 					Payload:     string(payload),

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 )
@@ -262,94 +260,4 @@ type ActivitySQLExportPayload struct {
 	DatabaseID   int    `json:"databaseId"`
 	DatabaseName string `json:"databaseName"`
 	Error        string `json:"error"`
-}
-
-// Activity is the API message for an activity.
-type Activity struct {
-	ID int `jsonapi:"primary,activity"`
-
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
-	// Related fields
-	// The object where this activity belongs
-	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-	ContainerID int `jsonapi:"attr,containerId"`
-
-	// Domain specific fields
-	Type    ActivityType  `jsonapi:"attr,type"`
-	Level   ActivityLevel `jsonapi:"attr,level"`
-	Comment string        `jsonapi:"attr,comment"`
-	Payload string        `jsonapi:"attr,payload"`
-}
-
-// ActivityResponse is the API message for an activity response.
-type ActivityResponse struct {
-	ActivityList []*Activity `jsonapi:"relation,activityList"`
-	NextToken    string      `jsonapi:"attr,nextToken"`
-}
-
-// ActivityCreate is the API message for creating an activity.
-type ActivityCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Domain specific fields
-	ContainerID int          `jsonapi:"attr,containerId"`
-	Type        ActivityType `jsonapi:"attr,type"`
-	Level       ActivityLevel
-	Comment     string `jsonapi:"attr,comment"`
-	Payload     string `jsonapi:"attr,payload"`
-}
-
-// ActivityFind is the API message for finding activities.
-type ActivityFind struct {
-	ID *int
-
-	// Domain specific fields
-	CreatorID       *int
-	TypePrefixList  []string
-	LevelList       []ActivityLevel
-	ContainerID     *int
-	Limit           *int
-	CreatedTsAfter  *int64
-	CreatedTsBefore *int64
-	// If specified, only find activities whose ID is smaller than SinceID.
-	SinceID *int
-	// If specified, sorts the returned list by created_ts in <<ORDER>>
-	// Different use cases want different orders.
-	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
-	Order *SortOrder
-}
-
-func (find *ActivityFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
-// ActivityPatch is the API message for patching an activity.
-type ActivityPatch struct {
-	ID int `jsonapi:"primary,activityPatch"`
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	Comment *string `jsonapi:"attr,comment"`
-
-	// TODO(d): remove the payload after the backfill.
-	Payload *string
-
-	// Level is the activity level.
-	Level *ActivityLevel `jsonapi:"attr,level"`
 }

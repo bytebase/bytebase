@@ -6,8 +6,11 @@
     - status: WARN
       code: 206
       title: statement.disallow-commit
-      content: 'Commit is not allowed, related statement: "COMMIT;"'
-      line: 3
+      content: |-
+        Commit is not allowed, related statement: "
+        COMMIT
+        ;"
+      line: 4
       details: ""
 - statement: |-
     START TRANSACTION;
@@ -21,12 +24,17 @@
     - status: WARN
       code: 206
       title: statement.disallow-commit
-      content: 'Commit is not allowed, related statement: "COMMIT;"'
+      content: |-
+        Commit is not allowed, related statement: "
+        COMMIT;"
       line: 3
       details: ""
     - status: WARN
       code: 206
       title: statement.disallow-commit
-      content: 'Commit is not allowed, related statement: "COMMIT;"'
-      line: 7
+      content: |-
+        Commit is not allowed, related statement: "
+        COMMIT
+        ;"
+      line: 8
       details: ""

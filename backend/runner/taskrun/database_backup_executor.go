@@ -80,7 +80,7 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *store.Tas
 		}
 	}
 	log.Debug("Start database backup.", zap.String("instance", instance.Title), zap.String("database", database.DatabaseName), zap.String("backup", backup.Name))
-	backupPayload, backupErr := exec.backupDatabase(ctx, exec.dbFactory, exec.s3Client, exec.profile, instance, database.DatabaseName, backup)
+	backupPayload, backupErr := exec.backupDatabase(ctx, exec.dbFactory, exec.s3Client, exec.profile, instance, database, backup)
 	backupStatus := string(api.BackupStatusDone)
 	comment := ""
 	if backupErr != nil {
@@ -151,8 +151,8 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, backupFilePath string
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, databaseName string, backup *store.BackupMessage) (string, error) {
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
+func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, database *store.DatabaseMessage, backup *store.BackupMessage) (string, error) {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return "", err
 	}

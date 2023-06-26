@@ -10,9 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/pkg/errors"
 
@@ -84,7 +86,7 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
-func (driver *Driver) Execute(_ context.Context, statement string, _ bool) (int64, error) {
+func (driver *Driver) Execute(_ context.Context, statement string, _ bool, _ db.ExecuteOptions) (int64, error) {
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
 	// There are some ways to execute the statement in mongosh:
@@ -215,6 +217,7 @@ func replaceCharacterWithPercentEncoding(s string) string {
 
 // QueryConn2 queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	startTime := time.Now()
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
 	// 1. Query always short, so it's safe to execute in the command line.
@@ -246,6 +249,8 @@ func (driver *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement str
 		ColumnNames:     field,
 		ColumnTypeNames: types,
 		Rows:            rows,
+		Latency:         durationpb.New(time.Since(startTime)),
+		Statement:       statement,
 	}}, nil
 }
 

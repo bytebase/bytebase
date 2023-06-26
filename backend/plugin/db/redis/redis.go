@@ -16,6 +16,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -141,7 +142,7 @@ func (*Driver) GetDB() *sql.DB {
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
 	if createDatabase {
 		return 0, errors.New("redis: cannot create database")
 	}
@@ -232,6 +233,7 @@ func (*Driver) Restore(context.Context, io.Reader) error {
 
 // QueryConn2 queries a SQL statement in a given connection.
 func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	startTime := time.Now()
 	lines := strings.Split(statement, "\n")
 	for i := range lines {
 		lines[i] = strings.Trim(lines[i], " \n\t\r")
@@ -272,6 +274,8 @@ func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, 
 		ColumnNames:     []string{"result"},
 		ColumnTypeNames: []string{"TEXT"},
 		Rows:            data,
+		Latency:         durationpb.New(time.Since(startTime)),
+		Statement:       statement,
 	}}, nil
 }
 

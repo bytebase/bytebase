@@ -6,24 +6,22 @@
     :show-header="true"
     :row-clickable="false"
   >
-    <template #body="{ rowData: auditLog }: { rowData: AuditLog }">
+    <template #body="{ rowData: auditLog }: { rowData: LogEntity }">
       <BBTableCell :left-padding="4" class="table-cell w-56">
         <div>
-          {{ dayjs.unix(auditLog.createdTs).format("YYYY-MM-DD HH:mm:ss Z") }}
+          {{ dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z") }}
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-24">
         <span
           :class="`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold whitespace-nowrap ${
-            auditLevelColorMap[auditLog.level as AuditActivityLevel]
+            auditLevelColorMap[auditLog.level]
           }`"
-          >{{ auditLog.level }}</span
+          >{{ logEntity_LevelToJSON(auditLog.level) }}</span
         >
       </BBTableCell>
       <BBTableCell class="table-cell w-28 whitespace-nowrap">
-        {{
-          t(AuditActivityTypeI18nNameMap[auditLog.type as AuditActivityType])
-        }}
+        {{ t(AuditActivityTypeI18nNameMap[auditLog.action]) }}
       </BBTableCell>
       <BBTableCell class="table-cell w-20">
         <UserByEmail :email="auditLog.creator" :plain="true" />
@@ -63,31 +61,33 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  AuditLog,
-  AuditActivityTypeI18nNameMap,
-  AuditActivityType,
-  AuditActivityLevel,
-} from "@/types";
+import { AuditActivityTypeI18nNameMap } from "@/types";
 import { UserByEmail } from "../v2";
+import {
+  LogEntity,
+  LogEntity_Level,
+  logEntity_LevelToJSON,
+} from "@/types/proto/v1/logging_service";
 
 defineProps({
   auditLogList: {
-    type: Array as PropType<AuditLog[]>,
+    type: Array as PropType<LogEntity[]>,
     required: true,
   },
 });
 
 defineEmits<{
-  (event: "view-detail", list: AuditLog, e: MouseEvent): void;
+  (event: "view-detail", log: LogEntity, e: MouseEvent): void;
 }>();
 
 const { t } = useI18n();
 
-const auditLevelColorMap: Record<AuditActivityLevel, string> = {
-  [AuditActivityLevel.INFO]: "bg-gray-100 text-gray-800",
-  [AuditActivityLevel.WARN]: "bg-yellow-100 text-yellow-800",
-  [AuditActivityLevel.ERROR]: "bg-red-100 text-red-800",
+const auditLevelColorMap: Record<LogEntity_Level, string> = {
+  [LogEntity_Level.LEVEL_UNSPECIFIED]: "bg-gray-100 text-gray-800",
+  [LogEntity_Level.UNRECOGNIZED]: "bg-gray-100 text-gray-800",
+  [LogEntity_Level.LEVEL_INFO]: "bg-gray-100 text-gray-800",
+  [LogEntity_Level.LEVEL_WARNING]: "bg-yellow-100 text-yellow-800",
+  [LogEntity_Level.LEVEL_ERROR]: "bg-red-100 text-red-800",
 };
 
 const columnList = computed(() => [

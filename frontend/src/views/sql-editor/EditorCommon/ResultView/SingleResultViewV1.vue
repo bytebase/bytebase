@@ -58,7 +58,7 @@
         </NDropdown>
         <NButton
           v-if="showRequestExportButton"
-          @click="handleGotoRequestExportPage"
+          @click="state.showRequestExportPanel = true"
         >
           {{ $t("quick-action.request-export") }}
         </NButton>
@@ -74,6 +74,17 @@
         :sensitive="sensitive"
         :keyword="state.search"
       />
+    </div>
+
+    <div
+      class="w-full flex items-center justify-between text-xs mt-0.5 gap-x-4 text-control-light"
+    >
+      <div class="flex-1 truncate">
+        {{ result.statement }}
+      </div>
+      <div class="shrink-0">
+        {{ $t("sql-editor.query-time") }}: {{ queryTime }}
+      </div>
     </div>
   </template>
   <template v-else-if="viewMode === 'AFFECTED-ROWS'">
@@ -93,6 +104,13 @@
   <template v-else-if="viewMode === 'ERROR'">
     <ErrorView :error="result.error" />
   </template>
+
+  <RequestExportPanel
+    v-if="state.showRequestExportPanel"
+    :database-id="currentTab.connection.databaseId"
+    :statement="currentTab.statement"
+    @close="state.showRequestExportPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -137,11 +155,12 @@ import {
   TabMode,
   UNKNOWN_ID,
 } from "@/types";
-import { useRouter } from "vue-router";
 import { useExportData } from "./useExportData";
+import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 
 type LocalState = {
   search: string;
+  showRequestExportPanel: boolean;
 };
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
 
@@ -159,18 +178,19 @@ const props = defineProps<{
 
 const state = reactive<LocalState>({
   search: "",
+  showRequestExportPanel: false,
 });
 
 const { dark } = useSQLResultViewContext();
 
 const { t } = useI18n();
-const router = useRouter();
 const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 const { isExportingData, exportData } = useExportData();
+const currentTab = computed(() => tabStore.currentTab);
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -195,7 +215,7 @@ const showSearchFeature = computed(() => {
 });
 
 const showExportButton = computed(() => {
-  if (!featureToRef("bb.feature.custom-role").value) {
+  if (!featureToRef("bb.feature.dba-workflow").value) {
     return true;
   }
   return hasWorkspacePermissionV1(
@@ -206,7 +226,7 @@ const showExportButton = computed(() => {
 
 const showRequestExportButton = computed(() => {
   return (
-    featureToRef("bb.feature.custom-role").value && !showExportButton.value
+    featureToRef("bb.feature.dba-workflow").value && !showExportButton.value
   );
 });
 
@@ -344,33 +364,6 @@ const handleChangePage = (page: number) => {
   dataTable.value?.scrollTo(0, 0);
 };
 
-const handleGotoRequestExportPage = () => {
-  const routeInfo = {
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query: {
-      template: "bb.issue.grant.request",
-      role: "EXPORTER",
-      name: "New grant exporter request",
-    },
-  };
-
-  const currentTab = tabStore.currentTab;
-  if (String(currentTab.connection.databaseId) !== String(UNKNOWN_ID)) {
-    const database = databaseStore.getDatabaseByUID(
-      currentTab.connection.databaseId
-    );
-    (routeInfo.query as any).project = database.projectEntity.uid;
-    (routeInfo.query as any).databaseList = database.uid;
-    (routeInfo.query as any).sql =
-      currentTab.selectedStatement || currentTab.statement;
-  }
-
-  router.push(routeInfo);
-};
-
 const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {
   if (!resultSet) return "";
   const lines = resultSet.results[0].rows.map((row) =>
@@ -379,4 +372,17 @@ const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {
   const explain = lines.map((line) => line[0]).join("\n");
   return explain;
 };
+
+const queryTime = computed(() => {
+  const { latency } = props.result;
+  if (!latency) return "-";
+
+  const { seconds, nanos } = latency;
+  const totalSeconds = seconds + nanos / 1e9;
+  if (totalSeconds < 1) {
+    const totalMS = Math.round(totalSeconds * 1000);
+    return `${totalMS} ms`;
+  }
+  return `${totalSeconds.toFixed(2)} s`;
+});
 </script>

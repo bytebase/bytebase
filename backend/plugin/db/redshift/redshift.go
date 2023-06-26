@@ -16,6 +16,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -54,6 +55,7 @@ type Driver struct {
 	// Unregister connectionString if we don't need it.
 	connectionString string
 	databaseName     string
+	datashare        bool
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -80,6 +82,9 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	connConfig.Config.User = config.Username
 	connConfig.Config.Password = config.Password
 	connConfig.Config.Database = config.Database
+	if config.ConnectionDatabase != "" {
+		connConfig.Config.Database = config.ConnectionDatabase
+	}
 	if config.TLSConfig.SslCert != "" {
 		cfg, err := config.TLSConfig.GetSslConfig()
 		if err != nil {
@@ -102,20 +107,14 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 			return &noDeadlineConn{Conn: conn}, nil
 		}
 	}
-	if config.ReadOnly {
+	driver.databaseName = config.Database
+	driver.datashare = config.ConnectionDatabase != ""
+	driver.config = config
+
+	// Datashare doesn't support read-only transactions.
+	if config.ReadOnly && !driver.datashare {
 		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
-
-	driver.databaseName = config.Database
-	if config.Database == "" {
-		databaseName, cfg, err := guessDSN(connConfig, config.Username)
-		if err != nil {
-			return nil, err
-		}
-		connConfig = cfg
-		driver.databaseName = databaseName
-	}
-	driver.config = config
 
 	driver.connectionString = stdlib.RegisterConnConfig(connConfig)
 	db, err := sql.Open(driverName, driver.connectionString)
@@ -131,33 +130,6 @@ type noDeadlineConn struct{ net.Conn }
 func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
 func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
 func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
-
-// guessDSN will guess a valid DB connection and its database name.
-func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.ConnConfig, error) {
-	// Some postgres server default behavior is to use username as the database name if not specified,
-	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
-	guesses := []string{"postgres", username, "template1"}
-	//  dsn+" dbname=bytebase"
-	for _, guessDatabase := range guesses {
-		connConfig := *baseConnConfig
-		connConfig.Database = guessDatabase
-		if err := func() error {
-			connectionString := stdlib.RegisterConnConfig(&connConfig)
-			defer stdlib.UnregisterConnConfig(connectionString)
-			db, err := sql.Open(driverName, connectionString)
-			if err != nil {
-				return err
-			}
-			defer db.Close()
-			return db.Ping()
-		}(); err != nil {
-			log.Debug("guessDSN attempt failed", zap.Error(err))
-			continue
-		}
-		return guessDatabase, &connConfig, nil
-	}
-	return "", nil, errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
-}
 
 // Close closes the database and prevents new queries from starting.
 // Close then waits for all queries that have started processing on the server to finish.
@@ -188,7 +160,10 @@ func (driver *Driver) GetDB() *sql.DB {
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
+	if driver.datashare {
+		return 0, errors.Errorf("datashare database cannot be updated")
+	}
 	if createDatabase {
 		databases, err := driver.getDatabases(ctx)
 		if err != nil {
@@ -291,7 +266,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 
 	// Run non-transaction statements at the end.
 	for _, stmt := range nonTransactionStmts {
-		if _, err := driver.db.Exec(stmt); err != nil {
+		if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 			return 0, err
 		}
 	}
@@ -426,14 +401,27 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := singleSQL.Text
-	statement = strings.TrimRight(statement, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
+	}
+	// Datashare doesn't support read-only transactions.
+	if driver.datashare {
+		queryContext.ReadOnly = false
+		queryContext.ShareDB = true
 	}
 
-	return util.Query2(ctx, db.Postgres, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, db.Redshift, conn, stmt, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.

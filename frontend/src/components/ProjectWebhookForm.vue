@@ -263,7 +263,9 @@
             v-else
             type="submit"
             class="btn-primary ml-3"
-            :disabled="!valueChanged"
+            :disabled="
+              !valueChanged || state.webhook.notificationTypes.length === 0
+            "
             @click.prevent="updateWebhook"
           >
             {{ $t("common.update") }}

@@ -1,7 +1,5 @@
 import { MigrationHistoryId, QueryHistory, OnboardingGuideType } from ".";
-import { Activity } from "./activity";
 import { Backup } from "./backup";
-import { Bookmark } from "./bookmark";
 import { Command } from "./common";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
@@ -11,11 +9,9 @@ import {
   DataSourceId,
   InstanceId,
   IssueId,
-  PrincipalId,
   ProjectId,
   VCSId,
 } from "./id";
-import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
 import { InstanceUser } from "./InstanceUser";
 import { Issue } from "./issue";
@@ -25,29 +21,10 @@ import { Principal } from "./principal";
 import { Project } from "./project";
 import { VCS } from "./vcs";
 import { Label } from "./label";
-import type { AuditLog } from "@/types/auditLog";
 import { DatabaseMetadata } from "./proto/store/database";
-
-export interface AuditLogState {
-  auditLogList: AuditLog[];
-}
 
 export interface PrincipalState {
   principalList: Principal[];
-}
-
-export interface BookmarkState {
-  bookmarkList: Map<PrincipalId, Bookmark[]>;
-}
-
-export interface ActivityState {
-  activityListByUser: Map<PrincipalId, Activity[]>;
-  activityListByIssue: Map<IssueId, Activity[]>;
-}
-
-export interface InboxState {
-  inboxListByUser: Map<PrincipalId, Inbox[]>;
-  inboxSummaryByUser: Map<PrincipalId, InboxSummary>;
 }
 
 export interface IssueState {
@@ -107,9 +84,6 @@ export interface BackupState {
 export interface VCSState {
   vcsById: Map<VCSId, VCS>;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface AnomalyState {}
 
 export interface NotificationState {
   notificationByModule: Map<string, Notification[]>;

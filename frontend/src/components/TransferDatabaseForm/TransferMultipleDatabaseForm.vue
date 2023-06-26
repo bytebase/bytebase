@@ -5,7 +5,9 @@
     >
       <slot name="transfer-source-selector" />
 
+      <!-- Leave some margin space to avoid accidentally clicking the Collaspe when trying to click the selector -->
       <NCollapse
+        class="mt-6"
         arrow-placement="left"
         :default-expanded-names="environmentList.map((env) => env.uid)"
       >
@@ -185,7 +187,7 @@ const gridColumnList = computed((): BBGridColumn[] => {
     width: "8rem",
   };
   const INSTANCE: BBGridColumn = {
-    width: "14rem",
+    width: "20rem",
   };
   return showProjectColumn.value
     ? [DB_NAME, PROJECT, INSTANCE]

@@ -3,6 +3,8 @@ package parser
 import (
 	"testing"
 
+	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/mysql-parser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -11,6 +13,13 @@ func TestMySQLParser(t *testing.T) {
 		statement    string
 		errorMessage string
 	}{
+		{
+			statement:    "aaa",
+			errorMessage: "line 1:0 extraneous input 'aaa' expecting {<EOF>, ALTER_SYMBOL, ANALYZE_SYMBOL, BEGIN_SYMBOL, BINLOG_SYMBOL, CACHE_SYMBOL, CALL_SYMBOL, CHANGE_SYMBOL, CHECKSUM_SYMBOL, CHECK_SYMBOL, COMMIT_SYMBOL, CREATE_SYMBOL, DEALLOCATE_SYMBOL, DELETE_SYMBOL, DESC_SYMBOL, DESCRIBE_SYMBOL, DO_SYMBOL, DROP_SYMBOL, EXECUTE_SYMBOL, EXPLAIN_SYMBOL, FLUSH_SYMBOL, FOR_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HANDLER_SYMBOL, HELP_SYMBOL, IMPORT_SYMBOL, INSERT_SYMBOL, INSTALL_SYMBOL, KILL_SYMBOL, LOAD_SYMBOL, LOCK_SYMBOL, OPTIMIZE_SYMBOL, PREPARE_SYMBOL, PURGE_SYMBOL, RELEASE_SYMBOL, RENAME_SYMBOL, REPAIR_SYMBOL, REPLACE_SYMBOL, RESET_SYMBOL, RESIGNAL_SYMBOL, REVOKE_SYMBOL, ROLLBACK_SYMBOL, SAVEPOINT_SYMBOL, SELECT_SYMBOL, SET_SYMBOL, SHOW_SYMBOL, SHUTDOWN_SYMBOL, SIGNAL_SYMBOL, START_SYMBOL, STOP_SYMBOL, TABLE_SYMBOL, TRUNCATE_SYMBOL, UNINSTALL_SYMBOL, UNLOCK_SYMBOL, UPDATE_SYMBOL, USE_SYMBOL, VALUES_SYMBOL, WITH_SYMBOL, XA_SYMBOL, CLONE_SYMBOL, RESTART_SYMBOL, ';', '('}",
+		},
+		{
+			statement: "select * from t;\n -- comments",
+		},
 		{
 			statement: "SELECT count(t.a) as TID from t1 as t;",
 		},
@@ -66,7 +75,7 @@ func TestMySQLParser(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		_, _, err := ParseMySQL(test.statement)
+		_, err := ParseMySQL(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err, i)
 		} else {
@@ -103,9 +112,9 @@ func TestMySQLValidateForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tree, _, err := ParseMySQL(test.statement)
+		trees, err := ParseMySQL(test.statement)
 		require.NoError(t, err)
-		err = MySQLValidateForEditor(tree)
+		err = MySQLValidateForEditor(trees[0].Tree)
 		if test.validate {
 			require.NoError(t, err)
 		} else {
@@ -164,5 +173,57 @@ func TestExtractMySQLResourceList(t *testing.T) {
 		resources, err := extractMySQLResourceList("db", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
+	}
+}
+
+func TestSplitMySQLStatements(t *testing.T) {
+	tests := []struct {
+		statement string
+		expected  []string
+	}{
+		{
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+			expected: []string{
+				"SELECT * FROM t1 WHERE c1 = 1;",
+				" SELECT * FROM t2;",
+			},
+		},
+		{
+			statement: `CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+			  SELECT name INTO name FROM users WHERE id = id;
+			END; SELECT * FROM t2;`,
+			expected: []string{
+				`CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+			  SELECT name INTO name FROM users WHERE id = id;
+			END;`,
+				" SELECT * FROM t2;",
+			},
+		},
+		{
+			statement: `CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+				SELECT IF(id = 1, 'one', 'other') INTO name FROM users;
+			END; SELECT REPEAT('123', a) FROM t2;`,
+			expected: []string{
+				`CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+				SELECT IF(id = 1, 'one', 'other') INTO name FROM users;
+			END;`,
+				" SELECT REPEAT('123', a) FROM t2;",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		lexer := parser.NewMySQLLexer(antlr.NewInputStream(test.statement))
+		stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+		list, err := splitMySQLStatement(stream)
+		require.NoError(t, err)
+		require.Equal(t, len(test.expected), len(list))
+		for i, statement := range list {
+			require.Equal(t, test.expected[i], statement.Text)
+		}
 	}
 }

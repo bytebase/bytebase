@@ -11,7 +11,7 @@
         <ul>
           <ActivityItem
             v-for="(item, index) in activityList"
-            :key="item.activity.id"
+            :key="item.activity.name"
             :activity-list="activityList"
             :issue="issue"
             :index="index"
@@ -23,7 +23,7 @@
                 <template
                   v-if="
                     state.editCommentMode &&
-                    state.activeActivity?.id === item.activity.id
+                    state.activeActivity?.name === item.activity.name
                   "
                 >
                   <button
@@ -59,7 +59,7 @@
               <div
                 v-if="
                   state.editCommentMode &&
-                  state.activeActivity?.id === item.activity.id
+                  state.activeActivity?.name === item.activity.name
                 "
                 class="mt-2 text-sm text-control whitespace-pre-wrap"
               >
@@ -155,17 +155,16 @@ import { useRoute } from "vue-router";
 import UserAvatar from "../User/UserAvatar.vue";
 import type {
   Issue,
-  Activity,
   ActivityIssueFieldUpdatePayload,
-  ActivityCreate,
   IssueSubscriber,
   ActivityIssueCommentCreatePayload,
 } from "@/types";
-import { extractUserUID, sizeToFit } from "@/utils";
+import { extractUserResourceName, sizeToFit } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import {
   useIssueSubscriberStore,
-  useActivityStore,
+  useReviewV1Store,
+  useActivityV1Store,
   useCurrentUserV1,
   useCurrentUser,
 } from "@/store";
@@ -177,13 +176,16 @@ import {
   Comment as ActivityComment,
   isSimilarActivity,
 } from "./activity";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { getLogId } from "@/store/modules/v1/common";
 
 interface LocalState {
   editCommentMode: boolean;
-  activeActivity?: Activity;
+  activeActivity?: LogEntity;
 }
 
-const activityStore = useActivityStore();
+const reviewV1Store = useReviewV1Store();
+const activityV1Store = useActivityV1Store();
 const route = useRoute();
 
 const newComment = ref("");
@@ -224,24 +226,24 @@ const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 
 const prepareActivityList = () => {
-  activityStore.fetchActivityListForIssue(issue.value);
+  activityV1Store.fetchActivityListForIssue(issue.value);
 };
 
 watchEffect(prepareActivityList);
 
 // Need to use computed to make list reactive to activity list changes.
 const activityList = computed((): DistinctActivity[] => {
-  const list = activityStore
+  const list = activityV1Store
     .getActivityListByIssue(issue.value.id)
-    .filter((activity: Activity) => {
-      if (activity.type === "bb.issue.approval.notify") {
+    .filter((activity) => {
+      if (activity.action === LogEntity_Action.ACTION_ISSUE_APPROVAL_NOTIFY) {
         return false;
       }
 
-      if (activity.type === "bb.issue.field.update") {
+      if (activity.action === LogEntity_Action.ACTION_ISSUE_FIELD_UPDATE) {
         const containUserVisibleChange =
-          (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !==
-          IssueBuiltinFieldId.SUBSCRIBER_LIST;
+          (JSON.parse(activity.payload) as ActivityIssueFieldUpdatePayload)
+            .fieldId !== IssueBuiltinFieldId.SUBSCRIBER_LIST;
         return containUserVisibleChange;
       }
       return true;
@@ -277,49 +279,49 @@ const cancelEditComment = () => {
 };
 
 const doCreateComment = (comment: string, clear = true) => {
-  const createActivity: ActivityCreate = {
-    type: "bb.issue.comment.create",
-    containerId: issue.value.id,
-    comment,
-  };
-  activityStore.createActivity(createActivity).then(() => {
-    if (clear) {
-      newComment.value = "";
-      nextTick(() => sizeToFit(newCommentTextArea.value));
-    }
-
-    // Because the user just added a comment and we assume she is interested in this
-    // issue, and we add her to the subscriber list if she is not there
-    let isSubscribed = false;
-    for (const subscriber of subscriberList.value) {
-      if (subscriber.subscriber.id == currentUser.value.id) {
-        isSubscribed = true;
-        break;
+  reviewV1Store
+    .createReviewComment({
+      reviewId: issue.value.id,
+      comment,
+    })
+    .then(() => {
+      if (clear) {
+        newComment.value = "";
+        nextTick(() => sizeToFit(newCommentTextArea.value));
       }
-    }
-    if (!isSubscribed) {
-      addSubscriberId(currentUser.value.id);
-    }
-  });
+
+      // Because the user just added a comment and we assume she is interested in this
+      // issue, and we add her to the subscriber list if she is not there
+      let isSubscribed = false;
+      for (const subscriber of subscriberList.value) {
+        if (subscriber.subscriber.id == currentUser.value.id) {
+          isSubscribed = true;
+          break;
+        }
+      }
+      if (!isSubscribed) {
+        addSubscriberId(currentUser.value.id);
+      }
+    });
 };
 
-const allowEditActivity = (activity: Activity) => {
-  if (activity.type !== "bb.issue.comment.create") {
+const allowEditActivity = (activity: LogEntity) => {
+  if (activity.action !== LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE) {
     return false;
   }
-  if (
-    extractUserUID(currentUserV1.value.name) !== String(activity.creator.id)
-  ) {
+  if (currentUserV1.value.email !== extractUserResourceName(activity.creator)) {
     return false;
   }
-  const payload = activity.payload as ActivityIssueCommentCreatePayload;
+  const payload = JSON.parse(
+    activity.payload
+  ) as ActivityIssueCommentCreatePayload;
   if (payload && payload.externalApprovalEvent) {
     return false;
   }
   return true;
 };
 
-const onUpdateComment = (activity: Activity) => {
+const onUpdateComment = (activity: LogEntity) => {
   editComment.value = activity.comment;
   state.activeActivity = activity;
   state.editCommentMode = true;
@@ -329,10 +331,15 @@ const onUpdateComment = (activity: Activity) => {
 };
 
 const doUpdateComment = () => {
-  activityStore
-    .updateComment({
-      activityId: state.activeActivity!.id,
-      updatedComment: editComment.value,
+  if (!state.activeActivity) {
+    return;
+  }
+  const activityId = getLogId(state.activeActivity.name);
+  reviewV1Store
+    .updateReviewComment({
+      commentId: `${activityId}`,
+      reviewId: issue.value.id,
+      comment: editComment.value,
     })
     .then(() => {
       cancelEditComment();

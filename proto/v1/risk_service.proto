@@ -4,7 +4,6 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/client.proto";
-import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
@@ -96,12 +95,13 @@ message Risk {
     DDL = 1;
     DML = 2;
     CREATE_DATABASE = 3;
+    QUERY = 4;
+    EXPORT = 5;
   }
   Source source = 3;
 
   string title = 4;
   int64 level = 5;
-  google.api.expr.v1alpha1.ParsedExpr expression = 6;
   bool active = 7;
   google.type.Expr condition = 8;
 }

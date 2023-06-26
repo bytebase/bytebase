@@ -21,22 +21,29 @@
         class="bb-grid-cell text-blue-600 hover:underline"
         @click="gotoIssuePage(item)"
       >
-        #{{ item.issueId }}
+        {{ `#${item.issueId}` }}
       </div>
       <div class="bb-grid-cell">
         {{ item.database.databaseName }}
       </div>
       <div class="bb-grid-cell">
-        {{ item.database.instanceEntity.environmentEntity.title }}
+        <EnvironmentV1Name
+          :environment="item.database.instanceEntity.environmentEntity"
+        />
       </div>
       <div class="bb-grid-cell">
-        {{ item.database.instanceEntity.title }}
+        <InstanceV1Name :instance="item.database.instanceEntity" />
       </div>
       <div class="bb-grid-cell">
-        {{ item.database.projectEntity.title }}
+        <ProjectV1Name :project="item.database.projectEntity" />
       </div>
       <div class="bb-grid-cell">
-        {{ item.expiration ? humanizeDate(new Date(item.expiration)) : "*" }}
+        {{ item.maxRowCount }}
+      </div>
+      <div class="bb-grid-cell">
+        {{
+          item.expiration ? dayjs(new Date(item.expiration)).format("LLL") : "*"
+        }}
       </div>
       <div class="bb-grid-cell">
         <ExportDataButton :export-record="item" />
@@ -54,6 +61,7 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { computed, shallowRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { ExportRecord } from "./types";
@@ -78,7 +86,7 @@ const selectedExportRecord = shallowRef<ExportRecord>();
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     { title: "", width: "4rem" },
-    { title: "Issue", width: "1fr" },
+    { title: t("common.issue"), width: "5rem" },
     {
       title: t("common.database"),
       width: "1fr",
@@ -96,10 +104,14 @@ const COLUMN_LIST = computed(() => {
       width: "1fr",
     },
     {
+      title: t("issue.grant-request.export-rows"),
+      width: "1fr",
+    },
+    {
       title: t("common.expiration"),
       width: "1fr",
     },
-    { title: "", width: "1fr" },
+    { title: "", width: "6rem" },
   ];
 
   return columns;

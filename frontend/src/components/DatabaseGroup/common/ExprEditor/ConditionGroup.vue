@@ -127,10 +127,9 @@ import {
   type ConditionExpr,
   type ConditionGroupExpr,
   type LogicalOperator,
-  StringOperatorList,
-  LogicalOperatorList,
   isConditionGroupExpr,
   isConditionExpr,
+  getOperatorListByFactor,
 } from "@/plugins/cel";
 import { useExprEditorContext } from "./context";
 import { StringFactorList } from "./factor";
@@ -171,16 +170,18 @@ const OPERATORS: SelectOption[] = [
 ];
 
 const addCondition = () => {
+  const factor = StringFactorList[0];
+  const operators = getOperatorListByFactor(factor);
   args.value.push({
-    operator: StringOperatorList[0],
-    args: [StringFactorList[0], ""],
+    operator: operators[0] as any,
+    args: [factor, ""],
   });
   emit("update");
 };
 
 const addConditionGroup = () => {
   args.value.push({
-    operator: LogicalOperatorList[0],
+    operator: "_&&_",
     args: [],
   });
   emit("update");

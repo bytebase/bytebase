@@ -118,14 +118,14 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			return status.Errorf(codes.Internal, "failed to receive request: %v", err)
 		}
 
-		instance, activity, err := s.preAdminExecute(ctx, request)
+		instance, database, activity, err := s.preAdminExecute(ctx, request)
 		if err != nil {
 			return err
 		}
 
 		// We only need to get the driver and connection once.
 		if driver == nil {
-			driver, err = s.dbFactory.GetAdminDatabaseDriver(ctx, instance, request.ConnectionDatabase)
+			driver, err = s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 			}
@@ -142,22 +142,35 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
 
 		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
-			return err
+			log.Error("failed to post admin execute activity", zap.Error(err))
 		}
 
+		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
-			return status.Errorf(codes.Internal, "failed to execute statement: %v", queryErr)
+			response.Results = []*v1pb.QueryResult{
+				{
+					Error: err.Error(),
+				},
+			}
+		} else {
+			response.Results = result
 		}
 
-		if err := server.Send(&v1pb.AdminExecuteResponse{
-			Results: result,
-		}); err != nil {
+		if proto.Size(response) > maximumSQLResultSize {
+			response.Results = []*v1pb.QueryResult{
+				{
+					Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
+				},
+			}
+		}
+
+		if err := server.Send(response); err != nil {
 			return status.Errorf(codes.Internal, "failed to send response: %v", err)
 		}
 	}
 }
 
-func (s *SQLService) postAdminExecute(ctx context.Context, activity *api.Activity, durationNs int64, queryErr error) error {
+func (s *SQLService) postAdminExecute(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	var payload api.ActivitySQLEditorQueryPayload
 	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal activity payload: %v", err)
@@ -184,11 +197,11 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *api.Activit
 	}
 
 	payloadString := string(payloadBytes)
-	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
-		ID:        activity.ID,
-		UpdaterID: activity.CreatorID,
-		Level:     newLevel,
-		Payload:   &payloadString,
+	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
+		UID:        activity.UID,
+		UpdaterUID: activity.CreatorUID,
+		Level:      newLevel,
+		Payload:    &payloadString,
 	}); err != nil {
 		return status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
 	}
@@ -202,10 +215,10 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 	return result, time.Now().UnixNano() - start, err
 }
 
-func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExecuteRequest) (*store.InstanceMessage, *api.Activity, error) {
+func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExecuteRequest) (*store.InstanceMessage, *store.DatabaseMessage, *store.ActivityMessage, error) {
 	user, _, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLEditorQueryPayload{
@@ -215,18 +228,21 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 		DatabaseID:             database.UID,
 		DatabaseName:           request.ConnectionDatabase,
 	})
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
-	return instance, activity, err
+	return instance, database, activity, nil
 }
 
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
-	instanceMessage, sensitiveSchemaInfo, activity, err := s.preExport(ctx, request)
+	instance, database, sensitiveSchemaInfo, activity, err := s.preExport(ctx, request)
 	if err != nil {
 		return nil, err
 	}
 
-	bytes, durationNs, exportErr := s.doExport(ctx, request, instanceMessage, sensitiveSchemaInfo)
+	bytes, durationNs, exportErr := s.doExport(ctx, request, instance, database, sensitiveSchemaInfo)
 
 	if err := s.postExport(ctx, activity, durationNs, exportErr); err != nil {
 		return nil, err
@@ -241,7 +257,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}, nil
 }
 
-func (s *SQLService) postExport(ctx context.Context, activity *api.Activity, durationNs int64, queryErr error) error {
+func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	// Update the activity
 	var payload api.ActivitySQLExportPayload
 	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
@@ -269,11 +285,11 @@ func (s *SQLService) postExport(ctx context.Context, activity *api.Activity, dur
 	}
 
 	payloadString := string(payloadBytes)
-	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
-		ID:        activity.ID,
-		UpdaterID: activity.CreatorID,
-		Level:     newLevel,
-		Payload:   &payloadString,
+	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
+		UID:        activity.UID,
+		UpdaterUID: activity.CreatorUID,
+		Level:      newLevel,
+		Payload:    &payloadString,
 	}); err != nil {
 		return status.Errorf(codes.Internal, "Failed to update activity after exporting sql statement: %v", err)
 	}
@@ -281,8 +297,8 @@ func (s *SQLService) postExport(ctx context.Context, activity *api.Activity, dur
 	return nil
 }
 
-func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]byte, int64, error) {
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, request.ConnectionDatabase)
+func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]byte, int64, error) {
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -445,20 +461,20 @@ func (*SQLService) exportJSON(result *v1pb.QueryResult) ([]byte, error) {
 	return protojson.Marshal(result)
 }
 
-func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest) (*store.InstanceMessage, *db.SensitiveSchemaInfo, *api.Activity, error) {
+func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest) (*store.InstanceMessage, *store.DatabaseMessage, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Validate the request.
 	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
-		return nil, nil, nil, err
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
+		return nil, nil, nil, nil, err
 	}
 
 	// Get sensitive schema info.
@@ -467,17 +483,22 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement)
 		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
 		}
 
 		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
 		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	case db.Postgres:
 		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+		}
+	case db.Oracle:
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	}
 
@@ -489,11 +510,14 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		DatabaseID:   database.UID,
 		DatabaseName: request.ConnectionDatabase,
 	})
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 
-	return instance, sensitiveSchemaInfo, activity, err
+	return instance, database, sensitiveSchemaInfo, activity, nil
 }
 
-func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLExportPayload) (*api.Activity, error) {
+func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLExportPayload) (*store.ActivityMessage, error) {
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -505,17 +529,17 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   user.ID,
-		Type:        api.ActivitySQLExport,
-		ContainerID: containerID,
-		Level:       level,
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   user.ID,
+		Type:         api.ActivitySQLExport,
+		ContainerUID: containerID,
+		Level:        level,
 		Comment: fmt.Sprintf("Export `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),
 	}
 
-	activity, err := s.store.CreateActivity(ctx, activityCreate)
+	activity, err := s.store.CreateActivityV2(ctx, activityCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create activity: %v", err)
 	}
@@ -528,7 +552,7 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 //  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
-	instanceMessage, adviceStatus, adviceList, sensitiveSchemaInfo, activity, err := s.preQuery(ctx, request)
+	instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, activity, err := s.preQuery(ctx, request)
 	if err != nil {
 		return nil, err
 	}
@@ -537,10 +561,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	var queryErr error
 	var durationNs int64
 	if adviceStatus != advisor.Error {
-		results, durationNs, queryErr = s.doQuery(ctx, request, instanceMessage, sensitiveSchemaInfo)
+		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database, sensitiveSchemaInfo)
 	}
 
-	adviceList, err = s.postQuery(ctx, request, adviceStatus, adviceList, instanceMessage, activity, durationNs, queryErr)
+	adviceList, err = s.postQuery(ctx, request, adviceStatus, adviceList, instance, activity, durationNs, queryErr)
 	if err != nil {
 		return nil, err
 	}
@@ -569,7 +593,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 // postQuery does the following:
 //  1. Check index hit Explain statements
 //  2. Update SQL query activity
-func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, adviceStatus advisor.Status, adviceList []*v1pb.Advice, _ *store.InstanceMessage, activity *api.Activity, durationNs int64, queryErr error) ([]*v1pb.Advice, error) {
+func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, adviceStatus advisor.Status, adviceList []*v1pb.Advice, _ *store.InstanceMessage, activity *store.ActivityMessage, durationNs int64, queryErr error) ([]*v1pb.Advice, error) {
 	indexHitAdvices, err := s.checkIndexHit()
 	if err != nil {
 		return nil, err
@@ -612,11 +636,11 @@ func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, advice
 	}
 
 	payloadString := string(payloadBytes)
-	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
-		ID:        activity.ID,
-		UpdaterID: activity.CreatorID,
-		Level:     &newLevel,
-		Payload:   &payloadString,
+	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
+		UID:        activity.UID,
+		UpdaterUID: activity.CreatorUID,
+		Level:      &newLevel,
+		Payload:    &payloadString,
 	}); err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
 	}
@@ -629,8 +653,8 @@ func (*SQLService) checkIndexHit() ([]*v1pb.Advice, error) {
 	return nil, nil
 }
 
-func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, request.ConnectionDatabase)
+func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -667,27 +691,27 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 //  3. Run SQL review.
 //  4. Get sensitive schema info.
 //  5. Create query activity.
-func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.InstanceMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *api.Activity, error) {
+func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
-		return nil, advisor.Success, nil, nil, nil, err
+		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
 	// Validate the request.
 	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
-		return nil, advisor.Success, nil, nil, nil, err
+		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
 	// Check if the user has permission to execute the query.
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
-		return nil, advisor.Success, nil, nil, nil, err
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
 	// Run SQL review.
 	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, request, environment, instance, database)
 	if err != nil {
-		return nil, adviceStatus, adviceList, nil, nil, err
+		return nil, nil, adviceStatus, adviceList, nil, nil, err
 	}
 
 	// Get sensitive schema info.
@@ -697,17 +721,22 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement)
 			if err != nil {
-				return nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
 			}
 
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
 			if err != nil {
-				return nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 			}
-		case db.Postgres:
+		case db.Postgres, db.Redshift:
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 			if err != nil {
-				return nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+			}
+		case db.Oracle:
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 			}
 		}
 	}
@@ -730,11 +759,14 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		// This should fix when we migrate to v1 activity API
 		// AdviceList:             adviceList,
 	})
+	if err != nil {
+		return nil, nil, advisor.Success, nil, nil, nil, err
+	}
 
-	return instance, adviceStatus, adviceList, sensitiveSchemaInfo, activity, err
+	return instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, activity, nil
 }
 
-func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) (*api.Activity, error) {
+func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) (*store.ActivityMessage, error) {
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -746,17 +778,17 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   user.ID,
-		Type:        api.ActivitySQLEditorQuery,
-		ContainerID: containerID,
-		Level:       level,
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   user.ID,
+		Type:         api.ActivitySQLEditorQuery,
+		ContainerUID: containerID,
+		Level:        level,
 		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),
 	}
 
-	activity, err := s.store.CreateActivity(ctx, activityCreate)
+	activity, err := s.store.CreateActivityV2(ctx, activityCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create activity: %v", err)
 	}
@@ -813,6 +845,38 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
 		}
 
+		if instance.Engine == db.Oracle {
+			for _, schema := range dbSchema.Metadata.Schemas {
+				databaseSchema := db.DatabaseSchema{
+					Name:      schema.Name,
+					TableList: []db.TableSchema{},
+				}
+				for _, table := range schema.Tables {
+					tableSchema := db.TableSchema{
+						Name:       table.Name,
+						ColumnList: []db.ColumnInfo{},
+					}
+					for _, column := range table.Columns {
+						_, sensitive := columnMap[api.SensitiveData{
+							Schema: schema.Name,
+							Table:  table.Name,
+							Column: column.Name,
+						}]
+						tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
+							Name:      column.Name,
+							Sensitive: sensitive,
+						})
+					}
+					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+				}
+				if len(databaseSchema.TableList) > 0 {
+					isEmpty = false
+				}
+				result.DatabaseList = append(result.DatabaseList, databaseSchema)
+			}
+			continue
+		}
+
 		databaseSchema := db.DatabaseSchema{
 			Name:      databaseName,
 			TableList: []db.TableSchema{},
@@ -823,7 +887,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					Name:       table.Name,
 					ColumnList: []db.ColumnInfo{},
 				}
-				if instance.Engine == db.Postgres {
+				if instance.Engine == db.Postgres || instance.Engine == db.Redshift {
 					tableSchema.Name = fmt.Sprintf("%s.%s", schema.Name, table.Name)
 				}
 				for _, column := range table.Columns {
@@ -914,7 +978,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
 
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, request.ConnectionDatabase)
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
 	}
@@ -1071,12 +1135,15 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			}
 		}
 	case db.MySQL:
-		tree, _, err := parser.ParseMySQL(statement)
+		trees, err := parser.ParseMySQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
-		if err := parser.MySQLValidateForEditor(tree); err != nil {
-			return status.Errorf(codes.InvalidArgument, err.Error())
+		for _, item := range trees {
+			tree := item.Tree
+			if err := parser.MySQLValidateForEditor(tree); err != nil {
+				return status.Errorf(codes.InvalidArgument, err.Error())
+			}
 		}
 	case db.TiDB:
 		stmtList, err := parser.ParseTiDB(statement, "", "")
@@ -1146,7 +1213,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		}
 
 		return result, nil
-	case parser.Postgres:
+	case parser.Postgres, parser.Redshift:
 		list, err := parser.ExtractResourceList(engine, databaseName, "public", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
@@ -1235,6 +1302,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 func (s *SQLService) checkQueryRights(
 	ctx context.Context,
 	databaseName string,
+	datashare bool,
 	statement string,
 	limit int32,
 	user *store.UserMessage,
@@ -1247,7 +1315,12 @@ func (s *SQLService) checkQueryRights(
 		return nil
 	}
 
-	resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), databaseName, statement, instance)
+	// TODO(d): use a Redshift extraction for shared database.
+	extractingStatement := statement
+	if datashare {
+		extractingStatement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", databaseName), "")
+	}
+	resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), databaseName, extractingStatement, instance)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 	}
@@ -1265,6 +1338,14 @@ func (s *SQLService) checkQueryRights(
 		if err != nil {
 			return err
 		}
+		if projectMessage == nil && databaseMessage == nil {
+			// If database not found, skip.
+			continue
+		}
+		if projectMessage == nil {
+			// Never happen
+			return status.Errorf(codes.Internal, "project not found for database: %s", databaseMessage.DatabaseName)
+		}
 		if project == nil {
 			project = projectMessage
 		}
@@ -1274,8 +1355,16 @@ func (s *SQLService) checkQueryRights(
 		databaseMessageMap[database] = databaseMessage
 	}
 
+	if len(databaseMessageMap) == 0 && project == nil {
+		project, _, err = s.getProjectAndDatabaseMessage(ctx, instance, databaseName)
+		if err != nil {
+			return err
+		}
+	}
+
 	if project == nil {
-		return status.Error(codes.NotFound, "project not found")
+		// Never happen
+		return status.Error(codes.Internal, "project not found")
 	}
 
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
@@ -1324,12 +1413,12 @@ func (s *SQLService) checkQueryRights(
 			return err
 		}
 		// Post project IAM policy update activity.
-		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: project.UID,
-			Type:        api.ActivityProjectMemberCreate,
-			Level:       api.ActivityInfo,
-			Comment:     fmt.Sprintf("Granted %s to %s (%s).", user.Name, user.Email, api.Role(common.ProjectExporter)),
+		if _, err := s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: project.UID,
+			Type:         api.ActivityProjectMemberCreate,
+			Level:        api.ActivityInfo,
+			Comment:      fmt.Sprintf("Granted %s to %s (%s).", user.Name, user.Email, api.Role(common.ProjectExporter)),
 		}, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))
 		}
@@ -1524,6 +1613,8 @@ func convertToParserEngine(engine db.Type) parser.EngineType {
 	switch engine {
 	case db.Postgres:
 		return parser.Postgres
+	case db.Redshift:
+		return parser.Redshift
 	case db.MySQL:
 		return parser.MySQL
 	case db.TiDB:
@@ -1542,14 +1633,15 @@ func convertToParserEngine(engine db.Type) parser.EngineType {
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
-	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB || dbType == db.Oracle {
+	switch dbType {
+	case db.Postgres, db.MySQL, db.TiDB, db.MariaDB, db.Oracle, db.OceanBase, db.Snowflake:
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false
 		}
 
 		return advisor.IsSQLReviewSupported(advisorDB)
+	default:
+		return false
 	}
-
-	return false
 }

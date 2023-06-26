@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -65,6 +64,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingWorkspaceApproval,
 	api.SettingWorkspaceMailDelivery,
 	api.SettingWorkspaceProfile,
+	api.SettingWorkspaceExternalApproval,
 }
 
 var (
@@ -167,29 +167,15 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceApproval:
-		if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
-			return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
-		}
-
-		e, err := cel.NewEnv(common.ApprovalFactors...)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create cel env: %v", err)
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 
 		payload := &storepb.WorkspaceApprovalSetting{}
 		for _, rule := range request.Setting.Value.GetWorkspaceApprovalSettingValue().Rules {
-			if rule.Expression != nil && rule.Expression.Expr != nil {
-				ast := cel.ParsedExprToAst(rule.Expression)
-				_, issues := e.Check(ast)
-				if issues != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid cel expression: %v, issues: %v", rule.Expression.String(), issues.Err())
-				}
-				// Make sure condition is always set till frontend is migrated.
-				ex, err := common.ConvertParsedApproval(rule.Expression)
-				if err != nil {
-					return nil, err
-				}
-				rule.Condition = ex
+			// Validate the condition.
+			if _, err := common.ConvertUnparsedApproval(rule.Condition); err != nil {
+				return nil, err
 			}
 			if err := validateApprovalTemplate(rule.Template); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid approval template: %v, err: %v", rule.Template, err)
@@ -220,7 +206,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 				return nil, status.Errorf(codes.Internal, "failed to unmarshal approval flow with error: %v", err)
 			}
 			payload.Rules = append(payload.Rules, &storepb.WorkspaceApprovalSetting_Rule{
-				Expression: rule.Expression,
+				Condition: rule.Condition,
 				Template: &storepb.ApprovalTemplate{
 					Flow:        flow,
 					Title:       rule.Template.Title,
@@ -285,12 +271,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		bytes, err := protojson.Marshal(storeMailDeliveryValue)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting value for %s with error: %v", err, apiSettingName)
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingBrandingLogo:
-		if !s.licenseService.IsFeatureEnabled(api.FeatureBranding) {
-			return nil, status.Errorf(codes.PermissionDenied, api.FeatureBranding.AccessErrorMessage())
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureBranding); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	case api.SettingPluginAgent:
@@ -323,8 +309,8 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unknown IM Type %s", payload.IMType))
 		}
 		if payload.ExternalApproval.Enabled {
-			if !s.licenseService.IsFeatureEnabled(api.FeatureIMApproval) {
-				return nil, status.Errorf(codes.PermissionDenied, api.FeatureIMApproval.AccessErrorMessage())
+			if err := s.licenseService.IsFeatureEnabled(api.FeatureIMApproval); err != nil {
+				return nil, status.Errorf(codes.PermissionDenied, err.Error())
 			}
 
 			if payload.AppID == "" || payload.AppSecret == "" {
@@ -359,6 +345,55 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal approval setting: %v", err)
 		}
 		storeSettingValue = string(s)
+	case api.SettingWorkspaceExternalApproval:
+		oldSetting, err := s.store.GetWorkspaceExternalApprovalSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get workspace external approval setting: %v", err)
+		}
+
+		externalApprovalSetting := request.Setting.Value.GetExternalApprovalSettingValue()
+		if externalApprovalSetting == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting external approval setting")
+		}
+		storeValue := convertExternalApprovalSetting(externalApprovalSetting)
+
+		newNode := make(map[string]*storepb.ExternalApprovalSetting_Node)
+		for _, node := range storeValue.Nodes {
+			newNode[node.Id] = node
+		}
+		removed := make(map[string]bool)
+		for _, node := range oldSetting.Nodes {
+			if _, ok := newNode[node.Id]; !ok {
+				removed[node.Id] = true
+			}
+		}
+		if len(removed) > 0 {
+			externalApprovalType := api.ExternalApprovalTypeRelay
+			approvals, err := s.store.ListExternalApprovalV2(
+				ctx,
+				&store.ListExternalApprovalMessage{
+					Type: &externalApprovalType,
+				},
+			)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to list external approvals: %v", err)
+			}
+			for _, approval := range approvals {
+				payload := &api.ExternalApprovalPayloadRelay{}
+				if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to unmarshal external approval payload: %v", err)
+				}
+				if removed[payload.ExternalApprovalNodeID] {
+					return nil, status.Errorf(codes.InvalidArgument, "cannot remove %s because it is used by the external approval node in issue %d", payload.ExternalApprovalNodeID, approval.IssueUID)
+				}
+			}
+		}
+
+		bytes, err := protojson.Marshal(storeValue)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
+		}
+		storeSettingValue = string(bytes)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -482,9 +517,8 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				template.Creator = fmt.Sprintf("%s%s", userNamePrefix, creator.Email)
 			}
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
-				Expression: rule.Expression,
-				Condition:  rule.Condition,
-				Template:   template,
+				Condition: rule.Condition,
+				Template:  template,
 			})
 		}
 		return &v1pb.Setting{
@@ -492,6 +526,20 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
 					WorkspaceApprovalSettingValue: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingWorkspaceExternalApproval:
+		storeValue := new(storepb.ExternalApprovalSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting values for %s with error: %v", setting.Name, err)
+		}
+		v1Value := convertToExternalApprovalSetting(storeValue)
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_ExternalApprovalSettingValue{
+					ExternalApprovalSettingValue: v1Value,
 				},
 			},
 		}, nil
@@ -702,6 +750,50 @@ func convertToSMTPEncryptionType(encryptionType storepb.SMTPMailDeliverySetting_
 		return v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_SSL_TLS
 	}
 	return v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_UNSPECIFIED
+}
+
+func convertToExternalApprovalSetting(s *storepb.ExternalApprovalSetting) *v1pb.ExternalApprovalSetting {
+	return &v1pb.ExternalApprovalSetting{
+		Nodes: convertToExternalApprovalSettingNodes(s.Nodes),
+	}
+}
+
+func convertToExternalApprovalSettingNodes(nodes []*storepb.ExternalApprovalSetting_Node) []*v1pb.ExternalApprovalSetting_Node {
+	v1Nodes := make([]*v1pb.ExternalApprovalSetting_Node, len(nodes))
+	for i := range nodes {
+		v1Nodes[i] = convertToExternalApprovalSettingNode(nodes[i])
+	}
+	return v1Nodes
+}
+
+func convertToExternalApprovalSettingNode(o *storepb.ExternalApprovalSetting_Node) *v1pb.ExternalApprovalSetting_Node {
+	return &v1pb.ExternalApprovalSetting_Node{
+		Id:       o.Id,
+		Title:    o.Title,
+		Endpoint: o.Endpoint,
+	}
+}
+
+func convertExternalApprovalSetting(s *v1pb.ExternalApprovalSetting) *storepb.ExternalApprovalSetting {
+	return &storepb.ExternalApprovalSetting{
+		Nodes: convertExternalApprovalSettingNodes(s.Nodes),
+	}
+}
+
+func convertExternalApprovalSettingNodes(nodes []*v1pb.ExternalApprovalSetting_Node) []*storepb.ExternalApprovalSetting_Node {
+	storeNodes := make([]*storepb.ExternalApprovalSetting_Node, len(nodes))
+	for i := range nodes {
+		storeNodes[i] = convertExternalApprovalSettingNode(nodes[i])
+	}
+	return storeNodes
+}
+
+func convertExternalApprovalSettingNode(o *v1pb.ExternalApprovalSetting_Node) *storepb.ExternalApprovalSetting_Node {
+	return &storepb.ExternalApprovalSetting_Node{
+		Id:       o.Id,
+		Title:    o.Title,
+		Endpoint: o.Endpoint,
+	}
 }
 
 // stripSensitiveData strips the sensitive data like password from the setting.value.

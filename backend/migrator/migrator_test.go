@@ -174,7 +174,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	defer defaultDriver.Close(ctx)
 	// Create a database with release latest schema.
 	databaseName := "hidb"
-	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true)
+	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true, dbdriver.ExecuteOptions{})
 	require.NoError(t, err)
 
 	metadataConnConfig := connCfg
@@ -241,5 +241,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("2.2.6"), releaseVersion)
+	require.Equal(t, semver.MustParse("2.4.0"), releaseVersion)
 }

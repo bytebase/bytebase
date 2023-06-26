@@ -1,12 +1,4 @@
-import {
-  ResourceId,
-  UNKNOWN_ID,
-  Instance,
-  Database,
-  Project,
-  Environment,
-  SheetId,
-} from "@/types";
+import { ResourceId, UNKNOWN_ID, Project, SheetId } from "@/types";
 
 export const userNamePrefix = "users/";
 export const environmentNamePrefix = "environments/";
@@ -20,6 +12,9 @@ export const sheetNamePrefix = "sheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
 export const schemaGroupNamePrefix = "schemaGroups/";
 export const externalVersionControlPrefix = "externalVersionControls/";
+export const logNamePrefix = "logs/";
+export const reviewNamePrefix = "reviews/";
+export const secretNamePrefix = "secrets/";
 
 export const getNameParentTokens = (
   name: string,
@@ -47,6 +42,15 @@ export const getUserId = (name: string): number => {
   const tokens = getNameParentTokens(name, [userNamePrefix]);
   const userId = Number(tokens[0] || UNKNOWN_ID);
   return userId;
+};
+
+export const getNumberId = (name: string, prefix: string): number => {
+  const tokens = getNameParentTokens(name, [prefix]);
+  return Number(tokens[0] || UNKNOWN_ID);
+};
+
+export const getLogId = (name: string): number => {
+  return getNumberId(name, logNamePrefix);
 };
 
 export const getProjectAndSheetId = (name: string): string[] => {
@@ -111,22 +115,6 @@ export const getProjectNameAndDatabaseGroupNameAndSchemaGroupName = (
   }
 
   return tokens;
-};
-
-export const getEnvironmentPathByLegacyEnvironment = (
-  env: Environment
-): string => {
-  return `${environmentNamePrefix}${env.resourceId}`;
-};
-
-export const getInstancePathByLegacyInstance = (instance: Instance): string => {
-  return `${instanceNamePrefix}${instance.resourceId}`;
-};
-
-export const getDatabasePathByLegacyDatabase = (database: Database): string => {
-  return `${getInstancePathByLegacyInstance(
-    database.instance
-  )}/${databaseNamePrefix}${database.name}`;
 };
 
 export const getProjectPathByLegacyProject = (project: Project): string => {

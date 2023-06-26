@@ -3,10 +3,12 @@ package taskcheck
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -16,15 +18,17 @@ import (
 )
 
 // NewStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
-func NewStatementAdvisorSimpleExecutor(store *store.Store) Executor {
+func NewStatementAdvisorSimpleExecutor(store *store.Store, licenseService enterpriseAPI.LicenseService) Executor {
 	return &StatementAdvisorSimpleExecutor{
-		store: store,
+		store:          store,
+		licenseService: licenseService,
 	}
 }
 
 // StatementAdvisorSimpleExecutor is the task check statement advisor simple executor.
 type StatementAdvisorSimpleExecutor struct {
-	store *store.Store
+	store          *store.Store
+	licenseService enterpriseAPI.LicenseService
 }
 
 // Run will run the task check statement advisor executor once.
@@ -33,10 +37,30 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 	if err != nil {
 		return nil, err
 	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", task.InstanceID)
+	}
+	if err := e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance); err != nil {
+		// nolint:nilerr
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusWarn,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.Unsupported.Int(),
+				Title:     fmt.Sprintf("SQL review disabled for instance %s", instance.ResourceID),
+				Content:   err.Error(),
+			},
+		}, nil
+	}
+
 	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
+	if database == nil {
+		return nil, errors.Errorf("database %v not found", task.DatabaseID)
+	}
+
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, err
@@ -46,7 +70,7 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 		return nil, err
 	}
 
-	sheet, err := e.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := e.store.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
 	}
@@ -81,6 +105,8 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 			advisorType = advisor.PostgreSQLSyntax
 		case db.Oracle:
 			advisorType = advisor.OracleSyntax
+		case db.Snowflake:
+			advisorType = advisor.SnowflakeSyntax
 		default:
 			return nil, common.Errorf(common.Invalid, "invalid database type: %s for syntax statement advisor", instance.Engine)
 		}

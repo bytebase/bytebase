@@ -131,7 +131,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		if err != nil {
 			return err
 		}
-		driver, err = s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database.DatabaseName)
+		driver, err = s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
@@ -219,7 +219,7 @@ func schemaDiff(c echo.Context) error {
 	switch request.EngineType {
 	case parser.EngineType(db.Postgres):
 		engine = parser.Postgres
-	case parser.EngineType(db.MySQL), parser.EngineType(db.MariaDB):
+	case parser.EngineType(db.MySQL), parser.EngineType(db.MariaDB), parser.EngineType(db.OceanBase):
 		engine = parser.MySQL
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database engine %s", request.EngineType))

@@ -45,7 +45,7 @@ func NewManager(store *store.Store) *Manager {
 
 // BatchCreateTaskStatusUpdateApprovalActivity creates a batch task status update activities for task approvals.
 func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Context, taskList []*store.TaskMessage, updaterID int, issue *store.IssueMessage, stageName string) error {
-	var createList []*api.ActivityCreate
+	var createList []*store.ActivityMessage
 	for _, task := range taskList {
 		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
 			TaskID:    task.ID,
@@ -58,17 +58,17 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
 		}
 
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   updaterID,
-			ContainerID: task.PipelineID,
-			Type:        api.ActivityPipelineTaskStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(payload),
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   updaterID,
+			ContainerUID: task.PipelineID,
+			Type:         api.ActivityPipelineTaskStatusUpdate,
+			Level:        api.ActivityInfo,
+			Payload:      string(payload),
 		}
 		createList = append(createList, activityCreate)
 	}
 
-	activityList, err := m.store.BatchCreateActivity(ctx, createList)
+	activityList, err := m.store.BatchCreateActivityV2(ctx, createList)
 	if err != nil {
 		return err
 	}
@@ -94,6 +94,11 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 		return errors.Wrapf(err, "failed to get workspace setting")
 	}
 
+	user, err := m.store.GetUserByID(ctx, anyActivity.CreatorUID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get principal %d", anyActivity.CreatorUID)
+	}
+
 	// Send one webhook post for all activities.
 	webhookCtx := webhook.Context{
 		Level:        webhook.WebhookInfo,
@@ -112,9 +117,9 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 		},
 		Description:  anyActivity.Comment,
 		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
-		CreatorID:    anyActivity.CreatorID,
-		CreatorName:  anyActivity.Creator.Name,
-		CreatorEmail: anyActivity.Creator.Email,
+		CreatorID:    anyActivity.CreatorUID,
+		CreatorName:  user.Name,
+		CreatorEmail: user.Email,
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
 	go postWebhookList(ctx, &webhookCtx, webhookList)
@@ -123,8 +128,8 @@ func (m *Manager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Contex
 }
 
 // CreateActivity creates an activity.
-func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate, meta *Metadata) (*api.Activity, error) {
-	activity, err := m.store.CreateActivity(ctx, create)
+func (m *Manager) CreateActivity(ctx context.Context, create *store.ActivityMessage, meta *Metadata) (*store.ActivityMessage, error) {
+	activity, err := m.store.CreateActivityV2(ctx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +142,7 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 		return nil, errors.Wrapf(err, "failed to post webhook event after changing the issue task status: %s", meta.Issue.Title)
 	}
 	if postInbox {
-		if err := m.postInboxIssueActivity(ctx, meta.Issue, activity.ID); err != nil {
+		if err := m.postInboxIssueActivity(ctx, meta.Issue, activity.UID); err != nil {
 			return nil, err
 		}
 	}
@@ -153,12 +158,12 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 		return activity, nil
 	}
 
-	updater, err := m.store.GetUserByID(ctx, create.CreatorID)
+	updater, err := m.store.GetUserByID(ctx, create.CreatorUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find updater for posting webhook event after changing the issue status: %v", meta.Issue.Title)
 	}
 	if updater == nil {
-		return nil, errors.Errorf("updater user not found for ID %v", create.CreatorID)
+		return nil, errors.Errorf("updater user not found for ID %v", create.CreatorUID)
 	}
 
 	webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
@@ -196,7 +201,7 @@ func postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookLi
 	}
 }
 
-func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *Metadata, updater *store.UserMessage) (*webhook.Context, error) {
+func (m *Manager) getWebhookContext(ctx context.Context, activity *store.ActivityMessage, meta *Metadata, updater *store.UserMessage) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var webhookTaskResult *webhook.TaskResult
 	var webhookApproval webhook.Approval
@@ -224,7 +229,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		}
 	case api.ActivityIssueCommentCreate:
 		title = fmt.Sprintf("Comment created - %s", meta.Issue.Title)
-		link += fmt.Sprintf("#activity%d", activity.ID)
+		link += fmt.Sprintf("#activity%d", activity.UID)
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
@@ -451,6 +456,10 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		case *storepb.ApprovalNode_Role:
 			role := api.Role(strings.TrimPrefix(val.Role, "roles/"))
 			usersGetter = getUsersFromProjectRole(m.store, role, meta.Issue.Project.ResourceID)
+		case *storepb.ApprovalNode_ExternalNodeId:
+			usersGetter = func(ctx context.Context) ([]*store.UserMessage, error) {
+				return nil, nil
+			}
 		default:
 			return nil, errors.Errorf("invalid node payload type")
 		}
@@ -503,32 +512,29 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 
 func (m *Manager) postInboxIssueActivity(ctx context.Context, issue *store.IssueMessage, activityID int) error {
 	if issue.Creator.ID != api.SystemBotID {
-		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.Creator.ID,
-			ActivityID: activityID,
-		}
-		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+		if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
+			ReceiverUID: issue.Creator.ID,
+			ActivityUID: activityID,
+		}); err != nil {
 			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.Creator.ID)
 		}
 	}
 
 	if issue.Assignee.ID != api.SystemBotID && issue.Assignee.ID != issue.Creator.ID {
-		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.Assignee.ID,
-			ActivityID: activityID,
-		}
-		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+		if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
+			ReceiverUID: issue.Assignee.ID,
+			ActivityUID: activityID,
+		}); err != nil {
 			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.Assignee.ID)
 		}
 	}
 
 	for _, subscriber := range issue.Subscribers {
 		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.Creator.ID && subscriber.ID != issue.Assignee.ID {
-			inboxCreate := &api.InboxCreate{
-				ReceiverID: subscriber.ID,
-				ActivityID: activityID,
-			}
-			if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+			if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
+				ReceiverUID: subscriber.ID,
+				ActivityUID: activityID,
+			}); err != nil {
 				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
 			}
 		}
@@ -537,7 +543,7 @@ func (m *Manager) postInboxIssueActivity(ctx context.Context, issue *store.Issue
 	return nil
 }
 
-func shouldPostInbox(activity *api.Activity, createType api.ActivityType) (bool, error) {
+func shouldPostInbox(activity *store.ActivityMessage, createType api.ActivityType) (bool, error) {
 	switch createType {
 	case api.ActivityIssueCreate:
 		return true, nil

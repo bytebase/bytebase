@@ -15,25 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// GetPrincipalList gets a list of Principal instances.
-func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
-	users, err := s.ListUsers(ctx, &FindUserMessage{ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to find Principal list")
-	}
-	var principalList []*api.Principal
-	for _, user := range users {
-		principal, err := composePrincipal(user)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Principal role with user[%+v]", user)
-		}
-		if principal != nil {
-			principalList = append(principalList, principal)
-		}
-	}
-	return principalList, nil
-}
-
 // GetPrincipalByID gets an instance of Principal by ID.
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	user, err := s.GetUserByID(ctx, id)
@@ -457,7 +438,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, err
 	}
 	s.userIDCache.Store(user.ID, user)
-	if patch.Email != nil {
+	if patch.Email != nil && patch.Phone != nil {
 		s.projectIDPolicyCache = sync.Map{}
 		s.projectPolicyCache = sync.Map{}
 	}

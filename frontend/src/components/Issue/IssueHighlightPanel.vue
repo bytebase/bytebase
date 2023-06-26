@@ -22,9 +22,26 @@
           />
 
           <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-            <IssueReviewButtonGroup v-if="showReviewButton" />
-            <ExportDataButton v-if="showExportButton" />
-            <IssueStatusTransitionButtonGroup v-if="showRolloutButton" />
+            <div v-if="showExportCenterLink">
+              <router-link
+                class="btn-primary"
+                :to="{
+                  name: 'workspace.export-center',
+                  hash: `#${issue.id}`,
+                }"
+              >
+                <heroicons-outline:download class="w-5 h-5 mr-2" />
+                <span>{{ $t("export-center.self") }}</span>
+              </router-link>
+            </div>
+            <div v-else-if="showSQLEditorLink">
+              <button class="btn-primary" @click="gotoSQLEditor">
+                <heroicons-solid:terminal class="w-5 h-5 mr-2" />
+                <span>{{ $t("sql-editor.self") }}</span>
+              </button>
+            </div>
+            <IssueReviewButtonGroup v-else-if="showReviewButtonGroup" />
+            <CombinedRolloutButtonGroup v-else-if="showRolloutButtonGroup" />
           </div>
         </div>
         <div v-if="!create">
@@ -41,7 +58,7 @@
               >
             </template>
             <template #time>{{
-              dayjs(issue.updatedTs * 1000).format("LLL")
+              dayjs(issue.createdTs * 1000).format("LLL")
             }}</template>
           </i18n-t>
           <p
@@ -90,10 +107,12 @@
 <script lang="ts" setup>
 import { reactive, watch, computed, Ref } from "vue";
 import { head } from "lodash-es";
+import { useRouter } from "vue-router";
 
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import {
   activeTask,
+  connectionV1Slug,
   extractUserUID,
   isDatabaseRelatedIssueType,
   isGrantRequestIssueType,
@@ -103,23 +122,25 @@ import {
   TaskDatabaseDataUpdatePayload,
   Issue,
   VCSPushEvent,
-  GrantRequestPayload,
   PresetRoleType,
+  GrantRequestPayload,
+  UNKNOWN_ID,
 } from "@/types";
-import { useCurrentUserV1 } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { IssueReviewButtonGroup } from "./review";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
-import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
-import ExportDataButton from "./action/ExportDataButton.vue";
+import { CombinedRolloutButtonGroup } from "./StatusTransitionButtonGroup";
+import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { convertFromCELString } from "@/utils/issue/cel";
 
 interface LocalState {
   editing: boolean;
   name: string;
 }
 
+const router = useRouter();
+const currentUser = useCurrentUserV1();
 const logic = useIssueLogic();
-const currentUserV1 = useCurrentUserV1();
 const create = logic.create;
 const issue = logic.issue as Ref<Issue>;
 const { allowEditNameAndDescription, updateName } = useExtraIssueLogic();
@@ -131,37 +152,50 @@ const state = reactive<LocalState>({
   name: issue.value.name,
 });
 
-const showReviewButton = computed(() => {
+const isFinishedGrantRequestIssueByCurrentUser = computed(() => {
   if (create.value) return false;
-  if (reviewError.value) return false;
-  return !reviewDone.value;
-});
-
-const showRolloutButton = computed(() => {
-  if (create.value) return true;
-  // User can cancel issue when it's in review.
-  if (isGrantRequestIssueType(issue.value.type)) return true;
-
-  return reviewDone.value;
-});
-
-const showExportButton = computed(() => {
-  if (create.value) return false;
+  if (issue.value.status !== "DONE") return false;
   if (!isGrantRequestIssueType(issue.value.type)) return false;
-  if (showReviewButton.value) return false;
-  // Don't show export button when issue is closed or done.
-  if (issue.value.status !== "OPEN") return false;
-
-  const issuePayload = (issue.value.payload as any)
-    .grantRequest as GrantRequestPayload;
   if (
-    issuePayload.role !== PresetRoleType.EXPORTER ||
-    extractUserUID(currentUserV1.value.name) !== String(issue.value.creator.id)
+    String(issue.value.creator.id) !== extractUserUID(currentUser.value.name)
   ) {
     return false;
   }
-
   return true;
+});
+
+const showExportCenterLink = computed(() => {
+  if (!isFinishedGrantRequestIssueByCurrentUser.value) return false;
+  return issue.value.payload.grantRequest?.role === PresetRoleType.EXPORTER;
+});
+
+const showSQLEditorLink = computed(() => {
+  if (!isFinishedGrantRequestIssueByCurrentUser.value) return false;
+  return issue.value.payload.grantRequest?.role === PresetRoleType.QUERIER;
+});
+
+/**
+ * Send back / Approve
+ * + cancel issue (dropdown)
+ */
+const showReviewButtonGroup = computed(() => {
+  if (create.value) return false;
+  if (reviewError.value) return false;
+  // User can cancel issue when it's in review.
+  if (isGrantRequestIssueType(issue.value.type)) return true;
+  return !reviewDone.value;
+});
+
+/**
+ * Rollout / Retry
+ * + cancel issue (dropdown)
+ * + skip all failed tasks in current stage (dropdown)
+ */
+const showRolloutButtonGroup = computed(() => {
+  if (create.value) return true;
+  if (isGrantRequestIssueType(issue.value.type)) return false;
+
+  return reviewDone.value;
 });
 
 const issueTaskStatus = computed(() => {
@@ -225,5 +259,37 @@ const trySaveName = (text: string) => {
   if (text != issue.value.name) {
     updateName(state.name);
   }
+};
+
+const gotoSQLEditor = async () => {
+  const grantRequest = issue.value.payload.grantRequest as GrantRequestPayload;
+  const conditionExpression = await convertFromCELString(
+    grantRequest.condition.expression
+  );
+  if (
+    conditionExpression.databaseResources !== undefined &&
+    conditionExpression.databaseResources.length > 0
+  ) {
+    const databaseResourceName = conditionExpression.databaseResources[0]
+      .databaseName as string;
+    const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
+      databaseResourceName
+    );
+    if (db.uid !== String(UNKNOWN_ID)) {
+      const slug = connectionV1Slug(db.instanceEntity, db);
+      const url = router.resolve({
+        name: "sql-editor.detail",
+        params: {
+          connectionSlug: slug,
+        },
+      });
+      window.open(url.fullPath, "__BLANK");
+      return;
+    }
+  }
+  const url = router.resolve({
+    name: "sql-editor.home",
+  });
+  window.open(url.fullPath, "__BLANK");
 };
 </script>

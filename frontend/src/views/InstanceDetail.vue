@@ -4,57 +4,45 @@
 
     <div class="px-6 space-y-6">
       <InstanceForm :instance="instance" />
-      <div
-        v-if="hasDataSourceFeature"
-        class="py-6 space-y-4 border-t divide-control-border"
-      >
-        <!-- 
-          it's always false here,
-          we could postpone to migrate DataSourceTable to v1
-        -->
-        <!-- <DataSourceTable :instance="instance" /> -->
-      </div>
-      <div v-else>
-        <NTabs>
-          <template #suffix>
-            <div class="flex items-center gap-x-4">
-              <NButton
-                v-if="allowEdit"
-                :loading="state.syncingSchema"
-                @click.prevent="syncSchema"
-              >
-                <template v-if="state.syncingSchema">
-                  {{ $t("instance.syncing") }}
-                </template>
-                <template v-else>
-                  {{ $t("common.sync-now") }}
-                </template>
-              </NButton>
-              <NButton
-                v-if="
-                  instance.state === State.ACTIVE &&
-                  instanceV1HasCreateDatabase(instance)
-                "
-                type="primary"
-                @click.prevent="createDatabase"
-              >
-                {{ $t("instance.new-database") }}
-              </NButton>
-            </div>
-          </template>
+      <NTabs>
+        <template #suffix>
+          <div class="flex items-center gap-x-4">
+            <NButton
+              v-if="allowEdit"
+              :loading="state.syncingSchema"
+              @click.prevent="syncSchema"
+            >
+              <template v-if="state.syncingSchema">
+                {{ $t("instance.syncing") }}
+              </template>
+              <template v-else>
+                {{ $t("common.sync-now") }}
+              </template>
+            </NButton>
+            <NButton
+              v-if="
+                instance.state === State.ACTIVE &&
+                instanceV1HasCreateDatabase(instance)
+              "
+              type="primary"
+              @click.prevent="createDatabase"
+            >
+              {{ $t("instance.new-database") }}
+            </NButton>
+          </div>
+        </template>
 
-          <NTabPane name="DATABASES" :tab="$t('common.databases')">
-            <DatabaseV1Table
-              mode="INSTANCE"
-              :scroll-on-page-change="false"
-              :database-list="databaseV1List"
-            />
-          </NTabPane>
-          <NTabPane name="USERS" :tab="$t('instance.users')">
-            <InstanceRoleTable :instance-role-list="instanceRoleList" />
-          </NTabPane>
-        </NTabs>
-      </div>
+        <NTabPane name="DATABASES" :tab="$t('common.databases')">
+          <DatabaseV1Table
+            mode="INSTANCE"
+            :scroll-on-page-change="false"
+            :database-list="databaseV1List"
+          />
+        </NTabPane>
+        <NTabPane name="USERS" :tab="$t('instance.users')">
+          <InstanceRoleTable :instance-role-list="instanceRoleList" />
+        </NTabPane>
+      </NTabs>
       <template v-if="allowArchiveOrRestore">
         <template v-if="instance.state === State.ACTIVE">
           <BBButtonConfirm
@@ -102,18 +90,13 @@
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </Drawer>
-
-  <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.instance-count"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { ClientError } from "nice-grpc-web";
 
 import {
   idFromSlug,
@@ -125,13 +108,9 @@ import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import InstanceForm from "@/components/InstanceForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
-import { SQLResultSet } from "@/types";
 import {
-  featureToRef,
   pushNotification,
-  useSubscriptionV1Store,
-  useLegacySQLStore,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useCurrentUserV1,
   useInstanceV1Store,
   useEnvironmentV1Store,
@@ -143,7 +122,6 @@ import { State } from "@/types/proto/v1/common";
 interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
-  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -155,16 +133,13 @@ const props = defineProps({
 
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
-const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
-const sqlStore = useLegacySQLStore();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
-  showFeatureModal: false,
 });
 
 const instanceId = computed(() => {
@@ -178,8 +153,6 @@ const environment = computed(() => {
     instance.value.environment
   );
 });
-
-const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
 watchEffect(() => {
   databaseStore.searchDatabaseList({
@@ -243,11 +216,6 @@ const doArchive = async () => {
 };
 
 const doRestore = async () => {
-  const instanceList = instanceV1Store.activeInstanceList;
-  if (subscriptionStore.instanceCount <= instanceList.length) {
-    state.showFeatureModal = true;
-    return;
-  }
   await useGracefulRequest(async () => {
     await instanceV1Store.restoreInstance(instance.value);
 
@@ -261,47 +229,44 @@ const doRestore = async () => {
   });
 };
 
-const syncSchema = () => {
+const syncSchema = async () => {
   state.syncingSchema = true;
-  sqlStore
-    .syncSchema(instanceId.value)
-    .then((resultSet: SQLResultSet) => {
-      state.syncingSchema = false;
-      if (resultSet.error) {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t(
-            "instance.failed-to-sync-schema-for-instance-instance-value-name",
-            [instance.value.title]
-          ),
-          description: resultSet.error,
-        });
-      } else {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t(
-            "instance.successfully-synced-schema-for-instance-instance-value-name",
-            [instance.value.title]
-          ),
-          description: resultSet.error,
-        });
-      }
-
-      // Clear the db schema metadata cache entities.
-      // So we will re-fetch new values when needed.
-      const dbSchemaStore = useDBSchemaStore();
-      const databaseList = useDatabaseV1Store().databaseListByInstance(
-        instance.value.name
-      );
-      databaseList.forEach((database) =>
-        dbSchemaStore.removeCacheByDatabaseId(Number(database.uid))
-      );
-    })
-    .catch(() => {
-      state.syncingSchema = false;
+  try {
+    await instanceV1Store.syncInstance(instance.value).then(() => {
+      return databaseStore.searchDatabaseList({
+        parent: instance.value.name,
+      });
     });
+    // Clear the db schema metadata cache entities.
+    // So we will re-fetch new values when needed.
+    const dbSchemaStore = useDBSchemaV1Store();
+    const databaseList = useDatabaseV1Store().databaseListByInstance(
+      instance.value.name
+    );
+    databaseList.forEach((database) =>
+      dbSchemaStore.removeCache(database.name)
+    );
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t(
+        "instance.successfully-synced-schema-for-instance-instance-value-name",
+        [instance.value.title]
+      ),
+    });
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t(
+        "instance.failed-to-sync-schema-for-instance-instance-value-name",
+        [instance.value.title]
+      ),
+      description: (error as ClientError).details,
+    });
+  } finally {
+    state.syncingSchema = false;
+  }
 };
 
 const createDatabase = () => {

@@ -17,8 +17,12 @@
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
-                  {{ databaseGroupName }}
-                  <BBBadge text="Group" :can-remove="false" class="text-xs" />
+                  {{ databaseGroup.databasePlaceholder }}
+                  <BBBadge
+                    text="Database Group"
+                    :can-remove="false"
+                    class="text-xs"
+                  />
                 </h1>
               </div>
             </div>
@@ -63,6 +67,12 @@
 
       <hr class="my-4" />
 
+      <FeatureAttentionForInstanceLicense
+        v-if="existMatchedUnactivateInstance"
+        custom-class="m-5"
+        feature="bb.feature.database-grouping"
+      />
+
       <div class="w-full px-3 max-w-5xl grid grid-cols-5 gap-x-6">
         <div class="col-span-3">
           <p class="pl-1 text-lg mb-2">
@@ -76,10 +86,9 @@
         </div>
         <div class="col-span-2">
           <MatchedDatabaseView
-            :project="project"
-            :environment-id="environment.uid"
-            :expr="state.expr!"
-            :database-group="databaseGroup"
+            :loading="false"
+            :matched-database-list="matchedDatabaseList"
+            :unmatched-database-list="unmatchedDatabaseList"
           />
         </div>
       </div>
@@ -107,6 +116,7 @@
     :project="project"
     :resource-type="editState.type"
     :database-group="editState.databaseGroup"
+    :parent-database-group="editState.parentDatabaseGroup"
     @close="editState.showConfigurePanel = false"
   />
 
@@ -120,7 +130,12 @@
 
 <script lang="ts" setup>
 import { onMounted, reactive, computed, watch, ref } from "vue";
-import { useDBGroupStore, useProjectV1Store } from "@/store";
+import { useDebounceFn } from "@vueuse/core";
+import {
+  useDBGroupStore,
+  useProjectV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
@@ -132,7 +147,7 @@ import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
-import { ComposedDatabaseGroup } from "@/types";
+import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import { NButton } from "naive-ui";
 import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
 
@@ -145,6 +160,7 @@ interface EditDatabaseGroupState {
   showConfigurePanel: boolean;
   type: ResourceType;
   databaseGroup?: DatabaseGroup | SchemaGroup;
+  parentDatabaseGroup?: ComposedDatabaseGroup;
 }
 
 const props = defineProps({
@@ -160,6 +176,8 @@ const props = defineProps({
 
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
+const subscriptionV1Store = useSubscriptionV1Store();
+
 const state = reactive<LocalState>({
   isLoaded: false,
 });
@@ -185,7 +203,7 @@ const schemaGroupList = computed(() => {
     databaseGroupResourceName.value
   );
 });
-const environment = computed(() => databaseGroup.value.environment);
+const environment = computed(() => databaseGroup.value?.environment);
 const project = computed(() => {
   return projectStore.getProjectByName(
     `${projectNamePrefix}${props.projectName}`
@@ -206,6 +224,7 @@ const handleCreateSchemaGroup = () => {
   editState.type = "SCHEMA_GROUP";
   editState.databaseGroup = undefined;
   editState.showConfigurePanel = true;
+  editState.parentDatabaseGroup = databaseGroup.value;
 };
 
 const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
@@ -238,4 +257,55 @@ watch(
     immediate: true,
   }
 );
+
+const matchedDatabaseList = ref<ComposedDatabase[]>([]);
+const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
+
+const updateDatabaseMatchingState = useDebounceFn(async () => {
+  if (!state.isLoaded) {
+    return;
+  }
+  if (!environment.value) {
+    return;
+  }
+  if (!project.value) {
+    return;
+  }
+  if (!state.expr) {
+    return;
+  }
+
+  const result = await dbGroupStore.fetchDatabaseGroupMatchList({
+    projectName: project.value.name,
+    environmentId: environment.value.uid,
+    expr: state.expr,
+  });
+
+  matchedDatabaseList.value = result.matchedDatabaseList;
+  unmatchedDatabaseList.value = result.unmatchedDatabaseList;
+}, 500);
+
+watch(
+  [
+    () => state.isLoaded,
+    () => project.value,
+    () => environment.value,
+    () => state.expr,
+  ],
+  updateDatabaseMatchingState,
+  {
+    immediate: true,
+    deep: true,
+  }
+);
+
+const existMatchedUnactivateInstance = computed(() => {
+  return matchedDatabaseList.value.some(
+    (database) =>
+      !subscriptionV1Store.hasInstanceFeature(
+        "bb.feature.database-grouping",
+        database.instanceEntity
+      )
+  );
+});
 </script>

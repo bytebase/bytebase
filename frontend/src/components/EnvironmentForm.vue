@@ -24,7 +24,7 @@
             ref="resourceIdField"
             resource-type="environment"
             :readonly="!create"
-            :value="state.environment.name"
+            :value="extractEnvironmentResourceName(state.environment.name)"
             :resource-title="state.environment.title"
             :validate="validateResourceId"
           />
@@ -33,10 +33,7 @@
         <div class="col-span-1 mt-6">
           <label class="textlabel flex items-center">
             {{ $t("policy.environment-tier.name") }}
-            <FeatureBadge
-              feature="bb.feature.environment-tier-policy"
-              class="text-accent"
-            />
+            <FeatureBadge feature="bb.feature.environment-tier-policy" />
           </label>
           <p class="mt-2 text-sm text-gray-600">
             <i18n-t tag="span" keypath="policy.environment-tier.description">
@@ -120,10 +117,7 @@
               <div class="-mt-0.5">
                 <div class="textlabel flex">
                   {{ $t("policy.rollout.auto") }}
-                  <FeatureBadge
-                    feature="bb.feature.approval-policy"
-                    class="text-accent"
-                  />
+                  <FeatureBadge feature="bb.feature.approval-policy" />
                 </div>
                 <div class="mt-1 textinfolabel">
                   {{ $t("policy.rollout.auto-info") }}
@@ -168,10 +162,7 @@
               <div class="-mt-0.5">
                 <div class="textlabel flex">
                   {{ $t("policy.backup.daily") }}
-                  <FeatureBadge
-                    feature="bb.feature.backup-policy"
-                    class="text-accent"
-                  />
+                  <FeatureBadge feature="bb.feature.backup-policy" />
                 </div>
                 <div class="mt-1 textinfolabel">
                   {{ $t("policy.backup.daily-info") }}
@@ -190,10 +181,7 @@
               <div class="-mt-0.5">
                 <div class="textlabel flex">
                   {{ $t("policy.backup.weekly") }}
-                  <FeatureBadge
-                    feature="bb.feature.backup-policy"
-                    class="text-accent"
-                  />
+                  <FeatureBadge feature="bb.feature.backup-policy" />
                 </div>
                 <div class="mt-1 textinfolabel">
                   {{ $t("policy.backup.weekly-info") }}
@@ -325,7 +313,11 @@ import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { getErrorCode } from "@/utils/grpcweb";
 import { BBSwitch } from "@/bbkit";
 import { DrawerContent } from "@/components/v2";
-import { hasWorkspacePermissionV1, sqlReviewPolicySlug } from "@/utils";
+import {
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV1,
+  sqlReviewPolicySlug,
+} from "@/utils";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -507,7 +499,8 @@ const validateResourceId = async (
 
   try {
     const env = await environmentV1Store.getOrFetchEnvironmentByName(
-      environmentNamePrefix + resourceId
+      environmentNamePrefix + resourceId,
+      true /* silent */
     );
     if (env) {
       return [

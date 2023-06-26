@@ -24,11 +24,11 @@ COPY ./backend/plugin/advisor/config/ ./src/types
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.20.3 as backend
+FROM golang:1.20.5 as backend
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.20.1"
+ARG GO_VERSION="1.20.5"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"

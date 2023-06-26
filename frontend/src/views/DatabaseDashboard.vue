@@ -25,7 +25,7 @@
           </template>
 
           <div class="whitespace-pre-wrap">
-            {{ $t("quick-action.default-db-hint") }}
+            {{ $t("quick-action.unassigned-db-hint") }}
           </div>
         </NTooltip>
 
@@ -65,7 +65,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect, onMounted, reactive } from "vue";
+import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { NInputGroup, NTooltip } from "naive-ui";
 
@@ -86,14 +86,21 @@ import {
   filterDatabaseV1ByKeyword,
   hasWorkspacePermissionV1,
   sortDatabaseV1List,
-} from "../utils";
+  isDatabaseV1Accessible,
+} from "@/utils";
 import {
   useCurrentUserV1,
   useDBGroupStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
+  usePolicyV1Store,
   useUIStateStore,
 } from "@/store";
+import {
+  Policy,
+  PolicyResourceType,
+  PolicyType,
+} from "@/types/proto/v1/org_policy_service";
 
 interface LocalState {
   instanceFilter: string;
@@ -119,6 +126,18 @@ const state = reactive<LocalState>({
 const currentUserV1 = useCurrentUserV1();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
+const policyList = ref<Policy[]>([]);
+
+const preparePolicyList = () => {
+  usePolicyV1Store()
+    .fetchPolicies({
+      resourceType: PolicyResourceType.DATABASE,
+      policyType: PolicyType.ACCESS_CONTROL,
+    })
+    .then((list) => (policyList.value = list));
+};
+
+watchEffect(preparePolicyList);
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
@@ -184,7 +203,9 @@ const changeSearchText = (searchText: string) => {
 };
 
 const filteredDatabaseList = computed(() => {
-  let list = [...state.databaseV1List];
+  let list = [...state.databaseV1List].filter((database) =>
+    isDatabaseV1Accessible(database, policyList.value, currentUserV1.value)
+  );
   const environment = selectedEnvironment.value;
   if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
     list = list.filter(

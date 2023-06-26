@@ -30,6 +30,9 @@
           <heroicons-outline:external-link class="w-4 h-4" />
         </button>
       </div>
+      <div v-if="canAssignLicense" class="bb-grid-cell hover:underline">
+        {{ instance.activation ? "Assigned" : "N/A" }}
+      </div>
     </template>
   </BBGrid>
 </template>
@@ -52,8 +55,9 @@ import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 
 export type InstanceRow = BBGridRow<ComposedInstance>;
 
-defineProps<{
+const props = defineProps<{
   instanceList: ComposedInstance[];
+  canAssignLicense: boolean;
 }>();
 
 const { t } = useI18n();
@@ -61,7 +65,7 @@ const { t } = useI18n();
 const router = useRouter();
 
 const columnList = computed((): BBGridColumn[] => {
-  return [
+  const list = [
     {
       title: "",
       width: "minmax(auto, 4rem)",
@@ -84,6 +88,13 @@ const columnList = computed((): BBGridColumn[] => {
       class: "hidden sm:flex",
     },
   ];
+  if (props.canAssignLicense) {
+    list.push({
+      title: t("subscription.instance-assignment.license"),
+      width: "minmax(auto, 1fr)",
+    });
+  }
+  return list;
 });
 
 const clickInstance = (

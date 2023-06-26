@@ -36,6 +36,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -62,15 +63,17 @@ const (
 type DatabaseService struct {
 	v1pb.UnimplementedDatabaseServiceServer
 	store          *store.Store
-	BackupRunner   *backuprun.Runner
+	backupRunner   *backuprun.Runner
+	schemaSyncer   *schemasync.Syncer
 	licenseService enterpriseAPI.LicenseService
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, licenseService enterpriseAPI.LicenseService) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterpriseAPI.LicenseService) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
-		BackupRunner:   br,
+		backupRunner:   br,
+		schemaSyncer:   schemaSyncer,
 		licenseService: licenseService,
 	}
 }
@@ -244,6 +247,35 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	return convertToDatabase(updatedDatabase), nil
 }
 
+// SyncDatabase syncs the schema of a database.
+func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDatabaseRequest) (*v1pb.SyncDatabaseResponse, error) {
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	find := &store.FindDatabaseMessage{}
+	databaseUID, isNumber := isNumber(databaseName)
+	if isNumber {
+		// Expected format: "instances/{ignored_value}/database/{uid}"
+		find.UID = &databaseUID
+	} else {
+		// Expected format: "instances/{instance}/database/{database}"
+		find.InstanceID = &instanceID
+		find.DatabaseName = &databaseName
+	}
+	database, err := s.store.GetDatabaseV2(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+		return nil, err
+	}
+	return &v1pb.SyncDatabaseResponse{}, nil
+}
+
 // BatchUpdateDatabases updates a database in batch.
 func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1pb.BatchUpdateDatabasesRequest) (*v1pb.BatchUpdateDatabasesResponse, error) {
 	var databases []*store.DatabaseMessage
@@ -330,6 +362,19 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	if dbSchema == nil {
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to sync database schema for database %q, error %v", databaseName, err)
+		}
+		newDBSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if newDBSchema == nil {
+			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
+		}
+		dbSchema = newDBSchema
+	}
 	return convertDatabaseMetadata(dbSchema.Metadata), nil
 }
 
@@ -354,7 +399,17 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if dbSchema == nil {
-		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to sync database schema for database %q, error %v", databaseName, err)
+		}
+		newDBSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if newDBSchema == nil {
+			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
+		}
+		dbSchema = newDBSchema
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
@@ -530,7 +585,7 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	}
 
 	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
-	backup, err := s.BackupRunner.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeManual, creatorID)
+	backup, err := s.backupRunner.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeManual, creatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -883,9 +938,6 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 
 // UpdateSecret updates a secret of a database.
 func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.UpdateSecretRequest) (*v1pb.Secret, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecrets) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecrets.AccessErrorMessage())
-	}
 	if request.Secret == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "secret is required")
 	}
@@ -906,6 +958,11 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
+
+	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureEncryptedSecrets, instance); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
+
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
@@ -986,10 +1043,6 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 // DeleteSecret deletes a secret of a database.
 func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecrets) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecrets.AccessErrorMessage())
-	}
-
 	instanceID, databaseName, secretName, err := getInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1004,6 +1057,11 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
+
+	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureEncryptedSecrets, instance); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
+
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
@@ -1495,7 +1553,7 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 }
 
 func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, newProject *store.ProjectMessage, updaterID int, databases ...*store.DatabaseMessage) error {
-	var creates []*api.ActivityCreate
+	var creates []*store.ActivityMessage
 	for _, database := range databases {
 		oldProject, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 		if err != nil {
@@ -1509,25 +1567,25 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 			return err
 		}
 		creates = append(creates,
-			&api.ActivityCreate{
-				CreatorID:   updaterID,
-				ContainerID: oldProject.UID,
-				Type:        api.ActivityProjectDatabaseTransfer,
-				Level:       api.ActivityInfo,
-				Comment:     fmt.Sprintf("Transferred out database %q to project %q.", database.DatabaseName, newProject.Title),
-				Payload:     string(bytes),
+			&store.ActivityMessage{
+				CreatorUID:   updaterID,
+				ContainerUID: oldProject.UID,
+				Type:         api.ActivityProjectDatabaseTransfer,
+				Level:        api.ActivityInfo,
+				Comment:      fmt.Sprintf("Transferred out database %q to project %q.", database.DatabaseName, newProject.Title),
+				Payload:      string(bytes),
 			},
-			&api.ActivityCreate{
-				CreatorID:   updaterID,
-				ContainerID: newProject.UID,
-				Type:        api.ActivityProjectDatabaseTransfer,
-				Level:       api.ActivityInfo,
-				Comment:     fmt.Sprintf("Transferred in database %q from project %q.", database.DatabaseName, oldProject.Title),
-				Payload:     string(bytes),
+			&store.ActivityMessage{
+				CreatorUID:   updaterID,
+				ContainerUID: newProject.UID,
+				Type:         api.ActivityProjectDatabaseTransfer,
+				Level:        api.ActivityInfo,
+				Comment:      fmt.Sprintf("Transferred in database %q from project %q.", database.DatabaseName, oldProject.Title),
+				Payload:      string(bytes),
 			},
 		)
 	}
-	if _, err := s.store.BatchCreateActivity(ctx, creates); err != nil {
+	if _, err := s.store.BatchCreateActivityV2(ctx, creates); err != nil {
 		log.Warn("failed to create activities for database project updates", zap.Error(err))
 	}
 	return nil
@@ -1739,8 +1797,8 @@ func isUpperCaseLetter(c rune) bool {
 
 // AdviseIndex advises the index of a table.
 func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest) (*v1pb.AdviseIndexResponse, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeaturePluginOpenAI.AccessErrorMessage())
+	if err := s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
 	if err != nil {

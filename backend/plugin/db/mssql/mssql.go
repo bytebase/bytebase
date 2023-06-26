@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	// Import go-ora Oracle driver.
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"go.uber.org/zap"
 
@@ -82,7 +84,7 @@ func (driver *Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
 	if createDatabase {
 		if _, err := driver.db.ExecContext(ctx, statement); err != nil {
 			return 0, err
@@ -157,18 +159,25 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := singleSQL.Text
-	statement = strings.TrimRight(statement, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
+	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+
+	stmt := statement
+	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getMSSQLStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 
 	if queryContext.ReadOnly {
 		// MSSQL does not support transaction isolation level for read-only queries.
 		queryContext.ReadOnly = false
 	}
-
-	return util.Query2(ctx, db.MSSQL, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, db.MSSQL, conn, stmt, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+	return result, nil
 }
 
 // RunStatement runs a SQL statement.

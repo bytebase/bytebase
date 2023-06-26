@@ -2,8 +2,6 @@ import { computed } from "vue";
 import { head } from "lodash-es";
 
 import {
-  ActivityCreate,
-  ActivityIssueCommentCreatePayload,
   ComposedDatabase,
   Issue,
   IssueCreate,
@@ -25,7 +23,7 @@ import {
 } from "@/utils";
 import { flattenTaskList, useIssueLogic } from "../logic";
 import {
-  useActivityStore,
+  useReviewV1Store,
   useCurrentUserV1,
   useDatabaseV1Store,
   useIssueStore,
@@ -189,19 +187,14 @@ export const useRollbackLogic = () => {
 
       const issueEntity = issue.value as Issue;
       const action = on ? "Enable" : "Disable";
-      const taskName = `[${taskEntity.name}]`;
-      const comment = `${action} SQL rollback log for task ${taskName}.`;
-      const payload: ActivityIssueCommentCreatePayload = {
-        issueName: issueEntity.name,
-      };
-      const createActivity: ActivityCreate = {
-        type: "bb.issue.comment.create",
-        containerId: issueEntity.id,
-        comment,
-        payload,
-      };
       try {
-        await useActivityStore().createActivity(createActivity);
+        await useReviewV1Store().createReviewComment({
+          reviewId: issueEntity.id,
+          comment: `${action} SQL rollback log for task [${taskEntity.name}].`,
+          payload: {
+            issueName: issueEntity.name,
+          },
+        });
       } catch {
         // do nothing
         // failing to comment to won't be too bad
@@ -267,24 +260,20 @@ export const maybeCreateBackTraceComments = async (newIssue: Issue) => {
       "to rollback task",
       `[${fromTask.name}]`,
     ].join(" ");
-
-    const payload: ActivityIssueCommentCreatePayload = {
-      issueName: fromIssue.name,
-      taskRollbackBy: {
-        issueId: fromIssue.id,
-        taskId: fromTask.id,
-        rollbackByIssueId: newIssue.id,
-        rollbackByTaskId: byTask.id,
-      },
-    };
-    const createActivity: ActivityCreate = {
-      type: "bb.issue.comment.create",
-      containerId: fromIssue.id,
-      comment,
-      payload,
-    };
     try {
-      await useActivityStore().createActivity(createActivity);
+      await useReviewV1Store().createReviewComment({
+        reviewId: fromIssue.id,
+        comment,
+        payload: {
+          issueName: fromIssue.name,
+          taskRollbackBy: {
+            issueId: fromIssue.id,
+            taskId: fromTask.id,
+            rollbackByIssueId: newIssue.id,
+            rollbackByTaskId: byTask.id,
+          },
+        },
+      });
     } catch {
       // do nothing
       // failing to comment to won't be too bad

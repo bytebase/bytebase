@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -53,16 +54,18 @@ type Runner struct {
 	dbFactory       *dbfactory.DBFactory
 	stateCfg        *state.State
 	activityManager *activity.Manager
+	relayRunner     *relay.Runner
 	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, relayRunner *relay.Runner, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
 		store:           store,
 		dbFactory:       dbFactory,
 		stateCfg:        stateCfg,
 		activityManager: activityManager,
+		relayRunner:     relayRunner,
 		licenseService:  licenseService,
 	}
 }
@@ -146,8 +149,8 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	// - feature is not enabled
 	// - risk source is RiskSourceUnknown
 	// - approval setting rules are empty
-	if !r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) || ((issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(approvalSetting.Rules) == 0) && issue.Type != api.IssueGrantRequest) {
-		if err := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+	if r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil || ((issueTypeToRiskSource[issue.Type] == store.RiskSourceUnknown || len(approvalSetting.Rules) == 0) && issue.Type != api.IssueGrantRequest) {
+		if err := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: true,
 				ApprovalTemplates:   nil,
@@ -182,7 +185,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		riskLevel, done, err := getIssueRiskLevel(ctx, r.store, issue, risks)
 		if err != nil {
 			err = errors.Wrap(err, "failed to get issue risk level")
-			if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+			if updateErr := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
 				Approval: &storepb.IssuePayloadApproval{
 					ApprovalFindingDone:  true,
 					ApprovalFindingError: err.Error(),
@@ -199,7 +202,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		approvalTemplate, err = getApprovalTemplate(approvalSetting, riskLevel, issueTypeToRiskSource[issue.Type])
 		if err != nil {
 			err = errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
-			if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+			if updateErr := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
 				Approval: &storepb.IssuePayloadApproval{
 					ApprovalFindingDone:  true,
 					ApprovalFindingError: err.Error(),
@@ -220,48 +223,36 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		payload.Approval.ApprovalTemplates = []*storepb.ApprovalTemplate{approvalTemplate}
 	}
 
-	stepsSkipped, err := utils.SkipApprovalStepIfNeeded(ctx, r.store, issue.Project.UID, payload.Approval)
+	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to skip approval step if needed")
+		err = errors.Wrapf(err, "failed to handle incoming approval steps")
+		if updateErr := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalFindingError: err.Error(),
+			},
+		}); updateErr != nil {
+			return false, multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
+		}
+		return false, err
 	}
+	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
-	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {
+	if err := updateIssuePayload(ctx, r.store, issue, payload); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
 	}
 
-	if stepsSkipped > 0 {
-		// It's ok to fail to create activity.
-		if err := func() error {
-			activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
-				Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
-					ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
-						Status: storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED,
-					},
-				},
-				IssueName: issue.Title,
-			})
-			if err != nil {
+	// It's ok to fail to create activity.
+	if err := func() error {
+		for _, create := range activityCreates {
+			if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 				return err
 			}
-
-			for i := 0; i < stepsSkipped; i++ {
-				create := &api.ActivityCreate{
-					CreatorID:   api.SystemBotID,
-					ContainerID: issue.UID,
-					Type:        api.ActivityIssueCommentCreate,
-					Level:       api.ActivityInfo,
-					Comment:     "",
-					Payload:     string(activityPayload),
-				}
-				if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		}(); err != nil {
-			log.Error("failed to create activity after approving review", zap.Error(err))
 		}
+
+		return nil
+	}(); err != nil {
+		log.Error("failed to create activity after approving review", zap.Error(err))
 	}
 
 	if err := func() error {
@@ -285,13 +276,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return err
 		}
 
-		create := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: issue.UID,
-			Type:        api.ActivityIssueApprovalNotify,
-			Level:       api.ActivityInfo,
-			Comment:     "",
-			Payload:     string(activityPayload),
+		create := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityIssueApprovalNotify,
+			Level:        api.ActivityInfo,
+			Comment:      "",
+			Payload:      string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err
@@ -311,10 +302,14 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 		return nil, err
 	}
 	for _, rule := range approvalSetting.Rules {
-		if rule.Expression == nil || rule.Expression.Expr == nil {
+		if rule.Condition == nil || rule.Condition.Expression == "" {
 			continue
 		}
-		ast := cel.ParsedExprToAst(rule.Expression)
+		ast, issues := e.Compile(rule.Condition.Expression)
+		if issues != nil && issues.Err() != nil {
+			return nil, issues.Err()
+		}
+
 		prg, err := e.Program(ast)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to compile expression")
@@ -536,13 +531,21 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 	return maxRisk, true, nil
 }
 
-func updateIssuePayload(ctx context.Context, s *store.Store, issueID int, payload *storepb.IssuePayload) error {
+func updateIssuePayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, payload *storepb.IssuePayload) error {
+	originalPayload := &storepb.IssuePayload{}
+	if err := protojson.Unmarshal([]byte(issue.Payload), originalPayload); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal original issue payload")
+	}
+	// TODO(xz): need to refactor this to do field-wise payload updates.
+	if originalPayload.Grouping != nil {
+		payload.Grouping = originalPayload.Grouping
+	}
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal issue payload")
+		return errors.Wrapf(err, "failed to marshal payload")
 	}
 	payloadStr := string(payloadBytes)
-	if _, err := s.UpdateIssueV2(ctx, issueID, &store.UpdateIssueMessage{
+	if _, err := s.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 		Payload: &payloadStr,
 	}, api.SystemBotID); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")

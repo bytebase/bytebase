@@ -122,7 +122,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 			ApprovalFindingDone: false,
 		},
 	}
-	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil {
 		issueCreatePayload.Approval.ApprovalFindingDone = true
 	}
 
@@ -160,12 +160,12 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   creatorID,
-		ContainerID: issue.UID,
-		Type:        api.ActivityIssueCreate,
-		Level:       api.ActivityInfo,
-		Payload:     string(bytes),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
 	}
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
@@ -185,12 +185,12 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
 		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: *issue.PipelineUID,
-			Type:        api.ActivityPipelineStageStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: *issue.PipelineUID,
+			Type:         api.ActivityPipelineStageStatusUpdate,
+			Level:        api.ActivityInfo,
+			Payload:      string(bytes),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 			Issue: issue,
@@ -428,7 +428,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet")
 	}
@@ -865,8 +865,8 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 				}
-				sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{
-					ID: &sheetIDInt,
+				sheet, err := s.store.GetSheetV2(ctx, &store.FindSheetMessage{
+					UID: &sheetIDInt,
 				}, api.SystemBotID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
@@ -1017,7 +1017,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 }
 
 func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.Plan_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
 			return nil, nil, errors.Errorf(api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
@@ -1091,8 +1091,8 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
-			if !licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-				return nil, errors.Errorf(api.FeatureMultiTenancy.AccessErrorMessage())
+			if err := licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+				return nil, err
 			}
 		}
 
@@ -1110,7 +1110,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 			// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
 			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
-			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 			if err != nil {
 				log.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", zap.Error(err), zap.String("instance", instance.Title))
 				break
@@ -1132,9 +1132,9 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheet, err := s.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.CreateSheetV2(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  project.UID,
+			ProjectUID: project.UID,
 			Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
 			Visibility: api.ProjectSheet,
@@ -1154,7 +1154,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			Collation:    c.Collation,
 			Labels:       labelsJSON,
 			DatabaseName: databaseName,
-			SheetID:      sheet.ID,
+			SheetID:      sheet.UID,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -1225,7 +1225,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		payloadString := string(bytes)
 		taskCreate := api.TaskCreate{
-			Name:              fmt.Sprintf("Establish baseline for database %q", database),
+			Name:              fmt.Sprintf("Establish baseline for database %q", database.DatabaseName),
 			InstanceID:        instance.UID,
 			DatabaseID:        &database.UID,
 			Status:            api.TaskPendingApproval,
@@ -1244,7 +1244,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1282,7 +1282,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1319,7 +1319,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1382,7 +1382,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -2060,7 +2060,7 @@ func (s *RolloutService) createPipeline(ctx context.Context, creatorID int, pipe
 }
 
 func getResourceNameForSheet(ctx context.Context, s *store.Store, sheetUID int) (string, error) {
-	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetUID}, api.SystemBotID)
+	sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get sheet")
 	}

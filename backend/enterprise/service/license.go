@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -57,11 +58,10 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 			return err
 		}
 	}
-	if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
-		UpdaterID: patch.UpdaterID,
-		Name:      api.SettingEnterpriseLicense,
-		Value:     patch.License,
-	}); err != nil {
+	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
+		Name:  api.SettingEnterpriseLicense,
+		Value: patch.License,
+	}, patch.UpdaterID); err != nil {
 		return err
 	}
 
@@ -103,8 +103,35 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 }
 
 // IsFeatureEnabled returns whether a feature is enabled.
-func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) bool {
-	return api.Feature(feature, s.GetEffectivePlan())
+func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) error {
+	if !api.Feature(feature, s.GetEffectivePlan()) {
+		return errors.Errorf(feature.AccessErrorMessage())
+	}
+	return nil
+}
+
+// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
+func (s *LicenseService) IsFeatureEnabledForInstance(feature api.FeatureType, instance *store.InstanceMessage) error {
+	if err := s.IsFeatureEnabled(feature); err != nil {
+		return err
+	}
+	if !api.InstanceLimitFeature[feature] {
+		// If the feature not exists in the limit map, we just need to check the feature for current plan.
+		return nil
+	}
+	if !instance.Activation {
+		return errors.Errorf(`feature "%s" is not available for instance %s, please assign license to the instance to enable it`, feature.Name(), instance.ResourceID)
+	}
+	return nil
+}
+
+// GetInstanceLicenseCount returns the instance count limit for current subscription.
+func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
+	instanceCount := s.LoadSubscription(ctx).InstanceCount
+	if instanceCount < 0 {
+		return math.MaxInt
+	}
+	return instanceCount
 }
 
 // GetEffectivePlan gets the effective plan.
@@ -145,11 +172,10 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 		return nil, err
 	}
 
-	if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
-		UpdaterID: api.SystemBotID,
-		Name:      api.SettingEnterpriseLicense,
-		Value:     license,
-	}); err != nil {
+	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
+		Name:  api.SettingEnterpriseLicense,
+		Value: license,
+	}, api.SystemBotID); err != nil {
 		return nil, errors.Wrapf(err, "failed to store the license")
 	}
 
@@ -200,7 +226,7 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	// Find enterprise license.
 	settingName := api.SettingEnterpriseLicense
-	setting, err := s.store.GetSetting(ctx, &api.SettingFind{
+	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &settingName,
 	})
 	if err != nil {
@@ -227,7 +253,7 @@ func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterprise
 
 func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	settingName := api.SettingEnterpriseTrial
-	setting, err := s.store.GetSetting(ctx, &api.SettingFind{
+	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &settingName,
 	})
 	if err != nil {

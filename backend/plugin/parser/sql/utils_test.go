@@ -23,13 +23,15 @@ func TestExtractTiDBUnsupportStmts(t *testing.T) {
 					VALUES (NEW.order_id, NEW.order_date, NEW.customer_id, NEW.order_amount);
 				END;`,
 			wantUnsupport: []string{
-				`CREATE TRIGGER order_insert_audit 
+				`
+CREATE TRIGGER order_insert_audit 
 				AFTER INSERT ON orders
 				FOR EACH ROW 
 				BEGIN
 					INSERT INTO orders_audit(order_id, order_date, customer_id, order_amount)
 					VALUES (NEW.order_id, NEW.order_date, NEW.customer_id, NEW.order_amount);
-				END;`,
+				END
+;`,
 			},
 			wantSupport: "CREATE TABLE t1(id INT);\n",
 			wantErr:     false,

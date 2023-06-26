@@ -15,8 +15,11 @@
     - status: WARN
       code: 407
       title: column.disallow-changing-order
-      content: '"ALTER TABLE t MODIFY COLUMN a int FIRST" changes column order'
-      line: 2
+      content: |-
+        "
+        ALTER TABLE t MODIFY COLUMN a int FIRST
+        ;" changes column order
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(b int, a1 int);
@@ -25,8 +28,11 @@
     - status: WARN
       code: 407
       title: column.disallow-changing-order
-      content: '"ALTER TABLE t CHANGE COLUMN a1 a int FIRST" changes column order'
-      line: 2
+      content: |-
+        "
+        ALTER TABLE t CHANGE COLUMN a1 a int FIRST
+        ;" changes column order
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int, b int);
@@ -35,8 +41,11 @@
     - status: WARN
       code: 407
       title: column.disallow-changing-order
-      content: '"ALTER TABLE t MODIFY COLUMN a int AFTER b" changes column order'
-      line: 2
+      content: |-
+        "
+        ALTER TABLE t MODIFY COLUMN a int AFTER b
+        ;" changes column order
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a1 int, b int);
@@ -45,6 +54,9 @@
     - status: WARN
       code: 407
       title: column.disallow-changing-order
-      content: '"ALTER TABLE t CHANGE COLUMN a1 a int AFTER b" changes column order'
-      line: 2
+      content: |-
+        "
+        ALTER TABLE t CHANGE COLUMN a1 a int AFTER b
+        ;" changes column order
+      line: 3
       details: ""

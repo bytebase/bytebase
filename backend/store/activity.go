@@ -15,479 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// activityRaw is the store model for an Activity.
-// Fields have exactly the same meanings as Activity.
-type activityRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	// The object where this activity belongs
-	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-	ContainerID int
-
-	// Domain specific fields
-	Type    api.ActivityType
-	Level   api.ActivityLevel
-	Comment string
-	Payload string
-}
-
-// toActivity creates an instance of Activity based on the ActivityRaw.
-// This is intended to be called when we need to compose an Activity relationship.
-func (raw *activityRaw) toActivity() *api.Activity {
-	return &api.Activity{
-		ID: raw.ID,
-
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		ContainerID: raw.ContainerID,
-
-		Type:    raw.Type,
-		Level:   raw.Level,
-		Comment: raw.Comment,
-		Payload: raw.Payload,
-	}
-}
-
-// CreateActivity creates an instance of Activity.
-func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) (*api.Activity, error) {
-	activityRaw, err := s.createActivityRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Activity with ActivityCreate[%+v]", create)
-	}
-	activity, err := s.composeActivity(ctx, activityRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", activityRaw)
-	}
-	return activity, nil
-}
-
-// BatchCreateActivity creates activities in batch.
-func (s *Store) BatchCreateActivity(ctx context.Context, creates []*api.ActivityCreate) ([]*api.Activity, error) {
-	if len(creates) == 0 {
-		return nil, nil
-	}
-	activityRawList, err := s.batchCreateActivityRaw(ctx, creates)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create TaskCheckRun with TaskCheckRunCreates[%+v]", creates)
-	}
-	var activityList []*api.Activity
-	for _, activityRaw := range activityRawList {
-		activity, err := s.composeActivity(ctx, activityRaw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose activity with activityRaw %+v", activityRaw)
-		}
-		activityList = append(activityList, activity)
-	}
-	return activityList, nil
-}
-
-// GetActivityByID gets an instance of Activity.
-func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, error) {
-	activityRaw, err := s.getActivityRawByID(ctx, id)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Activity with ID %d", id)
-	}
-	if activityRaw == nil {
-		return nil, nil
-	}
-	activity, err := s.composeActivity(ctx, activityRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", activityRaw)
-	}
-	return activity, nil
-}
-
-// FindActivity finds a list of Activity instances.
-func (s *Store) FindActivity(ctx context.Context, find *api.ActivityFind) ([]*api.Activity, error) {
-	activityRawList, err := s.findActivityRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Activity list with ActivityFind[%+v]", find)
-	}
-	var activityList []*api.Activity
-	for _, raw := range activityRawList {
-		activity, err := s.composeActivity(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", raw)
-		}
-		activityList = append(activityList, activity)
-	}
-	return activityList, nil
-}
-
-// PatchActivity patches an instance of Activity.
-func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*api.Activity, error) {
-	activityRaw, err := s.patchActivityRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Activity with ActivityPatch[%+v]", patch)
-	}
-	activity, err := s.composeActivity(ctx, activityRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", activityRaw)
-	}
-	return activity, nil
-}
-
-//
-// private function
-//
-
-func (s *Store) batchCreateActivityRaw(ctx context.Context, creates []*api.ActivityCreate) ([]*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	activityRawList, err := createActivityImpl(ctx, tx, creates...)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return activityRawList, nil
-}
-
-// createActivityRaw creates a new activity.
-func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreate) (*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	activityRawList, err := createActivityImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(activityRawList) != 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities, expect 1", len(activityRawList))}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return activityRawList[0], nil
-}
-
-// findActivityRaw retrieves a list of activities based on the find condition.
-func (s *Store) findActivityRaw(ctx context.Context, find *api.ActivityFind) ([]*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	list, err := findActivityImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// getActivityRawByID retrieves a single activity based on ID.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getActivityRawByID(ctx context.Context, id int) (*activityRaw, error) {
-	find := &api.ActivityFind{ID: &id}
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	list, err := findActivityImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities with filter %+v, expect 1. ", len(list), find)}
-	}
-	return list[0], nil
-}
-
-// patchActivityRaw updates an existing activity by ID.
-// Returns ENOTFOUND if activity does not exist.
-func (s *Store) patchActivityRaw(ctx context.Context, patch *api.ActivityPatch) (*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	activity, err := patchActivityImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return activity, nil
-}
-
-func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Activity, error) {
-	activity := raw.toActivity()
-
-	creator, err := s.GetPrincipalByID(ctx, activity.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	activity.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, activity.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	activity.Updater = updater
-
-	return activity, nil
-}
-
-// createActivityImpl creates activities.
-func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCreate) ([]*activityRaw, error) {
-	var query strings.Builder
-	var values []any
-	var queryValues []string
-
-	if _, err := query.WriteString(
-		`INSERT INTO activity (
-			creator_id,
-			updater_id,
-			container_id,
-			type,
-			level,
-			comment,
-			payload
-		) VALUES
-    `); err != nil {
-		return nil, err
-	}
-	for i, create := range creates {
-		if create.Payload == "" {
-			create.Payload = "{}"
-		}
-		payload, err := convertAPIPayloadToProtoPayload(create.Type, create.Payload)
-		if err != nil {
-			return nil, err
-		}
-		values = append(values,
-			create.CreatorID,
-			create.CreatorID,
-			create.ContainerID,
-			create.Type,
-			create.Level,
-			create.Comment,
-			payload,
-		)
-		const count = 7
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7))
-	}
-	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
-		return nil, err
-	}
-	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload`); err != nil {
-		return nil, err
-	}
-
-	var activityRawList []*activityRaw
-	rows, err := tx.QueryContext(ctx, query.String(), values...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var activityRaw activityRaw
-		var protoPayload string
-		if err := rows.Scan(
-			&activityRaw.ID,
-			&activityRaw.CreatorID,
-			&activityRaw.CreatedTs,
-			&activityRaw.UpdaterID,
-			&activityRaw.UpdatedTs,
-			&activityRaw.ContainerID,
-			&activityRaw.Type,
-			&activityRaw.Level,
-			&activityRaw.Comment,
-			&protoPayload,
-		); err != nil {
-			return nil, err
-		}
-		if activityRaw.Payload, err = convertProtoPayloadToAPIPayload(activityRaw.Type, protoPayload); err != nil {
-			return nil, err
-		}
-		activityRawList = append(activityRawList, &activityRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return activityRawList, nil
-}
-
-func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*activityRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ContainerID; v != nil {
-		where, args = append(where, fmt.Sprintf("container_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.CreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.TypePrefixList; len(v) > 0 {
-		var queryValues []string
-		// Iterate over the typePrefix list and join each one with an OR condition.
-		for _, str := range v {
-			queryValues, args = append(queryValues, fmt.Sprintf("type LIKE $%d", len(args)+1)), append(args, fmt.Sprintf("%s%%", str))
-		}
-		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
-	}
-	if v := find.LevelList; len(v) > 0 {
-		var queryValues []string
-		for _, level := range v {
-			queryValues, args = append(queryValues, fmt.Sprintf("level = $%d", len(args)+1)), append(args, level)
-		}
-		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
-	}
-	if v := find.SinceID; v != nil {
-		where, args = append(where, fmt.Sprintf("id <= $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.CreatedTsAfter; v != nil {
-		where, args = append(where, fmt.Sprintf("created_ts >= $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.CreatedTsBefore; v != nil {
-		where, args = append(where, fmt.Sprintf("created_ts <= $%d", len(args)+1)), append(args, *v)
-	}
-
-	var query = `
-		SELECT
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			container_id,
-			type,
-			level,
-			comment,
-			payload
-		FROM activity
-		WHERE ` + strings.Join(where, " AND ")
-	if v := find.Order; v != nil {
-		query += fmt.Sprintf(" ORDER BY id %s", *v)
-	}
-	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into activityRawList.
-	var activityRawList []*activityRaw
-	for rows.Next() {
-		var activity activityRaw
-		var protoPayload string
-		if err := rows.Scan(
-			&activity.ID,
-			&activity.CreatorID,
-			&activity.CreatedTs,
-			&activity.UpdaterID,
-			&activity.UpdatedTs,
-			&activity.ContainerID,
-			&activity.Type,
-			&activity.Level,
-			&activity.Comment,
-			&protoPayload,
-		); err != nil {
-			return nil, err
-		}
-		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
-			return nil, err
-		}
-		activityRawList = append(activityRawList, &activity)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return activityRawList, nil
-}
-
-// patchActivityImpl updates a activity by ID. Returns the new state of the activity after update.
-func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*activityRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
-	if v := patch.Comment; v != nil {
-		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, api.Role(*v))
-	}
-	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Level; v != nil {
-		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	var activityRaw activityRaw
-	var protoPayload string
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE activity
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
-	`, len(args)),
-		args...,
-	).Scan(
-		&activityRaw.ID,
-		&activityRaw.CreatorID,
-		&activityRaw.CreatedTs,
-		&activityRaw.UpdaterID,
-		&activityRaw.UpdatedTs,
-		&activityRaw.ContainerID,
-		&activityRaw.Type,
-		&activityRaw.Level,
-		&activityRaw.Comment,
-		&protoPayload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("activity ID not found: %d", patch.ID)}
-		}
-		return nil, err
-	}
-	var err error
-	if activityRaw.Payload, err = convertProtoPayloadToAPIPayload(activityRaw.Type, protoPayload); err != nil {
-		return nil, err
-	}
-
-	return &activityRaw, nil
-}
-
 func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload string) (string, error) {
 	// TODO(zp): remove here when we migrate all payloads.
 	switch activityType {
@@ -671,6 +198,8 @@ func convertAPIApprovalEventStatusToStorePBStatus(status string) storepb.Activit
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED
 	case "PENDING":
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_PENDING
+	case "REJECTED":
+		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED
 	default:
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_STATUS_UNSPECIFIED
 	}
@@ -682,7 +211,406 @@ func convertStorePBStatusToAPIApprovalEventStatus(status storepb.ActivityIssueCo
 		return "APPROVED"
 	case storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_PENDING:
 		return "PENDING"
+	case storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED:
+		return "REJECTED"
 	default:
 		return ""
 	}
+}
+
+// ActivityMessage is the API message for activity.
+type ActivityMessage struct {
+	UID       int
+	CreatedTs int64
+	UpdatedTs int64
+
+	// Related fields
+	CreatorUID int
+	UpdaterUID int
+	// The object where this activity belongs
+	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
+	ContainerUID int
+
+	// Domain specific fields
+	Type    api.ActivityType
+	Level   api.ActivityLevel
+	Comment string
+	Payload string
+}
+
+// FindActivityMessage is the API message for listing activities.
+type FindActivityMessage struct {
+	UID             *int
+	CreatorUID      *int
+	LevelList       []api.ActivityLevel
+	TypeList        []api.ActivityType
+	ContainerUID    *int
+	CreatedTsAfter  *int64
+	CreatedTsBefore *int64
+	Limit           *int
+	Offset          *int
+	// If specified, sorts the returned list by created_ts in <<ORDER>>
+	// Different use cases want different orders.
+	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
+	Order *api.SortOrder
+}
+
+// UpdateActivityMessage updates the activity.
+type UpdateActivityMessage struct {
+	UID        int
+	CreatorUID *int
+	UpdaterUID int
+	Comment    *string
+	Level      *api.ActivityLevel
+	Payload    *string
+}
+
+// CreateActivityV2 creates an instance of Activity.
+func (s *Store) CreateActivityV2(ctx context.Context, create *ActivityMessage) (*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	activityList, err := createActivityImplV2(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(activityList) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities, expect 1", len(activityList))}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return activityList[0], nil
+}
+
+// BatchCreateActivityV2 creates activities in batch.
+func (s *Store) BatchCreateActivityV2(ctx context.Context, creates []*ActivityMessage) ([]*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	activityList, err := createActivityImplV2(ctx, tx, creates...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return activityList, nil
+}
+
+// UpdateActivityV2 updates the activity.
+// Returns ENOTFOUND if activity does not exist.
+func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMessage) (*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	set, args := []string{"updater_id = $1"}, []any{update.UpdaterUID}
+	if v := update.Comment; v != nil {
+		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := update.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := update.Level; v != nil {
+		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
+	}
+
+	where, args := []string{fmt.Sprintf("id = $%d", len(args)+1)}, append(args, update.UID)
+	if v := update.CreatorUID; v != nil {
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	query := fmt.Sprintf(`
+		UPDATE activity
+		SET %s
+		WHERE %s
+		RETURNING
+			id,
+			creator_id,
+			updater_id,
+			created_ts,
+			updated_ts,
+			container_id,
+			type,
+			level,
+			comment,
+			payload
+	`, strings.Join(set, ", "), strings.Join(where, " AND "))
+
+	var activity ActivityMessage
+	var protoPayload string
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+		&activity.UID,
+		&activity.CreatorUID,
+		&activity.UpdaterUID,
+		&activity.CreatedTs,
+		&activity.UpdatedTs,
+		&activity.ContainerUID,
+		&activity.Type,
+		&activity.Level,
+		&activity.Comment,
+		&protoPayload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found activity with id: %d", update.UID)}
+		}
+		return nil, err
+	}
+	if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &activity, nil
+}
+
+// GetActivityV2 gets the activity.
+// Returns ECONFLICT if finding more than 1 matching records.
+func (s *Store) GetActivityV2(ctx context.Context, uid int) (*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	activity, err := getActivityImplV2(ctx, tx, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return activity, nil
+}
+
+// ListActivityV2 lists the activity.
+func (s *Store) ListActivityV2(ctx context.Context, find *FindActivityMessage) ([]*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	list, err := listActivityImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func getActivityImplV2(ctx context.Context, tx *Tx, uid int) (*ActivityMessage, error) {
+	list, err := listActivityImplV2(ctx, tx, &FindActivityMessage{
+		UID: &uid,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) == 0 {
+		return nil, nil
+	} else if len(list) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities with id %+v, expect 1. ", len(list), uid)}
+	}
+	return list[0], nil
+}
+
+func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) ([]*ActivityMessage, error) {
+	// Build WHERE clause.
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ContainerUID; v != nil {
+		where, args = append(where, fmt.Sprintf("container_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatorUID; v != nil {
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.LevelList; len(v) > 0 {
+		var queryValues []string
+		for _, level := range v {
+			queryValues, args = append(queryValues, fmt.Sprintf("level = $%d", len(args)+1)), append(args, level)
+		}
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
+	}
+	if v := find.TypeList; len(v) > 0 {
+		var queryValues []string
+		for _, t := range v {
+			queryValues, args = append(queryValues, fmt.Sprintf("type = $%d", len(args)+1)), append(args, t)
+		}
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
+	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("created_ts >= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("created_ts <= $%d", len(args)+1)), append(args, *v)
+	}
+
+	query := `
+		SELECT
+			id,
+			creator_id,
+			updater_id,
+			created_ts,
+			updated_ts,
+			container_id,
+			type,
+			level,
+			comment,
+			payload
+		FROM activity
+		WHERE ` + strings.Join(where, " AND ")
+
+	if v := find.Order; v != nil {
+		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
+	}
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into activityRawList.
+	var activityList []*ActivityMessage
+	for rows.Next() {
+		var activity ActivityMessage
+		var protoPayload string
+		if err := rows.Scan(
+			&activity.UID,
+			&activity.CreatorUID,
+			&activity.UpdaterUID,
+			&activity.CreatedTs,
+			&activity.UpdatedTs,
+			&activity.ContainerUID,
+			&activity.Type,
+			&activity.Level,
+			&activity.Comment,
+			&protoPayload,
+		); err != nil {
+			return nil, err
+		}
+		if protoPayload == "" {
+			protoPayload = "{}"
+		}
+		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
+			return nil, err
+		}
+		activityList = append(activityList, &activity)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return activityList, nil
+}
+
+func createActivityImplV2(ctx context.Context, tx *Tx, creates ...*ActivityMessage) ([]*ActivityMessage, error) {
+	var query strings.Builder
+	var values []any
+	var queryValues []string
+
+	if _, err := query.WriteString(
+		`INSERT INTO activity (
+			creator_id,
+			updater_id,
+			container_id,
+			type,
+			level,
+			comment,
+			payload
+		) VALUES
+    `); err != nil {
+		return nil, err
+	}
+	for i, create := range creates {
+		if create.Payload == "" {
+			create.Payload = "{}"
+		}
+		payload, err := convertAPIPayloadToProtoPayload(create.Type, create.Payload)
+		if err != nil {
+			return nil, err
+		}
+		values = append(values,
+			create.CreatorUID,
+			create.CreatorUID,
+			create.ContainerUID,
+			create.Type,
+			create.Level,
+			create.Comment,
+			payload,
+		)
+		const count = 7
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7))
+	}
+	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
+		return nil, err
+	}
+	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload`); err != nil {
+		return nil, err
+	}
+
+	var activityList []*ActivityMessage
+	rows, err := tx.QueryContext(ctx, query.String(), values...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var activity ActivityMessage
+		var protoPayload string
+		if err := rows.Scan(
+			&activity.UID,
+			&activity.CreatorUID,
+			&activity.CreatedTs,
+			&activity.UpdaterUID,
+			&activity.UpdatedTs,
+			&activity.ContainerUID,
+			&activity.Type,
+			&activity.Level,
+			&activity.Comment,
+			&protoPayload,
+		); err != nil {
+			return nil, err
+		}
+		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
+			return nil, err
+		}
+		activityList = append(activityList, &activity)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return activityList, nil
 }

@@ -75,7 +75,7 @@
         >
           <FeatureBadge
             feature="bb.feature.branding"
-            class="text-white pointer-events-none"
+            custom-class="text-white pointer-events-none"
           />
           {{ $t("common.update") }}
         </button>

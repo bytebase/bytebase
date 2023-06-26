@@ -257,7 +257,7 @@ func (rule *SQLReviewRule) Validate() error {
 	// TODO(rebelice): add other SQL review rule validation.
 	switch rule.Type {
 	case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
-		if _, _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
+		if _, _, err := UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
@@ -322,8 +322,8 @@ type NamingCaseRulePayload struct {
 	Upper bool `json:"upper"`
 }
 
-// UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
-func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
+// UnmarshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
+func UnmarshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return nil, 0, errors.Wrapf(err, "failed to unmarshal naming rule payload %q", payload)
@@ -799,6 +799,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLWhereRequirement, nil
 		case db.Oracle:
 			return OracleWhereRequirement, nil
+		case db.Snowflake:
+			return SnowflakeWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
@@ -833,6 +835,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLNamingTableConvention, nil
 		case db.Oracle:
 			return OracleNamingTableConvention, nil
+		case db.Snowflake:
+			return SnowflakeNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
@@ -872,16 +876,25 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLNamingAutoIncrementColumnConvention, nil
 		}
 	case SchemaRuleTableNameNoKeyword:
-		if engine == db.Oracle {
+		switch engine {
+		case db.Oracle:
 			return OracleTableNamingNoKeyword, nil
+		case db.Snowflake:
+			return SnowflakeTableNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierNoKeyword:
-		if engine == db.Oracle {
+		switch engine {
+		case db.Oracle:
 			return OracleIdentifierNamingNoKeyword, nil
+		case db.Snowflake:
+			return SnowflakeIdentifierNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierCase:
-		if engine == db.Oracle {
+		switch engine {
+		case db.Oracle:
 			return OracleIdentifierCase, nil
+		case db.Snowflake:
+			return SnowflakeIdentifierCase, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
@@ -891,6 +904,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLColumnRequirement, nil
 		case db.Oracle:
 			return OracleColumnRequirement, nil
+		case db.Snowflake:
+			return SnowflakeColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
@@ -900,6 +915,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLColumnNoNull, nil
 		case db.Oracle:
 			return OracleColumnNoNull, nil
+		case db.Snowflake:
+			return SnowflakeColumnNoNull, nil
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {
@@ -957,8 +974,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleColumnMaximumCharacterLength, nil
 		}
 	case SchemaRuleColumnMaximumVarcharLength:
-		if engine == db.Oracle {
+		switch engine {
+		case db.Oracle:
 			return OracleColumnMaximumVarcharLength, nil
+		case db.Snowflake:
+			return SnowflakeColumnMaximumVarcharLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
@@ -996,6 +1016,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLTableRequirePK, nil
 		case db.Oracle:
 			return OracleTableRequirePK, nil
+		case db.Snowflake:
+			return SnowflakeTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
@@ -1005,6 +1027,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLTableNoFK, nil
 		case db.Oracle:
 			return OracleTableNoFK, nil
+		case db.Snowflake:
+			return SnowflakeTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {

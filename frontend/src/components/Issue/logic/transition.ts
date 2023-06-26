@@ -19,6 +19,7 @@ import {
   extractUserUID,
   hasWorkspacePermissionV1,
   isOwnerOfProjectV1,
+  isGrantRequestIssueType,
 } from "@/utils";
 import {
   allowUserToBeAssignee,
@@ -182,6 +183,11 @@ export const calcApplicableIssueStatusTransitionList = (
       // If an issue is not "Approved" in review stage
       // it cannot be Resolved.
       if (!isIssueReviewDone(issue)) {
+        return;
+      }
+    } else if (type === "REOPEN") {
+      // Don't show the REOPEN button for request granting issues.
+      if (isGrantRequestIssueType(issue.type)) {
         return;
       }
     }

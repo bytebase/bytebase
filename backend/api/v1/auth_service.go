@@ -212,14 +212,14 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to construct activity payload, error: %v", err)
 	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   user.ID,
-		ContainerID: user.ID,
-		Type:        api.ActivityMemberCreate,
-		Level:       api.ActivityInfo,
-		Payload:     string(bytes),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   user.ID,
+		ContainerUID: user.ID,
+		Type:         api.ActivityMemberCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
 	}
-	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
+	if _, err := s.store.CreateActivityV2(ctx, activityCreate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
 	}
 	userResponse := convertToUser(user)
@@ -324,11 +324,10 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				patch.MFAConfig = &storepb.MFAConfig{}
 			}
 		case "phone":
-			if request.User.Phone == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "phone number cannot be empty")
-			}
-			if err := validatePhone(request.User.Phone); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid phone number %q, error: %v", request.User.Phone, err)
+			if request.User.Phone != "" {
+				if err := validatePhone(request.User.Phone); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid phone number %q, error: %v", request.User.Phone, err)
+				}
 			}
 			patch.Phone = &request.User.Phone
 		}
@@ -573,7 +572,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
-	if s.licenseService.IsFeatureEnabled(api.Feature2FA) && !mfaSecondLogin && userMFAEnabled {
+	if s.licenseService.IsFeatureEnabled(api.Feature2FA) == nil && !mfaSecondLogin && userMFAEnabled {
 		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
@@ -758,8 +757,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 	var user *store.UserMessage
 	if len(users) == 0 {
-		if !s.licenseService.IsFeatureEnabled(api.FeatureSSO) {
-			return nil, status.Errorf(codes.PermissionDenied, "SSO is not available in your license")
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		// Create new user from identity provider.
 		password, err := common.RandomString(20)

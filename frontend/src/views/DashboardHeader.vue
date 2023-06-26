@@ -119,7 +119,7 @@
         </div>
         <router-link to="/inbox" exact-active-class="">
           <span
-            v-if="inboxSummary.hasUnread"
+            v-if="inboxSummary.unread > 0"
             class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
@@ -215,7 +215,7 @@ import {
   useCurrentUser,
   useActuatorV1Store,
   useSubscriptionV1Store,
-  useInboxStore,
+  useInboxV1Store,
   useCurrentUserV1,
 } from "@/store";
 import { storeToRefs } from "pinia";
@@ -236,7 +236,7 @@ export default defineComponent({
   setup() {
     const { t, availableLocales } = useI18n();
     const actuatorV1Store = useActuatorV1Store();
-    const inboxStore = useInboxStore();
+    const inboxV1Store = useInboxV1Store();
     const subscriptionStore = useSubscriptionV1Store();
     const router = useRouter();
     const route = useRoute();
@@ -283,14 +283,14 @@ export default defineComponent({
     const prepareInboxSummary = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
+        inboxV1Store.fetchInboxSummary();
       }
     };
 
     watchEffect(prepareInboxSummary);
 
     const inboxSummary = computed(() => {
-      return inboxStore.getInboxSummaryByUser(currentUser.value.id);
+      return inboxV1Store.inboxSummary;
     });
 
     const kbarActions = computed(() => [

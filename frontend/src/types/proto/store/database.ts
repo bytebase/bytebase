@@ -16,6 +16,8 @@ export interface DatabaseMetadata {
   collation: string;
   /** The extensions is the list of extensions in a database. */
   extensions: ExtensionMetadata[];
+  /** The database belongs to a datashare. */
+  datashare: boolean;
 }
 
 /**
@@ -34,6 +36,172 @@ export interface SchemaMetadata {
   views: ViewMetadata[];
   /** The functions is the list of functions in a schema. */
   functions: FunctionMetadata[];
+  /** The streams is the list of streams in a schema, currently, only used for Snowflake. */
+  streams: StreamMetadata[];
+  /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
+  tasks: TaskMetadata[];
+}
+
+export interface TaskMetadata {
+  /** The name is the name of a task. */
+  name: string;
+  /**
+   * The id is the snowflake-generated id of a task.
+   * Example: 01ad32a0-1bb6-5e93-0000-000000000001
+   */
+  id: string;
+  /** The owner of the task. */
+  owner: string;
+  /** The comment of the task. */
+  comment: string;
+  /** The warehouse of the task. */
+  warehouse: string;
+  /** The schedule interval of the task. */
+  schedule: string;
+  /** The predecessor tasks of the task. */
+  predecessors: string[];
+  /** The state of the task. */
+  state: TaskMetadata_State;
+  /** The condition of the task. */
+  condition: string;
+  /** The definition of the task. */
+  definition: string;
+}
+
+export enum TaskMetadata_State {
+  STATE_UNSPECIFIED = 0,
+  STATE_STARTED = 1,
+  STATE_SUSPENDED = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function taskMetadata_StateFromJSON(object: any): TaskMetadata_State {
+  switch (object) {
+    case 0:
+    case "STATE_UNSPECIFIED":
+      return TaskMetadata_State.STATE_UNSPECIFIED;
+    case 1:
+    case "STATE_STARTED":
+      return TaskMetadata_State.STATE_STARTED;
+    case 2:
+    case "STATE_SUSPENDED":
+      return TaskMetadata_State.STATE_SUSPENDED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskMetadata_State.UNRECOGNIZED;
+  }
+}
+
+export function taskMetadata_StateToJSON(object: TaskMetadata_State): string {
+  switch (object) {
+    case TaskMetadata_State.STATE_UNSPECIFIED:
+      return "STATE_UNSPECIFIED";
+    case TaskMetadata_State.STATE_STARTED:
+      return "STATE_STARTED";
+    case TaskMetadata_State.STATE_SUSPENDED:
+      return "STATE_SUSPENDED";
+    case TaskMetadata_State.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface StreamMetadata {
+  /** The name is the name of a stream. */
+  name: string;
+  /** The table_name is the name of the table/view that the stream is created on. */
+  tableName: string;
+  /** The owner of the stream. */
+  owner: string;
+  /** The comment of the stream. */
+  comment: string;
+  /** The type of the stream. */
+  type: StreamMetadata_Type;
+  /** Indicates whether the stream was last read before the `stale_after` time. */
+  stale: boolean;
+  /** The mode of the stream. */
+  mode: StreamMetadata_Mode;
+  /** The definition of the stream. */
+  definition: string;
+}
+
+export enum StreamMetadata_Type {
+  TYPE_UNSPECIFIED = 0,
+  TYPE_DELTA = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function streamMetadata_TypeFromJSON(object: any): StreamMetadata_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return StreamMetadata_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "TYPE_DELTA":
+      return StreamMetadata_Type.TYPE_DELTA;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return StreamMetadata_Type.UNRECOGNIZED;
+  }
+}
+
+export function streamMetadata_TypeToJSON(object: StreamMetadata_Type): string {
+  switch (object) {
+    case StreamMetadata_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case StreamMetadata_Type.TYPE_DELTA:
+      return "TYPE_DELTA";
+    case StreamMetadata_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum StreamMetadata_Mode {
+  MODE_UNSPECIFIED = 0,
+  MODE_DEFAULT = 1,
+  MODE_APPEND_ONLY = 2,
+  MODE_INSERT_ONLY = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function streamMetadata_ModeFromJSON(object: any): StreamMetadata_Mode {
+  switch (object) {
+    case 0:
+    case "MODE_UNSPECIFIED":
+      return StreamMetadata_Mode.MODE_UNSPECIFIED;
+    case 1:
+    case "MODE_DEFAULT":
+      return StreamMetadata_Mode.MODE_DEFAULT;
+    case 2:
+    case "MODE_APPEND_ONLY":
+      return StreamMetadata_Mode.MODE_APPEND_ONLY;
+    case 3:
+    case "MODE_INSERT_ONLY":
+      return StreamMetadata_Mode.MODE_INSERT_ONLY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return StreamMetadata_Mode.UNRECOGNIZED;
+  }
+}
+
+export function streamMetadata_ModeToJSON(object: StreamMetadata_Mode): string {
+  switch (object) {
+    case StreamMetadata_Mode.MODE_UNSPECIFIED:
+      return "MODE_UNSPECIFIED";
+    case StreamMetadata_Mode.MODE_DEFAULT:
+      return "MODE_DEFAULT";
+    case StreamMetadata_Mode.MODE_APPEND_ONLY:
+      return "MODE_APPEND_ONLY";
+    case StreamMetadata_Mode.MODE_INSERT_ONLY:
+      return "MODE_INSERT_ONLY";
+    case StreamMetadata_Mode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 /** TableMetadata is the metadata for tables. */
@@ -197,7 +365,7 @@ export interface SecretItem {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [] };
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false };
 }
 
 export const DatabaseMetadata = {
@@ -216,6 +384,9 @@ export const DatabaseMetadata = {
     }
     for (const v of message.extensions) {
       ExtensionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.datashare === true) {
+      writer.uint32(48).bool(message.datashare);
     }
     return writer;
   },
@@ -262,6 +433,13 @@ export const DatabaseMetadata = {
 
           message.extensions.push(ExtensionMetadata.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.datashare = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -280,6 +458,7 @@ export const DatabaseMetadata = {
       extensions: Array.isArray(object?.extensions)
         ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
         : [],
+      datashare: isSet(object.datashare) ? Boolean(object.datashare) : false,
     };
   },
 
@@ -298,6 +477,7 @@ export const DatabaseMetadata = {
     } else {
       obj.extensions = [];
     }
+    message.datashare !== undefined && (obj.datashare = message.datashare);
     return obj;
   },
 
@@ -312,12 +492,13 @@ export const DatabaseMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
+    message.datashare = object.datashare ?? false;
     return message;
   },
 };
 
 function createBaseSchemaMetadata(): SchemaMetadata {
-  return { name: "", tables: [], views: [], functions: [] };
+  return { name: "", tables: [], views: [], functions: [], streams: [], tasks: [] };
 }
 
 export const SchemaMetadata = {
@@ -333,6 +514,12 @@ export const SchemaMetadata = {
     }
     for (const v of message.functions) {
       FunctionMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.streams) {
+      StreamMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.tasks) {
+      TaskMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -372,6 +559,20 @@ export const SchemaMetadata = {
 
           message.functions.push(FunctionMetadata.decode(reader, reader.uint32()));
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.tasks.push(TaskMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -387,6 +588,8 @@ export const SchemaMetadata = {
       tables: Array.isArray(object?.tables) ? object.tables.map((e: any) => TableMetadata.fromJSON(e)) : [],
       views: Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
       functions: Array.isArray(object?.functions) ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e)) : [],
+      streams: Array.isArray(object?.streams) ? object.streams.map((e: any) => StreamMetadata.fromJSON(e)) : [],
+      tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => TaskMetadata.fromJSON(e)) : [],
     };
   },
 
@@ -408,6 +611,16 @@ export const SchemaMetadata = {
     } else {
       obj.functions = [];
     }
+    if (message.streams) {
+      obj.streams = message.streams.map((e) => e ? StreamMetadata.toJSON(e) : undefined);
+    } else {
+      obj.streams = [];
+    }
+    if (message.tasks) {
+      obj.tasks = message.tasks.map((e) => e ? TaskMetadata.toJSON(e) : undefined);
+    } else {
+      obj.tasks = [];
+    }
     return obj;
   },
 
@@ -421,6 +634,347 @@ export const SchemaMetadata = {
     message.tables = object.tables?.map((e) => TableMetadata.fromPartial(e)) || [];
     message.views = object.views?.map((e) => ViewMetadata.fromPartial(e)) || [];
     message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
+    message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
+    message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTaskMetadata(): TaskMetadata {
+  return {
+    name: "",
+    id: "",
+    owner: "",
+    comment: "",
+    warehouse: "",
+    schedule: "",
+    predecessors: [],
+    state: 0,
+    condition: "",
+    definition: "",
+  };
+}
+
+export const TaskMetadata = {
+  encode(message: TaskMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    if (message.owner !== "") {
+      writer.uint32(26).string(message.owner);
+    }
+    if (message.comment !== "") {
+      writer.uint32(34).string(message.comment);
+    }
+    if (message.warehouse !== "") {
+      writer.uint32(42).string(message.warehouse);
+    }
+    if (message.schedule !== "") {
+      writer.uint32(50).string(message.schedule);
+    }
+    for (const v of message.predecessors) {
+      writer.uint32(58).string(v!);
+    }
+    if (message.state !== 0) {
+      writer.uint32(64).int32(message.state);
+    }
+    if (message.condition !== "") {
+      writer.uint32(74).string(message.condition);
+    }
+    if (message.definition !== "") {
+      writer.uint32(82).string(message.definition);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.warehouse = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.schedule = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.predecessors.push(reader.string());
+          continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.state = reader.int32() as any;
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.condition = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskMetadata {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      id: isSet(object.id) ? String(object.id) : "",
+      owner: isSet(object.owner) ? String(object.owner) : "",
+      comment: isSet(object.comment) ? String(object.comment) : "",
+      warehouse: isSet(object.warehouse) ? String(object.warehouse) : "",
+      schedule: isSet(object.schedule) ? String(object.schedule) : "",
+      predecessors: Array.isArray(object?.predecessors) ? object.predecessors.map((e: any) => String(e)) : [],
+      state: isSet(object.state) ? taskMetadata_StateFromJSON(object.state) : 0,
+      condition: isSet(object.condition) ? String(object.condition) : "",
+      definition: isSet(object.definition) ? String(object.definition) : "",
+    };
+  },
+
+  toJSON(message: TaskMetadata): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.id !== undefined && (obj.id = message.id);
+    message.owner !== undefined && (obj.owner = message.owner);
+    message.comment !== undefined && (obj.comment = message.comment);
+    message.warehouse !== undefined && (obj.warehouse = message.warehouse);
+    message.schedule !== undefined && (obj.schedule = message.schedule);
+    if (message.predecessors) {
+      obj.predecessors = message.predecessors.map((e) => e);
+    } else {
+      obj.predecessors = [];
+    }
+    message.state !== undefined && (obj.state = taskMetadata_StateToJSON(message.state));
+    message.condition !== undefined && (obj.condition = message.condition);
+    message.definition !== undefined && (obj.definition = message.definition);
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskMetadata>): TaskMetadata {
+    return TaskMetadata.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<TaskMetadata>): TaskMetadata {
+    const message = createBaseTaskMetadata();
+    message.name = object.name ?? "";
+    message.id = object.id ?? "";
+    message.owner = object.owner ?? "";
+    message.comment = object.comment ?? "";
+    message.warehouse = object.warehouse ?? "";
+    message.schedule = object.schedule ?? "";
+    message.predecessors = object.predecessors?.map((e) => e) || [];
+    message.state = object.state ?? 0;
+    message.condition = object.condition ?? "";
+    message.definition = object.definition ?? "";
+    return message;
+  },
+};
+
+function createBaseStreamMetadata(): StreamMetadata {
+  return { name: "", tableName: "", owner: "", comment: "", type: 0, stale: false, mode: 0, definition: "" };
+}
+
+export const StreamMetadata = {
+  encode(message: StreamMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.tableName !== "") {
+      writer.uint32(18).string(message.tableName);
+    }
+    if (message.owner !== "") {
+      writer.uint32(26).string(message.owner);
+    }
+    if (message.comment !== "") {
+      writer.uint32(34).string(message.comment);
+    }
+    if (message.type !== 0) {
+      writer.uint32(40).int32(message.type);
+    }
+    if (message.stale === true) {
+      writer.uint32(48).bool(message.stale);
+    }
+    if (message.mode !== 0) {
+      writer.uint32(56).int32(message.mode);
+    }
+    if (message.definition !== "") {
+      writer.uint32(66).string(message.definition);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): StreamMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStreamMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tableName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.stale = reader.bool();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.mode = reader.int32() as any;
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StreamMetadata {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      tableName: isSet(object.tableName) ? String(object.tableName) : "",
+      owner: isSet(object.owner) ? String(object.owner) : "",
+      comment: isSet(object.comment) ? String(object.comment) : "",
+      type: isSet(object.type) ? streamMetadata_TypeFromJSON(object.type) : 0,
+      stale: isSet(object.stale) ? Boolean(object.stale) : false,
+      mode: isSet(object.mode) ? streamMetadata_ModeFromJSON(object.mode) : 0,
+      definition: isSet(object.definition) ? String(object.definition) : "",
+    };
+  },
+
+  toJSON(message: StreamMetadata): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.tableName !== undefined && (obj.tableName = message.tableName);
+    message.owner !== undefined && (obj.owner = message.owner);
+    message.comment !== undefined && (obj.comment = message.comment);
+    message.type !== undefined && (obj.type = streamMetadata_TypeToJSON(message.type));
+    message.stale !== undefined && (obj.stale = message.stale);
+    message.mode !== undefined && (obj.mode = streamMetadata_ModeToJSON(message.mode));
+    message.definition !== undefined && (obj.definition = message.definition);
+    return obj;
+  },
+
+  create(base?: DeepPartial<StreamMetadata>): StreamMetadata {
+    return StreamMetadata.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<StreamMetadata>): StreamMetadata {
+    const message = createBaseStreamMetadata();
+    message.name = object.name ?? "";
+    message.tableName = object.tableName ?? "";
+    message.owner = object.owner ?? "";
+    message.comment = object.comment ?? "";
+    message.type = object.type ?? 0;
+    message.stale = object.stale ?? false;
+    message.mode = object.mode ?? 0;
+    message.definition = object.definition ?? "";
     return message;
   },
 };

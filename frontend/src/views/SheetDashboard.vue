@@ -58,11 +58,7 @@
               v-if="hasFeature('bb.feature.vcs-sheet-sync')"
               class="w-4 h-auto mr-1"
             />
-            <FeatureBadge
-              v-else
-              feature="bb.feature.vcs-sheet-sync"
-              class="text-accent"
-            />
+            <FeatureBadge v-else feature="bb.feature.vcs-sheet-sync" />
             {{ $t("sheet.actions.sync-from-vcs") }}
           </n-button>
         </div>

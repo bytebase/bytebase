@@ -54,6 +54,8 @@
     "bookmarks": "Bookmarks",
     "quick-action": "Quick Action",
     "archive": "Archive",
+    "archived": "Archived",
+    "no-license": "No license",
     "logout": "Logout",
     "close": "Close",
     "latest": "Latest",
@@ -75,6 +77,7 @@
     "updated": "Updated",
     "visit": "Visit",
     "role": {
+      "self": "Role",
       "dba": "DBA",
       "owner": "Owner",
       "developer": "Developer",
@@ -252,7 +255,8 @@
     },
     "expiration": "Expiration",
     "configure": "Configure",
-    "database-groups": "Database Groups"
+    "database-groups": "Database Groups",
+    "members": "Members"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -777,8 +781,11 @@
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
       "customize": "Customize",
-      "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once."
-    }
+      "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once.",
+      "export-method": "Export method",
+      "please-select-database-first": "Please select database first"
+    },
+    "review-sent-back": "Review sent back"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -802,12 +809,11 @@
     "troubleshoot": "Troubleshoot",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
-    "from-unassigned-databases": "From unassigned databases",
-    "from-projects": "From projects",
+    "from-unassigned-databases": "Transfer unassigned databases",
+    "from-projects": "Transfer from other projects",
     "transfer-in-db-title": "Transfer in database",
-    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in the default project.",
     "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
-    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in unassigned databases.",
+    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are unassigned at first, and they need to be transferred to a project before they can be used.",
     "transfer-out-db": "Transfer out DB",
     "transfer-out-db-title": "Transfer out database",
     "request-query": "Request Query",
@@ -1024,11 +1030,11 @@
     "rollout": {
       "name": "Rollout policy",
       "tip": "The policy is applied to issues retroactively.",
-      "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
-      "manual": "Require manual rolling out",
-      "manual-info": "Tasks will only be executed after being manually rolled out.",
-      "auto": "Skip manual rolling out",
-      "auto-info": "Tasks will be rolled out and executed automatically if all task checks pass.",
+      "info": "For rolling out database change, this setting controls whether the rollout requires manual approval.",
+      "manual": "Manual rollout",
+      "manual-info": "Require clicking \"Rollout\" button manually, and then the change will be executed.",
+      "auto": "Automatic rollout",
+      "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
       "assignee-group": {
         "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
         "project-owner": "Require rolling out from project owner."
@@ -1235,6 +1241,7 @@
     "doesnt-match-tenant-value": "Doesn't match label value",
     "should-follow-database-name-template": "Should follow tenant database name template",
     "all": "All databases",
+    "unassigned": "Unassigned",
     "show-schemaless-databases": "Show schemaless databases. (Alter Schema is not applicable for schemaless databases.)",
     "secret": {
       "self": "Secret",
@@ -1441,17 +1448,19 @@
     },
     "settings": {
       "success-updated": "Project settings updated successfully.",
-      "success-member-added-prompt": "Successfully added {name} to the project.",
+      "success-member-added-prompt": "Successfully added to the project.",
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
-      "add-member": "Add member",
       "owner": "@.upper:common.role.owner",
       "developer": "@.upper:common.role.developer",
       "archive": {
         "title": "Archive project",
         "description": "Archived project will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
-        "btn-text": "Archive this @.lower:{'common.project'}"
+        "btn-text": "Archive this @.lower:{'common.project'}",
+        "force": {
+          "description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
+        }
       },
       "restore": {
         "title": "Restore project",
@@ -1460,21 +1469,27 @@
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Imperative - Migration-based migration. E.g., ALTER TABLE",
       "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
-      "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
-      "members": {
-        "edit": "Edit member - {member}",
-        "view-by-principals": "View by principals",
-        "view-by-roles": "View by roles",
-        "cannot-remove-last-owner": "Cannot remove the last owner of a project",
-        "revoke-role-from-user": "Revoke '{role}' from '{user}'",
-        "remove-user": "Remove '{user}'",
-        "inactive-members": "Inactive members",
-        "show-inactive": "Show inactive members"
-      }
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
+    },
+    "members": {
+      "add-member": "Add member",
+      "revoke-member": "Revoke member",
+      "edit": "Edit member - {member}",
+      "view-by-principals": "View by principals",
+      "view-by-roles": "View by roles",
+      "cannot-remove-last-owner": "Cannot remove the last owner of a project",
+      "revoke-role-from-user": "Revocar el '{role}' del usuario '{user}'",
+      "inactive-members": "Inactive members",
+      "show-inactive": "Show inactive members",
+      "select-users": "Select users",
+      "assign-role": "Assign role",
+      "never-expires": "Never",
+      "role-never-expires": "This role never expires.",
+      "add-more": "Add more"
     },
     "mode": {
-      "standard": "Standard",
-      "tenant": "Tenant"
+      "standard": "Standard Mode",
+      "batch": "Batch Mode"
     },
     "db-name-template": "Tenant Database Name Template",
     "select": "Select project",
@@ -1738,7 +1753,8 @@
     },
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "run-selected": "Run selected",
-    "clear-screen": "Clear screen"
+    "clear-screen": "Clear screen",
+    "query-time": "Query time"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -1868,6 +1884,17 @@
     "trial-for-days": "You can start a free trial for {days} days - no credit card required",
     "upgrade-trial": "You can upgrade your free trial to this plan",
     "upgrade-now": "Upgrade Now",
+    "instance-assignment": {
+      "license": "License",
+      "assign-license": "Assign License",
+      "require-license": "Require instance license",
+      "missing-license-attention": "You need to assign license to the instance to enable this feature.",
+      "n-license-remain": "remain {n}",
+      "manage-license": "Manage License",
+      "used-and-total-license": "Assigned / Total Instance License",
+      "success-notification": "Successfully update license assignment",
+      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature."
+    },
     "update": {
       "success": {
         "title": "Successfully updated license",
@@ -1897,8 +1924,8 @@
         "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
       },
       "bb-feature-multi-tenancy": {
-        "title": "Multi-tenancy",
-        "desc": "Intelligent database management for tenants using identical schemas."
+        "title": "Batch mode",
+        "desc": "Batch changing a group of databases from different tenants or partitions."
       },
       "bb-feature-approval-policy": {
         "title": "Rollout policy",
@@ -2393,7 +2420,7 @@
     "approval-flow": {
       "self": "Approval flow",
       "description": "For each operation type, configure custom condition, risk and approval flow. ",
-      "approval-flows": "Approval flows",
+      "approval-flows": "Approval Flows",
       "approval-nodes": "Approval nodes",
       "type": {
         "system": "System",
@@ -2419,8 +2446,8 @@
         "delete": "Delete approval node",
         "select-approver": "Select approver",
         "roles": {
-          "system": "System roles",
-          "custom": "Custom roles"
+          "system": "System Roles",
+          "custom": "Custom Roles"
         }
       },
       "presets": {
@@ -2433,7 +2460,15 @@
       "view-approval-flow": "View approval flow",
       "skip": "Skip manual approval",
       "risk-not-configured-tips": "Make sure you have defined {link}.",
-      "the-related-risk-rules": "the related risk rules"
+      "the-related-risk-rules": "the related risk rules",
+      "external-approval": {
+        "self": "External Approval",
+        "delete": "Delete external approval node?",
+        "endpoint": "Endpoint",
+        "view-node": "View external approval node",
+        "create-node": "Create external approval node",
+        "edit-node": "Edit external approval node"
+      }
     },
     "risk": {
       "self": "Risk",
@@ -2457,8 +2492,16 @@
       "approved-issue": "approved issue",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Some task checks didn't pass"
-      }
-    }
+      },
+      "send-back": "Send back",
+      "send-back-issue": "Send back issue?",
+      "re-request-review": "Re-request review",
+      "re-request-review-issue": "Re-request review issue?",
+      "sent-back-issue": "Sent back issue",
+      "re-requested-review": "re-requested issue review",
+      "no-one-matches-role": "No one matches the role, contact project owner to assign one."
+    },
+    "send-back": "Send back"
   },
   "slow-query": {
     "self": "Slow query",
@@ -2532,7 +2575,8 @@
     "querier": {
       "description": "System defined project querier role"
     },
-    "select-role": "Select role"
+    "select-role": "Select role",
+    "expired-tip": "The role might has been expired."
   },
   "database-group": {
     "self": "Database Group",
@@ -2548,6 +2592,7 @@
       "edit": "Edit table group"
     },
     "factor": {
+      "resource_instance_id": "Instance ID",
       "resource_database_name": "Database name",
       "resource_table_name": "Table name"
     },

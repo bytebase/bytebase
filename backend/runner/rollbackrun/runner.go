@@ -139,9 +139,9 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		rollbackStatement = statementsBuffer.String()
 	}
 
-	sheet, err := r.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := r.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  project.UID,
+		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for rolling back task %v", task.ID),
 		Statement:  rollbackStatement,
 		Visibility: api.ProjectSheet,
@@ -158,7 +158,7 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		ID:                task.ID,
 		UpdaterID:         api.SystemBotID,
 		RollbackSQLStatus: &rollbackSQLStatus,
-		RollbackSheetID:   &sheet.ID,
+		RollbackSheetID:   &sheet.UID,
 		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
@@ -172,7 +172,7 @@ func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api
 	if payload.TransactionID == "" {
 		return nil, errors.New("missing transaction ID, may be there is no data change in the transaction")
 	}
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get admin database driver")
 	}
@@ -227,9 +227,9 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		rollbackStatement = rollbackSQL
 	}
 
-	sheet, err := r.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := r.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  project.UID,
+		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for rolling back task %d", task.ID),
 		Statement:  rollbackStatement,
 		Visibility: api.ProjectSheet,
@@ -245,7 +245,7 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		ID:                task.ID,
 		UpdaterID:         api.SystemBotID,
 		RollbackSQLStatus: &rollbackSQLStatus,
-		RollbackSheetID:   &sheet.ID,
+		RollbackSheetID:   &sheet.UID,
 		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
@@ -260,7 +260,7 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 		return "", ctx.Err()
 	}
 	// We cannot support rollback SQL generation for sheets because it can take lots of resources.
-	sheet, err := r.store.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := r.store.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
 	}
@@ -280,7 +280,7 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 	}
 	binlogFileNameList := mysql.GenBinlogFileNames(basename, seqStart, seqEnd)
 
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}

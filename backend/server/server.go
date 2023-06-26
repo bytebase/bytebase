@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net"
 	"net/http"
 	"runtime"
@@ -71,6 +72,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
@@ -112,6 +114,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	// Register oracle advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
+	// Register snowflake advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 
@@ -154,6 +158,7 @@ type Server struct {
 	ApplicationRunner  *apprun.Runner
 	RollbackRunner     *rollbackrun.Runner
 	ApprovalRunner     *approval.Runner
+	RelayRunner        *relay.Runner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *activity.Manager
@@ -325,9 +330,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	s.stateCfg = &state.State{
-		InstanceDatabaseSyncChan:       make(chan *store.InstanceMessage, 100),
-		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
-		InstanceOutstandingConnections: make(map[int]int),
+		InstanceDatabaseSyncChan:             make(chan *store.InstanceMessage, 100),
+		InstanceSlowQuerySyncChan:            make(chan string, 100),
+		InstanceOutstandingConnections:       make(map[int]int),
+		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 	}
 	s.store = storeInstance
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
@@ -425,10 +431,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
-		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
+		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile, s.licenseService)
+
+		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.TaskScheduler, s.stateCfg)
+
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
-		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.licenseService)
+		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.RelayRunner, s.licenseService)
 
 		s.MailSender = mail.NewSender(s.store, s.stateCfg)
 
@@ -446,10 +455,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
 		s.TaskCheckScheduler = taskcheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
-		statementSimpleExecutor := taskcheck.NewStatementAdvisorSimpleExecutor(storeInstance)
+		statementSimpleExecutor := taskcheck.NewStatementAdvisorSimpleExecutor(storeInstance, s.licenseService)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
-		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory)
+		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory, s.licenseService)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
 		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
@@ -510,18 +519,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
 	})
-	s.registerOAuthRoutes(apiGroup)
-	s.registerProjectRoutes(apiGroup)
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
 	s.registerTaskRoutes(apiGroup)
 	s.registerStageRoutes(apiGroup)
-	s.registerActivityRoutes(apiGroup)
-	s.registerInboxRoutes(apiGroup)
-	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
-	s.registerAnomalyRoutes(apiGroup)
 
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
@@ -542,6 +545,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	s.grpcServer = grpc.NewServer(
+		// Override the maximum receiving message size to 100M for uploading large sheets.
+		grpc.MaxRecvMsgSize(100*1024*1024),
 		grpc.ChainUnaryInterceptor(
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
@@ -586,7 +591,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.dbFactory,
 		s.SchemaSyncer))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store, s.ActivityManager, s.licenseService))
-	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.licenseService))
+	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.SchemaSyncer, s.licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
@@ -595,11 +600,14 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.SchemaSyncer, s.dbFactory, s.ActivityManager))
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
-	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager, s.TaskScheduler, s.stateCfg))
+	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager, s.TaskScheduler, s.TaskCheckScheduler, s.RelayRunner, s.stateCfg))
 	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.stateCfg, s.ActivityManager))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
-	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store))
+	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
 	v1pb.RegisterCelServiceServer(s.grpcServer, v1.NewCelService())
+	v1pb.RegisterLoggingServiceServer(s.grpcServer, v1.NewLoggingService(s.store))
+	v1pb.RegisterBookmarkServiceServer(s.grpcServer, v1.NewBookmarkService(s.store))
+	v1pb.RegisterInboxServiceServer(s.grpcServer, v1.NewInboxService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -658,6 +666,15 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterBookmarkServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
@@ -799,6 +816,19 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
+	// initial external approval setting
+	externalApprovalSettingValue, err := protojson.Marshal(&storepb.ExternalApprovalSetting{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal initial external approval setting")
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingWorkspaceExternalApproval,
+		Value:       string(externalApprovalSettingValue),
+		Description: "The external approval setting",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	// initial workspace approval setting
 	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
 	if err != nil {
@@ -880,6 +910,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApprovalRunner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.RelayRunner.Run(ctx, &s.runnerWG)
 
 		s.runnerWG.Add(1)
 		go s.MetricReporter.Run(ctx, &s.runnerWG)
@@ -1041,7 +1073,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 			},
 		},
 		EnvironmentID: api.DefaultProdEnvironmentID,
-	}, userID)
+		Activation:    true,
+	}, userID, math.MaxInt)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding instance")
 	}
@@ -1100,27 +1133,27 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	// Create a standalone sample SQL sheet.
 	// This is different from another sample SQL sheet created below, which is created as part of
 	// creating a schema change issue.
-	sheetCreate := &api.SheetCreate{
-		CreatorID:  userID,
-		ProjectID:  project.UID,
-		DatabaseID: &database.UID,
-		Name:       "Sample Sheet",
-		Statement:  "SELECT * FROM salary;",
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebase,
-		Type:       api.SheetForSQL,
+	sheetCreate := &store.SheetMessage{
+		CreatorID:   userID,
+		ProjectUID:  project.UID,
+		DatabaseUID: &database.UID,
+		Name:        "Sample Sheet",
+		Statement:   "SELECT * FROM salary;",
+		Visibility:  api.ProjectSheet,
+		Source:      api.SheetFromBytebase,
+		Type:        api.SheetForSQL,
 	}
-	_, err = s.store.CreateSheet(ctx, sheetCreate)
+	_, err = s.store.CreateSheetV2(ctx, sheetCreate)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create sample sheet")
 	}
 
 	// Create a schema update issue and start with creating the sheet for the schema update.
-	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
-		ProjectID:  project.UID,
-		DatabaseID: &database.UID,
+		ProjectUID:  project.UID,
+		DatabaseUID: &database.UID,
 
 		Name:       "Alter table sheet for Sample Issue",
 		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
@@ -1141,7 +1174,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 					DatabaseID:    database.UID,
 					// This will violate the NOT NULL SQL Review policy configured above and emit a
 					// warning. Thus to demonstrate the SQL Review capability.
-					SheetID: sheet.ID,
+					SheetID: sheet.UID,
 				},
 			},
 		})

@@ -1,5 +1,16 @@
 <template>
+  <NTooltip v-if="candidates.length === 0" placement="top">
+    <template #trigger>
+      <heroicons:exclamation-triangle class="w-4 h-4 inline-block" />
+    </template>
+
+    <div class="w-[14rem]">
+      {{ $t("custom-approval.issue-review.no-one-matches-role") }}
+    </div>
+  </NTooltip>
+
   <NEllipsis
+    v-else
     class="flex-1 truncate"
     :tooltip="{
       raw: true,
@@ -63,7 +74,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { NEllipsis } from "naive-ui";
+import { NEllipsis, NTooltip } from "naive-ui";
 
 import { convertUserToPrincipal, useAuthStore } from "@/store";
 import { WrappedReviewStep } from "@/types";

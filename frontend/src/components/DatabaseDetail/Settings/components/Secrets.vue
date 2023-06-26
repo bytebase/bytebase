@@ -1,5 +1,9 @@
 <template>
   <div class="space-y-4">
+    <FeatureAttention
+      feature="bb.feature.encrypted-secrets"
+      :instance="database.instanceEntity"
+    />
     <div class="textinfolabel">
       <i18n-t keypath="database.secret.description">
         <template #guide>
@@ -20,7 +24,8 @@
         </p>
         <FeatureBadge
           feature="bb.feature.encrypted-secrets"
-          class="text-accent ml-2"
+          custom-class="ml-2"
+          :instance="database.instanceEntity"
         />
       </div>
       <div class="flex justify-end">
@@ -70,7 +75,7 @@
       :show="!!detail"
       width="auto"
       :auto-focus="false"
-      @update:show="(show) => !show && hideDetail()"
+      @update:show="(show: boolean) => !show && hideDetail()"
     >
       <NDrawerContent
         :title="
@@ -181,6 +186,7 @@
   <FeatureModal
     v-if="showFeatureModal"
     feature="bb.feature.encrypted-secrets"
+    :instance="database.instanceEntity"
     @cancel="showFeatureModal = false"
   />
 </template>
@@ -197,8 +203,8 @@ import { type ComposedDatabase } from "@/types";
 import {
   pushNotification,
   useDatabaseSecretStore,
-  hasFeature,
   useCurrentUserV1,
+  useSubscriptionV1Store,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
 import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "@/utils";
@@ -227,6 +233,7 @@ const parent = computed(() => {
 const detail = ref<Detail>();
 const showFeatureModal = ref(false);
 const currentUserV1 = useCurrentUserV1();
+const subscriptionV1Store = useSubscriptionV1Store();
 
 const COLUMNS = computed(() => {
   const columns: BBGridColumn[] = [
@@ -268,8 +275,15 @@ const extractSecretName = (name: string) => {
   return "";
 };
 
+const hasSecretFeature = computed(() => {
+  return subscriptionV1Store.hasInstanceFeature(
+    "bb.feature.encrypted-secrets",
+    props.database.instanceEntity
+  );
+});
+
 const showDetail = (secret?: Secret) => {
-  if (!hasFeature("bb.feature.encrypted-secrets")) {
+  if (!hasSecretFeature.value) {
     showFeatureModal.value = true;
     return;
   }
@@ -355,7 +369,7 @@ const upsertSecret = (secret: Secret) => {
 const handleSave = async () => {
   if (!detail.value) return;
   detail.value.loading = true;
-  if (!hasFeature("bb.feature.encrypted-secrets")) {
+  if (!hasSecretFeature.value) {
     showFeatureModal.value = true;
     return;
   }
@@ -386,7 +400,7 @@ const handleSave = async () => {
 };
 
 const handleDelete = async (secret: Secret) => {
-  if (!hasFeature("bb.feature.encrypted-secrets")) {
+  if (!hasSecretFeature.value) {
     showFeatureModal.value = true;
     return;
   }

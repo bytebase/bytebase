@@ -8,11 +8,13 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -105,13 +107,13 @@ func (driver *Driver) getDatabases() ([]string, error) {
 		if file.IsDir() || !strings.HasSuffix(file.Name(), ".db") {
 			continue
 		}
-		databases = append(databases, strings.TrimRight(file.Name(), ".db"))
+		databases = append(databases, strings.TrimSuffix(file.Name(), ".db"))
 	}
 	return databases, nil
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
 	if createDatabase {
 		parts := strings.Split(statement, `'`)
 		if len(parts) != 3 {
@@ -159,10 +161,13 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 
 // QueryConn2 queries a SQL statement in a given connection.
 func (*Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	startTime := time.Now()
 	result, err := util.Query2(ctx, db.SQLite, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = strings.TrimRight(statement, " \n\t;")
 
 	return []*v1pb.QueryResult{result}, nil
 }

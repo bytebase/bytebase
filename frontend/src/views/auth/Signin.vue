@@ -229,7 +229,7 @@ const trySigninWithIdentityProvider = async (
 ) => {
   await openWindowForSSO(
     identityProvider,
-    false,
+    false /* !popup */,
     route.query.redirect as string
   );
 };

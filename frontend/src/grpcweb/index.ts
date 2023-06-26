@@ -3,7 +3,10 @@ import {
   createClientFactory,
   FetchTransport,
 } from "nice-grpc-web";
-import { authInterceptorMiddleware } from "./middlewares";
+import {
+  authInterceptorMiddleware,
+  errorNotificationMiddleware,
+} from "./middlewares";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
@@ -22,6 +25,10 @@ import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { ExternalVersionControlServiceDefinition } from "@/types/proto/v1/externalvs_service";
+import { LoggingServiceDefinition } from "@/types/proto/v1/logging_service";
+import { BookmarkServiceDefinition } from "@/types/proto/v1/bookmark_service";
+import { InboxServiceDefinition } from "@/types/proto/v1/inbox_service";
+import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -37,7 +44,18 @@ const channel = createChannel(
   })
 );
 
-const clientFactory = createClientFactory().use(authInterceptorMiddleware);
+const clientFactory = createClientFactory()
+  // A middleware that is attached first, will be invoked last.
+  .use(authInterceptorMiddleware)
+  .use(errorNotificationMiddleware);
+/**
+ * Example to use error notification middleware.
+ * Errors occurs during all requests will cause UI notifications automatically.
+ * abcServiceClient.foo(requestParams, {
+ *   // true if you want to suppress error notifications for this call
+ *   silent: true,
+ * })
+ */
 
 export const authServiceClient = clientFactory.create(
   AuthServiceDefinition,
@@ -125,6 +143,26 @@ export const actuatorServiceClient = clientFactory.create(
 
 export const externalVersionControlServiceClient = clientFactory.create(
   ExternalVersionControlServiceDefinition,
+  channel
+);
+
+export const loggingServiceClient = clientFactory.create(
+  LoggingServiceDefinition,
+  channel
+);
+
+export const bookmarkServiceClient = clientFactory.create(
+  BookmarkServiceDefinition,
+  channel
+);
+
+export const inboxServiceClient = clientFactory.create(
+  InboxServiceDefinition,
+  channel
+);
+
+export const anomalyServiceClient = clientFactory.create(
+  AnomalyServiceDefinition,
   channel
 );
 

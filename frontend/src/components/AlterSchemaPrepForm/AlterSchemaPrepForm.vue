@@ -84,7 +84,7 @@
                     :database-list="schemaDatabaseList"
                     :show-selection-column="true"
                     @select-database="
-                      (db) =>
+                      (db: ComposedDatabase) =>
                         toggleDatabaseSelection(db, !isDatabaseSelected(db))
                     "
                   >
@@ -565,7 +565,10 @@ const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
 
 // Also works when single db selected.
 const generateMultiDb = async () => {
-  if (state.selectedDatabaseGroupName) {
+  if (
+    state.databaseSelectedTab === "DATABASE_GROUP" &&
+    state.selectedDatabaseGroupName
+  ) {
     const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       state.selectedDatabaseGroupName
     );
@@ -698,7 +701,10 @@ const handleDatabaseGroupTabSelect = () => {
 };
 
 const generateTenant = async () => {
-  if (state.selectedDatabaseGroupName) {
+  if (
+    state.databaseSelectedTab === "DATABASE_GROUP" &&
+    state.selectedDatabaseGroupName
+  ) {
     const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       state.selectedDatabaseGroupName
     );

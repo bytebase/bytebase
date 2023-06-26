@@ -66,16 +66,16 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useTitle } from "@vueuse/core";
 
-import { Bookmark, UNKNOWN_ID, BookmarkCreate, RouteMapList } from "../types";
+import { RouteMapList } from "../types";
 import { databaseV1Slug, idFromSlug } from "../utils";
 import {
-  useCurrentUser,
   useRouterStore,
-  useBookmarkStore,
+  useBookmarkV1Store,
   useProjectV1Store,
   useDatabaseV1Store,
 } from "@/store";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
+import { Bookmark } from "@/types/proto/v1/bookmark_service";
 
 interface BreadcrumbItem {
   name: string;
@@ -92,9 +92,8 @@ export default defineComponent({
     const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
-    const bookmarkStore = useBookmarkStore();
+    const bookmarkV1Store = useBookmarkV1Store();
 
-    const currentUser = useCurrentUser();
     const projectV1Store = useProjectV1Store();
 
     const documentTitle = useTitle(null, { observe: true });
@@ -112,16 +111,11 @@ export default defineComponent({
       routeHelpNameMapList.value = await res.json();
     });
 
-    const bookmark: ComputedRef<Bookmark> = computed(() =>
-      bookmarkStore.bookmarkByUserAndLink(
-        currentUser.value.id,
-        currentRoute.value.path
-      )
+    const bookmark: ComputedRef<Bookmark | undefined> = computed(() =>
+      bookmarkV1Store.findBookmarkByLink(currentRoute.value.path)
     );
 
-    const isBookmarked: ComputedRef<boolean> = computed(
-      () => bookmark.value.id != UNKNOWN_ID
-    );
+    const isBookmarked: ComputedRef<boolean> = computed(() => !!bookmark.value);
 
     const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
 
@@ -180,7 +174,7 @@ export default defineComponent({
             String(idFromSlug(databaseSlug))
           );
           list.push({
-            name: database.name,
+            name: database.databaseName,
             path: `/db/${databaseSlug}`,
           });
         }
@@ -260,14 +254,13 @@ export default defineComponent({
     });
 
     const toggleBookmark = () => {
-      if (isBookmarked.value) {
-        bookmarkStore.deleteBookmark(bookmark.value);
+      if (bookmark.value) {
+        bookmarkV1Store.deleteBookmark(bookmark.value.name);
       } else {
-        const newBookmark: BookmarkCreate = {
-          name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
+        bookmarkV1Store.createBookmark({
+          title: breadcrumbList.value[breadcrumbList.value.length - 1].name,
           link: currentRoute.value.path,
-        };
-        bookmarkStore.createBookmark(newBookmark);
+        });
       }
     };
 

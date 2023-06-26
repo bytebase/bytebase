@@ -4,7 +4,9 @@ import {
   DatabaseGroup,
   Project,
   SchemaGroup,
+  SchemaGroup_Table,
 } from "./proto/v1/project_service";
+import { ComposedDatabase } from "@/types";
 
 export interface ComposedDatabaseGroup extends DatabaseGroup {
   databaseGroupName: string;
@@ -17,4 +19,8 @@ export interface ComposedDatabaseGroup extends DatabaseGroup {
 
 export interface ComposedSchemaGroup extends SchemaGroup {
   databaseGroup: ComposedDatabaseGroup;
+}
+
+export interface ComposedSchemaGroupTable extends SchemaGroup_Table {
+  databaseEntity: ComposedDatabase;
 }

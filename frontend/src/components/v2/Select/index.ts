@@ -4,7 +4,6 @@ import ProjectSelect from "./ProjectSelect.vue";
 import RoleSelect from "./RoleSelect.vue";
 import RoleRadioSelect from "./RoleRadioSelect.vue";
 import UserSelect from "./UserSelect.vue";
-import ProjectRolesSelect from "./ProjectRolesSelect.vue";
 
 export {
   InstanceSelect,
@@ -13,5 +12,4 @@ export {
   RoleSelect,
   RoleRadioSelect,
   UserSelect,
-  ProjectRolesSelect,
 };

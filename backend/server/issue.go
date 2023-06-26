@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -305,12 +304,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, payload := range payloadList {
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-				ContainerID: issue.UID,
-				Type:        api.ActivityIssueFieldUpdate,
-				Level:       api.ActivityInfo,
-				Payload:     string(payload),
+			activityCreate := &store.ActivityMessage{
+				CreatorUID:   c.Get(getPrincipalIDContextKey()).(int),
+				ContainerUID: issue.UID,
+				Type:         api.ActivityIssueFieldUpdate,
+				Level:        api.ActivityInfo,
+				Payload:      string(payload),
 			}
 			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 				Issue: updatedIssue,
@@ -445,7 +444,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil {
 		issueCreatePayload.Approval.ApprovalFindingDone = true
 	}
 
@@ -500,12 +499,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   creatorID,
-		ContainerID: issue.UID,
-		Type:        api.ActivityIssueCreate,
-		Level:       api.ActivityInfo,
-		Payload:     string(bytes),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
@@ -525,12 +524,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
 		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: *issue.PipelineUID,
-			Type:        api.ActivityPipelineStageStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: *issue.PipelineUID,
+			Type:         api.ActivityPipelineStageStatusUpdate,
+			Level:        api.ActivityInfo,
+			Payload:      string(bytes),
 		}
 		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 			Issue: issue,
@@ -827,9 +826,6 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if c.PointInTimeTs != nil && !s.licenseService.IsFeatureEnabled(api.FeaturePITR) {
-		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
-	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
 	if err != nil {
 		return nil, err
@@ -850,6 +846,11 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	}
+	if c.PointInTimeTs != nil {
+		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeaturePITR, instance); err != nil {
+			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
+		}
 	}
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
 	if err != nil {
@@ -885,7 +886,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		for _, detail := range c.DetailList {
 			if detail.EarliestAllowedTs != 0 {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -944,8 +945,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if emptyDatabaseIDCount > 1 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with empty database ID.")
 	}
-	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+	if project.TenantMode == api.TenantModeTenant {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
+		}
 	}
 	maximumTaskLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumTask)
 	if int64(databaseIDCount) > maximumTaskLimit {
@@ -977,8 +980,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			// We will generate a task for each (database, table).
 			// This means that, assuming the database group has `N` databases and the database group contains `M` table groups,
 			// and each table group has `K` tables on average, we will generate at most `M * K + N` tasks.
-			if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
-				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureDatabaseGrouping.AccessErrorMessage())
+			if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
+				return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 			}
 			parts := strings.Split(migrationDetail.DatabaseGroupName, "/")
 			if len(parts) != 4 {
@@ -1001,7 +1004,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, err
 			}
 			schemaGroups = append(schemaGroups, storeSchemaGroups...)
-			matches, _, err := getMatchedAndUnmatchedDatabases(ctx, databaseGroup, allDatabases)
+			matches, _, err := s.getMatchedAndUnmatchedDatabases(ctx, databaseGroup, allDatabases)
 			if err != nil {
 				return nil, err
 			}
@@ -1195,7 +1198,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					}
 					singleStatements, err := parser.SplitMultiSQL(parserEngineType, originalStatement)
 					if err != nil {
-						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to split multi SQL").SetInternal(err)
+						return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot split statements to multiple SQL, please check your SQL syntax. Error: %s", err.Error()))
 					}
 					if len(singleStatements) == 0 {
 						return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at least one non-empty statement provided")
@@ -1313,16 +1316,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
 					for migrationDetailIdx, migrationDetail := range migrationDetailList {
-						// CreateSheet for each migration detail.
+						// CreateSheetV2 for each migration detail.
 						sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
-							ProjectUID: project.UID,
-							DatabaseID: &migrationDetail.DatabaseID,
-							CreatorID:  creatorID,
-							Statement:  migrationDetail.Statement,
-							Visibility: api.ProjectSheet,
-							Source:     api.SheetFromBytebaseArtifact,
-							Type:       api.SheetForSQL,
-							Payload:    "",
+							ProjectUID:  project.UID,
+							DatabaseUID: &migrationDetail.DatabaseID,
+							CreatorID:   creatorID,
+							Statement:   migrationDetail.Statement,
+							Visibility:  api.ProjectSheet,
+							Source:      api.SheetFromBytebaseArtifact,
+							Type:        api.SheetForSQL,
+							Payload:     "",
 						})
 						if err != nil {
 							return nil, err
@@ -1523,8 +1526,8 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	if project.TenantMode == api.TenantModeTenant {
-		if !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 		}
 	}
 
@@ -1542,7 +1545,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 		// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
 		// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
 			log.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", zap.Error(err), zap.String("instance", instance.Title))
 			break
@@ -1564,9 +1567,9 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	if err != nil {
 		return nil, err
 	}
-	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  project.UID,
+		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
 		Statement:  statement,
 		Visibility: api.ProjectSheet,
@@ -1585,7 +1588,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Collation:    c.Collation,
 		Labels:       c.Labels,
 		DatabaseName: databaseName,
-		SheetID:      sheet.ID,
+		SheetID:      sheet.UID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
@@ -1912,22 +1915,11 @@ func convertDatabaseLabels(labelsJSON string) ([]*api.DatabaseLabel, error) {
 }
 
 // TODO(zp): keep this function as same as the one in the project_service.go.
-func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+func (s *Server) getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, err
 	}
-	ast, issues := e.Parse(databaseGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
 	var matches []*store.DatabaseMessage
 	var unmatches []*store.DatabaseMessage
 
@@ -1936,6 +1928,7 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
 				"environment_name": fmt.Sprintf("%s%s", "environments/", database.EnvironmentID),
+				"instance_id":      database.InstanceID,
 			},
 		})
 		if err != nil {
@@ -1947,7 +1940,18 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
 		}
 		if boolVal, ok := val.(bool); ok && boolVal {
-			matches = append(matches, database)
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "failed to found instance %s with error: %v", database.InstanceID, err.Error())
+			}
+			if instance == nil {
+				return nil, nil, status.Errorf(codes.Internal, "cannot found instance %s", database.InstanceID)
+			}
+			if s.licenseService.IsFeatureEnabledForInstance(api.FeatureDatabaseGrouping, instance) == nil {
+				matches = append(matches, database)
+			} else {
+				unmatches = append(unmatches, database)
+			}
 		} else {
 			unmatches = append(unmatches, database)
 		}
@@ -1956,19 +1960,9 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 }
 
 func getMatchesAndUnmatchedTables(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	ast, issues := e.Parse(schemaGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	var matched []string

@@ -46,8 +46,14 @@
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
+    - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableMetadata](#bytebase-store-TableMetadata)
+    - [TaskMetadata](#bytebase-store-TaskMetadata)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
+  
+    - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
+    - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
+    - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
   
 - [store/idp.proto](#store_idp-proto)
     - [FieldMapping](#bytebase-store-FieldMapping)
@@ -87,6 +93,8 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
+    - [ExternalApprovalSetting](#bytebase-store-ExternalApprovalSetting)
+    - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
@@ -145,6 +153,7 @@
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue) |  |  |
 | role | [string](#string) |  | Format: roles/{role} |
+| external_node_id | [string](#string) |  |  |
 
 
 
@@ -281,6 +290,7 @@ ANY means approving any node will proceed.
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
+| REJECTED | 3 |  |
 
 
  
@@ -413,6 +423,7 @@ convert to the expected struct there.
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
+| REJECTED | 3 |  |
 
 
 
@@ -561,6 +572,7 @@ DatabaseMetadata is the metadata for databases.
 | character_set | [string](#string) |  | The character_set is the character set of a database. |
 | collation | [string](#string) |  | The collation is the collation of a database. |
 | extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
+| datashare | [bool](#bool) |  | The database belongs to a datashare. |
 
 
 
@@ -690,6 +702,8 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | tables | [TableMetadata](#bytebase-store-TableMetadata) | repeated | The tables is the list of tables in a schema. |
 | views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+| streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
+| tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 
 
 
@@ -728,6 +742,28 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 
 
+<a name="bytebase-store-StreamMetadata"></a>
+
+### StreamMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a stream. |
+| table_name | [string](#string) |  | The table_name is the name of the table/view that the stream is created on. |
+| owner | [string](#string) |  | The owner of the stream. |
+| comment | [string](#string) |  | The comment of the stream. |
+| type | [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type) |  | The type of the stream. |
+| stale | [bool](#bool) |  | Indicates whether the stream was last read before the `stale_after` time. |
+| mode | [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode) |  | The mode of the stream. |
+| definition | [string](#string) |  | The definition of the stream. |
+
+
+
+
+
+
 <a name="bytebase-store-TableMetadata"></a>
 
 ### TableMetadata
@@ -754,6 +790,30 @@ TableMetadata is the metadata for tables.
 
 
 
+<a name="bytebase-store-TaskMetadata"></a>
+
+### TaskMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a task. |
+| id | [string](#string) |  | The id is the snowflake-generated id of a task. Example: 01ad32a0-1bb6-5e93-0000-000000000001 |
+| owner | [string](#string) |  | The owner of the task. |
+| comment | [string](#string) |  | The comment of the task. |
+| warehouse | [string](#string) |  | The warehouse of the task. |
+| schedule | [string](#string) |  | The schedule interval of the task. |
+| predecessors | [string](#string) | repeated | The predecessor tasks of the task. |
+| state | [TaskMetadata.State](#bytebase-store-TaskMetadata-State) |  | The state of the task. |
+| condition | [string](#string) |  | The condition of the task. |
+| definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
 <a name="bytebase-store-ViewMetadata"></a>
 
 ### ViewMetadata
@@ -772,6 +832,45 @@ ViewMetadata is the metadata for views.
 
 
  
+
+
+<a name="bytebase-store-StreamMetadata-Mode"></a>
+
+### StreamMetadata.Mode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MODE_UNSPECIFIED | 0 |  |
+| MODE_DEFAULT | 1 |  |
+| MODE_APPEND_ONLY | 2 |  |
+| MODE_INSERT_ONLY | 3 |  |
+
+
+
+<a name="bytebase-store-StreamMetadata-Type"></a>
+
+### StreamMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_DELTA | 1 |  |
+
+
+
+<a name="bytebase-store-TaskMetadata-State"></a>
+
+### TaskMetadata.State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| STATE_STARTED | 1 |  |
+| STATE_SUSPENDED | 2 |  |
+
 
  
 
@@ -1298,6 +1397,38 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | url | [string](#string) |  | The URL for the agent API. |
 | token | [string](#string) |  | The token for the agent. |
+
+
+
+
+
+
+<a name="bytebase-store-ExternalApprovalSetting"></a>
+
+### ExternalApprovalSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| nodes | [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ExternalApprovalSetting-Node"></a>
+
+### ExternalApprovalSetting.Node
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. We will also include the id in the message sending to the external relay service to identify the node. |
+| title | [string](#string) |  | The title of the node. |
+| endpoint | [string](#string) |  | The external endpoint for the relay service, e.g. &#34;http://hello:1234&#34;. |
 
 
 

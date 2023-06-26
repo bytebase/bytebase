@@ -408,7 +408,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		sqlFileName2Advice := s.sqlAdviceForSQLFiles(ctx, repositoryList, prFiles, setting.ExternalUrl)
 
-		if s.licenseService.IsFeatureEnabled(api.FeatureMybatisSQLReview) {
+		if s.licenseService.IsFeatureEnabled(api.FeatureMybatisSQLReview) == nil {
 			// If the commit file list contains the file which extension is xml and the content
 			// contains "https://mybatis.org/dtd/mybatis-3-mapper.dtd", we will try to apply
 			// sql-review to it.
@@ -738,9 +738,20 @@ func (s *Server) sqlAdviceForFile(
 		if err != nil {
 			return nil, err
 		}
+		if instance == nil {
+			return nil, errors.Errorf("cannot found instance %s", database.InstanceID)
+		}
+		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureVCSSQLReviewWorkflow, instance); err != nil {
+			log.Debug(err.Error(), zap.String("instance", instance.ResourceID))
+			continue
+		}
+
 		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 		if err != nil {
 			return nil, err
+		}
+		if environment == nil {
+			return nil, errors.Errorf("cannot found environment %s", instance.EnvironmentID)
 		}
 		policy, err := s.store.GetSQLReviewPolicy(ctx, environment.UID)
 		if err != nil {
@@ -762,7 +773,7 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
 		}
 
-		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database.DatabaseName)
+		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 		if err != nil {
 			return nil, err
 		}
@@ -793,9 +804,9 @@ func (s *Server) sqlAdviceForFile(
 	return []advisor.Advice{
 		{
 			Status:  advisor.Warn,
-			Code:    advisor.NotFound,
-			Title:   "SQL review policy not found",
-			Content: fmt.Sprintf("You can configure the SQL review policy on %s/setting/sql-review", externalURL),
+			Code:    advisor.Unsupported,
+			Title:   "SQL review is disabled",
+			Content: fmt.Sprintf("Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance", externalURL),
 			Line:    1,
 		},
 	}, nil
@@ -1174,13 +1185,15 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 // It returns "created=true" when new issue(s) has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
-	if repoInfo.project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-		return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
+	if repoInfo.project.TenantMode == api.TenantModeTenant {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
+		}
 	}
 
 	var migrationDetailList []*api.MigrationDetail
-	var activityCreateList []*api.ActivityCreate
+	var activityCreateList []*store.ActivityMessage
 	var createdIssueList []string
 	var fileNameList []string
 
@@ -1293,6 +1306,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 	}
 	issue, err := s.createIssue(ctx, issueCreate, creatorID)
 	if err != nil {
+		log.Error("Failed to create issue", zap.Any("issueCreate", issueCreate), zap.Error(err))
 		errMsg := "Failed to create schema update issue"
 		if issueType == api.IssueDatabaseDataUpdate {
 			errMsg = "Failed to create data update issue"
@@ -1314,13 +1328,13 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   creatorID,
-		ContainerID: projectID,
-		Type:        api.ActivityProjectRepositoryPush,
-		Level:       api.ActivityInfo,
-		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
-		Payload:     string(activityPayload),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: projectID,
+		Type:         api.ActivityProjectRepositoryPush,
+		Level:        api.ActivityInfo,
+		Comment:      fmt.Sprintf("Created issue %q.", issue.Name),
+		Payload:      string(activityPayload),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
@@ -1338,7 +1352,7 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 		if err != nil {
 			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", email), zap.Error(err))
 		} else if committerPrincipal == nil {
-			log.Warn("Principal with committer email does not exist, use system bot instead", zap.String("email", email))
+			log.Info("Principal with committer email does not exist, use system bot instead", zap.String("email", email))
 		} else {
 			creatorID = committerPrincipal.ID
 		}
@@ -1409,7 +1423,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 }
 
 // getIgnoredFileActivityCreate get a warning project activityCreate for the ignored file with given error.
-func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file string, err error) *api.ActivityCreate {
+func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file string, err error) *store.ActivityMessage {
 	payload, marshalErr := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: pushEvent,
@@ -1422,13 +1436,13 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file s
 		return nil
 	}
 
-	return &api.ActivityCreate{
-		CreatorID:   api.SystemBotID,
-		ContainerID: projectID,
-		Type:        api.ActivityProjectRepositoryPush,
-		Level:       api.ActivityWarn,
-		Comment:     fmt.Sprintf("Ignored file %q, %v.", file, err),
-		Payload:     string(payload),
+	return &store.ActivityMessage{
+		CreatorUID:   api.SystemBotID,
+		ContainerUID: projectID,
+		Type:         api.ActivityProjectRepositoryPush,
+		Level:        api.ActivityWarn,
+		Comment:      fmt.Sprintf("Ignored file %q, %v.", file, err),
+		Payload:      string(payload),
 	}
 }
 
@@ -1476,7 +1490,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 
 // prepareIssueFromSDLFile returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*store.ActivityMessage) {
 	dbName := schemaInfo.Database
 	if dbName == "" && repoInfo.project.TenantMode == api.TenantModeDisabled {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
@@ -1486,12 +1500,12 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 	sdl, err := s.readFileContent(ctx, pushEvent, repoInfo, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
-		return nil, []*api.ActivityCreate{activityCreate}
+		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
-	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  repoInfo.project.UID,
+		ProjectUID: repoInfo.project.UID,
 		Name:       file,
 		Statement:  sdl,
 		Visibility: api.ProjectSheet,
@@ -1500,7 +1514,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 	})
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
-		return nil, []*api.ActivityCreate{activityCreate}
+		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
 	var migrationDetailList []*api.MigrationDetail
@@ -1508,7 +1522,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
-				SheetID:       sheet.ID,
+				SheetID:       sheet.UID,
 			},
 		)
 		return migrationDetailList, nil
@@ -1517,7 +1531,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, dbName, schemaInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
-		return nil, []*api.ActivityCreate{activityCreate}
+		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
 	for _, database := range databases {
@@ -1525,7 +1539,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
 				DatabaseID:    database.UID,
-				SheetID:       sheet.ID,
+				SheetID:       sheet.UID,
 			},
 		)
 	}
@@ -1540,10 +1554,10 @@ func (s *Server) prepareIssueFromFile(
 	repoInfo *repoInfo,
 	pushEvent vcs.PushEvent,
 	fileInfo fileInfo,
-) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+) ([]*api.MigrationDetail, []*store.ActivityMessage) {
 	content, err := s.readFileContent(ctx, pushEvent, repoInfo, fileInfo.item.FileName)
 	if err != nil {
-		return nil, []*api.ActivityCreate{
+		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
 				repoInfo.project.UID,
 				pushEvent,
@@ -1556,9 +1570,9 @@ func (s *Server) prepareIssueFromFile(
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
-			sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+			sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 				CreatorID:  api.SystemBotID,
-				ProjectID:  repoInfo.project.UID,
+				ProjectUID: repoInfo.project.UID,
 				Name:       fileInfo.item.FileName,
 				Statement:  content,
 				Visibility: api.ProjectSheet,
@@ -1567,13 +1581,13 @@ func (s *Server) prepareIssueFromFile(
 			})
 			if err != nil {
 				activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
-				return nil, []*api.ActivityCreate{activityCreate}
+				return nil, []*store.ActivityMessage{activityCreate}
 			}
 
 			return []*api.MigrationDetail{
 				{
 					MigrationType: fileInfo.migrationInfo.Type,
-					SheetID:       sheet.ID,
+					SheetID:       sheet.UID,
 					SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 				},
 			}, nil
@@ -1582,7 +1596,7 @@ func (s *Server) prepareIssueFromFile(
 		var migrationFile api.MigrationFileYAML
 		err = yaml.Unmarshal([]byte(content), &migrationFile)
 		if err != nil {
-			return nil, []*api.ActivityCreate{
+			return nil, []*store.ActivityMessage{
 				getIgnoredFileActivityCreate(
 					repoInfo.project.UID,
 					pushEvent,
@@ -1592,9 +1606,9 @@ func (s *Server) prepareIssueFromFile(
 			}
 		}
 
-		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  repoInfo.project.UID,
+			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  migrationFile.Statement,
 			Visibility: api.ProjectSheet,
@@ -1603,14 +1617,14 @@ func (s *Server) prepareIssueFromFile(
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
-			return nil, []*api.ActivityCreate{activityCreate}
+			return nil, []*store.ActivityMessage{activityCreate}
 		}
 
 		var migrationDetailList []*api.MigrationDetail
 		for _, database := range migrationFile.Databases {
 			dbList, err := s.findProjectDatabases(ctx, repoInfo.project.UID, database.Name, "")
 			if err != nil {
-				return nil, []*api.ActivityCreate{
+				return nil, []*store.ActivityMessage{
 					getIgnoredFileActivityCreate(
 						repoInfo.project.UID,
 						pushEvent,
@@ -1625,7 +1639,7 @@ func (s *Server) prepareIssueFromFile(
 					&api.MigrationDetail{
 						MigrationType: fileInfo.migrationInfo.Type,
 						DatabaseID:    db.UID,
-						SheetID:       sheet.ID,
+						SheetID:       sheet.UID,
 						SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 					},
 				)
@@ -1638,13 +1652,13 @@ func (s *Server) prepareIssueFromFile(
 	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
-		return nil, []*api.ActivityCreate{activityCreate}
+		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
 	if fileInfo.item.ItemType == vcs.FileItemTypeAdded {
-		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  repoInfo.project.UID,
+			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  content,
 			Visibility: api.ProjectSheet,
@@ -1653,7 +1667,7 @@ func (s *Server) prepareIssueFromFile(
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
-			return nil, []*api.ActivityCreate{activityCreate}
+			return nil, []*store.ActivityMessage{activityCreate}
 		}
 
 		var migrationDetailList []*api.MigrationDetail
@@ -1662,7 +1676,7 @@ func (s *Server) prepareIssueFromFile(
 				&api.MigrationDetail{
 					MigrationType: fileInfo.migrationInfo.Type,
 					DatabaseID:    database.UID,
-					SheetID:       sheet.ID,
+					SheetID:       sheet.UID,
 					SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 				},
 			)
@@ -1672,7 +1686,7 @@ func (s *Server) prepareIssueFromFile(
 
 	migrationVersion := fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())
 	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content); err != nil {
-		return nil, []*api.ActivityCreate{
+		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
 				repoInfo.project.UID,
 				pushEvent,
@@ -1716,9 +1730,9 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			return nil
 		}
 
-		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  issue.Project.UID,
+			ProjectUID: issue.Project.UID,
 			Name:       fileName,
 			Statement:  statement,
 			Visibility: api.ProjectSheet,
@@ -1733,7 +1747,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", fileName), zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID))
 		taskPatch := api.TaskPatch{
 			ID:        task.ID,
-			SheetID:   &sheet.ID,
+			SheetID:   &sheet.UID,
 			UpdaterID: api.SystemBotID,
 		}
 		if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
@@ -1747,13 +1761,16 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			if task.Status != api.TaskPendingApproval {
 				return nil
 			}
-			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: false,
-				},
-			})
+			payload := &storepb.IssuePayload{}
+			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal original issue payload")
+			}
+			payload.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
+			payloadBytes, err := protojson.Marshal(payload)
 			if err != nil {
-				return errors.Wrap(err, "failed to marshal issue payload")
+				return errors.Wrapf(err, "failed to marshal issue payload")
 			}
 			payloadStr := string(payloadBytes)
 			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
@@ -1778,12 +1795,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 	testsuiteList := []string{}
 	status := advisor.Success
 
-	fileList := []string{}
-	for filePath := range adviceMap {
-		fileList = append(fileList, filePath)
-	}
-	sort.Strings(fileList)
-
+	fileList := getSQLAdviceFileList(adviceMap)
 	for _, filePath := range fileList {
 		adviceList := adviceMap[filePath]
 		testcaseList := []string{}
@@ -1806,7 +1818,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf("Error: %s.\nYou can check the docs at %s#%d",
+			content := fmt.Sprintf("Error: %s.\nPlease check the docs at %s#%d",
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,
@@ -1849,12 +1861,7 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 	messageList := []string{}
 	status := advisor.Success
 
-	fileList := []string{}
-	for filePath := range adviceMap {
-		fileList = append(fileList, filePath)
-	}
-	sort.Strings(fileList)
-
+	fileList := getSQLAdviceFileList(adviceMap)
 	for _, filePath := range fileList {
 		adviceList := adviceMap[filePath]
 		for _, advice := range adviceList {
@@ -1897,6 +1904,31 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 		Status:  status,
 		Content: messageList,
 	}
+}
+
+func getSQLAdviceFileList(adviceMap map[string][]advisor.Advice) []string {
+	fileList := []string{}
+	fileToErrorCount := map[string]int{}
+	for filePath, adviceList := range adviceMap {
+		fileList = append(fileList, filePath)
+
+		errorCount := 0
+		for _, advice := range adviceList {
+			if advice.Status == advisor.Error {
+				errorCount++
+			}
+		}
+		fileToErrorCount[filePath] = errorCount
+	}
+	sort.Strings(fileList)
+	sort.Slice(fileList, func(i int, j int) bool {
+		if fileToErrorCount[fileList[i]] == fileToErrorCount[fileList[j]] {
+			return i < j
+		}
+		return fileToErrorCount[fileList[i]] > fileToErrorCount[fileList[j]]
+	})
+
+	return fileList
 }
 
 func filterGitHubBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {

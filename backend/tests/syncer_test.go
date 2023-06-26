@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -43,17 +42,17 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 		CREATE VIEW "VW" AS SELECT * FROM "TFK";
 		`
 	)
-	wantDatabaseMetadata := &storepb.DatabaseMetadata{
+	wantDatabaseMetadata := &v1pb.DatabaseMetadata{
 		Name:         "test_sync_postgresql_schema_db",
 		CharacterSet: "UTF8",
 		Collation:    "en_US.UTF-8",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*v1pb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*v1pb.TableMetadata{
 					{
 						Name: "TFK",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*v1pb.ColumnMetadata{
 							{
 								Name:     "a",
 								Position: 1,
@@ -73,7 +72,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 								Type:     "integer",
 							},
 						},
-						ForeignKeys: []*storepb.ForeignKeyMetadata{
+						ForeignKeys: []*v1pb.ForeignKeyMetadata{
 							{
 								Name:              "tfk_ibfk_1",
 								Columns:           []string{"a", "b", "c"},
@@ -87,7 +86,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*v1pb.ViewMetadata{
 					{
 						Name: "VW",
 						Definition: strings.Join([]string{
@@ -96,7 +95,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 							`    "TFK".c`,
 							`   FROM "TFK";`},
 							"\n"),
-						DependentColumns: []*storepb.DependentColumn{
+						DependentColumns: []*v1pb.DependentColumn{
 							{
 								Schema: "public",
 								Table:  "TFK",
@@ -118,10 +117,10 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 			},
 			{
 				Name: "schema1",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*v1pb.TableMetadata{
 					{
 						Name: "trd",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*v1pb.ColumnMetadata{
 							{
 								Name:     "A",
 								Position: 1,
@@ -141,7 +140,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 								Type:     "integer",
 							},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*v1pb.IndexMetadata{
 							{
 								Name:        "trd_A_B_c_key",
 								Expressions: []string{`A`, `B`, "c"},
@@ -204,6 +203,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
@@ -257,14 +257,12 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	metadata, err := ctl.getLatestSchemaMetadata(databaseUID)
+	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+		Name: fmt.Sprintf("%s/metadata", database.Name),
+	})
 	a.NoError(err)
 
-	var latestSchemaMetadata storepb.DatabaseMetadata
-	err = protojson.Unmarshal([]byte(metadata), &latestSchemaMetadata)
-	a.NoError(err)
-
-	diff := cmp.Diff(wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
+	diff := cmp.Diff(wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
 	a.Equal("", diff)
 }
 
@@ -486,6 +484,7 @@ func TestSyncerForMySQL(t *testing.T) {
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
@@ -539,15 +538,15 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	metadata, err := ctl.getLatestSchemaMetadata(databaseUID)
+	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+		Name: fmt.Sprintf("%s/metadata", database.Name),
+	})
 	a.NoError(err)
 
-	var latestSchemaMetadata storepb.DatabaseMetadata
-	err = protojson.Unmarshal([]byte(metadata), &latestSchemaMetadata)
-	a.NoError(err)
-
-	var expectedSchemaMetadata storepb.DatabaseMetadata
+	var expectedSchemaMetadata v1pb.DatabaseMetadata
 	err = protojson.Unmarshal([]byte(expectedSchema), &expectedSchemaMetadata)
 	a.NoError(err)
-	a.Equal(&expectedSchemaMetadata, &latestSchemaMetadata)
+
+	diff := cmp.Diff(&expectedSchemaMetadata, latestSchemaMetadata, protocmp.Transform())
+	a.Equal("", diff)
 }

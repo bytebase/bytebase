@@ -45,13 +45,27 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) 
 	// Exclude nested tables, their DDL is part of their parent table.
 	// Exclude overflow segments, their DDL is part of their parent table.
 	query := fmt.Sprintf(`
+		WITH DISALLOW_OBJECTS AS (
+			SELECT OWNER, TABLE_NAME FROM DBA_NESTED_TABLES
+			UNION ALL
+			SELECT OWNER, TABLE_NAME FROM DBA_TABLES WHERE IOT_TYPE = 'IOT_OVERFLOW'
+		), NEED_OBJECTS AS (
+			SELECT
+				OWNER,
+				OBJECT_NAME,
+				decode(object_type,
+					'JOB',                'PROCOBJ',
+					'QUEUE',              'AQ_QUEUE',
+					object_type
+				) OBJECT_TYPE
+			FROM DBA_OBJECTS U
+			WHERE OWNER IN (%s) AND U.OBJECT_TYPE IN ('TABLE','INDEX','SEQUENCE','DIRECTORY','VIEW','FUNCTION','PROCEDURE','TRIGGER','SCHEDULE','JOB','QUEUE','WINDOW')
+			MINUS
+			SELECT OWNER, TABLE_NAME, 'TABLE' FROM DISALLOW_OBJECTS
+		)
 		SELECT
-			DBMS_METADATA.GET_DDL(u.OBJECT_TYPE, u.OBJECT_NAME, u.OWNER)
-			FROM DBA_OBJECTS u
-			WHERE OWNER IN (%s)
-				AND u.OBJECT_TYPE IN ('TABLE','INDEX','SEQUENCE','DIRECTORY','VIEW','FUNCTION','PROCEDURE','TABLE PARTITION','INDEX PARTITION','TRIGGER','SCHEDULE','JOB','QUEUE','WINDOW')
-				AND (owner, object_name) not in (select owner, table_name from dba_nested_tables)
-				AND (owner, object_name) not in (select owner, table_name from dba_tables where iot_type = 'IOT_OVERFLOW')`,
+			DBMS_METADATA.GET_DDL(U.OBJECT_TYPE, U.OBJECT_NAME, U.OWNER)
+		FROM NEED_OBJECTS U`,
 		strings.Join(schemas, ","))
 
 	rows, err := txn.QueryContext(ctx, query)

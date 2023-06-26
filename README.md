@@ -82,9 +82,9 @@
   Want to control the data access but don't know how?
 </p>
 
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                                                                                    |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Anonymization</b><br />State-of-the-art [column level anonymization](https://www.bytebase.com/docs/sql-editor/anonymize-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Database Access Control</b><br />Organization level policy to centralize the [database access control](https://www.bytebase.com/docs/security/database-access-control). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Anonymization</b><br />State-of-the-art [column level anonymization](https://www.bytebase.com/docs/sql-editor/anonymize-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Data Access Control</b><br />Organization level policy to centralize the [data access control](https://www.bytebase.com/docs/security/data-access-control). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
 
 <br />
 
@@ -265,7 +265,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 ### Prerequisites
 
-- [Go](https://golang.org/doc/install) (1.20.1 or later)
+- [Go](https://golang.org/doc/install) (1.20.5 or later)
 - [pnpm](https://pnpm.io/installation)
 - [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
   ```bash

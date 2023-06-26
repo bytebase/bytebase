@@ -15,40 +15,37 @@
   </template>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
-import { Activity, ActivityProjectRepositoryPushPayload } from "../../types";
+<script lang="ts" setup>
+import { computed, PropType } from "vue";
+import { ActivityProjectRepositoryPushPayload } from "../../types";
 import { issueSlug } from "../../utils/slug";
 import { Link } from "./types";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 
-export default defineComponent({
-  name: "ActivityCommentLink",
-  props: {
-    activity: {
-      type: Object as PropType<Activity>,
-      required: true,
-    },
+const props = defineProps({
+  activity: {
+    type: Object as PropType<LogEntity>,
+    required: true,
   },
-  setup(props) {
-    const link = computed((): Link | undefined => {
-      const { activity } = props;
-      switch (activity.type) {
-        case "bb.project.repository.push": {
-          const payload =
-            activity.payload as ActivityProjectRepositoryPushPayload;
-          if (payload.issueId && payload.issueName) {
-            return {
-              title: `issue/${payload.issueId}`,
-              path: `/issue/${issueSlug(payload.issueName!, payload.issueId!)}`,
-              external: false,
-            };
-          }
-          break;
-        }
+});
+
+const link = computed((): Link | undefined => {
+  const { activity } = props;
+  switch (activity.action) {
+    case LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityProjectRepositoryPushPayload;
+      if (payload.issueId && payload.issueName) {
+        return {
+          title: `issue/${payload.issueId}`,
+          path: `/issue/${issueSlug(payload.issueName!, payload.issueId!)}`,
+          external: false,
+        };
       }
-      return undefined;
-    });
-    return { link };
-  },
+      break;
+    }
+  }
+  return undefined;
 });
 </script>

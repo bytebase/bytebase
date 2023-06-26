@@ -77,7 +77,7 @@ func (db *DB) Open(ctx context.Context) error {
 			return err
 		}
 		defer defaultDriver.Close(ctx)
-		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true); err != nil {
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true, dbdriver.ExecuteOptions{}); err != nil {
 			return err
 		}
 	}

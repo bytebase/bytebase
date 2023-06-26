@@ -87,13 +87,13 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMe
 		return terminated, result, nil
 	}
 
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   task.UpdaterID,
-		ContainerID: issue.Project.UID,
-		Type:        api.ActivityDatabaseRecoveryPITRDone,
-		Level:       api.ActivityInfo,
-		Payload:     string(payload),
-		Comment:     fmt.Sprintf("Restore database %s in instance %s successfully.", database.DatabaseName, instance.Title),
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   task.UpdaterID,
+		ContainerUID: issue.Project.UID,
+		Type:         api.ActivityDatabaseRecoveryPITRDone,
+		Level:        api.ActivityInfo,
+		Payload:      string(payload),
+		Comment:      fmt.Sprintf("Restore database %s in instance %s successfully.", database.DatabaseName, instance.Title),
 	}
 	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
 		log.Error("cannot create an pitr activity", zap.Error(err))
@@ -149,12 +149,13 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		IssueID:        strconv.Itoa(issue.UID),
 	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, m, "" /* pitr cutover */, nil /* executeBeforeCommitTx */); err != nil {
+
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, m, "" /* pitr cutover */, db.ExecuteOptions{}); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
@@ -214,7 +215,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, instance *store.
 }
 
 func (exec *PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return err
 	}
@@ -239,7 +240,7 @@ func (exec *PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, instan
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, issue.CreatedTime.Unix())
 	pitrOldDatabaseName := util.GetPITROldDatabaseName(databaseName, issue.CreatedTime.Unix())
 
-	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return err
 	}

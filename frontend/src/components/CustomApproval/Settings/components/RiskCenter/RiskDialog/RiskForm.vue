@@ -90,15 +90,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { NButton, NInput } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 
-import type { Risk } from "@/types/proto/v1/risk_service";
+import { Risk } from "@/types/proto/v1/risk_service";
 import {
   Expr as CELExpr,
   ParsedExpr,
 } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/type/expr";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { useRiskCenterContext } from "../context";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
@@ -112,6 +113,10 @@ import {
   wrapAsGroup,
   validateSimpleExpr,
 } from "@/plugins/cel";
+import {
+  convertCELStringToParsedExpr,
+  convertParsedExprToCELString,
+} from "@/utils";
 
 type LocalState = {
   risk: Risk;
@@ -131,19 +136,22 @@ const emit = defineEmits<{
 const context = useRiskCenterContext();
 const { allowAdmin } = context;
 
-const mode = computed(() => context.dialog.value!.mode);
+const state = ref<LocalState>({
+  risk: Risk.fromJSON({}),
+  expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
+});
+const mode = computed(() => context.dialog.value?.mode ?? "CREATE");
 
-const resolveLocalState = (): LocalState => {
+const resolveLocalState = async () => {
   const risk = cloneDeep(context.dialog.value!.risk);
-  return {
+  const parsedExpr = await convertCELStringToParsedExpr(
+    risk.condition?.expression ?? ""
+  );
+  state.value = {
     risk,
-    expr: wrapAsGroup(
-      resolveCELExpr(risk.expression?.expr ?? CELExpr.fromJSON({}))
-    ),
+    expr: wrapAsGroup(resolveCELExpr(parsedExpr.expr ?? CELExpr.fromJSON({}))),
   };
 };
-
-const state = ref(resolveLocalState());
 
 const allowCreateOrUpdate = computed(() => {
   if (mode.value === "EDIT") {
@@ -152,6 +160,7 @@ const allowCreateOrUpdate = computed(() => {
 
   const { risk, expr } = state.value;
   if (!risk.title.trim()) return false;
+  if (!expr) return false;
 
   if (!validateSimpleExpr(expr)) {
     return false;
@@ -165,9 +174,17 @@ const handleUpsert = async () => {
     context.showFeatureModal.value = true;
     return;
   }
+  if (!state.value.expr) return;
+
   const risk = cloneDeep(state.value.risk);
-  risk.expression = ParsedExpr.fromJSON({
-    expr: buildCELExpr(state.value.expr),
+
+  const expression = await convertParsedExprToCELString(
+    ParsedExpr.fromJSON({
+      expr: buildCELExpr(state.value.expr),
+    })
+  );
+  risk.condition = Expr.fromJSON({
+    expression,
   });
   emit("save", risk);
 };
@@ -180,4 +197,8 @@ const handleApplyRuleTemplate = (
   state.value.expr = cloneDeep(expr);
   emit("update");
 };
+
+watch(() => context.dialog, resolveLocalState, {
+  immediate: true,
+});
 </script>

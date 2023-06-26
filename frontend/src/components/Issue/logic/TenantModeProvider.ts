@@ -47,7 +47,7 @@ export default defineComponent({
     const taskStore = useTaskStore();
 
     const isGroupingIssue = computed(() => {
-      return route.query.databaseGroupName !== "";
+      return route.query.databaseGroupName;
     });
 
     const allowEditStatement = computed(() => {

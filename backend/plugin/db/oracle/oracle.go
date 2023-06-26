@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	// Import go-ora Oracle driver.
 	"github.com/pkg/errors"
 	go_ora "github.com/sijms/go-ora/v2"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -78,17 +80,11 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
-	return driver.executeWithBeforeCommitTxFunc(ctx, statement, nil)
-}
-
-// executeWithBeforeCommitTxFunc executes the SQL statements and returns the effected rows, `beforeCommitTx` will be called before transaction commit and after executing `statement`.
+// Execute executes the migration, `beforeCommitTxFunc` will be called before transaction commit and after executing `statement`.
 //
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
-//
 // Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
-func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, statement string, beforeCommitTx func(tx *sql.Tx) error) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opts db.ExecuteOptions) (int64, error) {
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
@@ -122,8 +118,8 @@ func (driver *Driver) executeWithBeforeCommitTxFunc(ctx context.Context, stateme
 		return 0, err
 	}
 
-	if beforeCommitTx != nil {
-		if err := beforeCommitTx(tx); err != nil {
+	if opts.EndTransactionFunc != nil {
+		if err := opts.EndTransactionFunc(tx); err != nil {
 			return 0, errors.Wrapf(err, "failed to execute beforeCommitTx")
 		}
 	}
@@ -169,10 +165,11 @@ func getOracleStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := singleSQL.Text
-	statement = strings.TrimRight(statement, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
-		statement = getOracleStatementWithResultLimit(statement, queryContext.Limit)
+	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+
+	stmt := statement
+	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
+		stmt = getOracleStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 
 	if queryContext.ReadOnly {
@@ -180,7 +177,14 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 		queryContext.ReadOnly = false
 	}
 
-	return util.Query2(ctx, db.Oracle, conn, statement, queryContext)
+	startTime := time.Now()
+	result, err := util.Query2(ctx, db.Oracle, conn, stmt, queryContext)
+	if err != nil {
+		return nil, err
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.

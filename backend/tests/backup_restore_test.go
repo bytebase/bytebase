@@ -16,13 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"go.uber.org/zap"
@@ -41,13 +38,12 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, project, mysqlDB, instanceUID, _, databaseUID, databaseName, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, instanceUID, database, databaseUID, databaseName, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
-	metadata, err := ctl.getLatestSchemaMetadata(databaseUID)
-	a.NoError(err)
-	var latestSchemaMetadata storepb.DatabaseMetadata
-	err = protojson.Unmarshal([]byte(metadata), &latestSchemaMetadata)
+	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+		Name: fmt.Sprintf("%s/metadata", database.Name),
+	})
 	a.NoError(err)
 
 	backupUID, err := strconv.Atoi(backup.Uid)
@@ -314,6 +310,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 			Title:       "DestinationInstance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: dstConnCfg.Host, Port: dstConnCfg.Port, Username: dstConnCfg.Username}},
 		},
 	})
@@ -465,6 +462,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 			Title:       baseName + "_Instance",
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
 	})

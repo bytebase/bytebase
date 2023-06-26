@@ -94,6 +94,7 @@ DROP SCHEMA "schema_a";
 			Title:       "pgTestSyncSchema",
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
@@ -152,7 +153,7 @@ DROP SCHEMA "schema_a";
 	})
 	a.NoError(err)
 	histories := resp.ChangeHistories
-	// history[0] is SchemaUpdate
+	// history[0] is SchemaUpdate.
 	a.Equal(1, len(histories))
 	latest := histories[0]
 
@@ -163,16 +164,16 @@ DROP SCHEMA "schema_a";
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, newDatabaseName),
 	})
 	a.NoError(err)
-	newDatabaseUID, err := strconv.Atoi(newDatabase.Uid)
-	a.NoError(err)
 
-	newDatabaseSchema, err := ctl.getLatestSchemaDump(newDatabaseUID)
+	newDatabaseSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+		Name: fmt.Sprintf("%s/schema", newDatabase.Name),
+	})
 	a.NoError(err)
 
 	diff, err := ctl.getSchemaDiff(schemaDiffRequest{
 		EngineType:   parser.Postgres,
 		SourceSchema: latest.Schema,
-		TargetSchema: newDatabaseSchema,
+		TargetSchema: newDatabaseSchema.Schema,
 	})
 
 	a.NoError(err)

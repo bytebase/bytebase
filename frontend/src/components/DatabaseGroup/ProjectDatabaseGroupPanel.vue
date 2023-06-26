@@ -48,7 +48,6 @@ import DatabaseGroupTable from "./DatabaseGroupTable.vue";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { ResourceType } from "./common/ExprEditor/context";
-import FeatureBadge from "../FeatureBadge.vue";
 
 interface LocalState {
   showFeatureModal: boolean;

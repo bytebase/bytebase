@@ -4,6 +4,7 @@ import { uniq } from "lodash-es";
 
 import { databaseServiceClient } from "@/grpcweb";
 import {
+  ComposedInstance,
   ComposedDatabase,
   emptyDatabase,
   EMPTY_ID,
@@ -48,6 +49,19 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     });
     return composedDatabaseList;
   };
+  const updateDatabaseInstance = (instance: ComposedInstance) => {
+    for (const [_, database] of databaseMapByName) {
+      if (database.instance !== instance.name) {
+        continue;
+      }
+      if (databaseMapByName.has(database.name)) {
+        databaseMapByName.get(database.name)!.instanceEntity = instance;
+      }
+      if (databaseMapByUID.has(database.uid)) {
+        databaseMapByUID.get(database.uid)!.instanceEntity = instance;
+      }
+    }
+  };
   const fetchDatabaseList = async (args: Partial<ListDatabasesRequest>) => {
     const { databases } = await databaseServiceClient.listDatabases(args);
     const composedDatabaseList = await upsertDatabaseMap(databases);
@@ -57,6 +71,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const { databases } = await databaseServiceClient.searchDatabases(args);
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
+  };
+  const syncDatabase = async (database: string) => {
+    await databaseServiceClient.syncDatabase({
+      name: database,
+    });
   };
   const databaseListByUser = (user: User) => {
     const canManageDatabase = hasWorkspacePermissionV1(
@@ -143,6 +162,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databaseList,
     fetchDatabaseList,
     searchDatabaseList,
+    syncDatabase,
     databaseListByUser,
     databaseListByProject,
     databaseListByInstance,
@@ -155,6 +175,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     getOrFetchDatabaseByUID,
     updateDatabase,
     fetchDatabaseSchema,
+    updateDatabaseInstance,
   };
 });
 

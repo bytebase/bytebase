@@ -37,6 +37,22 @@ service ReviewService {
     option (google.api.method_signature) = "review,update_mask";
   }
 
+  rpc CreateReviewComment(CreateReviewCommentRequest) returns (ReviewComment) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/reviews/*}:comment"
+      body: "review_comment"
+    };
+    option (google.api.method_signature) = "parent,review_comment";
+  }
+
+  rpc UpdateReviewComment(UpdateReviewCommentRequest) returns (ReviewComment) {
+    option (google.api.http) = {
+      patch: "/v1/{parent=projects/*/reviews/*}:comment"
+      body: "review_comment"
+    };
+    option (google.api.method_signature) = "parent,review_comment,update_mask";
+  }
+
   rpc BatchUpdateReviews(BatchUpdateReviewsRequest) returns (BatchUpdateReviewsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/reviews:batchUpdate"
@@ -50,12 +66,28 @@ service ReviewService {
       body: "*"
     };
   }
+
+  rpc RejectReview(RejectReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/reviews/*}:reject"
+      body: "*"
+    };
+  }
+
+  rpc RequestReview(RequestReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/reviews/*}:request"
+      body: "*"
+    };
+  }
 }
 
 message GetReviewRequest {
   // The name of the review to retrieve.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  bool force = 2;
 }
 
 message CreateReviewRequest {
@@ -128,6 +160,21 @@ message ApproveReviewRequest {
   // The name of the review to add an approver.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
+}
+
+message RejectReviewRequest {
+  // The name of the review to add an rejecting reviewer.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
+}
+
+message RequestReviewRequest {
+  // The name of the review to request a review.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
 }
 
 message Review {
@@ -165,6 +212,7 @@ message Review {
       STATUS_UNSPECIFIED = 0;
       PENDING = 1;
       APPROVED = 2;
+      REJECTED = 3;
     }
     // The new status.
     Status status = 1;
@@ -254,5 +302,38 @@ message ApprovalNode {
     GroupValue group_value = 2;
     // Format: roles/{role}
     string role = 3;
+    string external_node_id = 4;
   }
+}
+
+message CreateReviewCommentRequest {
+  // The review name
+  // Format: projects/{project}/reviews/{review}
+  string parent = 1;
+
+  ReviewComment review_comment = 2;
+}
+
+message UpdateReviewCommentRequest {
+  // The review name
+  // Format: projects/{project}/reviews/{review}
+  string parent = 1;
+
+  ReviewComment review_comment = 2;
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ReviewComment {
+  string uid = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string comment = 2;
+
+  // TODO: use struct message instead.
+  string payload = 3;
+
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -8,29 +8,55 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed, h, ref, watchEffect } from "vue";
 import { cloneDeep, uniqBy } from "lodash-es";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import type { BBOutlineItem } from "@/bbkit/types";
 import { UNKNOWN_USER_NAME } from "@/types";
-import { databaseV1Slug, environmentV1Name, projectV1Slug } from "@/utils";
+import {
+  databaseV1Slug,
+  environmentV1Name,
+  projectV1Slug,
+  isDatabaseV1Accessible,
+  extractProjectResourceName,
+} from "@/utils";
 import {
   useEnvironmentV1List,
   useDatabaseV1Store,
   useCurrentUserV1,
+  usePolicyV1Store,
+  useDBGroupStore,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import {
+  Policy,
+  PolicyResourceType,
+  PolicyType,
+} from "@/types/proto/v1/org_policy_service";
+import DatabaseGroupIcon from "./DatabaseGroupIcon.vue";
 
 const { t } = useI18n();
 const databaseV1Store = useDatabaseV1Store();
+const dbGroupStore = useDBGroupStore();
 const router = useRouter();
-
 const currentUserV1 = useCurrentUserV1();
-
 const rawEnvironmentList = useEnvironmentV1List();
+
+const policyList = ref<Policy[]>([]);
+
+const preparePolicyList = () => {
+  usePolicyV1Store()
+    .fetchPolicies({
+      resourceType: PolicyResourceType.DATABASE,
+      policyType: PolicyType.ACCESS_CONTROL,
+    })
+    .then((list) => (policyList.value = list));
+};
+
+watchEffect(preparePolicyList);
 
 // Reserve the environment list, put "Prod" to the top.
 const environmentList = computed(() =>
@@ -43,6 +69,7 @@ const prepareList = () => {
     databaseV1Store.searchDatabaseList({
       parent: "instances/-",
     });
+    dbGroupStore.fetchAllDatabaseGroupList();
   }
 };
 
@@ -52,7 +79,10 @@ watchEffect(prepareList);
 const databaseList = computed(() => {
   return databaseV1Store
     .databaseListByUser(currentUserV1.value)
-    .filter((db) => db.syncState === State.ACTIVE);
+    .filter((db) => db.syncState === State.ACTIVE)
+    .filter((database) =>
+      isDatabaseV1Accessible(database, policyList.value, currentUserV1.value)
+    );
 });
 
 const databaseListByEnvironment = computed(() => {
@@ -74,7 +104,7 @@ const databaseListByEnvironment = computed(() => {
     if (dbList) {
       dbList.push({
         id: `bb.database.${database.uid}`,
-        name: database.databaseName,
+        name: `${database.databaseName} (${database.instanceEntity.title})`,
         link: `/db/${databaseV1Slug(database)}`,
       });
     }
@@ -96,41 +126,72 @@ const databaseListByEnvironment = computed(() => {
 });
 
 const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
-  const list = databaseList.value.filter(
+  const dbList = databaseList.value.filter(
     (db) => db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
   );
   // In case that each `db.project` is not reference equal
   // we run a uniq() on the list by project.id
   const projectList = uniqBy(
-    list.map((db) => db.projectEntity),
+    [
+      ...dbList.map((db) => db.projectEntity),
+      ...dbGroupStore
+        .getAllDatabaseGroupList()
+        .map((dbGroup) => dbGroup.project),
+    ],
     (project) => project.name
   );
   // Sort the list as what <ProjectListSidePanel /> does
   projectList.sort((a, b) => a.name.localeCompare(b.name));
   // Then group databaseList by project
   const databaseListGroupByProject = projectList.map((project) => {
-    const databaseList = list.filter((db) => db.project === project.name);
+    const databaseList = dbList.filter((db) => db.project === project.name);
     return {
       project,
       databaseList,
     };
   });
-  // Map groups to `BBOutlineItem[]`
-  const itemList = databaseListGroupByProject.map(
-    ({ project, databaseList }) => {
-      return {
-        id: `bb.project.${project.uid}.databases`,
-        name: project.title,
-        childList: databaseList.map<BBOutlineItem>((db) => ({
+  const databaseGroupListByProject = projectList.map((project) => {
+    const databaseGroupList = dbGroupStore.getDBGroupListByProjectName(
+      project.name
+    );
+    return {
+      project,
+      databaseGroupList,
+    };
+  });
+
+  const outlineItemList: BBOutlineItem[] = projectList.map((project) => {
+    const databaseList =
+      databaseListGroupByProject.find((item) => item.project === project)
+        ?.databaseList || [];
+    const databaseGroupList =
+      databaseGroupListByProject.find((item) => item.project === project)
+        ?.databaseGroupList || [];
+    return {
+      id: `bb.project.${project.uid}`,
+      name: project.title,
+      childList: [
+        ...databaseList.map<BBOutlineItem>((db) => ({
           id: `bb.project.${project.uid}.database.${db.databaseName}`,
-          name: db.databaseName,
+          name: `${db.databaseName} (${db.instanceEntity.title})`,
           link: `/project/${projectV1Slug(project)}#databases`,
         })),
-        childCollapse: true,
-      } as BBOutlineItem;
-    }
-  );
-  return itemList;
+        ...databaseGroupList.map<BBOutlineItem>((dbGroup) => ({
+          id: `bb.project.${project.uid}.databaseGroup.${dbGroup.name}`,
+          name: dbGroup.databaseGroupName,
+          link: `/projects/${extractProjectResourceName(
+            project.name
+          )}/database-groups/${dbGroup.databaseGroupName}`,
+          prefix: h(DatabaseGroupIcon, {
+            class: "w-4 h-auto",
+          }),
+        })),
+      ],
+      childCollapse: true,
+    } as BBOutlineItem;
+  });
+
+  return outlineItemList;
 });
 
 const mixedDatabaseList = computed(() => {

@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -32,7 +33,6 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -56,6 +56,7 @@ var (
 				},
 			},
 		},
+		Statement: "SELECT * FROM book",
 	}
 )
 
@@ -93,6 +94,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 		},
 	})
@@ -252,7 +254,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Results))
-	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform())
+	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Equal("", diff)
 
 	// Query clone migration history.
@@ -508,6 +510,7 @@ func TestVCS(t *testing.T) {
 					Title:       instanceName,
 					Engine:      v1pb.Engine_SQLITE,
 					Environment: prodEnvironment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 				},
 			})
@@ -530,10 +533,10 @@ func TestVCS(t *testing.T) {
 			gitFile3 := "bbtest/prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile3: migrationStatement3})
 			a.NoError(err)
-			gitFile2 := "bbtest/prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql"
+			gitFile2 := "bbtest/prod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile2: migrationStatement2})
 			a.NoError(err)
-			gitFile1 := "bbtest/prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql"
+			gitFile1 := "bbtest/prod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile1: migrationStatement})
 			a.NoError(err)
 			// This file is merged from other branch and included in this push event's commits.
@@ -567,8 +570,8 @@ func TestVCS(t *testing.T) {
 			// TODO(p0ny): expose task DAG list and check the dependency.
 			a.Equal(3, len(issue.Pipeline.StageList[0].TaskList))
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
-			a.Equal("[testVCSSchemaUpdate] Alter schema: Create table book", issue.Name)
-			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
+			a.Equal("[testVCSSchemaUpdate] Alter schema: 😊create table book", issue.Name)
+			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -933,6 +936,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 					Title:       "pgInstance",
 					Engine:      v1pb.Engine_POSTGRES,
 					Environment: prodEnvironment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 				},
 			})
@@ -1420,6 +1424,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					Title:       instanceName,
 					Engine:      v1pb.Engine_SQLITE,
 					Environment: environment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 				},
 			})
@@ -1494,7 +1499,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Status: advisor.Warn,
 					Content: []string{
 						fmt.Sprintf(
-							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"[WARN] %s#L1: SQL review policy not found\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: You can configure the SQL review policy on %s/setting/sql-review.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#2\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"[WARN] %s#L1: SQL review is disabled\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance.\nPlease check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#3\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
 							filePath,
 							pathes[len(pathes)-1],
 							filePath,
@@ -1511,7 +1516,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Status: advisor.Warn,
 					Content: []string{
 						fmt.Sprintf(
-							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"[WARN] %s#L1: column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"[WARN] %s#L1: column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"[WARN] %s#L1: column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nPlease check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"[WARN] %s#L1: column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nPlease check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
 							filePath,
 							filename,
 							filePath,
@@ -1535,7 +1540,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Status: advisor.Warn,
 					Content: []string{
 						fmt.Sprintf(
-							"::warning file=%s,line=1,col=1,endColumn=2,title=SQL review policy not found (2)::You can configure the SQL review policy on %s/setting/sql-review%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#2",
+							"::warning file=%s,line=1,col=1,endColumn=2,title=SQL review is disabled (3)::Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#3",
 							filePath,
 							rootURL,
 						),
@@ -1634,6 +1639,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Title:       "pgInstance",
 					Engine:      v1pb.Engine_POSTGRES,
 					Environment: prodEnvironment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 				},
 			})
@@ -1985,7 +1991,7 @@ func TestGetLatestSchema(t *testing.T) {
 		ddl                  string
 		wantRawSchema        string
 		wantSDL              string
-		wantDatabaseMetadata *storepb.DatabaseMetadata
+		wantDatabaseMetadata *v1pb.DatabaseMetadata
 	}{
 		{
 			name:         "MySQL",
@@ -2007,19 +2013,19 @@ func TestGetLatestSchema(t *testing.T) {
 				"  `id` INT DEFAULT NULL,\n" +
 				"  `name` TEXT COLLATE utf8mb4_general_ci\n" +
 				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n",
-			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
 				Name:         "latestSchema",
 				CharacterSet: "utf8mb4",
 				Collation:    "utf8mb4_general_ci",
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*v1pb.SchemaMetadata{
 					{
-						Tables: []*storepb.TableMetadata{
+						Tables: []*v1pb.TableMetadata{
 							{
 								Name:      "book",
 								Engine:    "InnoDB",
 								Collation: "utf8mb4_general_ci",
 								DataSize:  16384,
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*v1pb.ColumnMetadata{
 									{
 										Name:     "id",
 										Position: 1,
@@ -2069,18 +2075,18 @@ CREATE TABLE public.book (
 
 `,
 			wantSDL: ``,
-			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
 				Name:         "latestSchema",
 				CharacterSet: "UTF8",
 				Collation:    "en_US.UTF-8",
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*v1pb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*v1pb.TableMetadata{
 							{
 								Name:     "book",
 								DataSize: 8192,
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*v1pb.ColumnMetadata{
 									{Name: "id", Position: 1, Nullable: true, Type: "integer"},
 									{Name: "name", Position: 2, Nullable: true, Type: "text"},
 								},
@@ -2140,6 +2146,7 @@ CREATE TABLE public.book (
 						Title:       test.name,
 						Engine:      v1pb.Engine_POSTGRES,
 						Environment: environment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(dbPort), Username: "root"}},
 					},
 				})
@@ -2150,6 +2157,7 @@ CREATE TABLE public.book (
 						Title:       "mysqlInstance",
 						Engine:      v1pb.Engine_MYSQL,
 						Environment: environment.Name,
+						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(dbPort), Username: "root"}},
 					},
 				})
@@ -2205,20 +2213,24 @@ CREATE TABLE public.book (
 			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
-			latestSchemaDump, err := ctl.getLatestSchemaDump(databaseUID)
+			latestSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+				Name: fmt.Sprintf("%s/schema", database.Name),
+			})
 			a.NoError(err)
-			a.Equal(test.wantRawSchema, latestSchemaDump)
+			a.Equal(test.wantRawSchema, latestSchema.Schema)
 			if test.dbType == db.MySQL {
-				latestSchemaSDL, err := ctl.getLatestSchemaSDL(databaseUID)
+				latestSchemaSDL, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+					Name:      fmt.Sprintf("%s/schema", database.Name),
+					SdlFormat: true,
+				})
 				a.NoError(err)
-				a.Equal(test.wantSDL, latestSchemaSDL)
+				a.Equal(test.wantSDL, latestSchemaSDL.Schema)
 			}
-			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(databaseUID)
+			latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+				Name: fmt.Sprintf("%s/metadata", database.Name),
+			})
 			a.NoError(err)
-			var latestSchemaMetadata storepb.DatabaseMetadata
-			err = protojson.Unmarshal([]byte(latestSchemaMetadataString), &latestSchemaMetadata)
-			a.NoError(err)
-			diff := cmp.Diff(test.wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
+			diff := cmp.Diff(test.wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
 			a.Equal("", diff)
 		})
 	}
@@ -2259,6 +2271,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: prodEnvironment.Name,
+			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 		},
 	})
@@ -2519,6 +2532,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 					Title:       "mysqlInstance",
 					Engine:      v1pb.Engine_MYSQL,
 					Environment: prodEnvironment.Name,
+					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 				},
 			})

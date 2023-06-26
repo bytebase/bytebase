@@ -80,31 +80,21 @@ const (
 
 	// Change Workflow.
 
-	// FeatureDataSource exposes the data source concept.
-	//
-	// Currently, we DO NOT expose this feature.
-	//
-	// Internally Bytebase stores instance username/password in a separate data source model.
-	// This allows a single instance to have multiple data sources (e.g. one RW and one RO).
-	// And from the user's perspective, the username/password
-	// look like the property of the instance, which are not. They are the property of data source which
-	// in turns belongs to the instance.
-	// - Support defining extra data source for a database and exposing the related data source UI.
-	FeatureDataSource FeatureType = "bb.feature.data-source"
 	// FeatureDBAWorkflow enforces the DBA workflow.
 	//
 	// - Developers can't create and view instances since they are exclusively by DBA, they can
 	//   only access database.
-	// - Developers can submit troubleshooting issue.
+	// - Developers can't create database.
+	// - Developers can't query and export data directly. They must request corresponding permissions first.
 	FeatureDBAWorkflow FeatureType = "bb.feature.dba-workflow"
 	// FeatureIMApproval integrates IM approval into Bytebase, allowing users approve Bytebase issues on the IM.
 	FeatureIMApproval FeatureType = "bb.feature.im.approval"
-	// FeatureMultiTenancy allows user to enable tenant mode for the project.
+	// FeatureMultiTenancy allows user to enable batch mode for the project.
 	//
-	// Tenant mode allows user to track a group of homogeneous database changes together.
+	// Batch mode allows user to track a group of homogeneous database changes together.
 	// e.g. A game studio may deploy many servers, each server is fully isolated with its
 	// own database. When a new game version is released, it may require to upgrade the
-	// underlying database schema, then tenant mode will help the studio to track the
+	// underlying database schema, then batch mode will help the studio to track the
 	// schema change across all databases.
 	FeatureMultiTenancy FeatureType = "bb.feature.multi-tenancy"
 	// FeatureOnlineMigration allows user to perform online-migration.
@@ -205,8 +195,6 @@ func (e FeatureType) Name() string {
 	case FeatureBranding:
 		return "Branding"
 	// Change Workflow
-	case FeatureDataSource:
-		return "Data source"
 	case FeatureDBAWorkflow:
 		return "DBA workflow"
 	case FeatureIMApproval:
@@ -299,7 +287,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
-	FeatureDataSource:       {false, false, false},
 	FeatureDBAWorkflow:      {false, false, true},
 	FeatureIMApproval:       {false, false, true},
 	FeatureMultiTenancy:     {false, false, true},
@@ -333,6 +320,32 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeaturePluginOpenAI: {false, false, true},
 }
 
+// InstanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.
+var InstanceLimitFeature = map[FeatureType]bool{
+	// Change Workflow
+	FeatureIMApproval:       true,
+	FeatureSchemaDrift:      true,
+	FeatureSQLReview:        true,
+	FeatureEncryptedSecrets: true,
+	FeatureTaskScheduleTime: true,
+	FeatureOnlineMigration:  true,
+	// VCS Integration
+	FeatureVCSSchemaWriteBack:   true,
+	FeatureVCSSQLReviewWorkflow: true,
+	FeatureMybatisSQLReview:     true,
+	// Database management
+	FeaturePITR:                  true,
+	FeatureReadReplicaConnection: true,
+	FeatureInstanceSSHConnection: true,
+	FeatureDatabaseGrouping:      true,
+	FeatureSyncSchemaAllVersions: true,
+	FeatureIndexAdvisor:          true,
+	// Policy Control
+	FeatureSensitiveData: true,
+	// TODO:
+	// FeatureCustomApproval: true,
+}
+
 // PlanLimit is the type for plan limits.
 type PlanLimit int
 
@@ -351,5 +364,9 @@ var PlanLimitValues = map[PlanLimit][3]int64{
 
 // Feature returns whether a particular feature is available in a particular plan.
 func Feature(feature FeatureType, plan PlanType) bool {
-	return FeatureMatrix[feature][plan]
+	matrix, ok := FeatureMatrix[feature]
+	if !ok {
+		return false
+	}
+	return matrix[plan]
 }

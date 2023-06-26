@@ -76,7 +76,7 @@
               class="tooltip-wrapper"
             >
               <span class="tooltip whitespace-nowrap">
-                {{ $t("project.mode.tenant") }}
+                {{ $t("project.mode.batch") }}
               </span>
               <TenantIcon class="w-4 h-4 text-control" />
             </div>
@@ -97,7 +97,7 @@
                   {{ $t("database.gitops-enabled") }}
                 </span>
 
-                <heroicons-outline:collection
+                <GitIcon
                   class="w-4 h-4 text-control hover:text-control-hover"
                 />
               </template>

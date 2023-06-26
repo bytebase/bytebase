@@ -127,7 +127,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, errors.Errorf("cutover poller cancelled")
 	}
 
-	mi, err := preMigration(ctx, stores, profile, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
+	mi, err := getMigrationInfo(ctx, stores, profile, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
@@ -141,7 +141,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		}
 		return nil
 	}
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return true, nil, err
 	}

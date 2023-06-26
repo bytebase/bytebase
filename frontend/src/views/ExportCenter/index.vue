@@ -1,7 +1,7 @@
 <template>
   <div class="w-full px-4 py-1 pt-2">
     <div class="w-full flex flex-row justify-between items-center">
-      <div>
+      <div class="flex items-center gap-x-4">
         <NInputGroup>
           <ProjectSelect
             :project="state.filterParams.project?.uid ?? String(UNKNOWN_ID)"
@@ -21,9 +21,16 @@
             @update:database="changeDatabaseId"
           />
         </NInputGroup>
+        <NButton
+          v-if="filterIssueId !== String(UNKNOWN_ID)"
+          @click="clearFilterIssueId"
+        >
+          <span>#{{ filterIssueId }}</span>
+          <heroicons:x-mark class="w-4 h-4 ml-1 -mr-1.5" />
+        </NButton>
       </div>
       <div>
-        <NButton @click="createExportDataIssue">
+        <NButton @click="state.showRequestExportPanel = true">
           {{ $t("quick-action.request-export") }}
         </NButton>
       </div>
@@ -32,13 +39,17 @@
       <ExportRecordTable :export-records="filterExportRecords" />
     </div>
   </div>
+
+  <RequestExportPanel
+    v-if="state.showRequestExportPanel"
+    @close="state.showRequestExportPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NButton, NInputGroup } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
-import { useRouter } from "vue-router";
 import { UNKNOWN_ID } from "@/types";
 import { FilterParams, ExportRecord } from "./types";
 import {
@@ -50,16 +61,20 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { ProjectSelect, InstanceSelect, DatabaseSelect } from "@/components/v2";
-import { convertFromSimpleExpr } from "@/utils/issue/cel";
+import { convertFromExpr } from "@/utils/issue/cel";
 import ExportRecordTable from "./ExportRecordTable.vue";
+import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import { useRoute, useRouter } from "vue-router";
 
 interface LocalState {
   filterParams: FilterParams;
   exportRecords: ExportRecord[];
+  showRequestExportPanel: boolean;
 }
 
 const issueDescriptionRegexp = /^#(\d+)$/;
 
+const route = useRoute();
 const router = useRouter();
 const currentUser = useCurrentUserV1();
 const projectIamPolicyStore = useProjectIamPolicyStore();
@@ -72,10 +87,26 @@ const state = reactive<LocalState>({
     database: undefined,
   },
   exportRecords: [],
+  showRequestExportPanel: false,
+});
+
+const filterIssueId = computed(() => {
+  const hash = route.hash.replace(/^#+/g, "");
+  const maybeIssueId = parseInt(hash, 10);
+  if (!Number.isNaN(maybeIssueId) && maybeIssueId > 0) {
+    return String(maybeIssueId);
+  }
+  return String(UNKNOWN_ID);
 });
 
 const filterExportRecords = computed(() => {
   return state.exportRecords.filter((record) => {
+    if (filterIssueId.value !== String(UNKNOWN_ID)) {
+      if (record.issueId !== filterIssueId.value) {
+        return false;
+      }
+    }
+
     if (state.filterParams.project) {
       if (record.database.project !== state.filterParams.project.name) {
         return false;
@@ -114,7 +145,7 @@ watchEffect(async () => {
         continue;
       }
 
-      const conditionExpr = convertFromSimpleExpr(binding.parsedExpr.expr);
+      const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
       const databaseResource = head(conditionExpr.databaseResources);
       if (databaseResource) {
         const description = binding.condition?.description || "";
@@ -122,10 +153,23 @@ watchEffect(async () => {
         const database = await databaseStore.getOrFetchDatabaseByName(
           databaseResource.databaseName
         );
+        let statement = conditionExpr.statement || "";
+        // NOTE: concat schema and table name to statement for table level export.
+        // Maybe we need to move this into backend later.
+        if (statement === "" && databaseResource.table) {
+          const names = [];
+          if (databaseResource.schema) {
+            names.push(databaseResource.schema);
+          }
+          names.push(databaseResource.table);
+          statement = `SELECT * FROM ${names.join(".")};`;
+        }
+
         tempExportRecords.push({
+          databaseResource,
           database,
+          statement,
           expiration: conditionExpr.expiredTime || "",
-          statement: conditionExpr.statement || "",
           maxRowCount: conditionExpr.rowLimit || 0,
           exportFormat: (conditionExpr.exportFormat as any) || "JSON",
           issueId: issueId || String(UNKNOWN_ID),
@@ -163,18 +207,10 @@ const changeDatabaseId = (uid: string | undefined) => {
   }
 };
 
-const createExportDataIssue = () => {
-  const routeInfo = {
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query: {
-      template: "bb.issue.grant.request",
-      role: "EXPORTER",
-      name: "New grant exporter request",
-    },
-  };
-  router.push(routeInfo);
+const clearFilterIssueId = () => {
+  router.replace({
+    ...route,
+    hash: "",
+  });
 };
 </script>

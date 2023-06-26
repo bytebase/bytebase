@@ -50,6 +50,13 @@ service InstanceService {
     };
   }
 
+  rpc SyncInstance(SyncInstanceRequest) returns (SyncInstanceResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*}:sync"
+      body: "*"
+    };
+  }
+
   rpc AddDataSource(AddDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
       post: "/v1/{instance=instances/*}:addDataSource"
@@ -153,6 +160,14 @@ message UndeleteInstanceRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message SyncInstanceRequest {
+  // The name of instance.
+  // Format: instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SyncInstanceResponse {}
+
 message AddDataSourceRequest {
   // The name of the instance to add a data source to.
   // Format: instances/{instance}
@@ -220,6 +235,8 @@ message Instance {
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
   string environment = 9;
+
+  bool activation = 10;
 }
 
 message DataSource {

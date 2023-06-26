@@ -2,7 +2,10 @@ import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { isEqual, isUndefined } from "lodash-es";
 import { externalVersionControlServiceClient } from "@/grpcweb";
-import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
+import {
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
 import { externalVersionControlPrefix } from "./common";
 import { VCSId } from "@/types";
 
@@ -90,6 +93,35 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     return resp;
   };
 
+  const exchangeToken = async ({
+    vcsName,
+    vcsType,
+    instanceUrl,
+    clientId,
+    clientSecret,
+    code,
+  }: {
+    vcsName?: string;
+    vcsType?: ExternalVersionControl_Type;
+    instanceUrl?: string;
+    clientId?: string;
+    clientSecret?: string;
+    code: string;
+  }) => {
+    const oauthToken = await externalVersionControlServiceClient.exchangeToken({
+      exchangeToken: {
+        name: vcsName ?? `${externalVersionControlPrefix}-`,
+        code,
+        type: vcsType,
+        instanceUrl,
+        clientId,
+        clientSecret,
+      },
+    });
+
+    return oauthToken;
+  };
+
   return {
     listVCSExternalProjects,
     getVCSByUid,
@@ -100,6 +132,7 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     deleteVCS,
     createVCS,
     updateVCS,
+    exchangeToken,
   };
 });
 

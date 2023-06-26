@@ -26,12 +26,7 @@ import (
 
 // Dump and restore.
 const (
-	databaseHeaderFmt = "" +
-		"--\n" +
-		"-- MySQL database structure for `%s`\n" +
-		"--\n"
-	useDatabaseFmt = "USE `%s`;\n\n"
-	settingsStmt   = "" +
+	settingsStmt = "" +
 		"SET character_set_client  = %s;\n" +
 		"SET character_set_results = %s;\n" +
 		"SET collation_connection  = %s;\n" +
@@ -107,12 +102,12 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	if !schemaOnly {
 		log.Debug("flush tables in database with read locks",
 			zap.String("database", driver.databaseName))
-		if err := FlushTablesWithReadLock(ctx, conn, driver.databaseName); err != nil {
+		if err := FlushTablesWithReadLock(ctx, driver.dbType, conn, driver.databaseName); err != nil {
 			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
 
-		binlog, err := GetBinlogInfo(ctx, driver.db)
+		binlog, err := GetBinlogInfo(ctx, conn)
 		if err != nil {
 			return "", err
 		}
@@ -129,7 +124,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 
 	options := sql.TxOptions{}
 	// TiDB does not support readonly, so we only set for MySQL and OceanBase.
-	if driver.dbType == "MYSQL" || driver.dbType == "OCEANBASE" {
+	if driver.dbType == db.MySQL || driver.dbType == db.MariaDB || driver.dbType == db.OceanBase {
 		options.ReadOnly = true
 	}
 	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
@@ -142,7 +137,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	defer txn.Rollback()
 
 	log.Debug("begin to dump database", zap.String("database", driver.databaseName), zap.Bool("schemaOnly", schemaOnly))
-	if err := dumpTxn(ctx, txn, driver.dbType, driver.databaseName, out, schemaOnly); err != nil {
+	if err := dumpTxn(txn, driver.dbType, driver.databaseName, out, schemaOnly); err != nil {
 		return "", err
 	}
 
@@ -154,7 +149,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 }
 
 // FlushTablesWithReadLock runs FLUSH TABLES table1, table2, ... WITH READ LOCK for all the tables in the database.
-func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
+func FlushTablesWithReadLock(ctx context.Context, dbType db.Type, conn *sql.Conn, database string) error {
 	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
 	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -166,7 +161,7 @@ func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	}
 	defer txn.Rollback()
 
-	tables, err := getTablesTx(txn, database)
+	tables, err := getTablesTx(txn, dbType, database)
 	if err != nil {
 		return err
 	}
@@ -189,162 +184,109 @@ func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	return txn.Commit()
 }
 
-func dumpTxn(ctx context.Context, txn *sql.Tx, dbType db.Type, database string, out io.Writer, schemaOnly bool) error {
-	// Find all dumpable databases
-	dbNames, err := getDatabases(ctx, txn)
+func dumpTxn(txn *sql.Tx, dbType db.Type, database string, out io.Writer, schemaOnly bool) error {
+	// Disable foreign key check.
+	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
+	// the unique and foreign key check so that the restoring will not fail.
+	if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
+		return err
+	}
+
+	// Table and view statement.
+	// We have to dump the table before views because of the structure dependency.
+	tables, err := getTablesTx(txn, dbType, database)
 	if err != nil {
-		return errors.Wrap(err, "failed to get databases")
+		return errors.Wrapf(err, "failed to get tables of database %q", database)
 	}
-
-	var dumpableDbNames []string
-	if database != "" {
-		exist := false
-		for _, n := range dbNames {
-			if n == database {
-				exist = true
-				break
-			}
+	// Construct temporal views.
+	// Create a temporary view with the same name as the view and with columns of
+	// the same name in order to satisfy views that depend on this view.
+	// This temporary view will be removed when the actual view is created.
+	// The properties of each column, are not preserved in this temporary
+	// view. They are not necessary because other views only need to reference
+	// the column name, thus we generate SELECT 1 AS colName1, 1 AS colName2.
+	// This will not be necessary once we can determine dependencies
+	// between views and can simply dump them in the appropriate order.
+	// https://sourcegraph.com/github.com/mysql/mysql-server/-/blob/client/mysqldump.cc?L2781
+	for _, tbl := range tables {
+		if tbl.TableType != viewTableType {
+			continue
 		}
-		if !exist {
-			return common.Errorf(common.NotFound, "database %s not found", database)
-		}
-		dumpableDbNames = []string{database}
-	} else {
-		for _, dbName := range dbNames {
-			if systemDatabases[dbName] {
-				continue
-			}
-			dumpableDbNames = append(dumpableDbNames, dbName)
-		}
-	}
-
-	for _, dbName := range dumpableDbNames {
-		// Include "USE DATABASE xxx" if dumping multiple databases.
-		if len(dumpableDbNames) > 1 {
-			// Database header.
-			header := fmt.Sprintf(databaseHeaderFmt, dbName)
-			if _, err := io.WriteString(out, header); err != nil {
-				return err
-			}
-			dbStmt, err := getDatabaseStmt(txn, dbName)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get database %q", dbName)
-			}
-			if _, err := io.WriteString(out, dbStmt); err != nil {
-				return err
-			}
-			// Use database statement.
-			useStmt := fmt.Sprintf(useDatabaseFmt, dbName)
-			if _, err := io.WriteString(out, useStmt); err != nil {
-				return err
-			}
-		}
-
-		// Disable foreign key check.
-		// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
-		// the unique and foreign key check so that the restoring will not fail.
-		if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
+		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
 			return err
 		}
-
-		// Table and view statement.
-		// We have to dump the table before views because of the structure dependency.
-		tables, err := getTablesTx(txn, dbName)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get tables of database %q", dbName)
+	}
+	// Construct tables.
+	for _, tbl := range tables {
+		if tbl.TableType == viewTableType {
+			continue
 		}
-		// Construct temporal views.
-		// Create a temporary view with the same name as the view and with columns of
-		// the same name in order to satisfy views that depend on this view.
-		// This temporary view will be removed when the actual view is created.
-		// The properties of each column, are not preserved in this temporary
-		// view. They are not necessary because other views only need to reference
-		// the column name, thus we generate SELECT 1 AS colName1, 1 AS colName2.
-		// This will not be necessary once we can determine dependencies
-		// between views and can simply dump them in the appropriate order.
-		// https://sourcegraph.com/github.com/mysql/mysql-server/-/blob/client/mysqldump.cc?L2781
-		for _, tbl := range tables {
-			if tbl.TableType != viewTableType {
-				continue
-			}
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
-				return err
-			}
+		if schemaOnly {
+			tbl.Statement = excludeSchemaAutoIncrementValue(tbl.Statement)
 		}
-		// Construct tables.
-		for _, tbl := range tables {
-			if tbl.TableType == viewTableType {
-				continue
-			}
-			if schemaOnly {
-				tbl.Statement = excludeSchemaAutoIncrementValue(tbl.Statement)
-			}
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
-				return err
-			}
-			if !schemaOnly && tbl.TableType == baseTableType {
-				// Include db prefix if dumping multiple databases.
-				includeDbPrefix := len(dumpableDbNames) > 1
-				if err := exportTableData(txn, dbName, tbl.Name, includeDbPrefix, out); err != nil {
-					return err
-				}
-			}
-		}
-		// Construct final views.
-		for _, tbl := range tables {
-			if tbl.TableType != viewTableType {
-				continue
-			}
-			// The temporary view just created above were used to satisfy the schema dependency. See comment above.
-			// We have to drop the temporary and incorrect view here to recreate the final and correct one.
-			if _, err := io.WriteString(out, fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n", tbl.Name)); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
-				return err
-			}
-		}
-
-		// Procedure and function (routine) statements.
-		routines, err := getRoutines(txn, dbType, dbName)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get routines of database %q", dbName)
-		}
-		for _, rt := range routines {
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", rt.statement)); err != nil {
-				return err
-			}
-		}
-
-		// OceanBase doesn't support "Event Scheduler"
-		if dbType != "OCEANBASE" {
-			// Event statements.
-			events, err := getEvents(txn, dbName)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get events of database %q", dbName)
-			}
-			for _, et := range events {
-				if _, err := io.WriteString(out, fmt.Sprintf("%s\n", et.statement)); err != nil {
-					return err
-				}
-			}
-		}
-
-		// Trigger statements.
-		triggers, err := getTriggers(txn, dbName)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get triggers of database %q", dbName)
-		}
-		for _, tr := range triggers {
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tr.statement)); err != nil {
-				return err
-			}
-		}
-
-		// Restore foreign key check.
-		if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
+		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 			return err
 		}
+		if !schemaOnly && tbl.TableType == baseTableType {
+			if err := exportTableData(txn, database, tbl.Name, out); err != nil {
+				return err
+			}
+		}
+	}
+	// Construct final views.
+	for _, tbl := range tables {
+		if tbl.TableType != viewTableType {
+			continue
+		}
+		// The temporary view just created above were used to satisfy the schema dependency. See comment above.
+		// We have to drop the temporary and incorrect view here to recreate the final and correct one.
+		if _, err := io.WriteString(out, fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n", tbl.Name)); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
+			return err
+		}
+	}
+
+	// Procedure and function (routine) statements.
+	routines, err := getRoutines(txn, dbType, database)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get routines of database %q", database)
+	}
+	for _, rt := range routines {
+		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", rt.statement)); err != nil {
+			return err
+		}
+	}
+
+	// OceanBase doesn't support "Event Scheduler"
+	if dbType != db.OceanBase {
+		// Event statements.
+		events, err := getEvents(txn, database)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get events of database %q", database)
+		}
+		for _, et := range events {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", et.statement)); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Trigger statements.
+	triggers, err := getTriggers(txn, dbType, database)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get triggers of database %q", database)
+	}
+	for _, tr := range triggers {
+		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tr.statement)); err != nil {
+			return err
+		}
+	}
+
+	// Restore foreign key check.
+	if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
+		return err
 	}
 
 	return nil
@@ -366,11 +308,11 @@ func excludeSchemaAutoIncrementValue(s string) string {
 }
 
 // GetBinlogInfo queries current binlog info from MySQL server.
-func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
+func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
 	query := "SHOW MASTER STATUS"
 	binlogInfo := api.BinlogInfo{}
 	var unused any
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return api.BinlogInfo{}, errors.Wrapf(err, "cannot execute %q query", query)
 	}
@@ -428,19 +370,6 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 	return binlogInfo, nil
 }
 
-// getDatabaseStmt gets the create statement of a database.
-func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
-	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS `%s`;", dbName)
-	var stmt, unused string
-	if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return "", err
-	}
-	return fmt.Sprintf("%s;\n", stmt), nil
-}
-
 // TableSchema describes the schema of a table or view.
 type TableSchema struct {
 	Name        string
@@ -475,11 +404,11 @@ func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSche
 		return nil, err
 	}
 	defer txn.Rollback()
-	return getTablesTx(txn, dbName)
+	return getTablesTx(txn, db.MySQL, dbName)
 }
 
 // getTablesTx gets all tables of a database using the provided transaction.
-func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+func getTablesTx(txn *sql.Tx, dbType db.Type, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
@@ -499,7 +428,7 @@ func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 		return nil, err
 	}
 	for _, tbl := range tables {
-		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
+		stmt, err := getTableStmt(txn, dbType, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
@@ -515,8 +444,17 @@ func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	return tables, nil
 }
 
+func trimAfterLastParenthesis(sql string) string {
+	pos := strings.LastIndex(sql, ")")
+	if pos != -1 {
+		return sql[:pos+1]
+	}
+
+	return sql
+}
+
 // getTableStmt gets the create statement of a table.
-func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) {
+func getTableStmt(txn *sql.Tx, dbType db.Type, dbName, tblName, tblType string) (string, error) {
 	switch tblType {
 	case baseTableType:
 		query := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`;", dbName, tblName)
@@ -526,6 +464,9 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 				return "", common.FormatDBErrorEmptyRowWithQuery(query)
 			}
 			return "", err
+		}
+		if dbType == db.OceanBase {
+			stmt = trimAfterLastParenthesis(stmt)
 		}
 		return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 	case viewTableType:
@@ -581,7 +522,7 @@ func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
 }
 
 // exportTableData gets the data of a table.
-func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, out io.Writer) error {
+func exportTableData(txn *sql.Tx, dbName, tblName string, out io.Writer) error {
 	query := fmt.Sprintf("SELECT * FROM `%s`.`%s`;", dbName, tblName)
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -616,11 +557,7 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 				tokens[i] = fmt.Sprintf("'%s'", v.String)
 			}
 		}
-		dbPrefix := ""
-		if includeDbPrefix {
-			dbPrefix = fmt.Sprintf("`%s`.", dbName)
-		}
-		stmt := fmt.Sprintf("INSERT INTO %s`%s` VALUES (%s);\n", dbPrefix, tblName, strings.Join(tokens, ", "))
+		stmt := fmt.Sprintf("INSERT INTO `%s` VALUES (%s);\n", tblName, strings.Join(tokens, ", "))
 		if _, err := io.WriteString(out, stmt); err != nil {
 			return err
 		}
@@ -646,14 +583,18 @@ func getRoutines(txn *sql.Tx, dbType db.Type, dbName string) ([]*routineSchema, 
 	for _, routineType := range []string{"FUNCTION", "PROCEDURE"} {
 		if err := func() error {
 			var query string
-			if dbType == "OCEANBASE" {
+			if dbType == db.OceanBase {
 				query = fmt.Sprintf("SHOW %s STATUS FROM `%s`;", routineType, dbName)
 			} else {
 				query = fmt.Sprintf("SHOW %s STATUS WHERE Db = '%s';", routineType, dbName)
 			}
 			rows, err := txn.Query(query)
 			if err != nil {
-				return err
+				// Oceanbase starts to support functions since 4.0.
+				if dbType == db.OceanBase {
+					return nil
+				}
+				return errors.Wrapf(err, "failed query %q", query)
 			}
 			defer rows.Close()
 
@@ -777,11 +718,15 @@ func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 }
 
 // getTriggers gets all triggers of a database.
-func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
+func getTriggers(txn *sql.Tx, dbType db.Type, dbName string) ([]*triggerSchema, error) {
 	var triggers []*triggerSchema
 	query := fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
 	if err != nil {
+		// Oceanbase starts to support trigger since 4.0.
+		if dbType == db.OceanBase {
+			return nil, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
