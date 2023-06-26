@@ -273,6 +273,9 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err := ctl.initWorkspaceProfile(metaCtx); err != nil {
 		return nil, err
 	}
+	if err := ctl.setLicense(); err != nil {
+		return nil, err
+	}
 	return metaCtx, nil
 }
 

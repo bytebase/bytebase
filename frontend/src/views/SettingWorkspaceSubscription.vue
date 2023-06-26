@@ -39,7 +39,19 @@
           </div>
         </dd>
       </div>
-      <div class="my-3">
+      <div v-if="subscriptionStore.currentPlan === PlanType.FREE" class="my-3">
+        <dt class="text-gray-400">
+          {{ $t("subscription.instance-count") }}
+        </dt>
+        <dd
+          class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
+        >
+          <span class="group-hover:underline">{{
+            subscriptionStore.instanceCountLimit
+          }}</span>
+        </dd>
+      </div>
+      <div v-else class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.instance-assignment.used-and-total-license") }}
         </dt>
@@ -207,14 +219,14 @@ const uploadLicense = async () => {
   }
 };
 
-const { expireAt, isTrialing, isExpired, instanceCount } =
+const { expireAt, isTrialing, isExpired, instanceLicenseCount } =
   storeToRefs(subscriptionStore);
 
 const totalLicenseCount = computed((): string => {
-  if (instanceCount.value === Number.MAX_VALUE) {
+  if (instanceLicenseCount.value === Number.MAX_VALUE) {
     return t("subscription.unlimited");
   }
-  return `${instanceCount.value}`;
+  return `${instanceLicenseCount.value}`;
 });
 
 const activateLicenseCount = computed((): string => {

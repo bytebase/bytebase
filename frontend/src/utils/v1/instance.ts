@@ -6,6 +6,8 @@ import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { ComposedInstance } from "@/types";
+import { useSubscriptionV1Store } from "@/store";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -13,11 +15,12 @@ export const instanceV1Slug = (instance: Instance): string => {
 
 export function instanceV1Name(instance: Instance) {
   const { t } = useI18n();
+  const store = useSubscriptionV1Store();
   let name = instance.title;
   // instance cannot be deleted and activated at the same time.
   if (instance.state === State.DELETED) {
     name += ` (${t("common.archived")})`;
-  } else if (!instance.activation) {
+  } else if (!instance.activation && store.currentPlan !== PlanType.FREE) {
     name += ` (${t("common.no-license")})`;
   }
   return name;

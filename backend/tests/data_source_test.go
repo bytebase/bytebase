@@ -47,6 +47,8 @@ func TestDataSource(t *testing.T) {
 	})
 	a.NoError(err)
 
+	err = ctl.removeLicense()
+	a.NoError(err)
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{

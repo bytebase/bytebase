@@ -120,6 +120,19 @@ export const PLANS: Plan[] = planData.planList.map((raw: Plan) => ({
   type: planTypeFromJSON(raw.type + 1),
 }));
 
+// TODO: it's better to get the count limit from the backend.
+export const userCountLimit = new Map<PlanType, number>([
+  [PlanType.FREE, 20],
+  [PlanType.TEAM, Number.MAX_VALUE],
+  [PlanType.ENTERPRISE, Number.MAX_VALUE],
+]);
+
+export const instanceCountLimit = new Map<PlanType, number>([
+  [PlanType.FREE, 20],
+  [PlanType.TEAM, 20],
+  [PlanType.ENTERPRISE, Number.MAX_VALUE],
+]);
+
 export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
   const { t } = useI18n();
   for (const section of FEATURE_SECTIONS) {
