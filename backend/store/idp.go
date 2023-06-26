@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -202,11 +201,11 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, string(configBytes))
 	}
 	if v := patch.Delete; v != nil {
-		rowStatus := api.Normal
+		rowStatus := storepb.RowStatus_NORMAL.String()
 		if *patch.Delete {
-			rowStatus = api.Archived
+			rowStatus = storepb.RowStatus_ARCHIVED.String()
 		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, rowStatus)
 	}
 	args = append(args, patch.ResourceID)
 
@@ -258,7 +257,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, storepb.RowStatus_NORMAL.String())
 	}
 
 	rows, err := tx.QueryContext(ctx, `

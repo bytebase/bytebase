@@ -31,6 +31,8 @@
 - [store/common.proto](#store_common-proto)
     - [PageToken](#bytebase-store-PageToken)
   
+    - [RowStatus](#bytebase-store-RowStatus)
+  
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
@@ -486,6 +488,19 @@ Used internally for obfuscating the page token.
 
 
  
+
+
+<a name="bytebase-store-RowStatus"></a>
+
+### RowStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROW_STATUS_UNSPECIFIED | 0 |  |
+| NORMAL | 1 |  |
+| ARCHIVED | 2 |  |
+
 
  
 
