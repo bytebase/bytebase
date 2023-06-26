@@ -92,7 +92,6 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { ref, watch, reactive } from "vue";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { ConditionGroupExpr, buildCELExpr } from "@/plugins/cel";
 import {
   useDatabaseV1Store,
