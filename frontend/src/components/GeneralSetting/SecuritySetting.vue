@@ -23,7 +23,7 @@
             $t("settings.general.workspace.watermark.enable")
           }}</span>
 
-          <FeatureBadge feature="bb.feature.watermark" class="text-accent" />
+          <FeatureBadge feature="bb.feature.watermark" />
 
           <span
             v-if="!allowEdit"
@@ -50,10 +50,7 @@
             $t("settings.general.workspace.disallow-signup.enable")
           }}</span>
 
-          <FeatureBadge
-            feature="bb.feature.disallow-signup"
-            class="text-accent"
-          />
+          <FeatureBadge feature="bb.feature.disallow-signup" />
 
           <span
             v-if="!allowEdit"
@@ -79,7 +76,7 @@
           <span class="font-medium">{{
             $t("settings.general.workspace.require-2fa.enable")
           }}</span>
-          <FeatureBadge feature="bb.feature.2fa" class="text-accent" />
+          <FeatureBadge feature="bb.feature.2fa" />
           <span
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"

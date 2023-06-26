@@ -1,6 +1,7 @@
 <template>
   <div class="w-full">
     <FeatureAttentionForInstanceLicense
+      v-if="existMatchedUnactivateInstance"
       custom-class="mb-5"
       feature="bb.feature.database-grouping"
     />
@@ -76,17 +77,15 @@
       <div class="col-span-2">
         <MatchedDatabaseView
           v-if="resourceType === 'DATABASE_GROUP'"
-          :project="project"
-          :environment-id="state.environmentId || ''"
-          :database-group="databaseGroup as DatabaseGroup"
-          :expr="state.expr"
+          :loading="state.isRequesting"
+          :matched-database-list="matchedDatabaseList"
+          :unmatched-database-list="unmatchedDatabaseList"
         />
         <MatchedTableView
           v-if="resourceType === 'SCHEMA_GROUP'"
-          :project="project"
-          :schema-group="databaseGroup as SchemaGroup"
-          :database-group-name="selectedDatabaseGroupName || ''"
-          :expr="state.expr"
+          :loading="state.isRequesting"
+          :matched-table-list="matchedTableList"
+          :unmatched-table-list="unmatchedTableList"
         />
       </div>
     </div>
@@ -95,7 +94,8 @@
 
 <script lang="ts" setup>
 import { Status } from "nice-grpc-web";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useDebounceFn } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 import {
   ConditionGroupExpr,
@@ -106,13 +106,15 @@ import ExprEditor from "./common/ExprEditor";
 import { ResourceType } from "./common/ExprEditor/context";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import {
+  ComposedSchemaGroupTable,
+  ComposedDatabase,
   ComposedDatabaseGroup,
   ComposedProject,
   ResourceId,
   ValidatedMessage,
 } from "@/types";
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
-import { useDBGroupStore } from "@/store";
+import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../EnvironmentSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
@@ -136,6 +138,7 @@ const props = defineProps<{
 }>();
 
 type LocalState = {
+  isRequesting: boolean;
   resourceId: string;
   placeholder: string;
   environmentId?: string;
@@ -145,7 +148,9 @@ type LocalState = {
 
 const { t } = useI18n();
 const dbGroupStore = useDBGroupStore();
+const subscriptionV1Store = useSubscriptionV1Store();
 const state = reactive<LocalState>({
+  isRequesting: false,
   resourceId: "",
   placeholder: "",
   expr: wrapAsGroup(emptySimpleExpr()),
@@ -287,5 +292,91 @@ defineExpose({
       resourceId: resourceIdField.value?.resourceId || "",
     };
   },
+});
+
+const matchedDatabaseList = ref<ComposedDatabase[]>([]);
+const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
+const updateDatabaseMatchingState = useDebounceFn(async () => {
+  if (props.resourceType !== "DATABASE_GROUP") {
+    return;
+  }
+  if (!state.environmentId) {
+    return;
+  }
+
+  state.isRequesting = true;
+  const result = await dbGroupStore.fetchDatabaseGroupMatchList({
+    projectName: props.project.name,
+    environmentId: state.environmentId,
+    expr: state.expr,
+  });
+
+  matchedDatabaseList.value = result.matchedDatabaseList;
+  unmatchedDatabaseList.value = result.unmatchedDatabaseList;
+  state.isRequesting = false;
+}, 500);
+
+watch(
+  [() => props.project.name, () => state.environmentId, () => state.expr],
+  updateDatabaseMatchingState,
+  {
+    immediate: true,
+    deep: true,
+  }
+);
+
+const matchedTableList = ref<ComposedSchemaGroupTable[]>([]);
+const unmatchedTableList = ref<ComposedSchemaGroupTable[]>([]);
+const updateTableMatchingState = useDebounceFn(async () => {
+  if (props.resourceType !== "SCHEMA_GROUP") {
+    return;
+  }
+  if (!selectedDatabaseGroupName.value) {
+    return;
+  }
+
+  state.isRequesting = true;
+  const result = await dbGroupStore.fetchSchemaGroupMatchList({
+    projectName: props.project.name,
+    databaseGroupName: selectedDatabaseGroupName.value,
+    expr: state.expr,
+  });
+
+  matchedTableList.value = result.matchedTableList;
+  unmatchedTableList.value = result.unmatchedTableList;
+  state.isRequesting = false;
+}, 500);
+
+watch(
+  [
+    () => props.project.name,
+    () => selectedDatabaseGroupName.value,
+    () => state.expr,
+  ],
+  updateTableMatchingState,
+  {
+    immediate: true,
+    deep: true,
+  }
+);
+
+const existMatchedUnactivateInstance = computed(() => {
+  if (props.resourceType === "DATABASE_GROUP") {
+    return matchedDatabaseList.value.some(
+      (database) =>
+        !subscriptionV1Store.hasInstanceFeature(
+          "bb.feature.database-grouping",
+          database.instanceEntity
+        )
+    );
+  } else {
+    return matchedTableList.value.some(
+      (tb) =>
+        !subscriptionV1Store.hasInstanceFeature(
+          "bb.feature.database-grouping",
+          tb.databaseEntity.instanceEntity
+        )
+    );
+  }
 });
 </script>

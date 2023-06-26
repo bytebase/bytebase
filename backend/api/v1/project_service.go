@@ -1886,7 +1886,7 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	return s.convertStoreToAPISchemaGroupFull(ctx, schemaGroup, databaseGroup, projectResourceID)
 }
 
-func (s *ProjectService) getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
 		return nil, nil, err
@@ -1894,6 +1894,8 @@ func (s *ProjectService) getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx cont
 	var matches []*store.DatabaseMessage
 	var unmatches []*store.DatabaseMessage
 
+	// DONOT check bb.feature.database-grouping for instance. The API here is read-only in the frontend, we need to show if the instance is matched but missing required license.
+	// The feature guard will works during issue creation.
 	for _, database := range allDatabases {
 		res, _, err := prog.ContextEval(ctx, map[string]any{
 			"resource": map[string]any{
@@ -1911,18 +1913,7 @@ func (s *ProjectService) getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx cont
 			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
 		}
 		if boolVal, ok := val.(bool); ok && boolVal {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-			if err != nil {
-				return nil, nil, status.Errorf(codes.Internal, "failed to found instance %s with error: %v", database.InstanceID, err.Error())
-			}
-			if instance == nil {
-				return nil, nil, status.Errorf(codes.Internal, "cannot found instance %s", database.InstanceID)
-			}
-			if s.licenseService.IsFeatureEnabledForInstance(api.FeatureDatabaseGrouping, instance) == nil {
-				matches = append(matches, database)
-			} else {
-				unmatches = append(unmatches, database)
-			}
+			matches = append(matches, database)
 		} else {
 			unmatches = append(unmatches, database)
 		}
@@ -1938,7 +1929,7 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	matches, unmatches, err := s.getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
+	matches, unmatches, err := getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
 	if err != nil {
 		return nil, err
 	}
@@ -1990,7 +1981,7 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
-	matchesDatabases, _, err := s.getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+	matchesDatabases, _, err := getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
 	if err != nil {
 		return nil, nil, err
 	}

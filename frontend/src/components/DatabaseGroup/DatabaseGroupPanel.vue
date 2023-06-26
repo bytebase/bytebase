@@ -214,17 +214,17 @@ const doConfirm = async () => {
           })
         );
         const resourceId = formState.resourceId;
-        await dbGroupStore.createDatabaseGroup(
-          props.project.name,
-          {
+        await dbGroupStore.createDatabaseGroup({
+          projectName: props.project.name,
+          databaseGroup: {
             name: `${props.project.name}/databaseGroups/${resourceId}`,
             databasePlaceholder: formState.placeholder,
             databaseExpr: Expr.fromJSON({
               expression: celString || "true",
             }),
           },
-          resourceId
-        );
+          databaseGroupId: resourceId,
+        });
       } else {
         const environment = environmentStore.getEnvironmentByUID(
           formState.environmentId || ""
@@ -259,17 +259,17 @@ const doConfirm = async () => {
           })
         );
         const resourceId = formState.resourceId;
-        await dbGroupStore.createSchemaGroup(
-          formState.selectedDatabaseGroupId,
-          {
+        await dbGroupStore.createSchemaGroup({
+          dbGroupName: formState.selectedDatabaseGroupId,
+          schemaGroup: {
             name: `${formState.selectedDatabaseGroupId}/schemaGroups/${resourceId}`,
             tablePlaceholder: formState.placeholder,
             tableExpr: Expr.fromJSON({
               expression: celString || "true",
             }),
           },
-          resourceId
-        );
+          schemaGroupId: resourceId,
+        });
       } else {
         const celString = await convertParsedExprToCELString(
           ParsedExpr.fromJSON({

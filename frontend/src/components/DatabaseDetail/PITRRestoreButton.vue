@@ -19,7 +19,7 @@
             <span>{{ action.text }}</span>
             <FeatureBadge
               feature="bb.feature.pitr"
-              class="text-accent ml-2 -mr-1"
+              custom-class="ml-2 -mr-1"
               :instance="database.instanceEntity"
             />
           </template>

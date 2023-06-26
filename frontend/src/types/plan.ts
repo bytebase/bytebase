@@ -59,6 +59,7 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.encrypted-secrets",
   "bb.feature.sql-review",
   "bb.feature.task-schedule-time",
+  "bb.feature.online-migration",
   // Database Management
   "bb.feature.pitr",
   "bb.feature.read-replica-connection",
@@ -73,8 +74,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.vcs-sql-review",
   "bb.feature.mybatis-sql-review",
   "bb.feature.vcs-schema-write-back",
-  // TODO:
-  // "bb.feature.online-migration",
 ]);
 
 export const planTypeToString = (planType: PlanType): string => {
