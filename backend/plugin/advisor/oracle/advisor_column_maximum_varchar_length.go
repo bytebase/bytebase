@@ -26,9 +26,9 @@ type ColumnMaximumVarcharLengthAdvisor struct {
 
 // Check checks for maximum varchar length.
 func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	tree, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+	tree, ok := ctx.AST.(antlr.Tree)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

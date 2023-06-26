@@ -2,6 +2,8 @@
 package oracle
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 
@@ -23,9 +25,9 @@ type InsertMustSpecifyColumnAdvisor struct {
 
 // Check checks for to enforce column specified.
 func (*InsertMustSpecifyColumnAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	tree, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+	tree, ok := ctx.AST.(antlr.Tree)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
