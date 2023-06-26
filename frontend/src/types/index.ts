@@ -13,7 +13,6 @@ export * from "./error";
 export * from "./errorList";
 export * from "./help";
 export * from "./id";
-export * from "./inbox";
 export * from "./instance";
 export * from "./issue";
 export * from "./issueSubscriber";

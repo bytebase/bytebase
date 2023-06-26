@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -34,9 +37,32 @@ func (s *InboxService) ListInbox(ctx context.Context, request *v1pb.ListInboxReq
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	var pageToken storepb.PageToken
+	if request.PageToken != "" {
+		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+		if pageToken.Limit != request.PageSize {
+			return nil, status.Errorf(codes.InvalidArgument, "request page size does not match the page token")
+		}
+	} else {
+		pageToken.Limit = request.PageSize
+	}
+	limit := int(pageToken.Limit)
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	limitPlusOne := limit + 1
+	offset := int(pageToken.Offset)
+
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	find := &store.FindInboxMessage{
 		ReceiverUID: &principalID,
+		Limit:       &limitPlusOne,
+		Offset:      &offset,
 	}
 
 	for _, spec := range filters {
@@ -61,9 +87,27 @@ func (s *InboxService) ListInbox(ctx context.Context, request *v1pb.ListInboxReq
 		return nil, status.Errorf(codes.Internal, "failed to list inbox messages with error: %v", err.Error())
 	}
 
-	resp := &v1pb.ListInboxResponse{}
+	nextPageToken := ""
+	if len(inboxList) == limitPlusOne {
+		inboxList = inboxList[:limit]
+		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
+			Limit:  int32(limit),
+			Offset: int32(limit + offset),
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
+	resp := &v1pb.ListInboxResponse{
+		NextPageToken: nextPageToken,
+	}
 	for _, inbox := range inboxList {
-		resp.InboxMessages = append(resp.InboxMessages, convertToInboxMessage(inbox))
+		inboxV1, err := s.convertToInboxMessage(ctx, inbox)
+		if err != nil {
+			log.Error("failed to convert inbox message", zap.Int("inbox", inbox.UID), zap.Error(err))
+			continue
+		}
+		resp.InboxMessages = append(resp.InboxMessages, inboxV1)
 	}
 
 	return resp, nil
@@ -122,7 +166,7 @@ func (s *InboxService) UpdateInbox(ctx context.Context, request *v1pb.UpdateInbo
 		return nil, status.Errorf(codes.Internal, "failed to update inbox message %s with error: %v", request.InboxMessage.Name, err.Error())
 	}
 
-	return convertToInboxMessage(inbox), nil
+	return s.convertToInboxMessage(ctx, inbox)
 }
 
 func converToInboxAPIStatus(inboxStatus v1pb.InboxMessage_Status) (api.InboxStatus, error) {
@@ -136,7 +180,7 @@ func converToInboxAPIStatus(inboxStatus v1pb.InboxMessage_Status) (api.InboxStat
 	}
 }
 
-func convertToInboxMessage(inbox *store.InboxMessage) *v1pb.InboxMessage {
+func (s *InboxService) convertToInboxMessage(ctx context.Context, inbox *store.InboxMessage) (*v1pb.InboxMessage, error) {
 	status := v1pb.InboxMessage_STATUS_UNSPECIFIED
 	switch inbox.Status {
 	case api.Unread:
@@ -144,9 +188,15 @@ func convertToInboxMessage(inbox *store.InboxMessage) *v1pb.InboxMessage {
 	case api.Read:
 		status = v1pb.InboxMessage_STATUS_READ
 	}
+	activity, err := convertToLogEntity(ctx, s.store, inbox.Activity)
+	if err != nil {
+		return nil, err
+	}
+
 	return &v1pb.InboxMessage{
 		Name:        fmt.Sprintf("%s%d", inboxNamePrefix, inbox.UID),
 		ActivityUid: fmt.Sprintf("%d", inbox.ActivityUID),
 		Status:      status,
-	}
+		Activity:    activity,
+	}, nil
 }
