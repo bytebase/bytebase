@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/field_mask.proto";
+import "v1/logging_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -78,6 +79,8 @@ message InboxMessage {
     STATUS_READ = 2;
   }
   Status status = 3;
+
+  LogEntity activity = 4;
 }
 
 message InboxSummary {
