@@ -1890,7 +1890,7 @@
       "require-license": "Require instance license",
       "missing-license-attention": "You need to assign license to the instance to enable this feature.",
       "n-license-remain": "remain {n}",
-      "manage-license": "Manage License",
+      "manage-license": "Manage Instance License",
       "used-and-total-license": "Assigned / Total Instance License",
       "success-notification": "Successfully update license assignment",
       "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature."
@@ -1922,6 +1922,13 @@
         "remaining": "Your total instance quota is {total}, only have {count} instance remained.",
         "runoutof": "Your have run out of your {total} instance quota.",
         "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
+      },
+      "bb-feature-user-count": {
+        "title": "User count limit",
+        "desc": "You have reached the maximum user count limit. Please upgrade to get unlimited user quota.",
+        "remaining": "Your total user quota is {total}, only have {count} user remained.",
+        "runoutof": "Your have run out of your {total} user quota.",
+        "upgrade": "@:{'subscription.upgrade'} to get unlimited user quota."
       },
       "bb-feature-multi-tenancy": {
         "title": "Batch mode",

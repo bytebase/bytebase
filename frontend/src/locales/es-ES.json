@@ -1909,6 +1909,13 @@
         "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
         "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
       },
+      "bb-feature-user-count": {
+        "title": "Límite de conteo de usuarios",
+        "desc": "Ha alcanzado el límite máximo de recuento de usuarios. Actualice para obtener una cuota de usuario ilimitada.",
+        "remaining": "Su cuota total de usuarios es {total}, solo quedan {count} usuarios.",
+        "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
+        "upgrade": "@:{'subscription.upgrade'} para obtener una cuota de usuario ilimitada."
+      },
       "bb-feature-multi-tenancy": {
         "title": "Modo Lote",
         "desc": "Cambio por lotes de un grupo de bases de datos de diferentes inquilinos o particiones."

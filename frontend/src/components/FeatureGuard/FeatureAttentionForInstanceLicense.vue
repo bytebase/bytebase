@@ -1,8 +1,11 @@
 <template>
   <BBAttention
-    v-if="instanceLimitFeature.has(feature)"
+    v-if="
+      instanceLimitFeature.has(feature) &&
+      subscriptionV1Store.currentPlan !== PlanType.FREE
+    "
     :class="customClass"
-    :style="`INFO`"
+    :style="style ?? `INFO`"
     :title="$t(`subscription.features.${featureKey}.desc`)"
     :description="
       $t('subscription.instance-assignment.missing-license-attention')
@@ -17,28 +20,27 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType } from "vue";
+import { reactive } from "vue";
 import { FeatureType, instanceLimitFeature } from "@/types";
+import { BBAttentionStyle } from "@/bbkit";
+import { PlanType } from "@/types/proto/v1/subscription_service";
+import { useSubscriptionV1Store } from "@/store";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
 }
 
-const props = defineProps({
-  feature: {
-    required: true,
-    type: String as PropType<FeatureType>,
-  },
-  customClass: {
-    require: false,
-    default: "",
-    type: String,
-  },
-});
+const props = defineProps<{
+  style?: BBAttentionStyle;
+  feature: FeatureType;
+  customClass: string;
+}>();
 
 const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
 });
+
+const subscriptionV1Store = useSubscriptionV1Store();
 const featureKey = props.feature.split(".").join("-");
 
 const onClick = () => {

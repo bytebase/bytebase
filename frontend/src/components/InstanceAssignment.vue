@@ -52,7 +52,7 @@
                   :indeterminate="allSelectionState.indeterminate"
                   :disabled="
                     !allSelectionState.checked &&
-                    instanceList.length > instanceCount
+                    instanceList.length > instanceLicenseCount
                   "
                   @input="
                     selectAllInstances(
@@ -78,7 +78,7 @@
                 type="checkbox"
                 class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                 :checked="isInstanceSelected(instance)"
-                :disabled="state.selectedInstance.size == instanceCount"
+                :disabled="state.selectedInstance.size == instanceLicenseCount"
               />
             </BBTableCell>
             <BBTableCell class="bb-grid-cell">
@@ -117,7 +117,7 @@
               :disabled="
                 !assignmentChanged ||
                 state.processing ||
-                state.selectedInstance.size > instanceCount
+                state.selectedInstance.size > instanceLicenseCount
               "
               type="primary"
               @click.prevent="updateAssignment"
@@ -189,7 +189,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
 const { instanceList } = useInstanceV1List(false /* !showDeleted */);
-const { instanceCount } = storeToRefs(subscriptionStore);
+const { instanceLicenseCount } = storeToRefs(subscriptionStore);
 
 watchEffect(() => {
   for (const instance of instanceList.value) {
@@ -200,10 +200,10 @@ watchEffect(() => {
 });
 
 const totalLicenseCount = computed((): string => {
-  if (instanceCount.value === Number.MAX_VALUE) {
+  if (instanceLicenseCount.value === Number.MAX_VALUE) {
     return t("subscription.unlimited");
   }
-  return `${instanceCount.value}`;
+  return `${instanceLicenseCount.value}`;
 });
 
 const assignedLicenseCount = computed((): string => {

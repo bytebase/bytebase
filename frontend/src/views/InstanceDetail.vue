@@ -90,6 +90,12 @@
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </Drawer>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.instance-count"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -116,12 +122,14 @@ import {
   useEnvironmentV1Store,
   useGracefulRequest,
   useDatabaseV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
+  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -136,10 +144,12 @@ const databaseStore = useDatabaseV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
+const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
+  showFeatureModal: false,
 });
 
 const instanceId = computed(() => {
@@ -216,6 +226,11 @@ const doArchive = async () => {
 };
 
 const doRestore = async () => {
+  const instanceList = instanceV1Store.activeInstanceList;
+  if (subscriptionStore.instanceCountLimit <= instanceList.length) {
+    state.showFeatureModal = true;
+    return;
+  }
   await useGracefulRequest(async () => {
     await instanceV1Store.restoreInstance(instance.value);
 
