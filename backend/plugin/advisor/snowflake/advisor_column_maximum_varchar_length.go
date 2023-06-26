@@ -7,6 +7,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -34,7 +35,7 @@ type ColumnMaximumVarcharLengthAdvisor struct {
 func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
-		return nil, fmt.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

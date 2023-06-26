@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -32,7 +33,7 @@ type CollationAllowlistAdvisor struct {
 func (*CollationAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
-		return nil, fmt.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

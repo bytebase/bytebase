@@ -8,6 +8,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -31,7 +32,7 @@ type NamingTableAdvisor struct {
 func (*NamingTableAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
-		return nil, fmt.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

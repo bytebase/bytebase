@@ -31,7 +31,7 @@ type InsertRowLimitAdvisor struct {
 func (*InsertRowLimitAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
-		return nil, fmt.Errorf("failed to convert to Node")
+		return nil, errors.Errorf("failed to convert to Node")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

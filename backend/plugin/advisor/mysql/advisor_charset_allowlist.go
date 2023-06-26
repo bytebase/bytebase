@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
