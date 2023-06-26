@@ -201,9 +201,9 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, string(configBytes))
 	}
 	if v := patch.Delete; v != nil {
-		rowStatus := storepb.RowStatus_NORMAL.String()
+		rowStatus := Normal
 		if *patch.Delete {
-			rowStatus = storepb.RowStatus_ARCHIVED.String()
+			rowStatus = Archived
 		}
 		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, rowStatus)
 	}
@@ -257,7 +257,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, storepb.RowStatus_NORMAL.String())
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, Normal)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
