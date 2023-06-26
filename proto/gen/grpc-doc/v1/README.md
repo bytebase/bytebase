@@ -21,6 +21,10 @@
 - [v1/deployment.proto](#v1_deployment-proto)
     - [DeploymentType](#bytebase-v1-DeploymentType)
   
+- [v1/iam_policy.proto](#v1_iam_policy-proto)
+    - [Binding](#bytebase-v1-Binding)
+    - [IamPolicy](#bytebase-v1-IamPolicy)
+  
 - [v1/org_policy_service.proto](#v1_org_policy_service-proto)
     - [AccessControlPolicy](#bytebase-v1-AccessControlPolicy)
     - [AccessControlRule](#bytebase-v1-AccessControlRule)
@@ -290,7 +294,6 @@
     - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
     - [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse)
     - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
-    - [Binding](#bytebase-v1-Binding)
     - [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest)
     - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
     - [CreateSchemaGroupRequest](#bytebase-v1-CreateSchemaGroupRequest)
@@ -307,7 +310,6 @@
     - [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [GetSchemaGroupRequest](#bytebase-v1-GetSchemaGroupRequest)
-    - [IamPolicy](#bytebase-v1-IamPolicy)
     - [LabelSelector](#bytebase-v1-LabelSelector)
     - [LabelSelectorRequirement](#bytebase-v1-LabelSelectorRequirement)
     - [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest)
@@ -762,6 +764,55 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
+<a name="v1_iam_policy-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/iam_policy.proto
+
+
+
+<a name="bytebase-v1-Binding"></a>
+
+### Binding
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+| parsed_expr | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  | The parsed expression of the condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-IamPolicy"></a>
+
+### IamPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v1_org_policy_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -944,6 +995,7 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
+| workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 | deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
 | backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
 | sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
@@ -1127,12 +1179,13 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
-| DEPLOYMENT_APPROVAL | 1 |  |
-| BACKUP_PLAN | 2 |  |
-| SQL_REVIEW | 3 |  |
-| SENSITIVE_DATA | 4 |  |
-| ACCESS_CONTROL | 5 |  |
-| SLOW_QUERY | 6 |  |
+| WORKSPACE_IAM | 1 |  |
+| DEPLOYMENT_APPROVAL | 2 |  |
+| BACKUP_PLAN | 3 |  |
+| SQL_REVIEW | 4 |  |
+| SENSITIVE_DATA | 5 |  |
+| ACCESS_CONTROL | 6 |  |
+| SLOW_QUERY | 7 |  |
 
 
 
@@ -4657,26 +4710,6 @@ TODO(zp): move to activity later.
 
 
 
-<a name="bytebase-v1-Binding"></a>
-
-### Binding
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The project role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. `members` can have the following values:
-
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com` . |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-| parsed_expr | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  | The parsed expression of the condition. |
-
-
-
-
-
-
 <a name="bytebase-v1-CreateDatabaseGroupRequest"></a>
 
 ### CreateDatabaseGroupRequest
@@ -4933,21 +4966,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} |
 | view | [SchemaGroupView](#bytebase-v1-SchemaGroupView) |  | The view to return. Defaults to SCHEMA_GROUP_VIEW_BASIC. |
-
-
-
-
-
-
-<a name="bytebase-v1-IamPolicy"></a>
-
-### IamPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
 
 
 
