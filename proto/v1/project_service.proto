@@ -9,8 +9,8 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
-import "v1/iam_policy.proto";
 import "v1/externalvs_service.proto";
+import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
 
