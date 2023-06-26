@@ -1894,6 +1894,8 @@ func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 	var matches []*store.DatabaseMessage
 	var unmatches []*store.DatabaseMessage
 
+	// DONOT check bb.feature.database-grouping for instance. The API here is read-only in the frontend, we need to show if the instance is matched but missing required license.
+	// The feature guard will works during issue creation.
 	for _, database := range allDatabases {
 		res, _, err := prog.ContextEval(ctx, map[string]any{
 			"resource": map[string]any{
