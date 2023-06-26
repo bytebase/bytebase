@@ -49,6 +49,8 @@ const (
 	// The maximum number of bytes for sql results in response body.
 	// 10 MB.
 	maximumSQLResultSize = 10 * 1024 * 1024
+	// defaultTimeout is the default timeout for query and admin execution.
+	defaultTimeout = 1 * time.Minute
 )
 
 // SQLService is the service for SQL.
@@ -142,16 +144,29 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
 
 		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
-			return err
+			log.Error("failed to post admin execute activity", zap.Error(err))
 		}
 
+		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
-			return status.Errorf(codes.Internal, "failed to execute statement: %v", queryErr)
+			response.Results = []*v1pb.QueryResult{
+				{
+					Error: err.Error(),
+				},
+			}
+		} else {
+			response.Results = result
 		}
 
-		if err := server.Send(&v1pb.AdminExecuteResponse{
-			Results: result,
-		}); err != nil {
+		if proto.Size(response) > maximumSQLResultSize {
+			response.Results = []*v1pb.QueryResult{
+				{
+					Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
+				},
+			}
+		}
+
+		if err := server.Send(response); err != nil {
 			return status.Errorf(codes.Internal, "failed to send response: %v", err)
 		}
 	}
@@ -198,7 +213,20 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *store.Activ
 
 func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest) ([]*v1pb.QueryResult, int64, error) {
 	start := time.Now().UnixNano()
+	timeout := defaultTimeout
+	if request.Timeout != nil {
+		timeout = request.Timeout.AsDuration()
+	}
+	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
+	defer cancelCtx()
 	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	select {
+	case <-ctx.Done():
+		// canceled or timed out
+		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
+	default:
+		// So the select will not block
+	}
 	return result, time.Now().UnixNano() - start, err
 }
 
@@ -657,6 +685,13 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		defer conn.Close()
 	}
 
+	timeout := defaultTimeout
+	if request.Timeout != nil {
+		timeout = request.Timeout.AsDuration()
+	}
+	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
+	defer cancelCtx()
+
 	start := time.Now().UnixNano()
 	result, err := driver.QueryConn2(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
@@ -666,6 +701,14 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 		SensitiveSchemaInfo:   sensitiveSchemaInfo,
 	})
+	select {
+	case <-ctx.Done():
+		// canceled or timed out
+		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
+	default:
+		// So the select will not block
+	}
+
 	return result, time.Now().UnixNano() - start, err
 }
 
