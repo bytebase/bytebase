@@ -35,10 +35,7 @@
         <div @click="state.mode = 'online'">
           <div class="textlabel flex items-center space-x-2">
             <span>{{ $t("issue.migration-mode.online.title") }}</span>
-            <FeatureBadge
-              feature="bb.feature.online-migration"
-              class="text-accent"
-            />
+            <FeatureBadge feature="bb.feature.online-migration" />
             <BBBetaBadge />
           </div>
           <div class="textinfolabel mt-1">

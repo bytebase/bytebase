@@ -170,10 +170,7 @@
       <div class="textlabel flex gap-x-1">
         {{ $t("repository.schema-path-template") }}
         <span v-if="isProjectSchemaChangeTypeSDL" class="text-red-600">*</span>
-        <FeatureBadge
-          feature="bb.feature.vcs-schema-write-back"
-          class="text-accent"
-        />
+        <FeatureBadge feature="bb.feature.vcs-schema-write-back" />
       </div>
       <div class="mt-1 textinfolabel space-x-1">
         <span v-if="isProjectSchemaChangeTypeSDL">
@@ -269,11 +266,8 @@
     </div>
     <div>
       <div class="textlabel flex gap-x-1">
-        {{ $t("repository.sheet-path-template")
-        }}<FeatureBadge
-          feature="bb.feature.vcs-sheet-sync"
-          class="text-accent"
-        />
+        {{ $t("repository.sheet-path-template") }}
+        <FeatureBadge feature="bb.feature.vcs-sheet-sync" />
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.sheet-path-template-description") }}
@@ -308,7 +302,7 @@
     <div v-if="canEnableSQLReview">
       <div class="textlabel flex gap-x-1">
         {{ $t("repository.sql-review-ci") }}
-        <FeatureBadge feature="bb.feature.vcs-sql-review" class="text-accent" />
+        <FeatureBadge feature="bb.feature.vcs-sql-review" />
       </div>
       <div class="mt-1 textinfolabel">
         {{

@@ -24,7 +24,7 @@
         </p>
         <FeatureBadge
           feature="bb.feature.encrypted-secrets"
-          class="text-accent ml-2"
+          custom-class="ml-2"
           :instance="database.instanceEntity"
         />
       </div>
@@ -203,8 +203,8 @@ import { type ComposedDatabase } from "@/types";
 import {
   pushNotification,
   useDatabaseSecretStore,
-  featureToRef,
   useCurrentUserV1,
+  useSubscriptionV1Store,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
 import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "@/utils";
@@ -233,6 +233,7 @@ const parent = computed(() => {
 const detail = ref<Detail>();
 const showFeatureModal = ref(false);
 const currentUserV1 = useCurrentUserV1();
+const subscriptionV1Store = useSubscriptionV1Store();
 
 const COLUMNS = computed(() => {
   const columns: BBGridColumn[] = [
@@ -274,10 +275,12 @@ const extractSecretName = (name: string) => {
   return "";
 };
 
-const hasSecretFeature = featureToRef(
-  "bb.feature.encrypted-secrets",
-  props.database.instanceEntity
-);
+const hasSecretFeature = computed(() => {
+  return subscriptionV1Store.hasInstanceFeature(
+    "bb.feature.encrypted-secrets",
+    props.database.instanceEntity
+  );
+});
 
 const showDetail = (secret?: Secret) => {
   if (!hasSecretFeature.value) {

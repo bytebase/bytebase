@@ -84,7 +84,7 @@
                     :database-list="schemaDatabaseList"
                     :show-selection-column="true"
                     @select-database="
-                      (db) =>
+                      (db: ComposedDatabase) =>
                         toggleDatabaseSelection(db, !isDatabaseSelected(db))
                     "
                   >

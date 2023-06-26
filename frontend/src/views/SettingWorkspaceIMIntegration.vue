@@ -21,7 +21,7 @@
           }}</span>
           <FeatureBadge
             :feature="'bb.feature.im.approval'"
-            class="ml-2 text-accent"
+            custom-class="ml-2"
           />
         </div>
         <button
