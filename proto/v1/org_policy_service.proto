@@ -201,13 +201,13 @@ message Policy {
   PolicyType type = 5;
 
   oneof policy {
-    DeploymentApprovalPolicy deployment_approval_policy = 6;
-    BackupPlanPolicy backup_plan_policy = 7;
-    SensitiveDataPolicy sensitive_data_policy = 8;
-    AccessControlPolicy access_control_policy = 9;
-    SQLReviewPolicy sql_review_policy = 10;
-    SlowQueryPolicy slow_query_policy = 11;
-    DataAccessControlPolicy data_access_control_policy = 12;
+    IamPolicy workspace_iam_policy = 6;
+    DeploymentApprovalPolicy deployment_approval_policy = 7;
+    BackupPlanPolicy backup_plan_policy = 8;
+    SensitiveDataPolicy sensitive_data_policy = 9;
+    AccessControlPolicy access_control_policy = 10;
+    SQLReviewPolicy sql_review_policy = 11;
+    SlowQueryPolicy slow_query_policy = 12;
   }
 
   bool enforce = 13;
@@ -320,8 +320,4 @@ enum SQLReviewRuleLevel {
   ERROR = 1;
   WARNING = 2;
   DISABLED = 3;
-}
-
-message DataAccessControlPolicy {
-  IamPolicy iam_policy = 1;
 }
