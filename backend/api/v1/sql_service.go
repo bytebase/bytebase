@@ -142,7 +142,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
 
 		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
-			return err
+			log.Error("failed to post admin execute activity", zap.Error(err))
 		}
 
 		response := &v1pb.AdminExecuteResponse{}
