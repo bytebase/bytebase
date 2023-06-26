@@ -84,8 +84,9 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 		return enterpriseAPI.Subscription{
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
-			ExpiresTs:     -1,
-			InstanceCount: config.MaximumInstanceForFreePlan,
+			ExpiresTs: -1,
+			// Instance license count.
+			InstanceCount: 0,
 		}
 	}
 
@@ -112,6 +113,11 @@ func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) error {
 
 // IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
 func (s *LicenseService) IsFeatureEnabledForInstance(feature api.FeatureType, instance *store.InstanceMessage) error {
+	plan := s.GetEffectivePlan()
+	// DONOT check instance license fo FREE plan.
+	if plan == api.FREE {
+		return s.IsFeatureEnabled(feature)
+	}
 	if err := s.IsFeatureEnabled(feature); err != nil {
 		return err
 	}
@@ -145,8 +151,8 @@ func (s *LicenseService) GetEffectivePlan() api.PlanType {
 }
 
 // GetPlanLimitValue gets the limit value for the plan.
-func (s *LicenseService) GetPlanLimitValue(name api.PlanLimit) int64 {
-	v, ok := api.PlanLimitValues[name]
+func (s *LicenseService) GetPlanLimitValue(name enterpriseAPI.PlanLimit) int64 {
+	v, ok := enterpriseAPI.PlanLimitValues[name]
 	if !ok {
 		return 0
 	}

@@ -110,6 +110,9 @@ const allowConfirm = computed(() => {
   }
 
   const formState = formRef.value.getFormState();
+  if (formState.existMatchedUnactivateInstance) {
+    return false;
+  }
   if (props.resourceType === "DATABASE_GROUP") {
     return (
       formState.resourceId && formState.placeholder && formState.environmentId

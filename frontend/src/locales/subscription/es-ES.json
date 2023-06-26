@@ -2,6 +2,7 @@
   "current": "Plan actual",
   "unlimited": "Ilimitado",
   "instance-count": "Cantidad de instancias",
+  "user-count": "Conteo de usuarios",
   "expires-at": "Expira el",
   "start-free-trial": "Comience la prueba gratuita",
   "free-trial": "Puede comenzar una prueba gratuita durante 14 días - no se requiere tarjeta de crédito",
@@ -52,6 +53,7 @@
       "title": "Gestión del cambio",
       "features": {
         "user-count": "Cantidad de usuarios",
+        "user-maximum-20": "Hasta 20",
         "user-unlimited": "Ilimitado",
         "instance-count": "Cantidad de instancias",
         "instance-customized": "Personalizado",
