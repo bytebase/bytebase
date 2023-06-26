@@ -3,8 +3,10 @@
     v-if="instanceLimitFeature.has(feature)"
     :class="customClass"
     :style="`INFO`"
-    :title="$t(`subscription.features.${featureKey}.title`)"
-    :description="descriptionText"
+    :title="$t(`subscription.features.${featureKey}.desc`)"
+    :description="
+      $t('subscription.instance-assignment.missing-license-attention')
+    "
     :action-text="$t('subscription.instance-assignment.assign-license')"
     @click-action="onClick"
   />
@@ -15,9 +17,8 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed } from "vue";
+import { reactive, PropType } from "vue";
 import { FeatureType, instanceLimitFeature } from "@/types";
-import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -35,7 +36,6 @@ const props = defineProps({
   },
 });
 
-const { t } = useI18n();
 const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
 });
@@ -44,13 +44,4 @@ const featureKey = props.feature.split(".").join("-");
 const onClick = () => {
   state.showInstanceAssignmentDrawer = true;
 };
-
-const descriptionText = computed(() => {
-  const attention = t(
-    "subscription.instance-assignment.missing-license-attention"
-  );
-  const description = t(`subscription.features.${featureKey}.desc`);
-
-  return `${description} ${attention}`;
-});
 </script>

@@ -1,9 +1,11 @@
 <template>
-  <div
-    v-if="database && instance"
-    class="flex flex-row justify-start items-center"
-  >
-    <InstanceV1EngineIcon :instance="instance" />
+  <div v-if="database" class="flex flex-row justify-start items-center">
+    <FeatureBadge
+      feature="bb.feature.database-grouping"
+      custom-class="mr-2"
+      :instance="database.instanceEntity"
+    />
+    <InstanceV1EngineIcon :instance="database.instanceEntity" />
     <span class="text-sm ml-0.5 text-gray-500">{{
       database.databaseName
     }}</span>
@@ -11,27 +13,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { onMounted, ref } from "vue";
 import { InstanceV1EngineIcon } from "./Instance";
-import { Instance } from "@/types/proto/v1/instance_service";
 
-const props = defineProps<{
-  databaseName: string;
+defineProps<{
+  database: ComposedDatabase;
 }>();
-
-const databaseStore = useDatabaseV1Store();
-const instanceStore = useInstanceV1Store();
-const database = ref<ComposedDatabase>();
-const instance = ref<Instance>();
-
-onMounted(async () => {
-  database.value = await databaseStore.getOrFetchDatabaseByName(
-    props.databaseName
-  );
-  instance.value = await instanceStore.getOrFetchInstanceByName(
-    database.value.instance
-  );
-});
 </script>

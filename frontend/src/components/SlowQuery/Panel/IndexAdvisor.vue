@@ -30,7 +30,7 @@
     <div class="btn btn-primary !w-auto" @click="state.showFeatureModal = true">
       {{ $t("subscription.features.bb-feature-index-advisor.title") }}
       <FeatureBadge
-        class="ml-1"
+        custom-class="ml-1"
         feature="bb.feature.index-advisor"
         :instance="slowQueryLog.database.instanceEntity"
       />

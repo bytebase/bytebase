@@ -1,12 +1,17 @@
 import { ConditionGroupExpr } from "@/plugins/cel";
 import { Environment } from "./proto/v1/environment_service";
-import { DatabaseGroup, SchemaGroup } from "./proto/v1/project_service";
-import { ComposedProject } from "./v1";
+import {
+  DatabaseGroup,
+  Project,
+  SchemaGroup,
+  SchemaGroup_Table,
+} from "./proto/v1/project_service";
+import { ComposedDatabase } from "@/types";
 
 export interface ComposedDatabaseGroup extends DatabaseGroup {
   databaseGroupName: string;
   projectName: string;
-  project: ComposedProject;
+  project: Project;
   environmentName: string;
   environment: Environment;
   simpleExpr: ConditionGroupExpr;
@@ -14,4 +19,8 @@ export interface ComposedDatabaseGroup extends DatabaseGroup {
 
 export interface ComposedSchemaGroup extends SchemaGroup {
   databaseGroup: ComposedDatabaseGroup;
+}
+
+export interface ComposedSchemaGroupTable extends SchemaGroup_Table {
+  databaseEntity: ComposedDatabase;
 }
