@@ -20,6 +20,7 @@ type InboxMessage struct {
 	ReceiverUID int
 	ActivityUID int
 	Status      api.InboxStatus
+	Activity    *ActivityMessage
 }
 
 // InboxSummaryMessage is the API message for inbox summary info.
@@ -36,6 +37,8 @@ type FindInboxMessage struct {
 	ReceiverUID *int
 	// If specified, then it will only fetch "UNREAD" item or "READ" item whose activity created after "CreatedAfterTs"
 	ReadCreatedAfterTs *int64
+	Limit              *int
+	Offset             *int
 }
 
 // UpdateInboxMessage is the API message to update the inbox.
@@ -185,16 +188,35 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *FindInboxMessage) ([]*Inbo
 		where, args = append(where, fmt.Sprintf("(status != 'READ' OR created_ts >= $%d)", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	query := `
 		SELECT
-			inbox.id,
+			inbox.id AS inbox_id,
 			inbox.receiver_id,
 			inbox.activity_id,
-			inbox.status
+			inbox.status,
+			activity.id AS activity_id,
+			activity.creator_id,
+			activity.updater_id,
+			activity.created_ts,
+			activity.updated_ts,
+			activity.container_id,
+			activity.type,
+			activity.level,
+			activity.comment,
+			activity.payload
 		FROM inbox
 		LEFT JOIN activity ON inbox.activity_id = activity.id
-		WHERE `+strings.Join(where, " AND ")+`
-		ORDER BY activity.created_ts DESC`,
+		WHERE ` + strings.Join(where, " AND ") + `
+		ORDER BY activity.created_ts DESC`
+
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 	if err != nil {
@@ -206,14 +228,33 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *FindInboxMessage) ([]*Inbo
 	var inboxList []*InboxMessage
 	for rows.Next() {
 		var inbox InboxMessage
+		var activity ActivityMessage
+		var protoPayload string
 		if err := rows.Scan(
 			&inbox.UID,
 			&inbox.ReceiverUID,
 			&inbox.ActivityUID,
 			&inbox.Status,
+			&activity.UID,
+			&activity.CreatorUID,
+			&activity.UpdaterUID,
+			&activity.CreatedTs,
+			&activity.UpdatedTs,
+			&activity.ContainerUID,
+			&activity.Type,
+			&activity.Level,
+			&activity.Comment,
+			&protoPayload,
 		); err != nil {
 			return nil, err
 		}
+		if protoPayload == "" {
+			protoPayload = "{}"
+		}
+		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
+			return nil, err
+		}
+		inbox.Activity = &activity
 		inboxList = append(inboxList, &inbox)
 	}
 	if err := rows.Err(); err != nil {
@@ -230,12 +271,29 @@ func patchInboxImpl(ctx context.Context, tx *Tx, patch *UpdateInboxMessage) (*In
 	args = append(args, patch.UID)
 
 	var response InboxMessage
+	var activity ActivityMessage
+	var protoPayload string
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, `
 		UPDATE inbox
 		SET `+strings.Join(set, ", ")+`
-		WHERE id = $2
-		RETURNING id, receiver_id, activity_id, status
+		FROM activity
+		WHERE inbox.activity_id = activity.id AND inbox.id = $2
+		RETURNING
+			inbox.id AS inbox_id,
+			inbox.receiver_id,
+			inbox.activity_id,
+			inbox.status,
+			activity.id AS activity_id,
+			activity.creator_id,
+			activity.updater_id,
+			activity.created_ts,
+			activity.updated_ts,
+			activity.container_id,
+			activity.type,
+			activity.level,
+			activity.comment,
+			activity.payload
 	`,
 		args...,
 	).Scan(
@@ -243,11 +301,31 @@ func patchInboxImpl(ctx context.Context, tx *Tx, patch *UpdateInboxMessage) (*In
 		&response.ReceiverUID,
 		&response.ActivityUID,
 		&response.Status,
+		&activity.UID,
+		&activity.CreatorUID,
+		&activity.UpdaterUID,
+		&activity.CreatedTs,
+		&activity.UpdatedTs,
+		&activity.ContainerUID,
+		&activity.Type,
+		&activity.Level,
+		&activity.Comment,
+		&protoPayload,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("inbox ID not found: %d", patch.UID)}
 		}
 		return nil, err
 	}
+
+	if protoPayload == "" {
+		protoPayload = "{}"
+	}
+	payload, err := convertProtoPayloadToAPIPayload(activity.Type, protoPayload)
+	if err != nil {
+		return nil, err
+	}
+	activity.Payload = payload
+	response.Activity = &activity
 	return &response, nil
 }

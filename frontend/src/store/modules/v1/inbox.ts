@@ -4,37 +4,15 @@ import utc from "dayjs/plugin/utc";
 import { reactive } from "vue";
 import { InboxMessage, InboxSummary } from "@/types/proto/v1/inbox_service";
 import { inboxServiceClient } from "@/grpcweb";
-import { useActivityV1Store } from "./activity";
-import { ComposedInbox } from "@/types";
 
 dayjs.extend(utc);
 
 export const useInboxV1Store = defineStore("inbox_v1", () => {
-  const inboxMessageList = reactive<ComposedInbox[]>([]);
+  const inboxMessageList = reactive<InboxMessage[]>([]);
   const inboxSummary = reactive<InboxSummary>({
     unread: 0,
     unreadError: 0,
   });
-
-  const composeActivity = async (
-    inboxMessage: InboxMessage
-  ): Promise<ComposedInbox | undefined> => {
-    try {
-      const activity = await useActivityV1Store().fetchActivityByUID(
-        inboxMessage.activityUid
-      );
-      if (!activity) {
-        return;
-      }
-      return {
-        ...inboxMessage,
-        activity,
-      };
-    } catch {
-      // nothing, we will skip inbox with undefined activity.
-    }
-    return;
-  };
 
   const fetchInboxList = async (readCreatedAfterTs: number) => {
     if (inboxMessageList.length > 0) {
@@ -44,12 +22,9 @@ export const useInboxV1Store = defineStore("inbox_v1", () => {
       filter: `create_time >= ${dayjs(readCreatedAfterTs).utc().format()}`,
     });
 
-    const list = await Promise.all(resp.inboxMessages.map(composeActivity));
     inboxMessageList.splice(0, inboxMessageList.length);
-    for (const inbox of list) {
-      if (inbox) {
-        inboxMessageList.push(inbox);
-      }
+    for (const inbox of resp.inboxMessages) {
+      inboxMessageList.push(inbox);
     }
 
     return inboxMessageList;
