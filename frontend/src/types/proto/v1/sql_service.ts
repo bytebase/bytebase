@@ -57,6 +57,7 @@ export enum ExportRequest_Format {
   FORMAT_UNSPECIFIED = 0,
   CSV = 1,
   JSON = 2,
+  SQL = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -71,6 +72,9 @@ export function exportRequest_FormatFromJSON(object: any): ExportRequest_Format 
     case 2:
     case "JSON":
       return ExportRequest_Format.JSON;
+    case 3:
+    case "SQL":
+      return ExportRequest_Format.SQL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -86,6 +90,8 @@ export function exportRequest_FormatToJSON(object: ExportRequest_Format): string
       return "CSV";
     case ExportRequest_Format.JSON:
       return "JSON";
+    case ExportRequest_Format.SQL:
+      return "SQL";
     case ExportRequest_Format.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
