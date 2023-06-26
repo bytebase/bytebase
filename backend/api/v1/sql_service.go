@@ -1318,7 +1318,7 @@ func (s *SQLService) checkQueryRights(
 	}
 
 	var project *store.ProjectMessage
-	// var databaseMessages []*store.DatabaseMessage
+
 	databaseMessageMap := make(map[string]*store.DatabaseMessage)
 	for database := range databaseMap {
 		projectMessage, databaseMessage, err := s.getProjectAndDatabaseMessage(ctx, instance, database)
