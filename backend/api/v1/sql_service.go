@@ -595,8 +595,16 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
+	// Check if the environment is open for export privileges.
+	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+	if err != nil {
 		return nil, nil, nil, nil, err
+	}
+	if !result {
+		// Check if the user has permission to execute the export.
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
+			return nil, nil, nil, nil, err
+		}
 	}
 
 	// Get sensitive schema info.
@@ -842,9 +850,16 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
-	// Check if the user has permission to execute the query.
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+	// Check if the environment is open for query privileges.
+	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
+	if err != nil {
 		return nil, nil, advisor.Success, nil, nil, nil, err
+	}
+	if !result {
+		// Check if the user has permission to execute the query.
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+			return nil, nil, advisor.Success, nil, nil, nil, err
+		}
 	}
 
 	// Run SQL review.
@@ -1506,6 +1521,50 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 	}
 }
 
+func (s *SQLService) checkWorkspaceIAMPolicy(
+	ctx context.Context,
+	role common.ProjectRole,
+	environment *store.EnvironmentMessage,
+) (bool, error) {
+	workspacePolicyResourceType := api.PolicyResourceTypeWorkspace
+	workspaceIAMPolicyType := api.PolicyTypeWorkspaceIAM
+	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &workspacePolicyResourceType,
+		Type:         &workspaceIAMPolicyType,
+		ResourceUID:  &defaultWorkspaceResourceID,
+	})
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get workspace IAM policy")
+	}
+	if policy == nil {
+		return false, nil
+	}
+
+	v1pbPolicy, err := convertToPolicy("", policy)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to convert policy")
+	}
+
+	attributes := map[string]any{
+		"resource.environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+	}
+	bindings := v1pbPolicy.GetWorkspaceIamPolicy().Bindings
+	for _, binding := range bindings {
+		if binding.Role != string(role) {
+			continue
+		}
+
+		ok, err := evaluateCondition(binding.Condition.Expression, attributes)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to evaluate condition")
+		}
+		if ok {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (s *SQLService) checkQueryRights(
 	ctx context.Context,
 	databaseName string,
@@ -1513,7 +1572,6 @@ func (s *SQLService) checkQueryRights(
 	statement string,
 	limit int32,
 	user *store.UserMessage,
-	environment *store.EnvironmentMessage,
 	instance *store.InstanceMessage,
 	exportFormat v1pb.ExportRequest_Format,
 ) error {
@@ -1584,13 +1642,12 @@ func (s *SQLService) checkQueryRights(
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
-			"request.time":         time.Now(),
-			"resource.environment": instance.EnvironmentID,
-			"resource.database":    databaseResourceURL,
-			"resource.schema":      resource.Schema,
-			"resource.table":       resource.Table,
-			"request.statement":    base64.StdEncoding.EncodeToString([]byte(statement)),
-			"request.row_limit":    limit,
+			"request.time":      time.Now(),
+			"resource.database": databaseResourceURL,
+			"resource.schema":   resource.Schema,
+			"resource.table":    resource.Table,
+			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.row_limit": limit,
 		}
 
 		switch exportFormat {
@@ -1604,7 +1661,7 @@ func (s *SQLService) checkQueryRights(
 			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
 		}
 
-		ok, expression, err := s.hasDatabaseAccessRights(ctx, user.ID, projectPolicy, databaseMessageMap[resource.Database], environment, attributes, isExport)
+		ok, expression, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -1657,11 +1714,11 @@ func removeExportBinding(principalID int, usedExpression string, projectPolicy *
 	return &newPolicy
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, string, error) {
+func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, string, error) {
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
-	var usedExpression string
+	usedExpression := ""
 	for _, binding := range projectPolicy.Bindings {
 		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
 			continue
@@ -1685,40 +1742,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID in
 			break
 		}
 	}
-	if !pass {
-		return false, "", nil
-	}
-	// calculate the effective policy.
-	databasePolicy, inheritFromEnvironment, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
-	if err != nil {
-		return false, "", err
-	}
-
-	environmentPolicy, _, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
-	if err != nil {
-		return false, "", err
-	}
-
-	if !inheritFromEnvironment {
-		// Use database policy.
-		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, "", nil
-	}
-	// Use both database policy and environment policy.
-	hasAccessRights := true
-	if environmentPolicy != nil {
-		// Disallow by environment access policy.
-		for _, rule := range environmentPolicy.DisallowRuleList {
-			if rule.FullDatabase {
-				hasAccessRights = false
-				break
-			}
-		}
-	}
-	if databasePolicy != nil {
-		// Allow by database access policy.
-		hasAccessRights = true
-	}
-	return hasAccessRights, usedExpression, nil
+	return pass, usedExpression, nil
 }
 
 func evaluateCondition(expression string, attributes map[string]any) (bool, error) {
