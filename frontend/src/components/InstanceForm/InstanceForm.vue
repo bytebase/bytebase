@@ -61,8 +61,8 @@
           </div>
 
           <div
-            class="sm:col-span-2 ml-0 sm:ml-3"
             v-if="subscriptionStore.currentPlan !== PlanType.FREE"
+            class="sm:col-span-2 ml-0 sm:ml-3"
           >
             <label for="activation" class="textlabel block">
               {{ $t("subscription.instance-assignment.assign-license") }}
