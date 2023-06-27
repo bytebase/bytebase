@@ -1741,7 +1741,8 @@
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
-    "query-time": "Tiempo de consulta"
+    "query-time": "Tiempo de consulta",
+    "request-access": "Solicitar acceso"
   },
   "schema-editor": {
     "self": "Editor de esquema",

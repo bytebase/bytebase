@@ -1755,7 +1755,8 @@
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "run-selected": "Run selected",
     "clear-screen": "Clear screen",
-    "query-time": "Query time"
+    "query-time": "Query time",
+    "request-access": "Request Access"
   },
   "schema-editor": {
     "self": "Schema Editor",
