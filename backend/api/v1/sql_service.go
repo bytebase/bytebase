@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	tidbast "github.com/pingcap/tidb/parser/ast"
@@ -365,7 +366,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		if err != nil {
 			return nil, 0, err
 		}
-		if content, err = exportSQL(statementPrefix, result[0]); err != nil {
+		if content, err = exportSQL(instance.Engine, statementPrefix, result[0]); err != nil {
 			return nil, durationNs, err
 		}
 	default:
@@ -405,7 +406,7 @@ func convertValueToBytes(value *v1pb.RowValue) []byte {
 	case *v1pb.RowValue_StringValue:
 		var result []byte
 		result = append(result, '"')
-		result = append(result, []byte(value.GetStringValue())...)
+		result = append(result, []byte(escapeCSVString(value.GetStringValue()))...)
 		result = append(result, '"')
 		return result
 	case *v1pb.RowValue_Int32Value:
@@ -425,16 +426,23 @@ func convertValueToBytes(value *v1pb.RowValue) []byte {
 	case *v1pb.RowValue_BytesValue:
 		var result []byte
 		result = append(result, '"')
-		result = append(result, value.GetBytesValue()...)
+		result = append(result, []byte(escapeCSVString(string(value.GetBytesValue())))...)
 		result = append(result, '"')
 		return result
 	case *v1pb.RowValue_NullValue:
 		return []byte("")
 	case *v1pb.RowValue_ValueValue:
+		// This is used by ClickHouse and Spanner only.
 		return convertValueValueToBytes(value.GetValueValue())
 	default:
 		return []byte("")
 	}
+}
+
+func escapeCSVString(str string) string {
+	escapedStr := strings.ReplaceAll(str, "\"", "\"\"")
+	escapedStr = strings.ReplaceAll(escapedStr, ",", "\",\"")
+	return escapedStr
 }
 
 func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource, columnNames []string) (string, error) {
@@ -445,9 +453,8 @@ func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource,
 	case db.ClickHouse, db.MSSQL, db.Oracle, db.Postgres, db.Redshift, db.SQLite, db.Snowflake:
 		// ClickHouse takes both double-quotes or backticks.
 		escapeQuote = "\""
-	case db.MongoDB, db.Redis:
-		return "", errors.Errorf("MongoDB and Redis cannot export as SQL")
 	default:
+		// db.MongoDB, db.Redis
 		return "", errors.Errorf("unsupported engine %v for exporting as SQL", engine)
 	}
 
@@ -469,7 +476,7 @@ func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource,
 	return s, nil
 }
 
-func exportSQL(statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
+func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
 	var buf bytes.Buffer
 	if _, err := buf.WriteString(strings.Join(result.ColumnNames, ",")); err != nil {
 		return nil, err
@@ -484,7 +491,7 @@ func exportSQL(statementPrefix string, result *v1pb.QueryResult) ([]byte, error)
 					return nil, err
 				}
 			}
-			if _, err := buf.Write(convertValueToBytesInSQL(value)); err != nil {
+			if _, err := buf.Write(convertValueToBytesInSQL(engine, value)); err != nil {
 				return nil, err
 			}
 		}
@@ -495,14 +502,10 @@ func exportSQL(statementPrefix string, result *v1pb.QueryResult) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
-func convertValueToBytesInSQL(value *v1pb.RowValue) []byte {
+func convertValueToBytesInSQL(engine db.Type, value *v1pb.RowValue) []byte {
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
-		var result []byte
-		result = append(result, '\'')
-		result = append(result, []byte(value.GetStringValue())...)
-		result = append(result, '\'')
-		return result
+		return escapeSQLString(engine, []byte(value.GetStringValue()))
 	case *v1pb.RowValue_Int32Value:
 		return []byte(strconv.FormatInt(int64(value.GetInt32Value()), 10))
 	case *v1pb.RowValue_Int64Value:
@@ -518,17 +521,30 @@ func convertValueToBytesInSQL(value *v1pb.RowValue) []byte {
 	case *v1pb.RowValue_BoolValue:
 		return []byte(strconv.FormatBool(value.GetBoolValue()))
 	case *v1pb.RowValue_BytesValue:
-		var result []byte
-		result = append(result, '\'')
-		result = append(result, value.GetBytesValue()...)
-		result = append(result, '\'')
-		return result
+		return escapeSQLString(engine, value.GetBytesValue())
 	case *v1pb.RowValue_NullValue:
 		return []byte("NULL")
 	case *v1pb.RowValue_ValueValue:
+		// This is used by ClickHouse and Spanner only.
 		return convertValueValueToBytes(value.GetValueValue())
 	default:
 		return []byte("")
+	}
+}
+
+func escapeSQLString(engine db.Type, v []byte) []byte {
+	switch engine {
+	case db.Postgres, db.Redshift:
+		escapedStr := pq.QuoteLiteral(string(v))
+		return []byte(escapedStr)
+	default:
+		result := []byte("'")
+		s := strconv.Quote(string(v))
+		s = s[1 : len(s)-1]
+		s = strings.ReplaceAll(s, `'`, `''`)
+		result = append(result, []byte(s)...)
+		result = append(result, '\'')
+		return result
 	}
 }
 
