@@ -59,11 +59,13 @@ func TestGetSQLStatementPrefix(t *testing.T) {
 
 func TestExportSQL(t *testing.T) {
 	tests := []struct {
+		engine          db.Type
 		statementPrefix string
 		result          *v1pb.QueryResult
 		want            string
 	}{
 		{
+			engine:          db.MySQL,
 			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
 			result: &v1pb.QueryResult{
 				Rows: []*v1pb.QueryRow{
@@ -97,11 +99,91 @@ func TestExportSQL(t *testing.T) {
 			},
 			want: "INSERT INTO `<table_name>` (`a`) VALUES (true,'abc',NULL);\nINSERT INTO `<table_name>` (`a`) VALUES (false,'abc',NULL);\n",
 		},
+		{
+			engine:          db.MySQL,
+			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
+			result: &v1pb.QueryResult{
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{
+								Kind: &v1pb.RowValue_StringValue{StringValue: "a\nbc"},
+							},
+						},
+					},
+				},
+			},
+			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\\nbc');\n",
+		},
+		{
+			engine:          db.MySQL,
+			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
+			result: &v1pb.QueryResult{
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{
+								Kind: &v1pb.RowValue_StringValue{StringValue: "a'b"},
+							},
+						},
+					},
+				},
+			},
+			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a''b');\n",
+		},
+		{
+			engine:          db.MySQL,
+			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
+			result: &v1pb.QueryResult{
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{
+								Kind: &v1pb.RowValue_StringValue{StringValue: "a\b"},
+							},
+						},
+					},
+				},
+			},
+			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\\b');\n",
+		},
+		{
+			engine:          db.Postgres,
+			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
+			result: &v1pb.QueryResult{
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{
+								Kind: &v1pb.RowValue_StringValue{StringValue: "a\nbc"},
+							},
+						},
+					},
+				},
+			},
+			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\nbc');\n",
+		},
+		{
+			engine:          db.Postgres,
+			statementPrefix: "INSERT INTO `<table_name>` (`b`) VALUES (",
+			result: &v1pb.QueryResult{
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{
+								Kind: &v1pb.RowValue_StringValue{StringValue: "a\\bc"},
+							},
+						},
+					},
+				},
+			},
+			want: "INSERT INTO `<table_name>` (`b`) VALUES ( E'a\\\\bc');\n",
+		},
 	}
 	a := assert.New(t)
 
 	for _, test := range tests {
-		got, err := exportSQL(test.statementPrefix, test.result)
+		got, err := exportSQL(test.engine, test.statementPrefix, test.result)
 		a.NoError(err)
 		a.Equal(test.want, string(got))
 	}
