@@ -1719,7 +1719,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID in
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
-	var usedExpression string
+	usedExpression := ""
 	for _, binding := range projectPolicy.Bindings {
 		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
 			continue
@@ -1743,40 +1743,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID in
 			break
 		}
 	}
-	if !pass {
-		return false, "", nil
-	}
-	// calculate the effective policy.
-	databasePolicy, inheritFromEnvironment, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
-	if err != nil {
-		return false, "", err
-	}
-
-	environmentPolicy, _, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
-	if err != nil {
-		return false, "", err
-	}
-
-	if !inheritFromEnvironment {
-		// Use database policy.
-		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, "", nil
-	}
-	// Use both database policy and environment policy.
-	hasAccessRights := true
-	if environmentPolicy != nil {
-		// Disallow by environment access policy.
-		for _, rule := range environmentPolicy.DisallowRuleList {
-			if rule.FullDatabase {
-				hasAccessRights = false
-				break
-			}
-		}
-	}
-	if databasePolicy != nil {
-		// Allow by database access policy.
-		hasAccessRights = true
-	}
-	return hasAccessRights, usedExpression, nil
+	return pass, usedExpression, nil
 }
 
 func evaluateCondition(expression string, attributes map[string]any) (bool, error) {
