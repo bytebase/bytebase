@@ -357,6 +357,7 @@
     "update-license": "Actualizar licencia",
     "license-expires": "Su licencia para {plan} ha caducado el {expireAt}.",
     "trial-expires": "Su prueba gratuita para {plan} caducará en {days} días el {expireAt}.",
+    "trial-expired": "Su prueba gratuita de {plan} ha caducado.",
     "extend-trial": "Extender el tiempo de prueba",
     "deploy": "Auto Hospedaje",
     "cloud": "Registrarse para Cloud",

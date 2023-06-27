@@ -453,6 +453,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			if err != nil {
 				return nil, err
 			}
+			if instance == nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("instance %d not found", task.InstanceID))
+			}
 			if s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
 				issueCreatePayload.Approval.ApprovalFindingDone = true
 				break

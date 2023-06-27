@@ -358,6 +358,7 @@
     "update-license": "Update license",
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
     "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
+    "trial-expired": "Your free trial for {plan} has expired.",
     "extend-trial": "Extend trialing time",
     "deploy": "Self Host",
     "cloud": "Sign Up for Cloud",
