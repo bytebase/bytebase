@@ -37,6 +37,7 @@ import {
   defer,
   extractUserUID,
   getBacktracePayloadWithIssue,
+  hasWorkspacePermissionV1,
   isDev,
   isTaskTriggeredByVCS,
   taskCheckRunSummary,
@@ -190,19 +191,35 @@ export const useCommonLogic = () => {
     if (issueEntity.status !== "OPEN") {
       return false;
     }
-    if (
-      String(issueEntity.creator.id) !==
-      extractUserUID(currentUserV1.value.name)
-    ) {
-      if (isTaskTriggeredByVCS(selectedTask.value as Task)) {
-        // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
-        // We should "Allow" current user to edit the statement (via VCS).
-        return true;
-      }
+
+    if (!isTaskEditable(selectedTask.value as Task)) {
       return false;
     }
 
-    return isTaskEditable(selectedTask.value as Task);
+    if (
+      String(issueEntity.creator.id) ===
+      extractUserUID(currentUserV1.value.name)
+    ) {
+      return true;
+    }
+
+    if (
+      hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-issue",
+        currentUserV1.value.userRole
+      )
+    ) {
+      // Workspace OWNER/DBA are always allowed to edit.
+      return true;
+    }
+
+    if (isTaskTriggeredByVCS(selectedTask.value as Task)) {
+      // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
+      // We should "Allow" current user to edit the statement (via VCS).
+      return true;
+    }
+
+    return false;
   });
 
   const updateStatement = async (newStatement: string) => {

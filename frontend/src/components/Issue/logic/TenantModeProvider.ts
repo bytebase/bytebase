@@ -6,6 +6,7 @@ import {
   useTaskStore,
   useSheetStatementByUid,
   useDatabaseV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import {
   Issue,
@@ -26,7 +27,12 @@ import {
   useCommonLogic,
 } from "./common";
 import { provideIssueLogic, useIssueLogic } from "./index";
-import { getBacktracePayloadWithIssue, sheetIdOfTask } from "@/utils";
+import {
+  extractUserUID,
+  getBacktracePayloadWithIssue,
+  hasWorkspacePermissionV1,
+  sheetIdOfTask,
+} from "@/utils";
 import { getProjectPathByLegacyProject } from "@/store/modules/v1/common";
 import {
   Sheet_Visibility,
@@ -41,6 +47,7 @@ export default defineComponent({
     const { create, issue, selectedTask, createIssue, onStatusChanged } =
       useIssueLogic();
     const route = useRoute();
+    const currentUser = useCurrentUserV1();
     const databaseStore = useDatabaseV1Store();
     const sheetV1Store = useSheetV1Store();
     const projectV1Store = useProjectV1Store();
@@ -54,8 +61,26 @@ export default defineComponent({
       if (create.value) {
         return true;
       }
+
       const tasks = flattenTaskList<Task>(issue.value);
-      return tasks.every((task) => isTaskEditable(task));
+      if (!tasks.every((task) => isTaskEditable(task))) {
+        return false;
+      }
+
+      if (
+        hasWorkspacePermissionV1(
+          "bb.permission.workspace.manage-issue",
+          currentUser.value.userRole
+        )
+      ) {
+        return true;
+      }
+
+      const creatorUID = String((issue.value as Issue).creator.id);
+      if (creatorUID === extractUserUID(currentUser.value.name)) {
+        return true;
+      }
+      return false;
     });
 
     // In tenant mode, the entire issue shares only one SQL statement
