@@ -624,11 +624,11 @@ func convertToV1PBWorkspaceIAMPolicy(policy *storepb.IamPolicy) (*v1pb.Policy_Wo
 		Bindings: []*v1pb.Binding{},
 	}
 	for _, binding := range policy.Bindings {
-		e, err := cel.NewEnv(iamPolicyCELAttributes...)
+		env, err := cel.NewEnv(iamPolicyCELAttributes...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create cel environment")
 		}
-		ast, issues := e.Parse(binding.Condition.Expression)
+		ast, issues := env.Parse(binding.Condition.Expression)
 		if issues != nil && issues.Err() != nil {
 			return nil, errors.Wrap(issues.Err(), "failed to parse expression")
 		}
