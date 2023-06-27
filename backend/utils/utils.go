@@ -410,16 +410,6 @@ func PassAllCheck(task *store.TaskMessage, allowedStatus api.TaskCheckStatus, ta
 			return false, nil
 		}
 
-		if api.IsSyntaxCheckSupported(engine) {
-			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-
 		if api.IsSQLReviewSupported(engine) {
 			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
 			if err != nil {

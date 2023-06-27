@@ -22,7 +22,7 @@ type %AdvisorName struct {
 }
 
 // Check checks for %AdvisorComment
-func (*%AdvisorName) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*%AdvisorName) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil

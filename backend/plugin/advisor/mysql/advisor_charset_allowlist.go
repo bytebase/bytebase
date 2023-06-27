@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -29,12 +30,11 @@ type CharsetAllowlistAdvisor struct {
 }
 
 // Check checks for charset allowlist.
-func (*CharsetAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*CharsetAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
