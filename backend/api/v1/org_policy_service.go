@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -458,8 +458,12 @@ func validatePolicyType(policyType api.PolicyType, policyResourceType api.Policy
 func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_WORKSPACE_IAM:
-		payload := convertToStorePBWorkspaceIAMPolicy(policy.GetWorkspaceIamPolicy())
-		return payload.String(), nil
+		iamPolicy := convertToStorePBWorkspaceIAMPolicy(policy.GetWorkspaceIamPolicy())
+		payloadBytes, err := protojson.Marshal(iamPolicy)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal workspace iam policy")
+		}
+		return string(payloadBytes), nil
 	case v1pb.PolicyType_DEPLOYMENT_APPROVAL:
 		payload, err := convertToPipelineApprovalPolicyPayload(policy.GetDeploymentApprovalPolicy())
 		if err != nil {
@@ -557,7 +561,7 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 	case api.PolicyTypeWorkspaceIAM:
 		pType = v1pb.PolicyType_WORKSPACE_IAM
 		storepbIAMPolicy := &storepb.IamPolicy{}
-		err := proto.Unmarshal([]byte(policyMessage.Payload), storepbIAMPolicy)
+		err := protojson.Unmarshal([]byte(policyMessage.Payload), storepbIAMPolicy)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal workspace IAM policy")
 		}
@@ -624,23 +628,26 @@ func convertToV1PBWorkspaceIAMPolicy(policy *storepb.IamPolicy) (*v1pb.Policy_Wo
 		Bindings: []*v1pb.Binding{},
 	}
 	for _, binding := range policy.Bindings {
+		v1pbBinding := v1pb.Binding{
+			Role:      binding.Role,
+			Members:   binding.Members,
+			Condition: binding.Condition,
+		}
+
 		env, err := cel.NewEnv(iamPolicyCELAttributes...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create cel environment")
 		}
-		ast, issues := env.Parse(binding.Condition.Expression)
-		if issues != nil && issues.Err() != nil {
-			return nil, errors.Wrap(issues.Err(), "failed to parse expression")
-		}
-		parsedExpr, err := cel.AstToParsedExpr(ast)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert ast to parsed expression")
-		}
-		v1pbBinding := v1pb.Binding{
-			Role:       binding.Role,
-			Members:    binding.Members,
-			Condition:  binding.Condition,
-			ParsedExpr: parsedExpr,
+		if binding.Condition.Expression != "" {
+			ast, issues := env.Parse(binding.Condition.Expression)
+			if issues != nil && issues.Err() != nil {
+				return nil, errors.Wrap(issues.Err(), "failed to parse expression")
+			}
+			parsedExpr, err := cel.AstToParsedExpr(ast)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to convert ast to parsed expression")
+			}
+			v1pbBinding.ParsedExpr = parsedExpr
 		}
 		iamPolicy.Bindings = append(iamPolicy.Bindings, &v1pbBinding)
 	}
