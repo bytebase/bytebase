@@ -203,11 +203,6 @@ const extractDatabaseResourceFromProps = (): Pick<
   };
 };
 
-console.log(
-  "extractDatabaseResourceFromProps",
-  extractDatabaseResourceFromProps()
-);
-
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();

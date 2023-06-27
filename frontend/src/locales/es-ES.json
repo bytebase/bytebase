@@ -1742,7 +1742,7 @@
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
     "query-time": "Tiempo de consulta",
-    "request-access": "Solicitar acceso"
+    "request-query": "Solicitar consulta"
   },
   "schema-editor": {
     "self": "Editor de esquema",

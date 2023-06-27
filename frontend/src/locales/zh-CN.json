@@ -1751,7 +1751,7 @@
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏",
     "query-time": "查询时间",
-    "request-access": "申请查询权限"
+    "request-query": "申请查询权限"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

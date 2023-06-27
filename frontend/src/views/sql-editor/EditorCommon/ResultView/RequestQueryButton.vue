@@ -1,7 +1,7 @@
 <template>
   <div v-if="available">
     <NButton text type="primary" @click="showPanel = true">
-      {{ $t("sql-editor.request-access") }}
+      {{ $t("sql-editor.request-query") }}
     </NButton>
 
     <RequestQueryPanel
