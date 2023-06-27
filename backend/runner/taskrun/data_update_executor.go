@@ -49,5 +49,5 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, task *store.TaskMes
 	if err != nil {
 		return true, nil, err
 	}
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Data, statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Data, statement, payload.SchemaVersion, &payload.SheetID, payload.VCSPushEvent)
 }

@@ -155,7 +155,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	}
 	defer driver.Close(ctx)
 
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, m, "" /* pitr cutover */, db.ExecuteOptions{}); err != nil {
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, m, "" /* pitr cutover */, nil, db.ExecuteOptions{}); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
