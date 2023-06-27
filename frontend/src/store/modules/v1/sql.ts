@@ -6,7 +6,7 @@ import {
   QueryRequest,
 } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-import { Status } from "nice-grpc-common";
+import { ClientError, Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
 
 export const useSQLStore = defineStore("sql", () => {
@@ -27,10 +27,12 @@ export const useSQLStore = defineStore("sql", () => {
       };
     } catch (err) {
       const error = extractGrpcErrorMessage(err);
+      const status = err instanceof ClientError ? err.code : Status.UNKNOWN;
       return {
         error,
         results: [],
         advices: [],
+        status,
       };
     }
   };

@@ -56,6 +56,7 @@
             class="w-full flex flex-row justify-start items-center"
           >
             <SelectDatabaseResourceForm
+              v-if="state.projectId"
               :project-id="state.projectId"
               :selected-database-resource-list="
                 state.selectedDatabaseResourceList
@@ -142,10 +143,12 @@ import {
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  ComposedDatabase,
   DatabaseResource,
   IssueCreate,
   PresetRoleType,
   SYSTEM_BOT_ID,
+  UNKNOWN_ID,
 } from "@/types";
 import { extractUserUID, issueSlug, memberListInProjectV1 } from "@/utils";
 import {
@@ -170,17 +173,43 @@ interface LocalState {
   description: string;
 }
 
+const props = defineProps<{
+  projectId?: string;
+  database?: ComposedDatabase;
+}>();
+
 defineEmits<{
   (event: "close"): void;
 }>();
+
+const extractDatabaseResourceFromProps = (): Pick<
+  LocalState,
+  "allDatabases" | "selectedDatabaseResourceList"
+> => {
+  const { database } = props;
+  if (!database || database.uid === String(UNKNOWN_ID)) {
+    return {
+      allDatabases: true,
+      selectedDatabaseResourceList: [],
+    };
+  }
+  return {
+    allDatabases: false,
+    selectedDatabaseResourceList: [
+      {
+        databaseName: database.name,
+      },
+    ],
+  };
+};
 
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
-  allDatabases: true,
-  selectedDatabaseResourceList: [],
+  projectId: props.projectId,
+  ...extractDatabaseResourceFromProps(),
   expireDays: 7,
   customDays: 365,
   description: "",
