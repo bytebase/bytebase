@@ -1748,7 +1748,8 @@
     "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏",
-    "query-time": "查询时间"
+    "query-time": "查询时间",
+    "request-query": "申请查询权限"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
