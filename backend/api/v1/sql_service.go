@@ -441,7 +441,6 @@ func convertValueToBytes(value *v1pb.RowValue) []byte {
 
 func escapeCSVString(str string) string {
 	escapedStr := strings.ReplaceAll(str, "\"", "\"\"")
-	escapedStr = strings.ReplaceAll(escapedStr, ",", "\",\"")
 	return escapedStr
 }
 
