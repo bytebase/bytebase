@@ -71,25 +71,31 @@
           <template v-else>{{ $t("label.empty-label-value") }}</template>
         </BBTableCell>
         <BBTableCell v-for="(dbList, i) in matrix.stages" :key="i">
-          <div class="flex flex-col items-center space-y-1">
+          <div
+            v-if="databaseList.length > 0"
+            class="flex flex-col items-start space-y-1"
+          >
             <DatabaseMatrixItem
               v-for="db in dbList"
               :key="db.id"
               :database="db"
             />
-            <span v-if="dbList.length === 0">-</span>
           </div>
+          <div v-if="dbList.length === 0" class="text-center">-</div>
         </BBTableCell>
 
         <BBTableCell v-if="hasRest">
-          <div class="flex flex-col items-center space-y-1">
+          <div
+            v-if="databaseList.length > 0"
+            class="flex flex-col items-start space-y-1"
+          >
             <DatabaseMatrixItem
               v-for="db in matrix.rest"
               :key="db.id"
               :database="db"
             />
-            <span v-if="matrix.rest.length === 0">-</span>
           </div>
+          <div v-if="matrix.rest.length === 0" class="text-center">-</div>
         </BBTableCell>
       </template>
     </BBTable>
