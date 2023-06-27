@@ -7,11 +7,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	v1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
@@ -262,72 +260,4 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 
 	s.risksCache.Delete(0)
 	return s.GetRisk(ctx, id)
-}
-
-// BackfillRiskExpression backfills risk expression data.
-func (s *Store) BackfillRiskExpression(ctx context.Context) error {
-	query := `
-	SELECT
-		id,
-		expression
-	FROM risk`
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return errors.Wrap(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, query)
-	if err != nil {
-		return errors.Wrapf(err, "failed to query %s", query)
-	}
-	defer rows.Close()
-
-	idExpressionMap := make(map[int]*v1alpha1.ParsedExpr)
-	for rows.Next() {
-		var id int
-		var expressionBytes []byte
-		if err := rows.Scan(
-			&id,
-			&expressionBytes,
-		); err != nil {
-			return errors.Wrap(err, "failed to scan")
-		}
-		var parsedExpr v1alpha1.ParsedExpr
-		if err := protojson.Unmarshal(expressionBytes, &parsedExpr); err != nil {
-			if strings.Contains(err.Error(), "unknown field") {
-				continue
-			}
-			return errors.Wrap(err, "failed to unmarshal")
-		}
-		idExpressionMap[id] = &parsedExpr
-	}
-	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "rows.Err() is not nil")
-	}
-
-	for id, parsedExpr := range idExpressionMap {
-		e, err := common.ConvertParsedRisk(parsedExpr)
-		if err != nil {
-			return err
-		}
-		expressionBytes, err := protojson.Marshal(e)
-		if err != nil {
-			return err
-		}
-
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE risk
-			SET expression = $1
-			WHERE id = $2`,
-			expressionBytes, id,
-		); err != nil {
-			return err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "failed to commit")
-	}
-
-	return nil
 }
