@@ -356,6 +356,18 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		if content, err = s.exportJSON(result[0]); err != nil {
 			return nil, durationNs, err
 		}
+	case v1pb.ExportRequest_SQL:
+		resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), request.ConnectionDatabase, request.Statement, instance)
+		if err != nil {
+			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
+		}
+		statementPrefix, err := getSQLStatementPrefix(instance.Engine, resourceList, result[0].ColumnNames)
+		if err != nil {
+			return nil, 0, err
+		}
+		if content, err = exportSQL(statementPrefix, result[0]); err != nil {
+			return nil, durationNs, err
+		}
 	default:
 		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
@@ -418,6 +430,101 @@ func convertValueToBytes(value *v1pb.RowValue) []byte {
 		return result
 	case *v1pb.RowValue_NullValue:
 		return []byte("")
+	case *v1pb.RowValue_ValueValue:
+		return convertValueValueToBytes(value.GetValueValue())
+	default:
+		return []byte("")
+	}
+}
+
+func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource, columnNames []string) (string, error) {
+	var escapeQuote string
+	switch engine {
+	case db.MySQL, db.MariaDB, db.TiDB, db.OceanBase, db.Spanner:
+		escapeQuote = "`"
+	case db.ClickHouse, db.MSSQL, db.Oracle, db.Postgres, db.Redshift, db.SQLite, db.Snowflake:
+		// ClickHouse takes both double-quotes or backticks.
+		escapeQuote = "\""
+	case db.MongoDB, db.Redis:
+		return "", errors.Errorf("MongoDB and Redis cannot export as SQL")
+	default:
+		return "", errors.Errorf("unsupported engine %v for exporting as SQL", engine)
+	}
+
+	s := "INSERT INTO "
+	if len(resourceList) == 1 {
+		resource := resourceList[0]
+		if resource.Schema != "" {
+			s = fmt.Sprintf("%s%s%s%s%s", s, escapeQuote, resource.Schema, escapeQuote, ".")
+		}
+		s = fmt.Sprintf("%s%s%s%s", s, escapeQuote, resource.Table, escapeQuote)
+	} else {
+		s = fmt.Sprintf("%s%s%s%s", s, escapeQuote, "<table_name>", escapeQuote)
+	}
+	var columnTokens []string
+	for _, columnName := range columnNames {
+		columnTokens = append(columnTokens, fmt.Sprintf("%s%s%s", escapeQuote, columnName, escapeQuote))
+	}
+	s = fmt.Sprintf("%s (%s) VALUES (", s, strings.Join(columnTokens, ","))
+	return s, nil
+}
+
+func exportSQL(statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
+	var buf bytes.Buffer
+	if _, err := buf.WriteString(strings.Join(result.ColumnNames, ",")); err != nil {
+		return nil, err
+	}
+	for _, row := range result.Rows {
+		if _, err := buf.WriteString(statementPrefix); err != nil {
+			return nil, err
+		}
+		for i, value := range row.Values {
+			if i != 0 {
+				if err := buf.WriteByte(','); err != nil {
+					return nil, err
+				}
+			}
+			if _, err := buf.Write(convertValueToBytesInSQL(value)); err != nil {
+				return nil, err
+			}
+		}
+		if _, err := buf.WriteString(");\n"); err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
+}
+
+func convertValueToBytesInSQL(value *v1pb.RowValue) []byte {
+	switch value.Kind.(type) {
+	case *v1pb.RowValue_StringValue:
+		var result []byte
+		result = append(result, '\'')
+		result = append(result, []byte(value.GetStringValue())...)
+		result = append(result, '\'')
+		return result
+	case *v1pb.RowValue_Int32Value:
+		return []byte(strconv.FormatInt(int64(value.GetInt32Value()), 10))
+	case *v1pb.RowValue_Int64Value:
+		return []byte(strconv.FormatInt(value.GetInt64Value(), 10))
+	case *v1pb.RowValue_Uint32Value:
+		return []byte(strconv.FormatUint(uint64(value.GetUint32Value()), 10))
+	case *v1pb.RowValue_Uint64Value:
+		return []byte(strconv.FormatUint(value.GetUint64Value(), 10))
+	case *v1pb.RowValue_FloatValue:
+		return []byte(strconv.FormatFloat(float64(value.GetFloatValue()), 'f', -1, 32))
+	case *v1pb.RowValue_DoubleValue:
+		return []byte(strconv.FormatFloat(value.GetDoubleValue(), 'f', -1, 64))
+	case *v1pb.RowValue_BoolValue:
+		return []byte(strconv.FormatBool(value.GetBoolValue()))
+	case *v1pb.RowValue_BytesValue:
+		var result []byte
+		result = append(result, '\'')
+		result = append(result, value.GetBytesValue()...)
+		result = append(result, '\'')
+		return result
+	case *v1pb.RowValue_NullValue:
+		return []byte("NULL")
 	case *v1pb.RowValue_ValueValue:
 		return convertValueValueToBytes(value.GetValueValue())
 	default:
