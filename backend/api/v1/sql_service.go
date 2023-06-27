@@ -595,8 +595,16 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
+	// Check if the environment is open for export privileges.
+	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+	if err != nil {
 		return nil, nil, nil, nil, err
+	}
+	if !result {
+		// Check if the user has permission to execute the query.
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
+			return nil, nil, nil, nil, err
+		}
 	}
 
 	// Get sensitive schema info.
@@ -842,9 +850,16 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
-	// Check if the user has permission to execute the query.
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+	// Check if the environment is open for query privileges.
+	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
+	if err != nil {
 		return nil, nil, advisor.Success, nil, nil, nil, err
+	}
+	if !result {
+		// Check if the user has permission to execute the query.
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+			return nil, nil, advisor.Success, nil, nil, nil, err
+		}
 	}
 
 	// Run SQL review.
@@ -1506,6 +1521,50 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 	}
 }
 
+func (s *SQLService) checkWorkspaceIAMPolicy(
+	ctx context.Context,
+	role common.ProjectRole,
+	environment *store.EnvironmentMessage,
+) (bool, error) {
+	workspacePolicyResourceType := api.PolicyResourceTypeWorkspace
+	workspaceIAMPolicyType := api.PolicyTypeWorkspaceIAM
+	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &workspacePolicyResourceType,
+		Type:         &workspaceIAMPolicyType,
+		ResourceUID:  &defaultWorkspaceResourceID,
+	})
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get workspace IAM policy")
+	}
+	if policy == nil {
+		return false, nil
+	}
+
+	v1pbPolicy, err := convertToPolicy("", policy)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to convert policy")
+	}
+
+	attributes := map[string]any{
+		"resource.environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+	}
+	bindings := v1pbPolicy.GetWorkspaceIamPolicy().Bindings
+	for _, binding := range bindings {
+		if binding.Role != string(role) {
+			continue
+		}
+
+		ok, err := evaluateCondition(binding.Condition.Expression, attributes)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to evaluate condition")
+		}
+		if ok {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (s *SQLService) checkQueryRights(
 	ctx context.Context,
 	databaseName string,
@@ -1584,18 +1643,17 @@ func (s *SQLService) checkQueryRights(
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
-			"request.time":         time.Now(),
-			"resource.environment": instance.EnvironmentID,
-			"resource.database":    databaseResourceURL,
-			"resource.schema":      resource.Schema,
-			"resource.table":       resource.Table,
-			"request.statement":    base64.StdEncoding.EncodeToString([]byte(statement)),
-			"request.row_limit":    limit,
+			"request.time":      time.Now(),
+			"resource.database": databaseResourceURL,
+			"resource.schema":   resource.Schema,
+			"resource.table":    resource.Table,
+			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.row_limit": limit,
 		}
 
 		switch exportFormat {
 		case v1pb.ExportRequest_FORMAT_UNSPECIFIED:
-			attributes["request.export_format"] = "QUERY"
+			attributes["request.export_format"] = "SQL"
 		case v1pb.ExportRequest_CSV:
 			attributes["request.export_format"] = "CSV"
 		case v1pb.ExportRequest_JSON:
