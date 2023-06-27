@@ -1,4 +1,15 @@
 <template>
+  <FeatureAttentionForInstanceLicense
+    v-if="hasCustomApprovalFeature"
+    feature="bb.feature.custom-approval"
+    custom-class="my-4"
+  />
+  <FeatureAttention
+    v-else
+    feature="bb.feature.custom-approval"
+    custom-class="my-4"
+  />
+
   <div class="textinfolabel">
     {{ $t("custom-approval.risk.description") }}
     <a
