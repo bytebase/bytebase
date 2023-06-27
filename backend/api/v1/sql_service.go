@@ -1662,7 +1662,7 @@ func (s *SQLService) checkQueryRights(
 			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
 		}
 
-		ok, expression, err := s.hasDatabaseAccessRights(ctx, user.ID, projectPolicy, databaseMessageMap[resource.Database], environment, attributes, isExport)
+		ok, expression, err := hasDatabaseAccessRights(user.ID, projectPolicy, databaseMessageMap[resource.Database], environment, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -1715,7 +1715,7 @@ func removeExportBinding(principalID int, usedExpression string, projectPolicy *
 	return &newPolicy
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, string, error) {
+func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, string, error) {
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
