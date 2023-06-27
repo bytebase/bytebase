@@ -340,9 +340,8 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureSyncSchemaAllVersions: true,
 	FeatureIndexAdvisor:          true,
 	// Policy Control
-	FeatureSensitiveData: true,
-	// TODO:
-	// FeatureCustomApproval: true,
+	FeatureSensitiveData:  true,
+	FeatureCustomApproval: true,
 }
 
 // Feature returns whether a particular feature is available in a particular plan.
