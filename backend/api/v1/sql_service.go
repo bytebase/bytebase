@@ -1653,7 +1653,7 @@ func (s *SQLService) checkQueryRights(
 
 		switch exportFormat {
 		case v1pb.ExportRequest_FORMAT_UNSPECIFIED:
-			attributes["request.export_format"] = "SQL"
+			attributes["request.export_format"] = "QUERY"
 		case v1pb.ExportRequest_CSV:
 			attributes["request.export_format"] = "CSV"
 		case v1pb.ExportRequest_JSON:
