@@ -2287,11 +2287,11 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 }
 
 var iamPolicyCELAttributes = []cel.EnvOption{
+	cel.Variable("resource.environment_name", cel.StringType),
 	cel.Variable("request.time", cel.TimestampType),
 	cel.Variable("request.statement", cel.StringType),
 	cel.Variable("request.row_limit", cel.IntType),
 	cel.Variable("request.export_format", cel.StringType),
-	cel.Variable("resource.environment", cel.StringType),
 	cel.Variable("resource.database", cel.StringType),
 	cel.Variable("resource.schema", cel.StringType),
 	cel.Variable("resource.table", cel.StringType),
