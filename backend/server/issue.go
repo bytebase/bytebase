@@ -445,8 +445,19 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil {
-		issueCreatePayload.Approval.ApprovalFindingDone = true
+	for _, stage := range pipelineCreate.StageList {
+		for _, task := range stage.TaskList {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				UID: &task.InstanceID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			if s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
+				issueCreatePayload.Approval.ApprovalFindingDone = true
+				break
+			}
+		}
 	}
 
 	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
