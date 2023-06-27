@@ -601,7 +601,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 	if !result {
-		// Check if the user has permission to execute the query.
+		// Check if the user has permission to execute the export.
 		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
 			return nil, nil, nil, nil, err
 		}
