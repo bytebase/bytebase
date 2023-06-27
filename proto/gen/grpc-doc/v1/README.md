@@ -8194,6 +8194,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | FORMAT_UNSPECIFIED | 0 |  |
 | CSV | 1 |  |
 | JSON | 2 |  |
+| SQL | 3 |  |
 
 
  
