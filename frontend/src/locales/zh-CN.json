@@ -558,12 +558,10 @@
       "remove-sensitive-column-tips": "不再对此列数据脱敏？"
     },
     "access-control": {
-      "description": "允许开发者通过 SQL 编辑器对下列生产环境中的数据库执行查询。{link}",
-      "add-rule": "添加规则",
-      "remove-policy-tips": "删除这条规则？",
-      "inactive-rules": "无效的规则",
-      "inactive-rules-description": "这些规则不再生效，因为不属于生产环境。",
-      "no-database-in-production-environment": "请确保{production_environment}中有数据库。"
+      "description": "配置审批流来控制数据的查询和导出。{link}",
+      "skip-approval": "跳过人工审批",
+      "query-data": "数据查询",
+      "export-data": "数据导出"
     },
     "release": {
       "new-version-available": "有新版本可更新",
@@ -1947,8 +1945,8 @@
         "desc": "将数据表的列标记为敏感数据，它们在查询结果中将会被显示成 \"******\"。"
       },
       "bb-feature-access-control": {
-        "title": "访问控制",
-        "desc": "可以修改生产环境中的数据库的查询权限。"
+        "title": "数据访问控制",
+        "desc": "配置审批流来控制数据的查询和导出。"
       },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",

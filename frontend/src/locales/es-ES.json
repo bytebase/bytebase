@@ -554,12 +554,10 @@
       "remove-sensitive-column-tips": "¿Exponer esta columna?"
     },
     "access-control": {
-      "description": "Permitir a los desarrolladores ejecutar consultas para las siguientes bases de datos en ambientes de producción desde el Editor de SQL. {link}",
-      "add-rule": "Añadir regla",
-      "remove-policy-tips": "¿Eliminar esta regla?",
-      "inactive-rules": "Reglas inactivas",
-      "inactive-rules-description": "Estas reglas están inactivas porque el ambiente no es de producción.",
-      "no-database-in-production-environment": "Asegúrese de que hay bases de datos en el {production_environment}."
+      "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
+      "skip-approval": "Saltar aprobación manual",
+      "query-data": "Consulta de datos",
+      "export-data": "Exportación de datos"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
@@ -1938,8 +1936,8 @@
         "desc": "Marque las columnas de la tabla como datos sensibles y el resultado de la consulta de ellos se mostrará como \"******\"."
       },
       "bb-feature-access-control": {
-        "title": "Control de acceso",
-        "desc": "Cambie el permiso de consulta para bases de datos en entornos de producción."
+        "title": "Control de acceso a datos",
+        "desc": "Configura un flujo de aprobación para controlar la consulta y exportación de datos."
       },
       "bb-feature-lgtm": {
         "title": "Verificación LGTM",
