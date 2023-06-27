@@ -602,7 +602,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	}
 	if !result {
 		// Check if the user has permission to execute the export.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
 			return nil, nil, nil, nil, err
 		}
 	}
@@ -857,7 +857,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	}
 	if !result {
 		// Check if the user has permission to execute the query.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
 			return nil, nil, advisor.Success, nil, nil, nil, err
 		}
 	}
@@ -1572,7 +1572,6 @@ func (s *SQLService) checkQueryRights(
 	statement string,
 	limit int32,
 	user *store.UserMessage,
-	environment *store.EnvironmentMessage,
 	instance *store.InstanceMessage,
 	exportFormat v1pb.ExportRequest_Format,
 ) error {
@@ -1662,7 +1661,7 @@ func (s *SQLService) checkQueryRights(
 			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
 		}
 
-		ok, expression, err := hasDatabaseAccessRights(user.ID, projectPolicy, databaseMessageMap[resource.Database], environment, attributes, isExport)
+		ok, expression, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -1715,7 +1714,7 @@ func removeExportBinding(principalID int, usedExpression string, projectPolicy *
 	return &newPolicy
 }
 
-func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, string, error) {
+func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, string, error) {
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
