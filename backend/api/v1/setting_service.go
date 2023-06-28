@@ -65,6 +65,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingWorkspaceMailDelivery,
 	api.SettingWorkspaceProfile,
 	api.SettingWorkspaceExternalApproval,
+	api.SettingEnterpriseTrial,
 }
 
 var (
@@ -394,6 +395,8 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
 		}
 		storeSettingValue = string(bytes)
+	case api.SettingEnterpriseTrial:
+		return nil, status.Errorf(codes.InvalidArgument, "cannot set setting %s", settingName)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}

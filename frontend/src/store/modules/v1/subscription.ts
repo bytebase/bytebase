@@ -17,6 +17,7 @@ import {
   planTypeToJSON,
 } from "@/types/proto/v1/subscription_service";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { useSettingV1Store } from "./setting";
 
 interface SubscriptionState {
   subscription: Subscription | undefined;
@@ -105,7 +106,14 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       const total = trialEndTime.diff(state.subscription.startedTime, "day");
       return daysBeforeExpire / total < 0.5;
     },
+    existTrialLicense(state): boolean {
+      const settingStore = useSettingV1Store();
+      return !!settingStore.getSettingByName("bb.enterprise.trial");
+    },
     canTrial(state): boolean {
+      if (this.existTrialLicense) {
+        return false;
+      }
       if (!state.subscription || this.isFreePlan) {
         return true;
       }

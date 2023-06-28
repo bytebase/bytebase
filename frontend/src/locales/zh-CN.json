@@ -355,6 +355,7 @@
     "update-license": "更新证书",
     "license-expires": "您的{plan}证书已在 {expireAt} 过期",
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
+    "trial-expired": "您的{plan}试用将在已过期",
     "extend-trial": "申请延长试用",
     "deploy": "部署到本地",
     "cloud": "注册云服务",
