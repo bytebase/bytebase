@@ -2539,6 +2539,10 @@
       "suggestion": "建议",
       "create-index": "创建索引",
       "setup-openai-key-to-enable": "设置 OpenAI API Key 以开启索引建议功能。"
+    },
+    "no-log-placeholder": {
+      "admin": "点击「配置」按钮从数据库实例上抓取慢查询日志或点击「立即同步」按钮立即同步慢查询日志",
+      "developer": "点击「立即同步」按钮立即同步慢查询日志或联系工作空间所有者或 DBA 配置慢查询功能"
     }
   },
   "principal": {
