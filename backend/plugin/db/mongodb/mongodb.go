@@ -7,9 +7,9 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -173,8 +173,8 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		connectionURI = "mongodb+srv://"
 	}
 	if connConfig.Username != "" {
-		percentEncodingUsername := replaceCharacterWithPercentEncoding(connConfig.Username)
-		percentEncodingPassword := replaceCharacterWithPercentEncoding(connConfig.Password)
+		percentEncodingUsername := url.QueryEscape(connConfig.Username)
+		percentEncodingPassword := url.QueryEscape(connConfig.Password)
 		connectionURI = fmt.Sprintf("%s%s:%s@", connectionURI, percentEncodingUsername, percentEncodingPassword)
 	}
 	connectionURI = fmt.Sprintf("%s%s", connectionURI, connConfig.Host)
@@ -197,22 +197,6 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, authenticationDatabase)
 
 	return connectionURI
-}
-
-func replaceCharacterWithPercentEncoding(s string) string {
-	m := map[string]string{
-		":": `%3A`,
-		"/": `%2F`,
-		"?": `%3F`,
-		"#": `%23`,
-		"[": `%5B`,
-		"]": `%5D`,
-		"@": `%40`,
-	}
-	for k, v := range m {
-		s = strings.ReplaceAll(s, k, v)
-	}
-	return s
 }
 
 // QueryConn2 queries a SQL statement in a given connection.

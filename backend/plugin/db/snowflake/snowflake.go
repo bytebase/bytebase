@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -48,6 +49,8 @@ func newDriver(db.DriverConfig) db.Driver {
 func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	prefixParts, loggedPrefixParts := []string{config.Username}, []string{config.Username}
 	if config.Password != "" {
+		// Percent encoding for special characters in password by using url.QueryEscape
+		config.Password = url.QueryEscape(config.Password)
 		prefixParts = append(prefixParts, config.Password)
 		loggedPrefixParts = append(loggedPrefixParts, "<<redacted password>>")
 	}
