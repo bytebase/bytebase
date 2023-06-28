@@ -2378,7 +2378,7 @@
           "database_name": "数据库名称",
           "db_engine": "数据库引擎",
           "sql_type": "SQL 类型",
-          "expiration_day": "过期时间",
+          "expiration_day": "过期天数",
           "export_row": "导出行数",
           "table_name": "表名称"
         }
