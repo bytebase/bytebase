@@ -171,9 +171,9 @@ func convertToSource(source store.RiskSource) v1pb.Risk_Source {
 		return v1pb.Risk_DDL
 	case store.RiskSourceDatabaseDataUpdate:
 		return v1pb.Risk_DML
-	case store.RiskQueryGrantRequest:
+	case store.RiskRequestQuery:
 		return v1pb.Risk_QUERY
-	case store.RiskExportGrantRequest:
+	case store.RiskRequestExport:
 		return v1pb.Risk_EXPORT
 	}
 	return v1pb.Risk_SOURCE_UNSPECIFIED
@@ -188,9 +188,9 @@ func convertSource(source v1pb.Risk_Source) store.RiskSource {
 	case v1pb.Risk_DML:
 		return store.RiskSourceDatabaseDataUpdate
 	case v1pb.Risk_QUERY:
-		return store.RiskQueryGrantRequest
+		return store.RiskRequestQuery
 	case v1pb.Risk_EXPORT:
-		return store.RiskExportGrantRequest
+		return store.RiskRequestExport
 	}
 	return store.RiskSourceUnknown
 }

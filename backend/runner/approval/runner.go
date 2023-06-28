@@ -43,7 +43,7 @@ var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
 	api.IssueDatabaseCreate: store.RiskSourceDatabaseCreate,
 	// RiskGrantRequest.
 	// TODO(d): fix this to depend on the issue payload.
-	api.IssueGrantRequest: store.RiskExportGrantRequest,
+	api.IssueGrantRequest: store.RiskRequestExport,
 	// RiskSourceUnknown
 	api.IssueGeneral:             store.RiskSourceUnknown,
 	api.IssueDatabaseRestorePITR: store.RiskSourceUnknown,

@@ -25,10 +25,10 @@ const (
 	RiskSourceDatabaseDataUpdate RiskSource = "bb.risk.database.data.update"
 	// RiskSourceDatabaseCreate is for creating databases.
 	RiskSourceDatabaseCreate RiskSource = "bb.risk.database.create"
-	// RiskQueryGrantRequest is for requesting query grant.
-	RiskQueryGrantRequest RiskSource = "bb.risk.request.query-grant"
-	// RiskExportGrantRequest is for requesting export grant.
-	RiskExportGrantRequest RiskSource = "bb.risk.request.export-grant"
+	// RiskRequestQuery is for requesting query grant.
+	RiskRequestQuery RiskSource = "bb.risk.request.query"
+	// RiskRequestExport is for requesting export grant.
+	RiskRequestExport RiskSource = "bb.risk.request.export"
 )
 
 // RiskMessage is the message for risks.
