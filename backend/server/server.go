@@ -320,12 +320,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			return nil, err
 		}
 		s.SchemaVersion = metadataVersion
-		if err := storeInstance.BackfillRiskExpression(ctx); err != nil {
-			return nil, err
-		}
-		if err := storeInstance.BackfillWorkspaceApprovalSetting(ctx); err != nil {
-			return nil, err
-		}
 	}
 
 	s.stateCfg = &state.State{
