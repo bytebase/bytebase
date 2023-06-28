@@ -47,6 +47,10 @@ func newDriver(db.DriverConfig) db.Driver {
 // Open opens a Snowflake driver.
 func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	dsn, loggedDSN, err := buildSnowflakeDSN(config)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Debug("Opening Snowflake driver",
 		zap.String("dsn", loggedDSN),
 		zap.String("environment", connCtx.EnvironmentID),
