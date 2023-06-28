@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,10 +44,4 @@ func TestExcludeSchemaAutoIncrementValue(t *testing.T) {
 		got := excludeSchemaAutoIncrementValue(test.stmt)
 		require.Equal(t, test.want, got)
 	}
-}
-
-func TestHH(t *testing.T) {
-	u := url.UserPassword("special_password", `8F%f&eLxxx`)
-	a := require.New(t)
-	a.Equal("special_password", u.String())
 }
