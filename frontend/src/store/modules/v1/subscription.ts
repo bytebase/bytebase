@@ -3,7 +3,13 @@ import dayjs from "dayjs";
 import { computed, Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { subscriptionServiceClient } from "@/grpcweb";
-import { FeatureType, planTypeToString, instanceLimitFeature } from "@/types";
+import {
+  FeatureType,
+  planTypeToString,
+  instanceCountLimit,
+  userCountLimit,
+  instanceLimitFeature,
+} from "@/types";
 import {
   PlanType,
   Subscription,
@@ -25,9 +31,15 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     featureMatrix: new Map<FeatureType, boolean[]>(),
   }),
   getters: {
-    instanceCount(state): number {
+    instanceCountLimit(state): number {
+      return instanceCountLimit.get(this.currentPlan) ?? 0;
+    },
+    userCountLimit(state): number {
+      return userCountLimit.get(this.currentPlan) ?? 0;
+    },
+    instanceLicenseCount(state): number {
       const count = state.subscription?.instanceCount ?? 0;
-      if (count <= 0) {
+      if (count < 0) {
         return Number.MAX_VALUE;
       }
       return count;
@@ -119,6 +131,10 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       type: FeatureType,
       instance: Instance | undefined = undefined
     ) {
+      // DONOT check instance license fo FREE plan.
+      if (this.currentPlan === PlanType.FREE) {
+        return this.hasFeature(type);
+      }
       if (!instanceLimitFeature.has(type) || !instance) {
         return this.hasFeature(type);
       }
@@ -198,7 +214,8 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         trial: {
           plan: planType,
           days: this.trialingDays,
-          instanceCount: 20,
+          // Instance license count.
+          instanceCount: 10,
         },
       });
       this.setSubscription(subscription);

@@ -6,6 +6,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -25,10 +26,10 @@ type NamingIdentifierNoKeywordAdvisor struct {
 }
 
 // Check checks for identifier naming convention without keyword.
-func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	tree, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	tree, ok := ctx.AST.(antlr.Tree)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -106,7 +107,7 @@ func (l *namingIdentifierNoKeywordChecker) EnterColumn_decl_item_list(ctx *parse
 	for _, item := range allItems {
 		if fullColDecl := item.Full_col_decl(); fullColDecl != nil {
 			originalID := fullColDecl.Col_decl().Column_name().Id_()
-			originalColName := normalizeObjectNamePart(originalID)
+			originalColName := bbparser.NormalizeObjectNamePart(originalID)
 			if bbparser.IsSnowflakeKeyword(originalColName, false) {
 				l.adviceList = append(l.adviceList, advisor.Advice{
 					Status:  l.level,
@@ -127,7 +128,7 @@ func (l *namingIdentifierNoKeywordChecker) EnterAlter_table(ctx *parser.Alter_ta
 	}
 	l.currentOriginalTableName = ctx.Object_name(0).GetText()
 	renameToID := ctx.Table_column_action().Column_name(1).Id_()
-	renameToColName := normalizeObjectNamePart(renameToID)
+	renameToColName := bbparser.NormalizeObjectNamePart(renameToID)
 	if bbparser.IsSnowflakeKeyword(renameToColName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

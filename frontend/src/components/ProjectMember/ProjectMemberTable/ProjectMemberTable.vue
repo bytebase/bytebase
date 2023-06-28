@@ -100,7 +100,7 @@ import { useI18n } from "vue-i18n";
 
 import { ComposedProject } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import { Binding, IamPolicy } from "@/types/proto/v1/project_service";
+import { Binding, IamPolicy } from "@/types/proto/v1/iam_policy";
 import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
 import {
   hasWorkspacePermissionV1,

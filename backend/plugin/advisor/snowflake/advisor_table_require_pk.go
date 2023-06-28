@@ -6,9 +6,11 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 var (
@@ -24,10 +26,10 @@ type TableRequirePkAdvisor struct {
 }
 
 // Check checks for table require primary key.
-func (*TableRequirePkAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	tree, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*TableRequirePkAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	tree, ok := ctx.AST.(antlr.Tree)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -104,7 +106,7 @@ func (l *tableRequirePkChecker) generateAdvice() ([]advisor.Advice, error) {
 // EnterCreate_table is called when production create_table is entered.
 func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	originalTableName := ctx.Object_name()
-	normalizedTableName := normalizeObjectName(originalTableName)
+	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName)
 
 	l.tableHasPrimaryKey[normalizedTableName] = false
 	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()
@@ -116,7 +118,7 @@ func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContex
 // EnterDrop_table is called when production drop_table is entered.
 func (l *tableRequirePkChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
 	originalTableName := ctx.Object_name()
-	normalizedTableName := normalizeObjectName(originalTableName)
+	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName)
 
 	delete(l.tableHasPrimaryKey, normalizedTableName)
 	delete(l.tableOriginalName, normalizedTableName)
@@ -174,7 +176,7 @@ func (l *tableRequirePkChecker) EnterAlter_table(ctx *parser.Alter_tableContext)
 		return
 	}
 	originalTableName := ctx.Object_name(0)
-	normalizedTableName := normalizeObjectName(originalTableName)
+	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName)
 
 	l.currentNormalizedTableName = normalizedTableName
 	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()

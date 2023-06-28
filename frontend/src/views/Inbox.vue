@@ -36,18 +36,21 @@
 <script lang="ts">
 import { reactive, watchEffect } from "vue";
 import InboxList from "../components/InboxList.vue";
-import { ComposedInbox, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { useRouter } from "vue-router";
 import { useCurrentUser, useInboxV1Store } from "@/store";
-import { InboxMessage_Status } from "@/types/proto/v1/inbox_service";
+import {
+  InboxMessage,
+  InboxMessage_Status,
+} from "@/types/proto/v1/inbox_service";
 
 // We alway fetch all "UNREAD" items. But for "READ" items, by default, we only fetch the most recent 7 days.
 // And each time clicking "View older" will extend 7 days further.
 const READ_INBOX_DURATION_STEP = 3600 * 24 * 7;
 
 interface LocalState {
-  readList: ComposedInbox[];
-  unreadList: ComposedInbox[];
+  readList: InboxMessage[];
+  unreadList: InboxMessage[];
   readCreatedAfterTs: number;
 }
 

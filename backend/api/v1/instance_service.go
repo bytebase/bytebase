@@ -87,6 +87,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", request.InstanceId)
 	}
 
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+
 	instanceMessage, err := s.convertToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -762,6 +766,20 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		SSHObfuscatedPassword:   common.Obfuscate(dataSource.SshPassword, s.secret),
 		SSHObfuscatedPrivateKey: common.Obfuscate(dataSource.SshPrivateKey, s.secret),
 	}, nil
+}
+
+func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
+	instanceLimit := s.licenseService.GetPlanLimitValue(enterpriseAPI.PlanLimitMaximumInstance)
+
+	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	if int64(count) >= instanceLimit {
+		return status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", instanceLimit)
+	}
+
+	return nil
 }
 
 func convertDataSourceTp(tp v1pb.DataSourceType) (api.DataSourceType, error) {

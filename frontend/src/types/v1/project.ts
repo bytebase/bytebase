@@ -1,7 +1,7 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
+import { IamPolicy } from "../proto/v1/iam_policy";
 import {
-  IamPolicy,
   Project,
   SchemaChange,
   SchemaVersion,

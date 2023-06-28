@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -32,10 +33,10 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check checks table requires PK.
-func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	root, ok := ctx.AST.([]ast.StmtNode)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

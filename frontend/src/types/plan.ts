@@ -59,6 +59,7 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.encrypted-secrets",
   "bb.feature.sql-review",
   "bb.feature.task-schedule-time",
+  "bb.feature.online-migration",
   // Database Management
   "bb.feature.pitr",
   "bb.feature.read-replica-connection",
@@ -73,8 +74,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.vcs-sql-review",
   "bb.feature.mybatis-sql-review",
   "bb.feature.vcs-schema-write-back",
-  // TODO:
-  // "bb.feature.online-migration",
 ]);
 
 export const planTypeToString = (planType: PlanType): string => {
@@ -120,6 +119,19 @@ export const PLANS: Plan[] = planData.planList.map((raw: Plan) => ({
   ...raw,
   type: planTypeFromJSON(raw.type + 1),
 }));
+
+// TODO: it's better to get the count limit from the backend.
+export const userCountLimit = new Map<PlanType, number>([
+  [PlanType.FREE, 20],
+  [PlanType.TEAM, Number.MAX_VALUE],
+  [PlanType.ENTERPRISE, Number.MAX_VALUE],
+]);
+
+export const instanceCountLimit = new Map<PlanType, number>([
+  [PlanType.FREE, 20],
+  [PlanType.TEAM, 20],
+  [PlanType.ENTERPRISE, Number.MAX_VALUE],
+]);
 
 export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
   const { t } = useI18n();

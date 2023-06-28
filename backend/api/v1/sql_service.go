@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	tidbast "github.com/pingcap/tidb/parser/ast"
@@ -49,6 +50,8 @@ const (
 	// The maximum number of bytes for sql results in response body.
 	// 10 MB.
 	maximumSQLResultSize = 10 * 1024 * 1024
+	// defaultTimeout is the default timeout for query and admin execution.
+	defaultTimeout = 1 * time.Minute
 )
 
 // SQLService is the service for SQL.
@@ -142,16 +145,29 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
 
 		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
-			return err
+			log.Error("failed to post admin execute activity", zap.Error(err))
 		}
 
+		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
-			return status.Errorf(codes.Internal, "failed to execute statement: %v", queryErr)
+			response.Results = []*v1pb.QueryResult{
+				{
+					Error: err.Error(),
+				},
+			}
+		} else {
+			response.Results = result
 		}
 
-		if err := server.Send(&v1pb.AdminExecuteResponse{
-			Results: result,
-		}); err != nil {
+		if proto.Size(response) > maximumSQLResultSize {
+			response.Results = []*v1pb.QueryResult{
+				{
+					Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
+				},
+			}
+		}
+
+		if err := server.Send(response); err != nil {
 			return status.Errorf(codes.Internal, "failed to send response: %v", err)
 		}
 	}
@@ -198,7 +214,20 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *store.Activ
 
 func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest) ([]*v1pb.QueryResult, int64, error) {
 	start := time.Now().UnixNano()
+	timeout := defaultTimeout
+	if request.Timeout != nil {
+		timeout = request.Timeout.AsDuration()
+	}
+	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
+	defer cancelCtx()
 	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	select {
+	case <-ctx.Done():
+		// canceled or timed out
+		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
+	default:
+		// So the select will not block
+	}
 	return result, time.Now().UnixNano() - start, err
 }
 
@@ -328,6 +357,18 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		if content, err = s.exportJSON(result[0]); err != nil {
 			return nil, durationNs, err
 		}
+	case v1pb.ExportRequest_SQL:
+		resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), request.ConnectionDatabase, request.Statement, instance)
+		if err != nil {
+			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
+		}
+		statementPrefix, err := getSQLStatementPrefix(instance.Engine, resourceList, result[0].ColumnNames)
+		if err != nil {
+			return nil, 0, err
+		}
+		if content, err = exportSQL(instance.Engine, statementPrefix, result[0]); err != nil {
+			return nil, durationNs, err
+		}
 	default:
 		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
@@ -365,7 +406,7 @@ func convertValueToBytes(value *v1pb.RowValue) []byte {
 	case *v1pb.RowValue_StringValue:
 		var result []byte
 		result = append(result, '"')
-		result = append(result, []byte(value.GetStringValue())...)
+		result = append(result, []byte(escapeCSVString(value.GetStringValue()))...)
 		result = append(result, '"')
 		return result
 	case *v1pb.RowValue_Int32Value:
@@ -385,15 +426,124 @@ func convertValueToBytes(value *v1pb.RowValue) []byte {
 	case *v1pb.RowValue_BytesValue:
 		var result []byte
 		result = append(result, '"')
-		result = append(result, value.GetBytesValue()...)
+		result = append(result, []byte(escapeCSVString(string(value.GetBytesValue())))...)
 		result = append(result, '"')
 		return result
 	case *v1pb.RowValue_NullValue:
 		return []byte("")
 	case *v1pb.RowValue_ValueValue:
+		// This is used by ClickHouse and Spanner only.
 		return convertValueValueToBytes(value.GetValueValue())
 	default:
 		return []byte("")
+	}
+}
+
+func escapeCSVString(str string) string {
+	escapedStr := strings.ReplaceAll(str, `"`, `""`)
+	return escapedStr
+}
+
+func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource, columnNames []string) (string, error) {
+	var escapeQuote string
+	switch engine {
+	case db.MySQL, db.MariaDB, db.TiDB, db.OceanBase, db.Spanner:
+		escapeQuote = "`"
+	case db.ClickHouse, db.MSSQL, db.Oracle, db.Postgres, db.Redshift, db.SQLite, db.Snowflake:
+		// ClickHouse takes both double-quotes or backticks.
+		escapeQuote = "\""
+	default:
+		// db.MongoDB, db.Redis
+		return "", errors.Errorf("unsupported engine %v for exporting as SQL", engine)
+	}
+
+	s := "INSERT INTO "
+	if len(resourceList) == 1 {
+		resource := resourceList[0]
+		if resource.Schema != "" {
+			s = fmt.Sprintf("%s%s%s%s%s", s, escapeQuote, resource.Schema, escapeQuote, ".")
+		}
+		s = fmt.Sprintf("%s%s%s%s", s, escapeQuote, resource.Table, escapeQuote)
+	} else {
+		s = fmt.Sprintf("%s%s%s%s", s, escapeQuote, "<table_name>", escapeQuote)
+	}
+	var columnTokens []string
+	for _, columnName := range columnNames {
+		columnTokens = append(columnTokens, fmt.Sprintf("%s%s%s", escapeQuote, columnName, escapeQuote))
+	}
+	s = fmt.Sprintf("%s (%s) VALUES (", s, strings.Join(columnTokens, ","))
+	return s, nil
+}
+
+func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
+	var buf bytes.Buffer
+	if _, err := buf.WriteString(strings.Join(result.ColumnNames, ",")); err != nil {
+		return nil, err
+	}
+	for _, row := range result.Rows {
+		if _, err := buf.WriteString(statementPrefix); err != nil {
+			return nil, err
+		}
+		for i, value := range row.Values {
+			if i != 0 {
+				if err := buf.WriteByte(','); err != nil {
+					return nil, err
+				}
+			}
+			if _, err := buf.Write(convertValueToBytesInSQL(engine, value)); err != nil {
+				return nil, err
+			}
+		}
+		if _, err := buf.WriteString(");\n"); err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
+}
+
+func convertValueToBytesInSQL(engine db.Type, value *v1pb.RowValue) []byte {
+	switch value.Kind.(type) {
+	case *v1pb.RowValue_StringValue:
+		return escapeSQLString(engine, []byte(value.GetStringValue()))
+	case *v1pb.RowValue_Int32Value:
+		return []byte(strconv.FormatInt(int64(value.GetInt32Value()), 10))
+	case *v1pb.RowValue_Int64Value:
+		return []byte(strconv.FormatInt(value.GetInt64Value(), 10))
+	case *v1pb.RowValue_Uint32Value:
+		return []byte(strconv.FormatUint(uint64(value.GetUint32Value()), 10))
+	case *v1pb.RowValue_Uint64Value:
+		return []byte(strconv.FormatUint(value.GetUint64Value(), 10))
+	case *v1pb.RowValue_FloatValue:
+		return []byte(strconv.FormatFloat(float64(value.GetFloatValue()), 'f', -1, 32))
+	case *v1pb.RowValue_DoubleValue:
+		return []byte(strconv.FormatFloat(value.GetDoubleValue(), 'f', -1, 64))
+	case *v1pb.RowValue_BoolValue:
+		return []byte(strconv.FormatBool(value.GetBoolValue()))
+	case *v1pb.RowValue_BytesValue:
+		return escapeSQLString(engine, value.GetBytesValue())
+	case *v1pb.RowValue_NullValue:
+		return []byte("NULL")
+	case *v1pb.RowValue_ValueValue:
+		// This is used by ClickHouse and Spanner only.
+		return convertValueValueToBytes(value.GetValueValue())
+	default:
+		return []byte("")
+	}
+}
+
+func escapeSQLString(engine db.Type, v []byte) []byte {
+	switch engine {
+	case db.Postgres, db.Redshift:
+		escapedStr := pq.QuoteLiteral(string(v))
+		return []byte(escapedStr)
+	default:
+		result := []byte("'")
+		s := strconv.Quote(string(v))
+		s = s[1 : len(s)-1]
+		s = strings.ReplaceAll(s, `'`, `''`)
+		result = append(result, []byte(s)...)
+		result = append(result, '\'')
+		return result
 	}
 }
 
@@ -460,8 +610,16 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
+	// Check if the environment is open for export privileges.
+	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+	if err != nil {
 		return nil, nil, nil, nil, err
+	}
+	if !result {
+		// Check if the user has permission to execute the export.
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
+			return nil, nil, nil, nil, err
+		}
 	}
 
 	// Get sensitive schema info.
@@ -657,6 +815,13 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		defer conn.Close()
 	}
 
+	timeout := defaultTimeout
+	if request.Timeout != nil {
+		timeout = request.Timeout.AsDuration()
+	}
+	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
+	defer cancelCtx()
+
 	start := time.Now().UnixNano()
 	result, err := driver.QueryConn2(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
@@ -666,6 +831,14 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 		SensitiveSchemaInfo:   sensitiveSchemaInfo,
 	})
+	select {
+	case <-ctx.Done():
+		// canceled or timed out
+		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
+	default:
+		// So the select will not block
+	}
+
 	return result, time.Now().UnixNano() - start, err
 }
 
@@ -678,6 +851,8 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 //  3. Run SQL review.
 //  4. Get sensitive schema info.
 //  5. Create query activity.
+//
+// Due to the performance consideration, we DO NOT get the sensitive schema info if there are advice error in SQL review.
 func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
@@ -690,9 +865,16 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
-	// Check if the user has permission to execute the query.
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+	// Check if the environment is open for query privileges.
+	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
+	if err != nil {
 		return nil, nil, advisor.Success, nil, nil, nil, err
+	}
+	if !result {
+		// Check if the user has permission to execute the query.
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+			return nil, nil, advisor.Success, nil, nil, nil, err
+		}
 	}
 
 	// Run SQL review.
@@ -713,17 +895,17 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
 			if err != nil {
-				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		case db.Postgres, db.Redshift:
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 			if err != nil {
-				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		case db.Oracle:
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 			if err != nil {
-				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		}
 	}
@@ -1187,18 +1369,31 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		var result []parser.SchemaResource
 		for _, resource := range list {
 			if resource.Database != dbSchema.Metadata.Name {
-				// Should not happen.
+				// MySQL allows cross-database query, we should check the corresponding database.
+				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &resource.Database})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+				}
+				if resourceDB == nil {
+					continue
+				}
+				resourceDBSchema, err := s.store.GetDBSchema(ctx, resourceDB.UID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+				}
+				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) {
+					// If table not found, we regard it as a CTE/alias/... and skip.
+					continue
+				}
+				result = append(result, resource)
 				continue
 			}
-
 			if !dbSchema.TableExists(resource.Schema, resource.Table) {
 				// If table not found, skip.
 				continue
 			}
-
 			result = append(result, resource)
 		}
-
 		return result, nil
 	case parser.Postgres, parser.Redshift:
 		list, err := parser.ExtractResourceList(engine, databaseName, "public", statement)
@@ -1208,11 +1403,10 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 
 		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 		if err != nil {
-			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-				// If database not found, skip.
-				return nil, nil
-			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+		if databaseMessage == nil {
+			return nil, nil
 		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
@@ -1253,11 +1447,10 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 
 		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 		if err != nil {
-			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-				// If database not found, skip.
-				return nil, nil
-			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+		if databaseMessage == nil {
+			return nil, nil
 		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
@@ -1281,9 +1474,110 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		}
 
 		return result, nil
+	case parser.Snowflake:
+		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		// If there are no read-only data source, fall back to admin data source.
+		if dataSource == nil {
+			dataSource = adminDataSource
+		}
+		if dataSource == nil {
+			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
+		}
+		list, err := parser.ExtractResourceList(engine, databaseName, dataSource.Username, statement)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+		}
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		if err != nil {
+			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+				// If database not found, skip.
+				return nil, nil
+			}
+			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+
+		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+		}
+
+		var result []parser.SchemaResource
+		for _, resource := range list {
+			if resource.Database != dbSchema.Metadata.Name {
+				// Snowflake allows cross-database query, we should check the corresponding database.
+				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &resource.Database})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+				}
+				if resourceDB == nil {
+					continue
+				}
+				resourceDBSchema, err := s.store.GetDBSchema(ctx, resourceDB.UID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+				}
+				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) {
+					// If table not found, we regard it as a CTE/alias/... and skip.
+					continue
+				}
+				result = append(result, resource)
+				continue
+			}
+			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+				// If table not found, skip.
+				continue
+			}
+			result = append(result, resource)
+		}
+		return result, nil
 	default:
 		return parser.ExtractResourceList(engine, databaseName, "", statement)
 	}
+}
+
+func (s *SQLService) checkWorkspaceIAMPolicy(
+	ctx context.Context,
+	role common.ProjectRole,
+	environment *store.EnvironmentMessage,
+) (bool, error) {
+	workspacePolicyResourceType := api.PolicyResourceTypeWorkspace
+	workspaceIAMPolicyType := api.PolicyTypeWorkspaceIAM
+	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &workspacePolicyResourceType,
+		Type:         &workspaceIAMPolicyType,
+		ResourceUID:  &defaultWorkspaceResourceID,
+	})
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get workspace IAM policy")
+	}
+	if policy == nil {
+		return false, nil
+	}
+
+	v1pbPolicy, err := convertToPolicy("", policy)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to convert policy")
+	}
+
+	attributes := map[string]any{
+		"resource.environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+	}
+	bindings := v1pbPolicy.GetWorkspaceIamPolicy().Bindings
+	for _, binding := range bindings {
+		if binding.Role != string(role) {
+			continue
+		}
+
+		ok, err := evaluateCondition(binding.Condition.Expression, attributes)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to evaluate condition")
+		}
+		if ok {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (s *SQLService) checkQueryRights(
@@ -1293,7 +1587,6 @@ func (s *SQLService) checkQueryRights(
 	statement string,
 	limit int32,
 	user *store.UserMessage,
-	environment *store.EnvironmentMessage,
 	instance *store.InstanceMessage,
 	exportFormat v1pb.ExportRequest_Format,
 ) error {
@@ -1318,7 +1611,7 @@ func (s *SQLService) checkQueryRights(
 	}
 
 	var project *store.ProjectMessage
-	// var databaseMessages []*store.DatabaseMessage
+
 	databaseMessageMap := make(map[string]*store.DatabaseMessage)
 	for database := range databaseMap {
 		projectMessage, databaseMessage, err := s.getProjectAndDatabaseMessage(ctx, instance, database)
@@ -1364,13 +1657,12 @@ func (s *SQLService) checkQueryRights(
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
-			"request.time":         time.Now(),
-			"resource.environment": instance.EnvironmentID,
-			"resource.database":    databaseResourceURL,
-			"resource.schema":      resource.Schema,
-			"resource.table":       resource.Table,
-			"request.statement":    base64.StdEncoding.EncodeToString([]byte(statement)),
-			"request.row_limit":    limit,
+			"request.time":      time.Now(),
+			"resource.database": databaseResourceURL,
+			"resource.schema":   resource.Schema,
+			"resource.table":    resource.Table,
+			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.row_limit": limit,
 		}
 
 		switch exportFormat {
@@ -1384,7 +1676,7 @@ func (s *SQLService) checkQueryRights(
 			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
 		}
 
-		ok, expression, err := s.hasDatabaseAccessRights(ctx, user.ID, projectPolicy, databaseMessageMap[resource.Database], environment, attributes, isExport)
+		ok, expression, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -1437,11 +1729,11 @@ func removeExportBinding(principalID int, usedExpression string, projectPolicy *
 	return &newPolicy
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, string, error) {
+func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, string, error) {
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
-	var usedExpression string
+	usedExpression := ""
 	for _, binding := range projectPolicy.Bindings {
 		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
 			continue
@@ -1465,40 +1757,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID in
 			break
 		}
 	}
-	if !pass {
-		return false, "", nil
-	}
-	// calculate the effective policy.
-	databasePolicy, inheritFromEnvironment, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
-	if err != nil {
-		return false, "", err
-	}
-
-	environmentPolicy, _, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
-	if err != nil {
-		return false, "", err
-	}
-
-	if !inheritFromEnvironment {
-		// Use database policy.
-		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, "", nil
-	}
-	// Use both database policy and environment policy.
-	hasAccessRights := true
-	if environmentPolicy != nil {
-		// Disallow by environment access policy.
-		for _, rule := range environmentPolicy.DisallowRuleList {
-			if rule.FullDatabase {
-				hasAccessRights = false
-				break
-			}
-		}
-	}
-	if databasePolicy != nil {
-		// Allow by database access policy.
-		hasAccessRights = true
-	}
-	return hasAccessRights, usedExpression, nil
+	return pass, usedExpression, nil
 }
 
 func evaluateCondition(expression string, attributes map[string]any) (bool, error) {
@@ -1536,11 +1795,10 @@ func evaluateCondition(expression string, attributes map[string]any) (bool, erro
 func (s *SQLService) getProjectAndDatabaseMessage(ctx context.Context, instance *store.InstanceMessage, database string) (*store.ProjectMessage, *store.DatabaseMessage, error) {
 	databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &database})
 	if err != nil {
-		if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-			// If database not found, skip.
-			return nil, nil, nil
-		}
 		return nil, nil, err
+	}
+	if databaseMessage == nil {
+		return nil, nil, nil
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &databaseMessage.ProjectID})
@@ -1614,6 +1872,8 @@ func convertToParserEngine(engine db.Type) parser.EngineType {
 		return parser.MSSQL
 	case db.OceanBase:
 		return parser.OceanBase
+	case db.Snowflake:
+		return parser.Snowflake
 	}
 	return parser.Standard
 }

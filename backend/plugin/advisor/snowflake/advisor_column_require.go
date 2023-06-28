@@ -6,10 +6,12 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
+	"github.com/pkg/errors"
 	"golang.org/x/exp/slices"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 var (
@@ -25,10 +27,10 @@ type ColumnRequireAdvisor struct {
 }
 
 // Check checks for column requirement.
-func (*ColumnRequireAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	tree, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*ColumnRequireAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	tree, ok := ctx.AST.(antlr.Tree)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -105,7 +107,7 @@ func (l *columnRequireChecker) EnterColumn_decl_item_list(ctx *parser.Column_dec
 	allColumnDeclItems := ctx.AllColumn_decl_item()
 	for _, columnDeclItem := range allColumnDeclItems {
 		if fullColDecl := columnDeclItem.Full_col_decl(); fullColDecl != nil {
-			normalizedColumnName := normalizeObjectNamePart(fullColDecl.Col_decl().Column_name().Id_())
+			normalizedColumnName := snowsqlparser.NormalizeObjectNamePart(fullColDecl.Col_decl().Column_name().Id_())
 			delete(l.currentMissingColumn, normalizedColumnName)
 		}
 	}
@@ -150,7 +152,7 @@ func (l *columnRequireChecker) EnterTable_column_action(ctx *parser.Table_column
 
 	for _, columnName := range ctx.Column_list().AllColumn_name() {
 		originalColumName := columnName.GetText()
-		normalizedColumnName := extractOrdinaryIdentifier(originalColumName)
+		normalizedColumnName := snowsqlparser.ExtractOrdinaryIdentifier(originalColumName)
 		if _, ok := l.requireColumns[normalizedColumnName]; ok {
 			l.currentMissingColumn[normalizedColumnName] = true
 		}

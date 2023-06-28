@@ -49,6 +49,37 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	return count, nil
 }
 
+// CountPrincipal counts the number of endusers.
+func (s *Store) CountPrincipal(ctx context.Context) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	query := `
+		SELECT
+			count(1)
+		FROM principal
+		WHERE principal.type = $1`
+	var count int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			count(1)
+		FROM principal
+		WHERE principal.type = $1
+	`, api.EndUser).Scan(&count); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled.
 func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)

@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -444,8 +445,19 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil {
-		issueCreatePayload.Approval.ApprovalFindingDone = true
+	for _, stage := range pipelineCreate.StageList {
+		for _, task := range stage.TaskList {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				UID: &task.InstanceID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			if s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
+				issueCreatePayload.Approval.ApprovalFindingDone = true
+				break
+			}
+		}
 	}
 
 	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
@@ -950,7 +962,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 		}
 	}
-	maximumTaskLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumTask)
+	maximumTaskLimit := s.licenseService.GetPlanLimitValue(enterpriseAPI.PlanLimitMaximumTask)
 	if int64(databaseIDCount) > maximumTaskLimit {
 		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can update up to %d databases, got %d.", maximumTaskLimit, databaseIDCount))
 	}

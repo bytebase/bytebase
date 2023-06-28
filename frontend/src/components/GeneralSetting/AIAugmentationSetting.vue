@@ -18,10 +18,7 @@
             $t("settings.general.workspace.plugin.openai.openai-key.self")
           }}</span>
 
-          <FeatureBadge
-            feature="bb.feature.plugin.openai"
-            class="text-accent"
-          />
+          <FeatureBadge feature="bb.feature.plugin.openai" />
 
           <span
             v-if="!allowEdit"
@@ -63,10 +60,7 @@
             $t("settings.general.workspace.plugin.openai.openai-endpoint.self")
           }}</span>
 
-          <FeatureBadge
-            feature="bb.feature.plugin.openai"
-            class="text-accent"
-          />
+          <FeatureBadge feature="bb.feature.plugin.openai" />
 
           <span
             v-if="!allowEdit"

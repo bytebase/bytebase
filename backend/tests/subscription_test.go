@@ -33,6 +33,8 @@ func TestSubscription(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
+	err = ctl.removeLicense()
+	a.NoError(err)
 	subscription, err := ctl.getSubscription()
 	a.NoError(err)
 	a.Equal(v1pb.PlanType_FREE, subscription.Plan)

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net"
 	"net/http"
 	"runtime"
@@ -456,9 +455,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
 		s.TaskCheckScheduler = taskcheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
-		statementSimpleExecutor := taskcheck.NewStatementAdvisorSimpleExecutor(storeInstance, s.licenseService)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
 		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory, s.licenseService)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
 		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
@@ -1080,8 +1076,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 			},
 		},
 		EnvironmentID: api.DefaultProdEnvironmentID,
-		Activation:    true,
-	}, userID, math.MaxInt)
+		Activation:    false,
+	}, userID, -1)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding instance")
 	}

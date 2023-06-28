@@ -16,7 +16,8 @@
       code: 406
       title: column.disallow-change
       content: |-
-        "ALTER TABLE t CHANGE COLUMN b a int
+        "
+        ALTER TABLE t CHANGE COLUMN b a int
         ;" contains CHANGE COLUMN statement
       line: 3
       details: ""

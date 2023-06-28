@@ -554,12 +554,10 @@
       "remove-sensitive-column-tips": "¿Exponer esta columna?"
     },
     "access-control": {
-      "description": "Permitir a los desarrolladores ejecutar consultas para las siguientes bases de datos en ambientes de producción desde el Editor de SQL. {link}",
-      "add-rule": "Añadir regla",
-      "remove-policy-tips": "¿Eliminar esta regla?",
-      "inactive-rules": "Reglas inactivas",
-      "inactive-rules-description": "Estas reglas están inactivas porque el ambiente no es de producción.",
-      "no-database-in-production-environment": "Asegúrese de que hay bases de datos en el {production_environment}."
+      "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
+      "skip-approval": "Saltar aprobación manual",
+      "query-data": "Consulta de datos",
+      "export-data": "Exportación de datos"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
@@ -946,7 +944,8 @@
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
-    "all": "Todas las instancias"
+    "all": "Todas las instancias",
+    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
   },
   "environment": {
     "id": "ID del Entorno",
@@ -1740,7 +1739,8 @@
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
-    "query-time": "Tiempo de consulta"
+    "query-time": "Tiempo de consulta",
+    "request-query": "Solicitar consulta"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -1909,6 +1909,13 @@
         "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
         "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
       },
+      "bb-feature-user-count": {
+        "title": "Límite de conteo de usuarios",
+        "desc": "Ha alcanzado el límite máximo de recuento de usuarios. Actualice para obtener una cuota de usuario ilimitada.",
+        "remaining": "Su cuota total de usuarios es {total}, solo quedan {count} usuarios.",
+        "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
+        "upgrade": "@:{'subscription.upgrade'} para obtener una cuota de usuario ilimitada."
+      },
       "bb-feature-multi-tenancy": {
         "title": "Modo Lote",
         "desc": "Cambio por lotes de un grupo de bases de datos de diferentes inquilinos o particiones."
@@ -1930,8 +1937,8 @@
         "desc": "Marque las columnas de la tabla como datos sensibles y el resultado de la consulta de ellos se mostrará como \"******\"."
       },
       "bb-feature-access-control": {
-        "title": "Control de acceso",
-        "desc": "Cambie el permiso de consulta para bases de datos en entornos de producción."
+        "title": "Control de acceso a datos",
+        "desc": "Configura un flujo de aprobación para controlar la consulta y exportación de datos."
       },
       "bb-feature-lgtm": {
         "title": "Verificación LGTM",

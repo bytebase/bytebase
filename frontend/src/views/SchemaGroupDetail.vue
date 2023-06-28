@@ -61,6 +61,13 @@
 
       <hr class="my-4" />
 
+      <FeatureAttentionForInstanceLicense
+        v-if="existMatchedUnactivateInstance"
+        custom-class="m-5"
+        :style="`WARN`"
+        feature="bb.feature.database-grouping"
+      />
+
       <div class="w-full px-3 max-w-5xl grid grid-cols-5 gap-x-6">
         <div class="col-span-3">
           <p class="pl-1 text-lg mb-2">
@@ -74,10 +81,9 @@
         </div>
         <div class="col-span-2">
           <MatchedTableView
-            :project="project"
-            :database-group-name="databaseGroupName"
-            :schema-group="schemaGroup"
-            :expr="state.expr!"
+            :loading="false"
+            :matched-table-list="matchedTableList"
+            :unmatched-table-list="unmatchedTableList"
           />
         </div>
       </div>
@@ -94,8 +100,13 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, watch } from "vue";
-import { useDBGroupStore, useProjectV1Store } from "@/store";
+import { reactive, computed, watch, ref } from "vue";
+import { useDebounceFn } from "@vueuse/core";
+import {
+  useDBGroupStore,
+  useProjectV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
@@ -107,6 +118,7 @@ import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vu
 import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
 import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
+import { ComposedSchemaGroupTable } from "@/types";
 
 interface LocalState {
   isLoaded: boolean;
@@ -131,6 +143,8 @@ const props = defineProps({
 
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
+const subscriptionV1Store = useSubscriptionV1Store();
+
 const state = reactive<LocalState>({
   isLoaded: false,
   showConfigurePanel: false,
@@ -162,4 +176,39 @@ watch(
     immediate: true,
   }
 );
+
+const matchedTableList = ref<ComposedSchemaGroupTable[]>([]);
+const unmatchedTableList = ref<ComposedSchemaGroupTable[]>([]);
+const updateTableMatchingState = useDebounceFn(async () => {
+  if (!project.value) {
+    return;
+  }
+  if (!state.expr) {
+    return;
+  }
+
+  const result = await dbGroupStore.fetchSchemaGroupMatchList({
+    projectName: project.value.name,
+    databaseGroupName: props.databaseGroupName,
+    expr: state.expr,
+  });
+
+  matchedTableList.value = result.matchedTableList;
+  unmatchedTableList.value = result.unmatchedTableList;
+}, 500);
+
+watch([() => project.value, () => state.expr], updateTableMatchingState, {
+  immediate: true,
+  deep: true,
+});
+
+const existMatchedUnactivateInstance = computed(() => {
+  return matchedTableList.value.some(
+    (tb) =>
+      !subscriptionV1Store.hasInstanceFeature(
+        "bb.feature.database-grouping",
+        tb.databaseEntity.instanceEntity
+      )
+  );
+});
 </script>

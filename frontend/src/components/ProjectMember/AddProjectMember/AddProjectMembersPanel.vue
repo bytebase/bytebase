@@ -46,7 +46,7 @@
 <script lang="ts" setup>
 import { NDrawer, NDrawerContent, NButton } from "naive-ui";
 import { ComposedProject } from "@/types";
-import { Binding } from "@/types/proto/v1/project_service";
+import { Binding } from "@/types/proto/v1/iam_policy";
 import { computed, onMounted } from "vue";
 import { reactive } from "vue";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";

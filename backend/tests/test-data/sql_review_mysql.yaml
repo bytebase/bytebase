@@ -15,7 +15,7 @@
       status: ERROR
       title: Syntax error
       content: line 1:20 mismatched input ')' expecting {BIGINT_SYMBOL, BINARY_SYMBOL, BIT_SYMBOL, BLOB_SYMBOL, BOOLEAN_SYMBOL, BOOL_SYMBOL, CHAR_SYMBOL, DATETIME_SYMBOL, DATE_SYMBOL, DECIMAL_SYMBOL, DOUBLE_SYMBOL, ENUM_SYMBOL, FIXED_SYMBOL, FLOAT_SYMBOL, GEOMETRYCOLLECTION_SYMBOL, GEOMETRY_SYMBOL, INT_SYMBOL, JSON_SYMBOL, LINESTRING_SYMBOL, LONGBLOB_SYMBOL, LONGTEXT_SYMBOL, LONG_SYMBOL, MEDIUMBLOB_SYMBOL, MEDIUMINT_SYMBOL, MEDIUMTEXT_SYMBOL, MULTILINESTRING_SYMBOL, MULTIPOINT_SYMBOL, MULTIPOLYGON_SYMBOL, NATIONAL_SYMBOL, NCHAR_SYMBOL, NUMERIC_SYMBOL, NVARCHAR_SYMBOL, POINT_SYMBOL, POLYGON_SYMBOL, REAL_SYMBOL, SERIAL_SYMBOL, SET_SYMBOL, SMALLINT_SYMBOL, TEXT_SYMBOL, TIMESTAMP_SYMBOL, TIME_SYMBOL, TINYBLOB_SYMBOL, TINYINT_SYMBOL, TINYTEXT_SYMBOL, VARBINARY_SYMBOL, VARCHAR_SYMBOL, YEAR_SYMBOL}
-      line: 0
+      line: 1
       details: ""
   run: false
 - statement: CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
@@ -96,21 +96,21 @@
       code: 401
       status: WARN
       title: column.required
-      content: 'Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      content: "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id"
       line: 2
       details: ""
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
-      content: '`userTable`.`name` cannot have NULL value'
+      content: "`userTable`.`name` cannot have NULL value"
       line: 1
       details: ""
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
-      content: '`userTable`.`roomId` cannot have NULL value'
+      content: "`userTable`.`roomId` cannot have NULL value"
       line: 1
       details: ""
     - namespace: bb.advisor
@@ -224,7 +224,7 @@
       code: 401
       status: WARN
       title: column.required
-      content: 'Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id'
+      content: "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
       line: 2
       details: ""
     - namespace: bb.advisor
@@ -249,14 +249,14 @@
       line: 1
       details: ""
   run: false
-- statement: '        DELETE FROM tech_book'
+- statement: "        DELETE FROM tech_book"
   result:
     - namespace: bb.advisor
       code: 202
       status: ERROR
       title: statement.where.require
       content: |-
-        "DELETE FROM tech_book
+        "        DELETE FROM tech_book
         ;" requires WHERE clause
       line: 2
       details: ""
@@ -265,7 +265,7 @@
       status: ERROR
       title: statement.dml-dry-run
       content: |-
-        "DELETE FROM tech_book
+        "        DELETE FROM tech_book
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
       details: ""
@@ -274,7 +274,7 @@
       status: WARN
       title: statement.affected-row-limit
       content: |-
-        "DELETE FROM tech_book
+        "        DELETE FROM tech_book
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
       details: ""
@@ -309,14 +309,14 @@
       line: 2
       details: ""
   run: false
-- statement: '        INSERT INTO t_copy SELECT * FROM t'
+- statement: "        INSERT INTO t_copy SELECT * FROM t"
   result:
     - namespace: bb.advisor
       code: 203
       status: ERROR
       title: statement.select.no-select-all
       content: |-
-        "INSERT INTO t_copy SELECT * FROM t
+        "        INSERT INTO t_copy SELECT * FROM t
         ;" uses SELECT all
       line: 2
       details: ""
@@ -325,7 +325,7 @@
       status: ERROR
       title: statement.where.require
       content: |-
-        "INSERT INTO t_copy SELECT * FROM t
+        "        INSERT INTO t_copy SELECT * FROM t
         ;" requires WHERE clause
       line: 2
       details: ""
@@ -334,7 +334,7 @@
       status: ERROR
       title: statement.dml-dry-run
       content: |-
-        "INSERT INTO t_copy SELECT * FROM t
+        "        INSERT INTO t_copy SELECT * FROM t
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
       line: 2
       details: ""
@@ -343,7 +343,7 @@
       status: WARN
       title: statement.insert.row-limit
       content: |-
-        "INSERT INTO t_copy SELECT * FROM t
+        "        INSERT INTO t_copy SELECT * FROM t
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
       line: 2
       details: ""
@@ -352,19 +352,19 @@
       status: WARN
       title: statement.insert.must-specify-column
       content: |-
-        The INSERT statement must specify columns but "INSERT INTO t_copy SELECT * FROM t
+        The INSERT statement must specify columns but "        INSERT INTO t_copy SELECT * FROM t
         ;" does not
       line: 2
       details: ""
   run: false
-- statement: '        INSERT INTO t VALUES (1, 1, now(), 1, now())'
+- statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
   result:
     - namespace: bb.advisor
       code: 208
       status: ERROR
       title: statement.dml-dry-run
       content: |-
-        "INSERT INTO t VALUES (1, 1, now(), 1, now())
+        "        INSERT INTO t VALUES (1, 1, now(), 1, now())
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist
       line: 2
       details: ""
@@ -373,7 +373,7 @@
       status: WARN
       title: statement.insert.must-specify-column
       content: |-
-        The INSERT statement must specify columns but "INSERT INTO t VALUES (1, 1, now(), 1, now())
+        The INSERT statement must specify columns but "        INSERT INTO t VALUES (1, 1, now(), 1, now())
         ;" does not
       line: 2
       details: ""
@@ -506,21 +506,21 @@
       line: 2
       details: ""
   run: false
-- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
+- statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
   result:
     - namespace: bb.advisor
       code: 608
       status: WARN
       title: table.disallow-partition
       content: |-
-        Table partition is forbidden, but "ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8
+        Table partition is forbidden, but "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8
         ;" creates
       line: 2
       details: ""
   run: false
-- statement: |4-
-      ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
-      ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
+- statement: |-
+    ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
+    ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
   result:
     - namespace: bb.advisor
       code: 207
@@ -558,7 +558,7 @@
       line: 1
       details: ""
   run: false
-- statement: '        DROP TABLE user;'
+- statement: "        DROP TABLE user;"
   result:
     - namespace: bb.advisor
       code: 603
@@ -572,7 +572,7 @@
       status: WARN
       title: schema.backward-compatibility
       content: |-
-        "DROP TABLE user
+        "        DROP TABLE user
         ;" may cause incompatibility with the existing data and code
       line: 2
       details: ""

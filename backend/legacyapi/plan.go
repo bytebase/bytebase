@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"math"
 )
 
 // PlanType is the type for a plan.
@@ -341,25 +340,8 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureSyncSchemaAllVersions: true,
 	FeatureIndexAdvisor:          true,
 	// Policy Control
-	FeatureSensitiveData: true,
-	// TODO:
-	// FeatureCustomApproval: true,
-}
-
-// PlanLimit is the type for plan limits.
-type PlanLimit int
-
-const (
-	// PlanLimitMaximumTask is the key name for maximum number of tasks for a plan.
-	PlanLimitMaximumTask PlanLimit = iota
-	// PlanLimitMaximumEnvironment is the key name for maximum number of environments for a plan.
-	PlanLimitMaximumEnvironment
-)
-
-// PlanLimitValues is the plan limit value mapping.
-var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaximumTask:        {math.MaxInt64, math.MaxInt64, math.MaxInt64},
-	PlanLimitMaximumEnvironment: {math.MaxInt64, math.MaxInt64, math.MaxInt64},
+	FeatureSensitiveData:  true,
+	FeatureCustomApproval: true,
 }
 
 // Feature returns whether a particular feature is available in a particular plan.

@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative select-none">
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div ref="wrapperRef" class="overflow-hidden" v-html="html"></div>
     <div v-if="truncated" class="absolute right-0 top-1/2 translate-y-[-50%]">

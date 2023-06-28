@@ -2,6 +2,7 @@
   "current": "Current plan",
   "unlimited": "Unlimited",
   "instance-count": "Instance count",
+  "user-count": "User count",
   "expires-at": "Expires at",
   "start-free-trial": "Start free trial",
   "free-trial": "You can start a free trial for 14 days - no credit card required",
@@ -52,6 +53,7 @@
       "title": "Change Management",
       "features": {
         "user-count": "User count",
+        "user-maximum-20": "Up to 20",
         "user-unlimited": "Unlimited",
         "instance-count": "Instance count",
         "instance-customized": "Customized",

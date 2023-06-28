@@ -16,6 +16,7 @@ import {
   Advice_Status,
   advice_StatusToJSON,
 } from "@/types/proto/v1/sql_service";
+import { Status } from "nice-grpc-common";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();
@@ -94,12 +95,13 @@ const useExecuteSQL = () => {
       selectStatement = `EXPLAIN ${selectStatement}`;
     }
 
-    const fail = (error: string) => {
+    const fail = (error: string, status: Status | undefined = undefined) => {
       Object.assign(tab, {
         sqlResultSet: {
           error,
           results: [],
           advices: [],
+          status,
         },
         // Legacy compatibility
         queryResult: {
@@ -151,7 +153,7 @@ const useExecuteSQL = () => {
       }
 
       if (sqlResultSet.error) {
-        return fail(sqlResultSet.error);
+        return fail(sqlResultSet.error, sqlResultSet.status);
       }
 
       Object.assign(tab, {

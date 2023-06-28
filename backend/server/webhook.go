@@ -1795,12 +1795,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 	testsuiteList := []string{}
 	status := advisor.Success
 
-	fileList := []string{}
-	for filePath := range adviceMap {
-		fileList = append(fileList, filePath)
-	}
-	sort.Strings(fileList)
-
+	fileList := getSQLAdviceFileList(adviceMap)
 	for _, filePath := range fileList {
 		adviceList := adviceMap[filePath]
 		testcaseList := []string{}
@@ -1866,12 +1861,7 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 	messageList := []string{}
 	status := advisor.Success
 
-	fileList := []string{}
-	for filePath := range adviceMap {
-		fileList = append(fileList, filePath)
-	}
-	sort.Strings(fileList)
-
+	fileList := getSQLAdviceFileList(adviceMap)
 	for _, filePath := range fileList {
 		adviceList := adviceMap[filePath]
 		for _, advice := range adviceList {
@@ -1914,6 +1904,31 @@ func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice)
 		Status:  status,
 		Content: messageList,
 	}
+}
+
+func getSQLAdviceFileList(adviceMap map[string][]advisor.Advice) []string {
+	fileList := []string{}
+	fileToErrorCount := map[string]int{}
+	for filePath, adviceList := range adviceMap {
+		fileList = append(fileList, filePath)
+
+		errorCount := 0
+		for _, advice := range adviceList {
+			if advice.Status == advisor.Error {
+				errorCount++
+			}
+		}
+		fileToErrorCount[filePath] = errorCount
+	}
+	sort.Strings(fileList)
+	sort.Slice(fileList, func(i int, j int) bool {
+		if fileToErrorCount[fileList[i]] == fileToErrorCount[fileList[j]] {
+			return i < j
+		}
+		return fileToErrorCount[fileList[i]] > fileToErrorCount[fileList[j]]
+	})
+
+	return fileList
 }
 
 func filterGitHubBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -25,10 +26,10 @@ type NamingTableNoKeywordAdvisor struct {
 }
 
 // Check checks for table naming convention without keyword.
-func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	tree, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	tree, ok := ctx.AST.(antlr.Tree)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -71,7 +72,7 @@ func (l *namingTableNoKeywordChecker) generateAdvice() ([]advisor.Advice, error)
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
-	tableName := normalizeObjectNamePart(ctx.Object_name().GetO())
+	tableName := bbparser.NormalizeObjectNamePart(ctx.Object_name().GetO())
 	if bbparser.IsSnowflakeKeyword(tableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
@@ -88,7 +89,7 @@ func (l *namingTableNoKeywordChecker) EnterAlter_table(ctx *parser.Alter_tableCo
 		return
 	}
 
-	tableName := normalizeObjectNamePart(ctx.Object_name(1).GetO())
+	tableName := bbparser.NormalizeObjectNamePart(ctx.Object_name(1).GetO())
 	if bbparser.IsSnowflakeKeyword(tableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

@@ -150,7 +150,7 @@
       <DatabaseBackupCreateForm
         :database="database"
         @create="
-          (backupName) => {
+          (backupName: string) => {
             createBackup(backupName);
             state.showCreateBackupModal = false;
           }

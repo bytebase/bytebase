@@ -2,6 +2,7 @@
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { LogEntity } from "./logging_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -54,6 +55,7 @@ export interface InboxMessage {
   name: string;
   activityUid: string;
   status: InboxMessage_Status;
+  activity?: LogEntity;
 }
 
 export enum InboxMessage_Status {
@@ -380,7 +382,7 @@ export const UpdateInboxRequest = {
 };
 
 function createBaseInboxMessage(): InboxMessage {
-  return { name: "", activityUid: "", status: 0 };
+  return { name: "", activityUid: "", status: 0, activity: undefined };
 }
 
 export const InboxMessage = {
@@ -393,6 +395,9 @@ export const InboxMessage = {
     }
     if (message.status !== 0) {
       writer.uint32(24).int32(message.status);
+    }
+    if (message.activity !== undefined) {
+      LogEntity.encode(message.activity, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -425,6 +430,13 @@ export const InboxMessage = {
 
           message.status = reader.int32() as any;
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.activity = LogEntity.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -439,6 +451,7 @@ export const InboxMessage = {
       name: isSet(object.name) ? String(object.name) : "",
       activityUid: isSet(object.activityUid) ? String(object.activityUid) : "",
       status: isSet(object.status) ? inboxMessage_StatusFromJSON(object.status) : 0,
+      activity: isSet(object.activity) ? LogEntity.fromJSON(object.activity) : undefined,
     };
   },
 
@@ -447,6 +460,8 @@ export const InboxMessage = {
     message.name !== undefined && (obj.name = message.name);
     message.activityUid !== undefined && (obj.activityUid = message.activityUid);
     message.status !== undefined && (obj.status = inboxMessage_StatusToJSON(message.status));
+    message.activity !== undefined &&
+      (obj.activity = message.activity ? LogEntity.toJSON(message.activity) : undefined);
     return obj;
   },
 
@@ -459,6 +474,9 @@ export const InboxMessage = {
     message.name = object.name ?? "";
     message.activityUid = object.activityUid ?? "";
     message.status = object.status ?? 0;
+    message.activity = (object.activity !== undefined && object.activity !== null)
+      ? LogEntity.fromPartial(object.activity)
+      : undefined;
     return message;
   },
 };

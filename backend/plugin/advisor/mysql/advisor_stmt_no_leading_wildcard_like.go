@@ -5,6 +5,7 @@ import (
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -31,10 +32,10 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	root, ok := ctx.AST.([]ast.StmtNode)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

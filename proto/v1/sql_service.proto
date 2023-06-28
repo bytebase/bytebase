@@ -49,6 +49,9 @@ message AdminExecuteRequest {
 
   // The maximum number of rows to return.
   int32 limit = 4;
+
+  // The timeout for the request.
+  google.protobuf.Duration timeout = 5;
 }
 
 message AdminExecuteResponse {
@@ -61,6 +64,7 @@ message ExportRequest {
     FORMAT_UNSPECIFIED = 0;
     CSV = 1;
     JSON = 2;
+    SQL = 3;
   }
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}
@@ -101,6 +105,9 @@ message QueryRequest {
 
   // The maximum number of rows to return.
   int32 limit = 4;
+
+  // The timeout for the request.
+  google.protobuf.Duration timeout = 5;
 }
 
 message QueryResponse {

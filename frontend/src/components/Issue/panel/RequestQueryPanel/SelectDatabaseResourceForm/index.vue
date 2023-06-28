@@ -16,7 +16,6 @@
 
 <script setup lang="ts">
 import { computed, h, onMounted, ref, watch } from "vue";
-import { uniq } from "lodash-es";
 import {
   NTransfer,
   TransferRenderSourceList,
@@ -33,9 +32,9 @@ import {
   flattenTreeOptions,
   mapTreeOptions,
   DatabaseTreeOption,
-  DatabaseResource,
 } from "./common";
 import Label from "./Label.vue";
+import { DatabaseResource } from "@/types";
 
 const props = defineProps<{
   projectId: string;
@@ -49,7 +48,21 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const selectedValueList = ref<string[]>([]);
+
+const selectedValueList = ref<string[]>(
+  props.selectedDatabaseResourceList.map((databaseResource) => {
+    const database = databaseStore.getDatabaseByName(
+      databaseResource.databaseName
+    );
+    if (databaseResource.table !== undefined) {
+      return `t-${database.uid}-${databaseResource.schema}-${databaseResource.table}`;
+    } else if (databaseResource.schema !== undefined) {
+      return `s-${database.uid}-${databaseResource.schema}`;
+    } else {
+      return `d-${database.uid}`;
+    }
+  })
+);
 const databaseResourceMap = ref<Map<string, DatabaseResource>>(new Map());
 const loading = ref(false);
 
@@ -87,20 +100,6 @@ onMounted(async () => {
     }
   }
   loading.value = false;
-
-  const selectedKeyList = [];
-  for (const databaseResource of props.selectedDatabaseResourceList) {
-    let key = "";
-    if (databaseResource.table !== undefined) {
-      key = `t-${databaseResource.databaseName}-${databaseResource.schema}-${databaseResource.table}`;
-    } else if (databaseResource.schema !== undefined) {
-      key = `s-${databaseResource.databaseName}-${databaseResource.schema}`;
-    } else {
-      key = `d-${databaseResource.databaseName}`;
-    }
-    selectedKeyList.push(key);
-  }
-  selectedValueList.value = uniq(selectedKeyList);
 });
 
 const databaseList = computed(() => {
