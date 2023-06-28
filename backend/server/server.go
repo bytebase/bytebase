@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -353,7 +354,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			// Skip grpc and webhook calls.
 			return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
 				strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix) ||
-				strings.HasPrefix(c.Request().URL.Path, "/api/sheet/")
+				strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute")
 		},
 		Timeout: 30 * time.Second,
 	}))
@@ -667,6 +668,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
+	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(
+		mux,
+		wsproxy.WithTokenCookieName("access-token"),
+		// 10M.
+		wsproxy.WithMaxRespBodyBufferSize(10*1024*1024),
+	)))
 	e.Any("/v1/*", echo.WrapHandler(mux))
 	// GRPC web proxy.
 	options := []grpcweb.Option{
