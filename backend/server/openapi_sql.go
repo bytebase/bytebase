@@ -227,7 +227,7 @@ func schemaDiff(c echo.Context) error {
 
 	diff, err := differ.SchemaDiff(engine, request.SourceSchema, request.TargetSchema)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compute diff between source and target schemas").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compute diff between source and target schemas: %v", err)).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, diff)
