@@ -274,7 +274,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, env
 		mi.IssueIDInt = &issue.UID
 	}
 
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, mi, schema, db.ExecuteOptions{}); err != nil {
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, mi, schema, nil, db.ExecuteOptions{}); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schema, nil
