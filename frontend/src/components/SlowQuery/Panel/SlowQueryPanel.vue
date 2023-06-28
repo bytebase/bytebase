@@ -8,7 +8,15 @@
         @update:params="$emit('update:filter', $event)"
       >
         <template #suffix>
-          <NButton type="default" :loading="syncing" @click="syncNow">
+          <NButton v-if="allowAdmin" type="default" @click="goConfig">
+            {{ $t("common.configure") }}
+          </NButton>
+          <NButton
+            type="default"
+            :disabled="!allowSync"
+            :loading="syncing"
+            @click="syncNow"
+          >
             {{ $t("common.sync-now") }}
           </NButton>
         </template>
@@ -22,6 +30,7 @@
         :show-environment-column="showEnvironmentColumn"
         :show-instance-column="showInstanceColumn"
         :show-database-column="showDatabaseColumn"
+        :allow-admin="allowAdmin"
         @select="selectSlowQueryLog"
       />
       <div
@@ -47,7 +56,9 @@ import { useI18n } from "vue-i18n";
 import { ComposedSlowQueryLog } from "@/types";
 import {
   pushNotification,
+  useCurrentUserV1,
   useGracefulRequest,
+  useSlowQueryPolicyList,
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
@@ -60,7 +71,8 @@ import {
 import LogFilter from "./LogFilter.vue";
 import LogTable from "./LogTable.vue";
 import DetailPanel from "./DetailPanel.vue";
-import { extractInstanceResourceName } from "@/utils";
+import { extractInstanceResourceName, hasWorkspacePermissionV1 } from "@/utils";
+import { useRouter } from "vue-router";
 
 const props = withDefaults(
   defineProps<{
@@ -85,6 +97,8 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
+const currentUser = useCurrentUserV1();
 const slowQueryStore = useSlowQueryStore();
 const loading = shallowRef(false);
 const slowQueryLogList = shallowRef<ComposedSlowQueryLog[]>([]);
@@ -93,6 +107,22 @@ const syncing = shallowRef(false);
 
 const params = computed(() => {
   return buildListSlowQueriesRequest(props.filter);
+});
+
+const allowAdmin = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-slow-query",
+    currentUser.value.userRole
+  );
+});
+
+const { list: slowQueryPolicyList } = useSlowQueryPolicyList();
+
+const allowSync = computed(() => {
+  return (
+    slowQueryPolicyList.value.filter((policy) => policy.slowQueryPolicy?.active)
+      .length > 0
+  );
 });
 
 const fetchSlowQueryLogList = async () => {
@@ -133,6 +163,12 @@ const syncNow = async () => {
   } finally {
     syncing.value = false;
   }
+};
+
+const goConfig = () => {
+  router.push({
+    name: "setting.workspace.slow-query",
+  });
 };
 
 // Fetch the list while params changed.

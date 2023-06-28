@@ -99,6 +99,17 @@
         />
       </div>
     </template>
+
+    <template #placeholder-content>
+      <div class="py-8 px-8 text-center">
+        <p v-if="allowAdmin">
+          {{ $t("slow-query.no-log-placeholder.admin") }}
+        </p>
+        <p v-else>
+          {{ $t("slow-query.no-log-placeholder.developer") }}
+        </p>
+      </div>
+    </template>
   </BBGrid>
 </template>
 
@@ -126,6 +137,7 @@ const props = withDefaults(
     showEnvironmentColumn?: boolean;
     showInstanceColumn?: boolean;
     showDatabaseColumn?: boolean;
+    allowAdmin: boolean;
   }>(),
   {
     slowQueryLogList: () => [],

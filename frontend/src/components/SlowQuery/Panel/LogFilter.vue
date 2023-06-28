@@ -17,7 +17,7 @@
         />
       </div>
 
-      <div class="flex items-center justify-end">
+      <div class="flex items-center justify-end gap-x-3">
         <slot name="suffix" />
       </div>
     </div>
