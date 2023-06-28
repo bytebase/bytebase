@@ -6,15 +6,22 @@
           <span v-if="isExpired">
             {{
               $t("banner.license-expires", {
-                plan: currentPlan,
+                plan: currentPlanText,
                 expireAt: expireAt,
+              })
+            }}
+          </span>
+          <span v-else-if="currentPlan === PlanType.FREE && existTrialLicense">
+            {{
+              $t("banner.trial-expired", {
+                plan: $t("subscription.plan.enterprise.title"),
               })
             }}
           </span>
           <span v-else-if="isTrialing">
             {{
               $t("banner.trial-expires", {
-                plan: currentPlan,
+                plan: currentPlanText,
                 days: daysBeforeExpire,
                 expireAt: expireAt,
               })
@@ -40,58 +47,34 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { useSubscriptionV1Store } from "@/store";
 import { storeToRefs } from "pinia";
 
-export default {
-  name: "BannerSubscription",
-  setup() {
-    const subscriptionStore = useSubscriptionV1Store();
-    const { t } = useI18n();
+const subscriptionStore = useSubscriptionV1Store();
+const { t } = useI18n();
 
-    const emailBody = [
-      "Hi Bytebase support,\n",
-      "I request to extend the trialing time for another 14 days.",
-      "{please implement your reason to extend here}\n",
-      "My email in the Bytebase hub account: {email}",
-      "My organization key: {orgKey}",
-    ].join("\n");
+const currentPlanText = computed((): string => {
+  const plan = subscriptionStore.currentPlan;
+  switch (plan) {
+    case PlanType.TEAM:
+      return t("subscription.plan.team.title");
+    case PlanType.ENTERPRISE:
+      return t("subscription.plan.enterprise.title");
+    default:
+      return t("subscription.plan.free.title");
+  }
+});
 
-    const currentPlan = computed((): string => {
-      const plan = subscriptionStore.currentPlan;
-      switch (plan) {
-        case PlanType.TEAM:
-          return t("subscription.plan.team.title");
-        case PlanType.ENTERPRISE:
-          return t("subscription.plan.enterprise.title");
-        default:
-          return t("subscription.plan.free.title");
-      }
-    });
-
-    const {
-      expireAt,
-      isExpired,
-      isTrialing,
-      isNearExpireTime,
-      daysBeforeExpire,
-    } = storeToRefs(subscriptionStore);
-
-    return {
-      currentPlan,
-      expireAt,
-      isTrialing,
-      isExpired,
-      isNearExpireTime,
-      daysBeforeExpire,
-      extendTrialingEmail: `mailto:support@bytebase.com?subject=Request to extend trial&body=${encodeURIComponent(
-        emailBody
-      )}`,
-    };
-  },
-};
+const {
+  expireAt,
+  isExpired,
+  isTrialing,
+  daysBeforeExpire,
+  existTrialLicense,
+  currentPlan,
+} = storeToRefs(subscriptionStore);
 </script>
