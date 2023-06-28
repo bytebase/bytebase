@@ -145,7 +145,13 @@ const createStreamingQueryController = (tab: TabInfo) => {
         try {
           const data = JSON.parse(event.data);
           if (data.result) {
-            const response = AdminExecuteResponse.fromJSON(data.result ?? {});
+            const { results } = data.result;
+            if (Array.isArray(results)) {
+              results.forEach((result) => {
+                result.latency = parseDuration(result.latency);
+              });
+            }
+            const response = AdminExecuteResponse.fromJSON(data.result);
             subscriber.next(response);
           } else if (data.error) {
             const err = new ClientError(
@@ -318,4 +324,19 @@ export const waitForEvent = <E>(
       resolve(undefined);
     });
   });
+};
+
+export const parseDuration = (str: string): Duration | undefined => {
+  if (typeof str !== "string") return undefined;
+
+  const matches = str.match(/^([0-9.]+)s$/);
+  if (!matches) return undefined;
+  const totalSeconds = parseFloat(matches[0]);
+  if (Number.isNaN(totalSeconds) || totalSeconds < 0) return undefined;
+  const seconds = Math.floor(totalSeconds);
+  const nanos = (totalSeconds - seconds) * 1e9;
+  return {
+    seconds,
+    nanos,
+  };
 };
