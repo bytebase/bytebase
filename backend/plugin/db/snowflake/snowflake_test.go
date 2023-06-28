@@ -55,7 +55,7 @@ func TestBuildSnowflakeDSN(t *testing.T) {
 		},
 	}
 	for _, testCase := range testCases {
-		got, _ /*redacted*/, err := buildSnowflakeDSN(testCase.input)
+		got, _ /* redacted */, err := buildSnowflakeDSN(testCase.input)
 		require.NoError(t, err)
 		require.Equal(t, testCase.want, got)
 	}
