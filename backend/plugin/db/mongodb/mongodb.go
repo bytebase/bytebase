@@ -173,6 +173,7 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		connectionURI = "mongodb+srv://"
 	}
 	if connConfig.Username != "" {
+		// Percent encoding for special characters in password by using url.QueryEscape
 		percentEncodingUsername := url.QueryEscape(connConfig.Username)
 		percentEncodingPassword := url.QueryEscape(connConfig.Password)
 		connectionURI = fmt.Sprintf("%s%s:%s@", connectionURI, percentEncodingUsername, percentEncodingPassword)
