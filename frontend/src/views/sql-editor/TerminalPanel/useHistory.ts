@@ -1,4 +1,4 @@
-import { computed, watch } from "vue";
+import { computed, unref, watch } from "vue";
 
 import { TabMode, WebTerminalQueryItem } from "@/types";
 import { useTabStore, useWebTerminalV1Store } from "@/store";
@@ -20,7 +20,7 @@ export const useHistory = () => {
   });
 
   const currentQuery = computed(() => {
-    const queryList = queryState.value.queryItemList;
+    const queryList = unref(queryState.value.queryItemList);
     return queryList[queryList.length - 1];
   });
 

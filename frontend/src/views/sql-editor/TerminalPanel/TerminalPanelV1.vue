@@ -38,6 +38,13 @@
           />
 
           <div
+            v-if="query.resultSet?.error"
+            class="p-2 pb-1 text-md font-normal text-[var(--color-matrix-green-hover)]"
+          >
+            Connection lost. Will try to reconnect when executing next query.
+          </div>
+
+          <div
             v-if="query.status === 'RUNNING'"
             class="absolute inset-0 bg-black/20 flex justify-center items-center gap-2"
           >
@@ -54,17 +61,11 @@
       </div>
     </div>
     <ConnectionHolder v-else />
-
-    <div class="fixed right-0 bottom-0 bg-white/50">
-      <div>tabId: {{ tabStore.currentTab.id }}</div>
-      <div>elapsedMS: {{ queryState.timer.elapsedMS.value }}</div>
-      <div>expired: {{ queryState.timer.expired.value }}</div>
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, unref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
 import { ExecuteConfig, ExecuteOption, WebTerminalQueryItemV1 } from "@/types";
@@ -87,7 +88,7 @@ const queryState = computed(() => {
 });
 
 const queryList = computed(() => {
-  return queryState.value.queryItemList;
+  return unref(queryState.value.queryItemList);
 });
 
 const queryListContainerRef = ref<HTMLDivElement>();
@@ -100,10 +101,10 @@ const currentQuery = computed(
 const { move: moveHistory } = useHistory();
 
 const timer = computed(() => {
-  return queryState.value.timer;
+  return unref(queryState.value.timer);
 });
 const expired = computed(() => {
-  return timer.value.expired.value;
+  return unref(timer.value.expired);
 });
 
 const isEditableQueryItem = (item: WebTerminalQueryItemV1): boolean => {
@@ -124,15 +125,7 @@ const handleExecute = async (
     return;
   }
 
-  // console.log("query", { query, config, option });
   queryState.value.controller.events.emit("query", { query, config, option });
-  // if (query.includes("sleep")) {
-  //   console.log("will abort after 2000 ms");
-  //   setTimeout(() => {
-  //     console.log("aborted");
-  //     queryState.value.controller.abort();
-  //   }, 2000);
-  // }
 };
 
 const handleClearScreen = () => {

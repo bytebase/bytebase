@@ -1,7 +1,5 @@
 import Emittery from "emittery";
-import { Observable } from "rxjs";
-import { ComputedRef } from "vue";
-import { AdminExecuteResponse } from "../proto/v1/sql_service";
+import { ComputedRef, Ref } from "vue";
 import { ExecuteConfig, ExecuteOption, TabInfo } from "../tab";
 import { SQLResultSetV1 } from "./sql";
 
@@ -13,13 +11,11 @@ import { SQLResultSetV1 } from "./sql";
  * a WebTerminalQueryState
  *   -(belongs to a)> Tab
  *   -(has a)> QueryItem[]
- *   -(has a)> QueryStreaming
  *   -(has a)> QueryTimer
  * a StreamingQueryController
  *   -(has a)> QueryEvents
- *   -(has a)> input stream
- *   -(has a)> response stream
- *   -(has a)> streaming AdminExecute connection
+ *   -(has a)> status
+ *   -(has a)> websocket streaming connection
  */
 
 export type WebTerminalQueryParamsV1 = {
@@ -45,19 +41,18 @@ export type QueryTimer = {
 
 export type QueryEvents = Emittery<{
   query: WebTerminalQueryParamsV1;
-  response: AdminExecuteResponse;
+  result: SQLResultSetV1;
 }>;
 
 export type StreamingQueryController = {
+  status: Ref<"CONNECTED" | "DISCONNECTED">;
   events: QueryEvents;
-  input$: Observable<WebTerminalQueryParamsV1>;
-  response$: Observable<AdminExecuteResponse>;
   abort(reason?: any): void;
 };
 
 export type WebTerminalQueryState = {
   tab: TabInfo;
-  queryItemList: WebTerminalQueryItemV1[];
+  queryItemList: Ref<WebTerminalQueryItemV1[]>;
   controller: StreamingQueryController;
   timer: QueryTimer;
 };
