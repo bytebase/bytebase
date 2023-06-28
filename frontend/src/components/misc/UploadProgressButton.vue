@@ -73,6 +73,8 @@ const handleUpload = async (e: Event) => {
   percent.value = -1;
   try {
     await props.upload(e, updatePercent);
+  } catch {
+    // nothing
   } finally {
     uploading.value = false;
     percent.value = -1;
