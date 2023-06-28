@@ -380,6 +380,7 @@ type MigrationHistory struct {
 	Version               string
 	Description           string
 	Statement             string
+	SheetID               *int
 	Schema                string
 	SchemaPrev            string
 	ExecutionDurationNs   int64
