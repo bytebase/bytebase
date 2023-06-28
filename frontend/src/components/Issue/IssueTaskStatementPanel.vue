@@ -508,42 +508,46 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     return;
   }
 
-  state.isUploadingFile = true;
   const projectName = selectedDatabase.value.project;
-  const { filename, content: statement } = await handleUploadFileEvent(
-    event,
-    100
-  );
 
-  const uploadStatementAsSheet = async (statement: string) => {
-    let payload = {};
-    if (!create.value) {
-      payload = getBacktracePayloadWithIssue(issue.value as Issue);
+  const uploadStatementAsSheet = async () => {
+    state.isUploadingFile = true;
+    try {
+      const { filename, content: statement } = await handleUploadFileEvent(
+        event,
+        100
+      );
+
+      let payload = {};
+      if (!create.value) {
+        payload = getBacktracePayloadWithIssue(issue.value as Issue);
+      }
+      // TODO: upload process
+      const sheet = await sheetV1Store.createSheet(projectName, {
+        title: filename,
+        content: new TextEncoder().encode(statement),
+        visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+        source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+        type: Sheet_Type.TYPE_SQL,
+        payload: JSON.stringify(payload),
+      });
+
+      resetTempEditState();
+      updateSheetId(sheetV1Store.getSheetUid(sheet.name));
+      await updateStatement(statement);
+      state.editing = false;
+      if (selectedTask.value) {
+        updateEditorHeight();
+      }
+
+      pushNotification({
+        module: "bytebase",
+        style: "INFO",
+        title: "File upload success",
+      });
+    } finally {
+      state.isUploadingFile = false;
     }
-    // TODO: upload process
-    const sheet = await sheetV1Store.createSheet(projectName, {
-      title: filename,
-      content: new TextEncoder().encode(statement),
-      visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-      source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-      type: Sheet_Type.TYPE_SQL,
-      payload: JSON.stringify(payload),
-    });
-    state.isUploadingFile = false;
-
-    resetTempEditState();
-    updateSheetId(sheetV1Store.getSheetUid(sheet.name));
-    await updateStatement(statement);
-    state.editing = false;
-    if (selectedTask.value) {
-      updateEditorHeight();
-    }
-
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: "File upload success",
-    });
   };
 
   return new Promise((resolve, reject) => {
@@ -562,11 +566,11 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
           reject();
         },
         onPositiveClick: () => {
-          resolve(uploadStatementAsSheet(statement));
+          resolve(uploadStatementAsSheet());
         },
       });
     } else {
-      resolve(uploadStatementAsSheet(statement));
+      resolve(uploadStatementAsSheet());
     }
   });
 };
@@ -578,7 +582,7 @@ const handleUploadFileEvent = (
   filename: string;
   content: string;
 }> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const target = event.target as HTMLInputElement;
     const file = (target.files || [])[0];
     const cleanup = () => {
@@ -596,6 +600,7 @@ const handleUploadFileEvent = (
         title: "File not found",
       });
       cleanup();
+      reject();
       return;
     }
     if (file.size > maxFileSizeMB * 1024 * 1024) {
@@ -607,6 +612,7 @@ const handleUploadFileEvent = (
         }),
       });
       cleanup();
+      reject();
       return;
     }
 
@@ -625,6 +631,7 @@ const handleUploadFileEvent = (
         title: "Read file error",
         description: String(fr.error),
       });
+      reject();
     };
     fr.readAsText(file);
     cleanup();
