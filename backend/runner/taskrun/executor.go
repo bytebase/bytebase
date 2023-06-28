@@ -143,7 +143,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, mi *db.MigrationInfo) (string, string, error) {
+func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, sheetID *int, mi *db.MigrationInfo) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -185,7 +185,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
 
-	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, stores, driver, mi, statement, opts)
+	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, stores, driver, mi, statement, sheetID, opts)
 	if err != nil {
 		return "", "", err
 	}
@@ -568,13 +568,13 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	return branch, nil
 }
 
-func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, sheetID *int, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
 
-	migrationID, schema, err := executeMigration(ctx, store, dbFactory, stateCfg, task, statement, mi)
+	migrationID, schema, err := executeMigration(ctx, store, dbFactory, stateCfg, task, statement, sheetID, mi)
 	if err != nil {
 		return true, nil, err
 	}

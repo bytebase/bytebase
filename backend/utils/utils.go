@@ -475,18 +475,18 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 }
 
 // ExecuteMigrationDefault executes migration.
-func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, sheetID *int, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, false /* createDatabase */, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return ExecuteMigrationWithFunc(ctx, store, driver, mi, statement, execFunc)
+	return ExecuteMigrationWithFunc(ctx, store, driver, mi, statement, sheetID, execFunc)
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, execFunc func(execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 	// For baseline migration, we also record the live schema to detect the schema drift.
@@ -495,7 +495,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Dri
 		return "", "", err
 	}
 
-	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement)
+	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement, sheetID)
 	if err != nil {
 		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 			return insertedID, prevSchemaBuf.String(), nil
@@ -558,7 +558,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Dri
 }
 
 // BeginMigration checks before executing migration and inserts a migration history record with pending status.
-func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo, prevSchema string, statement string) (string, error) {
+func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo, prevSchema, statement string, sheetID *int) (string, error) {
 	// Convert version to stored version.
 	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
@@ -605,7 +605,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := store.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, storedVersion, statementRecord)
+	insertedID, err := store.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, storedVersion, statementRecord, sheetID)
 	if err != nil {
 		return "", err
 	}

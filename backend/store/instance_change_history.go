@@ -34,6 +34,7 @@ type InstanceChangeHistoryMessage struct {
 	Version             string
 	Description         string
 	Statement           string
+	SheetID             *int
 	Schema              string
 	SchemaPrev          string
 	ExecutionDurationNs int64
@@ -73,6 +74,7 @@ type UpdateInstanceChangeHistoryMessage struct {
 	Status              *db.MigrationStatus
 	ExecutionDurationNs *int64
 	Schema              *string
+	Sheet               *int
 }
 
 // CreateInstanceChangeHistory creates instance change history in batch.
@@ -118,6 +120,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			description,
 			statement,
 			"schema",
+			sheet_id,
 			schema_prev,
 			execution_duration_ns,
 			payload,
@@ -146,11 +149,12 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			create.Description,
 			create.Statement,
 			create.Schema,
+			create.SheetID,
 			create.SchemaPrev,
 			create.ExecutionDurationNs,
 			payload,
 		)
-		const countToPayload = 17
+		const countToPayload = 18
 		var valueStr []string
 		for i := 0; i < countToPayload; i++ {
 			valueStr = append(valueStr, fmt.Sprintf("$%d", count))
@@ -208,6 +212,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			Description:         create.Description,
 			Statement:           create.Statement,
 			Schema:              create.Schema,
+			SheetID:             create.SheetID,
 			SchemaPrev:          create.SchemaPrev,
 			ExecutionDurationNs: create.ExecutionDurationNs,
 			Payload:             create.Payload,
@@ -257,6 +262,7 @@ func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistor
 		Description:           change.Description,
 		Statement:             change.Statement,
 		Schema:                change.Schema,
+		SheetID:               change.SheetID,
 		SchemaPrev:            change.SchemaPrev,
 		ExecutionDurationNs:   change.ExecutionDurationNs,
 		IssueID:               issueID,
@@ -372,6 +378,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			%s,
 			%s,
 			%s,
+			instance_change_history.sheet_id,
 			instance_change_history.execution_duration_ns,
 			instance_change_history.payload,
 			COALESCE(instance.resource_id, ''),
@@ -403,7 +410,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
 		var rowStatus, payload string
-		var instanceID, databaseID, issueID sql.NullInt32
+		var instanceID, databaseID, issueID, sheetID sql.NullInt32
 		if err := rows.Scan(
 			&changeHistory.UID,
 			&rowStatus,
@@ -424,6 +431,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			&changeHistory.Statement,
 			&changeHistory.Schema,
 			&changeHistory.SchemaPrev,
+			&sheetID,
 			&changeHistory.ExecutionDurationNs,
 			&payload,
 			&changeHistory.InstanceID,
@@ -442,6 +450,10 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		if issueID.Valid {
 			n := int(issueID.Int32)
 			changeHistory.IssueUID = &n
+		}
+		if sheetID.Valid {
+			n := int(sheetID.Int32)
+			changeHistory.SheetID = &n
 		}
 		changeHistory.Payload = &storepb.InstanceChangeHistoryPayload{}
 		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
@@ -540,7 +552,7 @@ func (*Store) getNextInstanceChangeHistorySequence(ctx context.Context, tx *Tx, 
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
 // it deprecates the old InsertPendingHistory.
-func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (string, error) {
+func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSchema string, m *db.MigrationInfo, storedVersion, statement string, sheetID *int) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -564,6 +576,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 		Version:             storedVersion,
 		Description:         m.Description,
 		Statement:           statement,
+		SheetID:             sheetID,
 		Schema:              prevSchema,
 		SchemaPrev:          prevSchema,
 		ExecutionDurationNs: 0,
@@ -582,6 +595,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 
 // ListInstanceChangeHistoryForMigrator finds the instance change history for the migrator,
 // the users are not composed.
+// The sheet_id is not loaded.
 func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *FindInstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
