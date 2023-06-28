@@ -91,6 +91,7 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 	if err != nil {
 		// nolint
 		log.Warn("failed to build redacted Snowflake DSN", zap.Error(err))
+		return dsn, "", nil
 	}
 	return dsn, redactedDSN, nil
 }
