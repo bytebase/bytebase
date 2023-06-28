@@ -311,21 +311,6 @@ const mapRequest = (
   return request;
 };
 
-type EventHandler<E> = {
-  addEventListener(event: E, handler: () => any): any;
-};
-
-export const waitForEvent = <E>(
-  target: EventHandler<E>,
-  event: E
-): Promise<void> => {
-  return new Promise((resolve) => {
-    target.addEventListener(event, () => {
-      resolve(undefined);
-    });
-  });
-};
-
 export const parseDuration = (str: string): Duration | undefined => {
   if (typeof str !== "string") return undefined;
 
