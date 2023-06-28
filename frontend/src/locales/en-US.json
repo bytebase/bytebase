@@ -2373,7 +2373,9 @@
         "namespace": {
           "dml": "DML",
           "ddl": "DDL",
-          "create_database": "Create Database"
+          "create_database": "Create Database",
+          "query": "Request Query",
+          "export": "Request Export"
         },
         "factor": {
           "affected_rows": "Affected rows",
@@ -2381,7 +2383,10 @@
           "project_id": "Project ID",
           "database_name": "Database name",
           "db_engine": "DB engine",
-          "sql_type": "SQL type"
+          "sql_type": "SQL type",
+          "expiration_day": "Expiration day",
+          "export_row": "Export row",
+          "table_name": "Table name"
         }
       },
       "condition": {

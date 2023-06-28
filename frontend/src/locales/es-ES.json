@@ -2352,7 +2352,9 @@
         "namespace": {
           "dml": "DML",
           "ddl": "DDL",
-          "create_database": "Crear base de datos"
+          "create_database": "Crear base de datos",
+          "query": "Solicitar consulta",
+          "export": "Solicitar exportación"
         },
         "factor": {
           "affected_rows": "Filas afectadas",
@@ -2360,7 +2362,10 @@
           "project_id": "ID de proyecto",
           "database_name": "Nombre de base de datos",
           "db_engine": "Motor de base de datos",
-          "sql_type": "Tipo SQL"
+          "sql_type": "Tipo SQL",
+          "expiration_day": "Día de expiración",
+          "export_row": "Exportar fila",
+          "table_name": "Nombre de la tabla"
         }
       },
       "condition": {

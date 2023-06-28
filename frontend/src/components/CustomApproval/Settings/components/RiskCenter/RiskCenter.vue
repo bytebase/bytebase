@@ -8,7 +8,7 @@
       </template>
     </RiskFilter>
 
-    <div class="space-y-4">
+    <div class="space-y-4 pb-4">
       <RiskSection
         v-for="{ source, riskList } in riskListGroupBySource"
         :key="source"

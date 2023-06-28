@@ -64,6 +64,11 @@ export const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
+  table_name: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
+  ]),
   db_engine: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
@@ -101,6 +106,10 @@ export const OperatorList: Record<Factor, Operator[]> = {
     "contains",
     "matches",
   ]),
+
+  // Request query/export factors
+  expiration_day: uniq([...EqualityOperatorList, ...CompareOperatorList]),
+  export_row: uniq([...EqualityOperatorList, ...CompareOperatorList]),
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {
