@@ -299,11 +299,12 @@ const handleEditorReady = async () => {
       const databaseList = selectedDatabase.value
         ? [selectedDatabase.value]
         : databaseStore.databaseListByInstance(selectedInstance.value.name);
+      // Only provide auto-complete context for those opened database.
       for (const database of databaseList) {
-        const tableList = await dbSchemaStore.getOrFetchTableList(
-          database.name
-        );
-        databaseMap.set(database, tableList);
+        const tableList = dbSchemaStore.getTableList(database.name);
+        if (tableList.length > 0) {
+          databaseMap.set(database, tableList);
+        }
       }
       const connectionScope = selectedDatabase.value ? "database" : "instance";
       editorRef.value?.setEditorAutoCompletionContextV1(
