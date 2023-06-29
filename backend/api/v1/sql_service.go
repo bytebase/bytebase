@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -991,16 +990,16 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			return nil, errors.Errorf("database %q not found", databaseName)
 		}
 
-		columnMap := make(sensitiveDataMap)
 		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database %q in instance %q", databaseName, instance.Title))
+			return nil, status.Errorf(codes.Internal, "Failed to find sensitive data policy for database %q in instance %q: %v", databaseName, instance.Title, err)
 		}
 		if len(policy.SensitiveDataList) == 0 {
 			// If there is no sensitive data policy, return nil to skip mask sensitive data.
 			return nil, nil
 		}
 
+		columnMap := make(sensitiveDataMap)
 		for _, data := range policy.SensitiveDataList {
 			columnMap[api.SensitiveData{
 				Schema: data.Schema,
@@ -1011,7 +1010,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 
 		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
+			return nil, status.Errorf(codes.Internal, "Failed to find schema for database %q in instance %q: %v", databaseName, instance.Title, err)
 		}
 
 		if instance.Engine == db.Oracle {
