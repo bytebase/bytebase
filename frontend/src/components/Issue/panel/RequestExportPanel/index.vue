@@ -450,6 +450,8 @@ const doCreateIssue = async () => {
       condition: {
         expression: celExpressionString,
       },
+      // We need to pass a string type value to the expiration field because
+      // the type of Duration proto is string.
       expiration: `${expireDays * 24 * 60 * 60}s`,
     },
   };
