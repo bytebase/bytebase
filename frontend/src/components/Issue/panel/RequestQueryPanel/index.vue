@@ -313,6 +313,7 @@ const doCreateIssue = async () => {
       condition: {
         expression: celExpressionString,
       },
+      expiration: expireDays,
     },
   };
 
