@@ -15,7 +15,7 @@ export interface ExportRecord {
   expiration: string;
   statement: string;
   maxRowCount: number;
-  exportFormat: "CSV" | "JSON";
+  exportFormat: "CSV" | "JSON" | "SQL";
   // issueId is the uid of an issue.
   issueId: string;
 }

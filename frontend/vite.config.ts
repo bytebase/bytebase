@@ -48,6 +48,11 @@ export default defineConfig(() => {
       port: SERVER_PORT,
       host: "0.0.0.0",
       proxy: {
+        "/v1:adminExecute": {
+          target: "ws://localhost:8080/",
+          changeOrigin: true,
+          ws: true,
+        },
         "/api": {
           target: "http://localhost:8080/api",
           changeOrigin: true,

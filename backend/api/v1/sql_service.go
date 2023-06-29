@@ -1563,9 +1563,10 @@ func (s *SQLService) checkWorkspaceIAMPolicy(
 	attributes := map[string]any{
 		"resource.environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
 	}
+	formattedRole := fmt.Sprintf("roles/%s", role)
 	bindings := v1pbPolicy.GetWorkspaceIamPolicy().Bindings
 	for _, binding := range bindings {
-		if binding.Role != string(role) {
+		if binding.Role != formattedRole {
 			continue
 		}
 
@@ -1672,6 +1673,8 @@ func (s *SQLService) checkQueryRights(
 			attributes["request.export_format"] = "CSV"
 		case v1pb.ExportRequest_JSON:
 			attributes["request.export_format"] = "JSON"
+		case v1pb.ExportRequest_SQL:
+			attributes["request.export_format"] = "SQL"
 		default:
 			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
 		}

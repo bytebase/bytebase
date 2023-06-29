@@ -1741,7 +1741,8 @@
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
     "query-time": "Tiempo de consulta",
-    "request-query": "Solicitar consulta"
+    "request-query": "Solicitar consulta",
+    "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta."
   },
   "schema-editor": {
     "self": "Editor de esquema",

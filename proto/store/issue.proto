@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
 
@@ -24,4 +25,5 @@ message GrantRequest {
   // The requested user, e.g. users/hello@bytebase.com.
   string user = 2;
   google.type.Expr condition = 3;
+  google.protobuf.Duration expiration = 4;
 }
