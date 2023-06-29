@@ -54,6 +54,12 @@ const factorList = computed((): Factor[] => {
     case Risk_Source.CREATE_DATABASE:
       factorList.push(...FactorList.CreateDatabase);
       break;
+    case Risk_Source.QUERY:
+      factorList.push(...FactorList.RequestQuery);
+      break;
+    case Risk_Source.EXPORT:
+      factorList.push(...FactorList.RequestExport);
+      break;
     default:
       // unsupported namespace
       return [];
