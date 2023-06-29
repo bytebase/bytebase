@@ -1741,7 +1741,8 @@
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
     "query-time": "Tiempo de consulta",
-    "request-query": "Solicitar consulta"
+    "request-query": "Solicitar consulta",
+    "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta."
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2352,7 +2353,9 @@
         "namespace": {
           "dml": "DML",
           "ddl": "DDL",
-          "create_database": "Crear base de datos"
+          "create_database": "Crear base de datos",
+          "query": "Solicitar consulta",
+          "export": "Solicitar exportación"
         },
         "factor": {
           "affected_rows": "Filas afectadas",
@@ -2360,7 +2363,10 @@
           "project_id": "ID de proyecto",
           "database_name": "Nombre de base de datos",
           "db_engine": "Motor de base de datos",
-          "sql_type": "Tipo SQL"
+          "sql_type": "Tipo SQL",
+          "expiration_days": "Días de caducidad",
+          "export_rows": "Exportar filas",
+          "table_name": "Nombre de la tabla"
         }
       },
       "condition": {

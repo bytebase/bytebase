@@ -1750,7 +1750,8 @@
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏",
     "query-time": "查询时间",
-    "request-query": "申请查询权限"
+    "request-query": "申请查询权限",
+    "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2367,7 +2368,9 @@
         "namespace": {
           "dml": "DML",
           "ddl": "DDL",
-          "create_database": "创建数据库"
+          "create_database": "创建数据库",
+          "query": "申请查询权限",
+          "export": "申请导出数据"
         },
         "factor": {
           "affected_rows": "影响行数",
@@ -2375,7 +2378,10 @@
           "project_id": "项目 ID",
           "database_name": "数据库名称",
           "db_engine": "数据库引擎",
-          "sql_type": "SQL 类型"
+          "sql_type": "SQL 类型",
+          "expiration_days": "过期天数",
+          "export_rows": "导出行数",
+          "table_name": "表名称"
         }
       },
       "condition": {
