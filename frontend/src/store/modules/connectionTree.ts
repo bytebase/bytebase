@@ -78,13 +78,6 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
   ): Promise<Connection> => {
     try {
       await useInstanceV1Store().getOrFetchInstanceByUID(instanceId);
-      const databaseList = useDatabaseV1Store().databaseList.filter(
-        (db) => db.instanceEntity.uid === instanceId
-      );
-      const dbSchemaStore = useDBSchemaV1Store();
-      await Promise.all(
-        databaseList.map((db) => dbSchemaStore.getOrFetchTableList(db.name))
-      );
 
       return {
         instanceId,
