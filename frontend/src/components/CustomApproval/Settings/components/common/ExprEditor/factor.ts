@@ -6,8 +6,8 @@ export const NumberFactorList = [
   "affected_rows",
   "level",
   "source",
-  "expiration_day",
-  "export_row",
+  "expiration_days",
+  "export_rows",
 ] as const;
 
 export const StringFactorList = [
@@ -23,24 +23,24 @@ export const FactorList = {
   DDL: uniq(
     without(
       [...HighLevelFactorList, ...StringFactorList],
-      "expiration_day",
-      "export_row",
+      "expiration_days",
+      "export_rows",
       "table_name"
     )
   ),
   DML: uniq(
     without(
       [...HighLevelFactorList, ...NumberFactorList, ...StringFactorList],
-      "expiration_day",
-      "export_row",
+      "expiration_days",
+      "export_rows",
       "table_name"
     )
   ),
   CreateDatabase: without(
     [...HighLevelFactorList, ...StringFactorList],
     "sql_type",
-    "expiration_day",
-    "export_row",
+    "expiration_days",
+    "export_rows",
     "table_name"
   ),
   RequestQuery: uniq(
@@ -48,7 +48,7 @@ export const FactorList = {
       [...StringFactorList, ...NumberFactorList],
       "affected_rows",
       "sql_type",
-      "export_row"
+      "export_rows"
     )
   ),
   RequestExport: uniq(

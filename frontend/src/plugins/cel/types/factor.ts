@@ -8,8 +8,8 @@ export const NumberFactorList = [
   "request.row_limit",
 
   // Request query/export factors
-  "expiration_day",
-  "export_row",
+  "expiration_days",
+  "export_rows",
 ] as const;
 export type NumberFactor = typeof NumberFactorList[number];
 

@@ -2384,8 +2384,8 @@
           "database_name": "Database name",
           "db_engine": "DB engine",
           "sql_type": "SQL type",
-          "expiration_day": "Expiration day",
-          "export_row": "Export row",
+          "expiration_days": "Expiration days",
+          "export_rows": "Export rows",
           "table_name": "Table name"
         }
       },

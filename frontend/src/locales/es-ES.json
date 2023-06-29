@@ -2363,8 +2363,8 @@
           "database_name": "Nombre de base de datos",
           "db_engine": "Motor de base de datos",
           "sql_type": "Tipo SQL",
-          "expiration_day": "Día de expiración",
-          "export_row": "Exportar fila",
+          "expiration_days": "Días de caducidad",
+          "export_rows": "Exportar filas",
           "table_name": "Nombre de la tabla"
         }
       },
