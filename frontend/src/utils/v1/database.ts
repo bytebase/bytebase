@@ -1,20 +1,21 @@
 import { orderBy } from "lodash-es";
 import slug from "slug";
 
-import { ComposedDatabase, unknownEnvironment, UNKNOWN_ID } from "@/types";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
-import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { Policy } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
-  useEnvironmentV1Store,
+  usePolicyV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "../role";
 import { Engine, State } from "@/types/proto/v1/common";
 import { isDev, semverCompare } from "../util";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
@@ -92,22 +93,22 @@ export const isDatabaseV1Accessible = (
     return true;
   }
 
-  const environment =
-    useEnvironmentV1Store().getEnvironmentByName(
-      database.instanceEntity.environment
-    ) ?? unknownEnvironment();
-  if (environment.tier === EnvironmentTier.PROTECTED) {
-    const policy = policyList.find((policy) => {
-      const { type, resourceUid, enforce } = policy;
-      return (
-        type === PolicyType.ACCESS_CONTROL &&
-        resourceUid === `${database.uid}` &&
-        enforce
+  const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+  if (policy) {
+    const bindings = policy.workspaceIamPolicy?.bindings;
+    if (bindings) {
+      const querierBinding = bindings.find(
+        (binding) => binding.role === "roles/QUERIER"
       );
-    });
-    if (policy) {
-      // The database is in the allowed list
-      return true;
+      if (querierBinding) {
+        const simpleExpr = resolveCELExpr(
+          querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+        );
+        const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+        if (envNameList.includes(database.instanceEntity.environment)) {
+          return true;
+        }
+      }
     }
   }
 
@@ -227,3 +228,13 @@ export function allowDatabaseV1Access(
 
   return false;
 }
+
+export const extractEnvironmentNameListFromExpr = (
+  expr: SimpleExpr
+): string[] => {
+  const [left, right] = expr.args;
+  if (expr.operator === "@in" && left === "resource.environment_name") {
+    return right as any as string[];
+  }
+  return [];
+};

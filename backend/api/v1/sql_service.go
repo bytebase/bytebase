@@ -1563,9 +1563,10 @@ func (s *SQLService) checkWorkspaceIAMPolicy(
 	attributes := map[string]any{
 		"resource.environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
 	}
+	formattedRole := fmt.Sprintf("roles/%s", role)
 	bindings := v1pbPolicy.GetWorkspaceIamPolicy().Bindings
 	for _, binding := range bindings {
-		if binding.Role != string(role) {
+		if binding.Role != formattedRole {
 			continue
 		}
 

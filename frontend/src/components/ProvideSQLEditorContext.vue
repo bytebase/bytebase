@@ -398,6 +398,7 @@ onMounted(async () => {
     await useEnvironmentV1Store().fetchEnvironments(
       true /* include archived */
     );
+    await usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM");
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
     connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
