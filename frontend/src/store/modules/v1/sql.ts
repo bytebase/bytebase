@@ -48,13 +48,15 @@ export const useSQLStore = defineStore("sql", () => {
 });
 
 export const getExportRequestFormat = (
-  format: "CSV" | "JSON"
+  format: "CSV" | "JSON" | "SQL"
 ): ExportRequest_Format => {
   switch (format) {
     case "CSV":
       return ExportRequest_Format.CSV;
     case "JSON":
       return ExportRequest_Format.JSON;
+    case "SQL":
+      return ExportRequest_Format.SQL;
     default:
       return ExportRequest_Format.FORMAT_UNSPECIFIED;
   }
