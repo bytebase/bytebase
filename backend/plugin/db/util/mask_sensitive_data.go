@@ -66,6 +66,11 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			schemaInfo:      schemaInfo,
 		}
 		return extractor.extractOracleSensitiveField(statement)
+	case db.Snowflake:
+		extractor := &sensitiveFieldExtractor{
+			currentDatabase: currentDatabase,
+		}
+		return extractor.extractSnowsqlSensitiveFields(statement)
 	default:
 		return nil, nil
 	}

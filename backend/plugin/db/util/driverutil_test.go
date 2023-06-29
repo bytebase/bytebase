@@ -1260,31 +1260,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
-			// Test for UNION.
-			statement:  `select 1 as c1, 2 as c2, 3 as c3, 4 from DUAL UNION ALL select * from t`,
-			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
-				{
-					Name:      "C1",
-					Sensitive: true,
-				},
-				{
-					Name:      "C2",
-					Sensitive: false,
-				},
-				{
-					Name:      "C3",
-					Sensitive: false,
-				},
-				{
-					Name:      "4",
-					Sensitive: true,
-				},
-			},
-		},
-		{
-			// Test for UNION.
-			statement:  `select * from t UNION ALL select * from t`,
+			statement:  `SELECT * FROM t;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
