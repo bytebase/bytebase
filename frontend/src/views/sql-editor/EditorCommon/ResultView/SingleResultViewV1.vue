@@ -223,7 +223,9 @@ const showSearchFeature = computed(() => {
 });
 
 const showExportButton = computed(() => {
-  if (!featureToRef("bb.feature.dba-workflow").value) {
+  if (!featureToRef("bb.feature.access-control").value) {
+    // The current plan doesn't have access control feature.
+    // Fallback to true.
     return true;
   }
 
