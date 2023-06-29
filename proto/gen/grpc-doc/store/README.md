@@ -1160,6 +1160,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | role | [string](#string) |  | The requested role, e.g. roles/EXPORTER. |
 | user | [string](#string) |  | The requested user, e.g. users/hello@bytebase.com. |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
+| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 
 
 

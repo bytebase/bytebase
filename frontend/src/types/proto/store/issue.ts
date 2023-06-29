@@ -1,5 +1,6 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { Expr } from "../google/type/expr";
 import { IssuePayloadApproval } from "./approval";
 
@@ -22,6 +23,7 @@ export interface GrantRequest {
   /** The requested user, e.g. users/hello@bytebase.com. */
   user: string;
   condition?: Expr;
+  expiration?: Duration;
 }
 
 function createBaseIssuePayload(): IssuePayload {
@@ -173,7 +175,7 @@ export const Grouping = {
 };
 
 function createBaseGrantRequest(): GrantRequest {
-  return { role: "", user: "", condition: undefined };
+  return { role: "", user: "", condition: undefined, expiration: undefined };
 }
 
 export const GrantRequest = {
@@ -186,6 +188,9 @@ export const GrantRequest = {
     }
     if (message.condition !== undefined) {
       Expr.encode(message.condition, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.expiration !== undefined) {
+      Duration.encode(message.expiration, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -218,6 +223,13 @@ export const GrantRequest = {
 
           message.condition = Expr.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.expiration = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -232,6 +244,7 @@ export const GrantRequest = {
       role: isSet(object.role) ? String(object.role) : "",
       user: isSet(object.user) ? String(object.user) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+      expiration: isSet(object.expiration) ? Duration.fromJSON(object.expiration) : undefined,
     };
   },
 
@@ -240,6 +253,8 @@ export const GrantRequest = {
     message.role !== undefined && (obj.role = message.role);
     message.user !== undefined && (obj.user = message.user);
     message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    message.expiration !== undefined &&
+      (obj.expiration = message.expiration ? Duration.toJSON(message.expiration) : undefined);
     return obj;
   },
 
@@ -253,6 +268,9 @@ export const GrantRequest = {
     message.user = object.user ?? "";
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
+      : undefined;
+    message.expiration = (object.expiration !== undefined && object.expiration !== null)
+      ? Duration.fromPartial(object.expiration)
       : undefined;
     return message;
   },
