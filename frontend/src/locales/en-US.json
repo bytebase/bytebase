@@ -2551,6 +2551,10 @@
       "suggestion": "Suggestion",
       "create-index": "Create Index",
       "setup-openai-key-to-enable": "Setup OpenAI key to enable index advisor"
+    },
+    "no-log-placeholder": {
+      "admin": "Click the \"Configure\" button to fetch slow queries from the database instances or click the \"Sync Now\" button to sync slow query logs immediately",
+      "developer": "Click the \"Sync Now\" button to sync slow query logs immediately or contact Bytebase owners/DBAs to configure slow queries"
     }
   },
   "principal": {

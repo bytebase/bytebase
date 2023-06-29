@@ -2530,6 +2530,10 @@
       "suggestion": "Sugerencia",
       "create-index": "Crear índice",
       "setup-openai-key-to-enable": "Configure la clave de OpenAI para habilitar el asesor de índices"
+    },
+    "no-log-placeholder": {
+      "admin": "Haga clic en el botón \"Configurar\" para obtener consultas lentas de las instancias de la base de datos o haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas de inmediato",
+      "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los propietarios/DBA de Bytebase para configurar consultas lentas"
     }
   },
   "principal": {
