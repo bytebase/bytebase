@@ -30,7 +30,11 @@
         </NButton>
       </div>
       <div>
-        <NButton @click="state.showRequestExportPanel = true">
+        <NButton @click="handleRequestExportClick">
+          <FeatureBadge
+            feature="bb.feature.access-control"
+            custom-class="mr-2"
+          />
           {{ $t("quick-action.request-export") }}
         </NButton>
       </div>
@@ -44,6 +48,12 @@
     v-if="state.showRequestExportPanel"
     @close="state.showRequestExportPanel = false"
   />
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.access-control"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -53,6 +63,7 @@ import { computed, reactive, watchEffect } from "vue";
 import { UNKNOWN_ID } from "@/types";
 import { FilterParams, ExportRecord } from "./types";
 import {
+  featureToRef,
   useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1Store,
@@ -70,6 +81,7 @@ interface LocalState {
   filterParams: FilterParams;
   exportRecords: ExportRecord[];
   showRequestExportPanel: boolean;
+  showFeatureModal: boolean;
 }
 
 const issueDescriptionRegexp = /^#(\d+)$/;
@@ -88,7 +100,9 @@ const state = reactive<LocalState>({
   },
   exportRecords: [],
   showRequestExportPanel: false,
+  showFeatureModal: false,
 });
+const hasDataAccessControlFeature = featureToRef("bb.feature.access-control");
 
 const filterIssueId = computed(() => {
   const hash = route.hash.replace(/^#+/g, "");
@@ -179,6 +193,14 @@ watchEffect(async () => {
   }
   state.exportRecords = tempExportRecords;
 });
+
+const handleRequestExportClick = () => {
+  if (!hasDataAccessControlFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+  state.showRequestExportPanel = true;
+};
 
 const changeProjectId = (id: string | undefined) => {
   if (id && id !== String(UNKNOWN_ID)) {
