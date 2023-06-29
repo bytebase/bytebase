@@ -1749,7 +1749,8 @@
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏",
     "query-time": "查询时间",
-    "request-query": "申请查询权限"
+    "request-query": "申请查询权限",
+    "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

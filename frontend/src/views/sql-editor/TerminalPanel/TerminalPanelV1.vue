@@ -41,7 +41,7 @@
             v-if="query.resultSet?.error"
             class="p-2 pb-1 text-md font-normal text-[var(--color-matrix-green-hover)]"
           >
-            Connection lost. Will try to reconnect when executing next query.
+            {{ $t("sql-editor.connection-lost") }}
           </div>
 
           <div

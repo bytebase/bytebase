@@ -1754,7 +1754,8 @@
     "run-selected": "Run selected",
     "clear-screen": "Clear screen",
     "query-time": "Query time",
-    "request-query": "Request Query"
+    "request-query": "Request Query",
+    "connection-lost": "Connection lost. Will try to reconnect when executing next query."
   },
   "schema-editor": {
     "self": "Schema Editor",
