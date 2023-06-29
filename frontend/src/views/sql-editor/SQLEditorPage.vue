@@ -72,7 +72,7 @@
             </div>
           </template>
 
-          <TerminalPanel v-if="tabStore.currentTab.mode === TabMode.Admin" />
+          <TerminalPanelV1 v-if="tabStore.currentTab.mode === TabMode.Admin" />
         </template>
         <div
           v-else
@@ -122,7 +122,7 @@ import {
 } from "@/store";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
-import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
+import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
 import TabList from "./TabList";
 import ResultPanel from "./ResultPanel";
 import {

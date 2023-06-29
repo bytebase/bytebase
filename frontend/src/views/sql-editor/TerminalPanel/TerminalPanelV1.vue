@@ -28,19 +28,20 @@
             @history="handleHistory"
             @clear-screen="handleClearScreen"
           />
-          <ResultView
-            v-if="query.executeParams && query.queryResult"
+          <ResultViewV1
+            v-if="query.params && query.resultSet"
             class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"
-            :execute-params="query.executeParams"
-            :result-set="query.queryResult"
+            :execute-params="query.params"
+            :result-set="query.resultSet"
             :loading="query.status === 'RUNNING'"
             :dark="true"
           />
+
           <div
-            v-else-if="query.status === 'CANCELLED'"
-            class="text-control-light pl-2"
+            v-if="query.resultSet?.error"
+            class="p-2 pb-1 text-md font-normal text-[var(--color-matrix-green-hover)]"
           >
-            {{ $t("common.cancelled") }}
+            {{ $t("sql-editor.connection-lost") }}
           </div>
 
           <div
@@ -64,40 +65,30 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, unref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
-import type {
-  ExecuteConfig,
-  ExecuteOption,
-  WebTerminalQueryItem,
-} from "@/types";
-import {
-  createQueryItem,
-  mockAffectedRows0,
-  useTabStore,
-  useWebTerminalStore,
-} from "@/store";
+import { ExecuteConfig, ExecuteOption, WebTerminalQueryItemV1 } from "@/types";
+import { useTabStore, useWebTerminalV1Store } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
   EditorAction,
   ConnectionPathBar,
   ConnectionHolder,
-  ResultView,
+  ResultViewV1,
 } from "../EditorCommon";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { useHistory } from "./useHistory";
 import { useAttractFocus } from "./useAttractFocus";
 
-const QUERY_TIMEOUT_MS = 5000;
-const MAX_QUERY_ITEM_COUNT = 20;
-
 const tabStore = useTabStore();
-const webTerminalStore = useWebTerminalStore();
+const webTerminalStore = useWebTerminalV1Store();
+
+const queryState = computed(() => {
+  return webTerminalStore.getQueryStateByTab(tabStore.currentTab);
+});
 
 const queryList = computed(() => {
-  return webTerminalStore.getQueryListByTab(tabStore.currentTab);
+  return unref(queryState.value.queryItemList);
 });
 
 const queryListContainerRef = ref<HTMLDivElement>();
@@ -107,24 +98,17 @@ const currentQuery = computed(
   () => queryList.value[queryList.value.length - 1]
 );
 
-const { executeAdmin } = useExecuteSQL();
-
 const { move: moveHistory } = useHistory();
 
-const queryTimer = useCancelableTimeout(QUERY_TIMEOUT_MS);
-const { expired } = queryTimer;
+const timer = computed(() => {
+  return unref(queryState.value.timer);
+});
+const expired = computed(() => {
+  return unref(timer.value.expired);
+});
 
-const isEditableQueryItem = (query: WebTerminalQueryItem): boolean => {
-  return query === currentQuery.value && query.status === "IDLE";
-};
-
-const pushQueryItem = () => {
-  const list = queryList.value;
-  list.push(createQueryItem());
-
-  if (list.length > MAX_QUERY_ITEM_COUNT) {
-    list.shift();
-  }
+const isEditableQueryItem = (item: WebTerminalQueryItemV1): boolean => {
+  return item === currentQuery.value && item.status === "IDLE";
 };
 
 const handleExecute = async (
@@ -132,8 +116,7 @@ const handleExecute = async (
   config: ExecuteConfig,
   option?: ExecuteOption
 ) => {
-  const queryItem = currentQuery.value;
-  if (queryItem.status !== "IDLE") {
+  if (currentQuery.value.status !== "IDLE") {
     return;
   }
 
@@ -142,40 +125,7 @@ const handleExecute = async (
     return;
   }
 
-  try {
-    queryTimer.start();
-    queryItem.executeParams = { query, config, option };
-    queryItem.status = "RUNNING";
-
-    const queryResult = await executeAdmin(query, config, option);
-
-    // If the queryItem is still the currentQuery
-    // which means it hasn't been cancelled.
-    if (queryResult && queryItem === currentQuery.value) {
-      // If the result is empty, mock it as "Affected rows: 0"
-      const resultList = queryResult?.resultList ?? [];
-      resultList.forEach((result) => {
-        if (
-          !Array.isArray(result.data) ||
-          !Array.isArray(result.data[0]) ||
-          result.data[0].length === 0
-        ) {
-          result.data = mockAffectedRows0().data;
-        }
-      });
-      queryItem.queryResult = queryResult;
-      pushQueryItem();
-      // Clear the tab's statement and keep it sync with the latest query
-      tabStore.currentTab.statement = "";
-      tabStore.currentTab.selectedStatement = "";
-    }
-  } finally {
-    queryTimer.stop();
-    if (queryItem.status === "RUNNING") {
-      // The query is still not cancelled
-      queryItem.status = "FINISHED";
-    }
-  }
+  queryState.value.controller.events.emit("query", { query, config, option });
 };
 
 const handleClearScreen = () => {
@@ -193,12 +143,7 @@ const handleHistory = (direction: "up" | "down") => {
 };
 
 const handleCancelQuery = async () => {
-  queryTimer.stop();
-  currentQuery.value.status = "CANCELLED";
-  pushQueryItem();
-  // Clear the tab's statement and keep it sync with the latest query
-  tabStore.currentTab.statement = "";
-  tabStore.currentTab.selectedStatement = "";
+  queryState.value.controller.abort();
 };
 
 const { height: queryListHeight } = useElementSize(queryListRef);

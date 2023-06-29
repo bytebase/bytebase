@@ -2,6 +2,7 @@ import {
   createChannel,
   createClientFactory,
   FetchTransport,
+  WebsocketTransport,
 } from "nice-grpc-web";
 import {
   authInterceptorMiddleware,
@@ -42,6 +43,10 @@ const channel = createChannel(
   FetchTransport({
     credentials: "include",
   })
+);
+const websocketChannel = createChannel(
+  window.location.origin,
+  WebsocketTransport()
 );
 
 const clientFactory = createClientFactory()
@@ -124,6 +129,11 @@ export const reviewServiceClient = clientFactory.create(
 export const sqlServiceClient = clientFactory.create(
   SQLServiceDefinition,
   channel
+);
+
+export const sqlStreamingServiceClient = clientFactory.create(
+  SQLServiceDefinition,
+  websocketChannel
 );
 
 export const celServiceClient = clientFactory.create(
