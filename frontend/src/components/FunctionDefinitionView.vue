@@ -3,7 +3,7 @@
     <div ref="containerRef" class="w-full overflow-hidden text-ellipsis">
       <div class="w-full h-auto leading-5 whitespace-pre-wrap font-mono">
         <template v-if="state.expanded">
-          {{ formatedDefinition }}
+          {{ formattedDefinition }}
         </template>
         <NEllipsis
           v-else
@@ -11,7 +11,7 @@
           :line-clamp="3"
           :tooltip="false"
         >
-          {{ formatedDefinition }}
+          {{ formattedDefinition }}
         </NEllipsis>
       </div>
     </div>
@@ -49,7 +49,7 @@ const state = reactive<LocalState>({
 });
 const containerRef = ref<HTMLDivElement | null>(null);
 
-const formatedDefinition = computed(() => {
+const formattedDefinition = computed(() => {
   return props.definition.trim();
 });
 
