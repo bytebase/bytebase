@@ -18,7 +18,7 @@
         <div class="mt-2">
           <ResourceIdField
             ref="resourceIdField"
-            :resource-type="formatedResourceType"
+            :resource-type="formattedResourceType"
             :readonly="!isCreating"
             :value="state.resourceId"
             :resource-title="state.placeholder"
@@ -163,7 +163,7 @@ const selectedDatabaseGroupName = computed(() => {
   );
   return databaseGroupName;
 });
-const formatedResourceType = computed(() =>
+const formattedResourceType = computed(() =>
   props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
 );
 
