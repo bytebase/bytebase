@@ -7,9 +7,9 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -168,51 +168,32 @@ func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 // getMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
-	connectionURI := "mongodb://"
+	u := &url.URL{
+		Scheme: "mongodb",
+		// In RFC, there can be no tailing slash('/') in the path if the path is empty and the query is not empty.
+		// For mongosh, it can handle this case correctly, but for driver, it will throw the error likes "error parsing uri: must have a / before the query ?".
+		Path: "/",
+	}
 	if connConfig.SRV {
-		connectionURI = "mongodb+srv://"
+		u.Scheme = "mongodb+srv"
 	}
 	if connConfig.Username != "" {
-		percentEncodingUsername := replaceCharacterWithPercentEncoding(connConfig.Username)
-		percentEncodingPassword := replaceCharacterWithPercentEncoding(connConfig.Password)
-		connectionURI = fmt.Sprintf("%s%s:%s@", connectionURI, percentEncodingUsername, percentEncodingPassword)
+		u.User = url.UserPassword(connConfig.Username, connConfig.Password)
 	}
-	connectionURI = fmt.Sprintf("%s%s", connectionURI, connConfig.Host)
+	u.Host = connConfig.Host
 	if connConfig.Port != "" {
-		connectionURI = fmt.Sprintf("%s:%s", connectionURI, connConfig.Port)
+		u.Host = fmt.Sprintf("%s:%s", u.Host, connConfig.Port)
 	}
 	if connConfig.Database != "" {
-		connectionURI = fmt.Sprintf("%s/%s", connectionURI, connConfig.Database)
+		u.Path = connConfig.Database
 	}
-	// We use admin as the default authentication database.
-	// https://www.mongodb.com/docs/manual/reference/connection-string/#mongodb-urioption-urioption.authSource
-	authenticationDatabase := connConfig.AuthenticationDatabase
-	if authenticationDatabase == "" {
-		authenticationDatabase = "admin"
+	authDatabase := "admin"
+	if connConfig.AuthenticationDatabase != "" {
+		authDatabase = connConfig.AuthenticationDatabase
 	}
 
-	if connConfig.Database == "" {
-		connectionURI = fmt.Sprintf("%s/", connectionURI)
-	}
-	connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, authenticationDatabase)
-
-	return connectionURI
-}
-
-func replaceCharacterWithPercentEncoding(s string) string {
-	m := map[string]string{
-		":": `%3A`,
-		"/": `%2F`,
-		"?": `%3F`,
-		"#": `%23`,
-		"[": `%5B`,
-		"]": `%5D`,
-		"@": `%40`,
-	}
-	for k, v := range m {
-		s = strings.ReplaceAll(s, k, v)
-	}
-	return s
+	u.RawQuery = fmt.Sprintf("authSource=%s", authDatabase)
+	return u.String()
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
