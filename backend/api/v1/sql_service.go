@@ -1115,6 +1115,8 @@ func isExcludeDatabase(dbType db.Type, database string) bool {
 			return true
 		}
 		return database == "metrics_schema"
+	case db.Snowflake:
+		return database == "SNOWFLAKE"
 	default:
 		return false
 	}
