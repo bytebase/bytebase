@@ -135,7 +135,7 @@
             >
               <NRadio :value="'CSV'" label="CSV" />
               <NRadio :value="'JSON'" label="JSON" />
-              <NRadio v-if="isDev" :value="'SQL'" label="SQL" />
+              <NRadio :value="'SQL'" label="SQL" />
             </NRadioGroup>
           </div>
         </div>
