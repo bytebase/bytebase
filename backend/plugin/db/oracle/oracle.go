@@ -40,7 +40,7 @@ func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-// Open opens a Snowflake driver.
+// Open opens a Oracle driver.
 func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {

@@ -121,7 +121,9 @@ type DatabaseMessage struct {
 	Labels               map[string]string
 	Secrets              *storepb.Secrets
 	DataShare            bool
-	EnvironmentID        string
+	// ServiceName is the Oracle specific field.
+	ServiceName   string
+	EnvironmentID string
 }
 
 // UpdateDatabaseMessage is the mssage for updating a database.
@@ -137,6 +139,7 @@ type UpdateDatabaseMessage struct {
 	SourceBackupID       *int
 	Secrets              *storepb.Secrets
 	DataShare            *bool
+	ServiceName          *string
 	// TODO(d): allow database environment updates.
 	EnvironmentID *string
 }
@@ -347,9 +350,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			last_successful_sync_ts,
 			schema_version,
 			secrets,
-			datashare
+			datashare,
+			service_name
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			name = EXCLUDED.name,
@@ -367,6 +371,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		create.SchemaVersion,
 		secretsString,
 		create.DataShare,
+		create.ServiceName,
 	).Scan(
 		&databaseUID,
 	); err != nil {
@@ -418,6 +423,9 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	}
 	if v := patch.DataShare; v != nil {
 		set, args = append(set, fmt.Sprintf("datashare = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.ServiceName; v != nil {
+		set, args = append(set, fmt.Sprintf("service_name = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
 
@@ -580,7 +588,8 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 				db_label.value
 			) label_values,
 			db.secrets,
-			db.datashare
+			db.datashare,
+			db.service_name
 		FROM db
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
@@ -613,6 +622,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			pq.Array(&values),
 			&secretsString,
 			&databaseMessage.DataShare,
+			&databaseMessage.ServiceName,
 		); err != nil {
 			return nil, err
 		}
