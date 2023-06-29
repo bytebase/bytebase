@@ -80,9 +80,7 @@ export const useUserStore = defineStore("user", {
       if (cachedData) {
         return cachedData;
       }
-      const user = await authServiceClient.getUser({
-        name,
-      });
+      const user = await this.fetchUser(name);
       this.userMapByName.set(user.name, user);
       return user;
     },

@@ -8,3 +8,4 @@ export * from "./role";
 export * from "./user";
 export * from "./repository";
 export * from "./sql";
+export * from "./webTerminal";

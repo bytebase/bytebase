@@ -1,7 +1,7 @@
-import { computed, watch } from "vue";
+import { computed, unref, watch } from "vue";
 
 import { TabMode, WebTerminalQueryItem } from "@/types";
-import { useTabStore, useWebTerminalStore } from "@/store";
+import { useTabStore, useWebTerminalV1Store } from "@/store";
 import { minmax } from "@/utils";
 
 const MAX_HISTORY_ITEM_COUNT = 1000;
@@ -13,11 +13,14 @@ type HistoryState = {
 
 export const useHistory = () => {
   const tabStore = useTabStore();
-  const webTerminalStore = useWebTerminalStore();
+  const webTerminalStore = useWebTerminalV1Store();
   const historyByTabId = new Map<string, HistoryState>();
+  const queryState = computed(() => {
+    return webTerminalStore.getQueryStateByTab(tabStore.currentTab);
+  });
 
   const currentQuery = computed(() => {
-    const queryList = webTerminalStore.getQueryListByTab(tabStore.currentTab);
+    const queryList = unref(queryState.value.queryItemList);
     return queryList[queryList.length - 1];
   });
 
