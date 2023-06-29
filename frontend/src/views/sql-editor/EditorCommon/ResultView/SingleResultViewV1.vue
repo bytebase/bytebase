@@ -128,6 +128,7 @@ import { isEmpty } from "lodash-es";
 
 import {
   createExplainToken,
+  extractEnvironmentNameListFromExpr,
   extractSQLRowValue,
   hasWorkspacePermissionV1,
   instanceV1HasStructuredQueryResult,
@@ -141,6 +142,8 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useCurrentUserV1,
+  usePolicyV1Store,
+  useDatabaseV1ByUID,
 } from "@/store";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
@@ -157,6 +160,8 @@ import {
 } from "@/types";
 import { useExportData } from "./useExportData";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import { resolveCELExpr } from "@/plugins/cel";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 
 type LocalState = {
   search: string;
@@ -191,6 +196,9 @@ const currentUserV1 = useCurrentUserV1();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 const { isExportingData, exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
+const { database } = useDatabaseV1ByUID(
+  computed(() => currentTab.value.connection.databaseId)
+);
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -218,10 +226,36 @@ const showExportButton = computed(() => {
   if (!featureToRef("bb.feature.dba-workflow").value) {
     return true;
   }
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-database",
-    currentUserV1.value.userRole
-  );
+
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-access-control",
+      currentUserV1.value.userRole
+    )
+  ) {
+    return true;
+  }
+
+  const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+  if (database.value && policy) {
+    const bindings = policy.workspaceIamPolicy?.bindings;
+    if (bindings) {
+      const querierBinding = bindings.find(
+        (binding) => binding.role === "roles/EXPORTER"
+      );
+      if (querierBinding) {
+        const simpleExpr = resolveCELExpr(
+          querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+        );
+        const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+        if (envNameList.includes(database.value.instanceEntity.environment)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
 });
 
 const showRequestExportButton = computed(() => {
