@@ -256,7 +256,11 @@
     "expiration": "Expiración",
     "configure": "Configurar",
     "database-groups": "Grupo de bases de datos",
-    "members": "Miembros"
+    "members": "Miembros",
+    "warehouse": "Almacén",
+    "schedule": "Horario",
+    "state": "Estado",
+    "condition": "Condición"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -840,6 +844,8 @@
     "views": "Vistas",
     "extensions": "Extensiones",
     "functions": "Funciones",
+    "streams": "Streams",
+    "tasks": "Tareas",
     "parent": "Padre",
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",

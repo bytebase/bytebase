@@ -18,7 +18,7 @@
         </div>
       </BBTableCell>
       <BBTableCell>
-        <FunctionDefinitionView :definition="functionItem.definition" />
+        <DefinitionView :definition="functionItem.definition" />
       </BBTableCell>
     </template>
   </BBTable>
@@ -30,7 +30,7 @@ import { useI18n } from "vue-i18n";
 import { ComposedDatabase } from "@/types";
 import { FunctionMetadata } from "@/types/proto/store/database";
 import EllipsisText from "@/components/EllipsisText.vue";
-import FunctionDefinitionView from "@/components/FunctionDefinitionView.vue";
+import DefinitionView from "@/components/DefinitionView.vue";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({
