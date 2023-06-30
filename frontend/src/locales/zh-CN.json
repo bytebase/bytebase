@@ -688,6 +688,11 @@
     "add-a-comment": "添加评论",
     "edit-comment": "编辑评论",
     "leave-a-comment": "发表一条评论…",
+    "comment-editor": {
+      "editor": "编辑",
+      "preview": "预览",
+      "nothing-to-preview": "暂无预览"
+    },
     "view-commit": "查看提交",
     "search-issue-name": "搜索工单名称",
     "table": {
