@@ -98,7 +98,11 @@
     :class="'my-2'"
     :style="`WARN`"
     :title="$t('issue.statement-from-sheet-warning')"
-  />
+  >
+    <template v-if="state.taskSheetName" #action>
+      <DownloadSheetButton :sheet="state.taskSheetName" size="small" />
+    </template>
+  </BBAttention>
   <div
     class="whitespace-pre-wrap mt-2 w-full overflow-hidden"
     :class="state.editing ? 'border-t border-x' : 'border-t border-x'"
@@ -157,6 +161,7 @@ import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 import UploadProgressButton from "../misc/UploadProgressButton.vue";
+import DownloadSheetButton from "../Sheet/DownloadSheetButton.vue";
 import {
   Sheet_Visibility,
   Sheet_Source,
