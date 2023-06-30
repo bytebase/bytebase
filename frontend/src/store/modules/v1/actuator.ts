@@ -34,6 +34,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       return state.serverInfo;
     },
     version: (state) => {
+      // return "2.4.0";
       return state.serverInfo?.version || "";
     },
     gitCommit: (state) => {

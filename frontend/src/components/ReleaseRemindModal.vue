@@ -23,7 +23,7 @@
           :title="$t('settings.release.not-show-till-next-release')"
           :value="actuatorStore.releaseInfo.ignoreRemindModalTillNextRelease"
           @toggle="
-            (on) =>
+            (on: boolean) =>
               (actuatorStore.releaseInfo.ignoreRemindModalTillNextRelease = on)
           "
         />
