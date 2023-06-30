@@ -80,6 +80,7 @@ import markdownStyle from "../assets/css/github-markdown-style.css";
 import "../assets/css/tailwind.css";
 
 const md = new MarkdownIt({
+  html: true,
   linkify: true,
   highlight: function (code, lang) {
     if (lang && hljs.getLanguage(lang)) {
