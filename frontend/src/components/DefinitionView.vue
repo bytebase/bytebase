@@ -17,10 +17,15 @@
     </div>
     <button
       v-if="state.showExpandButton"
-      class="inline-block cursor-pointer border px-1 rounded text-xs text-green-600 border-green-600 bg-green-50 hover:opacity-80"
+      class="inline-block cursor-pointer px-2 py-1 rounded text-xs shadow bg-gray-50 hover:opacity-80"
       @click="state.expanded = !state.expanded"
     >
       {{ $t("common." + (state.expanded ? "collapse" : "expand")) }}
+      <heroicons-outline:chevron-down
+        v-if="!state.expanded"
+        class="w-4 h-auto inline-block"
+      />
+      <heroicons-outline:chevron-up v-else class="w-4 h-auto inline-block" />
     </button>
   </div>
 </template>

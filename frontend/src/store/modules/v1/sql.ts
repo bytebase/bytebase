@@ -61,3 +61,14 @@ export const getExportRequestFormat = (
       return ExportRequest_Format.FORMAT_UNSPECIFIED;
   }
 };
+
+export const getExportFileType = (format: "CSV" | "JSON" | "SQL") => {
+  switch (format) {
+    case "CSV":
+      return "text/csv";
+    case "JSON":
+      return "application/json";
+    case "SQL":
+      return "application/sql";
+  }
+};

@@ -256,7 +256,11 @@
     "expiration": "Expiration",
     "configure": "Configure",
     "database-groups": "Database Groups",
-    "members": "Members"
+    "members": "Members",
+    "warehouse": "Warehouse",
+    "schedule": "Schedule",
+    "state": "State",
+    "condition": "Condition"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -734,8 +738,8 @@
     "edit-sql-statement": "Edit SQL statement",
     "upload-sql": "Upload SQL",
     "upload-sql-as-sheet": "Upload SQL as Sheet",
-    "statement-from-sheet-warning": "The current SQL statement comes from a sheet. It is read-only and only part of it is displayed.",
-    "override-current-statement": "Override current SQL statement",
+    "statement-from-sheet-warning": "SQL is oversized and inline-editing is disallowed. You can upload a new SQL file to overwrite it.",
+    "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "waiting-earliest-allowed-time": "Will run after {time}",
     "batch-transition": {
@@ -845,6 +849,8 @@
     "views": "Views",
     "extensions": "Extensions",
     "functions": "Functions",
+    "streams": "Streams",
+    "tasks": "Tasks",
     "parent": "Parent",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",
@@ -1696,8 +1702,7 @@
     "loading-data": "Loading Data...",
     "table-empty-placeholder": "Click Run to execute the query.",
     "no-rows-found": "No rows found",
-    "download-as-csv": "Download as CSV",
-    "download-as-json": "Download as JSON",
+    "download-as-file": "Download as {file}",
     "only-select-allowed": "Only {select} statements are allowed to execute.",
     "want-to-action": "If you want to {want}, click the {action} button and submit an issue.",
     "table-schema-placeholder": "Select a table to see its schema",

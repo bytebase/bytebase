@@ -253,7 +253,11 @@
     "expiration": "过期时间",
     "configure": "配置",
     "database-groups": "数据库分组",
-    "members": "成员"
+    "members": "成员",
+    "warehouse": "仓库",
+    "schedule": "计划",
+    "state": "状态",
+    "condition": "条件"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -731,8 +735,8 @@
     "edit-sql-statement": "编辑 SQL 语句",
     "upload-sql": "上传 SQL",
     "upload-sql-as-sheet": "上传 SQL 至工作表",
-    "statement-from-sheet-warning": "当前的 SQL 语句来自一个工作表。它是只读的且只显示了部分内容。",
-    "override-current-statement": "覆盖当前的 SQL 语句",
+    "statement-from-sheet-warning": "SQL 过大所以无法直接编辑。你可以上传新的 SQL 文件以将其覆盖。",
+    "overwrite-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
     "waiting-earliest-allowed-time": "将于 {time} 之后执行",
     "batch-transition": {
@@ -842,6 +846,8 @@
     "views": "视图",
     "extensions": "插件",
     "functions": "函数",
+    "streams": "Streams",
+    "tasks": "任务",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",
@@ -1691,8 +1697,7 @@
     "loading-data": "加载数据中...",
     "table-empty-placeholder": "点击 ”运行“ 执行查询",
     "no-rows-found": "暂无数据",
-    "download-as-csv": "下载为 CSV 格式",
-    "download-as-json": "下载为 JSON 格式",
+    "download-as-file": "下载为 {file} 格式",
     "only-select-allowed": "只允许执行 {select} 语句",
     "want-to-action": "如果您想要{action}，点击“{action}”按钮并提交一个工单。",
     "table-schema-placeholder": "选择一个表进行查看 Schema",

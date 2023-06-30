@@ -78,6 +78,12 @@ const handleUpload = async (e: Event) => {
   } finally {
     uploading.value = false;
     percent.value = -1;
+    if (inputRef.value) {
+      // Clear the selected file.
+      // Otherwise selecting the same file again will not trigger
+      // change event
+      inputRef.value.value = "";
+    }
   }
 };
 </script>

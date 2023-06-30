@@ -256,7 +256,11 @@
     "expiration": "Expiración",
     "configure": "Configurar",
     "database-groups": "Grupo de bases de datos",
-    "members": "Miembros"
+    "members": "Miembros",
+    "warehouse": "Almacén",
+    "schedule": "Horario",
+    "state": "Estado",
+    "condition": "Condición"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -734,8 +738,8 @@
     "edit-sql-statement": "Editar declaración SQL",
     "upload-sql": "Cargar SQL",
     "upload-sql-as-sheet": "Cargar SQL como Hoja",
-    "statement-from-sheet-warning": "La declaración SQL actual proviene de una hoja. Es de solo lectura y solo se muestra parte de ella.",
-    "override-current-statement": "Anular la declaración SQL actual",
+    "statement-from-sheet-warning": "SQL está sobredimensionado y no se permite la edición en línea. \nPuede cargar un nuevo archivo SQL para sobrescribirlo.",
+    "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
     "waiting-earliest-allowed-time": "Se ejecutará después de {time}",
     "batch-transition": {
@@ -845,6 +849,8 @@
     "views": "Vistas",
     "extensions": "Extensiones",
     "functions": "Funciones",
+    "streams": "Streams",
+    "tasks": "Tareas",
     "parent": "Padre",
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",
@@ -1696,8 +1702,7 @@
     "loading-data": "Cargando datos...",
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "no-rows-found": "No se encontraron filas",
-    "download-as-csv": "Descargar como CSV",
-    "download-as-json": "Descargar como JSON",
+    "download-as-file": "Descargar como {file}",
     "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
     "want-to-action": "Si desea {want}, haga clic en el botón {action} y envíe una incidencia.",
     "table-schema-placeholder": "Seleccione una tabla para ver su esquema",
