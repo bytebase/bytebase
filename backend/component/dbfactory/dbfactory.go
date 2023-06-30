@@ -46,7 +46,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if database != nil && database.DataShare {
 		datashare = true
 	}
-	if instance.Engine == db.Oracle && database != nil {
+	if instance.Engine == db.Oracle && database != nil && database.ServiceName != "" {
 		// For Oracle, we map CDB as instance and PDB as database.
 		// The instance data source is the data source for CDB.
 		// So, if the database is not nil, which means we want to connect the PDB, we need to override the database name, service name, and sid.
@@ -77,7 +77,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if database != nil {
 		databaseName = database.DatabaseName
 	}
-	if instance.Engine == db.Oracle && database != nil {
+	if instance.Engine == db.Oracle && database != nil && database.ServiceName != "" {
 		// For Oracle, we map CDB as instance and PDB as database.
 		// The instance data source is the data source for CDB.
 		// So, if the database is not nil, which means we want to connect the PDB, we need to override the database name, service name, and sid.

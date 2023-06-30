@@ -34,6 +34,7 @@ func init() {
 type Driver struct {
 	db           *sql.DB
 	databaseName string
+	serviceName  string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -57,6 +58,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	}
 	driver.db = db
 	driver.databaseName = config.Database
+	driver.serviceName = config.ServiceName
 	return driver, nil
 }
 

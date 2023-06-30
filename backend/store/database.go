@@ -280,9 +280,10 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 			last_successful_sync_ts,
 			schema_version,
 			secrets,
-			datashare
+			datashare,
+			service_name
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			updater_id = EXCLUDED.updater_id,
 			project_id = EXCLUDED.project_id,
@@ -302,6 +303,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		"",            /* schema_version */
 		secretsString, /* secrets */
 		create.DataShare,
+		create.ServiceName,
 	).Scan(
 		&databaseUID,
 	); err != nil {
