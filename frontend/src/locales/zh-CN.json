@@ -253,7 +253,11 @@
     "expiration": "过期时间",
     "configure": "配置",
     "database-groups": "数据库分组",
-    "members": "成员"
+    "members": "成员",
+    "warehouse": "仓库",
+    "schedule": "计划",
+    "state": "状态",
+    "condition": "条件"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -842,6 +846,8 @@
     "views": "视图",
     "extensions": "插件",
     "functions": "函数",
+    "streams": "Streams",
+    "tasks": "任务",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",

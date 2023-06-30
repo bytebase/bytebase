@@ -256,7 +256,11 @@
     "expiration": "Expiration",
     "configure": "Configure",
     "database-groups": "Database Groups",
-    "members": "Members"
+    "members": "Members",
+    "warehouse": "Warehouse",
+    "schedule": "Schedule",
+    "state": "State",
+    "condition": "Condition"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -845,6 +849,8 @@
     "views": "Views",
     "extensions": "Extensions",
     "functions": "Functions",
+    "streams": "Streams",
+    "tasks": "Tasks",
     "parent": "Parent",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",

@@ -137,6 +137,26 @@
             :function-list="functionList"
           />
         </template>
+
+        <template v-if="databaseEngine === Engine.SNOWFLAKE">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.streams") }}
+          </div>
+          <StreamTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :stream-list="streamList"
+          />
+
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.tasks") }}
+          </div>
+          <TaskTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :task-list="taskList"
+          />
+        </template>
       </template>
     </div>
   </div>
@@ -154,6 +174,8 @@ import ViewTable from "../components/ViewTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
+import StreamTable from "./StreamTable.vue";
+import TaskTable from "./TaskTable.vue";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -258,5 +280,33 @@ const functionList = computed(() => {
     );
   }
   return dbSchemaStore.getFunctionList(props.database.name);
+});
+
+const streamList = computed(() => {
+  if (hasSchemaProperty.value) {
+    return (
+      schemaList.value.find(
+        (schema) => schema.name === state.selectedSchemaName
+      )?.streams || []
+    );
+  }
+  return dbSchemaStore
+    .getDatabaseMetadata(props.database.name)
+    .schemas.map((schema) => schema.streams)
+    .flat();
+});
+
+const taskList = computed(() => {
+  if (hasSchemaProperty.value) {
+    return (
+      schemaList.value.find(
+        (schema) => schema.name === state.selectedSchemaName
+      )?.tasks || []
+    );
+  }
+  return dbSchemaStore
+    .getDatabaseMetadata(props.database.name)
+    .schemas.map((schema) => schema.tasks)
+    .flat();
 });
 </script>
