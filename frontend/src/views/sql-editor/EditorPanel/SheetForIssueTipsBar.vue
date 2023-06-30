@@ -1,9 +1,12 @@
 <template>
-  <div v-if="payload || isSheetOversize" class="w-full p-4 flex bg-yellow-50">
+  <div
+    v-if="payload || isSheetOversize"
+    class="w-full p-4 flex items-center bg-yellow-50 gap-x-3"
+  >
     <div class="flex-shrink-0">
       <heroicons-solid:information-circle class="h-5 w-5 text-yellow-400" />
     </div>
-    <div class="ml-3 text-sm font-medium text-yellow-800">
+    <div class="flex-1 text-sm font-medium text-yellow-800">
       <i18n-t v-if="payload" tag="h3" keypath="sheet.from-issue-warning">
         <template #issue>
           <NTooltip :disabled="loading || !issue">
@@ -31,16 +34,22 @@
         {{ $t("sheet.content-oversize-warning") }}
       </div>
     </div>
+    <DownloadSheetButton
+      v-if="tab.sheetName"
+      :sheet="tab.sheetName"
+      size="small"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { shallowRef, computed, ref, watch } from "vue";
+import { NTooltip } from "naive-ui";
+
 import { useIssueStore, useSheetV1Store, useTabStore } from "@/store";
 import { Issue } from "@/types";
 import { getSheetIssueBacktracePayloadV1 } from "@/utils";
-import { NTooltip } from "naive-ui";
-import { shallowRef } from "vue";
-import { computed, ref, watch } from "vue";
+import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
