@@ -1539,6 +1539,32 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 				Definition: function.Definition,
 			})
 		}
+		for _, task := range schema.Tasks {
+			s.Tasks = append(s.Tasks, &v1pb.TaskMetadata{
+				Name:         task.Name,
+				Id:           task.Id,
+				Owner:        task.Owner,
+				Comment:      task.Comment,
+				Warehouse:    task.Warehouse,
+				Schedule:     task.Schedule,
+				Predecessors: task.Predecessors,
+				State:        v1pb.TaskMetadata_State(task.State),
+				Condition:    task.Condition,
+				Definition:   task.Definition,
+			})
+		}
+		for _, stream := range schema.Streams {
+			s.Streams = append(s.Streams, &v1pb.StreamMetadata{
+				Name:       stream.Name,
+				TableName:  stream.TableName,
+				Owner:      stream.Owner,
+				Comment:    stream.Comment,
+				Type:       v1pb.StreamMetadata_Type(stream.Type),
+				Stale:      stream.Stale,
+				Mode:       v1pb.StreamMetadata_Mode(stream.Mode),
+				Definition: stream.Definition,
+			})
+		}
 		m.Schemas = append(m.Schemas, s)
 	}
 	for _, extension := range metadata.Extensions {

@@ -351,6 +351,12 @@ message SchemaMetadata {
 
   // The functions is the list of functions in a schema.
   repeated FunctionMetadata functions = 4;
+
+  // The streams is the list of streams in a schema, currently, only used for Snowflake.
+  repeated StreamMetadata streams = 5;
+
+  // The routines is the list of routines in a schema, currently, only used for Snowflake.
+  repeated TaskMetadata tasks = 6;
 }
 
 // TableMetadata is the metadata for tables.
@@ -453,6 +459,80 @@ message FunctionMetadata {
 
   // The definition is the definition of a view.
   string definition = 2;
+}
+
+message TaskMetadata {
+  // The name is the name of a task.
+  string name = 1;
+
+  // The id is the snowflake-generated id of a task.
+  // Example: 01ad32a0-1bb6-5e93-0000-000000000001
+  string id = 2;
+
+  // The owner of the task.
+  string owner = 3;
+
+  // The comment of the task.
+  string comment = 4;
+
+  // The warehouse of the task.
+  string warehouse = 5;
+
+  // The schedule interval of the task.
+  string schedule = 6;
+
+  // The predecessor tasks of the task.
+  repeated string predecessors = 7;
+
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_STARTED = 1;
+    STATE_SUSPENDED = 2;
+  }
+  // The state of the task.
+  State state = 8;
+
+  // The condition of the task.
+  string condition = 9;
+
+  // The definition of the task.
+  string definition = 10;
+}
+
+message StreamMetadata {
+  // The name is the name of a stream.
+  string name = 1;
+
+  // The table_name is the name of the table/view that the stream is created on.
+  string table_name = 2;
+
+  // The owner of the stream.
+  string owner = 3;
+
+  // The comment of the stream.
+  string comment = 4;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_DELTA = 1;
+  }
+  // The type of the stream.
+  Type type = 5;
+
+  // Indicates whether the stream was last read before the `stale_after` time.
+  bool stale = 6;
+
+  enum Mode {
+    MODE_UNSPECIFIED = 0;
+    MODE_DEFAULT = 1;
+    MODE_APPEND_ONLY = 2;
+    MODE_INSERT_ONLY = 3;
+  }
+  // The mode of the stream.
+  Mode mode = 7;
+
+  // The definition of the stream.
+  string definition = 8;
 }
 
 // IndexMetadata is the metadata for indexes.
