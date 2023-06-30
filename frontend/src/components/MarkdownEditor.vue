@@ -28,7 +28,7 @@
             <template v-if="toolbar.text">
               <span class="font-bold">{{ toolbar.text }}</span>
             </template>
-            <template v-else="toolbar.icon">
+            <template v-else-if="toolbar.icon">
               <heroicons-outline:code
                 v-if="toolbar.icon === 'code'"
                 class="w-4 h-4"
@@ -44,8 +44,8 @@
     </div>
     <iframe
       v-if="state.showPreview"
-      :srcdoc="markdownContent"
       ref="contentPreviewArea"
+      :srcdoc="markdownContent"
       class="rounded-md w-full overflow-hidden"
       @load="adjustIframe"
     />
@@ -86,7 +86,9 @@ const md = new MarkdownIt({
     if (lang && hljs.getLanguage(lang)) {
       try {
         return hljs.highlight(code, { language: lang }).value;
-      } catch (__) {}
+      } catch {
+        return "";
+      }
     }
 
     return ""; // use external default escaping
@@ -169,7 +171,7 @@ const adjustIframe = () => {
   }
 
   if (contentPreviewArea.value.contentDocument) {
-    var cssLink = document.createElement("style");
+    const cssLink = document.createElement("style");
     cssLink.append(codeStyle, markdownStyle);
     contentPreviewArea.value.contentDocument.head.append(cssLink);
     contentPreviewArea.value.contentDocument.body.className = "markdown-body";
