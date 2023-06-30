@@ -1,439 +1,444 @@
 {
-  "engine": {
-    "mysql": "MySQL",
-    "tidb": "TiDB",
-    "postgres": "PostgreSQL",
-    "oracle": "Oracle",
-    "oceanbase": "OceanBase",
-    "snowflake": "Snowflake"
-  },
-  "category": {
-    "engine": "Motor",
-    "naming": "Nomenclatura",
-    "statement": "Declaración",
-    "table": "Tabla",
-    "column": "Columna",
-    "schema": "Esquema",
-    "database": "Base de datos",
-    "index": "Índice",
-    "system": "Sistema"
-  },
-  "template": {
-    "bb-sql-review-prod": "Plantilla Avanzada",
-    "bb-sql-review-prod-desc": "Política completa donde se tiene protección total y mejores prácticas para sus bases de datos.",
-    "bb-sql-review-dev": "Plantilla Básica",
-    "bb-sql-review-dev-desc": "Cobertura básica para defender sus bases de datos de uso indebido común.",
-    "bb-sql-review-sample": "Plantilla de Muestra",
-    "bb-sql-review-sample-desc": "Una plantilla mínima con protección de eliminación y prohibición de columnas nulas."
-  },
-  "rule": {
-    "engine-mysql-use-innodb": {
-      "title": "Imponer el motor de almacenamiento InnoDB",
-      "description": "InnoDB es el motor de almacenamiento predeterminado para MySQL que proporciona soporte para transacciones. También proporciona un mejor rendimiento para escenarios de alta concurrencia y baja latencia, y admite copias de seguridad y recuperación de datos en línea. Es la opción preferida para las empresas OLTP. Nivel de sugerencia de error: Error"
+    "engine": {
+        "mysql": "MySQL",
+        "tidb": "TiDB",
+        "postgres": "PostgreSQL",
+        "oracle": "Oracle",
+        "oceanbase": "OceanBase",
+        "snowflake": "Snowflake"
     },
-    "table-require-pk": {
-      "title": "Imponer la inclusión de clave primaria en una tabla",
-      "description": "Además de llevar un significado empresarial, las claves primarias también son beneficiosas para consultas de alta concurrencia en MySQL. Varias herramientas de sincronización, comparación y reversión de datos a menudo requieren que las tablas tengan claves primarias. Nivel de sugerencia de error: Error"
+    "category": {
+        "engine": "Motor",
+        "naming": "Nomenclatura",
+        "statement": "Declaración",
+        "table": "Tabla",
+        "column": "Columna",
+        "schema": "Esquema",
+        "database": "Base de datos",
+        "index": "Índice",
+        "system": "Sistema"
     },
-    "table-no-foreign-key": {
-      "title": "Prohibir el uso de restricciones de clave externa",
-      "description": "Las ventajas y desventajas de las claves externas son altamente controvertidas. El uso de claves externas puede aumentar significativamente la dificultad de los cambios en la base de datos, la escalabilidad (como la fragmentación), etc. Y incluso puede evitar el uso de algunas herramientas. Por lo tanto, otra opción es implementar restricciones de claves externas en la capa de aplicación. Nivel de sugerencia de error: Advertencia"
+    "template": {
+        "bb-sql-review-prod": "Plantilla Avanzada",
+        "bb-sql-review-prod-desc": "Política completa donde se tiene protección total y mejores prácticas para sus bases de datos.",
+        "bb-sql-review-dev": "Plantilla Básica",
+        "bb-sql-review-dev-desc": "Cobertura básica para defender sus bases de datos de uso indebido común.",
+        "bb-sql-review-sample": "Plantilla de Muestra",
+        "bb-sql-review-sample-desc": "Una plantilla mínima con protección de DROP y prohibición de columnas anulables."
     },
-    "table-drop-naming-convention": {
-      "title": "Restringir el formato de nomenclatura de las tablas a eliminar",
-      "description": "Por ejemplo, al requerir el sufijo \"_del\", se puede prevenir efectivamente las eliminaciones accidentales. Nivel de sugerencia de error: Error",
-      "component": {
-        "format": {
-          "title": "Formato de nombre de tabla (regex)"
-        }
-      }
-    },
-    "table-disallow-partition": {
-      "title": "Prohibir el uso de tablas particionadas",
-      "description": "En algunos motores de base de datos, las tablas particionadas no están maduras y el uso y mantenimiento son incómodos. Por lo tanto, es más propenso a utilizar métodos manuales de partición de datos como la fragmentación de bases de datos y tablas. Nivel de sugerencia de error: Advertencia"
-    },
-    "table-comment": {
-      "title": "Convención de comentarios de tabla",
-      "description": "Configure si la tabla requiere comentarios y la longitud máxima de comentarios.",
-      "component": {
-        "required": {
-          "title": "Requerir comentario"
+    "rule": {
+        "engine-mysql-use-innodb": {
+            "title": "Imponer el motor de almacenamiento InnoDB",
+            "description": "InnoDB es el motor de almacenamiento predeterminado para MySQL que proporciona soporte para transacciones. También proporciona un mejor rendimiento para escenarios de alta concurrencia y baja latencia, y admite copias de seguridad y recuperación de datos en línea. Es la opción preferida para las empresas OLTP. Nivel de sugerencia de error: Error"
         },
-        "maxLength": {
-          "title": "Longitud máxima"
-        }
-      }
-    },
-    "naming-table": {
-      "title": "Imponer formato de nomenclatura de tabla",
-      "description": "El formato predeterminado es todo en minúsculas, separado por guiones bajos entre palabras, y no más de 63 caracteres de largo, como \"abc\" y \"abc_def\". Nivel de sugerencia de error: Advertencia",
-      "component": {
-        "format": {
-          "title": "Formato de nombre de tabla (regex)"
+        "table-require-pk": {
+            "title": "Imponer la inclusión de clave primaria en una tabla",
+            "description": "Además de llevar un significado empresarial, las claves primarias también son beneficiosas para consultas de alta concurrencia en MySQL. Varias herramientas de sincronización, comparación y reversión de datos a menudo requieren que las tablas tengan claves primarias. Nivel de sugerencia de error: Error"
         },
-        "maxLength": {
-          "title": "Límite de longitud"
-        }
-      }
-    },
-    "naming-column": {
-      "title": "Imponer formato de nomenclatura de columna",
-      "description": "El formato predeterminado es todo en minúsculas, separado por guiones bajos entre palabras, y no más de 63 caracteres de largo, como \"abc\" y \"abc_def\". Nivel de sugerencia de error: Advertencia",
-      "component": {
-        "format": {
-          "title": "Formato de nombre de columna (regex)"
+        "table-no-foreign-key": {
+            "title": "Prohibir el uso de restricciones de clave externa",
+            "description": "Las ventajas y desventajas de las claves externas son altamente controvertidas. El uso de claves externas puede aumentar significativamente la dificultad de los cambios en la base de datos, la escalabilidad (como la fragmentación), etc. Y incluso puede evitar el uso de algunas herramientas. Por lo tanto, otra opción es implementar restricciones de claves externas en la capa de aplicación. Nivel de sugerencia de error: Advertencia"
         },
-        "maxLength": {
-          "title": "Límite de longitud"
-        }
-      }
-    },
-    "naming-index-uk": {
-      "title": "Imponer formato de nomenclatura de clave única",
-      "description": "El nombre puede estar vacío y nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"uk_<nombre de tabla><combinación de nombre de columna de clave única>\", que no debe superar los 63 caracteres, como \"uk_my_table_id_name\". Nivel de sugerencia de error: Advertencia",
-      "component": {
-        "format": {
-          "title": "Formato de nombre de clave única",
-          "template": {
-            "table": "El nombre de la tabla",
-            "column_list": "Nombres de columna del índice, unidos por "
-          }
+        "table-drop-naming-convention": {
+            "title": "Restringir el formato de nomenclatura de las tablas a eliminar",
+            "description": "Por ejemplo, al requerir el sufijo \"_del\", se puede prevenir efectivamente las eliminaciones accidentales. Nivel de sugerencia de error: Error",
+            "component": {
+                "format": {
+                    "title": "Formato de nombre de tabla (regex)"
+                }
+            }
         },
-        "maxLength": {
-          "title": "Límite de longitud"
-        }
-      }
-    },
-    "naming-index-pk": {
-      "title": "Imponer formato de nomenclatura de clave primaria",
-      "description": "El nombre puede estar vacío y nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"pk<nombre de tabla><combinación de nombre de columna de clave única>\", que no debe superar los 63 caracteres, como \"pk_my_table_id_name\". Nivel de sugerencia de error: Advertencia",
-      "component": {
-        "format": {
-          "title": "Formato del nombre de clave primaria",
-          "template": {
-            "table": "El nombre de la tabla",
-            "column_list": "Nombres de las columnas de índice, unidos por "
-          }
+        "table-disallow-partition": {
+            "title": "Prohibir el uso de tablas particionadas",
+            "description": "En algunos motores de base de datos, las tablas particionadas no están maduras y el uso y mantenimiento son incómodos. Por lo tanto, es más propenso a utilizar métodos manuales de partición de datos como la fragmentación de bases de datos y tablas. Nivel de sugerencia de error: Advertencia"
         },
-        "maxLength": {
-          "title": "Límite de longitud"
-        }
-      }
-    },
-    "naming-index-fk": {
-      "title": "Imponer el formato de nombres de clave foránea",
-      "description": "El nombre puede estar vacío y ser nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"fk<nombre de la tabla><combinación de nombres de columna de clave única>\", que no tiene más de 63 caracteres de longitud, como \"fk_my_table_id_name\". Nivel de error sugerido: Advertencia",
-      "component": {
-        "format": {
-          "title": "Formato del nombre de clave foránea",
-          "template": {
-            "referencing_table": "El nombre de la tabla que referencia",
-            "referencing_column": "El nombre de la columna que referencia",
-            "referenced_table": "El nombre de la tabla referenciada",
-            "referenced_column": "El nombre de la columna referenciada"
-          }
+        "table-comment": {
+            "title": "Convención de comentarios de tabla",
+            "description": "Configure si la tabla requiere comentarios y la longitud máxima de comentarios.",
+            "component": {
+                "required": {
+                    "title": "Requerir comentario"
+                },
+                "maxLength": {
+                    "title": "Longitud máxima"
+                }
+            }
         },
-        "maxLength": {
-          "title": "Límite de longitud"
-        }
-      }
-    },
-    "naming-index-idx": {
-      "title": "Imponer el formato de nombres de índice",
-      "description": "El nombre puede estar vacío y ser nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"idx<nombre de la tabla>_<combinación de nombres de columna de clave única>\", que no tiene más de 63 caracteres de longitud, como \"idx_my_table_id_name\". Nivel de error sugerido: Advertencia",
-      "component": {
-        "format": {
-          "title": "Formato del nombre de índice",
-          "template": {
-            "table": "El nombre de la tabla",
-            "column_list": "Nombres de las columnas de índice, unidos por _"
-          }
+        "naming-table": {
+            "title": "Imponer formato de nomenclatura de tabla",
+            "description": "El formato predeterminado es todo en minúsculas, separado por guiones bajos entre palabras, y no más de 63 caracteres de largo, como \"abc\" y \"abc_def\". Nivel de sugerencia de error: Advertencia",
+            "component": {
+                "format": {
+                    "title": "Formato de nombre de tabla (regex)"
+                },
+                "maxLength": {
+                    "title": "Límite de longitud"
+                }
+            }
         },
-        "maxLength": {
-          "title": "Límite de longitud"
-        }
-      }
-    },
-    "naming-column-auto-increment": {
-      "title": "Imponer el formato de nombres de columna de autoincremento",
-      "description": "El nombre predeterminado de la columna es \"ID\" y no tiene más de 63 caracteres de longitud.",
-      "component": {
-        "format": {
-          "title": "Formato del nombre de columna de autoincremento (regex)"
+        "naming-column": {
+            "title": "Imponer formato de nomenclatura de columna",
+            "description": "El formato predeterminado es todo en minúsculas, separado por guiones bajos entre palabras, y no más de 63 caracteres de largo, como \"abc\" y \"abc_def\". Nivel de sugerencia de error: Advertencia",
+            "component": {
+                "format": {
+                    "title": "Formato de nombre de columna (regex)"
+                },
+                "maxLength": {
+                    "title": "Límite de longitud"
+                }
+            }
         },
-        "maxLength": {
-          "title": "Límite de longitud"
-        }
-      }
-    },
-    "naming-table-no-keyword": {
-      "title": "Prohibir el uso de palabras clave como nombres de tablas",
-      "description": ""
-    },
-    "naming-identifier-no-keyword": {
-      "title": "Prohibir el uso de palabras clave como identificadores",
-      "description": ""
-    },
-    "naming-identifier-case": {
-      "title": "Hacer cumplir el caso del identificador",
-      "description": "",
-      "component": {
-        "upper": {
-          "title": "Capital"
-        }
-      }
-    },
-
-    "column-required": {
-      "title": "Imponer la inclusión de columnas específicas en una tabla",
-      "description": "Algunas columnas comunes son útiles para el mantenimiento de la aplicación. Por ejemplo, agregar una columna de \"ID\" independiente del negocio como clave primaria evita conflictos de clave primaria causados por cambios en el negocio (como fusiones de negocios) y en algunos escenarios también puede mejorar el rendimiento de inserción de datos. Nivel de error sugerido: Advertencia",
-      "component": {
-        "list": {
-          "title": "Lista de prohibiciones"
-        }
-      }
-    },
-    "column-type-disallow-list": {
-      "title": "Prohibir el uso de ciertos tipos de datos de columna",
-      "description": "Abusar de los tipos de columna puede tener graves efectos negativos en el mantenimiento y rendimiento del sistema. Por ejemplo, el uso de una columna \"LOB\" para almacenar grandes cantidades de datos de audio y video puede disminuir el rendimiento de la base de datos, aumentar los tiempos de copia de seguridad y recuperación, y hacer que las herramientas de sincronización de datos sean incompatibles. Nivel de error sugerido: Error",
-      "component": {
-        "list": {
-          "title": "Prohibir lista"
-        }
-      }
-    },
-    "column-no-null": {
-      "title": "Forzar restricciones \"NOT NULL\" en las columnas",
-      "description": "Las columnas no pueden tener un valor NULL."
-    },
-    "column-disallow-set-charset": {
-      "title": "Prohibir la definición del conjunto de caracteres en las propiedades de las columnas",
-      "description": "Se recomienda establecer el conjunto de caracteres a nivel de base de datos o de tabla. Establecer el conjunto de caracteres a una granularidad más fina puede traer complejidades innecesarias. Nivel de error sugerido: Error."
-    },
-    "column-disallow-change-type": {
-      "title": "Prohibir la modificación de los tipos de columnas",
-      "description": "Modificar los tipos de columnas puede afectar el rendimiento del sistema, la mantenibilidad e incluso llevar a la pérdida de datos. Nivel de error sugerido: Advertencia"
-    },
-    "column-disallow-change": {
-      "title": "Prohibir el uso de la instrucción \"CHANGE COLUMN\"",
-      "description": "\"CHANGE COLUMN\" es único en la sintaxis de MySQL y se puede usar para modificar los nombres de las columnas y otras propiedades al mismo tiempo. Sin embargo, puede causar que el nombre de la columna se cambie por error al modificar las propiedades. Se recomienda seguir utilizando las instrucciones estándar \"RENAME\" y \"MODIFY\" para distinguir entre los dos tipos de cambios. Nivel de error sugerido: Error"
-    },
-    "column-disallow-changing-order": {
-      "title": "Prohibir el cambio del orden de las columnas en una tabla",
-      "description": "Modificar el orden de las columnas puede hacer que algunas aplicaciones o vistas que dependen del orden predeterminado de la tabla original produzcan resultados inesperados, como \"select *\". Nivel de error sugerido: Advertencia"
-    },
-    "column-set-default-for-not-null": {
-      "title": "Forzar un valor predeterminado en columnas \"NOT NULL\"",
-      "description": "Para una columna 'NOT NULL', si no se asigna un valor a la columna al insertar una nueva fila y la columna no tiene un valor predeterminado, la base de datos rechazará la inserción de esa fila. Establecer un valor predeterminado para una nueva columna también puede garantizar la compatibilidad con la aplicación heredada. Nivel de error sugerido: Error"
-    },
-    "column-auto-increment-must-integer": {
-      "title": "Forzar el uso del tipo de datos \"INTEGER\" para columnas de autoincremento",
-      "description": "Las columnas de autoincremento de MySQL se utilizan generalmente como claves primarias independientes del negocio. El uso de tipos enteros ocupa menos espacio de almacenamiento y hace que la estructura de índice de clave primaria sea más compacta, lo que mejora el rendimiento de consultas y DML. Nivel de error sugerido: Error"
-    },
-    "column-auto-increment-must-unsigned": {
-      "title": "Hacer obligatorio el uso del tipo de dato \"UNSIGNED\" para columnas de autoincremento",
-      "description": "Los tipos no signados no almacenan números negativos, y el rango de valores que pueden almacenar se duplica, lo que puede evitar que las columnas de autoincremento desborden. Nivel de error sugerido: Advertencia"
-    },
-    "column-comment": {
-      "title": "Hacer obligatorio agregar comentarios a las columnas",
-      "description": "Agregar comentarios a las columnas es una buena práctica de desarrollo, pero comentarios demasiado largos pueden disminuir la legibilidad del esquema. Nivel de error sugerido: Advertencia",
-      "component": {
-        "required": {
-          "title": "Comentario obligatorio"
+        "naming-index-uk": {
+            "title": "Imponer formato de nomenclatura de clave única",
+            "description": "El nombre puede estar vacío y nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"uk_<nombre de tabla><combinación de nombre de columna de clave única>\", que no debe superar los 63 caracteres, como \"uk_my_table_id_name\". Nivel de sugerencia de error: Advertencia",
+            "component": {
+                "format": {
+                    "title": "Formato de nombre de clave única",
+                    "template": {
+                        "table": "El nombre de la tabla",
+                        "column_list": "Nombres de columna del índice, unidos por _"
+                    }
+                },
+                "maxLength": {
+                    "title": "Límite de longitud"
+                }
+            }
         },
-        "maxLength": {
-          "title": "Longitud máxima"
+        "naming-index-pk": {
+            "title": "Imponer formato de nomenclatura de clave primaria",
+            "description": "El nombre puede estar vacío y nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"pk<nombre de tabla><combinación de nombre de columna de clave única>\", que no debe superar los 63 caracteres, como \"pk_my_table_id_name\". Nivel de sugerencia de error: Advertencia",
+            "component": {
+                "format": {
+                    "title": "Formato del nombre de clave primaria",
+                    "template": {
+                        "table": "El nombre de la tabla",
+                        "column_list": "Nombres de las columnas de índice, unidos por _"
+                    }
+                },
+                "maxLength": {
+                    "title": "Límite de longitud"
+                }
+            }
+        },
+        "naming-index-fk": {
+            "title": "Imponer el formato de nombres de clave foránea",
+            "description": "El nombre puede estar vacío y ser nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"fk<nombre de la tabla><combinación de nombres de columna de clave única>\", que no tiene más de 63 caracteres de longitud, como \"fk_my_table_id_name\". Nivel de error sugerido: Advertencia",
+            "component": {
+                "format": {
+                    "title": "Formato del nombre de clave foránea",
+                    "template": {
+                        "referencing_table": "El nombre de la tabla que referencia",
+                        "referencing_column": "El nombre de la columna que referencia",
+                        "referenced_table": "El nombre de la tabla referenciada",
+                        "referenced_column": "El nombre de la columna referenciada"
+                    }
+                },
+                "maxLength": {
+                    "title": "Límite de longitud"
+                }
+            }
+        },
+        "naming-index-idx": {
+            "title": "Imponer el formato de nombres de índice",
+            "description": "El nombre puede estar vacío y ser nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"idx<nombre de la tabla>_<combinación de nombres de columna de clave única>\", que no tiene más de 63 caracteres de longitud, como \"idx_my_table_id_name\". Nivel de error sugerido: Advertencia",
+            "component": {
+                "format": {
+                    "title": "Formato del nombre del índice",
+                    "template": {
+                        "table": "El nombre de la tabla",
+                        "column_list": "Nombres de las columnas de índice, unidos por _"
+                    }
+                },
+                "maxLength": {
+                    "title": "Límite de longitud"
+                }
+            }
+        },
+        "naming-column-auto-increment": {
+            "title": " Imponer el formato de nombres de columna de autoincremento",
+            "description": "El nombre predeterminado de la columna es \"ID\" y no tiene más de 63 caracteres de longitud.",
+            "component": {
+                "format": {
+                    "title": "Formato del nombre de columna de autoincremento (regex)"
+                },
+                "maxLength": {
+                    "title": "Límite de longitud"
+                }
+            }
+        },
+        "naming-table-no-keyword": {
+            "title": "Prohibir el uso de palabras clave como nombres de tablas",
+            "description": ""
+        },
+        "naming-identifier-no-keyword": {
+            "title": "Prohibir el uso de palabras clave como identificadores",
+            "description": ""
+        },
+        "naming-identifier-case": {
+            "title": "Hacer cumplir el caso del identificador",
+            "description": "",
+            "component": {
+                "upper": {
+                    "title": "Capital"
+                }
+            }
+        },
+        "column-required": {
+            "title": "Imponer la inclusión de columnas específicas en una tabla",
+            "description": "Algunas columnas comunes son útiles para el mantenimiento de la aplicación. Por ejemplo, agregar una columna de \"ID\" independiente del negocio como clave primaria evita conflictos de clave primaria causados por cambios en el negocio (como fusiones de negocios) y en algunos escenarios también puede mejorar el rendimiento de inserción de datos. Nivel de error sugerido: Advertencia",
+            "component": {
+                "list": {
+                    "title": "Lista de prohibiciones"
+                }
+            }
+        },
+        "column-type-disallow-list": {
+            "title": "Prohibir el uso de ciertos tipos de datos de columna",
+            "description": "Abusar de los tipos de columna puede tener graves efectos negativos en el mantenimiento y rendimiento del sistema. Por ejemplo, el uso de una columna \"LOB\" para almacenar grandes cantidades de datos de audio y video puede disminuir el rendimiento de la base de datos, aumentar los tiempos de copia de seguridad y recuperación, y hacer que las herramientas de sincronización de datos sean incompatibles. Nivel de error sugerido: Error",
+            "component": {
+                "list": {
+                    "title": "Prohibir lista"
+                }
+            }
+        },
+        "column-no-null": {
+            "title": "Forzar restricciones \"NOT NULL\" en las columnas",
+            "description": "Las columnas no pueden tener un valor NULL."
+        },
+        "column-disallow-set-charset": {
+            "title": "Prohibir la definición del conjunto de caracteres en las propiedades de las columnas",
+            "description": "Se recomienda establecer el conjunto de caracteres a nivel de base de datos o de tabla. Establecer el conjunto de caracteres a una granularidad más fina puede traer complejidades innecesarias. Nivel de error sugerido: Error."
+        },
+        "column-disallow-change-type": {
+            "title": "Prohibir la modificación de los tipos de columnas",
+            "description": "Modificar los tipos de columnas puede afectar el rendimiento del sistema, la mantenibilidad e incluso llevar a la pérdida de datos. Nivel de error sugerido: Advertencia"
+        },
+        "column-disallow-change": {
+            "title": "Prohibir el uso de la instrucción \"CHANGE COLUMN\"",
+            "description": "\"CHANGE COLUMN\" es único en la sintaxis de MySQL y se puede usar para modificar los nombres de las columnas y otras propiedades al mismo tiempo. Sin embargo, puede causar que el nombre de la columna se cambie por error al modificar las propiedades. Se recomienda seguir utilizando las instrucciones estándar \"RENAME\" y \"MODIFY\" para distinguir entre los dos tipos de cambios. Nivel de error sugerido: Error"
+        },
+        "column-disallow-changing-order": {
+            "title": "Prohibir el cambio del orden de las columnas en una tabla",
+            "description": "Modificar el orden de las columnas puede hacer que algunas aplicaciones o vistas que dependen del orden predeterminado de la tabla original produzcan resultados inesperados, como \"select *\". Nivel de error sugerido: Advertencia"
+        },
+        "column-set-default-for-not-null": {
+            "title": "Forzar un valor predeterminado en columnas \"NOT NULL\"",
+            "description": "Para una columna 'NOT NULL', si no se asigna un valor a la columna al insertar una nueva fila y la columna no tiene un valor predeterminado, la base de datos rechazará la inserción de esa fila. Establecer un valor predeterminado para una nueva columna también puede garantizar la compatibilidad con la aplicación heredada. Nivel de error sugerido: Error"
+        },
+        "column-auto-increment-must-integer": {
+            "title": "Forzar el uso del tipo de datos \"INTEGER\" para columnas de autoincremento",
+            "description": "Las columnas de autoincremento de MySQL se utilizan generalmente como claves primarias independientes del negocio. El uso de tipos enteros ocupa menos espacio de almacenamiento y hace que la estructura de índice de clave primaria sea más compacta, lo que mejora el rendimiento de consultas y DML. Nivel de error sugerido: Error"
+        },
+        "column-auto-increment-must-unsigned": {
+            "title": "Hacer obligatorio el uso del tipo de dato \"UNSIGNED\" para columnas de autoincremento",
+            "description": "Los tipos no signados no almacenan números negativos, y el rango de valores que pueden almacenar se duplica, lo que puede evitar que las columnas de autoincremento desborden. Nivel de error sugerido: Advertencia"
+        },
+        "column-comment": {
+            "title": "Hacer obligatorio agregar comentarios a las columnas",
+            "description": "Agregar comentarios a las columnas es una buena práctica de desarrollo, pero comentarios demasiado largos pueden disminuir la legibilidad del esquema. Nivel de error sugerido: Advertencia",
+            "component": {
+                "required": {
+                    "title": "Comentario obligatorio"
+                },
+                "maxLength": {
+                    "title": "Longitud máxima"
+                }
+            }
+        },
+        "column-maximum-character-length": {
+            "title": "Restringir la longitud del tipo de dato \"CHAR\"",
+            "description": "\"CHAR\" es un tipo de longitud fija. Por ejemplo, la columna CHAR(20) ocupará 20 espacios de caracteres aunque solo se almacene un carácter, lo que causa desperdicio. Cuando la cadena sea demasiado larga y la longitud no sea fija, se debe considerar el uso de VARCHAR para MySQL y el uso de TEXT para PostgreSQL. Nivel de error sugerido: Error",
+            "component": {
+                "number": {
+                    "title": "Longitud máxima"
+                }
+            }
+        },
+        "column-maximum-varchar-length": {
+            "title": "Restringir la longitud del tipo de dato \"VARCHAR\"",
+            "description": "",
+            "component": {
+                "number": {
+                    "title": "Longitud máxima"
+                }
+            }
+        },
+        "column-auto-increment-initial-value": {
+            "title": "Restringir el valor inicial de las columnas de autoincremento",
+            "description": "Basándose en los requisitos de gestión, se debe limitar el valor inicial de la columna de autoincremento. Nivel de error sugerido: Advertencia",
+            "component": {
+                "number": {
+                    "title": "Valor inicial"
+                }
+            }
+        },
+        "column-current-time-count-limit": {
+            "title": "Restringir el número de columnas en la tabla que adquieren la hora del sistema",
+            "description": "Solo las columnas que registran la hora de creación del registro con \"DEFAULT NOW()\" y que registran la hora de actualización del registro con \"DEFAULT NOW() ON UPDATE\" necesitan llamar a la función para obtener la hora del sistema. Es inútil y aumentará la sobrecarga de recursos registrar la hora del sistema en otras columnas. Nivel de error sugerido: Error"
+        },
+        "column-require-default": {
+            "title": "Hacer obligatorio establecer un valor por defecto en las columnas",
+            "description": "Establecer valores por defecto que satisfagan la lógica de negocio puede mejorar efectivamente la calidad de los datos del pipeline analítico aguas abajo. Esta regla no verifica los tipos \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\". Nivel de error sugerido: Advertencia"
+        },
+        "statement-select-no-select-all": {
+            "title": "Prohibir el uso de \"SELECT *\"",
+            "description": "El uso de SELECT * para obtener todos los datos de una fila puede causar una sobrecarga de recursos innecesaria y también puede causar resultados inesperados en las aplicaciones una vez que la tabla agrega o elimina columnas. Nivel de sugerencia de error: Error"
+        },
+        "statement-where-require": {
+            "title": "Obligar la presencia de la condición \"WHERE\" en las declaraciones",
+            "description": "Las consultas sin cláusula WHERE pueden causar una enorme sobrecarga de recursos innecesarios, y las DML pueden causar una pérdida masiva de datos accidental. Nivel de sugerencia de error: Error"
+        },
+        "statement-where-no-leading-wildcard-like": {
+            "title": "Prohibir el uso de comodines principales en las condiciones de filtrado",
+            "description": "Al usar comodines principales, como \"LIKE '%ABC'\", el optimizador de la base de datos no puede usar el escaneo de índice rápido y debe recurrir al escaneo completo de la tabla o del índice completo, lo que puede causar un impacto grave en el rendimiento. Nivel de sugerencia de error: Error"
+        },
+        "statement-disallow-commit": {
+            "title": "Prohibir la declaración explícita de \"COMMIT\"",
+            "description": "En algunos casos, se requiere que varias declaraciones se incluyan en una transacción confirmada por el sistema, para poder volver a ejecutarse rápidamente en caso de fallo parcial. Por lo tanto, no se permite la declaración explícita de \"COMMIT\". Nivel de sugerencia de error: Advertencia"
+        },
+        "statement-disallow-limit": {
+            "title": "Prohibir el uso de la cláusula \"LIMIT\" en declaraciones DML",
+            "description": "Si se utiliza LIMIT en declaraciones DML sin una cláusula ORDER BY, el orden de las filas afectadas no está fijo, lo que puede causar inconsistencias de datos entre las bases de datos primarias y de réplica en algunos modos de replicación. Nivel de sugerencia de error: Error"
+        },
+        "statement-disallow-order-by": {
+            "title": "Prohibir el uso de la cláusula \"ORDER BY\" en las declaraciones \"UPDATE\" y \"DELETE\"",
+            "description": "Las operaciones de clasificación son extremadamente intensivas en recursos, por lo que para operaciones de actualización y eliminación, se recomienda utilizar una condición de filtrado determinista tanto como sea posible en lugar de usar ORDER BY y LIMIT. Nivel de sugerencia de error: Error"
+        },
+        "statement-merge-alter-table": {
+            "title": "Prohibir la emisión de múltiples cambios independientes en la misma tabla",
+            "description": "Cada cambio en una tabla puede causar un bloqueo a nivel de tabla y consumir una gran cantidad de recursos. Si hay múltiples cambios en la misma tabla, deben fusionarse en una única declaración de cambio. Nivel de sugerencia de error: Error"
+        },
+        "statement-insert-must-specify-column": {
+            "title": "Obligar a especificar nombres de columnas en declaraciones \"INSERT\"",
+            "description": "La declaración \"INSERT INTO table VALUES (...)\" no lista explícitamente los nombres de las columnas. Una vez que cambia el orden de las columnas o se agregan o eliminan columnas, la declaración puede fallar o generar datos inesperados. Nivel de sugerencia de error: Error"
+        },
+        "statement-insert-disallow-order-by-rand": {
+            "title": "Prohibir el uso de \"ORDER BY rand()\" en declaraciones \"INSERT\"",
+            "description": "Ordenar aleatoriamente los datos a insertar no tiene sentido y solo consume recursos innecesarios. Nivel de sugerencia de error: Error"
+        },
+        "statement-insert-row-limit": {
+            "title": "Restringir el número máximo de filas insertadas",
+            "description": "Revelar el número de filas a insertar puede ayudar a determinar si la declaración cumple con las expectativas comerciales. Nivel de sugerencia de error: Advertencia",
+            "component": {
+                "number": {
+                    "title": "Cantidad máxima de inserciones"
+                }
+            }
+        },
+        "statement-affected-row-limit": {
+            "title": "Restringir el número máximo de filas actualizadas o eliminadas.",
+            "description": "Revelar el número de filas a actualizar o eliminar puede ayudar a determinar si la declaración cumple con las expectativas comerciales. Nivel de sugerencia de error: Advertencia",
+            "component": {
+                "number": {
+                    "title": "Cantidad máxima de filas afectadas"
+                }
+            }
+        },
+        "statement-dml-dry-run": {
+            "title": "Validar la ejecutabilidad de declaraciones DML",
+            "description": "Cuando la sintaxis es correcta, pero el nombre de la tabla es incorrecto o el permiso es insuficiente, se puede descubrir mediante una simulación antes de la ejecución real. Nivel de sugerencia de error: Advertencia"
+        },
+        "statement-disallow-add-column-with-default": {
+            "title": "Restringir agregar columnas con valores predeterminados a una tabla",
+            "description": "Antes de PostgreSQL 11, agregar una columna con un valor predeterminado causaba bloqueos en la tabla y no se podía leer ni escribir, lo que podía causar interrupciones comerciales. En PostgreSQL 11 y versiones posteriores, este problema se ha optimizado y no es necesario prestar atención a esta regla. Nivel de sugerencia de error: Advertencia"
+        },
+        "statement-add-check-not-valid": {
+            "title": "Obligar a incluir la opción \"NOT VALID\" al agregar restricciones \"CHECK\"",
+            "description": "Antes de PostgreSQL 11, agregar una restricción CHECK requería verificar los datos existentes y bloquear la tabla. Esto bloqueaba la lectura y escritura, lo que podía causar interrupciones comerciales. Se recomienda agregar la opción \"NOT VALID\" para validar nuevos datos y validar manualmente los datos existentes después de completar el cambio. En PostgreSQL 11 y versiones posteriores, este problema se ha optimizado y no es necesario prestar atención a esta regla. Nivel de sugerencia de error: Advertencia"
+        },
+        "statement-disallow-add-not-null": {
+            "title": "Restricción de agregar restricción \"NOT NULL\" a columnas existentes",
+            "description": "Antes de PostgreSQL 11, agregar una restricción NOT NULL requería verificar los datos existentes. Esto bloquea la lectura y escritura, lo que puede causar interrupciones comerciales. En PostgreSQL 11 y superior, este problema se ha optimizado y no es necesario prestar atención a esta especificación. Nivel de error sugerido: Advertencia"
+        },
+        "schema-backward-compatibility": {
+            "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
+            "description": "Algunos cambios pueden afectar las aplicaciones en ejecución, como modificar el nombre del objeto de la base de datos, agregar nuevas restricciones, etc. Esta regla puede evitar cambios descuidados que lleven al fallo de la aplicación existente. Nivel de error sugerido: Advertencia"
+        },
+        "database-drop-empty-database": {
+            "title": "Prohibir eliminar base de datos no vacía",
+            "description": "Solo se permite la eliminación cuando no hay tablas en la base de datos, lo que puede evitar la eliminación accidental. Nivel de error sugerido: Error"
+        },
+        "index-no-duplicate-column": {
+            "title": "Prohibir índices que contengan columnas duplicadas",
+            "description": "La creación de un índice con columnas duplicadas dará como resultado un fallo. Nivel de error sugerido: Error"
+        },
+        "index-type-no-blob": {
+            "title": "Prohibir la creación de índices en columnas de tipo de datos \"BLOB\" y \"TEXT\"",
+            "description": "El tipo \"BLOB\" se utiliza generalmente para almacenar datos binarios y no debe utilizarse como condición de consulta. Si se crea un índice en este tipo de columna por error, consumirá muchos recursos y causará un grave impacto en el rendimiento. Nivel de error sugerido: Error"
+        },
+        "index-pk-type-limit": {
+            "title": "Límite de tipo de clave primaria",
+            "description": "Forzar que el tipo de clave primaria sea INT o BIGINT."
+        },
+        "index-key-number-limit": {
+            "title": "Restringir el número de columnas en un solo índice",
+            "description": "Un índice compuesto con más de 5 columnas no mejora significativamente el rendimiento de la consulta, pero ocupa mucho espacio y reduce el rendimiento de DML. Nivel de error sugerido: Advertencia",
+            "component": {
+                "number": {
+                    "title": "Número máximo de columnas"
+                }
+            }
+        },
+        "index-total-number-limit": {
+            "title": "Restringir el número de índices en una sola tabla",
+            "description": "Aunque los índices pueden mejorar el rendimiento de la consulta, también ocupan mucho espacio y reducen el rendimiento de DML. Por lo tanto, no se recomienda crear más de 5 índices en una tabla. Nivel de error sugerido: Advertencia",
+            "component": {
+                "number": {
+                    "title": "Número máximo de índices"
+                }
+            }
+        },
+        "index-primary-key-type-allowlist": {
+            "title": "Lista permitida de tipos de clave primaria",
+            "description": "El tipo de clave primaria adecuado puede optimizar la estructura de almacenamiento, reducir el uso de espacio y ser beneficioso para el rendimiento de inserción y consulta. Nivel de error sugerido: Advertencia",
+            "component": {
+                "list": {
+                    "title": "Permitir lista"
+                }
+            }
+        },
+        "index-create-concurrently": {
+            "title": "Aplicar creación de índices concurrentes",
+            "description": "En PostgreSQL 11 y versiones posteriores, usar la declaración estándar para crear un índice causará un bloqueo de tabla y no permitirá escribir. Usar el modo \"CONCURRENTLY\" puede evitar este problema. Nivel de error sugerido: Advertencia"
+        },
+        "system-charset-allowlist": {
+            "title": "Lista permitida de juegos de caracteres",
+            "description": "El juego de caracteres determina qué caracteres se pueden almacenar en la tabla. El uso de un juego de caracteres incorrecto puede hacer que ciertos caracteres de la aplicación no se puedan almacenar ni mostrar correctamente, como los caracteres CJK y Emoji. Nivel de error sugerido: Error",
+            "component": {
+                "list": {
+                    "title": "Permitir lista"
+                }
+            }
+        },
+        "system-collation-allowlist": {
+            "title": "Lista permitida de ordenaciones",
+            "description": "La ordenación determina las reglas para la comparación y clasificación de caracteres. Por ejemplo, al utilizar una ordenación que no distingue entre mayúsculas y minúsculas, \"ABC\" y \"abc\" se tratarán como la misma cadena en las consultas. Nivel de error sugerido: Error",
+            "component": {
+                "list": {
+                    "title": "Permitir lista"
+                }
+            }
+        },
+        "system-comment-length": {
+            "title": "Restricción en la longitud de los comentarios",
+            "description": "",
+            "component": {
+                "number": {
+                    "title": "Longitud máxima de los comentarios"
+                }
+            }
+        },
+        "level": {
+            "name": "Nivel de error",
+            "error": "Error",
+            "warning": "Advertencia",
+            "disabled": "Desactivado"
         }
-      }
-    },
-    "column-maximum-character-length": {
-      "title": "Restringir la longitud del tipo de dato \"CHAR\"",
-      "description": "\"CHAR\" es un tipo de longitud fija. Por ejemplo, la columna CHAR(20) ocupará 20 espacios de caracteres aunque solo se almacene un carácter, lo que causa desperdicio. Cuando la cadena sea demasiado larga y la longitud no sea fija, se debe considerar el uso de VARCHAR para MySQL y el uso de TEXT para PostgreSQL. Nivel de error sugerido: Error",
-      "component": {
-        "number": {
-          "title": "Longitud máxima"
-        }
-      }
-    },
-    "column-maximum-varchar-length": {
-      "title": "Restringir la longitud del tipo de dato \"VARCHAR\"",
-      "description": "",
-      "component": {
-        "number": {
-          "title": "Longitud máxima"
-        }
-      }
-    },
-    "column-auto-increment-initial-value": {
-      "title": "Restringir el valor inicial de las columnas de autoincremento",
-      "description": "Basándose en los requisitos de gestión, se debe limitar el valor inicial de la columna de autoincremento. Nivel de error sugerido: Advertencia",
-      "component": {
-        "number": {
-          "title": "Valor inicial"
-        }
-      }
-    },
-    "column-current-time-count-limit": {
-      "title": "Restringir el número de columnas en la tabla que adquieren la hora del sistema",
-      "description": "Solo las columnas que registran la hora de creación del registro con \"DEFAULT NOW()\" y que registran la hora de actualización del registro con \"DEFAULT NOW() ON UPDATE\" necesitan llamar a la función para obtener la hora del sistema. Es inútil y aumentará la sobrecarga de recursos registrar la hora del sistema en otras columnas. Nivel de error sugerido: Error"
-    },
-    "column-require-default": {
-      "title": "Hacer obligatorio establecer un valor por defecto en las columnas",
-      "description": "Establecer valores por defecto que satisfagan la lógica de negocio puede mejorar efectivamente la calidad de los datos del pipeline analítico aguas abajo. Esta regla no verifica los tipos \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\". Nivel de error sugerido: Advertencia"
-    },
-    "statement-select-no-select-all": {
-      "title": "Prohibir el uso de \"SELECT *\"",
-      "description": "El uso de SELECT * para obtener todos los datos de una fila puede causar una sobrecarga de recursos innecesaria y también puede causar resultados inesperados en las aplicaciones una vez que la tabla agrega o elimina columnas. Nivel de sugerencia de error: Error"
-    },
-    "statement-where-require": {
-      "title": "Obligar la presencia de la condición \"WHERE\" en las declaraciones",
-      "description": "Las consultas sin cláusula WHERE pueden causar una enorme sobrecarga de recursos innecesarios, y las DML pueden causar una pérdida masiva de datos accidental. Nivel de sugerencia de error: Error"
-    },
-    "statement-where-no-leading-wildcard-like": {
-      "title": "Prohibir el uso de comodines principales en las condiciones de filtrado",
-      "description": "Al usar comodines principales, como \"LIKE '%ABC'\", el optimizador de la base de datos no puede usar el escaneo de índice rápido y debe recurrir al escaneo completo de la tabla o del índice completo, lo que puede causar un impacto grave en el rendimiento. Nivel de sugerencia de error: Error"
-    },
-    "statement-disallow-commit": {
-      "title": "Prohibir la declaración explícita de \"COMMIT\"",
-      "description": "En algunos casos, se requiere que varias declaraciones se incluyan en una transacción confirmada por el sistema, para poder volver a ejecutarse rápidamente en caso de fallo parcial. Por lo tanto, no se permite la declaración explícita de \"COMMIT\". Nivel de sugerencia de error: Advertencia"
-    },
-    "statement-disallow-limit": {
-      "title": "Prohibir el uso de la cláusula \"LIMIT\" en declaraciones DML",
-      "description": "Si se utiliza LIMIT en declaraciones DML sin una cláusula ORDER BY, el orden de las filas afectadas no está fijo, lo que puede causar inconsistencias de datos entre las bases de datos primarias y de réplica en algunos modos de replicación. Nivel de sugerencia de error: Error"
-    },
-    "statement-disallow-order-by": {
-      "title": "Prohibir el uso de la cláusula \"ORDER BY\" en las declaraciones \"UPDATE\" y \"DELETE\"",
-      "description": "Las operaciones de clasificación son extremadamente intensivas en recursos, por lo que para operaciones de actualización y eliminación, se recomienda utilizar una condición de filtrado determinista tanto como sea posible en lugar de usar ORDER BY y LIMIT. Nivel de sugerencia de error: Error"
-    },
-    "statement-merge-alter-table": {
-      "title": "Prohibir la emisión de múltiples cambios independientes en la misma tabla",
-      "description": "Cada cambio en una tabla puede causar un bloqueo a nivel de tabla y consumir una gran cantidad de recursos. Si hay múltiples cambios en la misma tabla, deben fusionarse en una única declaración de cambio. Nivel de sugerencia de error: Error"
-    },
-    "statement-insert-must-specify-column": {
-      "title": "Obligar a especificar nombres de columnas en declaraciones \"INSERT\"",
-      "description": "La declaración \"INSERT INTO table VALUES (...)\" no lista explícitamente los nombres de las columnas. Una vez que cambia el orden de las columnas o se agregan o eliminan columnas, la declaración puede fallar o generar datos inesperados. Nivel de sugerencia de error: Error"
-    },
-    "statement-insert-disallow-order-by-rand": {
-      "title": "Prohibir el uso de \"ORDER BY rand()\" en declaraciones \"INSERT\"",
-      "description": "Ordenar aleatoriamente los datos a insertar no tiene sentido y solo consume recursos innecesarios. Nivel de sugerencia de error: Error"
-    },
-    "statement-insert-row-limit": {
-      "title": "Restringir el número máximo de filas insertadas",
-      "description": "Revelar el número de filas a insertar puede ayudar a determinar si la declaración cumple con las expectativas comerciales. Nivel de sugerencia de error: Advertencia",
-      "component": {
-        "number": {
-          "title": "Cantidad máxima de inserciones"
-        }
-      }
-    },
-    "statement-affected-row-limit": {
-      "title": "Restringir el número máximo de filas actualizadas o eliminadas",
-      "description": "Revelar el número de filas a actualizar o eliminar puede ayudar a determinar si la declaración cumple con las expectativas comerciales. Nivel de sugerencia de error: Advertencia",
-      "component": {
-        "number": {
-          "title": "Cantidad máxima de filas afectadas"
-        }
-      }
-    },
-    "statement-dml-dry-run": {
-      "title": "Validar la ejecutabilidad de declaraciones DML",
-      "description": "Cuando la sintaxis es correcta, pero el nombre de la tabla es incorrecto o el permiso es insuficiente, se puede descubrir mediante una simulación antes de la ejecución real. Nivel de sugerencia de error: Advertencia"
-    },
-    "statement-disallow-add-column-with-default": {
-      "title": "Restringir agregar columnas con valores predeterminados a una tabla",
-      "description": "Antes de PostgreSQL 11, agregar una columna con un valor predeterminado causaba bloqueos en la tabla y no se podía leer ni escribir, lo que podía causar interrupciones comerciales. En PostgreSQL 11 y versiones posteriores, este problema se ha optimizado y no es necesario prestar atención a esta regla. Nivel de sugerencia de error: Advertencia"
-    },
-    "statement-add-check-not-valid": {
-      "title": "Obligar a incluir la opción \"NOT VALID\" al agregar restricciones \"CHECK\"",
-      "description": "Antes de PostgreSQL 11, agregar una restricción CHECK requería verificar los datos existentes y bloquear la tabla. Esto bloqueaba la lectura y escritura, lo que podía causar interrupciones comerciales. Se recomienda agregar la opción \"NOT VALID\" para validar nuevos datos y validar manualmente los datos existentes después de completar el cambio. En PostgreSQL 11 y versiones posteriores, este problema se ha optimizado y no es necesario prestar atención a esta regla. Nivel de sugerencia de error: Advertencia"
-    },
-    "statement-disallow-add-not-null": {
-      "title": "Restricción de agregar restricción \"NOT NULL\" a columnas existentes",
-      "description": "Antes de PostgreSQL 11, agregar una restricción NOT NULL requería verificar los datos existentes. Esto bloquea la lectura y escritura, lo que puede causar interrupciones comerciales. En PostgreSQL 11 y superior, este problema se ha optimizado y no es necesario prestar atención a esta especificación. Nivel de error sugerido: Advertencia"
-    },
-    "schema-backward-compatibility": {
-      "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
-      "description": "Algunos cambios pueden afectar las aplicaciones en ejecución, como modificar el nombre del objeto de la base de datos, agregar nuevas restricciones, etc. Esta regla puede evitar cambios descuidados que lleven al fallo de la aplicación existente. Nivel de error sugerido: Advertencia"
-    },
-    "database-drop-empty-database": {
-      "title": "Prohibir eliminar base de datos no vacía",
-      "description": "Solo se permite la eliminación cuando no hay tablas en la base de datos, lo que puede evitar la eliminación accidental. Nivel de error sugerido: Error"
-    },
-    "index-no-duplicate-column": {
-      "title": "Prohibir índices que contengan columnas duplicadas",
-      "description": "La creación de un índice con columnas duplicadas dará como resultado un fallo. Nivel de error sugerido: Error"
-    },
-    "index-type-no-blob": {
-      "title": "Prohibir la creación de índices en columnas de tipo de datos \"BLOB\" y \"TEXT\"",
-      "description": "El tipo \"BLOB\" se utiliza generalmente para almacenar datos binarios y no debe utilizarse como condición de consulta. Si se crea un índice en este tipo de columna por error, consumirá muchos recursos y causará un grave impacto en el rendimiento. Nivel de error sugerido: Error"
-    },
-    "index-pk-type-limit": {
-      "title": "Límite de tipo de clave primaria",
-      "description": "Forzar que el tipo de clave primaria sea INT o BIGINT."
-    },
-    "index-key-number-limit": {
-      "title": "Restringir el número de columnas en un solo índice",
-      "description": "Un índice compuesto con más de 5 columnas no mejora significativamente el rendimiento de la consulta, pero ocupa mucho espacio y reduce el rendimiento de DML. Nivel de error sugerido: Advertencia",
-      "component": {
-        "number": {
-          "title": "Número máximo de columnas"
-        }
-      }
-    },
-    "index-total-number-limit": {
-      "title": "Restringir el número de índices en una sola tabla",
-      "description": "Aunque los índices pueden mejorar el rendimiento de la consulta, también ocupan mucho espacio y reducen el rendimiento de DML. Por lo tanto, no se recomienda crear más de 5 índices en una tabla. Nivel de error sugerido: Advertencia",
-      "component": {
-        "number": {
-          "title": "Número máximo de índices"
-        }
-      }
-    },
-    "index-primary-key-type-allowlist": {
-      "title": "Lista permitida de tipos de clave primaria",
-      "description": "El tipo de clave primaria adecuado puede optimizar la estructura de almacenamiento, reducir el uso de espacio y ser beneficioso para el rendimiento de inserción y consulta. Nivel de error sugerido: Advertencia",
-      "component": {
-        "list": {
-          "title": "Permitir lista"
-        }
-      }
-    },
-    "index-create-concurrently": {
-      "title": "Aplicar creación de índices concurrentes",
-      "description": "En PostgreSQL 11 y versiones posteriores, usar la declaración estándar para crear un índice causará un bloqueo de tabla y no permitirá escribir. Usar el modo \"CONCURRENTLY\" puede evitar este problema. Nivel de error sugerido: Advertencia"
-    },
-    "system-charset-allowlist": {
-      "title": "Lista permitida de juegos de caracteres",
-      "description": "El juego de caracteres determina qué caracteres se pueden almacenar en la tabla. El uso de un juego de caracteres incorrecto puede hacer que ciertos caracteres de la aplicación no se puedan almacenar ni mostrar correctamente, como los caracteres CJK y Emoji. Nivel de error sugerido: Error",
-      "component": {
-        "list": {
-          "title": "Permitir lista"
-        }
-      }
-    },
-    "system-collation-allowlist": {
-      "title": "Lista permitida de ordenaciones",
-      "description": "La ordenación determina las reglas para la comparación y clasificación de caracteres. Por ejemplo, al utilizar una ordenación que no distingue entre mayúsculas y minúsculas, \"ABC\" y \"abc\" se tratarán como la misma cadena en las consultas. Nivel de error sugerido: Error",
-      "component": {
-        "list": {
-          "title": "Permitir lista"
-        }
-      }
-    },
-    "system-comment-length": {
-      "title": "Restricción en la longitud de los comentarios",
-      "description": "",
-      "component": {
-        "number": {
-          "title": "Longitud máxima de los comentarios"
-        }
-      }
     },
     "level": {
-      "name": "Nivel de error",
-      "error": "Error",
-      "warning": "Advertencia",
-      "disabled": "Desactivado"
+        "error": "Error",
+        "name": "Nivel de Error",
+        "warning": "Advertencia",
+        "disabled": "Deshabilitado"
     }
-  }
 }
