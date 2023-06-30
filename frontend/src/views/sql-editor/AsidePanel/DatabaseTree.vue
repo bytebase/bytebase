@@ -29,6 +29,7 @@
         :render-prefix="renderPrefix"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
+        :virtual-scroll="true"
         @update:expanded-keys="updateExpandedKeys"
       />
     </div>
