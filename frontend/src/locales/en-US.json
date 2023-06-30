@@ -691,6 +691,11 @@
     "add-a-comment": "Add a comment",
     "edit-comment": "Edit comment",
     "leave-a-comment": "Leave a comment...",
+    "comment-editor": {
+      "editor": "Editor",
+      "preview": "Preview",
+      "nothing-to-preview": "Nothing to preview"
+    },
     "view-commit": "View commit",
     "search-issue-name": "Search issue name",
     "table": {
