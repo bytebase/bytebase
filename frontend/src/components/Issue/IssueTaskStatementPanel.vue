@@ -62,10 +62,10 @@
         >
           {{ $t("common.edit") }}
         </NButton>
-        <!-- for oversized sheets, only allow to upload and override the sheet -->
+        <!-- for oversized sheets, only allow to upload and overwrite the sheet -->
         <UploadProgressButton
           v-else
-          :upload="handleUploadAndOverride"
+          :upload="handleUploadAndOverwrite"
           size="tiny"
         >
           {{ $t("issue.upload-sql") }}
@@ -197,7 +197,7 @@ const {
 } = useIssueLogic();
 
 const { t } = useI18n();
-const overrideSQLDialog = useDialog();
+const overwriteSQLDialog = useDialog();
 const uiStateStore = useUIStateStore();
 const dbSchemaStore = useDBSchemaV1Store();
 const sheetV1Store = useSheetV1Store();
@@ -486,7 +486,7 @@ const saveEdit = async () => {
   state.editing = false;
 };
 
-const handleUploadAndOverride = async (event: Event) => {
+const handleUploadAndOverwrite = async (event: Event) => {
   if (!selectedDatabase.value) {
     return;
   }
@@ -495,7 +495,7 @@ const handleUploadAndOverride = async (event: Event) => {
   }
   try {
     state.isUploadingFile = true;
-    await showOverrideConfirmDialog();
+    await showOverwriteConfirmDialog();
     const { filename, content: statement } = await handleUploadFileEvent(
       event,
       100
@@ -552,13 +552,13 @@ const allowSaveSQL = computed((): boolean => {
   return true;
 });
 
-const showOverrideConfirmDialog = () => {
+const showOverwriteConfirmDialog = () => {
   return new Promise((resolve, reject) => {
     // Show a confirm dialog before replacing if the editing statement is not empty.
-    overrideSQLDialog.create({
+    overwriteSQLDialog.create({
       positiveText: t("common.confirm"),
       negativeText: t("common.cancel"),
-      title: t("issue.override-current-statement"),
+      title: t("issue.overwrite-current-statement"),
       autoFocus: false,
       closable: false,
       maskClosable: false,
@@ -624,7 +624,7 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
   };
 
   if (state.editStatement) {
-    await showOverrideConfirmDialog();
+    await showOverwriteConfirmDialog();
     return uploadStatementAsSheet();
   }
 

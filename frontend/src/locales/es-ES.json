@@ -722,8 +722,8 @@
     "edit-sql-statement": "Editar declaración SQL",
     "upload-sql": "Cargar SQL",
     "upload-sql-as-sheet": "Cargar SQL como Hoja",
-    "statement-from-sheet-warning": "La declaración SQL actual proviene de una hoja. Es de solo lectura y solo se muestra parte de ella.",
-    "override-current-statement": "Anular la declaración SQL actual",
+    "statement-from-sheet-warning": "SQL está sobredimensionado y no se permite la edición en línea. \nPuede cargar un nuevo archivo SQL para sobrescribirlo.",
+    "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
     "waiting-earliest-allowed-time": "Se ejecutará después de {time}",
     "batch-transition": {
