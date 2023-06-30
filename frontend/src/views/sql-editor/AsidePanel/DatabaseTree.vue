@@ -20,7 +20,7 @@
       <NTree
         block-line
         :data="treeData"
-        :pattern="mounted ? searchPattern : ''"
+        :pattern="mounted ? throttledSearchPattern : ''"
         :show-irrelevant-nodes="false"
         :expand-on-click="true"
         :selected-keys="selectedKeys"
@@ -53,7 +53,7 @@
 import { ref, computed, h, nextTick, watch } from "vue";
 import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { useMounted } from "@vueuse/core";
+import { useMounted, useThrottleFn } from "@vueuse/core";
 
 import type {
   ConnectionAtom,
@@ -113,6 +113,7 @@ const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
 
 const mounted = useMounted();
+const throttledSearchPattern = ref(props.searchPattern);
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
   x: 0,
@@ -373,6 +374,21 @@ watch(
     scrollToConnectedNode(instanceId, databaseId);
   },
   { immediate: true }
+);
+
+watch(
+  () => props.searchPattern,
+  useThrottleFn(
+    (searchPattern: string | undefined) => {
+      throttledSearchPattern.value = searchPattern;
+    },
+    100,
+    true /* trailing */,
+    true /* leading */
+  ),
+  {
+    immediate: true,
+  }
 );
 </script>
 
