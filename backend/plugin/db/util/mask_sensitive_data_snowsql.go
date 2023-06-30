@@ -2,6 +2,8 @@
 package util
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -178,12 +180,18 @@ func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDat
 }
 
 func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) (db.TableSchema, error) {
+	normalizedSchemaTableName := fmt.Sprintf(`"%s"."%s"`, normalizedDatabaseName)
 	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
 		if databaseSchema.Name != normalizedDatabaseName {
 			continue
 		}
-		for _, tableName := range databaseSchema.TableList {
-
+		for _, tableSchema := range databaseSchema.TableList {
+			if normalizedSchemaTableName != tableSchema.Name {
+				continue
+			}
+			return tableSchema, nil
 		}
+
 	}
+	return db.TableSchema{}, errors.Errorf(`table %s not found in database %s`, normalizedSchemaTableName, normalizedDatabaseName)
 }
