@@ -698,7 +698,14 @@
     "comment-editor": {
       "editor": "Editor",
       "preview": "Preview",
-      "nothing-to-preview": "Nothing to preview"
+      "nothing-to-preview": "Nothing to preview",
+      "toolbar": {
+        "header": "Insert heading text",
+        "bold": "Insert bold text",
+        "code": "Insert SQL code snippet",
+        "link": "Insert a link",
+        "hashtag": "Insert issue's link by id. Type the issue id after the hashtag \"#\""
+      }
     },
     "view-commit": "View commit",
     "search-issue-name": "Search issue name",

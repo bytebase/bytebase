@@ -24,21 +24,32 @@
         class="flex-1 flex items-center justify-end"
       >
         <div v-for="(toolbar, i) in toolbarItems" :key="i">
-          <button class="hover:bg-gray-100 p-2" @click="toolbar.action">
-            <template v-if="toolbar.text">
-              <span class="font-bold">{{ toolbar.text }}</span>
+          <NTooltip :show-arrow="true">
+            <template #trigger>
+              <button class="hover:bg-gray-100 p-2" @click="toolbar.action">
+                <template v-if="toolbar.text">
+                  <span class="font-bold">{{ toolbar.text }}</span>
+                </template>
+                <template v-else-if="toolbar.icon">
+                  <heroicons-outline:code
+                    v-if="toolbar.icon === 'code'"
+                    class="w-4 h-4"
+                  />
+                  <heroicons-outline:link
+                    v-else-if="toolbar.icon === 'link'"
+                    class="w-4 h-4"
+                  />
+                  <heroicons-outline:hashtag
+                    v-else-if="toolbar.icon === 'hashtag'"
+                    class="w-4 h-4"
+                  />
+                </template>
+              </button>
             </template>
-            <template v-else-if="toolbar.icon">
-              <heroicons-outline:code
-                v-if="toolbar.icon === 'code'"
-                class="w-4 h-4"
-              />
-              <heroicons-outline:link
-                v-else-if="toolbar.icon === 'link'"
-                class="w-4 h-4"
-              />
-            </template>
-          </button>
+            <span class="w-56 text-sm">
+              {{ toolbar.tooltip }}
+            </span>
+          </NTooltip>
         </div>
       </div>
     </div>
@@ -77,7 +88,6 @@ import MarkdownIt from "markdown-it";
 import { sizeToFit } from "@/utils";
 import codeStyle from "highlight.js/styles/github.css";
 import markdownStyle from "../assets/css/github-markdown-style.css";
-import "../assets/css/tailwind.css";
 
 const md = new MarkdownIt({
   html: true,
@@ -103,6 +113,7 @@ interface LocalState {
 interface Toolbar {
   icon?: string;
   text?: string;
+  tooltip: string;
   action: () => void;
 }
 
@@ -131,7 +142,26 @@ watch(
 
 const markdownPlaceholder = t("issue.comment-editor.nothing-to-preview");
 const markdownContent = computed(() => {
-  return DOMPurify.sanitize(md.render(state.content || markdownPlaceholder));
+  if (!state.content) {
+    return `<span>${markdownPlaceholder}</span>`;
+  }
+
+  // we met a valid #{issue_id} in which issue_id is an integer and >= 0
+  // render a link to the issue
+  const format = state.content
+    .split(/(#\d+)\b/)
+    .map((part) => {
+      if (!part.startsWith("#")) {
+        return part;
+      }
+      const id = parseInt(part.slice(1), 10);
+      if (!Number.isNaN(id) && id > 0) {
+        return `[issue #${id}](${window.location.origin}/issue/${id})`;
+      }
+      return part;
+    })
+    .join("");
+  return DOMPurify.sanitize(md.render(format));
 });
 const contentTextArea = ref<HTMLTextAreaElement>();
 const contentPreviewArea = ref<HTMLIFrameElement>();
@@ -175,6 +205,12 @@ const adjustIframe = () => {
     cssLink.append(codeStyle, markdownStyle);
     contentPreviewArea.value.contentDocument.head.append(cssLink);
     contentPreviewArea.value.contentDocument.body.className = "markdown-body";
+
+    const links =
+      contentPreviewArea.value.contentDocument.querySelectorAll("a");
+    for (let i = 0; i < links.length; i++) {
+      links[i].setAttribute("target", "_blank");
+    }
   }
 
   nextTick(() => {
@@ -309,26 +345,37 @@ const getCursorPosition = (lines: string[]): number => {
 const toolbarItems: Toolbar[] = [
   {
     text: "H",
+    tooltip: t("issue.comment-editor.toolbar.header"),
     action: () => {
       insertWithCursorPosition("### ", 4);
     },
   },
   {
     text: "B",
+    tooltip: t("issue.comment-editor.toolbar.bold"),
     action: () => {
       insertWithCursorPosition("****", 2);
     },
   },
   {
     icon: "code",
+    tooltip: t("issue.comment-editor.toolbar.code"),
     action: () => {
       insertWithCursorPosition("\n```sql\n\n```\n", 8);
     },
   },
   {
     icon: "link",
+    tooltip: t("issue.comment-editor.toolbar.link"),
     action: () => {
-      insertWithCursorPosition("[](herf)", 1);
+      insertWithCursorPosition("[](url)", 1);
+    },
+  },
+  {
+    icon: "hashtag",
+    tooltip: t("issue.comment-editor.toolbar.hashtag"),
+    action: () => {
+      insertWithCursorPosition("#", 1);
     },
   },
 ];
@@ -337,7 +384,7 @@ const toolbarItems: Toolbar[] = [
 // Support templates:
 // \n```\nsql{text}\n```\n
 // **{text}**
-// [{text}](herf)
+// [{text}](url)
 // ### {text}
 const insertWithCursorPosition = (template: string, position: number) => {
   if (!contentTextArea.value) {
