@@ -698,7 +698,14 @@
     "comment-editor": {
       "editor": "Editor",
       "preview": "Vista previa",
-      "nothing-to-preview": "Nada para previsualizar"
+      "nothing-to-preview": "Nada para previsualizar",
+      "toolbar": {
+        "header": "Insertar texto de encabezado",
+        "bold": "Insertar texto en negrita",
+        "code": "Insertar fragmento de código SQL",
+        "link": "Insertar un enlace",
+        "hashtag": "Inserte el enlace del problema por id. Escriba la identificación del problema después del hashtag \"#\""
+      }
     },
     "view-commit": "Ver commit",
     "search-issue-name": "Buscar nombre de la incidencia",
