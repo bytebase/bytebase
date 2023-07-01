@@ -695,7 +695,14 @@
     "comment-editor": {
       "editor": "编辑",
       "preview": "预览",
-      "nothing-to-preview": "暂无预览"
+      "nothing-to-preview": "暂无预览",
+      "toolbar": {
+        "header": "插入标题",
+        "bold": "插入粗体文本",
+        "code": "插入 SQL 代码片段",
+        "link": "插入链接",
+        "hashtag": "通过 id 插入工单链接。请在\"#\"后填入工单 id"
+      }
     },
     "view-commit": "查看提交",
     "search-issue-name": "搜索工单名称",
