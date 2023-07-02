@@ -116,6 +116,18 @@ func TestPITRGeneral(t *testing.T) {
 	ctl := &controller{}
 	ctx, project, mysqlDB, _, _, databaseUID, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
+	_, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: "environments/prod",
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
+			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
+				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
+					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
+				},
+			},
+		},
+	})
+	a.NoError(err)
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
@@ -124,7 +136,7 @@ func TestPITRGeneral(t *testing.T) {
 
 	dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
 	log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
-	_, err := mysqlDB.ExecContext(ctx, dropColumnStmt)
+	_, err = mysqlDB.ExecContext(ctx, dropColumnStmt)
 	a.NoError(err)
 
 	issue, err := createPITRIssue(ctl, project, api.PITRContext{
@@ -211,6 +223,19 @@ func TestPITRTwice(t *testing.T) {
 	ctl := &controller{}
 	ctx, project, mysqlDB, _, database, databaseUID, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
+
+	_, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: "environments/prod",
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
+			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
+				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
+					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
+				},
+			},
+		},
+	})
+	a.NoError(err)
 
 	log.Debug("Creating issue for the first PITR.")
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
