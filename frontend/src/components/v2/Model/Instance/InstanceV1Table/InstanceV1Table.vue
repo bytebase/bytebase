@@ -31,7 +31,7 @@
         </button>
       </div>
       <div v-if="canAssignLicense" class="bb-grid-cell hover:underline">
-        {{ instance.activation ? "Assigned" : "N/A" }}
+        {{ instance.activation ? "Y" : "" }}
       </div>
     </template>
   </BBGrid>
