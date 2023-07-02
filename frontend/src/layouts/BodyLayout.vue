@@ -105,7 +105,7 @@
             {{ $t("common.archive") }}
           </router-link>
           <div
-            class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
+            class="flex-shrink-0 flex justify-between border-t border-block-border px-3 py-2"
           >
             <div
               v-if="isDemo"
