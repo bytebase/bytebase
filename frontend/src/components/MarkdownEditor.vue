@@ -1,19 +1,19 @@
 <template>
   <div>
-    <div v-if="mode === 'editor'" class="flex gap-x-3 mb-2 text-sm">
+    <div v-if="mode === 'editor'" class="flex gap-x-2 mb-2 text-sm">
       <div
         :class="[
           'p-2 rounded cursor-pointer',
-          state.showPreview ? '' : 'bg-gray-100 font-bold',
+          state.showPreview ? '' : 'bg-gray-100 text-gray-800',
         ]"
         @click="state.showPreview = false"
       >
-        {{ $t("issue.comment-editor.editor") }}
+        {{ $t("issue.comment-editor.write") }}
       </div>
       <div
         :class="[
           'p-2 rounded cursor-pointer',
-          state.showPreview ? 'bg-gray-100 font-bold' : '',
+          state.showPreview ? 'bg-gray-100 text-gray-800' : '',
         ]"
         @click="state.showPreview = true"
       >
@@ -361,7 +361,7 @@ const toolbarItems: Toolbar[] = [
     icon: "code",
     tooltip: t("issue.comment-editor.toolbar.code"),
     action: () => {
-      insertWithCursorPosition("\n```sql\n\n```\n", 8);
+      insertWithCursorPosition("```sql\n\n```", 7);
     },
   },
   {
