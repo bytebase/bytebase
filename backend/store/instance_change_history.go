@@ -306,10 +306,12 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_change_history.id = $%d", len(args)+1)), append(args, *v)
 	}
+	sheetField := "instance_change_history.sheet_id"
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_change_history.instance_id = $%d", len(args)+1)), append(args, *v)
 	} else {
 		where = append(where, "instance_change_history.instance_id is NULL AND instance_change_history.database_id is NULL")
+		sheetField = "NULL"
 	}
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_change_history.database_id = $%d", len(args)+1)), append(args, *v)
@@ -355,7 +357,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			%s,
 			%s,
 			%s,
-			instance_change_history.sheet_id,
+			%s,
 			instance_change_history.execution_duration_ns,
 			instance_change_history.payload,
 			COALESCE(instance.resource_id, ''),
@@ -363,7 +365,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		FROM instance_change_history
 		LEFT JOIN instance on instance.id = instance_change_history.instance_id
 		LEFT JOIN db on db.id = instance_change_history.database_id
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`, statementField, schemaField, schemaPrevField)
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`, statementField, schemaField, schemaPrevField, sheetField)
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
