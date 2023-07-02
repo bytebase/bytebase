@@ -77,7 +77,7 @@
     </div>
 
     <div
-      class="w-full flex items-center justify-between text-xs mt-0.5 gap-x-4 text-control-light"
+      class="w-full flex items-center justify-between text-xs mt-1 gap-x-4 text-control-light"
     >
       <div class="flex-1 truncate">
         {{ result.statement }}
