@@ -85,8 +85,8 @@ func (s *Store) CreateInstanceChangeHistory(ctx context.Context, create *Instanc
 	}
 	defer tx.Rollback()
 
-	if create.SheetID == nil {
-		if _, err := s.createInstanceChangeHistoryImplWithoutSheet(ctx, tx, create); err != nil {
+	if create.InstanceUID == nil {
+		if _, err := s.createInstanceChangeHistoryImplForMigrator(ctx, tx, create); err != nil {
 			return err
 		}
 	} else {
@@ -153,7 +153,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 	return uid, nil
 }
 
-func (*Store) createInstanceChangeHistoryImplWithoutSheet(ctx context.Context, tx *Tx, create *InstanceChangeHistoryMessage) (string, error) {
+func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx *Tx, create *InstanceChangeHistoryMessage) (string, error) {
 	query := `
 		INSERT INTO instance_change_history (
 			creator_id,
@@ -562,8 +562,8 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 		Payload:             m.Payload,
 	}
 	var uid string
-	if instanceChange.SheetID == nil {
-		id, err := s.createInstanceChangeHistoryImplWithoutSheet(ctx, tx, instanceChange)
+	if instanceChange.InstanceUID == nil {
+		id, err := s.createInstanceChangeHistoryImplForMigrator(ctx, tx, instanceChange)
 		if err != nil {
 			return "", err
 		}
