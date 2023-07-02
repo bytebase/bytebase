@@ -20,7 +20,7 @@
     </div>
     <InstanceV1Table
       :instance-list="filteredInstanceV1List"
-      :can-assign-license="true"
+      :can-assign-license="subscriptionStore.currentPlan !== PlanType.FREE"
     />
   </div>
 </template>
