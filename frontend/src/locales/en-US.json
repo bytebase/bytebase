@@ -696,7 +696,7 @@
     "edit-comment": "Edit comment",
     "leave-a-comment": "Leave a comment...",
     "comment-editor": {
-      "editor": "Editor",
+      "write": "Write",
       "preview": "Preview",
       "nothing-to-preview": "Nothing to preview",
       "toolbar": {

@@ -696,7 +696,7 @@
     "edit-comment": "Editar comentario",
     "leave-a-comment": "Dejar un comentario...",
     "comment-editor": {
-      "editor": "Editor",
+      "write": "Escribir",
       "preview": "Vista previa",
       "nothing-to-preview": "Nada para previsualizar",
       "toolbar": {
