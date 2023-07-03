@@ -71,7 +71,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 // buildSnowflakeDSN returns the Snowflake Golang DSN and a redacted version of the DSN.
 func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 	snowConfig := &snow.Config{
-		Database: config.Database,
+		Database: fmt.Sprintf(`"%s"`, config.Database),
 		User:     config.Username,
 		Password: config.Password,
 	}
