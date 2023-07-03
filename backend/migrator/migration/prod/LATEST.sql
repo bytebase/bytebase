@@ -331,7 +331,8 @@ CREATE TABLE instance (
     external_link TEXT NOT NULL DEFAULT '',
     resource_id TEXT NOT NULL,
     -- activation should set to be TRUE if users assign license to this instance.
-    activation BOOLEAN NOT NULL DEFAULT false
+    activation BOOLEAN NOT NULL DEFAULT false,
+    option JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
