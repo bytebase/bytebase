@@ -97,7 +97,7 @@ func TestExportSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "INSERT INTO `<table_name>` (`a`) VALUES (true,'abc',NULL);\nINSERT INTO `<table_name>` (`a`) VALUES (false,'abc',NULL);\n",
+			want: "INSERT INTO `<table_name>` (`a`) VALUES (true,'abc',NULL);\nINSERT INTO `<table_name>` (`a`) VALUES (false,'abc',NULL);",
 		},
 		{
 			engine:          db.MySQL,
@@ -113,7 +113,7 @@ func TestExportSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\\nbc');\n",
+			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\\nbc');",
 		},
 		{
 			engine:          db.MySQL,
@@ -129,7 +129,7 @@ func TestExportSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a''b');\n",
+			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a''b');",
 		},
 		{
 			engine:          db.MySQL,
@@ -145,7 +145,7 @@ func TestExportSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\\b');\n",
+			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\\b');",
 		},
 		{
 			engine:          db.Postgres,
@@ -161,7 +161,7 @@ func TestExportSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\nbc');\n",
+			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\nbc');",
 		},
 		{
 			engine:          db.Postgres,
@@ -177,7 +177,7 @@ func TestExportSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "INSERT INTO `<table_name>` (`b`) VALUES ( E'a\\\\bc');\n",
+			want: "INSERT INTO `<table_name>` (`b`) VALUES ( E'a\\\\bc');",
 		},
 	}
 	a := assert.New(t)
