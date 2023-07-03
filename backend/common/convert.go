@@ -22,6 +22,8 @@ var RiskFactors = []cel.EnvOption{
 
 	// number factors
 	cel.Variable("affected_rows", cel.IntType),
+	cel.Variable("expiration_days", cel.IntType),
+	cel.Variable("export_rows", cel.IntType),
 }
 
 // ApprovalFactors are the variables when finding the approval template.

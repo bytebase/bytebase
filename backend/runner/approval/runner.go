@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -180,6 +181,27 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return false, err
 	}
 
+	// For grant request, we will use a default approval template(Project owner) if no template is found.
+	if approvalTemplate == nil && issue.Type == api.IssueGrantRequest {
+		approvalTemplate = &storepb.ApprovalTemplate{
+			Flow: &storepb.ApprovalFlow{
+				Steps: []*storepb.ApprovalStep{
+					{
+						Type: storepb.ApprovalStep_ANY,
+						Nodes: []*storepb.ApprovalNode{
+							{
+								Type: storepb.ApprovalNode_ANY_IN_GROUP,
+								Payload: &storepb.ApprovalNode_GroupValue_{
+									GroupValue: storepb.ApprovalNode_PROJECT_OWNER,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
 	payload.Approval = &storepb.IssuePayloadApproval{
 		ApprovalFindingDone: true,
 		ApprovalTemplates:   nil,
@@ -335,8 +357,6 @@ func getIssueRiskResource(issue *store.IssueMessage) store.RiskSource {
 }
 
 func getIssueRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
-	var maxRiskLevel int64
-
 	if issue.Type == api.IssueGrantRequest {
 		riskLevel, done, err := getGrantRequestRiskLevel(ctx, s, issue, risks)
 		if err != nil {
@@ -345,32 +365,30 @@ func getIssueRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMe
 		if !done {
 			return 0, false, nil
 		}
+		return riskLevel, true, nil
+	}
+
+	var maxRiskLevel int64
+	tasks, err := s.ListTasks(ctx, &api.TaskFind{
+		PipelineID: issue.PipelineUID,
+		StatusList: &[]api.TaskStatus{api.TaskPendingApproval},
+	})
+	if err != nil {
+		return 0, false, err
+	}
+
+	for _, task := range tasks {
+		riskLevel, done, err := getTaskRiskLevel(ctx, s, issue, task, risks)
+		if err != nil {
+			return 0, false, errors.Wrapf(err, "failed to get task risk level for task %v", task.ID)
+		}
+		if !done {
+			return 0, false, nil
+		}
 		if riskLevel > maxRiskLevel {
 			maxRiskLevel = riskLevel
 		}
-	} else {
-		tasks, err := s.ListTasks(ctx, &api.TaskFind{
-			PipelineID: issue.PipelineUID,
-			StatusList: &[]api.TaskStatus{api.TaskPendingApproval},
-		})
-		if err != nil {
-			return 0, false, err
-		}
-
-		for _, task := range tasks {
-			riskLevel, done, err := getTaskRiskLevel(ctx, s, issue, task, risks)
-			if err != nil {
-				return 0, false, errors.Wrapf(err, "failed to get task risk level for task %v", task.ID)
-			}
-			if !done {
-				return 0, false, nil
-			}
-			if riskLevel > maxRiskLevel {
-				maxRiskLevel = riskLevel
-			}
-		}
 	}
-
 	return maxRiskLevel, true, nil
 }
 
@@ -402,7 +420,7 @@ func getReportResult(ctx context.Context, s *store.Store, task *store.TaskMessag
 	return payload.ResultList, true, nil
 }
 
-func getGrantRequestRiskLevel(_ context.Context, _ *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
+func getGrantRequestRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
 	if len(risks) == 0 {
 		return 0, true, nil
 	}
@@ -430,6 +448,39 @@ func getGrantRequestRiskLevel(_ context.Context, _ *store.Store, issue *store.Is
 		return 0, false, nil
 	}
 
+	factors, err := common.GetQueryExportFactors(payload.GrantRequest.Condition.Expression)
+	if err != nil {
+		return 0, false, errors.Wrap(err, "failed to get query export factors")
+	}
+	expirationDays := payload.GrantRequest.Expiration.AsDuration().Hours() / 24
+	databases := []*store.DatabaseMessage{}
+	if len(factors.DatabaseNames) == 0 {
+		list, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{
+			ProjectID: &issue.Project.ResourceID,
+		})
+		if err != nil {
+			return 0, false, errors.Wrap(err, "failed to list databases")
+		}
+		databases = list
+	} else {
+		for _, dbName := range factors.DatabaseNames {
+			instanceID, databaseName, err := getInstanceDatabaseID(dbName)
+			if err != nil {
+				return 0, false, errors.Wrap(err, "failed to get instance database id")
+			}
+
+			database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				ProjectID:    &issue.Project.ResourceID,
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return 0, false, errors.Wrap(err, "failed to get database")
+			}
+			databases = append(databases, database)
+		}
+	}
+
 	var maxRisk int64
 	for _, risk := range risks {
 		if !risk.Active {
@@ -450,25 +501,68 @@ func getGrantRequestRiskLevel(_ context.Context, _ *store.Store, issue *store.Is
 		if err != nil {
 			return 0, false, err
 		}
-		args := map[string]any{}
-		if riskSource == store.RiskRequestExport {
-			// TODO(d): build querier args with issue payload.
-			args = map[string]any{}
-		} else if riskSource == store.RiskRequestQuery {
-			// TODO(d): build exporter args with issue payload.
-			args = map[string]any{}
-		}
 
-		res, _, err := prg.Eval(args)
-		if err != nil {
-			return 0, false, err
-		}
-		val, err := res.ConvertToNative(reflect.TypeOf(false))
-		if err != nil {
-			return 0, false, errors.Wrap(err, "expect bool result")
-		}
-		if boolVal, ok := val.(bool); ok && boolVal {
-			return risk.Level, true, nil
+		if riskSource == store.RiskRequestExport {
+			for _, database := range databases {
+				instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+					ResourceID: &database.InstanceID,
+				})
+				if err != nil {
+					return 0, false, errors.Wrap(err, "failed to get instance")
+				}
+				args := map[string]any{
+					"environment_id":  database.EnvironmentID,
+					"project_id":      issue.Project.ResourceID,
+					"database_name":   database.DatabaseName,
+					"db_engine":       instance.Engine,
+					"export_rows":     factors.ExportRows,
+					"expiration_days": expirationDays,
+				}
+				res, _, err := prg.Eval(args)
+				if err != nil {
+					return 0, false, err
+				}
+
+				val, err := res.ConvertToNative(reflect.TypeOf(false))
+				if err != nil {
+					return 0, false, errors.Wrap(err, "expect bool result")
+				}
+				if boolVal, ok := val.(bool); ok && boolVal {
+					if risk.Level > maxRisk {
+						maxRisk = risk.Level
+					}
+				}
+			}
+		} else if riskSource == store.RiskRequestQuery {
+			for _, database := range databases {
+				instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+					ResourceID: &database.InstanceID,
+				})
+				if err != nil {
+					return 0, false, errors.Wrap(err, "failed to get instance")
+				}
+				args := map[string]any{
+					"environment_id":  database.EnvironmentID,
+					"project_id":      issue.Project.ResourceID,
+					"database_name":   database.DatabaseName,
+					"db_engine":       instance.Engine,
+					"expiration_days": expirationDays,
+				}
+				res, _, err := prg.Eval(args)
+				if err != nil {
+					return 0, false, err
+				}
+
+				val, err := res.ConvertToNative(reflect.TypeOf(false))
+				if err != nil {
+					return 0, false, errors.Wrap(err, "expect bool result")
+				}
+				if boolVal, ok := val.(bool); ok && boolVal {
+					if risk.Level > maxRisk {
+						maxRisk = risk.Level
+					}
+				}
+			}
 		}
 	}
 
@@ -649,6 +743,43 @@ func convertToSource(source store.RiskSource) v1pb.Risk_Source {
 		return v1pb.Risk_DDL
 	case store.RiskSourceDatabaseDataUpdate:
 		return v1pb.Risk_DML
+	case store.RiskRequestQuery:
+		return v1pb.Risk_QUERY
+	case store.RiskRequestExport:
+		return v1pb.Risk_EXPORT
 	}
 	return v1pb.Risk_SOURCE_UNSPECIFIED
+}
+
+const (
+	instanceNamePrefix = "instances/"
+	databaseIDPrefix   = "databases/"
+)
+
+func getNameParentTokens(name string, tokenPrefixes ...string) ([]string, error) {
+	parts := strings.Split(name, "/")
+	if len(parts) != 2*len(tokenPrefixes) {
+		return nil, errors.Errorf("invalid request %q", name)
+	}
+
+	var tokens []string
+	for i, tokenPrefix := range tokenPrefixes {
+		if fmt.Sprintf("%s/", parts[2*i]) != tokenPrefix {
+			return nil, errors.Errorf("invalid prefix %q in request %q", tokenPrefix, name)
+		}
+		if parts[2*i+1] == "" {
+			return nil, errors.Errorf("invalid request %q with empty prefix %q", name, tokenPrefix)
+		}
+		tokens = append(tokens, parts[2*i+1])
+	}
+	return tokens, nil
+}
+
+func getInstanceDatabaseID(name string) (string, string, error) {
+	// the instance request should be instances/{instance-id}/databases/{database-id}
+	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
 }
