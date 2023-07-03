@@ -2093,7 +2093,7 @@
     },
     "linked-issue": "关联工单",
     "from-issue-warning": "这个工作表来自工单 {issue}，处于只读模式。{oversize}",
-    "content-oversize-warning": "因工作表较长，仅展示部分内容。"
+    "content-oversize-warning": "SQL 过大所以无法直接编辑。"
   },
   "engine": {
     "mysql": "MySQL",
