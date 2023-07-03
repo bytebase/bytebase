@@ -1764,7 +1764,7 @@ func evaluateCondition(expression string, attributes map[string]any) (bool, erro
 	if expression == "" {
 		return true, nil
 	}
-	env, err := cel.NewEnv(iamPolicyCELAttributes...)
+	env, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
 	if err != nil {
 		return false, err
 	}

@@ -30,6 +30,18 @@ var ApprovalFactors = []cel.EnvOption{
 	cel.Variable("source", cel.IntType),
 }
 
+// QueryExportPolicyCELAttributes are the variables when evaluating query and export permissions.
+var QueryExportPolicyCELAttributes = []cel.EnvOption{
+	cel.Variable("resource.environment_name", cel.StringType),
+	cel.Variable("request.time", cel.TimestampType),
+	cel.Variable("request.statement", cel.StringType),
+	cel.Variable("request.row_limit", cel.IntType),
+	cel.Variable("request.export_format", cel.StringType),
+	cel.Variable("resource.database", cel.StringType),
+	cel.Variable("resource.schema", cel.StringType),
+	cel.Variable("resource.table", cel.StringType),
+}
+
 // ConvertParsedRisk converts parsed risk to unparsed format.
 func ConvertParsedRisk(expression *v1alpha1.ParsedExpr) (*expr.Expr, error) {
 	if expression == nil || expression.Expr == nil {
