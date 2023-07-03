@@ -402,7 +402,7 @@ func getReportResult(ctx context.Context, s *store.Store, task *store.TaskMessag
 	return payload.ResultList, true, nil
 }
 
-func getGrantRequestRiskLevel(_ context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
+func getGrantRequestRiskLevel(_ context.Context, _ *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
 	if len(risks) == 0 {
 		return 0, true, nil
 	}
