@@ -542,21 +542,21 @@ const adjustIssuePanelWithPosition = () => {
 };
 
 const getIssuePanelPosition = (textArea: HTMLTextAreaElement) => {
-  var start = textArea.selectionStart;
-  var end = textArea.selectionEnd;
-  var copy = createDivCopyForTextarea(textArea);
+  const start = textArea.selectionStart;
+  const end = textArea.selectionEnd;
+  const copy = createDivCopyForTextarea(textArea);
 
-  var range = document.createRange();
+  const range = document.createRange();
   if (copy.firstChild) {
     range.setStart(copy.firstChild, start);
     range.setEnd(copy.firstChild, end);
   }
 
-  var selection = document.getSelection();
+  const selection = document.getSelection();
   selection?.removeAllRanges();
   selection?.addRange(range);
 
-  var rect = range.getBoundingClientRect();
+  const rect = range.getBoundingClientRect();
   document.body.removeChild(copy);
   textArea.selectionStart = start;
   textArea.selectionEnd = end;
@@ -569,9 +569,9 @@ const getIssuePanelPosition = (textArea: HTMLTextAreaElement) => {
 };
 
 const createDivCopyForTextarea = (textArea: HTMLTextAreaElement) => {
-  var copy = document.createElement("div");
+  const copy = document.createElement("div");
   copy.textContent = textArea.value;
-  var style = getComputedStyle(textArea);
+  const style = getComputedStyle(textArea);
 
   [
     "fontFamily",
