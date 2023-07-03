@@ -282,6 +282,7 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
+	return stmt
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 

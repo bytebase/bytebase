@@ -33,6 +33,7 @@
               )
             "
           />
+          <div>{{ props.sensitiveDataList }}</div>
         </div>
       </BBTableCell>
       <BBTableCell class="w-16" :left-padding="showSensitiveColumn ? 2 : 4">
@@ -147,7 +148,8 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.TIDB ||
       engine.value === Engine.POSTGRES ||
       engine.value === Engine.REDSHIFT ||
-      engine.value === Engine.ORACLE)
+      engine.value === Engine.ORACLE ||
+      engine.value === Engine.SNOWFLAKE)
   );
 });
 

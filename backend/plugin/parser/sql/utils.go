@@ -762,7 +762,7 @@ func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormal
 // If the database name is not specified, it will fallback to the normalizedDatabaseName.
 func extractSnowSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
 	schemaPlaceholder := "schema_placeholder"
-	schemaResource, err := extractSnowflakeNormalizeResourceListFromSelectStatement(statement, schemaPlaceholder, schemaPlaceholder)
+	schemaResource, err := extractSnowflakeNormalizeResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
 	if err != nil {
 		return nil, err
 	}

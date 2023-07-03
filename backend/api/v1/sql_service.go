@@ -1076,7 +1076,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					tableSchema.Name = fmt.Sprintf("%s.%s", schema.Name, table.Name)
 				}
 				if instance.Engine == db.Snowflake {
-					tableSchema.Name = fmt.Sprintf(`"%s"."%s"`, schema.Name, table.Name)
+					tableSchema.Name = fmt.Sprintf(`%s.%s`, schema.Name, table.Name)
 				}
 				for _, column := range table.Columns {
 					_, sensitive := columnMap[api.SensitiveData{
