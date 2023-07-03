@@ -249,7 +249,7 @@ type FindActivityMessage struct {
 	CreatedTsBefore *int64
 	Limit           *int
 	Offset          *int
-	// If specified, sorts the returned list by created_ts in <<ORDER>>
+	// If specified, sorts the returned list by id in <<ORDER>>
 	// Different use cases want different orders.
 	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
 	Order *api.SortOrder
