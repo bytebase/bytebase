@@ -2094,7 +2094,7 @@
     },
     "linked-issue": "Incidencia vinculada",
     "from-issue-warning": "La hoja proviene de la incidencia {issue} en modo de solo lectura. {oversize}",
-    "content-oversize-warning": "Mostrar solo parte de la hoja debido al tamaño excesivo.",
+    "content-oversize-warning": "SQL está sobredimensionado y no se permite la edición en línea.",
     "notifications": {
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
     }
