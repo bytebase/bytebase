@@ -86,8 +86,9 @@
                 :disabled="!allowEdit"
               />
               <div class="-mt-0.5">
-                <div class="textlabel">
+                <div class="textlabel flex">
                   {{ $t("policy.rollout.manual") }}
+                  <FeatureBadge feature="bb.feature.approval-policy" />
                 </div>
                 <div class="mt-1 textinfolabel">
                   {{ $t("policy.rollout.manual-info") }}
@@ -115,9 +116,8 @@
                 :disabled="!allowEdit"
               />
               <div class="-mt-0.5">
-                <div class="textlabel flex">
+                <div class="textlabel">
                   {{ $t("policy.rollout.auto") }}
-                  <FeatureBadge feature="bb.feature.approval-policy" />
                 </div>
                 <div class="mt-1 textinfolabel">
                   {{ $t("policy.rollout.auto-info") }}

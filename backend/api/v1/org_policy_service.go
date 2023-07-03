@@ -473,7 +473,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", status.Errorf(codes.InvalidArgument, "invalid approval policy value: %q", *payload)
 		}
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy); err != nil {
-			if payload.Value != api.PipelineApprovalValueManualAlways {
+			if payload.Value != api.PipelineApprovalValueManualNever {
 				return "", status.Errorf(codes.PermissionDenied, err.Error())
 			}
 		}
@@ -498,7 +498,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if payload.Schedule != api.BackupPlanPolicyScheduleUnset && payload.Schedule != api.BackupPlanPolicyScheduleDaily && payload.Schedule != api.BackupPlanPolicyScheduleWeekly {
 			return "", status.Errorf(codes.InvalidArgument, "invalid backup plan policy schedule: %q", payload.Schedule)
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureBackupPolicy); err != nil {
 			if payload.Schedule != api.BackupPlanPolicyScheduleUnset {
 				return "", status.Errorf(codes.PermissionDenied, err.Error())
 			}
