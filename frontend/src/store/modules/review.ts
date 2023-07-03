@@ -8,7 +8,7 @@ import {
   ApprovalStep,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
-} from "@/types/proto/v1/review_service";
+} from "@/types/proto/v1/issue_service";
 import { useUserStore } from "./user";
 import { reviewServiceClient } from "@/grpcweb";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";

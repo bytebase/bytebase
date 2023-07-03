@@ -14,7 +14,7 @@ import {
   extractIssueReviewContext,
   useWrappedReviewSteps,
 } from "@/plugins/issue/logic";
-import { Review } from "@/types/proto/v1/review_service";
+import { Review } from "@/types/proto/v1/issue_service";
 
 const currentUserName = computed(() => useAuthStore().currentUser.name);
 

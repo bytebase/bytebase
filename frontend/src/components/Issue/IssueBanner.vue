@@ -51,7 +51,7 @@ import { Issue } from "@/types";
 import { activeTask, isDatabaseRelatedIssueType } from "@/utils";
 import { useIssueLogic } from "./logic";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
-import { Review_Approver_Status } from "@/types/proto/v1/review_service";
+import { Review_Approver_Status } from "@/types/proto/v1/issue_service";
 
 const issueContext = useIssueLogic();
 const issue = issueContext.issue as Ref<Issue>;

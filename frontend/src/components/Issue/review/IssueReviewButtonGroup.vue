@@ -86,7 +86,7 @@ import IssueReviewForm from "./IssueReviewForm.vue";
 import { extractUserUID, taskCheckRunSummary } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { StandaloneIssueStatusTransitionButtonGroup } from "../StatusTransitionButtonGroup";
-import { Review_Approver_Status } from "@/types/proto/v1/review_service";
+import { Review_Approver_Status } from "@/types/proto/v1/issue_service";
 
 type LocalState = {
   modal?: {
