@@ -225,6 +225,14 @@ const showExportButton = computed(() => {
     return true;
   }
 
+  return allowToExportData.value;
+});
+
+const allowToExportData = computed(() => {
+  if (!featureToRef("bb.feature.access-control").value) {
+    return true;
+  }
+
   if (
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-access-control",
@@ -234,10 +242,6 @@ const showExportButton = computed(() => {
     return true;
   }
 
-  return allowToExportData.value;
-});
-
-const allowToExportData = computed(() => {
   const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
   if (database.value && policy) {
     const bindings = policy.workspaceIamPolicy?.bindings;
