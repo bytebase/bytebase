@@ -31,9 +31,9 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// ReviewService implements the review service.
-type ReviewService struct {
-	v1pb.UnimplementedReviewServiceServer
+// IssueService implements the review service.
+type IssueService struct {
+	v1pb.UnimplementedIssueServiceServer
 	store              *store.Store
 	activityManager    *activity.Manager
 	taskScheduler      *taskrun.Scheduler
@@ -42,9 +42,9 @@ type ReviewService struct {
 	stateCfg           *state.State
 }
 
-// NewReviewService creates a new ReviewService.
-func NewReviewService(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, relayRunner *relay.Runner, stateCfg *state.State) *ReviewService {
-	return &ReviewService{
+// NewIssueService creates a new IssueService.
+func NewIssueService(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, relayRunner *relay.Runner, stateCfg *state.State) *IssueService {
+	return &IssueService{
 		store:              store,
 		activityManager:    activityManager,
 		taskScheduler:      taskScheduler,
@@ -56,7 +56,7 @@ func NewReviewService(store *store.Store, activityManager *activity.Manager, tas
 
 // GetReview gets a review.
 // Currently, only review.ApprovalTemplates and review.Approvers are set.
-func (s *ReviewService) GetReview(ctx context.Context, request *v1pb.GetReviewRequest) (*v1pb.Review, error) {
+func (s *IssueService) GetReview(ctx context.Context, request *v1pb.GetReviewRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssue(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (s *ReviewService) GetReview(ctx context.Context, request *v1pb.GetReviewRe
 }
 
 // ApproveReview approves the approval flow of the review.
-func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.ApproveReviewRequest) (*v1pb.Review, error) {
+func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveReviewRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssue(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -327,7 +327,7 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 }
 
 // RejectReview rejects a review.
-func (s *ReviewService) RejectReview(ctx context.Context, request *v1pb.RejectReviewRequest) (*v1pb.Review, error) {
+func (s *IssueService) RejectReview(ctx context.Context, request *v1pb.RejectReviewRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssue(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -433,7 +433,7 @@ func (s *ReviewService) RejectReview(ctx context.Context, request *v1pb.RejectRe
 }
 
 // RequestReview requests a review.
-func (s *ReviewService) RequestReview(ctx context.Context, request *v1pb.RequestReviewRequest) (*v1pb.Review, error) {
+func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestReviewRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssue(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -544,7 +544,7 @@ func (s *ReviewService) RequestReview(ctx context.Context, request *v1pb.Request
 
 // UpdateReview updates the review.
 // It can only update approval_finding_done to false.
-func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateReviewRequest) (*v1pb.Review, error) {
+func (s *IssueService) UpdateReview(ctx context.Context, request *v1pb.UpdateReviewRequest) (*v1pb.Review, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
@@ -604,7 +604,7 @@ func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateRe
 }
 
 // CreateReviewComment creates the review comment.
-func (s *ReviewService) CreateReviewComment(ctx context.Context, request *v1pb.CreateReviewCommentRequest) (*v1pb.ReviewComment, error) {
+func (s *IssueService) CreateReviewComment(ctx context.Context, request *v1pb.CreateReviewCommentRequest) (*v1pb.ReviewComment, error) {
 	if request.ReviewComment.Comment == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "review comment is empty")
 	}
@@ -649,7 +649,7 @@ func (s *ReviewService) CreateReviewComment(ctx context.Context, request *v1pb.C
 }
 
 // UpdateReviewComment updates the review comment.
-func (s *ReviewService) UpdateReviewComment(ctx context.Context, request *v1pb.UpdateReviewCommentRequest) (*v1pb.ReviewComment, error) {
+func (s *IssueService) UpdateReviewComment(ctx context.Context, request *v1pb.UpdateReviewCommentRequest) (*v1pb.ReviewComment, error) {
 	if request.UpdateMask.Paths == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
@@ -691,7 +691,7 @@ func (s *ReviewService) UpdateReviewComment(ctx context.Context, request *v1pb.U
 	}, nil
 }
 
-func (s *ReviewService) onReviewApproved(ctx context.Context, issue *store.IssueMessage) {
+func (s *IssueService) onReviewApproved(ctx context.Context, issue *store.IssueMessage) {
 	if issue.Type == api.IssueGrantRequest {
 		if err := func() error {
 			payload := &storepb.IssuePayload{}
@@ -714,7 +714,7 @@ func (s *ReviewService) onReviewApproved(ctx context.Context, issue *store.Issue
 	}
 }
 
-func (s *ReviewService) getIssue(ctx context.Context, name string) (*store.IssueMessage, error) {
+func (s *IssueService) getIssue(ctx context.Context, name string) (*store.IssueMessage, error) {
 	reviewID, err := getReviewID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
