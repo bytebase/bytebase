@@ -73,7 +73,12 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	`
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, err
+		// nolint
+		// Failed-open for non-CDB database
+		return &db.InstanceMetadata{
+			Version:   version,
+			Databases: databases,
+		}, nil
 	}
 	defer rows.Close()
 
