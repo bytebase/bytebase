@@ -60,22 +60,47 @@
       class="rounded-md w-full overflow-hidden"
       @load="adjustIframe"
     />
-    <textarea
-      v-else-if="mode === 'editor'"
-      ref="contentTextArea"
-      v-model="state.content"
-      rows="3"
-      class="textarea block w-full resize-none whitespace-pre-wrap bg-gray-100"
-      :placeholder="$t('issue.leave-a-comment')"
-      @input="(e: any) => sizeToFit(e.target)"
-      @keydown.enter="keyboardHandler"
-      @keydown.esc="
-        () => {
-          $emit('cancel');
-          state.content = props.content;
-        }
-      "
-    ></textarea>
+    <div v-else-if="mode === 'editor'" class="relative">
+      <textarea
+        ref="contentTextArea"
+        v-model="state.content"
+        rows="3"
+        class="textarea block w-full resize-none whitespace-pre-wrap bg-gray-100"
+        :placeholder="$t('issue.leave-a-comment')"
+        @mousedown="clearIssuePanel"
+        @input="(e: any) => sizeToFit(e.target)"
+        @keyup="adjustIssuePanelWithPosition"
+        @keydown.enter="keyboardHandler"
+        @keydown.esc="
+          () => {
+            $emit('cancel');
+            state.content = props.content;
+          }
+        "
+      ></textarea>
+      <div
+        ref="issuePanel"
+        class="border rounded absolute hidden bg-white shadow-sm"
+      >
+        <ul class="text-sm rounded divide-y divide-solid">
+          <li
+            v-for="issue in filterIssueList"
+            :key="issue.id"
+            class="p-3 rounded hover:bg-blue-500 hover:text-white cursor-pointer flex items-center gap-x-2"
+            @click="onIssueSelect(issue)"
+          >
+            <IssueStatusIcon
+              :issue-status="issue.status"
+              :task-status="issueTaskStatus(issue)"
+            />
+            <span class="opacity-60">#{{ issue.id }}</span>
+            <div class="whitespace-nowrap">
+              {{ issue.name }}
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -88,6 +113,8 @@ import MarkdownIt from "markdown-it";
 import { sizeToFit } from "@/utils";
 import codeStyle from "highlight.js/styles/github.css";
 import markdownStyle from "../assets/css/github-markdown-style.css";
+import { Issue } from "@/types";
+import { activeTask, isDatabaseRelatedIssueType } from "@/utils";
 
 const md = new MarkdownIt({
   html: true,
@@ -122,6 +149,7 @@ type EditorMode = "editor" | "preview";
 const props = defineProps<{
   content: string;
   mode: EditorMode;
+  issueList: Issue[];
 }>();
 const emit = defineEmits<{
   (event: "change", value: string): void;
@@ -156,7 +184,9 @@ const markdownContent = computed(() => {
       }
       const id = parseInt(part.slice(1), 10);
       if (!Number.isNaN(id) && id > 0) {
-        return `[issue #${id}](${window.location.origin}/issue/${id})`;
+        return `[${t("common.issue")} #${id}](${
+          window.location.origin
+        }/issue/${id})`;
       }
       return part;
     })
@@ -165,6 +195,8 @@ const markdownContent = computed(() => {
 });
 const contentTextArea = ref<HTMLTextAreaElement>();
 const contentPreviewArea = ref<HTMLIFrameElement>();
+const issuePanel = ref<HTMLDivElement>();
+const filterIssueList = ref<Issue[]>([]);
 
 watch(
   () => state.content,
@@ -263,8 +295,8 @@ const autoComplete = (text: string) => {
   const currentLineIndex = getActiveLineIndex(text, start);
   const currentLine = lines[currentLineIndex];
 
-  if (/^\s{0,}([0-9]{1,}\.|-)\s{1,}$/.test(currentLine)) {
-    // /^\s{0,}([0-9]{1,}\.|-)\s{1,}$/ matches "- ", " - " or "1. ", " 1. ", etc.
+  if (/^\s{0,}(\d{1,}\.|-)\s{1,}$/.test(currentLine)) {
+    // /^\s{0,}(\d{1,}\.|-)\s{1,}$/ matches "- ", " - " or "1. ", " 1. ", etc.
     // if current line only contains "-" or number list like "1.", we will clear the line just like the GitHub.
     lines[currentLineIndex] = "";
     state.content = lines.join("\n");
@@ -276,7 +308,7 @@ const autoComplete = (text: string) => {
       contentTextArea.value.setSelectionRange(newPosition, newPosition);
     });
     return true;
-  } else if (/^\s{0,}([0-9]{1,}\.|-)\s/.test(currentLine)) {
+  } else if (/^\s{0,}(\d{1,}\.|-)\s/.test(currentLine)) {
     // else if current line also contains other text, we will auto-complete the markdown list.
     // for example, the "- 12|3"(| is the cursor position) should be "- 12\n- 3"
     const indent = new Array(
@@ -288,7 +320,7 @@ const autoComplete = (text: string) => {
     lines[currentLineIndex] = currentLine.slice(0, indexInCurrentLine);
 
     let nextListStart = "-";
-    if (/^\s{0,}[0-9]{1,}\.\s/.test(currentLine)) {
+    if (/^\s{0,}\d{1,}\.\s/.test(currentLine)) {
       const guessListNumber = Number(currentLine.match(/\d+/)![0]) + 1;
       nextListStart = `${guessListNumber}.`;
     }
@@ -410,6 +442,159 @@ const insertWithCursorPosition = (template: string, position: number) => {
     }
     contentTextArea.value.setSelectionRange(start + position, end + position);
     contentTextArea.value.focus();
+
+    if (template === "#") {
+      adjustIssuePanelWithPosition();
+    }
   });
+};
+
+const clearIssuePanel = () => {
+  if (issuePanel.value) {
+    issuePanel.value.style.display = "none";
+  }
+  filterIssueList.value = [];
+};
+
+// onIssueSelect will replace the input issue id with the selected issue id.
+// For example, if the text is "#12|" (| is the cursor position), and select the issue with id 1234,
+// we will replace the "#12|" with "#1234 |"
+const onIssueSelect = (issue: Issue) => {
+  if (!contentTextArea.value) {
+    return false;
+  }
+  const start = contentTextArea.value.selectionStart;
+  const end = contentTextArea.value.selectionEnd;
+  if (start !== end) {
+    return false;
+  }
+
+  let replaceStart = start - 1;
+  while (replaceStart > 0) {
+    if (state.content[replaceStart] === "#") {
+      break;
+    }
+    replaceStart--;
+  }
+  replaceStart++;
+
+  const content = state.content.split("");
+  const issueId = `${issue.id} `;
+  content.splice(replaceStart, start - replaceStart, issueId);
+  state.content = content.join("");
+
+  clearIssuePanel();
+
+  nextTick(() => {
+    if (!contentTextArea.value) {
+      return;
+    }
+    const selectionDiff = issueId.length - (start - replaceStart);
+    contentTextArea.value.setSelectionRange(
+      start + selectionDiff,
+      end + selectionDiff
+    );
+    contentTextArea.value.focus();
+  });
+
+  return;
+};
+
+const issueTaskStatus = (issue: Issue) => {
+  // For grant request issue, we always show the status as "PENDING_APPROVAL" as task status.
+  if (!isDatabaseRelatedIssueType(issue.type)) {
+    return "PENDING_APPROVAL";
+  }
+
+  return activeTask(issue.pipeline!).status;
+};
+
+const adjustIssuePanelWithPosition = () => {
+  if (!contentTextArea.value || !issuePanel.value) {
+    return;
+  }
+
+  clearIssuePanel();
+
+  const start = contentTextArea.value.selectionStart;
+  const end = contentTextArea.value.selectionEnd;
+  if (start !== end || start === 0) {
+    return;
+  }
+
+  const text = `${state.content.slice(0, start)}${
+    start === state.content.length ? " " : state.content[start]
+  }`;
+  const matches = text.match(/#\d{0,}\s$/);
+  if (!matches) {
+    return;
+  }
+
+  const id = matches[0].slice(1).trimEnd();
+  filterIssueList.value = props.issueList
+    .filter((issue) => `${issue.id}`.startsWith(id))
+    .slice(0, 5);
+
+  const position = getIssuePanelPosition(contentTextArea.value);
+  issuePanel.value.style.display = "block";
+  issuePanel.value.style.left = `${position.x}px`;
+  issuePanel.value.style.top = `${position.y + 25}px`;
+};
+
+const getIssuePanelPosition = (textArea: HTMLTextAreaElement) => {
+  const start = textArea.selectionStart;
+  const end = textArea.selectionEnd;
+  const copy = createDivCopyForTextarea(textArea);
+
+  const range = document.createRange();
+  if (copy.firstChild) {
+    range.setStart(copy.firstChild, start);
+    range.setEnd(copy.firstChild, end);
+  }
+
+  const selection = document.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+
+  const rect = range.getBoundingClientRect();
+  document.body.removeChild(copy);
+  textArea.selectionStart = start;
+  textArea.selectionEnd = end;
+  textArea.focus();
+
+  return {
+    x: rect.left - textArea.scrollLeft,
+    y: rect.top - textArea.scrollTop,
+  };
+};
+
+const createDivCopyForTextarea = (textArea: HTMLTextAreaElement) => {
+  const copy = document.createElement("div");
+  copy.textContent = textArea.value;
+  const style = getComputedStyle(textArea);
+
+  [
+    "fontFamily",
+    "fontSize",
+    "fontWeight",
+    "wordWrap",
+    "whiteSpace",
+    "borderLeftWidth",
+    "borderTopWidth",
+    "borderRightWidth",
+    "borderBottomWidth",
+  ].forEach(function (key: any) {
+    copy.style[key] = style[key];
+  });
+
+  copy.style.overflow = "auto";
+  copy.style.width = textArea.offsetWidth + "px";
+  copy.style.height = textArea.offsetHeight + "px";
+  copy.style.position = "absolute";
+  copy.style.left = textArea.offsetLeft + "px";
+  copy.style.top = textArea.offsetTop + "px";
+
+  document.body.appendChild(copy);
+  return copy;
 };
 </script>
