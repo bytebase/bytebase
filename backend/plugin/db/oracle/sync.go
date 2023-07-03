@@ -88,8 +88,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, err
 	}
 
-	fmt.Println("[databases]:", databases)
-
 	return &db.InstanceMetadata{
 		Version:   version,
 		Databases: databases,
