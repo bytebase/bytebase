@@ -24,7 +24,7 @@ message DatabaseMetadata {
 
   // The database belongs to a datashare.
   bool datashare = 6;
-  
+
   // The service name of the database. It's the Oracle specific concept.
   string service_name = 7;
 }
