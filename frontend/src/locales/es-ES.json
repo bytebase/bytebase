@@ -1070,7 +1070,7 @@
     },
     "environment-tier": {
       "name": "Nivel de entorno",
-      "description": "El entorno aparecerá de manera diferente a otros entornos.{newline}Por defecto, los desarrolladores no pueden ejecutar consultas en las \nbases de datos de este entorno utilizando el Editor de SQL. ",
+      "description": "El entorno aparecerá de manera diferente a otros entornos.",
       "mark-env-as-production": "Marcar como entorno de producción"
     }
   },
