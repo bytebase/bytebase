@@ -32,6 +32,16 @@ func TestGetQueryExportFactors(t *testing.T) {
 				DatabaseNames: []string{"instances/postgres-sample/databases/employee"},
 			},
 		},
+		{
+			expression: "request.time < timestamp(\"2023-07-10T08:14:34.788Z\")",
+			want:       QueryExportFactors{},
+		},
+		{
+			expression: "request.time < timestamp(\"2023-07-10T08:15:46.773Z\") && ((resource.database in [\"instances/postgres-sample/databases/blog\"]) || (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema in [\"public\"]))",
+			want: QueryExportFactors{
+				DatabaseNames: []string{"instances/postgres-sample/databases/blog", "instances/postgres-sample/databases/employee"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		factors, err := GetQueryExportFactors(tt.expression)
