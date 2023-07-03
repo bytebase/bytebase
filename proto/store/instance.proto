@@ -6,7 +6,7 @@ option go_package = "generated-go/store";
 
 // InstanceOption is the option for instances.
 message InstanceOption {
-    // The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-    // For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
-    bool schema_tenant_mode = 1;
+  // The schema tenant mode is used to determine whether the instance is in schema tenant mode.
+  // For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
+  bool schema_tenant_mode = 1;
 }
