@@ -56,10 +56,7 @@
             {{ t("common.export") }}
           </NButton>
         </NDropdown>
-        <NButton
-          v-if="showRequestExportButton"
-          @click="state.showRequestExportPanel = true"
-        >
+        <NButton v-else @click="state.showRequestExportPanel = true">
           {{ $t("quick-action.request-export") }}
         </NButton>
       </div>
@@ -239,12 +236,6 @@ const showExportButton = computed(() => {
   }
 
   return allowToExportData.value;
-});
-
-const showRequestExportButton = computed(() => {
-  return (
-    featureToRef("bb.feature.dba-workflow").value && !showExportButton.value
-  );
 });
 
 const allowToExportData = computed(() => {
