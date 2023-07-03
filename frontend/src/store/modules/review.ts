@@ -10,7 +10,7 @@ import {
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
 import { useUserStore } from "./user";
-import { reviewServiceClient } from "@/grpcweb";
+import { issueServiceClient } from "@/grpcweb";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
@@ -42,7 +42,7 @@ export const useReviewStore = defineStore("review", () => {
     const name = reviewName(issue);
 
     try {
-      const review = await reviewServiceClient.getReview({
+      const review = await issueServiceClient.getReview({
         name,
         force,
       });
@@ -54,7 +54,7 @@ export const useReviewStore = defineStore("review", () => {
   };
 
   const approveReview = async (issue: Issue, comment?: string) => {
-    const review = await reviewServiceClient.approveReview({
+    const review = await issueServiceClient.approveReview({
       name: reviewName(issue),
       comment,
     });
@@ -62,7 +62,7 @@ export const useReviewStore = defineStore("review", () => {
   };
 
   const rejectReview = async (issue: Issue, comment?: string) => {
-    const review = await reviewServiceClient.rejectReview({
+    const review = await issueServiceClient.rejectReview({
       name: reviewName(issue),
       comment,
     });
@@ -70,7 +70,7 @@ export const useReviewStore = defineStore("review", () => {
   };
 
   const requestReview = async (issue: Issue, comment?: string) => {
-    const review = await reviewServiceClient.requestReview({
+    const review = await issueServiceClient.requestReview({
       name: reviewName(issue),
       comment,
     });
@@ -78,7 +78,7 @@ export const useReviewStore = defineStore("review", () => {
   };
 
   const regenerateReview = async (issue: Issue) => {
-    const review = await reviewServiceClient.updateReview({
+    const review = await issueServiceClient.updateReview({
       review: {
         name: reviewName(issue),
         approvalFindingDone: false,
