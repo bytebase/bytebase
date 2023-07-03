@@ -15,6 +15,7 @@ export type ExportDataParams = {
   limit: number;
   database: string; // instances/{instance}/databases/{database}
   instance: string; // instances/{instance}
+  admin?: boolean;
 };
 
 export const useExportData = () => {
@@ -35,6 +36,7 @@ export const useExportData = () => {
         statement: params.statement,
         limit: params.limit,
         format: getExportRequestFormat(params.format),
+        admin: params.admin ?? false,
       });
 
       const blob = new Blob([content], {
