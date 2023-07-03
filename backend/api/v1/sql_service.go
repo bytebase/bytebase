@@ -383,7 +383,7 @@ func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 	if err := buf.WriteByte('\n'); err != nil {
 		return nil, err
 	}
-	for _, row := range result.Rows {
+	for i, row := range result.Rows {
 		for i, value := range row.Values {
 			if i != 0 {
 				if err := buf.WriteByte(','); err != nil {
@@ -394,8 +394,10 @@ func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 				return nil, err
 			}
 		}
-		if err := buf.WriteByte('\n'); err != nil {
-			return nil, err
+		if i != len(result.Rows)-1 {
+			if err := buf.WriteByte('\n'); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return buf.Bytes(), nil
@@ -477,7 +479,7 @@ func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource,
 
 func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
 	var buf bytes.Buffer
-	for _, row := range result.Rows {
+	for i, row := range result.Rows {
 		if _, err := buf.WriteString(statementPrefix); err != nil {
 			return nil, err
 		}
@@ -491,8 +493,14 @@ func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult)
 				return nil, err
 			}
 		}
-		if _, err := buf.WriteString(");\n"); err != nil {
-			return nil, err
+		if i != len(result.Rows)-1 {
+			if _, err := buf.WriteString(");\n"); err != nil {
+				return nil, err
+			}
+		} else {
+			if _, err := buf.WriteString(");"); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return buf.Bytes(), nil
