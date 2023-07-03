@@ -66,11 +66,13 @@
           >
             <label for="activation" class="textlabel block">
               {{ $t("subscription.instance-assignment.assign-license") }}
-              ({{
-                $t("subscription.instance-assignment.n-license-remain", {
-                  n: availableLicenseCount,
-                })
-              }})
+              (<router-link to="/setting/subscription" class="accent-link">
+                {{
+                  $t("subscription.instance-assignment.n-license-remain", {
+                    n: availableLicenseCount,
+                  })
+                }}</router-link
+              >)
             </label>
             <BBSwitch
               class="mt-2"

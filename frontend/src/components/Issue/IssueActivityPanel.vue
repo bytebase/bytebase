@@ -20,30 +20,11 @@
           >
             <template v-if="allowEditActivity(item.activity)" #subject-suffix>
               <div class="space-x-2 flex items-center text-control-light">
-                <template
-                  v-if="
-                    state.editCommentMode &&
-                    state.activeActivity?.name === item.activity.name
-                  "
-                >
-                  <button
-                    type="button"
-                    class="rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-                    @click.prevent="cancelEditComment"
-                  >
-                    {{ $t("common.cancel") }}
-                  </button>
-                  <button
-                    type="button"
-                    class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-                    :disabled="!allowUpdateComment"
-                    @click.prevent="doUpdateComment"
-                  >
-                    {{ $t("common.save") }}
-                  </button>
-                </template>
                 <!-- mr-2 is to vertical align with the text description edit button-->
-                <div v-else class="mr-2 flex items-center space-x-2">
+                <div
+                  v-if="!state.editCommentMode"
+                  class="mr-2 flex items-center space-x-2"
+                >
                   <!-- Edit Comment Button-->
                   <button
                     class="btn-icon"
@@ -56,35 +37,42 @@
             </template>
 
             <template #comment>
+              <MarkdownEditor
+                v-if="item.activity.comment"
+                :mode="
+                  state.editCommentMode &&
+                  state.activeActivity?.name === item.activity.name
+                    ? 'editor'
+                    : 'preview'
+                "
+                :content="item.activity.comment"
+                @change="(val: string) => state.editComment = val"
+                @submit="doUpdateComment"
+                @cancel="cancelEditComment"
+              />
               <div
                 v-if="
                   state.editCommentMode &&
                   state.activeActivity?.name === item.activity.name
                 "
-                class="mt-2 text-sm text-control whitespace-pre-wrap"
+                class="flex space-x-2 mt-4 items-center justify-end"
               >
-                <label for="comment" class="sr-only">
-                  {{ $t("issue.edit-comment") }}
-                </label>
-                <textarea
-                  ref="editCommentTextArea"
-                  v-model="editComment"
-                  rows="3"
-                  class="textarea block w-full resize-none"
-                  :placeholder="$t('issue.leave-a-comment')"
-                  @input="
-                  (e: any) => {
-                    sizeToFit(e.target);
-                  }
-                "
-                  @focus="
-                  (e: any) => {
-                    sizeToFit(e.target);
-                  }
-                "
-                />
+                <button
+                  type="button"
+                  class="btn-normal border-none"
+                  @click.prevent="cancelEditComment"
+                >
+                  {{ $t("common.cancel") }}
+                </button>
+                <button
+                  type="button"
+                  class="btn-normal"
+                  :disabled="!allowUpdateComment"
+                  @click.prevent="doUpdateComment"
+                >
+                  {{ $t("common.save") }}
+                </button>
               </div>
-              <ActivityComment v-else :activity="item.activity" />
             </template>
           </ActivityItem>
         </ul>
@@ -108,25 +96,19 @@
               <label for="comment" class="sr-only">
                 {{ $t("issue.add-a-comment") }}
               </label>
-              <textarea
-                ref="newCommentTextArea"
-                v-model="newComment"
-                rows="3"
-                class="textarea block w-full resize-none whitespace-pre-wrap"
-                :placeholder="$t('issue.leave-a-comment')"
-                @input="
-                  (e: any) => {
-                    sizeToFit(e.target);
-                  }
-                "
-              ></textarea>
+              <MarkdownEditor
+                mode="editor"
+                :content="state.newComment"
+                @change="(val: string) => state.newComment = val"
+                @submit="doCreateComment(state.newComment)"
+              />
               <div class="mt-4 flex items-center justify-between space-x-4">
                 <div>
                   <button
                     type="button"
                     class="btn-normal"
-                    :disabled="newComment.length == 0"
-                    @click.prevent="doCreateComment(newComment)"
+                    :disabled="state.newComment.length == 0"
+                    @click.prevent="doCreateComment(state.newComment)"
                   >
                     {{ $t("common.comment") }}
                   </button>
@@ -141,16 +123,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  computed,
-  nextTick,
-  ref,
-  reactive,
-  watch,
-  watchEffect,
-  Ref,
-  onMounted,
-} from "vue";
+import { computed, reactive, watch, watchEffect, Ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import UserAvatar from "../User/UserAvatar.vue";
 import type {
@@ -159,7 +132,7 @@ import type {
   IssueSubscriber,
   ActivityIssueCommentCreatePayload,
 } from "@/types";
-import { extractUserResourceName, sizeToFit } from "@/utils";
+import { extractUserResourceName } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import {
   useIssueSubscriberStore,
@@ -168,30 +141,21 @@ import {
   useCurrentUserV1,
   useCurrentUser,
 } from "@/store";
-import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
-import {
-  ActivityItem,
-  DistinctActivity,
-  Comment as ActivityComment,
-  isSimilarActivity,
-} from "./activity";
+import { ActivityItem, DistinctActivity, isSimilarActivity } from "./activity";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { getLogId } from "@/store/modules/v1/common";
 
 interface LocalState {
   editCommentMode: boolean;
   activeActivity?: LogEntity;
+  editComment: string;
+  newComment: string;
 }
 
 const reviewV1Store = useReviewV1Store();
 const activityV1Store = useActivityV1Store();
 const route = useRoute();
-
-const newComment = ref("");
-const newCommentTextArea = ref();
-const editComment = ref("");
-const editCommentTextArea = ref<HTMLTextAreaElement[]>();
 
 const logic = useIssueLogic();
 const issue = logic.issue as Ref<Issue>;
@@ -199,28 +163,9 @@ const { addSubscriberId } = useExtraIssueLogic();
 
 const state = reactive<LocalState>({
   editCommentMode: false,
+  editComment: "",
+  newComment: "",
 });
-
-const keyboardHandler = (e: KeyboardEvent) => {
-  if (
-    state.editCommentMode &&
-    editCommentTextArea.value?.[0] === document.activeElement
-  ) {
-    if (e.code == "Escape") {
-      cancelEditComment();
-    } else if (e.code == "Enter" && e.metaKey) {
-      if (allowUpdateComment.value) {
-        doUpdateComment();
-      }
-    }
-  } else if (newCommentTextArea.value === document.activeElement) {
-    if (e.code == "Enter" && e.metaKey) {
-      doCreateComment(newComment.value);
-    }
-  }
-};
-
-useEventListener("keydown", keyboardHandler);
 
 const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
@@ -273,22 +218,19 @@ const subscriberList = computed((): IssueSubscriber[] => {
 });
 
 const cancelEditComment = () => {
-  editComment.value = "";
   state.activeActivity = undefined;
   state.editCommentMode = false;
+  state.editComment = "";
 };
 
-const doCreateComment = (comment: string, clear = true) => {
+const doCreateComment = (comment: string) => {
   reviewV1Store
     .createReviewComment({
       reviewId: issue.value.id,
       comment,
     })
     .then(() => {
-      if (clear) {
-        newComment.value = "";
-        nextTick(() => sizeToFit(newCommentTextArea.value));
-      }
+      state.newComment = "";
 
       // Because the user just added a comment and we assume she is interested in this
       // issue, and we add her to the subscriber list if she is not there
@@ -322,16 +264,16 @@ const allowEditActivity = (activity: LogEntity) => {
 };
 
 const onUpdateComment = (activity: LogEntity) => {
-  editComment.value = activity.comment;
   state.activeActivity = activity;
   state.editCommentMode = true;
-  nextTick(() => {
-    editCommentTextArea.value?.[0]?.focus();
-  });
+  state.editComment = activity.comment;
 };
 
 const doUpdateComment = () => {
   if (!state.activeActivity) {
+    return;
+  }
+  if (!state.editComment) {
     return;
   }
   const activityId = getLogId(state.activeActivity.name);
@@ -339,7 +281,7 @@ const doUpdateComment = () => {
     .updateReviewComment({
       commentId: `${activityId}`,
       reviewId: issue.value.id,
-      comment: editComment.value,
+      comment: state.editComment,
     })
     .then(() => {
       cancelEditComment();
@@ -347,7 +289,9 @@ const doUpdateComment = () => {
 };
 
 const allowUpdateComment = computed(() => {
-  return editComment.value != state.activeActivity!.comment;
+  return (
+    state.editComment && state.editComment != state.activeActivity!.comment
+  );
 });
 
 onMounted(() => {

@@ -477,9 +477,6 @@ func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource,
 
 func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
 	var buf bytes.Buffer
-	if _, err := buf.WriteString(strings.Join(result.ColumnNames, ",")); err != nil {
-		return nil, err
-	}
 	for _, row := range result.Rows {
 		if _, err := buf.WriteString(statementPrefix); err != nil {
 			return nil, err

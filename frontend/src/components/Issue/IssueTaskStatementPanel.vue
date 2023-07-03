@@ -53,13 +53,24 @@
         </UploadProgressButton>
       </template>
 
-      <NButton
-        v-if="shouldShowStatementEditButtonForUI"
-        size="tiny"
-        @click.prevent="beginEdit"
-      >
-        {{ $t("common.edit") }}
-      </NButton>
+      <template v-if="shouldShowStatementEditButtonForUI">
+        <!-- for small size sheets, show full featured UI editing button group -->
+        <NButton
+          v-if="!isTaskSheetOversize"
+          size="tiny"
+          @click.prevent="beginEdit"
+        >
+          {{ $t("common.edit") }}
+        </NButton>
+        <!-- for oversized sheets, only allow to upload and overwrite the sheet -->
+        <UploadProgressButton
+          v-else
+          :upload="handleUploadAndOverwrite"
+          size="tiny"
+        >
+          {{ $t("issue.upload-sql") }}
+        </UploadProgressButton>
+      </template>
 
       <template v-else-if="!create">
         <NButton
@@ -87,7 +98,11 @@
     :class="'my-2'"
     :style="`WARN`"
     :title="$t('issue.statement-from-sheet-warning')"
-  />
+  >
+    <template v-if="state.taskSheetName" #action>
+      <DownloadSheetButton :sheet="state.taskSheetName" size="small" />
+    </template>
+  </BBAttention>
   <div
     class="whitespace-pre-wrap mt-2 w-full overflow-hidden"
     :class="state.editing ? 'border-t border-x' : 'border-t border-x'"
@@ -146,6 +161,7 @@ import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 import UploadProgressButton from "../misc/UploadProgressButton.vue";
+import DownloadSheetButton from "../Sheet/DownloadSheetButton.vue";
 import {
   Sheet_Visibility,
   Sheet_Source,
@@ -186,7 +202,7 @@ const {
 } = useIssueLogic();
 
 const { t } = useI18n();
-const overrideSQLDialog = useDialog();
+const overwriteSQLDialog = useDialog();
 const uiStateStore = useUIStateStore();
 const dbSchemaStore = useDBSchemaV1Store();
 const sheetV1Store = useSheetV1Store();
@@ -371,10 +387,6 @@ const shouldShowStatementEditButtonForUI = computed(() => {
   if (create.value) {
     return false;
   }
-  // For those task sheet oversized, it's readonly.
-  if (isTaskSheetOversize.value) {
-    return false;
-  }
   // Will show another button group as [Upload][Cancel][Save]
   // while editing
   if (state.editing) {
@@ -479,6 +491,51 @@ const saveEdit = async () => {
   state.editing = false;
 };
 
+const handleUploadAndOverwrite = async (event: Event) => {
+  if (!selectedDatabase.value) {
+    return;
+  }
+  if (state.isUploadingFile) {
+    return;
+  }
+  try {
+    state.isUploadingFile = true;
+    await showOverwriteConfirmDialog();
+    const { filename, content: statement } = await handleUploadFileEvent(
+      event,
+      100
+    );
+    const projectName = selectedDatabase.value.project;
+    let payload = {};
+    if (!create.value) {
+      payload = getBacktracePayloadWithIssue(issue.value as Issue);
+    }
+    // TODO: upload process
+    const sheet = await sheetV1Store.createSheet(projectName, {
+      title: filename,
+      content: new TextEncoder().encode(statement),
+      visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+      source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+      type: Sheet_Type.TYPE_SQL,
+      payload: JSON.stringify(payload),
+    });
+
+    resetTempEditState();
+    await updateSheetId(sheetV1Store.getSheetUid(sheet.name));
+    if (selectedTask.value) {
+      updateEditorHeight();
+    }
+
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: "File upload success",
+    });
+  } finally {
+    state.isUploadingFile = false;
+  }
+};
+
 const cancelEdit = async () => {
   state.editStatement = await getOrFetchSheetStatementByName(
     state.taskSheetName
@@ -499,6 +556,27 @@ const allowSaveSQL = computed((): boolean => {
   // Allowed to save otherwise
   return true;
 });
+
+const showOverwriteConfirmDialog = () => {
+  return new Promise((resolve, reject) => {
+    // Show a confirm dialog before replacing if the editing statement is not empty.
+    overwriteSQLDialog.create({
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      title: t("issue.overwrite-current-statement"),
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      onNegativeClick: () => {
+        reject();
+      },
+      onPositiveClick: () => {
+        resolve(undefined);
+      },
+    });
+  });
+};
 
 const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
   if (!selectedDatabase.value) {
@@ -550,29 +628,12 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     }
   };
 
-  return new Promise((resolve, reject) => {
-    if (state.editStatement) {
-      // Show a confirm dialog before replacing if the editing statement is not empty.
-      overrideSQLDialog.create({
-        positiveText: t("common.confirm"),
-        negativeText: t("common.cancel"),
-        title: t("issue.override-current-statement"),
-        autoFocus: false,
-        closable: false,
-        maskClosable: false,
-        closeOnEsc: false,
-        onNegativeClick: () => {
-          state.isUploadingFile = false;
-          reject();
-        },
-        onPositiveClick: () => {
-          resolve(uploadStatementAsSheet());
-        },
-      });
-    } else {
-      resolve(uploadStatementAsSheet());
-    }
-  });
+  if (state.editStatement) {
+    await showOverwriteConfirmDialog();
+    return uploadStatementAsSheet();
+  }
+
+  return uploadStatementAsSheet();
 };
 
 const handleUploadFileEvent = (

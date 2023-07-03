@@ -250,7 +250,7 @@ export const getDefaultBackupPlanPolicy = (
   };
 };
 
-export const defaultApprovalStrategy = ApprovalStrategy.MANUAL;
+export const defaultApprovalStrategy = ApprovalStrategy.AUTOMATIC;
 
 export const getDefaultDeploymentApprovalPolicy = (
   parentPath: string,

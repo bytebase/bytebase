@@ -77,7 +77,7 @@
     </div>
 
     <div
-      class="w-full flex items-center justify-between text-xs mt-0.5 gap-x-4 text-control-light"
+      class="w-full flex items-center justify-between text-xs mt-1 gap-x-4 text-control-light"
     >
       <div class="flex-1 truncate">
         {{ result.statement }}
@@ -326,18 +326,23 @@ table.setPageSize(DEFAULT_PAGE_SIZE);
 
 const exportDropdownOptions = computed(() => [
   {
-    label: t("sql-editor.download-as-csv"),
+    label: t("sql-editor.download-as-file", { file: "CSV" }),
     key: "CSV",
     disabled: props.result === null || isEmpty(props.result),
   },
   {
-    label: t("sql-editor.download-as-json"),
+    label: t("sql-editor.download-as-file", { file: "JSON" }),
     key: "JSON",
+    disabled: props.result === null || isEmpty(props.result),
+  },
+  {
+    label: t("sql-editor.download-as-file", { file: "SQL" }),
+    key: "SQL",
     disabled: props.result === null || isEmpty(props.result),
   },
 ]);
 
-const handleExportBtnClick = (format: "CSV" | "JSON") => {
+const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL") => {
   if (!allowToExportData.value) {
     pushNotification({
       module: "bytebase",

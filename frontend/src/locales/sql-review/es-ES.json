@@ -24,7 +24,7 @@
     "bb-sql-review-dev": "Plantilla Básica",
     "bb-sql-review-dev-desc": "Cobertura básica para defender sus bases de datos de uso indebido común.",
     "bb-sql-review-sample": "Plantilla de Muestra",
-    "bb-sql-review-sample-desc": "Una plantilla mínima con protección de eliminación y prohibición de columnas nulas."
+    "bb-sql-review-sample-desc": "Una plantilla mínima con protección de DROP y prohibición de columnas anulables."
   },
   "rule": {
     "engine-mysql-use-innodb": {
@@ -96,7 +96,7 @@
           "title": "Formato de nombre de clave única",
           "template": {
             "table": "El nombre de la tabla",
-            "column_list": "Nombres de columna del índice, unidos por "
+            "column_list": "Nombres de columna del índice, unidos por _"
           }
         },
         "maxLength": {
@@ -112,7 +112,7 @@
           "title": "Formato del nombre de clave primaria",
           "template": {
             "table": "El nombre de la tabla",
-            "column_list": "Nombres de las columnas de índice, unidos por "
+            "column_list": "Nombres de las columnas de índice, unidos por _"
           }
         },
         "maxLength": {
@@ -143,7 +143,7 @@
       "description": "El nombre puede estar vacío y ser nombrado por la base de datos. Si no está vacío, el formato predeterminado es \"idx<nombre de la tabla>_<combinación de nombres de columna de clave única>\", que no tiene más de 63 caracteres de longitud, como \"idx_my_table_id_name\". Nivel de error sugerido: Advertencia",
       "component": {
         "format": {
-          "title": "Formato del nombre de índice",
+          "title": "Formato del nombre del índice",
           "template": {
             "table": "El nombre de la tabla",
             "column_list": "Nombres de las columnas de índice, unidos por _"
@@ -155,7 +155,7 @@
       }
     },
     "naming-column-auto-increment": {
-      "title": "Imponer el formato de nombres de columna de autoincremento",
+      "title": " Imponer el formato de nombres de columna de autoincremento",
       "description": "El nombre predeterminado de la columna es \"ID\" y no tiene más de 63 caracteres de longitud.",
       "component": {
         "format": {
@@ -183,7 +183,6 @@
         }
       }
     },
-
     "column-required": {
       "title": "Imponer la inclusión de columnas específicas en una tabla",
       "description": "Algunas columnas comunes son útiles para el mantenimiento de la aplicación. Por ejemplo, agregar una columna de \"ID\" independiente del negocio como clave primaria evita conflictos de clave primaria causados por cambios en el negocio (como fusiones de negocios) y en algunos escenarios también puede mejorar el rendimiento de inserción de datos. Nivel de error sugerido: Advertencia",
@@ -327,7 +326,7 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "Restringir el número máximo de filas actualizadas o eliminadas",
+      "title": "Restringir el número máximo de filas actualizadas o eliminadas.",
       "description": "Revelar el número de filas a actualizar o eliminar puede ayudar a determinar si la declaración cumple con las expectativas comerciales. Nivel de sugerencia de error: Advertencia",
       "component": {
         "number": {
@@ -435,5 +434,11 @@
       "warning": "Advertencia",
       "disabled": "Desactivado"
     }
+  },
+  "level": {
+    "error": "Error",
+    "name": "Nivel de Error",
+    "warning": "Advertencia",
+    "disabled": "Deshabilitado"
   }
 }

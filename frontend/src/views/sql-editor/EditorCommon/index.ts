@@ -4,7 +4,7 @@ import EditorAction from "./EditorAction.vue";
 import ExecutingHintModal from "./ExecutingHintModal.vue";
 import SaveSheetModal from "./SaveSheetModal.vue";
 import SharePopover from "./SharePopover.vue";
-import { ResultView, ResultViewV1 } from "./ResultView";
+import { ResultViewV1 } from "./ResultView";
 
 export {
   ConnectionHolder,
@@ -13,6 +13,5 @@ export {
   ExecutingHintModal,
   SaveSheetModal,
   SharePopover,
-  ResultView,
   ResultViewV1,
 };

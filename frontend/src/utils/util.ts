@@ -130,13 +130,11 @@ export function sizeToFit(
   if (!el) return;
 
   el.style.height = "auto";
-  requestAnimationFrame(() => {
-    // Extra several pixels are to prevent jiggling upon entering the text
-    let height = el.scrollHeight + padding;
-    if (max >= 0 && height > max) height = max;
-    if (min >= 0 && height < min) height = min;
-    el.style.height = `${height}px`;
-  });
+  // Extra several pixels are to prevent jiggling upon entering the text
+  let height = el.scrollHeight + padding;
+  if (max >= 0 && height > max) height = max;
+  if (min >= 0 && height < min) height = min;
+  el.style.height = `${height}px`;
 }
 
 export function isValidEmail(email: string) {
