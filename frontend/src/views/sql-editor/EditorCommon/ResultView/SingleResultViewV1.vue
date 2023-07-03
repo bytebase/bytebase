@@ -8,6 +8,7 @@
           v-if="showSearchFeature"
           v-model:value="state.search"
           class="!max-w-[10rem]"
+          size="small"
           type="text"
           :placeholder="t('sql-editor.search-results')"
         >
@@ -49,7 +50,11 @@
           :options="exportDropdownOptions"
           @select="handleExportBtnClick"
         >
-          <NButton :loading="isExportingData" :disabled="isExportingData">
+          <NButton
+            size="small"
+            :loading="isExportingData"
+            :disabled="isExportingData"
+          >
             <template #icon>
               <heroicons-outline:download class="h-5 w-5" />
             </template>
@@ -58,6 +63,7 @@
         </NDropdown>
         <NButton
           v-if="showRequestExportButton"
+          size="small"
           @click="state.showRequestExportPanel = true"
         >
           {{ $t("quick-action.request-export") }}
