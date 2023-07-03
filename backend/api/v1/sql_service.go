@@ -151,7 +151,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
 				{
-					Error: err.Error(),
+					Error: queryErr.Error(),
 				},
 			}
 		} else {
@@ -313,6 +313,11 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 }
 
 func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]byte, int64, error) {
+	// Don't anonymize data for exporting data using admin mode.
+	if request.Admin {
+		sensitiveSchemaInfo = nil
+	}
+
 	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, 0, err
@@ -382,7 +387,7 @@ func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 	if err := buf.WriteByte('\n'); err != nil {
 		return nil, err
 	}
-	for _, row := range result.Rows {
+	for i, row := range result.Rows {
 		for i, value := range row.Values {
 			if i != 0 {
 				if err := buf.WriteByte(','); err != nil {
@@ -393,8 +398,10 @@ func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 				return nil, err
 			}
 		}
-		if err := buf.WriteByte('\n'); err != nil {
-			return nil, err
+		if i != len(result.Rows)-1 {
+			if err := buf.WriteByte('\n'); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return buf.Bytes(), nil
@@ -476,7 +483,7 @@ func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource,
 
 func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
 	var buf bytes.Buffer
-	for _, row := range result.Rows {
+	for i, row := range result.Rows {
 		if _, err := buf.WriteString(statementPrefix); err != nil {
 			return nil, err
 		}
@@ -490,8 +497,14 @@ func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult)
 				return nil, err
 			}
 		}
-		if _, err := buf.WriteString(");\n"); err != nil {
-			return nil, err
+		if i != len(result.Rows)-1 {
+			if _, err := buf.WriteString(");\n"); err != nil {
+				return nil, err
+			}
+		} else {
+			if _, err := buf.WriteString(");"); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return buf.Bytes(), nil
@@ -604,6 +617,11 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	// Validate the request.
 	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, nil, nil, nil, err
+	}
+
+	// Check if the caller is admin for exporting with admin mode.
+	if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
+		return nil, nil, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
 	}
 
 	// Check if the environment is open for export privileges.

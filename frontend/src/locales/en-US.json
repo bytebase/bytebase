@@ -2097,7 +2097,7 @@
     },
     "linked-issue": "Linked issue",
     "from-issue-warning": "The sheet comes from issue {issue} in read-only mode. {oversize}",
-    "content-oversize-warning": "Only display part of the sheet due to oversize."
+    "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. "
   },
   "engine": {
     "mysql": "MySQL",

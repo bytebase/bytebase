@@ -64,6 +64,9 @@
   
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
+- [store/instance.proto](#store_instance-proto)
+    - [InstanceOptions](#bytebase-store-InstanceOptions)
+  
 - [store/vcs.proto](#store_vcs-proto)
     - [Commit](#bytebase-store-Commit)
     - [FileCommit](#bytebase-store-FileCommit)
@@ -577,6 +580,7 @@ DatabaseMetadata is the metadata for databases.
 | collation | [string](#string) |  | The collation is the collation of a database. |
 | extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
 | datashare | [bool](#bool) |  | The database belongs to a datashare. |
+| service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
 
 
 
@@ -1002,6 +1006,37 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_instance-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/instance.proto
+
+
+
+<a name="bytebase-store-InstanceOptions"></a>
+
+### InstanceOptions
+InstanceOptions is the option for instances.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_tenant_mode | [bool](#bool) |  | The schema tenant mode is used to determine whether the instance is in schema tenant mode. For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. |
+
+
+
+
+
+ 
 
  
 

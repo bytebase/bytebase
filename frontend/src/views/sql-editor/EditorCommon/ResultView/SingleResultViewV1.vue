@@ -8,6 +8,7 @@
           v-if="showSearchFeature"
           v-model:value="state.search"
           class="!max-w-[10rem]"
+          size="small"
           type="text"
           :placeholder="t('sql-editor.search-results')"
         >
@@ -49,17 +50,18 @@
           :options="exportDropdownOptions"
           @select="handleExportBtnClick"
         >
-          <NButton :loading="isExportingData" :disabled="isExportingData">
+          <NButton
+            size="small"
+            :loading="isExportingData"
+            :disabled="isExportingData"
+          >
             <template #icon>
               <heroicons-outline:download class="h-5 w-5" />
             </template>
             {{ t("common.export") }}
           </NButton>
         </NDropdown>
-        <NButton
-          v-if="showRequestExportButton"
-          @click="state.showRequestExportPanel = true"
-        >
+        <NButton v-else @click="state.showRequestExportPanel = true">
           {{ $t("quick-action.request-export") }}
         </NButton>
       </div>
@@ -139,7 +141,6 @@ import {
   RESULT_ROWS_LIMIT,
   featureToRef,
   useCurrentUserIamPolicy,
-  pushNotification,
   useDatabaseV1Store,
   useCurrentUserV1,
   usePolicyV1Store,
@@ -229,6 +230,14 @@ const showExportButton = computed(() => {
     return true;
   }
 
+  return allowToExportData.value;
+});
+
+const allowToExportData = computed(() => {
+  if (!featureToRef("bb.feature.access-control").value) {
+    return true;
+  }
+
   if (
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-access-control",
@@ -257,20 +266,7 @@ const showExportButton = computed(() => {
     }
   }
 
-  return false;
-});
-
-const showRequestExportButton = computed(() => {
-  return (
-    featureToRef("bb.feature.dba-workflow").value && !showExportButton.value
-  );
-});
-
-const allowToExportData = computed(() => {
-  const database = databaseStore.getDatabaseByUID(
-    tabStore.currentTab.connection.databaseId
-  );
-  return useCurrentUserIamPolicy().allowToExportDatabaseV1(database);
+  return useCurrentUserIamPolicy().allowToExportDatabaseV1(database.value);
 });
 
 // use a debounced value to improve performance when typing rapidly
@@ -343,15 +339,6 @@ const exportDropdownOptions = computed(() => [
 ]);
 
 const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL") => {
-  if (!allowToExportData.value) {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: "You don't have permission to export data.",
-    });
-    return;
-  }
-
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
   const database =
@@ -359,14 +346,15 @@ const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL") => {
       ? ""
       : databaseStore.getDatabaseByUID(databaseId).name;
   const statement = props.params.query;
-  const limit =
-    tabStore.currentTab.mode === TabMode.Admin ? 0 : RESULT_ROWS_LIMIT;
+  const admin = tabStore.currentTab.mode === TabMode.Admin;
+  const limit = admin ? 0 : RESULT_ROWS_LIMIT;
   exportData({
     database,
     instance,
     format,
     statement,
     limit,
+    admin,
   });
 };
 
