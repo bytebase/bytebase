@@ -133,13 +133,13 @@ func ValidateGroupCELExpr(expr string) (cel.Program, error) {
 	return prog, nil
 }
 
-type QueryExportFactors struct {
-	DatabaseNames []string
-	ExportRows    int64
+type queryExportFactors struct {
+	databaseNames []string
+	exportRows    int64
 }
 
-func GetAST(expression string) (*QueryExportFactors, error) {
-	factors := &QueryExportFactors{}
+func getQueryExportFactors(expression string) (*queryExportFactors, error) {
+	factors := &queryExportFactors{}
 
 	e, err := cel.NewEnv(QueryExportPolicyCELAttributes...)
 	if err != nil {
@@ -154,15 +154,15 @@ func GetAST(expression string) (*QueryExportFactors, error) {
 	return factors, nil
 }
 
-func findField(callExpr *v1alpha1.Expr_Call, factors *QueryExportFactors) {
+func findField(callExpr *v1alpha1.Expr_Call, factors *queryExportFactors) {
 	if len(callExpr.Args) == 2 {
 		idExpr := callExpr.Args[0].GetIdentExpr()
 		if idExpr != nil {
 			if idExpr.Name == "request.row_limit" {
-				factors.ExportRows = callExpr.Args[1].GetConstExpr().GetInt64Value()
+				factors.exportRows = callExpr.Args[1].GetConstExpr().GetInt64Value()
 			}
 			if idExpr.Name == "resource.database" {
-				factors.DatabaseNames = append(factors.DatabaseNames, callExpr.Args[1].GetConstExpr().GetStringValue())
+				factors.databaseNames = append(factors.databaseNames, callExpr.Args[1].GetConstExpr().GetStringValue())
 			}
 			return
 		}

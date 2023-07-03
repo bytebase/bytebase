@@ -10,18 +10,18 @@ func TestGetQueryExportFactors(t *testing.T) {
 	a := assert.New(t)
 	tests := []struct {
 		expression string
-		want       QueryExportFactors
+		want       queryExportFactors
 	}{
 		{
 			expression: "request.time < timestamp(\"2023-07-04T06:09:03.384Z\") && request.export_format == \"CSV\" && request.row_limit == 1000 && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema == \"public\" && resource.table in [\"dept_manager\"])",
-			want: QueryExportFactors{
-				DatabaseNames: []string{"instances/postgres-sample/databases/employee"},
-				ExportRows:    1000,
+			want: queryExportFactors{
+				databaseNames: []string{"instances/postgres-sample/databases/employee"},
+				exportRows:    1000,
 			},
 		},
 	}
 	for _, tt := range tests {
-		factors, err := GetAST(tt.expression)
+		factors, err := getQueryExportFactors(tt.expression)
 		a.NoError(err)
 		a.Equal(tt.want, *factors)
 	}
