@@ -136,7 +136,6 @@ import {
   RESULT_ROWS_LIMIT,
   featureToRef,
   useCurrentUserIamPolicy,
-  pushNotification,
   useDatabaseV1Store,
   useCurrentUserV1,
   usePolicyV1Store,
@@ -331,15 +330,6 @@ const exportDropdownOptions = computed(() => [
 ]);
 
 const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL") => {
-  if (!allowToExportData.value) {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: "You don't have permission to export data.",
-    });
-    return;
-  }
-
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
   const database =
