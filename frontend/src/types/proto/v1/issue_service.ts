@@ -2159,10 +2159,10 @@ export const ReviewComment = {
   },
 };
 
-export type ReviewServiceDefinition = typeof ReviewServiceDefinition;
-export const ReviewServiceDefinition = {
-  name: "ReviewService",
-  fullName: "bytebase.v1.ReviewService",
+export type IssueServiceDefinition = typeof IssueServiceDefinition;
+export const IssueServiceDefinition = {
+  name: "IssueService",
+  fullName: "bytebase.v1.IssueService",
   methods: {
     getReview: {
       name: "GetReview",
@@ -2849,7 +2849,7 @@ export const ReviewServiceDefinition = {
   },
 } as const;
 
-export interface ReviewServiceImplementation<CallContextExt = {}> {
+export interface IssueServiceImplementation<CallContextExt = {}> {
   getReview(request: GetReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
   createReview(request: CreateReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
   listReviews(
@@ -2874,7 +2874,7 @@ export interface ReviewServiceImplementation<CallContextExt = {}> {
   requestReview(request: RequestReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
 }
 
-export interface ReviewServiceClient<CallOptionsExt = {}> {
+export interface IssueServiceClient<CallOptionsExt = {}> {
   getReview(request: DeepPartial<GetReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
   createReview(request: DeepPartial<CreateReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
   listReviews(

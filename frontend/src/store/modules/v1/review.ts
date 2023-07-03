@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 
-import { reviewServiceClient } from "@/grpcweb";
+import { issueServiceClient } from "@/grpcweb";
 import { useActivityV1Store } from "./activity";
 import { IdType, ActivityIssueCommentCreatePayload } from "@/types";
 import { projectNamePrefix, reviewNamePrefix } from "./common";
@@ -15,7 +15,7 @@ export const useReviewV1Store = defineStore("review_v1", () => {
     comment: string;
     payload?: ActivityIssueCommentCreatePayload;
   }) => {
-    await reviewServiceClient.createReviewComment({
+    await issueServiceClient.createReviewComment({
       parent: `${projectNamePrefix}-/${reviewNamePrefix}${reviewId}`,
       reviewComment: {
         comment,
@@ -34,7 +34,7 @@ export const useReviewV1Store = defineStore("review_v1", () => {
     reviewId: IdType;
     comment: string;
   }) => {
-    await reviewServiceClient.updateReviewComment({
+    await issueServiceClient.updateReviewComment({
       parent: `${projectNamePrefix}-/${reviewNamePrefix}${reviewId}`,
       reviewComment: {
         uid: commentId,

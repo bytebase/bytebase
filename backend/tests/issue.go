@@ -287,7 +287,7 @@ func (ctl *controller) waitIssuePipelineTaskImpl(ctx context.Context, id int, ap
 			return api.TaskFailed, err
 		}
 
-		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1.GetReviewRequest{
+		review, err := ctl.issueServiceClient.GetReview(ctx, &v1.GetReviewRequest{
 			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
 		})
 		if err != nil {
