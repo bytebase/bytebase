@@ -51,6 +51,11 @@ export interface ExportRequest {
   limit: number;
   /** The export format. */
   format: ExportRequest_Format;
+  /**
+   * The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
+   * The exported data is not anonymized.
+   */
+  admin: boolean;
 }
 
 export enum ExportRequest_Format {
@@ -424,7 +429,7 @@ export const AdminExecuteResponse = {
 };
 
 function createBaseExportRequest(): ExportRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0 };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0, admin: false };
 }
 
 export const ExportRequest = {
@@ -443,6 +448,9 @@ export const ExportRequest = {
     }
     if (message.format !== 0) {
       writer.uint32(40).int32(message.format);
+    }
+    if (message.admin === true) {
+      writer.uint32(48).bool(message.admin);
     }
     return writer;
   },
@@ -489,6 +497,13 @@ export const ExportRequest = {
 
           message.format = reader.int32() as any;
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.admin = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -505,6 +520,7 @@ export const ExportRequest = {
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
       format: isSet(object.format) ? exportRequest_FormatFromJSON(object.format) : 0,
+      admin: isSet(object.admin) ? Boolean(object.admin) : false,
     };
   },
 
@@ -515,6 +531,7 @@ export const ExportRequest = {
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
     message.format !== undefined && (obj.format = exportRequest_FormatToJSON(message.format));
+    message.admin !== undefined && (obj.admin = message.admin);
     return obj;
   },
 
@@ -529,6 +546,7 @@ export const ExportRequest = {
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
     message.format = object.format ?? 0;
+    message.admin = object.admin ?? false;
     return message;
   },
 };

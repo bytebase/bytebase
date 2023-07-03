@@ -127,7 +127,7 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   isLoading: true,
   environmentPolicyList: environmentList.value.map((environment) => {
-    const defaultValue = hasDataAccessControlFeature.value ? false : true;
+    const defaultValue = false;
     return {
       environment,
       allowQueryData: defaultValue,
@@ -156,6 +156,11 @@ const COLUMN_LIST = computed((): BBTableColumn[] => [
 ]);
 
 onMounted(async () => {
+  if (!hasDataAccessControlFeature.value) {
+    state.isLoading = false;
+    return;
+  }
+
   const policy = await policyStore.getOrFetchPolicyByName(
     "policies/WORKSPACE_IAM"
   );

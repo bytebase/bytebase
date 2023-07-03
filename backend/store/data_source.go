@@ -40,6 +40,33 @@ type DataSourceMessage struct {
 	DatabaseID int
 }
 
+// Copy returns a copy of the data source message.
+func (m *DataSourceMessage) Copy() *DataSourceMessage {
+	return &DataSourceMessage{
+		Title:                   m.Title,
+		Type:                    m.Type,
+		Username:                m.Username,
+		ObfuscatedPassword:      m.ObfuscatedPassword,
+		ObfuscatedSslCa:         m.ObfuscatedSslCa,
+		ObfuscatedSslCert:       m.ObfuscatedSslCert,
+		ObfuscatedSslKey:        m.ObfuscatedSslKey,
+		Host:                    m.Host,
+		Port:                    m.Port,
+		Database:                m.Database,
+		SRV:                     m.SRV,
+		AuthenticationDatabase:  m.AuthenticationDatabase,
+		SID:                     m.SID,
+		ServiceName:             m.ServiceName,
+		SSHHost:                 m.SSHHost,
+		SSHPort:                 m.SSHPort,
+		SSHUser:                 m.SSHUser,
+		SSHObfuscatedPassword:   m.SSHObfuscatedPassword,
+		SSHObfuscatedPrivateKey: m.SSHObfuscatedPrivateKey,
+		UID:                     m.UID,
+		DatabaseID:              m.DatabaseID,
+	}
+}
+
 // UpdateDataSourceMessage is the message for the data source.
 type UpdateDataSourceMessage struct {
 	UpdaterID   int
