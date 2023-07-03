@@ -216,6 +216,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				InstanceID:    instance.ResourceID,
 				DatabaseName:  databaseMetadata.Name,
 				DataShare:     databaseMetadata.Datashare,
+				ServiceName:   databaseMetadata.ServiceName,
 			}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}
@@ -289,6 +290,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		SuccessfulSyncTimeTs: &ts,
 		DataShare:            &database.DataShare,
 		SchemaVersion:        patchSchemaVersion,
+		ServiceName:          &database.ServiceName,
 	}, api.SystemBotID); err != nil {
 		return errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}

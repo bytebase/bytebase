@@ -577,6 +577,7 @@ DatabaseMetadata is the metadata for databases.
 | collation | [string](#string) |  | The collation is the collation of a database. |
 | extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
 | datashare | [bool](#bool) |  | The database belongs to a datashare. |
+| service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
 
 
 

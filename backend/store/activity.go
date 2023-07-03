@@ -249,7 +249,7 @@ type FindActivityMessage struct {
 	CreatedTsBefore *int64
 	Limit           *int
 	Offset          *int
-	// If specified, sorts the returned list by created_ts in <<ORDER>>
+	// If specified, sorts the returned list by id in <<ORDER>>
 	// Different use cases want different orders.
 	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
 	Order *api.SortOrder
@@ -487,7 +487,7 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 		WHERE ` + strings.Join(where, " AND ")
 
 	if v := find.Order; v != nil {
-		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
+		query += fmt.Sprintf(" ORDER BY id %s", *v)
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
