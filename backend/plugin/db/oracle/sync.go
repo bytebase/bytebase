@@ -46,15 +46,45 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}
 
 	var databases []*storepb.DatabaseMetadata
-	rows, err := driver.db.QueryContext(ctx, "SELECT name FROM v$database")
+	// sync CDB
+	cdbRows, err := driver.db.QueryContext(ctx, "SELECT name FROM v$database")
 	if err != nil {
 		return nil, err
+	}
+	defer cdbRows.Close()
+
+	for cdbRows.Next() {
+		database := &storepb.DatabaseMetadata{}
+		if err := cdbRows.Scan(&database.Name); err != nil {
+			return nil, err
+		}
+		databases = append(databases, database)
+	}
+	if err := cdbRows.Err(); err != nil {
+		return nil, err
+	}
+
+	// sync PDBs
+	query := `
+		WITH db AS (
+			SELECT pdb_name FROM dba_pdbs WHERE pdb_name NOT IN ('PDB$SEED') and status = 'NORMAL'
+		)
+		SELECT db.pdb_name, s.name FROM db INNER JOIN v$services s ON db.pdb_name = s.pdb
+	`
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		// nolint
+		// Failed-open for non-CDB database
+		return &db.InstanceMetadata{
+			Version:   version,
+			Databases: databases,
+		}, nil
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		database := &storepb.DatabaseMetadata{}
-		if err := rows.Scan(&database.Name); err != nil {
+		if err := rows.Scan(&database.Name, &database.ServiceName); err != nil {
 			return nil, err
 		}
 		databases = append(databases, database)
@@ -95,7 +125,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	}
 
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name: driver.databaseName,
+		Name:        driver.databaseName,
+		ServiceName: driver.serviceName,
 	}
 	for _, schemaName := range schemaNames {
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{

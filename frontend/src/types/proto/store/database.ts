@@ -18,6 +18,8 @@ export interface DatabaseMetadata {
   extensions: ExtensionMetadata[];
   /** The database belongs to a datashare. */
   datashare: boolean;
+  /** The service name of the database. It's the Oracle specific concept. */
+  serviceName: string;
 }
 
 /**
@@ -365,7 +367,7 @@ export interface SecretItem {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false };
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false, serviceName: "" };
 }
 
 export const DatabaseMetadata = {
@@ -387,6 +389,9 @@ export const DatabaseMetadata = {
     }
     if (message.datashare === true) {
       writer.uint32(48).bool(message.datashare);
+    }
+    if (message.serviceName !== "") {
+      writer.uint32(58).string(message.serviceName);
     }
     return writer;
   },
@@ -440,6 +445,13 @@ export const DatabaseMetadata = {
 
           message.datashare = reader.bool();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.serviceName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -459,6 +471,7 @@ export const DatabaseMetadata = {
         ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
         : [],
       datashare: isSet(object.datashare) ? Boolean(object.datashare) : false,
+      serviceName: isSet(object.serviceName) ? String(object.serviceName) : "",
     };
   },
 
@@ -478,6 +491,7 @@ export const DatabaseMetadata = {
       obj.extensions = [];
     }
     message.datashare !== undefined && (obj.datashare = message.datashare);
+    message.serviceName !== undefined && (obj.serviceName = message.serviceName);
     return obj;
   },
 
@@ -493,6 +507,7 @@ export const DatabaseMetadata = {
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
     message.datashare = object.datashare ?? false;
+    message.serviceName = object.serviceName ?? "";
     return message;
   },
 };
