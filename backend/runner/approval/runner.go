@@ -443,9 +443,8 @@ func getGrantRequestRiskLevel(ctx context.Context, s *store.Store, issue *store.
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
 		return 0, false, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
-
 	if payload.GrantRequest == nil {
-		return 0, false, nil
+		return 0, false, errors.New("grant request payload not found")
 	}
 
 	factors, err := common.GetQueryExportFactors(payload.GrantRequest.Condition.Expression)
