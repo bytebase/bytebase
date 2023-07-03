@@ -64,6 +64,9 @@
   
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
+- [store/instance.proto](#store_instance-proto)
+    - [InstanceOptions](#bytebase-store-InstanceOptions)
+  
 - [store/vcs.proto](#store_vcs-proto)
     - [Commit](#bytebase-store-Commit)
     - [FileCommit](#bytebase-store-FileCommit)
@@ -1003,6 +1006,37 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_instance-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/instance.proto
+
+
+
+<a name="bytebase-store-InstanceOptions"></a>
+
+### InstanceOptions
+InstanceOptions is the option for instances.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_tenant_mode | [bool](#bool) |  | The schema tenant mode is used to determine whether the instance is in schema tenant mode. For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. |
+
+
+
+
+
+ 
 
  
 
