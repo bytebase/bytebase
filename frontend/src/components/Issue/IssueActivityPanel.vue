@@ -46,6 +46,7 @@
                     : 'preview'
                 "
                 :content="item.activity.comment"
+                :issue-list="issueList"
                 @change="(val: string) => state.editComment = val"
                 @submit="doUpdateComment"
                 @cancel="cancelEditComment"
@@ -99,6 +100,7 @@
               <MarkdownEditor
                 mode="editor"
                 :content="state.newComment"
+                :issue-list="issueList"
                 @change="(val: string) => state.newComment = val"
                 @submit="doCreateComment(state.newComment)"
               />
@@ -123,7 +125,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch, watchEffect, Ref, onMounted } from "vue";
+import {
+  computed,
+  reactive,
+  watch,
+  watchEffect,
+  Ref,
+  ref,
+  onMounted,
+} from "vue";
 import { useRoute } from "vue-router";
 import UserAvatar from "../User/UserAvatar.vue";
 import type {
@@ -137,6 +147,7 @@ import { IssueBuiltinFieldId } from "@/plugins";
 import {
   useIssueSubscriberStore,
   useReviewV1Store,
+  useIssueStore,
   useActivityV1Store,
   useCurrentUserV1,
   useCurrentUser,
@@ -153,12 +164,14 @@ interface LocalState {
   newComment: string;
 }
 
+const issueStore = useIssueStore();
 const reviewV1Store = useReviewV1Store();
 const activityV1Store = useActivityV1Store();
 const route = useRoute();
 
 const logic = useIssueLogic();
 const issue = logic.issue as Ref<Issue>;
+const issueList = ref<Issue[]>([]);
 const { addSubscriberId } = useExtraIssueLogic();
 
 const state = reactive<LocalState>({
@@ -170,8 +183,13 @@ const state = reactive<LocalState>({
 const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 
-const prepareActivityList = () => {
-  activityV1Store.fetchActivityListForIssue(issue.value);
+const prepareActivityList = async () => {
+  const [_, list] = await Promise.all([
+    activityV1Store.fetchActivityListForIssue(issue.value),
+    issueStore.fetchIssueList({ projectId: issue.value.project.id }),
+  ]);
+
+  issueList.value = list;
 };
 
 watchEffect(prepareActivityList);
