@@ -31,10 +31,14 @@
         <EmptyView />
       </template>
       <template v-else-if="viewMode === 'ERROR'">
-        <ErrorView :error="resultSet.error" />
-        <RequestQueryButton
-          v-if="resultSet.status === Status.PERMISSION_DENIED"
-        />
+        <ErrorView :error="resultSet.error">
+          <template
+            v-if="resultSet.status === Status.PERMISSION_DENIED"
+            #suffix
+          >
+            <RequestQueryButton />
+          </template>
+        </ErrorView>
       </template>
     </template>
 
