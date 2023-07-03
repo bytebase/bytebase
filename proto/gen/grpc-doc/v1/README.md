@@ -279,6 +279,7 @@
     - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
     - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
     - [Instance](#bytebase-v1-Instance)
+    - [InstanceOptions](#bytebase-v1-InstanceOptions)
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
@@ -4532,6 +4533,22 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | activation | [bool](#bool) |  |  |
+| options | [InstanceOptions](#bytebase-v1-InstanceOptions) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-InstanceOptions"></a>
+
+### InstanceOptions
+InstanceOptions is the option for instances.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_tenant_mode | [bool](#bool) |  | The schema tenant mode is used to determine whether the instance is in schema tenant mode. For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. |
 
 
 

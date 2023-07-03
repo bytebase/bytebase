@@ -10,9 +10,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetInstanceByID gets an instance of Instance.
@@ -95,6 +98,7 @@ type InstanceMessage struct {
 	ExternalLink string
 	DataSources  []*DataSourceMessage
 	Activation   bool
+	Options      *storepb.InstanceOptions
 	// Output only.
 	EnvironmentID string
 	UID           int
@@ -110,6 +114,7 @@ type UpdateInstanceMessage struct {
 	DataSources   *[]*DataSourceMessage
 	EngineVersion *string
 	Activation    *bool
+	Options       *storepb.InstanceOptions
 
 	// Output only.
 	UpdaterID     int
@@ -218,6 +223,11 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
 	}
 
+	optionBytes, err := protojson.Marshal(instanceCreate.Options)
+	if err != nil {
+		return nil, err
+	}
+
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			INSERT INTO instance (
@@ -228,9 +238,10 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				name,
 				engine,
 				external_link,
-				activation
+				activation,
+				options
 			)
-			SELECT $1, $2, $3, $4, $5, $6, $7, $8
+			SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9
 			%s
 			RETURNING id
 		`, where),
@@ -242,6 +253,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		instanceCreate.Engine,
 		instanceCreate.ExternalLink,
 		instanceCreate.Activation,
+		optionBytes,
 	).Scan(&instanceID); err != nil {
 		return nil, err
 	}
@@ -275,6 +287,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		ExternalLink:  instanceCreate.ExternalLink,
 		DataSources:   dataSources,
 		Activation:    instanceCreate.Activation,
+		Options:       instanceCreate.Options,
 	}
 	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
@@ -316,6 +329,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
+	if v := patch.Options; v != nil {
+		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, v)
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -352,9 +368,11 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				engine_version,
 				external_link,
 				activation,
-				row_status
+				row_status,
+				options
 		`, strings.Join(where, " AND "))
 	var rowStatus string
+	var options []byte
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&instance.UID,
 		&instance.ResourceID,
@@ -364,6 +382,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&instance.ExternalLink,
 		&instance.Activation,
 		&rowStatus,
+		&options,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -398,6 +417,11 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, err
 	}
 	instance.DataSources = dataSourceList
+	var instanceOptions storepb.InstanceOptions
+	if err := protojson.Unmarshal(options, &instanceOptions); err != nil {
+		return nil, err
+	}
+	instance.Options = &instanceOptions
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -434,7 +458,8 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			engine_version,
 			external_link,
 			activation,
-			instance.row_status AS row_status
+			instance.row_status AS row_status,
+			instance.options AS options
 		FROM instance
 		LEFT JOIN environment ON environment.id = instance.environment_id
 		WHERE `+strings.Join(where, " AND "),
@@ -447,6 +472,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	for rows.Next() {
 		var instanceMessage InstanceMessage
 		var rowStatus string
+		var options []byte
 		if err := rows.Scan(
 			&instanceMessage.EnvironmentID,
 			&instanceMessage.UID,
@@ -457,10 +483,16 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			&instanceMessage.ExternalLink,
 			&instanceMessage.Activation,
 			&rowStatus,
+			&options,
 		); err != nil {
 			return nil, err
 		}
 		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+		var instanceOptions storepb.InstanceOptions
+		if err := protojson.Unmarshal(options, &instanceOptions); err != nil {
+			return nil, err
+		}
+		instanceMessage.Options = &instanceOptions
 		instanceMessages = append(instanceMessages, &instanceMessage)
 	}
 	if err := rows.Err(); err != nil {

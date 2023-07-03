@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -690,6 +691,12 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 			ServiceName:            ds.ServiceName,
 		})
 	}
+	var options *v1pb.InstanceOptions
+	if instance.Options != nil {
+		options = &v1pb.InstanceOptions{
+			SchemaTenantMode: instance.Options.SchemaTenantMode,
+		}
+	}
 
 	return &v1pb.Instance{
 		Name:          fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
@@ -702,6 +709,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		State:         convertDeletedToState(instance.Deleted),
 		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
 		Activation:    instance.Activation,
+		Options:       options,
 	}
 }
 
@@ -714,6 +722,12 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	if err != nil {
 		return nil, err
 	}
+	var options *storepb.InstanceOptions
+	if instance.Options != nil {
+		options = &storepb.InstanceOptions{
+			SchemaTenantMode: instance.Options.SchemaTenantMode,
+		}
+	}
 
 	return &store.InstanceMessage{
 		ResourceID:    instanceID,
@@ -723,6 +737,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 		DataSources:   datasources,
 		EnvironmentID: environmentID,
 		Activation:    instance.Activation,
+		Options:       options,
 	}, nil
 }
 

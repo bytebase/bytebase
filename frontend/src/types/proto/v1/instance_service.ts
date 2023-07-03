@@ -190,6 +190,15 @@ export interface SyncSlowQueriesRequest {
   instance: string;
 }
 
+/** InstanceOptions is the option for instances. */
+export interface InstanceOptions {
+  /**
+   * The schema tenant mode is used to determine whether the instance is in schema tenant mode.
+   * For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
+   */
+  schemaTenantMode: boolean;
+}
+
 export interface Instance {
   /**
    * The name of the instance.
@@ -210,6 +219,7 @@ export interface Instance {
    */
   environment: string;
   activation: boolean;
+  options?: InstanceOptions;
 }
 
 export interface DataSource {
@@ -1169,6 +1179,62 @@ export const SyncSlowQueriesRequest = {
   },
 };
 
+function createBaseInstanceOptions(): InstanceOptions {
+  return { schemaTenantMode: false };
+}
+
+export const InstanceOptions = {
+  encode(message: InstanceOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schemaTenantMode === true) {
+      writer.uint32(8).bool(message.schemaTenantMode);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): InstanceOptions {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInstanceOptions();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.schemaTenantMode = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InstanceOptions {
+    return { schemaTenantMode: isSet(object.schemaTenantMode) ? Boolean(object.schemaTenantMode) : false };
+  },
+
+  toJSON(message: InstanceOptions): unknown {
+    const obj: any = {};
+    message.schemaTenantMode !== undefined && (obj.schemaTenantMode = message.schemaTenantMode);
+    return obj;
+  },
+
+  create(base?: DeepPartial<InstanceOptions>): InstanceOptions {
+    return InstanceOptions.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
+    const message = createBaseInstanceOptions();
+    message.schemaTenantMode = object.schemaTenantMode ?? false;
+    return message;
+  },
+};
+
 function createBaseInstance(): Instance {
   return {
     name: "",
@@ -1181,6 +1247,7 @@ function createBaseInstance(): Instance {
     dataSources: [],
     environment: "",
     activation: false,
+    options: undefined,
   };
 }
 
@@ -1215,6 +1282,9 @@ export const Instance = {
     }
     if (message.activation === true) {
       writer.uint32(80).bool(message.activation);
+    }
+    if (message.options !== undefined) {
+      InstanceOptions.encode(message.options, writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -1296,6 +1366,13 @@ export const Instance = {
 
           message.activation = reader.bool();
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.options = InstanceOptions.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1317,6 +1394,7 @@ export const Instance = {
       dataSources: Array.isArray(object?.dataSources) ? object.dataSources.map((e: any) => DataSource.fromJSON(e)) : [],
       environment: isSet(object.environment) ? String(object.environment) : "",
       activation: isSet(object.activation) ? Boolean(object.activation) : false,
+      options: isSet(object.options) ? InstanceOptions.fromJSON(object.options) : undefined,
     };
   },
 
@@ -1336,6 +1414,8 @@ export const Instance = {
     }
     message.environment !== undefined && (obj.environment = message.environment);
     message.activation !== undefined && (obj.activation = message.activation);
+    message.options !== undefined &&
+      (obj.options = message.options ? InstanceOptions.toJSON(message.options) : undefined);
     return obj;
   },
 
@@ -1355,6 +1435,9 @@ export const Instance = {
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.environment = object.environment ?? "";
     message.activation = object.activation ?? false;
+    message.options = (object.options !== undefined && object.options !== null)
+      ? InstanceOptions.fromPartial(object.options)
+      : undefined;
     return message;
   },
 };
