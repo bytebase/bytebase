@@ -1871,7 +1871,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 	var schemas []*store.DBSchema
 
 	// Deal with the cross database query
-	dbList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement)
+	dbList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract database list: %v", err)
 	}

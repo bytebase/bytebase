@@ -1560,3 +1560,75 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
+
+func TestSnowSQLExtractSensitiveField(t *testing.T) {
+	var (
+		defaultDatabase       = "SNOWFLAKE"
+		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
+			DatabaseList: []db.DatabaseSchema{
+				{
+					Name: defaultDatabase,
+					TableList: []db.TableSchema{
+						{
+							Name: "PUBLIC.T",
+							ColumnList: []db.ColumnInfo{
+								{
+									Name:      "A",
+									Sensitive: true,
+								},
+								{
+									Name:      "B",
+									Sensitive: false,
+								},
+								{
+									Name:      "C",
+									Sensitive: false,
+								},
+								{
+									Name:      "D",
+									Sensitive: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	)
+
+	tests := []struct {
+		statement  string
+		schemaInfo *db.SensitiveSchemaInfo
+		fieldList  []db.SensitiveField
+	}{
+		{
+			statement:  `SELECT * FROM T;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		res, err := extractSensitiveField(db.Snowflake, test.statement, defaultDatabase, test.schemaInfo)
+		require.NoError(t, err)
+		require.Equal(t, test.fieldList, res, test.statement)
+	}
+
+}

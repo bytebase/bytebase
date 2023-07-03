@@ -7,7 +7,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/internal/status"
+	"google.golang.org/grpc/status"
 
 	snowparser "github.com/bytebase/snowsql-parser"
 
@@ -24,7 +24,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFields(sql stri
 		return nil, nil
 	}
 
-	listener := &selectStatementListener{
+	listener := &snowsqlSensitiveFieldExtractorListener{
 		extractor: extractor,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -40,15 +40,30 @@ type snowsqlSensitiveFieldExtractorListener struct {
 	err       error
 }
 
-func (l *snowsqlSensitiveFieldExtractorListener) EnterQuery_statement(ctx *snowparser.Query_statementContext) {
+func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparser.Dml_commandContext) {
 	if l.err != nil {
 		return
 	}
 
+	result, err := l.extractor.extractSnowsqlSensitiveFieldsQuery_statement(ctx.Query_statement())
+	if err != nil {
+		l.err = err
+		return
+	}
+	for _, field := range result {
+		l.result = append(l.result, db.SensitiveField{
+			Name:      field.name,
+			Sensitive: field.sensitive,
+		})
+	}
+}
+
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_statement(ctx snowparser.IQuery_statementContext) ([]fieldInfo, error) {
 	// TODO(zp): handle CTE.
 	// if ctx.With_expression() != nil {}
 
 	selectStatement := ctx.Select_statement()
+	return extractor.extractSnowsqlSensitiveFieldsSelect_statement(selectStatement)
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_statement(ctx snowparser.ISelect_statementContext) ([]fieldInfo, error) {
@@ -56,18 +71,45 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 		return nil, nil
 	}
 
+	var fromFieldList []fieldInfo
+	var err error
 	if ctx.Select_optional_clauses().From_clause() != nil {
-		fromFields, err := extractor.extractSnowsqlSensitiveFieldsFrom_clause(ctx.Select_optional_clauses().From_clause())
+		fromFieldList, err = extractor.extractSnowsqlSensitiveFieldsFrom_clause(ctx.Select_optional_clauses().From_clause())
 		if err != nil {
 			return nil, err
 		}
 		originalFromFields := extractor.fromFieldList
-		extractor.fromFieldList = fromFields
+		extractor.fromFieldList = fromFieldList
 		defer func() {
 			extractor.fromFieldList = originalFromFields
 		}()
 	}
 
+	var result []fieldInfo
+
+	var selectList snowparser.ISelect_listContext
+	if ctx.Select_clause() != nil {
+		selectList = ctx.Select_clause().Select_list_no_top().Select_list()
+	} else if ctx.Select_top_clause() != nil {
+		selectList = ctx.Select_clause().Select_list_no_top().Select_list()
+	}
+	for _, iSelectListElem := range selectList.AllSelect_list_elem() {
+		// TODO(zp): handle expression elem
+		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
+			// TODO(zp): handle object_name and alias
+			if columnElem.STAR() != nil {
+				result = append(result, fromFieldList...)
+			} else if columnElem.Column_name() != nil {
+				for _, fromField := range fromFieldList {
+					if columnElem.Column_name().Id_().GetText() == fromField.name {
+						result = append(result, fromField)
+					}
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFrom_clause(ctx snowparser.IFrom_clauseContext) ([]fieldInfo, error) {
@@ -120,9 +162,23 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 		return nil, nil
 	}
 
+	var result []fieldInfo
+
 	if objectName := ctx.Object_name(); objectName != nil {
 		database, schema, table := normalizedObjectName(objectName, extractor.currentDatabase, "PUBLIC")
-
+		tableSchema, err := extractor.snowsqlFindTableSchema(database, schema, table)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find column list of table %q.%q.%q", database, schema, table)
+		}
+		for _, column := range tableSchema.ColumnList {
+			result = append(result, fieldInfo{
+				database:  database,
+				table:     table,
+				name:      column.Name,
+				sensitive: column.Sensitive,
+			})
+		}
+		return result, nil
 	}
 
 	// TODO(zp): Handle the value clause.
@@ -146,10 +202,31 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 		return nil, nil
 	}
 
+	// TODO(zp): Handle the as_alias
+	if ctx.As_alias() != nil {
+
+	}
+
 	return nil, status.Errorf(codes.Internal, "Should be unreachable")
 }
 
-func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDatabaseName, fallbackTableName string) (string, string, string) {
+func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) (db.TableSchema, error) {
+	normalizedSchemaTableName := fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName)
+	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
+		if databaseSchema.Name != normalizedDatabaseName {
+			continue
+		}
+		for _, tableSchema := range databaseSchema.TableList {
+			if normalizedSchemaTableName != tableSchema.Name {
+				continue
+			}
+			return tableSchema, nil
+		}
+	}
+	return db.TableSchema{}, errors.Errorf(`table %s not found in database %s`, normalizedSchemaTableName, normalizedDatabaseName)
+}
+
+func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, string, string) {
 	// TODO(zp): unify here with NormalizeObjectName in backend/plugin/parser/sql/snowsql.go
 	var parts []string
 	if objectName == nil {
@@ -164,7 +241,7 @@ func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDat
 	}
 	parts = append(parts, database)
 
-	schema := "PUBLIC"
+	schema := fallbackSchemaName
 	if s := objectName.GetS(); s != nil {
 		normalizedS := parser.NormalizeObjectNamePart(s)
 		if normalizedS != "" {
@@ -177,21 +254,4 @@ func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDat
 	parts = append(parts, normalizedO)
 
 	return parts[0], parts[1], parts[2]
-}
-
-func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) (db.TableSchema, error) {
-	normalizedSchemaTableName := fmt.Sprintf(`"%s"."%s"`, normalizedDatabaseName)
-	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
-		if databaseSchema.Name != normalizedDatabaseName {
-			continue
-		}
-		for _, tableSchema := range databaseSchema.TableList {
-			if normalizedSchemaTableName != tableSchema.Name {
-				continue
-			}
-			return tableSchema, nil
-		}
-
-	}
-	return db.TableSchema{}, errors.Errorf(`table %s not found in database %s`, normalizedSchemaTableName, normalizedDatabaseName)
 }

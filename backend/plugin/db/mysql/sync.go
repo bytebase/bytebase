@@ -670,7 +670,7 @@ func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatisticsIte
 }
 
 func extractDatabase(defaultDB string, sql string) []string {
-	list, err := parser.ExtractDatabaseList(parser.MySQL, sql)
+	list, err := parser.ExtractDatabaseList(parser.MySQL, sql, "")
 	if err != nil {
 		// If we can't extract the database, we just use the default database.
 		log.Debug("extract database failed", zap.Error(err), zap.String("sql", sql))
