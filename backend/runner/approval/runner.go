@@ -402,8 +402,7 @@ func getReportResult(ctx context.Context, s *store.Store, task *store.TaskMessag
 	return payload.ResultList, true, nil
 }
 
-func getGrantRequestRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
-	// Fall through to "DEFAULT" risk level if risks are empty.
+func getGrantRequestRiskLevel(_ context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
 	if len(risks) == 0 {
 		return 0, true, nil
 	}
@@ -452,27 +451,13 @@ func getGrantRequestRiskLevel(ctx context.Context, s *store.Store, issue *store.
 			return 0, false, err
 		}
 		args := map[string]any{}
-		// if riskSource == store.RiskRequestExport {
-		// 	args = map[string]any{
-		// 		"environment_id": instance.EnvironmentID,
-		// 		"project_id":     issue.Project.ResourceID,
-		// 		"database_name":  databaseName,
-		// 		// convert to string type otherwise cel-go will complain that db.Type is not string type.
-		// 		"db_engine":     string(instance.Engine),
-		// 		"sql_type":      "UNKNOWN",
-		// 		"affected_rows": 0,
-		// 	}
-		// } else if riskSource == store.RiskRequestQuery {
-		// 	args = map[string]any{
-		// 		"environment_id": instance.EnvironmentID,
-		// 		"project_id":     issue.Project.ResourceID,
-		// 		"database_name":  databaseName,
-		// 		// convert to string type otherwise cel-go will complain that db.Type is not string type.
-		// 		"db_engine":     string(instance.Engine),
-		// 		"sql_type":      "UNKNOWN",
-		// 		"affected_rows": 0,
-		// 	}
-		// }
+		if riskSource == store.RiskRequestExport {
+			// TODO(d): build querier args with issue payload.
+			args = map[string]any{}
+		} else if riskSource == store.RiskRequestQuery {
+			// TODO(d): build exporter args with issue payload.
+			args = map[string]any{}
+		}
 
 		res, _, err := prg.Eval(args)
 		if err != nil {
