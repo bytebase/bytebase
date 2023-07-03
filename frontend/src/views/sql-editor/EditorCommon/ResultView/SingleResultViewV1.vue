@@ -238,6 +238,16 @@ const showExportButton = computed(() => {
     return true;
   }
 
+  return allowToExportData.value;
+});
+
+const showRequestExportButton = computed(() => {
+  return (
+    featureToRef("bb.feature.dba-workflow").value && !showExportButton.value
+  );
+});
+
+const allowToExportData = computed(() => {
   const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
   if (database.value && policy) {
     const bindings = policy.workspaceIamPolicy?.bindings;
@@ -257,20 +267,7 @@ const showExportButton = computed(() => {
     }
   }
 
-  return false;
-});
-
-const showRequestExportButton = computed(() => {
-  return (
-    featureToRef("bb.feature.dba-workflow").value && !showExportButton.value
-  );
-});
-
-const allowToExportData = computed(() => {
-  const database = databaseStore.getDatabaseByUID(
-    tabStore.currentTab.connection.databaseId
-  );
-  return useCurrentUserIamPolicy().allowToExportDatabaseV1(database);
+  return useCurrentUserIamPolicy().allowToExportDatabaseV1(database.value);
 });
 
 // use a debounced value to improve performance when typing rapidly
