@@ -365,14 +365,15 @@ const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL") => {
       ? ""
       : databaseStore.getDatabaseByUID(databaseId).name;
   const statement = props.params.query;
-  const limit =
-    tabStore.currentTab.mode === TabMode.Admin ? 0 : RESULT_ROWS_LIMIT;
+  const admin = tabStore.currentTab.mode === TabMode.Admin;
+  const limit = admin ? 0 : RESULT_ROWS_LIMIT;
   exportData({
     database,
     instance,
     format,
     statement,
     limit,
+    admin,
   });
 };
 
