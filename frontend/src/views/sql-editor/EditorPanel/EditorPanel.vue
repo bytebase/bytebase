@@ -7,7 +7,11 @@
 
       <SheetForIssueTipsBar />
 
-      <template v-if="!tabStore.isDisconnected || sheetBacktracePayload">
+      <template
+        v-if="
+          !tabStore.isDisconnected || isSheetOversize || sheetBacktracePayload
+        "
+      >
         <SQLEditor @execute="handleExecute" @save-sheet="trySaveSheet" />
       </template>
       <template v-else>
@@ -54,12 +58,16 @@ const sheetV1Store = useSheetV1Store();
 const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
 const tab = useCurrentTab();
 
-const sheetBacktracePayload = computed(() => {
+const sheet = computed(() => {
   const sheetName = tabStore.currentTab.sheetName;
   if (!sheetName) return undefined;
   const sheet = sheetV1Store.getSheetByName(sheetName);
-  if (!sheet) return undefined;
-  return getSheetIssueBacktracePayloadV1(sheet);
+  return sheet;
+});
+
+const sheetBacktracePayload = computed(() => {
+  if (!sheet.value) return undefined;
+  return getSheetIssueBacktracePayloadV1(sheet.value);
 });
 
 const { executeReadonly } = useExecuteSQL();
@@ -92,4 +100,15 @@ const handleApplyStatement = async (
     });
   }
 };
+
+const isSheetOversize = computed(() => {
+  if (!sheet.value) {
+    return false;
+  }
+
+  return (
+    new TextDecoder().decode(sheet.value.content).length <
+    sheet.value.contentSize
+  );
+});
 </script>
