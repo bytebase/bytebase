@@ -458,7 +458,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			engine_version,
 			external_link,
 			activation,
-			instance.row_status AS row_status
+			instance.row_status AS row_status,
 			instance.options AS options
 		FROM instance
 		LEFT JOIN environment ON environment.id = instance.environment_id
