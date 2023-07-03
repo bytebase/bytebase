@@ -244,8 +244,8 @@ message Instance {
   string environment = 9;
 
   bool activation = 10;
- 
-  InstanceOptions options = 11; 
+
+  InstanceOptions options = 11;
 }
 
 message DataSource {
