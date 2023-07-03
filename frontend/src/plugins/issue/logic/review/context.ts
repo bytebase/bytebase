@@ -2,7 +2,7 @@ import { ReviewFlow } from "@/types";
 import {
   Review,
   Review_Approver_Status,
-} from "@/types/proto/v1/review_service";
+} from "@/types/proto/v1/issue_service";
 import { inject, provide, type InjectionKey, type Ref } from "vue";
 
 export type IssueReviewContext = {

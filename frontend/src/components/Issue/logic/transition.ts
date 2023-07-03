@@ -27,7 +27,7 @@ import {
 } from "./";
 import { useIssueLogic } from ".";
 import { User } from "@/types/proto/v1/auth_service";
-import { Review } from "@/types/proto/v1/review_service";
+import { Review } from "@/types/proto/v1/issue_service";
 import { extractIssueReviewContext } from "@/plugins/issue/logic";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
