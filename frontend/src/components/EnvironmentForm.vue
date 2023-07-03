@@ -78,6 +78,26 @@
             <div class="flex space-x-4">
               <input
                 v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
+                name="manual-approval-never"
+                tabindex="-1"
+                type="radio"
+                class="text-accent disabled:text-accent-disabled focus:ring-accent"
+                :value="ApprovalStrategy.AUTOMATIC"
+                :disabled="!allowEdit"
+              />
+              <div class="-mt-0.5">
+                <div class="textlabel">
+                  {{ $t("policy.rollout.auto") }}
+                </div>
+                <div class="mt-1 textinfolabel">
+                  {{ $t("policy.rollout.auto-info") }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex space-x-4">
+              <input
+                v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
                 name="manual-approval-always"
                 tabindex="-1"
                 type="radio"
@@ -101,29 +121,9 @@
               :policy="state.approvalPolicy"
               :allow-edit="allowEdit"
               @update="(assigneeGroupList) => {
-              state.approvalPolicy.deploymentApprovalPolicy!.deploymentApprovalStrategies = assigneeGroupList
-            }"
+                state.approvalPolicy.deploymentApprovalPolicy!.deploymentApprovalStrategies = assigneeGroupList
+              }"
             />
-
-            <div class="flex space-x-4">
-              <input
-                v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
-                name="manual-approval-never"
-                tabindex="-1"
-                type="radio"
-                class="text-accent disabled:text-accent-disabled focus:ring-accent"
-                :value="ApprovalStrategy.AUTOMATIC"
-                :disabled="!allowEdit"
-              />
-              <div class="-mt-0.5">
-                <div class="textlabel">
-                  {{ $t("policy.rollout.auto") }}
-                </div>
-                <div class="mt-1 textinfolabel">
-                  {{ $t("policy.rollout.auto-info") }}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         <div class="col-span-1 mt-6">
