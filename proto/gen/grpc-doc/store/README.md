@@ -65,7 +65,7 @@
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
 - [store/instance.proto](#store_instance-proto)
-    - [InstanceOption](#bytebase-store-InstanceOption)
+    - [InstanceOptions](#bytebase-store-InstanceOptions)
   
 - [store/vcs.proto](#store_vcs-proto)
     - [Commit](#bytebase-store-Commit)
@@ -1022,10 +1022,10 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-InstanceOption"></a>
+<a name="bytebase-store-InstanceOptions"></a>
 
-### InstanceOption
-InstanceOption is the option for instances.
+### InstanceOptions
+InstanceOptions is the option for instances.
 
 
 | Field | Type | Label | Description |

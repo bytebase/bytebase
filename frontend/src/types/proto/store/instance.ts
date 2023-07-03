@@ -3,8 +3,8 @@ import * as _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
 
-/** InstanceOption is the option for instances. */
-export interface InstanceOption {
+/** InstanceOptions is the option for instances. */
+export interface InstanceOptions {
   /**
    * The schema tenant mode is used to determine whether the instance is in schema tenant mode.
    * For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
@@ -12,22 +12,22 @@ export interface InstanceOption {
   schemaTenantMode: boolean;
 }
 
-function createBaseInstanceOption(): InstanceOption {
+function createBaseInstanceOptions(): InstanceOptions {
   return { schemaTenantMode: false };
 }
 
-export const InstanceOption = {
-  encode(message: InstanceOption, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const InstanceOptions = {
+  encode(message: InstanceOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.schemaTenantMode === true) {
       writer.uint32(8).bool(message.schemaTenantMode);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): InstanceOption {
+  decode(input: _m0.Reader | Uint8Array, length?: number): InstanceOptions {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseInstanceOption();
+    const message = createBaseInstanceOptions();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -47,22 +47,22 @@ export const InstanceOption = {
     return message;
   },
 
-  fromJSON(object: any): InstanceOption {
+  fromJSON(object: any): InstanceOptions {
     return { schemaTenantMode: isSet(object.schemaTenantMode) ? Boolean(object.schemaTenantMode) : false };
   },
 
-  toJSON(message: InstanceOption): unknown {
+  toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
     message.schemaTenantMode !== undefined && (obj.schemaTenantMode = message.schemaTenantMode);
     return obj;
   },
 
-  create(base?: DeepPartial<InstanceOption>): InstanceOption {
-    return InstanceOption.fromPartial(base ?? {});
+  create(base?: DeepPartial<InstanceOptions>): InstanceOptions {
+    return InstanceOptions.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<InstanceOption>): InstanceOption {
-    const message = createBaseInstanceOption();
+  fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
+    const message = createBaseInstanceOptions();
     message.schemaTenantMode = object.schemaTenantMode ?? false;
     return message;
   },
