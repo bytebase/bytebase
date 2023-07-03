@@ -152,7 +152,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
 				{
-					Error: err.Error(),
+					Error: queryErr.Error(),
 				},
 			}
 		} else {
