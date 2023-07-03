@@ -429,6 +429,9 @@ type ConnectionConfig struct {
 	SID         string
 	ServiceName string
 	SSHConfig   SSHConfig
+	// SchemaTenantMode is the Oracle specific mode.
+	// If true, bytebase will treat the schema as a database.
+	SchemaTenantMode bool
 }
 
 // SSHConfig is the configuration for connection over SSH.
