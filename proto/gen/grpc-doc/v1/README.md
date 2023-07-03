@@ -321,7 +321,7 @@
     - [Review.Approver.Status](#bytebase-v1-Review-Approver-Status)
     - [ReviewStatus](#bytebase-v1-ReviewStatus)
   
-    - [ReviewService](#bytebase-v1-ReviewService)
+    - [IssueService](#bytebase-v1-IssueService)
   
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
@@ -5159,9 +5159,9 @@ ANY means approving any node will proceed.
  
 
 
-<a name="bytebase-v1-ReviewService"></a>
+<a name="bytebase-v1-IssueService"></a>
 
-### ReviewService
+### IssueService
 
 
 | Method Name | Request Type | Response Type | Description |
