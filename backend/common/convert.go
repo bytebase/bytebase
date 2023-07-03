@@ -132,3 +132,45 @@ func ValidateGroupCELExpr(expr string) (cel.Program, error) {
 	}
 	return prog, nil
 }
+
+type QueryExportFactors struct {
+	DatabaseNames []string
+	ExportRows    int64
+}
+
+func GetAST(expression string) (*QueryExportFactors, error) {
+	factors := &QueryExportFactors{}
+
+	e, err := cel.NewEnv(QueryExportPolicyCELAttributes...)
+	if err != nil {
+		return nil, err
+	}
+	ast, issues := e.Compile(expression)
+	if issues != nil {
+		return nil, errors.Errorf("found issue %v", issues)
+	}
+	callExpr := ast.Expr().GetCallExpr()
+	findField(callExpr, factors)
+	return factors, nil
+}
+
+func findField(callExpr *v1alpha1.Expr_Call, factors *QueryExportFactors) {
+	if len(callExpr.Args) == 2 {
+		idExpr := callExpr.Args[0].GetIdentExpr()
+		if idExpr != nil {
+			if idExpr.Name == "request.row_limit" {
+				factors.ExportRows = callExpr.Args[1].GetConstExpr().GetInt64Value()
+			}
+			if idExpr.Name == "resource.database" {
+				factors.DatabaseNames = append(factors.DatabaseNames, callExpr.Args[1].GetConstExpr().GetStringValue())
+			}
+			return
+		}
+	}
+	for _, arg := range callExpr.Args {
+		callExpr := arg.GetCallExpr()
+		if callExpr != nil {
+			findField(callExpr, factors)
+		}
+	}
+}
