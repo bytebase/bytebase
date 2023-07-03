@@ -487,7 +487,7 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 		WHERE ` + strings.Join(where, " AND ")
 
 	if v := find.Order; v != nil {
-		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
+		query += fmt.Sprintf(" ORDER BY id %s", *v)
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
