@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// InstanceOptions is the option for instances.
+message InstanceOptions {
+  // The schema tenant mode is used to determine whether the instance is in schema tenant mode.
+  // For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
+  bool schema_tenant_mode = 1;
+}
