@@ -133,11 +133,13 @@ func ValidateGroupCELExpr(expr string) (cel.Program, error) {
 	return prog, nil
 }
 
+// QueryExportFactors is the factors for query and export.
 type QueryExportFactors struct {
 	DatabaseNames []string
 	ExportRows    int64
 }
 
+// GetQueryExportFactors is used to get risk factors from query and export expressions.
 func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
 	factors := &QueryExportFactors{}
 
@@ -161,8 +163,14 @@ func findField(callExpr *v1alpha1.Expr_Call, factors *QueryExportFactors) {
 			if idExpr.Name == "request.row_limit" {
 				factors.ExportRows = callExpr.Args[1].GetConstExpr().GetInt64Value()
 			}
-			if idExpr.Name == "resource.database" {
+			if idExpr.Name == "resource.database" && callExpr.Function == "_==_" {
 				factors.DatabaseNames = append(factors.DatabaseNames, callExpr.Args[1].GetConstExpr().GetStringValue())
+			}
+			if idExpr.Name == "resource.database" && callExpr.Function == "@in" {
+				list := callExpr.Args[1].GetListExpr()
+				for _, element := range list.Elements {
+					factors.DatabaseNames = append(factors.DatabaseNames, element.GetConstExpr().GetStringValue())
+				}
 			}
 			return
 		}
