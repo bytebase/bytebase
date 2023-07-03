@@ -8,6 +8,7 @@ export const useCancelableTimeout = (timeoutMS: MaybeRef<number>) => {
   const nowTS = useTimestamp();
 
   const elapsedMS = computed(() => {
+    if (!running.value) return 0;
     return nowTS.value - startTS.value;
   });
 
@@ -25,5 +26,5 @@ export const useCancelableTimeout = (timeoutMS: MaybeRef<number>) => {
     running.value = false;
   };
 
-  return { start, stop, expired };
+  return { start, stop, elapsedMS, expired };
 };

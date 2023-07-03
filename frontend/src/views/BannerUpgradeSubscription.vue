@@ -87,6 +87,7 @@ import {
   useDBGroupStore,
   useDatabaseV1Store,
   useDatabaseSecretStore,
+  useActuatorV1Store,
 } from "@/store";
 import { onMounted } from "vue";
 import { computed } from "vue";
@@ -111,6 +112,7 @@ const state = reactive<LocalState>({
   ready: false,
 });
 
+const actuatorStore = useActuatorV1Store();
 const idpStore = useIdentityProviderStore();
 const settingV1Store = useSettingV1Store();
 const instanceStore = useInstanceV1Store();
@@ -240,6 +242,8 @@ const neededPlan = computed(() => {
 
 const showBanner = computed(() => {
   return (
+    // Do not show banner in demo mode
+    actuatorStore.serverInfo?.demoName == "" &&
     overUsedFeatureList.value.length > 0 &&
     neededPlan.value > subscriptionStore.currentPlan
   );

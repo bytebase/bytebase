@@ -1,11 +1,16 @@
 import { ref } from "vue";
 
-import { getExportRequestFormat, pushNotification, useSQLStore } from "@/store";
+import {
+  getExportFileType,
+  getExportRequestFormat,
+  pushNotification,
+  useSQLStore,
+} from "@/store";
 import { extractDatabaseResourceName } from "@/utils";
 import dayjs from "dayjs";
 
 export type ExportDataParams = {
-  format: "CSV" | "JSON";
+  format: "CSV" | "JSON" | "SQL";
   statement: string;
   limit: number;
   database: string; // instances/{instance}/databases/{database}
@@ -33,7 +38,7 @@ export const useExportData = () => {
       });
 
       const blob = new Blob([content], {
-        type: params.format === "CSV" ? "text/csv" : "application/json",
+        type: getExportFileType(params.format),
       });
       const url = window.URL.createObjectURL(blob);
 

@@ -3,7 +3,7 @@
     <div ref="containerRef" class="w-full overflow-hidden text-ellipsis">
       <div class="w-full h-auto leading-5 whitespace-pre-wrap font-mono">
         <template v-if="state.expanded">
-          {{ formatedDefinition }}
+          {{ formattedDefinition }}
         </template>
         <NEllipsis
           v-else
@@ -11,16 +11,21 @@
           :line-clamp="3"
           :tooltip="false"
         >
-          {{ formatedDefinition }}
+          {{ formattedDefinition }}
         </NEllipsis>
       </div>
     </div>
     <button
       v-if="state.showExpandButton"
-      class="inline-block cursor-pointer border px-1 rounded text-xs text-green-600 border-green-600 bg-green-50 hover:opacity-80"
+      class="inline-block cursor-pointer px-2 py-1 rounded text-xs shadow bg-gray-50 hover:opacity-80"
       @click="state.expanded = !state.expanded"
     >
       {{ $t("common." + (state.expanded ? "collapse" : "expand")) }}
+      <heroicons-outline:chevron-down
+        v-if="!state.expanded"
+        class="w-4 h-auto inline-block"
+      />
+      <heroicons-outline:chevron-up v-else class="w-4 h-auto inline-block" />
     </button>
   </div>
 </template>
@@ -49,7 +54,7 @@ const state = reactive<LocalState>({
 });
 const containerRef = ref<HTMLDivElement | null>(null);
 
-const formatedDefinition = computed(() => {
+const formattedDefinition = computed(() => {
   return props.definition.trim();
 });
 

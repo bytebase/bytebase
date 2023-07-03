@@ -135,7 +135,7 @@
             >
               <NRadio :value="'CSV'" label="CSV" />
               <NRadio :value="'JSON'" label="JSON" />
-              <NRadio v-if="isDev" :value="'SQL'" label="SQL" />
+              <NRadio :value="'SQL'" label="SQL" />
             </NRadioGroup>
           </div>
         </div>
@@ -450,6 +450,9 @@ const doCreateIssue = async () => {
       condition: {
         expression: celExpressionString,
       },
+      // We need to pass a string type value to the expiration field because
+      // the type of Duration proto is string.
+      expiration: `${expireDays * 24 * 60 * 60}s`,
     },
   };
 

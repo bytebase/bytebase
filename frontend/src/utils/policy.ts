@@ -1,9 +1,11 @@
-import { hasFeature, useCurrentUserIamPolicy } from "@/store";
+import { hasFeature, useCurrentUserIamPolicy, usePolicyV1Store } from "@/store";
 import type { ComposedDatabase, Instance } from "@/types";
 import { hasWorkspacePermissionV1 } from "./role";
-import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
+import { Policy } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import { resolveCELExpr } from "@/plugins/cel";
+import { extractEnvironmentNameListFromExpr } from "./v1";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 
 export const isInstanceAccessible = (instance: Instance, user: User) => {
   if (!hasFeature("bb.feature.access-control")) {
@@ -49,19 +51,22 @@ export const isDatabaseAccessible = (
   }
 
   if (hasFeature("bb.feature.access-control")) {
-    const { environmentEntity } = database.instanceEntity;
-    if (environmentEntity.tier === EnvironmentTier.PROTECTED) {
-      const policy = policyList.find((policy) => {
-        const { type, resourceUid, enforce } = policy;
-        return (
-          type === PolicyType.ACCESS_CONTROL &&
-          resourceUid === `${database.uid}` &&
-          enforce
+    const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+    if (policy) {
+      const bindings = policy.workspaceIamPolicy?.bindings;
+      if (bindings) {
+        const querierBinding = bindings.find(
+          (binding) => binding.role === "roles/QUERIER"
         );
-      });
-      if (policy) {
-        // The database is in the allowed list
-        return true;
+        if (querierBinding) {
+          const simpleExpr = resolveCELExpr(
+            querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+          );
+          const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+          if (envNameList.includes(database.instanceEntity.environment)) {
+            return true;
+          }
+        }
       }
     }
   }

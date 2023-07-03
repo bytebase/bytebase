@@ -2,8 +2,8 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, toRef, watch } from "vue";
 import { pick } from "lodash-es";
 import { watchThrottled } from "@vueuse/core";
-import type { TabInfo, CoreTabInfo, AnyTabInfo } from "@/types";
-import { UNKNOWN_ID, TabMode } from "@/types";
+import { TabInfo, CoreTabInfo, AnyTabInfo, TabMode } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import {
   getDefaultTab,
   INITIAL_TAB,
@@ -13,8 +13,8 @@ import {
 } from "@/utils";
 import { useInstanceV1Store } from "./v1/instance";
 import { useSheetV1Store } from "./v1/sheet";
-import { useWebTerminalStore } from "./webTerminal";
 import { Engine } from "@/types/proto/v1/common";
+import { useWebTerminalV1Store } from "./v1";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor.tab-list";
 const KEYS = {
@@ -97,6 +97,10 @@ export const useTabStore = defineStore("tab", () => {
       tabIdList.value.splice(index, 1);
       tabs.value.delete(id);
       storage.remove(KEYS.tab(id));
+
+      if (tab.mode === TabMode.Admin) {
+        useWebTerminalV1Store().clearQueryStateByTab(tab);
+      }
     }
   };
   const updateCurrentTab = (payload: AnyTabInfo) => {
@@ -163,23 +167,6 @@ export const useTabStore = defineStore("tab", () => {
         storage.save(KEYS.tab(tabPartial.id), tabPartial);
       },
       { deep: true, immediate, throttle: 100, trailing: true }
-    );
-
-    watch(
-      () => tab.mode,
-      (mode) => {
-        // When switched to read-only-mode, clear the tab's query list
-        // so we can re-init it next-time.
-        if (mode === TabMode.ReadOnly) {
-          useWebTerminalStore().clearQueryListByTab(tab);
-        }
-
-        // And we should clear the tab's query result
-        // so we won't carry the results in Admin mode to read-only mode.
-        // vice versa
-        tab.executeParams = undefined;
-        tab.queryResult = undefined;
-      }
     );
   };
 

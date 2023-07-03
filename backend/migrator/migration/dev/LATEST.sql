@@ -386,7 +386,9 @@ CREATE TABLE db (
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
     secrets JSONB NOT NULL DEFAULT '{}',
-    datashare BOOLEAN NOT NULL DEFAULT FALSE
+    datashare BOOLEAN NOT NULL DEFAULT FALSE,
+    -- service_name is the Oracle specific field.
+    service_name TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX idx_db_instance_id ON db(instance_id);
