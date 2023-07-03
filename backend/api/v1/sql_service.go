@@ -314,6 +314,11 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 }
 
 func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]byte, int64, error) {
+	// Don't anonymize data for exporting data using admin mode.
+	if request.Admin {
+		sensitiveSchemaInfo = nil
+	}
+
 	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, 0, err
@@ -613,6 +618,11 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	// Validate the request.
 	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, nil, nil, nil, err
+	}
+
+	// Check if the caller is admin for exporting with admin mode.
+	if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
+		return nil, nil, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
 	}
 
 	// Check if the environment is open for export privileges.
