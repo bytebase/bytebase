@@ -300,20 +300,20 @@
     - [ApprovalStep](#bytebase-v1-ApprovalStep)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
     - [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest)
-    - [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest)
-    - [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse)
-    - [CreateReviewCommentRequest](#bytebase-v1-CreateReviewCommentRequest)
-    - [CreateReviewRequest](#bytebase-v1-CreateReviewRequest)
-    - [GetReviewRequest](#bytebase-v1-GetReviewRequest)
-    - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
-    - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
+    - [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest)
+    - [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse)
+    - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
+    - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
+    - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
+    - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
+    - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
     - [RejectReviewRequest](#bytebase-v1-RejectReviewRequest)
     - [RequestReviewRequest](#bytebase-v1-RequestReviewRequest)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
     - [ReviewComment](#bytebase-v1-ReviewComment)
-    - [UpdateReviewCommentRequest](#bytebase-v1-UpdateReviewCommentRequest)
-    - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
+    - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
+    - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
     - [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue)
     - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
@@ -4829,25 +4829,25 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-BatchUpdateReviewsRequest"></a>
+<a name="bytebase-v1-BatchUpdateIssuesRequest"></a>
 
-### BatchUpdateReviewsRequest
+### BatchUpdateIssuesRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource shared by all reviews being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
-| requests | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
+| requests | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
 
 
 
 
 
 
-<a name="bytebase-v1-BatchUpdateReviewsResponse"></a>
+<a name="bytebase-v1-BatchUpdateIssuesResponse"></a>
 
-### BatchUpdateReviewsResponse
+### BatchUpdateIssuesResponse
 
 
 
@@ -4860,9 +4860,9 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-CreateReviewCommentRequest"></a>
+<a name="bytebase-v1-CreateIssueCommentRequest"></a>
 
-### CreateReviewCommentRequest
+### CreateIssueCommentRequest
 
 
 
@@ -4876,9 +4876,9 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-CreateReviewRequest"></a>
+<a name="bytebase-v1-CreateIssueRequest"></a>
 
-### CreateReviewRequest
+### CreateIssueRequest
 
 
 
@@ -4892,9 +4892,9 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-GetReviewRequest"></a>
+<a name="bytebase-v1-GetIssueRequest"></a>
 
-### GetReviewRequest
+### GetIssueRequest
 
 
 
@@ -4908,9 +4908,9 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-ListReviewsRequest"></a>
+<a name="bytebase-v1-ListIssuesRequest"></a>
 
-### ListReviewsRequest
+### ListIssuesRequest
 
 
 
@@ -4918,18 +4918,18 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} Use &#34;projects/-&#34; to list all reviews from all projects. |
 | page_size | [int32](#int32) |  | The maximum number of reviews to return. The service may return fewer than this value. If unspecified, at most 50 reviews will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListReviews` call. Provide this to retrieve the subsequent page.
+| page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListReviews` must match the call that provided the page token. |
-
-
+When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
 
 
 
 
-<a name="bytebase-v1-ListReviewsResponse"></a>
 
-### ListReviewsResponse
+
+<a name="bytebase-v1-ListIssuesResponse"></a>
+
+### ListIssuesResponse
 
 
 
@@ -5041,9 +5041,9 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 
 
 
-<a name="bytebase-v1-UpdateReviewCommentRequest"></a>
+<a name="bytebase-v1-UpdateIssueCommentRequest"></a>
 
-### UpdateReviewCommentRequest
+### UpdateIssueCommentRequest
 
 
 
@@ -5058,9 +5058,9 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 
 
 
-<a name="bytebase-v1-UpdateReviewRequest"></a>
+<a name="bytebase-v1-UpdateIssueRequest"></a>
 
-### UpdateReviewRequest
+### UpdateIssueRequest
 
 
 
@@ -5166,13 +5166,13 @@ ANY means approving any node will proceed.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetReview | [GetReviewRequest](#bytebase-v1-GetReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| CreateReview | [CreateReviewRequest](#bytebase-v1-CreateReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| ListReviews | [ListReviewsRequest](#bytebase-v1-ListReviewsRequest) | [ListReviewsResponse](#bytebase-v1-ListReviewsResponse) |  |
-| UpdateReview | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| CreateReviewComment | [CreateReviewCommentRequest](#bytebase-v1-CreateReviewCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
-| UpdateReviewComment | [UpdateReviewCommentRequest](#bytebase-v1-UpdateReviewCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
-| BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
+| GetIssue | [GetIssueRequest](#bytebase-v1-GetIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) |  |
+| UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
+| UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
+| BatchUpdateIssues | [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest) | [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse) |  |
 | ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | RejectReview | [RejectReviewRequest](#bytebase-v1-RejectReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | RequestReview | [RequestReviewRequest](#bytebase-v1-RequestReviewRequest) | [Review](#bytebase-v1-Review) |  |

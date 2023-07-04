@@ -5,8 +5,8 @@ import { useActivityV1Store } from "./activity";
 import { IdType, ActivityIssueCommentCreatePayload } from "@/types";
 import { projectNamePrefix, reviewNamePrefix } from "./common";
 
-export const useReviewV1Store = defineStore("review_v1", () => {
-  const createReviewComment = async ({
+export const useIssueV1Store = defineStore("issue_v1", () => {
+  const createIssueComment = async ({
     reviewId,
     comment,
     payload,
@@ -15,7 +15,7 @@ export const useReviewV1Store = defineStore("review_v1", () => {
     comment: string;
     payload?: ActivityIssueCommentCreatePayload;
   }) => {
-    await issueServiceClient.createReviewComment({
+    await issueServiceClient.createIssueComment({
       parent: `${projectNamePrefix}-/${reviewNamePrefix}${reviewId}`,
       reviewComment: {
         comment,
@@ -25,7 +25,7 @@ export const useReviewV1Store = defineStore("review_v1", () => {
     await useActivityV1Store().fetchActivityListByIssueId(reviewId);
   };
 
-  const updateReviewComment = async ({
+  const updateIssueComment = async ({
     commentId,
     reviewId,
     comment,
@@ -34,7 +34,7 @@ export const useReviewV1Store = defineStore("review_v1", () => {
     reviewId: IdType;
     comment: string;
   }) => {
-    await issueServiceClient.updateReviewComment({
+    await issueServiceClient.updateIssueComment({
       parent: `${projectNamePrefix}-/${reviewNamePrefix}${reviewId}`,
       reviewComment: {
         uid: commentId,
@@ -46,7 +46,7 @@ export const useReviewV1Store = defineStore("review_v1", () => {
   };
 
   return {
-    createReviewComment,
-    updateReviewComment,
+    createIssueComment,
+    updateIssueComment,
   };
 });

@@ -11,12 +11,12 @@ import "google/protobuf/timestamp.proto";
 option go_package = "generated-go/v1";
 
 service IssueService {
-  rpc GetReview(GetReviewRequest) returns (Review) {
+  rpc GetIssue(GetIssueRequest) returns (Review) {
     option (google.api.http) = {get: "/v1/{name=projects/*/reviews/*}"};
     option (google.api.method_signature) = "name";
   }
 
-  rpc CreateReview(CreateReviewRequest) returns (Review) {
+  rpc CreateIssue(CreateIssueRequest) returns (Review) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/reviews"
       body: "review"
@@ -24,12 +24,12 @@ service IssueService {
     option (google.api.method_signature) = "parent,review";
   }
 
-  rpc ListReviews(ListReviewsRequest) returns (ListReviewsResponse) {
+  rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/reviews"};
     option (google.api.method_signature) = "parent";
   }
 
-  rpc UpdateReview(UpdateReviewRequest) returns (Review) {
+  rpc UpdateIssue(UpdateIssueRequest) returns (Review) {
     option (google.api.http) = {
       patch: "/v1/{review.name=projects/*/reviews/*}"
       body: "review"
@@ -37,7 +37,7 @@ service IssueService {
     option (google.api.method_signature) = "review,update_mask";
   }
 
-  rpc CreateReviewComment(CreateReviewCommentRequest) returns (ReviewComment) {
+  rpc CreateIssueComment(CreateIssueCommentRequest) returns (ReviewComment) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/reviews/*}:comment"
       body: "review_comment"
@@ -45,7 +45,7 @@ service IssueService {
     option (google.api.method_signature) = "parent,review_comment";
   }
 
-  rpc UpdateReviewComment(UpdateReviewCommentRequest) returns (ReviewComment) {
+  rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (ReviewComment) {
     option (google.api.http) = {
       patch: "/v1/{parent=projects/*/reviews/*}:comment"
       body: "review_comment"
@@ -53,7 +53,7 @@ service IssueService {
     option (google.api.method_signature) = "parent,review_comment,update_mask";
   }
 
-  rpc BatchUpdateReviews(BatchUpdateReviewsRequest) returns (BatchUpdateReviewsResponse) {
+  rpc BatchUpdateIssues(BatchUpdateIssuesRequest) returns (BatchUpdateIssuesResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/reviews:batchUpdate"
       body: "*"
@@ -82,7 +82,7 @@ service IssueService {
   }
 }
 
-message GetReviewRequest {
+message GetIssueRequest {
   // The name of the review to retrieve.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
@@ -90,7 +90,7 @@ message GetReviewRequest {
   bool force = 2;
 }
 
-message CreateReviewRequest {
+message CreateIssueRequest {
   // The parent, which owns this collection of reviews.
   // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
@@ -99,7 +99,7 @@ message CreateReviewRequest {
   Review review = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ListReviewsRequest {
+message ListIssuesRequest {
   // The parent, which owns this collection of reviews.
   // Format: projects/{project}
   // Use "projects/-" to list all reviews from all projects.
@@ -111,15 +111,15 @@ message ListReviewsRequest {
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // A page token, received from a previous `ListReviews` call.
+  // A page token, received from a previous `ListIssues` call.
   // Provide this to retrieve the subsequent page.
   //
-  // When paginating, all other parameters provided to `ListReviews` must match
+  // When paginating, all other parameters provided to `ListIssues` must match
   // the call that provided the page token.
   string page_token = 3;
 }
 
-message ListReviewsResponse {
+message ListIssuesResponse {
   // The reviews from the specified request.
   repeated Review reviews = 1;
 
@@ -128,7 +128,7 @@ message ListReviewsResponse {
   string next_page_token = 2;
 }
 
-message UpdateReviewRequest {
+message UpdateIssueRequest {
   // The review to update.
   //
   // The review's `name` field is used to identify the review to update.
@@ -139,7 +139,7 @@ message UpdateReviewRequest {
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message BatchUpdateReviewsRequest {
+message BatchUpdateIssuesRequest {
   // The parent resource shared by all reviews being updated.
   // Format: projects/{project}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
@@ -148,10 +148,10 @@ message BatchUpdateReviewsRequest {
 
   // The request message specifying the resources to update.
   // A maximum of 1000 databases can be modified in a batch.
-  repeated UpdateReviewRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
+  repeated UpdateIssueRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message BatchUpdateReviewsResponse {
+message BatchUpdateIssuesResponse {
   // Reviews updated.
   repeated Review reviews = 1;
 }
@@ -306,7 +306,7 @@ message ApprovalNode {
   }
 }
 
-message CreateReviewCommentRequest {
+message CreateIssueCommentRequest {
   // The review name
   // Format: projects/{project}/reviews/{review}
   string parent = 1;
@@ -314,7 +314,7 @@ message CreateReviewCommentRequest {
   ReviewComment review_comment = 2;
 }
 
-message UpdateReviewCommentRequest {
+message UpdateIssueCommentRequest {
   // The review name
   // Format: projects/{project}/reviews/{review}
   string parent = 1;

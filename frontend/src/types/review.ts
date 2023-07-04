@@ -3,7 +3,7 @@ import type {
   ApprovalStep,
   ApprovalTemplate,
   Review_Approver,
-} from "./proto/v1/review_service";
+} from "./proto/v1/issue_service";
 
 export type ApprovalEvent = {
   status: "APPROVED" | "REJECTED" | "PENDING";
