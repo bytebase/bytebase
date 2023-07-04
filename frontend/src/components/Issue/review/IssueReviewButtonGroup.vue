@@ -210,12 +210,12 @@ const handleModalConfirm = async (
   state.loading = true;
   try {
     if (status === Review_Approver_Status.APPROVED) {
-      await store.approveReview(issue.value, comment);
+      await store.approveIssue(issue.value, comment);
       onSuccess();
     } else if (status === Review_Approver_Status.PENDING) {
-      await store.requestReview(issue.value, comment);
+      await store.requestIssue(issue.value, comment);
     } else if (status === Review_Approver_Status.REJECTED) {
-      await store.rejectReview(issue.value, comment);
+      await store.rejectIssue(issue.value, comment);
     }
     state.modal = undefined;
 
