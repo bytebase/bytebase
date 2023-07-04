@@ -136,7 +136,7 @@ export interface BatchUpdateIssuesResponse {
   reviews: Review[];
 }
 
-export interface ApproveReviewRequest {
+export interface ApproveIssueRequest {
   /**
    * The name of the issue to add an approver.
    * Format: projects/{project}/reviews/{review}
@@ -145,7 +145,7 @@ export interface ApproveReviewRequest {
   comment: string;
 }
 
-export interface RejectReviewRequest {
+export interface RejectIssueRequest {
   /**
    * The name of the issue to add an rejecting reviewer.
    * Format: projects/{project}/reviews/{review}
@@ -154,7 +154,7 @@ export interface RejectReviewRequest {
   comment: string;
 }
 
-export interface RequestReviewRequest {
+export interface RequestIssueRequest {
   /**
    * The name of the issue to request a review.
    * Format: projects/{project}/reviews/{review}
@@ -971,12 +971,12 @@ export const BatchUpdateIssuesResponse = {
   },
 };
 
-function createBaseApproveReviewRequest(): ApproveReviewRequest {
+function createBaseApproveIssueRequest(): ApproveIssueRequest {
   return { name: "", comment: "" };
 }
 
-export const ApproveReviewRequest = {
-  encode(message: ApproveReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ApproveIssueRequest = {
+  encode(message: ApproveIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -986,10 +986,10 @@ export const ApproveReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ApproveReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ApproveIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseApproveReviewRequest();
+    const message = createBaseApproveIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1016,38 +1016,38 @@ export const ApproveReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): ApproveReviewRequest {
+  fromJSON(object: any): ApproveIssueRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
     };
   },
 
-  toJSON(message: ApproveReviewRequest): unknown {
+  toJSON(message: ApproveIssueRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
-  create(base?: DeepPartial<ApproveReviewRequest>): ApproveReviewRequest {
-    return ApproveReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ApproveIssueRequest>): ApproveIssueRequest {
+    return ApproveIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ApproveReviewRequest>): ApproveReviewRequest {
-    const message = createBaseApproveReviewRequest();
+  fromPartial(object: DeepPartial<ApproveIssueRequest>): ApproveIssueRequest {
+    const message = createBaseApproveIssueRequest();
     message.name = object.name ?? "";
     message.comment = object.comment ?? "";
     return message;
   },
 };
 
-function createBaseRejectReviewRequest(): RejectReviewRequest {
+function createBaseRejectIssueRequest(): RejectIssueRequest {
   return { name: "", comment: "" };
 }
 
-export const RejectReviewRequest = {
-  encode(message: RejectReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const RejectIssueRequest = {
+  encode(message: RejectIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -1057,10 +1057,10 @@ export const RejectReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): RejectReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): RejectIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRejectReviewRequest();
+    const message = createBaseRejectIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1087,38 +1087,38 @@ export const RejectReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): RejectReviewRequest {
+  fromJSON(object: any): RejectIssueRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
     };
   },
 
-  toJSON(message: RejectReviewRequest): unknown {
+  toJSON(message: RejectIssueRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
-  create(base?: DeepPartial<RejectReviewRequest>): RejectReviewRequest {
-    return RejectReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<RejectIssueRequest>): RejectIssueRequest {
+    return RejectIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<RejectReviewRequest>): RejectReviewRequest {
-    const message = createBaseRejectReviewRequest();
+  fromPartial(object: DeepPartial<RejectIssueRequest>): RejectIssueRequest {
+    const message = createBaseRejectIssueRequest();
     message.name = object.name ?? "";
     message.comment = object.comment ?? "";
     return message;
   },
 };
 
-function createBaseRequestReviewRequest(): RequestReviewRequest {
+function createBaseRequestIssueRequest(): RequestIssueRequest {
   return { name: "", comment: "" };
 }
 
-export const RequestReviewRequest = {
-  encode(message: RequestReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const RequestIssueRequest = {
+  encode(message: RequestIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -1128,10 +1128,10 @@ export const RequestReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): RequestReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): RequestIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRequestReviewRequest();
+    const message = createBaseRequestIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1158,26 +1158,26 @@ export const RequestReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): RequestReviewRequest {
+  fromJSON(object: any): RequestIssueRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
     };
   },
 
-  toJSON(message: RequestReviewRequest): unknown {
+  toJSON(message: RequestIssueRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
-  create(base?: DeepPartial<RequestReviewRequest>): RequestReviewRequest {
-    return RequestReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<RequestIssueRequest>): RequestIssueRequest {
+    return RequestIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<RequestReviewRequest>): RequestReviewRequest {
-    const message = createBaseRequestReviewRequest();
+  fromPartial(object: DeepPartial<RequestIssueRequest>): RequestIssueRequest {
+    const message = createBaseRequestIssueRequest();
     message.name = object.name ?? "";
     message.comment = object.comment ?? "";
     return message;
@@ -2662,9 +2662,9 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    approveReview: {
-      name: "ApproveReview",
-      requestType: ApproveReviewRequest,
+    approveIssue: {
+      name: "ApproveIssue",
+      requestType: ApproveIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2722,9 +2722,9 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    rejectReview: {
-      name: "RejectReview",
-      requestType: RejectReviewRequest,
+    rejectIssue: {
+      name: "RejectIssue",
+      requestType: RejectIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2781,9 +2781,9 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    requestReview: {
-      name: "RequestReview",
-      requestType: RequestReviewRequest,
+    requestIssue: {
+      name: "RequestIssue",
+      requestType: RequestIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2864,9 +2864,9 @@ export interface IssueServiceImplementation<CallContextExt = {}> {
     request: BatchUpdateIssuesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BatchUpdateIssuesResponse>>;
-  approveReview(request: ApproveReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  rejectReview(request: RejectReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  requestReview(request: RequestReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  approveIssue(request: ApproveIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  rejectIssue(request: RejectIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  requestIssue(request: RequestIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
 }
 
 export interface IssueServiceClient<CallOptionsExt = {}> {
@@ -2889,9 +2889,9 @@ export interface IssueServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<BatchUpdateIssuesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<BatchUpdateIssuesResponse>;
-  approveReview(request: DeepPartial<ApproveReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  rejectReview(request: DeepPartial<RejectReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  requestReview(request: DeepPartial<RequestReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  approveIssue(request: DeepPartial<ApproveIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  rejectIssue(request: DeepPartial<RejectIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  requestIssue(request: DeepPartial<RequestIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
