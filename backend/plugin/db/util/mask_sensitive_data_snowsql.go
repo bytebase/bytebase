@@ -191,10 +191,35 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 			if asAlias := columnElem.As_alias(); asAlias != nil {
 				result[len(result)-1].name = parser.NormalizeObjectNamePart(asAlias.Alias().Id_())
 			}
+		} else if expressionElem := iSelectListElem.Expression_elem(); expressionElem != nil {
+
 		}
 	}
 
 	return result, nil
+}
+
+// The closure of the IExprContext
+func (extractor *sensitiveFieldExtractor) isExprSensitive(ctx antlr.RuleContext) (string, bool, error) {
+	switch ctx := ctx.(type) {
+	case *snowparser.Primitive_expressionContext:
+		return ctx.GetText(), false, nil
+	case *snowparser.Function_callContext:
+		if v := ctx.Ranking_windowed_function(); v != nil {
+			return extractor.isExprSensitive(v)
+		}
+		panic("never reach here")
+	case *snowparser.Ranking_windowed_functionContext:
+		if v := ctx.Expr(); v != nil {
+			return extractor.isExprSensitive(v)
+		}
+		if v := ctx.Over_clause(); v != nil {
+			return extractor.isExprSensitive(v)
+		}
+		panic("never reach here")
+	case *snowparser.
+
+	}
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFrom_clause(ctx snowparser.IFrom_clauseContext) ([]fieldInfo, error) {
