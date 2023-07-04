@@ -6,52 +6,52 @@ import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
-export enum ReviewStatus {
-  REVIEW_STATUS_UNSPECIFIED = 0,
+export enum IssueStatus {
+  ISSUE_STATUS_UNSPECIFIED = 0,
   OPEN = 1,
   DONE = 2,
   CANCELED = 3,
   UNRECOGNIZED = -1,
 }
 
-export function reviewStatusFromJSON(object: any): ReviewStatus {
+export function issueStatusFromJSON(object: any): IssueStatus {
   switch (object) {
     case 0:
-    case "REVIEW_STATUS_UNSPECIFIED":
-      return ReviewStatus.REVIEW_STATUS_UNSPECIFIED;
+    case "ISSUE_STATUS_UNSPECIFIED":
+      return IssueStatus.ISSUE_STATUS_UNSPECIFIED;
     case 1:
     case "OPEN":
-      return ReviewStatus.OPEN;
+      return IssueStatus.OPEN;
     case 2:
     case "DONE":
-      return ReviewStatus.DONE;
+      return IssueStatus.DONE;
     case 3:
     case "CANCELED":
-      return ReviewStatus.CANCELED;
+      return IssueStatus.CANCELED;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return ReviewStatus.UNRECOGNIZED;
+      return IssueStatus.UNRECOGNIZED;
   }
 }
 
-export function reviewStatusToJSON(object: ReviewStatus): string {
+export function issueStatusToJSON(object: IssueStatus): string {
   switch (object) {
-    case ReviewStatus.REVIEW_STATUS_UNSPECIFIED:
-      return "REVIEW_STATUS_UNSPECIFIED";
-    case ReviewStatus.OPEN:
+    case IssueStatus.ISSUE_STATUS_UNSPECIFIED:
+      return "ISSUE_STATUS_UNSPECIFIED";
+    case IssueStatus.OPEN:
       return "OPEN";
-    case ReviewStatus.DONE:
+    case IssueStatus.DONE:
       return "DONE";
-    case ReviewStatus.CANCELED:
+    case IssueStatus.CANCELED:
       return "CANCELED";
-    case ReviewStatus.UNRECOGNIZED:
+    case IssueStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export interface GetReviewRequest {
+export interface GetIssueRequest {
   /**
    * The name of the review to retrieve.
    * Format: projects/{project}/reviews/{review}
@@ -60,7 +60,7 @@ export interface GetReviewRequest {
   force: boolean;
 }
 
-export interface CreateReviewRequest {
+export interface CreateIssueRequest {
   /**
    * The parent, which owns this collection of reviews.
    * Format: projects/{project}
@@ -70,32 +70,32 @@ export interface CreateReviewRequest {
   review?: Review;
 }
 
-export interface ListReviewsRequest {
+export interface ListIssuesRequest {
   /**
    * The parent, which owns this collection of reviews.
    * Format: projects/{project}
-   * Use "projects/-" to list all reviews from all projects.
+   * Use "projects/-" to list all issues from all projects.
    */
   parent: string;
   /**
-   * The maximum number of reviews to return. The service may return fewer than
+   * The maximum number of issues to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 reviews will be returned.
+   * If unspecified, at most 50 issues will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * A page token, received from a previous `ListReviews` call.
+   * A page token, received from a previous `ListIssues` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListReviews` must match
+   * When paginating, all other parameters provided to `ListIssues` must match
    * the call that provided the page token.
    */
   pageToken: string;
 }
 
-export interface ListReviewsResponse {
-  /** The reviews from the specified request. */
+export interface ListIssuesResponse {
+  /** The issues from the specified request. */
   reviews: Review[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.
@@ -104,11 +104,11 @@ export interface ListReviewsResponse {
   nextPageToken: string;
 }
 
-export interface UpdateReviewRequest {
+export interface UpdateIssueRequest {
   /**
-   * The review to update.
+   * The issue to update.
    *
-   * The review's `name` field is used to identify the review to update.
+   * The issue's `name` field is used to identify the issue to update.
    * Format: projects/{project}/reviews/{review}
    */
   review?: Review;
@@ -116,9 +116,9 @@ export interface UpdateReviewRequest {
   updateMask?: string[];
 }
 
-export interface BatchUpdateReviewsRequest {
+export interface BatchUpdateIssuesRequest {
   /**
-   * The parent resource shared by all reviews being updated.
+   * The parent resource shared by all issues being updated.
    * Format: projects/{project}
    * If the operation spans parents, a dash (-) may be accepted as a wildcard.
    * We only support updating the status of databases for now.
@@ -128,35 +128,35 @@ export interface BatchUpdateReviewsRequest {
    * The request message specifying the resources to update.
    * A maximum of 1000 databases can be modified in a batch.
    */
-  requests: UpdateReviewRequest[];
+  requests: UpdateIssueRequest[];
 }
 
-export interface BatchUpdateReviewsResponse {
-  /** Reviews updated. */
+export interface BatchUpdateIssuesResponse {
+  /** Issues updated. */
   reviews: Review[];
 }
 
-export interface ApproveReviewRequest {
+export interface ApproveIssueRequest {
   /**
-   * The name of the review to add an approver.
+   * The name of the issue to add an approver.
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
   comment: string;
 }
 
-export interface RejectReviewRequest {
+export interface RejectIssueRequest {
   /**
-   * The name of the review to add an rejecting reviewer.
+   * The name of the issue to add an rejecting reviewer.
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
   comment: string;
 }
 
-export interface RequestReviewRequest {
+export interface RequestIssueRequest {
   /**
-   * The name of the review to request a review.
+   * The name of the issue to request a review.
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
@@ -165,8 +165,7 @@ export interface RequestReviewRequest {
 
 export interface Review {
   /**
-   * The name of the review.
-   * `review` is a system generated ID.
+   * The name of the issue.
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
@@ -174,19 +173,19 @@ export interface Review {
   uid: string;
   title: string;
   /**
-   * The plan associated with the review.
+   * The plan associated with the issue.
    * Can be empty.
    * Format: projects/{project}/plans/{plan}
    */
   plan: string;
   /**
-   * The rollout associated with the review.
+   * The rollout associated with the issue.
    * Can be empty.
    * Format: projects/{project}/rollouts/{rollout}
    */
   rollout: string;
   description: string;
-  status: ReviewStatus;
+  status: IssueStatus;
   /** Format: users/hello@world.com */
   assignee: string;
   assigneeAttention: boolean;
@@ -432,27 +431,27 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
   }
 }
 
-export interface CreateReviewCommentRequest {
+export interface CreateIssueCommentRequest {
   /**
-   * The review name
+   * The issue name
    * Format: projects/{project}/reviews/{review}
    */
   parent: string;
-  reviewComment?: ReviewComment;
+  issueComment?: IssueComment;
 }
 
-export interface UpdateReviewCommentRequest {
+export interface UpdateIssueCommentRequest {
   /**
-   * The review name
+   * The issue name
    * Format: projects/{project}/reviews/{review}
    */
   parent: string;
-  reviewComment?: ReviewComment;
+  issueComment?: IssueComment;
   /** The list of fields to update. */
   updateMask?: string[];
 }
 
-export interface ReviewComment {
+export interface IssueComment {
   uid: string;
   comment: string;
   /** TODO: use struct message instead. */
@@ -461,12 +460,12 @@ export interface ReviewComment {
   updateTime?: Date;
 }
 
-function createBaseGetReviewRequest(): GetReviewRequest {
+function createBaseGetIssueRequest(): GetIssueRequest {
   return { name: "", force: false };
 }
 
-export const GetReviewRequest = {
-  encode(message: GetReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const GetIssueRequest = {
+  encode(message: GetIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -476,10 +475,10 @@ export const GetReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetReviewRequest();
+    const message = createBaseGetIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -506,38 +505,38 @@ export const GetReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): GetReviewRequest {
+  fromJSON(object: any): GetIssueRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       force: isSet(object.force) ? Boolean(object.force) : false,
     };
   },
 
-  toJSON(message: GetReviewRequest): unknown {
+  toJSON(message: GetIssueRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.force !== undefined && (obj.force = message.force);
     return obj;
   },
 
-  create(base?: DeepPartial<GetReviewRequest>): GetReviewRequest {
-    return GetReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<GetIssueRequest>): GetIssueRequest {
+    return GetIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<GetReviewRequest>): GetReviewRequest {
-    const message = createBaseGetReviewRequest();
+  fromPartial(object: DeepPartial<GetIssueRequest>): GetIssueRequest {
+    const message = createBaseGetIssueRequest();
     message.name = object.name ?? "";
     message.force = object.force ?? false;
     return message;
   },
 };
 
-function createBaseCreateReviewRequest(): CreateReviewRequest {
+function createBaseCreateIssueRequest(): CreateIssueRequest {
   return { parent: "", review: undefined };
 }
 
-export const CreateReviewRequest = {
-  encode(message: CreateReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const CreateIssueRequest = {
+  encode(message: CreateIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
@@ -547,10 +546,10 @@ export const CreateReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateReviewRequest();
+    const message = createBaseCreateIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -577,26 +576,26 @@ export const CreateReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): CreateReviewRequest {
+  fromJSON(object: any): CreateIssueRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       review: isSet(object.review) ? Review.fromJSON(object.review) : undefined,
     };
   },
 
-  toJSON(message: CreateReviewRequest): unknown {
+  toJSON(message: CreateIssueRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
     message.review !== undefined && (obj.review = message.review ? Review.toJSON(message.review) : undefined);
     return obj;
   },
 
-  create(base?: DeepPartial<CreateReviewRequest>): CreateReviewRequest {
-    return CreateReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<CreateIssueRequest>): CreateIssueRequest {
+    return CreateIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<CreateReviewRequest>): CreateReviewRequest {
-    const message = createBaseCreateReviewRequest();
+  fromPartial(object: DeepPartial<CreateIssueRequest>): CreateIssueRequest {
+    const message = createBaseCreateIssueRequest();
     message.parent = object.parent ?? "";
     message.review = (object.review !== undefined && object.review !== null)
       ? Review.fromPartial(object.review)
@@ -605,12 +604,12 @@ export const CreateReviewRequest = {
   },
 };
 
-function createBaseListReviewsRequest(): ListReviewsRequest {
+function createBaseListIssuesRequest(): ListIssuesRequest {
   return { parent: "", pageSize: 0, pageToken: "" };
 }
 
-export const ListReviewsRequest = {
-  encode(message: ListReviewsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListIssuesRequest = {
+  encode(message: ListIssuesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
@@ -623,10 +622,10 @@ export const ListReviewsRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListReviewsRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListIssuesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListReviewsRequest();
+    const message = createBaseListIssuesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -660,7 +659,7 @@ export const ListReviewsRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListReviewsRequest {
+  fromJSON(object: any): ListIssuesRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
@@ -668,7 +667,7 @@ export const ListReviewsRequest = {
     };
   },
 
-  toJSON(message: ListReviewsRequest): unknown {
+  toJSON(message: ListIssuesRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
@@ -676,12 +675,12 @@ export const ListReviewsRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListReviewsRequest>): ListReviewsRequest {
-    return ListReviewsRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListIssuesRequest>): ListIssuesRequest {
+    return ListIssuesRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListReviewsRequest>): ListReviewsRequest {
-    const message = createBaseListReviewsRequest();
+  fromPartial(object: DeepPartial<ListIssuesRequest>): ListIssuesRequest {
+    const message = createBaseListIssuesRequest();
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
@@ -689,12 +688,12 @@ export const ListReviewsRequest = {
   },
 };
 
-function createBaseListReviewsResponse(): ListReviewsResponse {
+function createBaseListIssuesResponse(): ListIssuesResponse {
   return { reviews: [], nextPageToken: "" };
 }
 
-export const ListReviewsResponse = {
-  encode(message: ListReviewsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListIssuesResponse = {
+  encode(message: ListIssuesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.reviews) {
       Review.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -704,10 +703,10 @@ export const ListReviewsResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListReviewsResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListIssuesResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListReviewsResponse();
+    const message = createBaseListIssuesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -734,14 +733,14 @@ export const ListReviewsResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListReviewsResponse {
+  fromJSON(object: any): ListIssuesResponse {
     return {
       reviews: Array.isArray(object?.reviews) ? object.reviews.map((e: any) => Review.fromJSON(e)) : [],
       nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
     };
   },
 
-  toJSON(message: ListReviewsResponse): unknown {
+  toJSON(message: ListIssuesResponse): unknown {
     const obj: any = {};
     if (message.reviews) {
       obj.reviews = message.reviews.map((e) => e ? Review.toJSON(e) : undefined);
@@ -752,24 +751,24 @@ export const ListReviewsResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListReviewsResponse>): ListReviewsResponse {
-    return ListReviewsResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListIssuesResponse>): ListIssuesResponse {
+    return ListIssuesResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListReviewsResponse>): ListReviewsResponse {
-    const message = createBaseListReviewsResponse();
+  fromPartial(object: DeepPartial<ListIssuesResponse>): ListIssuesResponse {
+    const message = createBaseListIssuesResponse();
     message.reviews = object.reviews?.map((e) => Review.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
 
-function createBaseUpdateReviewRequest(): UpdateReviewRequest {
+function createBaseUpdateIssueRequest(): UpdateIssueRequest {
   return { review: undefined, updateMask: undefined };
 }
 
-export const UpdateReviewRequest = {
-  encode(message: UpdateReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const UpdateIssueRequest = {
+  encode(message: UpdateIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.review !== undefined) {
       Review.encode(message.review, writer.uint32(10).fork()).ldelim();
     }
@@ -779,10 +778,10 @@ export const UpdateReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateReviewRequest();
+    const message = createBaseUpdateIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -809,26 +808,26 @@ export const UpdateReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): UpdateReviewRequest {
+  fromJSON(object: any): UpdateIssueRequest {
     return {
       review: isSet(object.review) ? Review.fromJSON(object.review) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
-  toJSON(message: UpdateReviewRequest): unknown {
+  toJSON(message: UpdateIssueRequest): unknown {
     const obj: any = {};
     message.review !== undefined && (obj.review = message.review ? Review.toJSON(message.review) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
-  create(base?: DeepPartial<UpdateReviewRequest>): UpdateReviewRequest {
-    return UpdateReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateIssueRequest>): UpdateIssueRequest {
+    return UpdateIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<UpdateReviewRequest>): UpdateReviewRequest {
-    const message = createBaseUpdateReviewRequest();
+  fromPartial(object: DeepPartial<UpdateIssueRequest>): UpdateIssueRequest {
+    const message = createBaseUpdateIssueRequest();
     message.review = (object.review !== undefined && object.review !== null)
       ? Review.fromPartial(object.review)
       : undefined;
@@ -837,25 +836,25 @@ export const UpdateReviewRequest = {
   },
 };
 
-function createBaseBatchUpdateReviewsRequest(): BatchUpdateReviewsRequest {
+function createBaseBatchUpdateIssuesRequest(): BatchUpdateIssuesRequest {
   return { parent: "", requests: [] };
 }
 
-export const BatchUpdateReviewsRequest = {
-  encode(message: BatchUpdateReviewsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const BatchUpdateIssuesRequest = {
+  encode(message: BatchUpdateIssuesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
     for (const v of message.requests) {
-      UpdateReviewRequest.encode(v!, writer.uint32(18).fork()).ldelim();
+      UpdateIssueRequest.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateReviewsRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateIssuesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchUpdateReviewsRequest();
+    const message = createBaseBatchUpdateIssuesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -871,7 +870,7 @@ export const BatchUpdateReviewsRequest = {
             break;
           }
 
-          message.requests.push(UpdateReviewRequest.decode(reader, reader.uint32()));
+          message.requests.push(UpdateIssueRequest.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -882,52 +881,52 @@ export const BatchUpdateReviewsRequest = {
     return message;
   },
 
-  fromJSON(object: any): BatchUpdateReviewsRequest {
+  fromJSON(object: any): BatchUpdateIssuesRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      requests: Array.isArray(object?.requests) ? object.requests.map((e: any) => UpdateReviewRequest.fromJSON(e)) : [],
+      requests: Array.isArray(object?.requests) ? object.requests.map((e: any) => UpdateIssueRequest.fromJSON(e)) : [],
     };
   },
 
-  toJSON(message: BatchUpdateReviewsRequest): unknown {
+  toJSON(message: BatchUpdateIssuesRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
     if (message.requests) {
-      obj.requests = message.requests.map((e) => e ? UpdateReviewRequest.toJSON(e) : undefined);
+      obj.requests = message.requests.map((e) => e ? UpdateIssueRequest.toJSON(e) : undefined);
     } else {
       obj.requests = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<BatchUpdateReviewsRequest>): BatchUpdateReviewsRequest {
-    return BatchUpdateReviewsRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchUpdateIssuesRequest>): BatchUpdateIssuesRequest {
+    return BatchUpdateIssuesRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<BatchUpdateReviewsRequest>): BatchUpdateReviewsRequest {
-    const message = createBaseBatchUpdateReviewsRequest();
+  fromPartial(object: DeepPartial<BatchUpdateIssuesRequest>): BatchUpdateIssuesRequest {
+    const message = createBaseBatchUpdateIssuesRequest();
     message.parent = object.parent ?? "";
-    message.requests = object.requests?.map((e) => UpdateReviewRequest.fromPartial(e)) || [];
+    message.requests = object.requests?.map((e) => UpdateIssueRequest.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseBatchUpdateReviewsResponse(): BatchUpdateReviewsResponse {
+function createBaseBatchUpdateIssuesResponse(): BatchUpdateIssuesResponse {
   return { reviews: [] };
 }
 
-export const BatchUpdateReviewsResponse = {
-  encode(message: BatchUpdateReviewsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const BatchUpdateIssuesResponse = {
+  encode(message: BatchUpdateIssuesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.reviews) {
       Review.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateReviewsResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateIssuesResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchUpdateReviewsResponse();
+    const message = createBaseBatchUpdateIssuesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -947,11 +946,11 @@ export const BatchUpdateReviewsResponse = {
     return message;
   },
 
-  fromJSON(object: any): BatchUpdateReviewsResponse {
+  fromJSON(object: any): BatchUpdateIssuesResponse {
     return { reviews: Array.isArray(object?.reviews) ? object.reviews.map((e: any) => Review.fromJSON(e)) : [] };
   },
 
-  toJSON(message: BatchUpdateReviewsResponse): unknown {
+  toJSON(message: BatchUpdateIssuesResponse): unknown {
     const obj: any = {};
     if (message.reviews) {
       obj.reviews = message.reviews.map((e) => e ? Review.toJSON(e) : undefined);
@@ -961,23 +960,23 @@ export const BatchUpdateReviewsResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<BatchUpdateReviewsResponse>): BatchUpdateReviewsResponse {
-    return BatchUpdateReviewsResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchUpdateIssuesResponse>): BatchUpdateIssuesResponse {
+    return BatchUpdateIssuesResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<BatchUpdateReviewsResponse>): BatchUpdateReviewsResponse {
-    const message = createBaseBatchUpdateReviewsResponse();
+  fromPartial(object: DeepPartial<BatchUpdateIssuesResponse>): BatchUpdateIssuesResponse {
+    const message = createBaseBatchUpdateIssuesResponse();
     message.reviews = object.reviews?.map((e) => Review.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseApproveReviewRequest(): ApproveReviewRequest {
+function createBaseApproveIssueRequest(): ApproveIssueRequest {
   return { name: "", comment: "" };
 }
 
-export const ApproveReviewRequest = {
-  encode(message: ApproveReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ApproveIssueRequest = {
+  encode(message: ApproveIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -987,10 +986,10 @@ export const ApproveReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ApproveReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ApproveIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseApproveReviewRequest();
+    const message = createBaseApproveIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1017,38 +1016,38 @@ export const ApproveReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): ApproveReviewRequest {
+  fromJSON(object: any): ApproveIssueRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
     };
   },
 
-  toJSON(message: ApproveReviewRequest): unknown {
+  toJSON(message: ApproveIssueRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
-  create(base?: DeepPartial<ApproveReviewRequest>): ApproveReviewRequest {
-    return ApproveReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ApproveIssueRequest>): ApproveIssueRequest {
+    return ApproveIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ApproveReviewRequest>): ApproveReviewRequest {
-    const message = createBaseApproveReviewRequest();
+  fromPartial(object: DeepPartial<ApproveIssueRequest>): ApproveIssueRequest {
+    const message = createBaseApproveIssueRequest();
     message.name = object.name ?? "";
     message.comment = object.comment ?? "";
     return message;
   },
 };
 
-function createBaseRejectReviewRequest(): RejectReviewRequest {
+function createBaseRejectIssueRequest(): RejectIssueRequest {
   return { name: "", comment: "" };
 }
 
-export const RejectReviewRequest = {
-  encode(message: RejectReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const RejectIssueRequest = {
+  encode(message: RejectIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -1058,10 +1057,10 @@ export const RejectReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): RejectReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): RejectIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRejectReviewRequest();
+    const message = createBaseRejectIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1088,38 +1087,38 @@ export const RejectReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): RejectReviewRequest {
+  fromJSON(object: any): RejectIssueRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
     };
   },
 
-  toJSON(message: RejectReviewRequest): unknown {
+  toJSON(message: RejectIssueRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
-  create(base?: DeepPartial<RejectReviewRequest>): RejectReviewRequest {
-    return RejectReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<RejectIssueRequest>): RejectIssueRequest {
+    return RejectIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<RejectReviewRequest>): RejectReviewRequest {
-    const message = createBaseRejectReviewRequest();
+  fromPartial(object: DeepPartial<RejectIssueRequest>): RejectIssueRequest {
+    const message = createBaseRejectIssueRequest();
     message.name = object.name ?? "";
     message.comment = object.comment ?? "";
     return message;
   },
 };
 
-function createBaseRequestReviewRequest(): RequestReviewRequest {
+function createBaseRequestIssueRequest(): RequestIssueRequest {
   return { name: "", comment: "" };
 }
 
-export const RequestReviewRequest = {
-  encode(message: RequestReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const RequestIssueRequest = {
+  encode(message: RequestIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -1129,10 +1128,10 @@ export const RequestReviewRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): RequestReviewRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): RequestIssueRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRequestReviewRequest();
+    const message = createBaseRequestIssueRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1159,26 +1158,26 @@ export const RequestReviewRequest = {
     return message;
   },
 
-  fromJSON(object: any): RequestReviewRequest {
+  fromJSON(object: any): RequestIssueRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
     };
   },
 
-  toJSON(message: RequestReviewRequest): unknown {
+  toJSON(message: RequestIssueRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
-  create(base?: DeepPartial<RequestReviewRequest>): RequestReviewRequest {
-    return RequestReviewRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<RequestIssueRequest>): RequestIssueRequest {
+    return RequestIssueRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<RequestReviewRequest>): RequestReviewRequest {
-    const message = createBaseRequestReviewRequest();
+  fromPartial(object: DeepPartial<RequestIssueRequest>): RequestIssueRequest {
+    const message = createBaseRequestIssueRequest();
     message.name = object.name ?? "";
     message.comment = object.comment ?? "";
     return message;
@@ -1406,7 +1405,7 @@ export const Review = {
       plan: isSet(object.plan) ? String(object.plan) : "",
       rollout: isSet(object.rollout) ? String(object.rollout) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      status: isSet(object.status) ? reviewStatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? issueStatusFromJSON(object.status) : 0,
       assignee: isSet(object.assignee) ? String(object.assignee) : "",
       assigneeAttention: isSet(object.assigneeAttention) ? Boolean(object.assigneeAttention) : false,
       approvalTemplates: Array.isArray(object?.approvalTemplates)
@@ -1430,7 +1429,7 @@ export const Review = {
     message.plan !== undefined && (obj.plan = message.plan);
     message.rollout !== undefined && (obj.rollout = message.rollout);
     message.description !== undefined && (obj.description = message.description);
-    message.status !== undefined && (obj.status = reviewStatusToJSON(message.status));
+    message.status !== undefined && (obj.status = issueStatusToJSON(message.status));
     message.assignee !== undefined && (obj.assignee = message.assignee);
     message.assigneeAttention !== undefined && (obj.assigneeAttention = message.assigneeAttention);
     if (message.approvalTemplates) {
@@ -1888,25 +1887,25 @@ export const ApprovalNode = {
   },
 };
 
-function createBaseCreateReviewCommentRequest(): CreateReviewCommentRequest {
-  return { parent: "", reviewComment: undefined };
+function createBaseCreateIssueCommentRequest(): CreateIssueCommentRequest {
+  return { parent: "", issueComment: undefined };
 }
 
-export const CreateReviewCommentRequest = {
-  encode(message: CreateReviewCommentRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const CreateIssueCommentRequest = {
+  encode(message: CreateIssueCommentRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
-    if (message.reviewComment !== undefined) {
-      ReviewComment.encode(message.reviewComment, writer.uint32(18).fork()).ldelim();
+    if (message.issueComment !== undefined) {
+      IssueComment.encode(message.issueComment, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateReviewCommentRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateIssueCommentRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateReviewCommentRequest();
+    const message = createBaseCreateIssueCommentRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1922,7 +1921,7 @@ export const CreateReviewCommentRequest = {
             break;
           }
 
-          message.reviewComment = ReviewComment.decode(reader, reader.uint32());
+          message.issueComment = IssueComment.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1933,46 +1932,46 @@ export const CreateReviewCommentRequest = {
     return message;
   },
 
-  fromJSON(object: any): CreateReviewCommentRequest {
+  fromJSON(object: any): CreateIssueCommentRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      reviewComment: isSet(object.reviewComment) ? ReviewComment.fromJSON(object.reviewComment) : undefined,
+      issueComment: isSet(object.issueComment) ? IssueComment.fromJSON(object.issueComment) : undefined,
     };
   },
 
-  toJSON(message: CreateReviewCommentRequest): unknown {
+  toJSON(message: CreateIssueCommentRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
-    message.reviewComment !== undefined &&
-      (obj.reviewComment = message.reviewComment ? ReviewComment.toJSON(message.reviewComment) : undefined);
+    message.issueComment !== undefined &&
+      (obj.issueComment = message.issueComment ? IssueComment.toJSON(message.issueComment) : undefined);
     return obj;
   },
 
-  create(base?: DeepPartial<CreateReviewCommentRequest>): CreateReviewCommentRequest {
-    return CreateReviewCommentRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<CreateIssueCommentRequest>): CreateIssueCommentRequest {
+    return CreateIssueCommentRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<CreateReviewCommentRequest>): CreateReviewCommentRequest {
-    const message = createBaseCreateReviewCommentRequest();
+  fromPartial(object: DeepPartial<CreateIssueCommentRequest>): CreateIssueCommentRequest {
+    const message = createBaseCreateIssueCommentRequest();
     message.parent = object.parent ?? "";
-    message.reviewComment = (object.reviewComment !== undefined && object.reviewComment !== null)
-      ? ReviewComment.fromPartial(object.reviewComment)
+    message.issueComment = (object.issueComment !== undefined && object.issueComment !== null)
+      ? IssueComment.fromPartial(object.issueComment)
       : undefined;
     return message;
   },
 };
 
-function createBaseUpdateReviewCommentRequest(): UpdateReviewCommentRequest {
-  return { parent: "", reviewComment: undefined, updateMask: undefined };
+function createBaseUpdateIssueCommentRequest(): UpdateIssueCommentRequest {
+  return { parent: "", issueComment: undefined, updateMask: undefined };
 }
 
-export const UpdateReviewCommentRequest = {
-  encode(message: UpdateReviewCommentRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const UpdateIssueCommentRequest = {
+  encode(message: UpdateIssueCommentRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
-    if (message.reviewComment !== undefined) {
-      ReviewComment.encode(message.reviewComment, writer.uint32(18).fork()).ldelim();
+    if (message.issueComment !== undefined) {
+      IssueComment.encode(message.issueComment, writer.uint32(18).fork()).ldelim();
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(26).fork()).ldelim();
@@ -1980,10 +1979,10 @@ export const UpdateReviewCommentRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateReviewCommentRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateIssueCommentRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateReviewCommentRequest();
+    const message = createBaseUpdateIssueCommentRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1999,7 +1998,7 @@ export const UpdateReviewCommentRequest = {
             break;
           }
 
-          message.reviewComment = ReviewComment.decode(reader, reader.uint32());
+          message.issueComment = IssueComment.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -2017,44 +2016,44 @@ export const UpdateReviewCommentRequest = {
     return message;
   },
 
-  fromJSON(object: any): UpdateReviewCommentRequest {
+  fromJSON(object: any): UpdateIssueCommentRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      reviewComment: isSet(object.reviewComment) ? ReviewComment.fromJSON(object.reviewComment) : undefined,
+      issueComment: isSet(object.issueComment) ? IssueComment.fromJSON(object.issueComment) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
-  toJSON(message: UpdateReviewCommentRequest): unknown {
+  toJSON(message: UpdateIssueCommentRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
-    message.reviewComment !== undefined &&
-      (obj.reviewComment = message.reviewComment ? ReviewComment.toJSON(message.reviewComment) : undefined);
+    message.issueComment !== undefined &&
+      (obj.issueComment = message.issueComment ? IssueComment.toJSON(message.issueComment) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
-  create(base?: DeepPartial<UpdateReviewCommentRequest>): UpdateReviewCommentRequest {
-    return UpdateReviewCommentRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateIssueCommentRequest>): UpdateIssueCommentRequest {
+    return UpdateIssueCommentRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<UpdateReviewCommentRequest>): UpdateReviewCommentRequest {
-    const message = createBaseUpdateReviewCommentRequest();
+  fromPartial(object: DeepPartial<UpdateIssueCommentRequest>): UpdateIssueCommentRequest {
+    const message = createBaseUpdateIssueCommentRequest();
     message.parent = object.parent ?? "";
-    message.reviewComment = (object.reviewComment !== undefined && object.reviewComment !== null)
-      ? ReviewComment.fromPartial(object.reviewComment)
+    message.issueComment = (object.issueComment !== undefined && object.issueComment !== null)
+      ? IssueComment.fromPartial(object.issueComment)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
 
-function createBaseReviewComment(): ReviewComment {
+function createBaseIssueComment(): IssueComment {
   return { uid: "", comment: "", payload: "", createTime: undefined, updateTime: undefined };
 }
 
-export const ReviewComment = {
-  encode(message: ReviewComment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const IssueComment = {
+  encode(message: IssueComment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.uid !== "") {
       writer.uint32(10).string(message.uid);
     }
@@ -2073,10 +2072,10 @@ export const ReviewComment = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ReviewComment {
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseReviewComment();
+    const message = createBaseIssueComment();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2124,7 +2123,7 @@ export const ReviewComment = {
     return message;
   },
 
-  fromJSON(object: any): ReviewComment {
+  fromJSON(object: any): IssueComment {
     return {
       uid: isSet(object.uid) ? String(object.uid) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
@@ -2134,7 +2133,7 @@ export const ReviewComment = {
     };
   },
 
-  toJSON(message: ReviewComment): unknown {
+  toJSON(message: IssueComment): unknown {
     const obj: any = {};
     message.uid !== undefined && (obj.uid = message.uid);
     message.comment !== undefined && (obj.comment = message.comment);
@@ -2144,12 +2143,12 @@ export const ReviewComment = {
     return obj;
   },
 
-  create(base?: DeepPartial<ReviewComment>): ReviewComment {
-    return ReviewComment.fromPartial(base ?? {});
+  create(base?: DeepPartial<IssueComment>): IssueComment {
+    return IssueComment.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ReviewComment>): ReviewComment {
-    const message = createBaseReviewComment();
+  fromPartial(object: DeepPartial<IssueComment>): IssueComment {
+    const message = createBaseIssueComment();
     message.uid = object.uid ?? "";
     message.comment = object.comment ?? "";
     message.payload = object.payload ?? "";
@@ -2159,14 +2158,14 @@ export const ReviewComment = {
   },
 };
 
-export type ReviewServiceDefinition = typeof ReviewServiceDefinition;
-export const ReviewServiceDefinition = {
-  name: "ReviewService",
-  fullName: "bytebase.v1.ReviewService",
+export type IssueServiceDefinition = typeof IssueServiceDefinition;
+export const IssueServiceDefinition = {
+  name: "IssueService",
+  fullName: "bytebase.v1.IssueService",
   methods: {
-    getReview: {
-      name: "GetReview",
-      requestType: GetReviewRequest,
+    getIssue: {
+      name: "GetIssue",
+      requestType: GetIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2214,9 +2213,9 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    createReview: {
-      name: "CreateReview",
-      requestType: CreateReviewRequest,
+    createIssue: {
+      name: "CreateIssue",
+      requestType: CreateIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2272,11 +2271,11 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    listReviews: {
-      name: "ListReviews",
-      requestType: ListReviewsRequest,
+    listIssues: {
+      name: "ListIssues",
+      requestType: ListIssuesRequest,
       requestStream: false,
-      responseType: ListReviewsResponse,
+      responseType: ListIssuesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -2322,9 +2321,9 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    updateReview: {
-      name: "UpdateReview",
-      requestType: UpdateReviewRequest,
+    updateIssue: {
+      name: "UpdateIssue",
+      requestType: UpdateIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2389,17 +2388,17 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    createReviewComment: {
-      name: "CreateReviewComment",
-      requestType: CreateReviewCommentRequest,
+    createIssueComment: {
+      name: "CreateIssueComment",
+      requestType: CreateIssueCommentRequest,
       requestStream: false,
-      responseType: ReviewComment,
+      responseType: IssueComment,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [
             new Uint8Array([
-              21,
+              20,
               112,
               97,
               114,
@@ -2407,12 +2406,11 @@ export const ReviewServiceDefinition = {
               110,
               116,
               44,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               95,
               99,
               111,
@@ -2425,15 +2423,14 @@ export const ReviewServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              59,
               58,
-              14,
-              114,
-              101,
-              118,
+              58,
+              13,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               95,
               99,
               111,
@@ -2490,17 +2487,17 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    updateReviewComment: {
-      name: "UpdateReviewComment",
-      requestType: UpdateReviewCommentRequest,
+    updateIssueComment: {
+      name: "UpdateIssueComment",
+      requestType: UpdateIssueCommentRequest,
       requestStream: false,
-      responseType: ReviewComment,
+      responseType: IssueComment,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [
             new Uint8Array([
-              33,
+              32,
               112,
               97,
               114,
@@ -2508,12 +2505,11 @@ export const ReviewServiceDefinition = {
               110,
               116,
               44,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               95,
               99,
               111,
@@ -2538,15 +2534,14 @@ export const ReviewServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              59,
               58,
-              14,
-              114,
-              101,
-              118,
+              58,
+              13,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               95,
               99,
               111,
@@ -2603,11 +2598,11 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    batchUpdateReviews: {
-      name: "BatchUpdateReviews",
-      requestType: BatchUpdateReviewsRequest,
+    batchUpdateIssues: {
+      name: "BatchUpdateIssues",
+      requestType: BatchUpdateIssuesRequest,
       requestStream: false,
-      responseType: BatchUpdateReviewsResponse,
+      responseType: BatchUpdateIssuesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -2667,9 +2662,9 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    approveReview: {
-      name: "ApproveReview",
-      requestType: ApproveReviewRequest,
+    approveIssue: {
+      name: "ApproveIssue",
+      requestType: ApproveIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2727,9 +2722,9 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    rejectReview: {
-      name: "RejectReview",
-      requestType: RejectReviewRequest,
+    rejectIssue: {
+      name: "RejectIssue",
+      requestType: RejectIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2786,9 +2781,9 @@ export const ReviewServiceDefinition = {
         },
       },
     },
-    requestReview: {
-      name: "RequestReview",
-      requestType: RequestReviewRequest,
+    requestIssue: {
+      name: "RequestIssue",
+      requestType: RequestIssueRequest,
       requestStream: false,
       responseType: Review,
       responseStream: false,
@@ -2849,54 +2844,54 @@ export const ReviewServiceDefinition = {
   },
 } as const;
 
-export interface ReviewServiceImplementation<CallContextExt = {}> {
-  getReview(request: GetReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  createReview(request: CreateReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  listReviews(
-    request: ListReviewsRequest,
+export interface IssueServiceImplementation<CallContextExt = {}> {
+  getIssue(request: GetIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  createIssue(request: CreateIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  listIssues(
+    request: ListIssuesRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListReviewsResponse>>;
-  updateReview(request: UpdateReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  createReviewComment(
-    request: CreateReviewCommentRequest,
+  ): Promise<DeepPartial<ListIssuesResponse>>;
+  updateIssue(request: UpdateIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  createIssueComment(
+    request: CreateIssueCommentRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ReviewComment>>;
-  updateReviewComment(
-    request: UpdateReviewCommentRequest,
+  ): Promise<DeepPartial<IssueComment>>;
+  updateIssueComment(
+    request: UpdateIssueCommentRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ReviewComment>>;
-  batchUpdateReviews(
-    request: BatchUpdateReviewsRequest,
+  ): Promise<DeepPartial<IssueComment>>;
+  batchUpdateIssues(
+    request: BatchUpdateIssuesRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchUpdateReviewsResponse>>;
-  approveReview(request: ApproveReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  rejectReview(request: RejectReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  requestReview(request: RequestReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  ): Promise<DeepPartial<BatchUpdateIssuesResponse>>;
+  approveIssue(request: ApproveIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  rejectIssue(request: RejectIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  requestIssue(request: RequestIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
 }
 
-export interface ReviewServiceClient<CallOptionsExt = {}> {
-  getReview(request: DeepPartial<GetReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  createReview(request: DeepPartial<CreateReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  listReviews(
-    request: DeepPartial<ListReviewsRequest>,
+export interface IssueServiceClient<CallOptionsExt = {}> {
+  getIssue(request: DeepPartial<GetIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  createIssue(request: DeepPartial<CreateIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  listIssues(
+    request: DeepPartial<ListIssuesRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ListReviewsResponse>;
-  updateReview(request: DeepPartial<UpdateReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  createReviewComment(
-    request: DeepPartial<CreateReviewCommentRequest>,
+  ): Promise<ListIssuesResponse>;
+  updateIssue(request: DeepPartial<UpdateIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  createIssueComment(
+    request: DeepPartial<CreateIssueCommentRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ReviewComment>;
-  updateReviewComment(
-    request: DeepPartial<UpdateReviewCommentRequest>,
+  ): Promise<IssueComment>;
+  updateIssueComment(
+    request: DeepPartial<UpdateIssueCommentRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ReviewComment>;
-  batchUpdateReviews(
-    request: DeepPartial<BatchUpdateReviewsRequest>,
+  ): Promise<IssueComment>;
+  batchUpdateIssues(
+    request: DeepPartial<BatchUpdateIssuesRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchUpdateReviewsResponse>;
-  approveReview(request: DeepPartial<ApproveReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  rejectReview(request: DeepPartial<RejectReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  requestReview(request: DeepPartial<RequestReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  ): Promise<BatchUpdateIssuesResponse>;
+  approveIssue(request: DeepPartial<ApproveIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  rejectIssue(request: DeepPartial<RejectIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  requestIssue(request: DeepPartial<RequestIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

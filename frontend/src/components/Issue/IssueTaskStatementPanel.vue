@@ -39,7 +39,7 @@
     </div>
 
     <div class="space-x-2 flex items-center">
-      <template v-if="(create || state.editing) && !readonly">
+      <template v-if="create || state.editing">
         <NCheckbox
           v-if="allowFormatOnSave"
           v-model:checked="formatOnSave"

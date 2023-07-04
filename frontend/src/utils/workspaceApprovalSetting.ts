@@ -27,7 +27,7 @@ import {
   approvalNode_GroupValueToJSON,
   ApprovalNode_Type,
   ApprovalStep_Type,
-} from "@/types/proto/v1/review_service";
+} from "@/types/proto/v1/issue_service";
 import { useSettingV1Store, useUserStore } from "@/store";
 import {
   buildCELExpr,

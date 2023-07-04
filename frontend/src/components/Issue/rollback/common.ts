@@ -23,7 +23,7 @@ import {
 } from "@/utils";
 import { flattenTaskList, useIssueLogic } from "../logic";
 import {
-  useReviewV1Store,
+  useIssueV1Store,
   useCurrentUserV1,
   useDatabaseV1Store,
   useIssueStore,
@@ -188,7 +188,7 @@ export const useRollbackLogic = () => {
       const issueEntity = issue.value as Issue;
       const action = on ? "Enable" : "Disable";
       try {
-        await useReviewV1Store().createReviewComment({
+        await useIssueV1Store().createIssueComment({
           reviewId: issueEntity.id,
           comment: `${action} SQL rollback log for task [${taskEntity.name}].`,
           payload: {
@@ -261,7 +261,7 @@ export const maybeCreateBackTraceComments = async (newIssue: Issue) => {
       `[${fromTask.name}]`,
     ].join(" ");
     try {
-      await useReviewV1Store().createReviewComment({
+      await useIssueV1Store().createIssueComment({
         reviewId: fromIssue.id,
         comment,
         payload: {

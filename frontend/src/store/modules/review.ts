@@ -8,9 +8,9 @@ import {
   ApprovalStep,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
-} from "@/types/proto/v1/review_service";
+} from "@/types/proto/v1/issue_service";
 import { useUserStore } from "./user";
-import { reviewServiceClient } from "@/grpcweb";
+import { issueServiceClient } from "@/grpcweb";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
@@ -29,7 +29,7 @@ const emptyReview = (issue: Issue) => {
 export const useReviewStore = defineStore("review", () => {
   const reviewsByName = ref(new Map<string, Review>());
 
-  const getReviewByIssue = (issue: Issue) => {
+  const getIssueByIssue = (issue: Issue) => {
     return reviewsByName.value.get(reviewName(issue)) ?? emptyReview(issue);
   };
 
@@ -42,7 +42,7 @@ export const useReviewStore = defineStore("review", () => {
     const name = reviewName(issue);
 
     try {
-      const review = await reviewServiceClient.getReview({
+      const review = await issueServiceClient.getIssue({
         name,
         force,
       });
@@ -53,24 +53,24 @@ export const useReviewStore = defineStore("review", () => {
     }
   };
 
-  const approveReview = async (issue: Issue, comment?: string) => {
-    const review = await reviewServiceClient.approveReview({
+  const approveIssue = async (issue: Issue, comment?: string) => {
+    const review = await issueServiceClient.approveIssue({
       name: reviewName(issue),
       comment,
     });
     await setReviewByIssue(issue, review);
   };
 
-  const rejectReview = async (issue: Issue, comment?: string) => {
-    const review = await reviewServiceClient.rejectReview({
+  const rejectIssue = async (issue: Issue, comment?: string) => {
+    const review = await issueServiceClient.rejectIssue({
       name: reviewName(issue),
       comment,
     });
     await setReviewByIssue(issue, review);
   };
 
-  const requestReview = async (issue: Issue, comment?: string) => {
-    const review = await reviewServiceClient.requestReview({
+  const requestIssue = async (issue: Issue, comment?: string) => {
+    const review = await issueServiceClient.requestIssue({
       name: reviewName(issue),
       comment,
     });
@@ -78,7 +78,7 @@ export const useReviewStore = defineStore("review", () => {
   };
 
   const regenerateReview = async (issue: Issue) => {
-    const review = await reviewServiceClient.updateReview({
+    const review = await issueServiceClient.updateIssue({
       review: {
         name: reviewName(issue),
         approvalFindingDone: false,
@@ -89,11 +89,11 @@ export const useReviewStore = defineStore("review", () => {
   };
 
   return {
-    getReviewByIssue,
+    getIssueByIssue,
     fetchReviewByIssue,
-    approveReview,
-    rejectReview,
-    requestReview,
+    approveIssue,
+    rejectIssue,
+    requestIssue,
     regenerateReview,
   };
 });

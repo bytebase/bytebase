@@ -151,7 +151,7 @@ import {
 
 import {
   databaseV1Slug,
-  isDatabaseV1Accessible,
+  isDatabaseV1Queryable,
   isPITRDatabaseV1,
   VueClass,
 } from "@/utils";
@@ -302,8 +302,8 @@ const preparePolicyList = () => {
   if (showSQLEditorLink.value) {
     usePolicyV1Store()
       .fetchPolicies({
-        resourceType: PolicyResourceType.DATABASE,
-        policyType: PolicyType.ACCESS_CONTROL,
+        policyType: PolicyType.WORKSPACE_IAM,
+        resourceType: PolicyResourceType.WORKSPACE,
       })
       .then((list) => (policyList.value = list));
   }
@@ -451,11 +451,7 @@ const showSQLEditorLink = computed(() => {
 });
 
 const allowQuery = (database: ComposedDatabase) => {
-  return isDatabaseV1Accessible(
-    database,
-    policyList.value,
-    currentUserV1.value
-  );
+  return isDatabaseV1Queryable(database, currentUserV1.value);
 };
 
 const showTenantIcon = computed(() => {
