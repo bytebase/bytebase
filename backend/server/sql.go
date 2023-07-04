@@ -59,6 +59,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		exec.Readonly = false
 		start := time.Now().UnixNano()
 
+		enableSensitive := s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil
+
 		singleSQLResults, queryErr := func() ([]api.SingleSQLResult, error) {
 			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 			if err != nil {
@@ -73,6 +75,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					ReadOnly:            false,
 					CurrentDatabase:     exec.DatabaseName,
 					SensitiveSchemaInfo: nil,
+					EnableSensitive:     enableSensitive,
 				})
 				if err != nil {
 					return nil, err
@@ -109,6 +112,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						ReadOnly:            false,
 						CurrentDatabase:     exec.DatabaseName,
 						SensitiveSchemaInfo: nil,
+						EnableSensitive:     enableSensitive,
 					})
 					if err != nil {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{
@@ -134,6 +138,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						ReadOnly:            false,
 						CurrentDatabase:     exec.DatabaseName,
 						SensitiveSchemaInfo: nil,
+						EnableSensitive:     enableSensitive,
 					})
 					if err != nil {
 						singleSQLResults = append(singleSQLResults, api.SingleSQLResult{

@@ -457,6 +457,8 @@ type QueryContext struct {
 	ReadOnly              bool
 	SensitiveDataMaskType SensitiveDataMaskType
 	SensitiveSchemaInfo   *SensitiveSchemaInfo
+	// EnableSensitive will set to be true if the database instance has license.
+	EnableSensitive bool
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string

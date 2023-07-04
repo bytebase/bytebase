@@ -136,14 +136,17 @@ message QueryResult {
   // Columns are masked or not.
   repeated bool masked = 4;
 
+  // Columns are sensitive or not.
+  repeated bool sensitive = 5;
+
   // The error message if the query failed.
-  string error = 5;
+  string error = 6;
 
   // The time it takes to execute the query.
-  google.protobuf.Duration latency = 6;
+  google.protobuf.Duration latency = 7;
 
   // The query statement for the result.
-  string statement = 7;
+  string statement = 8;
 }
 
 message QueryRow {

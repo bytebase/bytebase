@@ -32,6 +32,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -61,15 +62,23 @@ type SQLService struct {
 	schemaSyncer    *schemasync.Syncer
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewSQLService creates a SQLService.
-func NewSQLService(store *store.Store, schemaSyncer *schemasync.Syncer, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager) *SQLService {
+func NewSQLService(
+	store *store.Store,
+	schemaSyncer *schemasync.Syncer,
+	dbFactory *dbfactory.DBFactory,
+	activityManager *activity.Manager,
+	licenseService enterpriseAPI.LicenseService,
+) *SQLService {
 	return &SQLService{
 		store:           store,
 		schemaSyncer:    schemaSyncer,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		licenseService:  licenseService,
 	}
 }
 
@@ -343,6 +352,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
 		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 		SensitiveSchemaInfo:   sensitiveSchemaInfo,
+		EnableSensitive:       s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	durationNs := time.Now().UnixNano() - start
 	if err != nil {
@@ -845,6 +855,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
 		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 		SensitiveSchemaInfo:   sensitiveSchemaInfo,
+		EnableSensitive:       s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	select {
 	case <-ctx.Done():
