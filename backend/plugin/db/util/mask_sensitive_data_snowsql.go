@@ -95,12 +95,13 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 	for _, iSelectListElem := range selectList.AllSelect_list_elem() {
 		// TODO(zp): handle expression elem
 		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
-			// TODO(zp): handle object_name and alias
+			// TODO(zp): handle object_name
 			if columnElem.STAR() != nil {
 				result = append(result, fromFieldList...)
 			} else if columnElem.Column_name() != nil {
+				columnName := parser.NormalizeObjectNamePart(columnElem.Column_name().Id_())
 				for _, fromField := range fromFieldList {
-					if columnElem.Column_name().Id_().GetText() == fromField.name {
+					if fromField.name == columnName {
 						result = append(result, fromField)
 					}
 				}
@@ -135,6 +136,9 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFrom_clau
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sources(ctx snowparser.ITable_sourcesContext) ([]fieldInfo, error) {
+	if ctx == nil {
+		return nil, nil
+	}
 	allTableSources := ctx.AllTable_source()
 	var result []fieldInfo
 	// If there are multiple table sources, the default join type is CROSS JOIN.
@@ -188,6 +192,10 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sou
 
 // extractSnowsqlSensitiveFieldsJoin_clause extracts sensitive fields from join clause, and return the
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoin_clause(ctx snowparser.IJoin_clauseContext, left []fieldInfo) ([]fieldInfo, error) {
+	if ctx == nil {
+		return nil, nil
+	}
+
 	// Snowflake has 6 types of join:
 	// INNER JOIN, LEFT OUTER JOIN, RIGHT OUTER JOIN, FULL OUTER JOIN, CROSS JOIN, and NATURAL JOIN.
 	// Only the result(column num) of NATURAL JOIN may be reduced.
