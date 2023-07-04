@@ -2,9 +2,9 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { uniq, uniqBy } from "lodash-es";
 
-import { Issue, PresetRoleType } from "@/types";
+import { Issue as LegacyIssue, PresetRoleType } from "@/types";
 import {
-  Review,
+  Issue,
   ApprovalStep,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
@@ -15,82 +15,85 @@ import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
 
-const reviewName = (issue: Issue) => {
-  return `projects/${issue.project.id}/reviews/${issue.id}`;
+const issueName = (legacyIssue: LegacyIssue) => {
+  return `projects/${legacyIssue.project.id}/reviews/${legacyIssue.id}`;
 };
 
-const emptyReview = (issue: Issue) => {
-  return Review.fromJSON({
-    name: reviewName(issue),
+const emptyIssue = (legacyIssue: LegacyIssue) => {
+  return Issue.fromJSON({
+    name: issueName(legacyIssue),
     approvalFindingDone: false,
   });
 };
 
 export const useReviewStore = defineStore("review", () => {
-  const reviewsByName = ref(new Map<string, Review>());
+  const issuesByName = ref(new Map<string, Issue>());
 
-  const getIssueByIssue = (issue: Issue) => {
-    return reviewsByName.value.get(reviewName(issue)) ?? emptyReview(issue);
+  const getIssueByIssue = (issue: LegacyIssue) => {
+    return issuesByName.value.get(issueName(issue)) ?? emptyIssue(issue);
   };
 
-  const setReviewByIssue = async (issue: Issue, review: Review) => {
-    await fetchReviewApproversAndCandidates(issue, review);
-    reviewsByName.value.set(reviewName(issue), review);
+  const setReviewByIssue = async (legacyIssue: LegacyIssue, issue: Issue) => {
+    await fetchReviewApproversAndCandidates(legacyIssue, issue);
+    issuesByName.value.set(issueName(legacyIssue), issue);
   };
 
-  const fetchReviewByIssue = async (issue: Issue, force = false) => {
-    const name = reviewName(issue);
+  const fetchIssueByLegacyIssue = async (
+    legacyIssue: LegacyIssue,
+    force = false
+  ) => {
+    const name = issueName(legacyIssue);
 
     try {
-      const review = await issueServiceClient.getIssue({
+      const issue = await issueServiceClient.getIssue({
         name,
         force,
       });
-      await setReviewByIssue(issue, review);
-      return review;
+      await setReviewByIssue(legacyIssue, issue);
+      return issue;
     } catch (error) {
-      return Review.fromJSON({});
+      return Issue.fromJSON({});
     }
   };
 
-  const approveIssue = async (issue: Issue, comment?: string) => {
-    const review = await issueServiceClient.approveIssue({
-      name: reviewName(issue),
+  const approveIssue = async (legacyIssue: LegacyIssue, comment?: string) => {
+    const issue = await issueServiceClient.approveIssue({
+      name: issueName(legacyIssue),
       comment,
     });
-    await setReviewByIssue(issue, review);
+    await setReviewByIssue(legacyIssue, issue);
   };
 
-  const rejectIssue = async (issue: Issue, comment?: string) => {
-    const review = await issueServiceClient.rejectIssue({
-      name: reviewName(issue),
+  const rejectIssue = async (legacyIssue: LegacyIssue, comment?: string) => {
+    const issue = await issueServiceClient.rejectIssue({
+      name: issueName(legacyIssue),
       comment,
     });
-    await setReviewByIssue(issue, review);
+    await setReviewByIssue(legacyIssue, issue);
   };
 
-  const requestIssue = async (issue: Issue, comment?: string) => {
-    const review = await issueServiceClient.requestIssue({
-      name: reviewName(issue),
+  const requestIssue = async (legacyIssue: LegacyIssue, comment?: string) => {
+    const issue = await issueServiceClient.requestIssue({
+      name: issueName(legacyIssue),
       comment,
     });
-    await setReviewByIssue(issue, review);
+    await setReviewByIssue(legacyIssue, issue);
   };
 
-  const regenerateReview = async (issue: Issue) => {
-    const review = await issueServiceClient.updateIssue({
+  const regenerateReview = async (legacyIssue: LegacyIssue) => {
+    const issue = await issueServiceClient.updateIssue({
       review: {
-        name: reviewName(issue),
+        name: issueName(legacyIssue),
         approvalFindingDone: false,
       },
       updateMask: ["approval_finding_done"],
     });
-    await setReviewByIssue(issue, review);
+    await setReviewByIssue(legacyIssue, issue);
   };
 
   return {
     getIssueByIssue,
-    fetchReviewByIssue,
+    fetchReviewByIssue: fetchIssueByLegacyIssue,
     approveIssue,
     rejectIssue,
     requestIssue,
@@ -99,19 +102,21 @@ export const useReviewStore = defineStore("review", () => {
 });
 
 const fetchReviewApproversAndCandidates = async (
-  issue: Issue,
-  review: Review
+  legacyIssue: LegacyIssue,
+  issue: Issue
 ) => {
   const userStore = useUserStore();
-  const approvers = review.approvers.map((approver) => {
+  const approvers = issue.approvers.map((approver) => {
     return userStore.getUserByEmail(
       extractUserResourceName(approver.principal)
     );
   });
-  const candidates = review.approvalTemplates
+  const candidates = issue.approvalTemplates
     .flatMap((template) => {
       const steps = template.flow?.steps ?? [];
-      return steps.flatMap((step) => candidatesOfApprovalStep(issue, step));
+      return steps.flatMap((step) =>
+        candidatesOfApprovalStep(legacyIssue, step)
+      );
     })
     .map((user) => userStore.getUserByName(user));
   const users = [...approvers, ...candidates].filter(
@@ -120,11 +125,16 @@ const fetchReviewApproversAndCandidates = async (
   return uniqBy(users, "name");
 };
 
-export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
+export const candidatesOfApprovalStep = (
+  legacyIssue: LegacyIssue,
+  step: ApprovalStep
+) => {
   const workspaceMemberList = useUserStore().activeUserList.filter(
     (user) => user.userType === UserType.USER
   );
-  const project = useProjectV1Store().getProjectByUID(String(issue.project.id));
+  const project = useProjectV1Store().getProjectByUID(
+    String(legacyIssue.project.id)
+  );
   const projectMemberList = memberListInProjectV1(project, project.iamPolicy)
     .filter((member) => member.user.userType === UserType.USER)
     .map((member) => ({
@@ -167,7 +177,7 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
     };
     const candidatesForCustomRoles = (role: string) => {
       const project = useProjectV1Store().getProjectByUID(
-        String(issue.project.id)
+        String(legacyIssue.project.id)
       );
       const memberList = memberListInProjectV1(project, project.iamPolicy);
       return memberList
