@@ -1,3 +1,6 @@
 frontend/node_modules
 backend/server/dist
 bytebase-build
+scripts/Dockerfile*
+scripts/.air*
+scripts/.goreleaser*
