@@ -43,7 +43,13 @@
                   }}
                 </span>
               </template>
-              <template v-if="subscriptionStore.canUpgradeTrial" #startTrial>
+              <template v-if="!hasPermission" #startTrial>
+                {{ $t("subscription.contact-to-upgrade") }}
+              </template>
+              <template
+                v-else-if="subscriptionStore.canUpgradeTrial"
+                #startTrial
+              >
                 {{ $t("subscription.upgrade-trial") }}
               </template>
               <template v-else #startTrial>
@@ -74,7 +80,15 @@
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
-        <template v-if="subscriptionStore.canTrial">
+        <button
+          v-if="!hasPermission"
+          type="button"
+          class="btn-primary"
+          @click.prevent="$emit('cancel')"
+        >
+          {{ $t("common.ok") }}
+        </button>
+        <template v-else-if="subscriptionStore.canTrial">
           <button
             v-if="subscriptionStore.canUpgradeTrial"
             type="button"
@@ -112,10 +126,15 @@
 import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionV1Store, pushNotification } from "@/store";
+import {
+  useSubscriptionV1Store,
+  useCurrentUserV1,
+  pushNotification,
+} from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 const props = defineProps({
   feature: {
@@ -133,6 +152,10 @@ const { t } = useI18n();
 const router = useRouter();
 
 const subscriptionStore = useSubscriptionV1Store();
+const hasPermission = hasWorkspacePermissionV1(
+  "bb.permission.workspace.manage-subscription",
+  useCurrentUserV1().value.userRole
+);
 
 const instanceMissingLicense = computed(() => {
   return subscriptionStore.instanceMissingLicense(

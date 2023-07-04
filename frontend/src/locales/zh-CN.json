@@ -1897,6 +1897,7 @@
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
+    "contact-to-upgrade": "请联系 DBA 或所有者来升级到试用版",
     "upgrade-now": "现在升级",
     "instance-assignment": {
       "license": "证书",
