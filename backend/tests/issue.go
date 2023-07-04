@@ -271,7 +271,7 @@ func (ctl *controller) waitIssuePipelineWithNoApproval(ctx context.Context, id i
 }
 
 // waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipelineTaskImpl(ctx context.Context, id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
+func (ctl *controller) waitIssuePipelineTaskImpl(ctx context.Context, id int, approveFunc func(legacyIssue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
 	// Sleep for 1 second between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(1 * time.Second)
 
@@ -282,22 +282,22 @@ func (ctl *controller) waitIssuePipelineTaskImpl(ctx context.Context, id int, ap
 	log.Debug("Waiting for issue pipeline tasks.")
 	prevStatus := "UNKNOWN"
 	for range ticker.C {
-		issue, err := ctl.getIssue(id)
+		legacyIssue, err := ctl.getIssue(id)
 		if err != nil {
 			return api.TaskFailed, err
 		}
 
-		review, err := ctl.issueServiceClient.GetIssue(ctx, &v1.GetIssueRequest{
-			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
+		issue, err := ctl.issueServiceClient.GetIssue(ctx, &v1.GetIssueRequest{
+			Name: fmt.Sprintf("projects/%d/issues/%d", legacyIssue.ProjectID, legacyIssue.ID),
 		})
 		if err != nil {
 			return api.TaskFailed, err
 		}
-		if !review.ApprovalFindingDone {
+		if !issue.ApprovalFindingDone {
 			continue
 		}
 
-		status, err := getNextTaskStatus(issue)
+		status, err := getNextTaskStatus(legacyIssue)
 		if err != nil {
 			return status, err
 		}
@@ -310,7 +310,7 @@ func (ctl *controller) waitIssuePipelineTaskImpl(ctx context.Context, id int, ap
 			if approveOnce && approved {
 				return api.TaskDone, nil
 			}
-			if err := approveFunc(issue); err != nil {
+			if err := approveFunc(legacyIssue); err != nil {
 				if strings.Contains(err.Error(), "The task has not passed all the checks yet") {
 					continue
 				}

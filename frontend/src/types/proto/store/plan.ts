@@ -157,10 +157,10 @@ export interface PlanConfig_ChangeDatabaseConfig_RollbackDetail {
    */
   rollbackFromTask: string;
   /**
-   * rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
-   * Format: projects/{project}/reviews/{review}
+   * rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
+   * Format: projects/{project}/issues/{issue}
    */
-  rollbackFromReview: string;
+  rollbackFromIssue: string;
 }
 
 export interface PlanConfig_RestoreDatabaseConfig {
@@ -831,7 +831,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
 };
 
 function createBasePlanConfig_ChangeDatabaseConfig_RollbackDetail(): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
-  return { rollbackFromTask: "", rollbackFromReview: "" };
+  return { rollbackFromTask: "", rollbackFromIssue: "" };
 }
 
 export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
@@ -842,8 +842,8 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
     if (message.rollbackFromTask !== "") {
       writer.uint32(10).string(message.rollbackFromTask);
     }
-    if (message.rollbackFromReview !== "") {
-      writer.uint32(18).string(message.rollbackFromReview);
+    if (message.rollbackFromIssue !== "") {
+      writer.uint32(18).string(message.rollbackFromIssue);
     }
     return writer;
   },
@@ -867,7 +867,7 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
             break;
           }
 
-          message.rollbackFromReview = reader.string();
+          message.rollbackFromIssue = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -881,14 +881,14 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
   fromJSON(object: any): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
     return {
       rollbackFromTask: isSet(object.rollbackFromTask) ? String(object.rollbackFromTask) : "",
-      rollbackFromReview: isSet(object.rollbackFromReview) ? String(object.rollbackFromReview) : "",
+      rollbackFromIssue: isSet(object.rollbackFromIssue) ? String(object.rollbackFromIssue) : "",
     };
   },
 
   toJSON(message: PlanConfig_ChangeDatabaseConfig_RollbackDetail): unknown {
     const obj: any = {};
     message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
-    message.rollbackFromReview !== undefined && (obj.rollbackFromReview = message.rollbackFromReview);
+    message.rollbackFromIssue !== undefined && (obj.rollbackFromIssue = message.rollbackFromIssue);
     return obj;
   },
 
@@ -903,7 +903,7 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
   ): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
     const message = createBasePlanConfig_ChangeDatabaseConfig_RollbackDetail();
     message.rollbackFromTask = object.rollbackFromTask ?? "";
-    message.rollbackFromReview = object.rollbackFromReview ?? "";
+    message.rollbackFromIssue = object.rollbackFromIssue ?? "";
     return message;
   },
 };
