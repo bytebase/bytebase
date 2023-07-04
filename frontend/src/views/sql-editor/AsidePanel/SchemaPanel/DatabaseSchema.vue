@@ -34,7 +34,7 @@
     </div>
 
     <div class="flex-1 p-1 overflow-y-auto flex flex-col gap-y-2">
-      <template v-for="(schema, i) in databaseMetadata.schemas" :key="i">
+      <template v-for="(schema, i) in availableSchemas" :key="i">
         <div v-for="(table, j) in schema.tables" :key="j" class="text-sm">
           <div
             class="flex items-center h-6 px-1 text-gray-600 whitespace-pre-wrap break-words rounded-sm"
@@ -62,11 +62,16 @@ import type {
   TableMetadata,
 } from "@/types/proto/store/database";
 import type { ComposedDatabase } from "@/types";
-import { databaseV1Slug, instanceV1HasAlterSchema } from "@/utils";
+import {
+  databaseV1Slug,
+  instanceV1HasAlterSchema,
+  isTableQueryable,
+} from "@/utils";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import SchemaDiagramButton from "./SchemaDiagramButton.vue";
 import { Engine } from "@/types/proto/v1/common";
+import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -83,9 +88,32 @@ const emit = defineEmits<{
   ): void;
 }>();
 
+const currentUser = useCurrentUserV1();
+
 const engine = computed(() => props.database.instanceEntity.engine);
 
 const rowClickable = computed(() => engine.value !== Engine.MONGODB);
+
+const availableSchemas = computed(() => {
+  const schemas = props.databaseMetadata.schemas
+    .map((schema) => {
+      return {
+        ...schema,
+        tables: schema.tables.filter((table) => {
+          return isTableQueryable(
+            props.database,
+            schema.name,
+            table.name,
+            currentUser.value
+          );
+        }),
+      };
+    })
+    .filter((schema) => {
+      return schema.tables.length !== 0;
+    });
+  return schemas;
+});
 
 const handleClickHeader = () => {
   if (!props.headerClickable) return;
