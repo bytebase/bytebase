@@ -62,7 +62,34 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_sta
 	// if ctx.With_expression() != nil {}
 
 	selectStatement := ctx.Select_statement()
-	return extractor.extractSnowsqlSensitiveFieldsSelect_statement(selectStatement)
+	result, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(selectStatement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", selectStatement.GetStart().GetLine())
+	}
+
+	allSetOperators := ctx.AllSet_operators()
+	for i, setOperator := range allSetOperators {
+		// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
+		// So we only need to extract the sensitive fields of the right part.
+		right, err := extractor.extractSnowsqlSensitiveFieldSet_operator(setOperator)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, setOperator.GetStart().GetLine())
+		}
+		if len(result) != len(right) {
+			return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", selectStatement.GetStart().GetLine(), len(result), i+1, setOperator.GetStart().GetLine(), len(right))
+		}
+		for i := range right {
+			if !result[i].sensitive {
+				result[i].sensitive = right[i].sensitive
+			}
+		}
+
+	}
+	return result, nil
+}
+
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldSet_operator(ctx snowparser.ISet_operatorsContext) ([]fieldInfo, error) {
+	return extractor.extractSnowsqlSensitiveFieldsSelect_statement(ctx.Select_statement())
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_statement(ctx snowparser.ISelect_statementContext) ([]fieldInfo, error) {

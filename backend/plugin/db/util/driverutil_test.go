@@ -1628,6 +1628,21 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for set operators(UNION, INTERSECT, ...)
+			statement:  `SELECT A, B FROM T1 UNION SELECT * FROM T2 INTERSECT SELECT * FROM T3`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+			},
+		},
+		{
 			// Test for subquery in from cluase with as alias.
 			statement:  `SELECT T.A, A, B FROM (SELECT * FROM T1) AS T`,
 			schemaInfo: defaultDatabaseSchema,
