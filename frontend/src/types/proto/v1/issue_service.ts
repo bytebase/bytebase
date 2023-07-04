@@ -67,7 +67,7 @@ export interface CreateIssueRequest {
    */
   parent: string;
   /** The review to create. */
-  review?: Review;
+  review?: Issue;
 }
 
 export interface ListIssuesRequest {
@@ -96,7 +96,7 @@ export interface ListIssuesRequest {
 
 export interface ListIssuesResponse {
   /** The issues from the specified request. */
-  reviews: Review[];
+  reviews: Issue[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.
    * If this field is omitted, there are no subsequent pages.
@@ -111,7 +111,7 @@ export interface UpdateIssueRequest {
    * The issue's `name` field is used to identify the issue to update.
    * Format: projects/{project}/reviews/{review}
    */
-  review?: Review;
+  review?: Issue;
   /** The list of fields to update. */
   updateMask?: string[];
 }
@@ -133,7 +133,7 @@ export interface BatchUpdateIssuesRequest {
 
 export interface BatchUpdateIssuesResponse {
   /** Issues updated. */
-  reviews: Review[];
+  reviews: Issue[];
 }
 
 export interface ApproveIssueRequest {
@@ -163,7 +163,7 @@ export interface RequestIssueRequest {
   comment: string;
 }
 
-export interface Review {
+export interface Issue {
   /**
    * The name of the issue.
    * Format: projects/{project}/reviews/{review}
@@ -190,7 +190,7 @@ export interface Review {
   assignee: string;
   assigneeAttention: boolean;
   approvalTemplates: ApprovalTemplate[];
-  approvers: Review_Approver[];
+  approvers: Issue_Approver[];
   /**
    * If the value is `false`, it means that the backend is still finding matching approval templates.
    * If `true`, approval_templates & approvers & approval_finding_error are available.
@@ -208,14 +208,14 @@ export interface Review {
   updateTime?: Date;
 }
 
-export interface Review_Approver {
+export interface Issue_Approver {
   /** The new status. */
-  status: Review_Approver_Status;
+  status: Issue_Approver_Status;
   /** Format: users/hello@world.com */
   principal: string;
 }
 
-export enum Review_Approver_Status {
+export enum Issue_Approver_Status {
   STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   APPROVED = 2,
@@ -223,38 +223,38 @@ export enum Review_Approver_Status {
   UNRECOGNIZED = -1,
 }
 
-export function review_Approver_StatusFromJSON(object: any): Review_Approver_Status {
+export function issue_Approver_StatusFromJSON(object: any): Issue_Approver_Status {
   switch (object) {
     case 0:
     case "STATUS_UNSPECIFIED":
-      return Review_Approver_Status.STATUS_UNSPECIFIED;
+      return Issue_Approver_Status.STATUS_UNSPECIFIED;
     case 1:
     case "PENDING":
-      return Review_Approver_Status.PENDING;
+      return Issue_Approver_Status.PENDING;
     case 2:
     case "APPROVED":
-      return Review_Approver_Status.APPROVED;
+      return Issue_Approver_Status.APPROVED;
     case 3:
     case "REJECTED":
-      return Review_Approver_Status.REJECTED;
+      return Issue_Approver_Status.REJECTED;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return Review_Approver_Status.UNRECOGNIZED;
+      return Issue_Approver_Status.UNRECOGNIZED;
   }
 }
 
-export function review_Approver_StatusToJSON(object: Review_Approver_Status): string {
+export function issue_Approver_StatusToJSON(object: Issue_Approver_Status): string {
   switch (object) {
-    case Review_Approver_Status.STATUS_UNSPECIFIED:
+    case Issue_Approver_Status.STATUS_UNSPECIFIED:
       return "STATUS_UNSPECIFIED";
-    case Review_Approver_Status.PENDING:
+    case Issue_Approver_Status.PENDING:
       return "PENDING";
-    case Review_Approver_Status.APPROVED:
+    case Issue_Approver_Status.APPROVED:
       return "APPROVED";
-    case Review_Approver_Status.REJECTED:
+    case Issue_Approver_Status.REJECTED:
       return "REJECTED";
-    case Review_Approver_Status.UNRECOGNIZED:
+    case Issue_Approver_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -541,7 +541,7 @@ export const CreateIssueRequest = {
       writer.uint32(10).string(message.parent);
     }
     if (message.review !== undefined) {
-      Review.encode(message.review, writer.uint32(18).fork()).ldelim();
+      Issue.encode(message.review, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -565,7 +565,7 @@ export const CreateIssueRequest = {
             break;
           }
 
-          message.review = Review.decode(reader, reader.uint32());
+          message.review = Issue.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -579,14 +579,14 @@ export const CreateIssueRequest = {
   fromJSON(object: any): CreateIssueRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      review: isSet(object.review) ? Review.fromJSON(object.review) : undefined,
+      review: isSet(object.review) ? Issue.fromJSON(object.review) : undefined,
     };
   },
 
   toJSON(message: CreateIssueRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
-    message.review !== undefined && (obj.review = message.review ? Review.toJSON(message.review) : undefined);
+    message.review !== undefined && (obj.review = message.review ? Issue.toJSON(message.review) : undefined);
     return obj;
   },
 
@@ -598,7 +598,7 @@ export const CreateIssueRequest = {
     const message = createBaseCreateIssueRequest();
     message.parent = object.parent ?? "";
     message.review = (object.review !== undefined && object.review !== null)
-      ? Review.fromPartial(object.review)
+      ? Issue.fromPartial(object.review)
       : undefined;
     return message;
   },
@@ -695,7 +695,7 @@ function createBaseListIssuesResponse(): ListIssuesResponse {
 export const ListIssuesResponse = {
   encode(message: ListIssuesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.reviews) {
-      Review.encode(v!, writer.uint32(10).fork()).ldelim();
+      Issue.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.nextPageToken !== "") {
       writer.uint32(18).string(message.nextPageToken);
@@ -715,7 +715,7 @@ export const ListIssuesResponse = {
             break;
           }
 
-          message.reviews.push(Review.decode(reader, reader.uint32()));
+          message.reviews.push(Issue.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -735,7 +735,7 @@ export const ListIssuesResponse = {
 
   fromJSON(object: any): ListIssuesResponse {
     return {
-      reviews: Array.isArray(object?.reviews) ? object.reviews.map((e: any) => Review.fromJSON(e)) : [],
+      reviews: Array.isArray(object?.reviews) ? object.reviews.map((e: any) => Issue.fromJSON(e)) : [],
       nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
     };
   },
@@ -743,7 +743,7 @@ export const ListIssuesResponse = {
   toJSON(message: ListIssuesResponse): unknown {
     const obj: any = {};
     if (message.reviews) {
-      obj.reviews = message.reviews.map((e) => e ? Review.toJSON(e) : undefined);
+      obj.reviews = message.reviews.map((e) => e ? Issue.toJSON(e) : undefined);
     } else {
       obj.reviews = [];
     }
@@ -757,7 +757,7 @@ export const ListIssuesResponse = {
 
   fromPartial(object: DeepPartial<ListIssuesResponse>): ListIssuesResponse {
     const message = createBaseListIssuesResponse();
-    message.reviews = object.reviews?.map((e) => Review.fromPartial(e)) || [];
+    message.reviews = object.reviews?.map((e) => Issue.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
@@ -770,7 +770,7 @@ function createBaseUpdateIssueRequest(): UpdateIssueRequest {
 export const UpdateIssueRequest = {
   encode(message: UpdateIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.review !== undefined) {
-      Review.encode(message.review, writer.uint32(10).fork()).ldelim();
+      Issue.encode(message.review, writer.uint32(10).fork()).ldelim();
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
@@ -790,7 +790,7 @@ export const UpdateIssueRequest = {
             break;
           }
 
-          message.review = Review.decode(reader, reader.uint32());
+          message.review = Issue.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -810,14 +810,14 @@ export const UpdateIssueRequest = {
 
   fromJSON(object: any): UpdateIssueRequest {
     return {
-      review: isSet(object.review) ? Review.fromJSON(object.review) : undefined,
+      review: isSet(object.review) ? Issue.fromJSON(object.review) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
   toJSON(message: UpdateIssueRequest): unknown {
     const obj: any = {};
-    message.review !== undefined && (obj.review = message.review ? Review.toJSON(message.review) : undefined);
+    message.review !== undefined && (obj.review = message.review ? Issue.toJSON(message.review) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
@@ -829,7 +829,7 @@ export const UpdateIssueRequest = {
   fromPartial(object: DeepPartial<UpdateIssueRequest>): UpdateIssueRequest {
     const message = createBaseUpdateIssueRequest();
     message.review = (object.review !== undefined && object.review !== null)
-      ? Review.fromPartial(object.review)
+      ? Issue.fromPartial(object.review)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
     return message;
@@ -918,7 +918,7 @@ function createBaseBatchUpdateIssuesResponse(): BatchUpdateIssuesResponse {
 export const BatchUpdateIssuesResponse = {
   encode(message: BatchUpdateIssuesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.reviews) {
-      Review.encode(v!, writer.uint32(10).fork()).ldelim();
+      Issue.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -935,7 +935,7 @@ export const BatchUpdateIssuesResponse = {
             break;
           }
 
-          message.reviews.push(Review.decode(reader, reader.uint32()));
+          message.reviews.push(Issue.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -947,13 +947,13 @@ export const BatchUpdateIssuesResponse = {
   },
 
   fromJSON(object: any): BatchUpdateIssuesResponse {
-    return { reviews: Array.isArray(object?.reviews) ? object.reviews.map((e: any) => Review.fromJSON(e)) : [] };
+    return { reviews: Array.isArray(object?.reviews) ? object.reviews.map((e: any) => Issue.fromJSON(e)) : [] };
   },
 
   toJSON(message: BatchUpdateIssuesResponse): unknown {
     const obj: any = {};
     if (message.reviews) {
-      obj.reviews = message.reviews.map((e) => e ? Review.toJSON(e) : undefined);
+      obj.reviews = message.reviews.map((e) => e ? Issue.toJSON(e) : undefined);
     } else {
       obj.reviews = [];
     }
@@ -966,7 +966,7 @@ export const BatchUpdateIssuesResponse = {
 
   fromPartial(object: DeepPartial<BatchUpdateIssuesResponse>): BatchUpdateIssuesResponse {
     const message = createBaseBatchUpdateIssuesResponse();
-    message.reviews = object.reviews?.map((e) => Review.fromPartial(e)) || [];
+    message.reviews = object.reviews?.map((e) => Issue.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1184,7 +1184,7 @@ export const RequestIssueRequest = {
   },
 };
 
-function createBaseReview(): Review {
+function createBaseIssue(): Issue {
   return {
     name: "",
     uid: "",
@@ -1206,8 +1206,8 @@ function createBaseReview(): Review {
   };
 }
 
-export const Review = {
-  encode(message: Review, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const Issue = {
+  encode(message: Issue, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -1239,7 +1239,7 @@ export const Review = {
       ApprovalTemplate.encode(v!, writer.uint32(66).fork()).ldelim();
     }
     for (const v of message.approvers) {
-      Review_Approver.encode(v!, writer.uint32(74).fork()).ldelim();
+      Issue_Approver.encode(v!, writer.uint32(74).fork()).ldelim();
     }
     if (message.approvalFindingDone === true) {
       writer.uint32(80).bool(message.approvalFindingDone);
@@ -1262,10 +1262,10 @@ export const Review = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): Review {
+  decode(input: _m0.Reader | Uint8Array, length?: number): Issue {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseReview();
+    const message = createBaseIssue();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1344,7 +1344,7 @@ export const Review = {
             break;
           }
 
-          message.approvers.push(Review_Approver.decode(reader, reader.uint32()));
+          message.approvers.push(Issue_Approver.decode(reader, reader.uint32()));
           continue;
         case 10:
           if (tag !== 80) {
@@ -1397,7 +1397,7 @@ export const Review = {
     return message;
   },
 
-  fromJSON(object: any): Review {
+  fromJSON(object: any): Issue {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
@@ -1411,7 +1411,7 @@ export const Review = {
       approvalTemplates: Array.isArray(object?.approvalTemplates)
         ? object.approvalTemplates.map((e: any) => ApprovalTemplate.fromJSON(e))
         : [],
-      approvers: Array.isArray(object?.approvers) ? object.approvers.map((e: any) => Review_Approver.fromJSON(e)) : [],
+      approvers: Array.isArray(object?.approvers) ? object.approvers.map((e: any) => Issue_Approver.fromJSON(e)) : [],
       approvalFindingDone: isSet(object.approvalFindingDone) ? Boolean(object.approvalFindingDone) : false,
       approvalFindingError: isSet(object.approvalFindingError) ? String(object.approvalFindingError) : "",
       subscribers: Array.isArray(object?.subscribers) ? object.subscribers.map((e: any) => String(e)) : [],
@@ -1421,7 +1421,7 @@ export const Review = {
     };
   },
 
-  toJSON(message: Review): unknown {
+  toJSON(message: Issue): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
@@ -1438,7 +1438,7 @@ export const Review = {
       obj.approvalTemplates = [];
     }
     if (message.approvers) {
-      obj.approvers = message.approvers.map((e) => e ? Review_Approver.toJSON(e) : undefined);
+      obj.approvers = message.approvers.map((e) => e ? Issue_Approver.toJSON(e) : undefined);
     } else {
       obj.approvers = [];
     }
@@ -1455,12 +1455,12 @@ export const Review = {
     return obj;
   },
 
-  create(base?: DeepPartial<Review>): Review {
-    return Review.fromPartial(base ?? {});
+  create(base?: DeepPartial<Issue>): Issue {
+    return Issue.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<Review>): Review {
-    const message = createBaseReview();
+  fromPartial(object: DeepPartial<Issue>): Issue {
+    const message = createBaseIssue();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
@@ -1471,7 +1471,7 @@ export const Review = {
     message.assignee = object.assignee ?? "";
     message.assigneeAttention = object.assigneeAttention ?? false;
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
-    message.approvers = object.approvers?.map((e) => Review_Approver.fromPartial(e)) || [];
+    message.approvers = object.approvers?.map((e) => Issue_Approver.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;
     message.approvalFindingError = object.approvalFindingError ?? "";
     message.subscribers = object.subscribers?.map((e) => e) || [];
@@ -1482,12 +1482,12 @@ export const Review = {
   },
 };
 
-function createBaseReview_Approver(): Review_Approver {
+function createBaseIssue_Approver(): Issue_Approver {
   return { status: 0, principal: "" };
 }
 
-export const Review_Approver = {
-  encode(message: Review_Approver, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const Issue_Approver = {
+  encode(message: Issue_Approver, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.status !== 0) {
       writer.uint32(8).int32(message.status);
     }
@@ -1497,10 +1497,10 @@ export const Review_Approver = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): Review_Approver {
+  decode(input: _m0.Reader | Uint8Array, length?: number): Issue_Approver {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseReview_Approver();
+    const message = createBaseIssue_Approver();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1527,26 +1527,26 @@ export const Review_Approver = {
     return message;
   },
 
-  fromJSON(object: any): Review_Approver {
+  fromJSON(object: any): Issue_Approver {
     return {
-      status: isSet(object.status) ? review_Approver_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? issue_Approver_StatusFromJSON(object.status) : 0,
       principal: isSet(object.principal) ? String(object.principal) : "",
     };
   },
 
-  toJSON(message: Review_Approver): unknown {
+  toJSON(message: Issue_Approver): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = review_Approver_StatusToJSON(message.status));
+    message.status !== undefined && (obj.status = issue_Approver_StatusToJSON(message.status));
     message.principal !== undefined && (obj.principal = message.principal);
     return obj;
   },
 
-  create(base?: DeepPartial<Review_Approver>): Review_Approver {
-    return Review_Approver.fromPartial(base ?? {});
+  create(base?: DeepPartial<Issue_Approver>): Issue_Approver {
+    return Issue_Approver.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<Review_Approver>): Review_Approver {
-    const message = createBaseReview_Approver();
+  fromPartial(object: DeepPartial<Issue_Approver>): Issue_Approver {
+    const message = createBaseIssue_Approver();
     message.status = object.status ?? 0;
     message.principal = object.principal ?? "";
     return message;
@@ -2167,7 +2167,7 @@ export const IssueServiceDefinition = {
       name: "GetIssue",
       requestType: GetIssueRequest,
       requestStream: false,
-      responseType: Review,
+      responseType: Issue,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -2217,7 +2217,7 @@ export const IssueServiceDefinition = {
       name: "CreateIssue",
       requestType: CreateIssueRequest,
       requestStream: false,
-      responseType: Review,
+      responseType: Issue,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -2325,7 +2325,7 @@ export const IssueServiceDefinition = {
       name: "UpdateIssue",
       requestType: UpdateIssueRequest,
       requestStream: false,
-      responseType: Review,
+      responseType: Issue,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -2666,7 +2666,7 @@ export const IssueServiceDefinition = {
       name: "ApproveIssue",
       requestType: ApproveIssueRequest,
       requestStream: false,
-      responseType: Review,
+      responseType: Issue,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -2726,7 +2726,7 @@ export const IssueServiceDefinition = {
       name: "RejectIssue",
       requestType: RejectIssueRequest,
       requestStream: false,
-      responseType: Review,
+      responseType: Issue,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -2785,7 +2785,7 @@ export const IssueServiceDefinition = {
       name: "RequestIssue",
       requestType: RequestIssueRequest,
       requestStream: false,
-      responseType: Review,
+      responseType: Issue,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -2845,13 +2845,13 @@ export const IssueServiceDefinition = {
 } as const;
 
 export interface IssueServiceImplementation<CallContextExt = {}> {
-  getIssue(request: GetIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  createIssue(request: CreateIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  getIssue(request: GetIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
+  createIssue(request: CreateIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
   listIssues(
     request: ListIssuesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListIssuesResponse>>;
-  updateIssue(request: UpdateIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  updateIssue(request: UpdateIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
   createIssueComment(
     request: CreateIssueCommentRequest,
     context: CallContext & CallContextExt,
@@ -2864,19 +2864,19 @@ export interface IssueServiceImplementation<CallContextExt = {}> {
     request: BatchUpdateIssuesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BatchUpdateIssuesResponse>>;
-  approveIssue(request: ApproveIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  rejectIssue(request: RejectIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
-  requestIssue(request: RequestIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  approveIssue(request: ApproveIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
+  rejectIssue(request: RejectIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
+  requestIssue(request: RequestIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
 }
 
 export interface IssueServiceClient<CallOptionsExt = {}> {
-  getIssue(request: DeepPartial<GetIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  createIssue(request: DeepPartial<CreateIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  getIssue(request: DeepPartial<GetIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
+  createIssue(request: DeepPartial<CreateIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
   listIssues(
     request: DeepPartial<ListIssuesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListIssuesResponse>;
-  updateIssue(request: DeepPartial<UpdateIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  updateIssue(request: DeepPartial<UpdateIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
   createIssueComment(
     request: DeepPartial<CreateIssueCommentRequest>,
     options?: CallOptions & CallOptionsExt,
@@ -2889,9 +2889,9 @@ export interface IssueServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<BatchUpdateIssuesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<BatchUpdateIssuesResponse>;
-  approveIssue(request: DeepPartial<ApproveIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  rejectIssue(request: DeepPartial<RejectIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
-  requestIssue(request: DeepPartial<RequestIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  approveIssue(request: DeepPartial<ApproveIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
+  rejectIssue(request: DeepPartial<RejectIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
+  requestIssue(request: DeepPartial<RequestIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

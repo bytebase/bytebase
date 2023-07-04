@@ -11,12 +11,12 @@ import "google/protobuf/timestamp.proto";
 option go_package = "generated-go/v1";
 
 service IssueService {
-  rpc GetIssue(GetIssueRequest) returns (Review) {
+  rpc GetIssue(GetIssueRequest) returns (Issue) {
     option (google.api.http) = {get: "/v1/{name=projects/*/reviews/*}"};
     option (google.api.method_signature) = "name";
   }
 
-  rpc CreateIssue(CreateIssueRequest) returns (Review) {
+  rpc CreateIssue(CreateIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/reviews"
       body: "review"
@@ -29,7 +29,7 @@ service IssueService {
     option (google.api.method_signature) = "parent";
   }
 
-  rpc UpdateIssue(UpdateIssueRequest) returns (Review) {
+  rpc UpdateIssue(UpdateIssueRequest) returns (Issue) {
     option (google.api.http) = {
       patch: "/v1/{review.name=projects/*/reviews/*}"
       body: "review"
@@ -60,21 +60,21 @@ service IssueService {
     };
   }
 
-  rpc ApproveIssue(ApproveIssueRequest) returns (Review) {
+  rpc ApproveIssue(ApproveIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/reviews/*}:approve"
       body: "*"
     };
   }
 
-  rpc RejectIssue(RejectIssueRequest) returns (Review) {
+  rpc RejectIssue(RejectIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/reviews/*}:reject"
       body: "*"
     };
   }
 
-  rpc RequestIssue(RequestIssueRequest) returns (Review) {
+  rpc RequestIssue(RequestIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/reviews/*}:request"
       body: "*"
@@ -96,7 +96,7 @@ message CreateIssueRequest {
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The review to create.
-  Review review = 2 [(google.api.field_behavior) = REQUIRED];
+  Issue review = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListIssuesRequest {
@@ -121,7 +121,7 @@ message ListIssuesRequest {
 
 message ListIssuesResponse {
   // The issues from the specified request.
-  repeated Review reviews = 1;
+  repeated Issue reviews = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
@@ -133,7 +133,7 @@ message UpdateIssueRequest {
   //
   // The issue's `name` field is used to identify the issue to update.
   // Format: projects/{project}/reviews/{review}
-  Review review = 1 [(google.api.field_behavior) = REQUIRED];
+  Issue review = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
@@ -153,7 +153,7 @@ message BatchUpdateIssuesRequest {
 
 message BatchUpdateIssuesResponse {
   // Issues updated.
-  repeated Review reviews = 1;
+  repeated Issue reviews = 1;
 }
 
 message ApproveIssueRequest {
@@ -177,7 +177,7 @@ message RequestIssueRequest {
   string comment = 2;
 }
 
-message Review {
+message Issue {
   // The name of the issue.
   // Format: projects/{project}/reviews/{review}
   string name = 1;
