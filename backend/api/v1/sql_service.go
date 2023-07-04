@@ -32,6 +32,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -58,15 +59,17 @@ const (
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
 	store           *store.Store
+	licenseService  enterpriseAPI.LicenseService
 	schemaSyncer    *schemasync.Syncer
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
 }
 
 // NewSQLService creates a SQLService.
-func NewSQLService(store *store.Store, schemaSyncer *schemasync.Syncer, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager) *SQLService {
+func NewSQLService(store *store.Store, licenseService enterpriseAPI.LicenseService, schemaSyncer *schemasync.Syncer, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager) *SQLService {
 	return &SQLService{
 		store:           store,
+		licenseService:  licenseService,
 		schemaSyncer:    schemaSyncer,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
@@ -620,20 +623,22 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 
-	// Check if the caller is admin for exporting with admin mode.
-	if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
-		return nil, nil, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
-	}
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		// Check if the caller is admin for exporting with admin mode.
+		if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
+			return nil, nil, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
+		}
 
-	// Check if the environment is open for export privileges.
-	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if !result {
-		// Check if the user has permission to execute the export.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
+		// Check if the environment is open for export privileges.
+		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+		if err != nil {
 			return nil, nil, nil, nil, err
+		}
+		if !result {
+			// Check if the user has permission to execute the export.
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
+				return nil, nil, nil, nil, err
+			}
 		}
 	}
 
@@ -880,15 +885,17 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
-	// Check if the environment is open for query privileges.
-	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
-	if err != nil {
-		return nil, nil, advisor.Success, nil, nil, nil, err
-	}
-	if !result {
-		// Check if the user has permission to execute the query.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		// Check if the environment is open for query privileges.
+		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
+		if err != nil {
 			return nil, nil, advisor.Success, nil, nil, nil, err
+		}
+		if !result {
+			// Check if the user has permission to execute the query.
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, err
+			}
 		}
 	}
 
