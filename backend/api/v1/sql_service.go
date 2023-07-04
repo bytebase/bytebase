@@ -630,20 +630,22 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 
-	// Check if the caller is admin for exporting with admin mode.
-	if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
-		return nil, nil, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
-	}
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		// Check if the caller is admin for exporting with admin mode.
+		if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
+			return nil, nil, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
+		}
 
-	// Check if the environment is open for export privileges.
-	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if !result {
-		// Check if the user has permission to execute the export.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
+		// Check if the environment is open for export privileges.
+		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+		if err != nil {
 			return nil, nil, nil, nil, err
+		}
+		if !result {
+			// Check if the user has permission to execute the export.
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
+				return nil, nil, nil, nil, err
+			}
 		}
 	}
 
@@ -891,15 +893,17 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
-	// Check if the environment is open for query privileges.
-	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
-	if err != nil {
-		return nil, nil, advisor.Success, nil, nil, nil, err
-	}
-	if !result {
-		// Check if the user has permission to execute the query.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		// Check if the environment is open for query privileges.
+		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
+		if err != nil {
 			return nil, nil, advisor.Success, nil, nil, nil, err
+		}
+		if !result {
+			// Check if the user has permission to execute the query.
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, err
+			}
 		}
 	}
 
