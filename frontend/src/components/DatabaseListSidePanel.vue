@@ -50,8 +50,8 @@ const policyList = ref<Policy[]>([]);
 const preparePolicyList = () => {
   usePolicyV1Store()
     .fetchPolicies({
-      resourceType: PolicyResourceType.DATABASE,
-      policyType: PolicyType.ACCESS_CONTROL,
+      policyType: PolicyType.WORKSPACE_IAM,
+      resourceType: PolicyResourceType.WORKSPACE,
     })
     .then((list) => (policyList.value = list));
 };
@@ -81,7 +81,7 @@ const databaseList = computed(() => {
     .databaseListByUser(currentUserV1.value)
     .filter((db) => db.syncState === State.ACTIVE)
     .filter((database) =>
-      isDatabaseV1Accessible(database, policyList.value, currentUserV1.value)
+      isDatabaseV1Accessible(database, currentUserV1.value)
     );
 });
 
