@@ -1912,7 +1912,8 @@
       "manage-license": "Manage Instance License",
       "used-and-total-license": "Assigned / Total Instance License",
       "success-notification": "Successfully update license assignment",
-      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature."
+      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature.",
+      "missing-license-for-feature": "Missing instance license to enable {feature}. Click to assign now."
     },
     "update": {
       "success": {

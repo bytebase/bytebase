@@ -59,20 +59,26 @@ const (
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
 	store           *store.Store
-	licenseService  enterpriseAPI.LicenseService
 	schemaSyncer    *schemasync.Syncer
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewSQLService creates a SQLService.
-func NewSQLService(store *store.Store, licenseService enterpriseAPI.LicenseService, schemaSyncer *schemasync.Syncer, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager) *SQLService {
+func NewSQLService(
+	store *store.Store,
+	schemaSyncer *schemasync.Syncer,
+	dbFactory *dbfactory.DBFactory,
+	activityManager *activity.Manager,
+	licenseService enterpriseAPI.LicenseService,
+) *SQLService {
 	return &SQLService{
 		store:           store,
-		licenseService:  licenseService,
 		schemaSyncer:    schemaSyncer,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		licenseService:  licenseService,
 	}
 }
 
@@ -346,6 +352,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
 		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 		SensitiveSchemaInfo:   sensitiveSchemaInfo,
+		EnableSensitive:       s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	durationNs := time.Now().UnixNano() - start
 	if err != nil {
@@ -850,6 +857,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
 		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 		SensitiveSchemaInfo:   sensitiveSchemaInfo,
+		EnableSensitive:       s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	select {
 	case <-ctx.Done():

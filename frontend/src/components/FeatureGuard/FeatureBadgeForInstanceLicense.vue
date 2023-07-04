@@ -1,27 +1,26 @@
 <template>
   <div
-    v-if="instanceMissingLicense"
+    v-if="show || instanceMissingLicense"
     :class="['text-accent cursor-pointer', customClass]"
     @click="state.showInstanceAssignmentDrawer = true"
   >
     <NTooltip :show-arrow="true">
       <template #trigger>
-        <heroicons-solid:lock-closed class="text-accent w-5 h-5" />
+        <heroicons-outline:exclamation class="text-warning w-5 h-5" />
       </template>
       <span class="w-56 text-sm">
-        {{ $t("subscription.instance-assignment.missing-license-attention") }}
+        {{
+          $t("subscription.instance-assignment.missing-license-for-feature", {
+            feature: $t(
+              `subscription.features.${feature.split(".").join("-")}.title`
+            ).toLowerCase(),
+          })
+        }}
       </span>
     </NTooltip>
   </div>
-  <router-link
-    v-else-if="!hasFeature"
-    to="/setting/subscription"
-    exact-active-class=""
-  >
-    <heroicons-solid:sparkles class="text-accent w-5 h-5" />
-  </router-link>
   <InstanceAssignment
-    v-if="!hasFeature"
+    v-if="!hasFeature || show"
     :show="state.showInstanceAssignmentDrawer"
     @dismiss="state.showInstanceAssignmentDrawer = false"
   />
@@ -39,6 +38,10 @@ interface LocalState {
 }
 
 const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
   feature: {
     required: true,
     type: String as PropType<FeatureType>,
