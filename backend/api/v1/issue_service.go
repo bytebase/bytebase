@@ -790,7 +790,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 
 	issueV1 := &v1pb.Issue{
-		Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, reviewPrefix, issue.UID),
+		Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, issuePrefix, issue.UID),
 		Uid:               fmt.Sprintf("%d", issue.UID),
 		Title:             issue.Title,
 		Description:       issue.Description,

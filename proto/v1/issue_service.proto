@@ -12,26 +12,26 @@ option go_package = "generated-go/v1";
 
 service IssueService {
   rpc GetIssue(GetIssueRequest) returns (Issue) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/reviews/*}"};
+    option (google.api.http) = {get: "/v1/{name=projects/*/issues/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc CreateIssue(CreateIssueRequest) returns (Issue) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/reviews"
+      post: "/v1/{parent=projects/*}/issues"
       body: "issue"
     };
     option (google.api.method_signature) = "parent,issue";
   }
 
   rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/reviews"};
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/issues"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc UpdateIssue(UpdateIssueRequest) returns (Issue) {
     option (google.api.http) = {
-      patch: "/v1/{issue.name=projects/*/reviews/*}"
+      patch: "/v1/{issue.name=projects/*/issues/*}"
       body: "issue"
     };
     option (google.api.method_signature) = "issue,update_mask";
@@ -39,7 +39,7 @@ service IssueService {
 
   rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*/reviews/*}:comment"
+      post: "/v1/{parent=projects/*/issues/*}:comment"
       body: "issue_comment"
     };
     option (google.api.method_signature) = "parent,issue_comment";
@@ -47,7 +47,7 @@ service IssueService {
 
   rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
-      patch: "/v1/{parent=projects/*/reviews/*}:comment"
+      patch: "/v1/{parent=projects/*/issues/*}:comment"
       body: "issue_comment"
     };
     option (google.api.method_signature) = "parent,issue_comment,update_mask";
@@ -55,28 +55,28 @@ service IssueService {
 
   rpc BatchUpdateIssues(BatchUpdateIssuesRequest) returns (BatchUpdateIssuesResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/reviews:batchUpdate"
+      post: "/v1/{parent=projects/*}/issues:batchUpdate"
       body: "*"
     };
   }
 
   rpc ApproveIssue(ApproveIssueRequest) returns (Issue) {
     option (google.api.http) = {
-      post: "/v1/{name=projects/*/reviews/*}:approve"
+      post: "/v1/{name=projects/*/issues/*}:approve"
       body: "*"
     };
   }
 
   rpc RejectIssue(RejectIssueRequest) returns (Issue) {
     option (google.api.http) = {
-      post: "/v1/{name=projects/*/reviews/*}:reject"
+      post: "/v1/{name=projects/*/issues/*}:reject"
       body: "*"
     };
   }
 
   rpc RequestIssue(RequestIssueRequest) returns (Issue) {
     option (google.api.http) = {
-      post: "/v1/{name=projects/*/reviews/*}:request"
+      post: "/v1/{name=projects/*/issues/*}:request"
       body: "*"
     };
   }
@@ -84,7 +84,7 @@ service IssueService {
 
 message GetIssueRequest {
   // The name of the issue to retrieve.
-  // Format: projects/{project}/reviews/{review}
+  // Format: projects/{project}/issues/{issue}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   bool force = 2;
@@ -132,7 +132,7 @@ message UpdateIssueRequest {
   // The issue to update.
   //
   // The issue's `name` field is used to identify the issue to update.
-  // Format: projects/{project}/reviews/{review}
+  // Format: projects/{project}/issues/{issue}
   Issue issue = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -158,28 +158,28 @@ message BatchUpdateIssuesResponse {
 
 message ApproveIssueRequest {
   // The name of the issue to add an approver.
-  // Format: projects/{project}/reviews/{review}
+  // Format: projects/{project}/issues/{issue}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;
 }
 
 message RejectIssueRequest {
-  // The name of the issue to add an rejecting reviewer.
-  // Format: projects/{project}/reviews/{review}
+  // The name of the issue to add an rejection.
+  // Format: projects/{project}/issues/{issue}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;
 }
 
 message RequestIssueRequest {
   // The name of the issue to request a issue.
-  // Format: projects/{project}/reviews/{review}
+  // Format: projects/{project}/issues/{issue}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;
 }
 
 message Issue {
   // The name of the issue.
-  // Format: projects/{project}/reviews/{review}
+  // Format: projects/{project}/issues/{issue}
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.
@@ -307,7 +307,7 @@ message ApprovalNode {
 
 message CreateIssueCommentRequest {
   // The issue name
-  // Format: projects/{project}/reviews/{review}
+  // Format: projects/{project}/issues/{issue}
   string parent = 1;
 
   IssueComment issue_comment = 2;
@@ -315,7 +315,7 @@ message CreateIssueCommentRequest {
 
 message UpdateIssueCommentRequest {
   // The issue name
-  // Format: projects/{project}/reviews/{review}
+  // Format: projects/{project}/issues/{issue}
   string parent = 1;
 
   IssueComment issue_comment = 2;

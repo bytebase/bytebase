@@ -54,7 +54,7 @@ export function issueStatusToJSON(object: IssueStatus): string {
 export interface GetIssueRequest {
   /**
    * The name of the issue to retrieve.
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   force: boolean;
@@ -109,7 +109,7 @@ export interface UpdateIssueRequest {
    * The issue to update.
    *
    * The issue's `name` field is used to identify the issue to update.
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   issue?: Issue;
   /** The list of fields to update. */
@@ -139,7 +139,7 @@ export interface BatchUpdateIssuesResponse {
 export interface ApproveIssueRequest {
   /**
    * The name of the issue to add an approver.
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   comment: string;
@@ -147,8 +147,8 @@ export interface ApproveIssueRequest {
 
 export interface RejectIssueRequest {
   /**
-   * The name of the issue to add an rejecting reviewer.
-   * Format: projects/{project}/reviews/{review}
+   * The name of the issue to add an rejection.
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   comment: string;
@@ -157,7 +157,7 @@ export interface RejectIssueRequest {
 export interface RequestIssueRequest {
   /**
    * The name of the issue to request a issue.
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   comment: string;
@@ -166,7 +166,7 @@ export interface RequestIssueRequest {
 export interface Issue {
   /**
    * The name of the issue.
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   /** The system-assigned, unique identifier for a resource. */
@@ -434,7 +434,7 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
 export interface CreateIssueCommentRequest {
   /**
    * The issue name
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   parent: string;
   issueComment?: IssueComment;
@@ -443,7 +443,7 @@ export interface CreateIssueCommentRequest {
 export interface UpdateIssueCommentRequest {
   /**
    * The issue name
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   parent: string;
   issueComment?: IssueComment;
@@ -2170,9 +2170,9 @@ export const IssueServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              33,
+              32,
               18,
-              31,
+              30,
               47,
               118,
               49,
@@ -2194,12 +2194,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
@@ -2220,7 +2219,7 @@ export const IssueServiceDefinition = {
           8410: [new Uint8Array([12, 112, 97, 114, 101, 110, 116, 44, 105, 115, 115, 117, 101])],
           578365826: [
             new Uint8Array([
-              40,
+              39,
               58,
               5,
               105,
@@ -2229,7 +2228,7 @@ export const IssueServiceDefinition = {
               117,
               101,
               34,
-              31,
+              30,
               47,
               118,
               49,
@@ -2254,12 +2253,11 @@ export const IssueServiceDefinition = {
               42,
               125,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
             ]),
           ],
@@ -2277,9 +2275,9 @@ export const IssueServiceDefinition = {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              33,
+              32,
               18,
-              31,
+              30,
               47,
               118,
               49,
@@ -2304,12 +2302,11 @@ export const IssueServiceDefinition = {
               42,
               125,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
             ]),
           ],
@@ -2327,7 +2324,7 @@ export const IssueServiceDefinition = {
           8410: [new Uint8Array([17, 105, 115, 115, 117, 101, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
           578365826: [
             new Uint8Array([
-              46,
+              45,
               58,
               5,
               105,
@@ -2336,7 +2333,7 @@ export const IssueServiceDefinition = {
               117,
               101,
               50,
-              37,
+              36,
               47,
               118,
               49,
@@ -2364,12 +2361,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
@@ -2414,7 +2410,7 @@ export const IssueServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              58,
+              57,
               58,
               13,
               105,
@@ -2431,7 +2427,7 @@ export const IssueServiceDefinition = {
               110,
               116,
               34,
-              41,
+              40,
               47,
               118,
               49,
@@ -2455,12 +2451,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
@@ -2525,7 +2520,7 @@ export const IssueServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              58,
+              57,
               58,
               13,
               105,
@@ -2542,7 +2537,7 @@ export const IssueServiceDefinition = {
               110,
               116,
               50,
-              41,
+              40,
               47,
               118,
               49,
@@ -2566,12 +2561,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
@@ -2599,12 +2593,12 @@ export const IssueServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              48,
+              47,
               58,
               1,
               42,
               34,
-              43,
+              42,
               47,
               118,
               49,
@@ -2629,12 +2623,11 @@ export const IssueServiceDefinition = {
               42,
               125,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               58,
               98,
@@ -2656,66 +2649,6 @@ export const IssueServiceDefinition = {
     approveIssue: {
       name: "ApproveIssue",
       requestType: ApproveIssueRequest,
-      requestStream: false,
-      responseType: Issue,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              44,
-              58,
-              1,
-              42,
-              34,
-              39,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              114,
-              101,
-              118,
-              105,
-              101,
-              119,
-              115,
-              47,
-              42,
-              125,
-              58,
-              97,
-              112,
-              112,
-              114,
-              111,
-              118,
-              101,
-            ]),
-          ],
-        },
-      },
-    },
-    rejectIssue: {
-      name: "RejectIssue",
-      requestType: RejectIssueRequest,
       requestStream: false,
       responseType: Issue,
       responseStream: false,
@@ -2750,12 +2683,70 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
+              115,
+              47,
+              42,
+              125,
+              58,
+              97,
+              112,
+              112,
+              114,
+              111,
+              118,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    rejectIssue: {
+      name: "RejectIssue",
+      requestType: RejectIssueRequest,
+      requestStream: false,
+      responseType: Issue,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              42,
+              58,
+              1,
+              42,
+              34,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              115,
+              115,
+              117,
+              101,
               115,
               47,
               42,
@@ -2782,12 +2773,12 @@ export const IssueServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              44,
+              43,
               58,
               1,
               42,
               34,
-              39,
+              38,
               47,
               118,
               49,
@@ -2809,12 +2800,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
