@@ -1628,6 +1628,25 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for subquery in from cluase with as alias.
+			statement:  `SELECT T.A, A, B FROM (SELECT * FROM T1) AS T`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+			},
+		},
+		{
 			// Test for field name.
 			statement:  "SELECT $1, A, T.B AS N, T.C from T1 AS T",
 			schemaInfo: defaultDatabaseSchema,

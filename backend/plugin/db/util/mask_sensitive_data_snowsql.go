@@ -259,9 +259,12 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 		return nil, nil
 	}
 
-	// TODO(zp): Handle the subquery.
 	if ctx.Subquery() != nil {
-		return nil, nil
+		subqueryResult, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(ctx.Subquery().Query_statement().Select_statement())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract sensitive fields of subquery near line %d", ctx.Subquery().GetStart().GetLine())
+		}
+		result = append(result, subqueryResult...)
 	}
 
 	// TODO(zp): Handle the flatten table.
