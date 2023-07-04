@@ -1570,7 +1570,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 					Name: defaultDatabase,
 					TableList: []db.TableSchema{
 						{
-							Name: "PUBLIC.T",
+							Name: "PUBLIC.T1",
 							ColumnList: []db.ColumnInfo{
 								{
 									Name:      "A",
@@ -1590,6 +1590,32 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 								},
 							},
 						},
+						{
+							Name: "PUBLIC.T2",
+							ColumnList: []db.ColumnInfo{
+								{
+									Name:      "A",
+									Sensitive: false,
+								},
+								{
+									Name:      "E",
+									Sensitive: false,
+								},
+							},
+						},
+						{
+							Name: "PUBLIC.T3",
+							ColumnList: []db.ColumnInfo{
+								{
+									Name:      "E",
+									Sensitive: true,
+								},
+								{
+									Name:      "F",
+									Sensitive: false,
+								},
+							},
+						},
 					},
 				},
 			},
@@ -1602,7 +1628,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
-			statement:  `SELECT *, A, B, D FROM T;`,
+			statement:  `SELECT * FROM T1, T2, T3;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
@@ -1623,20 +1649,42 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:      "A",
-					Sensitive: true,
-				},
-				{
-					Name:      "B",
 					Sensitive: false,
 				},
 				{
-					Name:      "D",
+					Name:      "E",
+					Sensitive: false,
+				},
+				{
+					Name:      "E",
 					Sensitive: true,
+				},
+				{
+					Name:      "F",
+					Sensitive: false,
 				},
 			},
 		},
 		{
-			statement:  `SELECT A, B, D FROM T;`,
+			statement:  `SELECT A, E, F FROM T1 NATURAL JOIN T2 NATURAL JOIN T3;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "E",
+					Sensitive: true,
+				},
+				{
+					Name:      "F",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			statement:  `SELECT A, B, D FROM T1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
@@ -1654,7 +1702,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			},
 		},
 		{
-			statement:  `SELECT * FROM T;`,
+			statement:  `SELECT * FROM T1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{

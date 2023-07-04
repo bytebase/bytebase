@@ -95,6 +95,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 	}
 	for _, iSelectListElem := range selectList.AllSelect_list_elem() {
 		// TODO(zp): handle expression elem
+		// TODO(zp): handle column position
 		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
 			// TODO(zp): handle object_name and alias
 			if columnElem.STAR() != nil {
@@ -122,11 +123,16 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFrom_clau
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sources(ctx snowparser.ITable_sourcesContext) ([]fieldInfo, error) {
 	allTableSources := ctx.AllTable_source()
-	if len(allTableSources) > 1 {
-		// TODO(zp): handle select from multiple table sources.
-		return nil, nil
+	var result []fieldInfo
+	// If there are multiple table sources, the default join type is CROSS JOIN.
+	for _, tableSource := range allTableSources {
+		tableSourceResult, err := extractor.extractSnowsqlSensitiveFieldsTable_source(tableSource)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, tableSourceResult...)
 	}
-	return extractor.extractSnowsqlSensitiveFieldsTable_source(allTableSources[0])
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_source(ctx snowparser.ITable_sourceContext) ([]fieldInfo, error) {
@@ -141,20 +147,69 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sou
 		return nil, nil
 	}
 
+	var left []fieldInfo
+	var err error
 	if ctx.Object_ref() != nil {
-		if len(ctx.AllJoin_clause()) != 0 {
-			// TODO(zp): handle join in table source item.
-			return nil, nil
+		left, err = extractor.extractSnowsqlSensitiveFieldsObject_ref(ctx.Object_ref())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the object ref near line %d", ctx.Object_ref().GetStart().GetLine())
 		}
-		return extractor.extractSnowsqlSensitiveFieldsObject_ref(ctx.Object_ref())
 	}
 
 	if ctx.Table_source_item_joined() != nil {
-		return extractor.extractSnowsqlSensitiveFieldsTable_source_item_joined(ctx.Table_source_item_joined())
+		left, err = extractor.extractSnowsqlSensitiveFieldsTable_source_item_joined(ctx.Table_source_item_joined())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the table source item joined near line %d", ctx.Table_source_item_joined().GetStart().GetLine())
+		}
 	}
 
-	// Never reach here.
-	panic("never reach here")
+	for i, joinClause := range ctx.AllJoin_clause() {
+		left, err = extractor.extractSnowsqlSensitiveFieldsJoin_clause(joinClause, left)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the #%d join clause near line %d", i+1, joinClause.GetStart().GetLine())
+		}
+	}
+
+	return left, nil
+}
+
+// extractSnowsqlSensitiveFieldsJoin_clause extracts sensitive fields from join clause, and return the
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoin_clause(ctx snowparser.IJoin_clauseContext, left []fieldInfo) ([]fieldInfo, error) {
+	// Snowflake has 6 types of join:
+	// INNER JOIN, LEFT OUTER JOIN, RIGHT OUTER JOIN, FULL OUTER JOIN, CROSS JOIN, and NATURAL JOIN.
+	// Only the result(column num) of NATURAL JOIN may be reduced.
+	right, err := extractor.extractSnowsqlSensitiveFieldsObject_ref(ctx.Object_ref())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the right part of the JOIN near line %d", ctx.Object_ref().GetStart().GetLine())
+	}
+	if ctx.NATURAL() != nil {
+		// We should remove all the duplicate columns in the result set.
+		// For example, if the left part has columns [a, b, c], and the right part has columns [a, b, d],
+		// then the result set of NATURAL JOIN should be [a, b, c, d].
+		leftMap := make(map[string]int)
+		for i, field := range left {
+			leftMap[field.name] = i
+		}
+
+		var result []fieldInfo
+		result = append(result, left...)
+		for _, field := range right {
+			if _, ok := leftMap[field.name]; !ok {
+				result = append(result, field)
+			} else if field.sensitive {
+				// If the field is in the left part and the right part, we should keep the field in the left part,
+				// and set the sensitive flag to true if the field in the right part is sensitive.
+				result[leftMap[field.name]].sensitive = true
+			}
+		}
+		return result, nil
+	}
+
+	// For other types of join, we should keep all the columns for the left part and the right part.
+	var result []fieldInfo
+	result = append(result, left...)
+	result = append(result, right...)
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_ref(ctx snowparser.IObject_refContext) ([]fieldInfo, error) {
