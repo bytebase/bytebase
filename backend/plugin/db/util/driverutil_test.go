@@ -1629,9 +1629,13 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 	}{
 		{
 			// Test for field name.
-			statement:  "SELECT A, T.B AS N, T.C from T1 AS T",
+			statement:  "SELECT $1, A, T.B AS N, T.C from T1 AS T",
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
 				{
 					Name:      "A",
 					Sensitive: true,

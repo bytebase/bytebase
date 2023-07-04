@@ -3,6 +3,7 @@ package util
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -93,7 +94,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 	}
 	for _, iSelectListElem := range selectList.AllSelect_list_elem() {
 		// TODO(zp): handle expression elem
-		// TODO(zp): handle column position
 		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
 			// TODO(zp): handle object_name and alias
 			if columnElem.STAR() != nil {
@@ -104,6 +104,18 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 						result = append(result, fromField)
 					}
 				}
+			} else if columnElem.DOLLAR() != nil {
+				columnPosition, err := strconv.Atoi(columnElem.Column_position().Num().GetText())
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to parse column position %q to integer near line %d", columnElem.Column_position().Num().GetText(), columnElem.Column_position().Num().GetStart().GetLine())
+				}
+				if columnPosition < 1 {
+					return nil, errors.Wrapf(err, "column position %d is invalid because it is less than 1 near line %d", columnPosition, columnElem.Column_position().Num().GetStart().GetLine())
+				}
+				if columnPosition > len(fromFieldList) {
+					return nil, errors.Wrapf(err, "column position is invalid because want to try get the %d column near line %d, but FROM clause only returns %d columns", columnPosition, columnElem.Column_position().Num().GetStart().GetLine(), len(fromFieldList))
+				}
+				result = append(result, fromFieldList[columnPosition-1])
 			}
 			if asAlias := columnElem.As_alias(); asAlias != nil {
 				result[len(result)-1].name = parser.NormalizeObjectNamePart(asAlias.Alias().Id_())
