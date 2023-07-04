@@ -410,10 +410,6 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
-	}
-
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
@@ -431,6 +427,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 			return nil, err
 		}
 		return convertToInstance(instance), nil
+	}
+
+	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)

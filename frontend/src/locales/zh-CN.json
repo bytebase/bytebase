@@ -1907,7 +1907,8 @@
       "manage-license": "管理证书",
       "used-and-total-license": "已分配 / 总实例证书",
       "success-notification": "证书分配更新成功",
-      "missing-license-for-instances": "您有 {count} 个实例（{name}）缺失开启该功能的证书。"
+      "missing-license-for-instances": "您有 {count} 个实例（{name}）缺失开启该功能的证书。",
+      "missing-license-for-feature": "缺少实例证书以启用{feature}。点击去分配证书。"
     },
     "update": {
       "success": {
