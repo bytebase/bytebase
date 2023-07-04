@@ -549,7 +549,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	issue, err := s.getIssueMessage(ctx, request.Review.Name)
+	issue, err := s.getIssueMessage(ctx, request.Issue.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -557,7 +557,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	patch := &store.UpdateIssueMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		if path == "approval_finding_done" {
-			if request.Review.ApprovalFindingDone {
+			if request.Issue.ApprovalFindingDone {
 				return nil, status.Errorf(codes.InvalidArgument, "cannot set approval_finding_done to true")
 			}
 			payload := &storepb.IssuePayload{}

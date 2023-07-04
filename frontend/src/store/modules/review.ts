@@ -82,7 +82,7 @@ export const useReviewStore = defineStore("review", () => {
 
   const regenerateReview = async (legacyIssue: LegacyIssue) => {
     const issue = await issueServiceClient.updateIssue({
-      review: {
+      issue: {
         name: issueName(legacyIssue),
         approvalFindingDone: false,
       },

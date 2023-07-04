@@ -4853,7 +4853,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| reviews | [Issue](#bytebase-v1-Issue) | repeated | Issues updated. |
+| issues | [Issue](#bytebase-v1-Issue) | repeated | Issues updated. |
 
 
 
@@ -4884,8 +4884,8 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} |
-| review | [Issue](#bytebase-v1-Issue) |  | The review to create. |
+| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} |
+| issue | [Issue](#bytebase-v1-Issue) |  | The issue to create. |
 
 
 
@@ -4900,7 +4900,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to retrieve. Format: projects/{project}/reviews/{review} |
+| name | [string](#string) |  | The name of the issue to retrieve. Format: projects/{project}/reviews/{review} |
 | force | [bool](#bool) |  |  |
 
 
@@ -4982,7 +4982,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} Use &#34;projects/-&#34; to list all issues from all projects. |
+| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} Use &#34;projects/-&#34; to list all issues from all projects. |
 | page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
 
@@ -5001,7 +5001,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| reviews | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
+| issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
@@ -5033,7 +5033,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the issue to request a review. Format: projects/{project}/reviews/{review} |
+| name | [string](#string) |  | The name of the issue to request a issue. Format: projects/{project}/reviews/{review} |
 | comment | [string](#string) |  |  |
 
 
@@ -5066,7 +5066,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| review | [Issue](#bytebase-v1-Issue) |  | The issue to update.
+| issue | [Issue](#bytebase-v1-Issue) |  | The issue to update.
 
 The issue&#39;s `name` field is used to identify the issue to update. Format: projects/{project}/reviews/{review} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |

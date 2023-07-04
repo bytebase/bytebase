@@ -109,7 +109,7 @@ func request_IssueService_CreateIssue_0(ctx context.Context, marshaler runtime.M
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Review); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Issue); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -143,7 +143,7 @@ func local_request_IssueService_CreateIssue_0(ctx context.Context, marshaler run
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Review); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Issue); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -240,7 +240,7 @@ func local_request_IssueService_ListIssues_0(ctx context.Context, marshaler runt
 }
 
 var (
-	filter_IssueService_UpdateIssue_0 = &utilities.DoubleArray{Encoding: map[string]int{"review": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_IssueService_UpdateIssue_0 = &utilities.DoubleArray{Encoding: map[string]int{"issue": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
 )
 
 func request_IssueService_UpdateIssue_0(ctx context.Context, marshaler runtime.Marshaler, client IssueServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -251,11 +251,11 @@ func request_IssueService_UpdateIssue_0(ctx context.Context, marshaler runtime.M
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Review); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Issue); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
-		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Review); err != nil {
+		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Issue); err != nil {
 			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 		} else {
 			protoReq.UpdateMask = fieldMask
@@ -269,14 +269,14 @@ func request_IssueService_UpdateIssue_0(ctx context.Context, marshaler runtime.M
 		_   = err
 	)
 
-	val, ok = pathParams["review.name"]
+	val, ok = pathParams["issue.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "review.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "issue.name")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "review.name", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "issue.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "review.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "issue.name", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -299,11 +299,11 @@ func local_request_IssueService_UpdateIssue_0(ctx context.Context, marshaler run
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Review); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Issue); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
-		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Review); err != nil {
+		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Issue); err != nil {
 			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 		} else {
 			protoReq.UpdateMask = fieldMask
@@ -317,14 +317,14 @@ func local_request_IssueService_UpdateIssue_0(ctx context.Context, marshaler run
 		_   = err
 	)
 
-	val, ok = pathParams["review.name"]
+	val, ok = pathParams["issue.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "review.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "issue.name")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "review.name", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "issue.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "review.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "issue.name", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -868,7 +868,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssue", runtime.WithHTTPPathPattern("/v1/{review.name=projects/*/reviews/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssue", runtime.WithHTTPPathPattern("/v1/{issue.name=projects/*/reviews/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1148,7 +1148,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssue", runtime.WithHTTPPathPattern("/v1/{review.name=projects/*/reviews/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssue", runtime.WithHTTPPathPattern("/v1/{issue.name=projects/*/reviews/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1306,7 +1306,7 @@ var (
 
 	pattern_IssueService_ListIssues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "reviews"}, ""))
 
-	pattern_IssueService_UpdateIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "review.name"}, ""))
+	pattern_IssueService_UpdateIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "issue.name"}, ""))
 
 	pattern_IssueService_CreateIssueComment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "parent"}, "comment"))
 
