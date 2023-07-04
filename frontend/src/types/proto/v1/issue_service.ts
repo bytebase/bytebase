@@ -6,46 +6,46 @@ import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
-export enum ReviewStatus {
-  REVIEW_STATUS_UNSPECIFIED = 0,
+export enum IssueStatus {
+  ISSUE_STATUS_UNSPECIFIED = 0,
   OPEN = 1,
   DONE = 2,
   CANCELED = 3,
   UNRECOGNIZED = -1,
 }
 
-export function reviewStatusFromJSON(object: any): ReviewStatus {
+export function issueStatusFromJSON(object: any): IssueStatus {
   switch (object) {
     case 0:
-    case "REVIEW_STATUS_UNSPECIFIED":
-      return ReviewStatus.REVIEW_STATUS_UNSPECIFIED;
+    case "ISSUE_STATUS_UNSPECIFIED":
+      return IssueStatus.ISSUE_STATUS_UNSPECIFIED;
     case 1:
     case "OPEN":
-      return ReviewStatus.OPEN;
+      return IssueStatus.OPEN;
     case 2:
     case "DONE":
-      return ReviewStatus.DONE;
+      return IssueStatus.DONE;
     case 3:
     case "CANCELED":
-      return ReviewStatus.CANCELED;
+      return IssueStatus.CANCELED;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return ReviewStatus.UNRECOGNIZED;
+      return IssueStatus.UNRECOGNIZED;
   }
 }
 
-export function reviewStatusToJSON(object: ReviewStatus): string {
+export function issueStatusToJSON(object: IssueStatus): string {
   switch (object) {
-    case ReviewStatus.REVIEW_STATUS_UNSPECIFIED:
-      return "REVIEW_STATUS_UNSPECIFIED";
-    case ReviewStatus.OPEN:
+    case IssueStatus.ISSUE_STATUS_UNSPECIFIED:
+      return "ISSUE_STATUS_UNSPECIFIED";
+    case IssueStatus.OPEN:
       return "OPEN";
-    case ReviewStatus.DONE:
+    case IssueStatus.DONE:
       return "DONE";
-    case ReviewStatus.CANCELED:
+    case IssueStatus.CANCELED:
       return "CANCELED";
-    case ReviewStatus.UNRECOGNIZED:
+    case IssueStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -74,13 +74,13 @@ export interface ListIssuesRequest {
   /**
    * The parent, which owns this collection of reviews.
    * Format: projects/{project}
-   * Use "projects/-" to list all reviews from all projects.
+   * Use "projects/-" to list all issues from all projects.
    */
   parent: string;
   /**
-   * The maximum number of reviews to return. The service may return fewer than
+   * The maximum number of issues to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 reviews will be returned.
+   * If unspecified, at most 50 issues will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
@@ -95,7 +95,7 @@ export interface ListIssuesRequest {
 }
 
 export interface ListIssuesResponse {
-  /** The reviews from the specified request. */
+  /** The issues from the specified request. */
   reviews: Review[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.
@@ -106,9 +106,9 @@ export interface ListIssuesResponse {
 
 export interface UpdateIssueRequest {
   /**
-   * The review to update.
+   * The issue to update.
    *
-   * The review's `name` field is used to identify the review to update.
+   * The issue's `name` field is used to identify the issue to update.
    * Format: projects/{project}/reviews/{review}
    */
   review?: Review;
@@ -118,7 +118,7 @@ export interface UpdateIssueRequest {
 
 export interface BatchUpdateIssuesRequest {
   /**
-   * The parent resource shared by all reviews being updated.
+   * The parent resource shared by all issues being updated.
    * Format: projects/{project}
    * If the operation spans parents, a dash (-) may be accepted as a wildcard.
    * We only support updating the status of databases for now.
@@ -132,13 +132,13 @@ export interface BatchUpdateIssuesRequest {
 }
 
 export interface BatchUpdateIssuesResponse {
-  /** Reviews updated. */
+  /** Issues updated. */
   reviews: Review[];
 }
 
 export interface ApproveReviewRequest {
   /**
-   * The name of the review to add an approver.
+   * The name of the issue to add an approver.
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
@@ -147,7 +147,7 @@ export interface ApproveReviewRequest {
 
 export interface RejectReviewRequest {
   /**
-   * The name of the review to add an rejecting reviewer.
+   * The name of the issue to add an rejecting reviewer.
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
@@ -156,7 +156,7 @@ export interface RejectReviewRequest {
 
 export interface RequestReviewRequest {
   /**
-   * The name of the review to request a review.
+   * The name of the issue to request a review.
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
@@ -165,8 +165,7 @@ export interface RequestReviewRequest {
 
 export interface Review {
   /**
-   * The name of the review.
-   * `review` is a system generated ID.
+   * The name of the issue.
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
@@ -174,19 +173,19 @@ export interface Review {
   uid: string;
   title: string;
   /**
-   * The plan associated with the review.
+   * The plan associated with the issue.
    * Can be empty.
    * Format: projects/{project}/plans/{plan}
    */
   plan: string;
   /**
-   * The rollout associated with the review.
+   * The rollout associated with the issue.
    * Can be empty.
    * Format: projects/{project}/rollouts/{rollout}
    */
   rollout: string;
   description: string;
-  status: ReviewStatus;
+  status: IssueStatus;
   /** Format: users/hello@world.com */
   assignee: string;
   assigneeAttention: boolean;
@@ -434,25 +433,25 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
 
 export interface CreateIssueCommentRequest {
   /**
-   * The review name
+   * The issue name
    * Format: projects/{project}/reviews/{review}
    */
   parent: string;
-  reviewComment?: ReviewComment;
+  issueComment?: IssueComment;
 }
 
 export interface UpdateIssueCommentRequest {
   /**
-   * The review name
+   * The issue name
    * Format: projects/{project}/reviews/{review}
    */
   parent: string;
-  reviewComment?: ReviewComment;
+  issueComment?: IssueComment;
   /** The list of fields to update. */
   updateMask?: string[];
 }
 
-export interface ReviewComment {
+export interface IssueComment {
   uid: string;
   comment: string;
   /** TODO: use struct message instead. */
@@ -1406,7 +1405,7 @@ export const Review = {
       plan: isSet(object.plan) ? String(object.plan) : "",
       rollout: isSet(object.rollout) ? String(object.rollout) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      status: isSet(object.status) ? reviewStatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? issueStatusFromJSON(object.status) : 0,
       assignee: isSet(object.assignee) ? String(object.assignee) : "",
       assigneeAttention: isSet(object.assigneeAttention) ? Boolean(object.assigneeAttention) : false,
       approvalTemplates: Array.isArray(object?.approvalTemplates)
@@ -1430,7 +1429,7 @@ export const Review = {
     message.plan !== undefined && (obj.plan = message.plan);
     message.rollout !== undefined && (obj.rollout = message.rollout);
     message.description !== undefined && (obj.description = message.description);
-    message.status !== undefined && (obj.status = reviewStatusToJSON(message.status));
+    message.status !== undefined && (obj.status = issueStatusToJSON(message.status));
     message.assignee !== undefined && (obj.assignee = message.assignee);
     message.assigneeAttention !== undefined && (obj.assigneeAttention = message.assigneeAttention);
     if (message.approvalTemplates) {
@@ -1889,7 +1888,7 @@ export const ApprovalNode = {
 };
 
 function createBaseCreateIssueCommentRequest(): CreateIssueCommentRequest {
-  return { parent: "", reviewComment: undefined };
+  return { parent: "", issueComment: undefined };
 }
 
 export const CreateIssueCommentRequest = {
@@ -1897,8 +1896,8 @@ export const CreateIssueCommentRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
-    if (message.reviewComment !== undefined) {
-      ReviewComment.encode(message.reviewComment, writer.uint32(18).fork()).ldelim();
+    if (message.issueComment !== undefined) {
+      IssueComment.encode(message.issueComment, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1922,7 +1921,7 @@ export const CreateIssueCommentRequest = {
             break;
           }
 
-          message.reviewComment = ReviewComment.decode(reader, reader.uint32());
+          message.issueComment = IssueComment.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1936,15 +1935,15 @@ export const CreateIssueCommentRequest = {
   fromJSON(object: any): CreateIssueCommentRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      reviewComment: isSet(object.reviewComment) ? ReviewComment.fromJSON(object.reviewComment) : undefined,
+      issueComment: isSet(object.issueComment) ? IssueComment.fromJSON(object.issueComment) : undefined,
     };
   },
 
   toJSON(message: CreateIssueCommentRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
-    message.reviewComment !== undefined &&
-      (obj.reviewComment = message.reviewComment ? ReviewComment.toJSON(message.reviewComment) : undefined);
+    message.issueComment !== undefined &&
+      (obj.issueComment = message.issueComment ? IssueComment.toJSON(message.issueComment) : undefined);
     return obj;
   },
 
@@ -1955,15 +1954,15 @@ export const CreateIssueCommentRequest = {
   fromPartial(object: DeepPartial<CreateIssueCommentRequest>): CreateIssueCommentRequest {
     const message = createBaseCreateIssueCommentRequest();
     message.parent = object.parent ?? "";
-    message.reviewComment = (object.reviewComment !== undefined && object.reviewComment !== null)
-      ? ReviewComment.fromPartial(object.reviewComment)
+    message.issueComment = (object.issueComment !== undefined && object.issueComment !== null)
+      ? IssueComment.fromPartial(object.issueComment)
       : undefined;
     return message;
   },
 };
 
 function createBaseUpdateIssueCommentRequest(): UpdateIssueCommentRequest {
-  return { parent: "", reviewComment: undefined, updateMask: undefined };
+  return { parent: "", issueComment: undefined, updateMask: undefined };
 }
 
 export const UpdateIssueCommentRequest = {
@@ -1971,8 +1970,8 @@ export const UpdateIssueCommentRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
-    if (message.reviewComment !== undefined) {
-      ReviewComment.encode(message.reviewComment, writer.uint32(18).fork()).ldelim();
+    if (message.issueComment !== undefined) {
+      IssueComment.encode(message.issueComment, writer.uint32(18).fork()).ldelim();
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(26).fork()).ldelim();
@@ -1999,7 +1998,7 @@ export const UpdateIssueCommentRequest = {
             break;
           }
 
-          message.reviewComment = ReviewComment.decode(reader, reader.uint32());
+          message.issueComment = IssueComment.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -2020,7 +2019,7 @@ export const UpdateIssueCommentRequest = {
   fromJSON(object: any): UpdateIssueCommentRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      reviewComment: isSet(object.reviewComment) ? ReviewComment.fromJSON(object.reviewComment) : undefined,
+      issueComment: isSet(object.issueComment) ? IssueComment.fromJSON(object.issueComment) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
@@ -2028,8 +2027,8 @@ export const UpdateIssueCommentRequest = {
   toJSON(message: UpdateIssueCommentRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
-    message.reviewComment !== undefined &&
-      (obj.reviewComment = message.reviewComment ? ReviewComment.toJSON(message.reviewComment) : undefined);
+    message.issueComment !== undefined &&
+      (obj.issueComment = message.issueComment ? IssueComment.toJSON(message.issueComment) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
@@ -2041,20 +2040,20 @@ export const UpdateIssueCommentRequest = {
   fromPartial(object: DeepPartial<UpdateIssueCommentRequest>): UpdateIssueCommentRequest {
     const message = createBaseUpdateIssueCommentRequest();
     message.parent = object.parent ?? "";
-    message.reviewComment = (object.reviewComment !== undefined && object.reviewComment !== null)
-      ? ReviewComment.fromPartial(object.reviewComment)
+    message.issueComment = (object.issueComment !== undefined && object.issueComment !== null)
+      ? IssueComment.fromPartial(object.issueComment)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
 
-function createBaseReviewComment(): ReviewComment {
+function createBaseIssueComment(): IssueComment {
   return { uid: "", comment: "", payload: "", createTime: undefined, updateTime: undefined };
 }
 
-export const ReviewComment = {
-  encode(message: ReviewComment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const IssueComment = {
+  encode(message: IssueComment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.uid !== "") {
       writer.uint32(10).string(message.uid);
     }
@@ -2073,10 +2072,10 @@ export const ReviewComment = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ReviewComment {
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseReviewComment();
+    const message = createBaseIssueComment();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2124,7 +2123,7 @@ export const ReviewComment = {
     return message;
   },
 
-  fromJSON(object: any): ReviewComment {
+  fromJSON(object: any): IssueComment {
     return {
       uid: isSet(object.uid) ? String(object.uid) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
@@ -2134,7 +2133,7 @@ export const ReviewComment = {
     };
   },
 
-  toJSON(message: ReviewComment): unknown {
+  toJSON(message: IssueComment): unknown {
     const obj: any = {};
     message.uid !== undefined && (obj.uid = message.uid);
     message.comment !== undefined && (obj.comment = message.comment);
@@ -2144,12 +2143,12 @@ export const ReviewComment = {
     return obj;
   },
 
-  create(base?: DeepPartial<ReviewComment>): ReviewComment {
-    return ReviewComment.fromPartial(base ?? {});
+  create(base?: DeepPartial<IssueComment>): IssueComment {
+    return IssueComment.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ReviewComment>): ReviewComment {
-    const message = createBaseReviewComment();
+  fromPartial(object: DeepPartial<IssueComment>): IssueComment {
+    const message = createBaseIssueComment();
     message.uid = object.uid ?? "";
     message.comment = object.comment ?? "";
     message.payload = object.payload ?? "";
@@ -2393,13 +2392,13 @@ export const IssueServiceDefinition = {
       name: "CreateIssueComment",
       requestType: CreateIssueCommentRequest,
       requestStream: false,
-      responseType: ReviewComment,
+      responseType: IssueComment,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [
             new Uint8Array([
-              21,
+              20,
               112,
               97,
               114,
@@ -2407,12 +2406,11 @@ export const IssueServiceDefinition = {
               110,
               116,
               44,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               95,
               99,
               111,
@@ -2425,15 +2423,14 @@ export const IssueServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              59,
               58,
-              14,
-              114,
-              101,
-              118,
+              58,
+              13,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               95,
               99,
               111,
@@ -2494,13 +2491,13 @@ export const IssueServiceDefinition = {
       name: "UpdateIssueComment",
       requestType: UpdateIssueCommentRequest,
       requestStream: false,
-      responseType: ReviewComment,
+      responseType: IssueComment,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [
             new Uint8Array([
-              33,
+              32,
               112,
               97,
               114,
@@ -2508,12 +2505,11 @@ export const IssueServiceDefinition = {
               110,
               116,
               44,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               95,
               99,
               111,
@@ -2538,15 +2534,14 @@ export const IssueServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              59,
               58,
-              14,
-              114,
-              101,
-              118,
+              58,
+              13,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               95,
               99,
               111,
@@ -2860,11 +2855,11 @@ export interface IssueServiceImplementation<CallContextExt = {}> {
   createIssueComment(
     request: CreateIssueCommentRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ReviewComment>>;
+  ): Promise<DeepPartial<IssueComment>>;
   updateIssueComment(
     request: UpdateIssueCommentRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ReviewComment>>;
+  ): Promise<DeepPartial<IssueComment>>;
   batchUpdateIssues(
     request: BatchUpdateIssuesRequest,
     context: CallContext & CallContextExt,
@@ -2885,11 +2880,11 @@ export interface IssueServiceClient<CallOptionsExt = {}> {
   createIssueComment(
     request: DeepPartial<CreateIssueCommentRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ReviewComment>;
+  ): Promise<IssueComment>;
   updateIssueComment(
     request: DeepPartial<UpdateIssueCommentRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ReviewComment>;
+  ): Promise<IssueComment>;
   batchUpdateIssues(
     request: DeepPartial<BatchUpdateIssuesRequest>,
     options?: CallOptions & CallOptionsExt,
