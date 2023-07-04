@@ -8,7 +8,7 @@
     <NDrawerContent
       :title="panelTitle"
       :closable="true"
-      class="w-[60rem] max-w-[100vw] relative"
+      class="w-[64rem] max-w-[100vw] relative"
     >
       <div v-for="role in roleList" :key="role.role" class="mb-4">
         <template v-if="role.singleBindingList.length > 0">
@@ -197,7 +197,7 @@ const COLUMNS = computed(() => {
     },
     {
       title: t("common.database"),
-      width: "1fr",
+      width: "2fr",
     },
     {
       title: t("common.schema"),
@@ -209,7 +209,7 @@ const COLUMNS = computed(() => {
     },
     {
       title: t("common.expiration"),
-      width: "1fr",
+      width: "12rem",
     },
     {
       title: t("common.description"),
