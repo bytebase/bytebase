@@ -29,7 +29,7 @@ const emptyReview = (issue: Issue) => {
 export const useReviewStore = defineStore("review", () => {
   const reviewsByName = ref(new Map<string, Review>());
 
-  const getReviewByIssue = (issue: Issue) => {
+  const getIssueByIssue = (issue: Issue) => {
     return reviewsByName.value.get(reviewName(issue)) ?? emptyReview(issue);
   };
 
@@ -42,7 +42,7 @@ export const useReviewStore = defineStore("review", () => {
     const name = reviewName(issue);
 
     try {
-      const review = await issueServiceClient.getReview({
+      const review = await issueServiceClient.getIssue({
         name,
         force,
       });
@@ -78,7 +78,7 @@ export const useReviewStore = defineStore("review", () => {
   };
 
   const regenerateReview = async (issue: Issue) => {
-    const review = await issueServiceClient.updateReview({
+    const review = await issueServiceClient.updateIssue({
       review: {
         name: reviewName(issue),
         approvalFindingDone: false,
@@ -89,7 +89,7 @@ export const useReviewStore = defineStore("review", () => {
   };
 
   return {
-    getReviewByIssue,
+    getIssueByIssue,
     fetchReviewByIssue,
     approveReview,
     rejectReview,

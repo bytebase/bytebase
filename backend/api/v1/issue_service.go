@@ -54,10 +54,10 @@ func NewIssueService(store *store.Store, activityManager *activity.Manager, task
 	}
 }
 
-// GetReview gets a review.
+// GetIssue gets a review.
 // Currently, only review.ApprovalTemplates and review.Approvers are set.
-func (s *IssueService) GetReview(ctx context.Context, request *v1pb.GetReviewRequest) (*v1pb.Review, error) {
-	issue, err := s.getIssue(ctx, request.Name)
+func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueRequest) (*v1pb.Review, error) {
+	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (s *IssueService) GetReview(ctx context.Context, request *v1pb.GetReviewReq
 			return nil, status.Errorf(codes.Internal, "failed to check external approval status, error: %v", errs)
 		}
 	}
-	issue, err = s.getIssue(ctx, request.Name)
+	issue, err = s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (s *IssueService) GetReview(ctx context.Context, request *v1pb.GetReviewReq
 
 // ApproveReview approves the approval flow of the review.
 func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveReviewRequest) (*v1pb.Review, error) {
-	issue, err := s.getIssue(ctx, request.Name)
+	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +328,7 @@ func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveR
 
 // RejectReview rejects a review.
 func (s *IssueService) RejectReview(ctx context.Context, request *v1pb.RejectReviewRequest) (*v1pb.Review, error) {
-	issue, err := s.getIssue(ctx, request.Name)
+	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +434,7 @@ func (s *IssueService) RejectReview(ctx context.Context, request *v1pb.RejectRev
 
 // RequestReview requests a review.
 func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestReviewRequest) (*v1pb.Review, error) {
-	issue, err := s.getIssue(ctx, request.Name)
+	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -542,14 +542,14 @@ func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestR
 	return review, nil
 }
 
-// UpdateReview updates the review.
+// UpdateIssue updates the review.
 // It can only update approval_finding_done to false.
-func (s *IssueService) UpdateReview(ctx context.Context, request *v1pb.UpdateReviewRequest) (*v1pb.Review, error) {
+func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssueRequest) (*v1pb.Review, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	issue, err := s.getIssue(ctx, request.Review.Name)
+	issue, err := s.getIssueMessage(ctx, request.Review.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -603,12 +603,12 @@ func (s *IssueService) UpdateReview(ctx context.Context, request *v1pb.UpdateRev
 	return review, nil
 }
 
-// CreateReviewComment creates the review comment.
-func (s *IssueService) CreateReviewComment(ctx context.Context, request *v1pb.CreateReviewCommentRequest) (*v1pb.ReviewComment, error) {
+// CreateIssueComment creates the review comment.
+func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.CreateIssueCommentRequest) (*v1pb.ReviewComment, error) {
 	if request.ReviewComment.Comment == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "review comment is empty")
 	}
-	issue, err := s.getIssue(ctx, request.Parent)
+	issue, err := s.getIssueMessage(ctx, request.Parent)
 	if err != nil {
 		return nil, err
 	}
@@ -648,8 +648,8 @@ func (s *IssueService) CreateReviewComment(ctx context.Context, request *v1pb.Cr
 	}, nil
 }
 
-// UpdateReviewComment updates the review comment.
-func (s *IssueService) UpdateReviewComment(ctx context.Context, request *v1pb.UpdateReviewCommentRequest) (*v1pb.ReviewComment, error) {
+// UpdateIssueComment updates the review comment.
+func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.UpdateIssueCommentRequest) (*v1pb.ReviewComment, error) {
 	if request.UpdateMask.Paths == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
@@ -714,8 +714,8 @@ func (s *IssueService) onReviewApproved(ctx context.Context, issue *store.IssueM
 	}
 }
 
-func (s *IssueService) getIssue(ctx context.Context, name string) (*store.IssueMessage, error) {
-	reviewID, err := getReviewID(name)
+func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {
+	reviewID, err := getIssueID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
