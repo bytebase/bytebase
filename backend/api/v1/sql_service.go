@@ -1755,6 +1755,15 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 	pass := false
 	usedExpression := ""
 	for _, binding := range projectPolicy.Bindings {
+		// Project owner has all permissions.
+		if binding.Role == api.Role(common.ProjectOwner) {
+			for _, member := range binding.Members {
+				if member.ID == principalID {
+					pass = true
+					break
+				}
+			}
+		}
 		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
 			continue
 		}
