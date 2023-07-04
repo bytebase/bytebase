@@ -25,7 +25,10 @@ const downloadSheet = async () => {
       raw: true,
     });
 
-    const filename = `${response.title}.sql`;
+    let filename = response.title;
+    if (!filename.endsWith(".sql")) {
+      filename = `${response.title}.sql`;
+    }
     const content = new TextDecoder().decode(response.content);
 
     const blob = new Blob([content], { type: "text/plain" });
