@@ -294,6 +294,35 @@
   
     - [InstanceService](#bytebase-v1-InstanceService)
   
+- [v1/issue_service.proto](#v1_issue_service-proto)
+    - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
+    - [ApprovalNode](#bytebase-v1-ApprovalNode)
+    - [ApprovalStep](#bytebase-v1-ApprovalStep)
+    - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
+    - [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest)
+    - [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest)
+    - [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse)
+    - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
+    - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
+    - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
+    - [IssueComment](#bytebase-v1-IssueComment)
+    - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
+    - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
+    - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
+    - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
+    - [Review](#bytebase-v1-Review)
+    - [Review.Approver](#bytebase-v1-Review-Approver)
+    - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
+    - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
+  
+    - [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue)
+    - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
+    - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
+    - [IssueStatus](#bytebase-v1-IssueStatus)
+    - [Review.Approver.Status](#bytebase-v1-Review-Approver-Status)
+  
+    - [IssueService](#bytebase-v1-IssueService)
+  
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
     - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
@@ -359,35 +388,6 @@
     - [Workflow](#bytebase-v1-Workflow)
   
     - [ProjectService](#bytebase-v1-ProjectService)
-  
-- [v1/review_service.proto](#v1_review_service-proto)
-    - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
-    - [ApprovalNode](#bytebase-v1-ApprovalNode)
-    - [ApprovalStep](#bytebase-v1-ApprovalStep)
-    - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
-    - [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest)
-    - [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest)
-    - [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse)
-    - [CreateReviewCommentRequest](#bytebase-v1-CreateReviewCommentRequest)
-    - [CreateReviewRequest](#bytebase-v1-CreateReviewRequest)
-    - [GetReviewRequest](#bytebase-v1-GetReviewRequest)
-    - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
-    - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
-    - [RejectReviewRequest](#bytebase-v1-RejectReviewRequest)
-    - [RequestReviewRequest](#bytebase-v1-RequestReviewRequest)
-    - [Review](#bytebase-v1-Review)
-    - [Review.Approver](#bytebase-v1-Review-Approver)
-    - [ReviewComment](#bytebase-v1-ReviewComment)
-    - [UpdateReviewCommentRequest](#bytebase-v1-UpdateReviewCommentRequest)
-    - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
-  
-    - [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue)
-    - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
-    - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
-    - [Review.Approver.Status](#bytebase-v1-Review-Approver-Status)
-    - [ReviewStatus](#bytebase-v1-ReviewStatus)
-  
-    - [ReviewService](#bytebase-v1-ReviewService)
   
 - [v1/risk_service.proto](#v1_risk_service-proto)
     - [CreateRiskRequest](#bytebase-v1-CreateRiskRequest)
@@ -4739,6 +4739,448 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
+<a name="v1_issue_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/issue_service.proto
+
+
+
+<a name="bytebase-v1-ApprovalFlow"></a>
+
+### ApprovalFlow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| steps | [ApprovalStep](#bytebase-v1-ApprovalStep) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ApprovalNode"></a>
+
+### ApprovalNode
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type) |  |  |
+| group_value | [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue) |  |  |
+| role | [string](#string) |  | Format: roles/{role} |
+| external_node_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ApprovalStep"></a>
+
+### ApprovalStep
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type) |  |  |
+| nodes | [ApprovalNode](#bytebase-v1-ApprovalNode) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ApprovalTemplate"></a>
+
+### ApprovalTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| creator | [string](#string) |  | The name of the creator in users/{email} format. TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator. |
+
+
+
+
+
+
+<a name="bytebase-v1-ApproveIssueRequest"></a>
+
+### ApproveIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue to add an approver. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateIssuesRequest"></a>
+
+### BatchUpdateIssuesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource shared by all issues being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
+| requests | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateIssuesResponse"></a>
+
+### BatchUpdateIssuesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| reviews | [Review](#bytebase-v1-Review) | repeated | Issues updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateIssueCommentRequest"></a>
+
+### CreateIssueCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The issue name Format: projects/{project}/reviews/{review} |
+| issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateIssueRequest"></a>
+
+### CreateIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} |
+| review | [Review](#bytebase-v1-Review) |  | The review to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetIssueRequest"></a>
+
+### GetIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review to retrieve. Format: projects/{project}/reviews/{review} |
+| force | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment"></a>
+
+### IssueComment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| uid | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
+| payload | [string](#string) |  | TODO: use struct message instead. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIssuesRequest"></a>
+
+### ListIssuesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} Use &#34;projects/-&#34; to list all issues from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIssuesResponse"></a>
+
+### ListIssuesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| reviews | [Review](#bytebase-v1-Review) | repeated | The issues from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-RejectIssueRequest"></a>
+
+### RejectIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue to add an rejecting reviewer. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestIssueRequest"></a>
+
+### RequestIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue to request a review. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Review"></a>
+
+### Review
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue. Format: projects/{project}/reviews/{review} |
+| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
+| title | [string](#string) |  |  |
+| plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
+| rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
+| description | [string](#string) |  |  |
+| status | [IssueStatus](#bytebase-v1-IssueStatus) |  |  |
+| assignee | [string](#string) |  | Format: users/hello@world.com |
+| assignee_attention | [bool](#bool) |  |  |
+| approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
+| approvers | [Review.Approver](#bytebase-v1-Review-Approver) | repeated |  |
+| approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
+| approval_finding_error | [string](#string) |  |  |
+| subscribers | [string](#string) | repeated | The subscribers. Format: users/hello@world.com |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Review-Approver"></a>
+
+### Review.Approver
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Review.Approver.Status](#bytebase-v1-Review-Approver-Status) |  | The new status. |
+| principal | [string](#string) |  | Format: users/hello@world.com |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateIssueCommentRequest"></a>
+
+### UpdateIssueCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The issue name Format: projects/{project}/reviews/{review} |
+| issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateIssueRequest"></a>
+
+### UpdateIssueRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| review | [Review](#bytebase-v1-Review) |  | The issue to update.
+
+The issue&#39;s `name` field is used to identify the issue to update. Format: projects/{project}/reviews/{review} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-ApprovalNode-GroupValue"></a>
+
+### ApprovalNode.GroupValue
+The predefined user groups are:
+- WORKSPACE_OWNER
+- WORKSPACE_DBA
+- PROJECT_OWNER
+- PROJECT_MEMBER
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| GROUP_VALUE_UNSPECIFILED | 0 |  |
+| WORKSPACE_OWNER | 1 |  |
+| WORKSPACE_DBA | 2 |  |
+| PROJECT_OWNER | 3 |  |
+| PROJECT_MEMBER | 4 |  |
+
+
+
+<a name="bytebase-v1-ApprovalNode-Type"></a>
+
+### ApprovalNode.Type
+Type of the ApprovalNode.
+type determines who should approve this node.
+ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
+See GroupValue below for the predefined user groups.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| ANY_IN_GROUP | 1 |  |
+
+
+
+<a name="bytebase-v1-ApprovalStep-Type"></a>
+
+### ApprovalStep.Type
+Type of the ApprovalStep
+ALL means every node must be approved to proceed.
+ANY means approving any node will proceed.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| ALL | 1 |  |
+| ANY | 2 |  |
+
+
+
+<a name="bytebase-v1-IssueStatus"></a>
+
+### IssueStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ISSUE_STATUS_UNSPECIFIED | 0 |  |
+| OPEN | 1 |  |
+| DONE | 2 |  |
+| CANCELED | 3 |  |
+
+
+
+<a name="bytebase-v1-Review-Approver-Status"></a>
+
+### Review.Approver.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
+| REJECTED | 3 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-IssueService"></a>
+
+### IssueService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetIssue | [GetIssueRequest](#bytebase-v1-GetIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) |  |
+| UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
+| UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
+| BatchUpdateIssues | [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest) | [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse) |  |
+| ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Review](#bytebase-v1-Review) |  |
+
+ 
+
+
+
 <a name="v1_project_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -5794,448 +6236,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | CreateSchemaGroup | [CreateSchemaGroupRequest](#bytebase-v1-CreateSchemaGroupRequest) | [SchemaGroup](#bytebase-v1-SchemaGroup) |  |
 | UpdateSchemaGroup | [UpdateSchemaGroupRequest](#bytebase-v1-UpdateSchemaGroupRequest) | [SchemaGroup](#bytebase-v1-SchemaGroup) |  |
 | DeleteSchemaGroup | [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
-<a name="v1_review_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/review_service.proto
-
-
-
-<a name="bytebase-v1-ApprovalFlow"></a>
-
-### ApprovalFlow
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| steps | [ApprovalStep](#bytebase-v1-ApprovalStep) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ApprovalNode"></a>
-
-### ApprovalNode
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type) |  |  |
-| group_value | [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue) |  |  |
-| role | [string](#string) |  | Format: roles/{role} |
-| external_node_id | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ApprovalStep"></a>
-
-### ApprovalStep
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type) |  |  |
-| nodes | [ApprovalNode](#bytebase-v1-ApprovalNode) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ApprovalTemplate"></a>
-
-### ApprovalTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
-| title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
-| creator | [string](#string) |  | The name of the creator in users/{email} format. TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator. |
-
-
-
-
-
-
-<a name="bytebase-v1-ApproveReviewRequest"></a>
-
-### ApproveReviewRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to add an approver. Format: projects/{project}/reviews/{review} |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateReviewsRequest"></a>
-
-### BatchUpdateReviewsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all reviews being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
-| requests | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateReviewsResponse"></a>
-
-### BatchUpdateReviewsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| reviews | [Review](#bytebase-v1-Review) | repeated | Reviews updated. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateReviewCommentRequest"></a>
-
-### CreateReviewCommentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The review name Format: projects/{project}/reviews/{review} |
-| review_comment | [ReviewComment](#bytebase-v1-ReviewComment) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateReviewRequest"></a>
-
-### CreateReviewRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} |
-| review | [Review](#bytebase-v1-Review) |  | The review to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetReviewRequest"></a>
-
-### GetReviewRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to retrieve. Format: projects/{project}/reviews/{review} |
-| force | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ListReviewsRequest"></a>
-
-### ListReviewsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} Use &#34;projects/-&#34; to list all reviews from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of reviews to return. The service may return fewer than this value. If unspecified, at most 50 reviews will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListReviews` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListReviews` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListReviewsResponse"></a>
-
-### ListReviewsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| reviews | [Review](#bytebase-v1-Review) | repeated | The reviews from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-RejectReviewRequest"></a>
-
-### RejectReviewRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to add an rejecting reviewer. Format: projects/{project}/reviews/{review} |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-RequestReviewRequest"></a>
-
-### RequestReviewRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to request a review. Format: projects/{project}/reviews/{review} |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Review"></a>
-
-### Review
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review. `review` is a system generated ID. Format: projects/{project}/reviews/{review} |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| title | [string](#string) |  |  |
-| plan | [string](#string) |  | The plan associated with the review. Can be empty. Format: projects/{project}/plans/{plan} |
-| rollout | [string](#string) |  | The rollout associated with the review. Can be empty. Format: projects/{project}/rollouts/{rollout} |
-| description | [string](#string) |  |  |
-| status | [ReviewStatus](#bytebase-v1-ReviewStatus) |  |  |
-| assignee | [string](#string) |  | Format: users/hello@world.com |
-| assignee_attention | [bool](#bool) |  |  |
-| approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
-| approvers | [Review.Approver](#bytebase-v1-Review-Approver) | repeated |  |
-| approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
-| approval_finding_error | [string](#string) |  |  |
-| subscribers | [string](#string) | repeated | The subscribers. Format: users/hello@world.com |
-| creator | [string](#string) |  | Format: users/hello@world.com |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Review-Approver"></a>
-
-### Review.Approver
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [Review.Approver.Status](#bytebase-v1-Review-Approver-Status) |  | The new status. |
-| principal | [string](#string) |  | Format: users/hello@world.com |
-
-
-
-
-
-
-<a name="bytebase-v1-ReviewComment"></a>
-
-### ReviewComment
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| uid | [string](#string) |  |  |
-| comment | [string](#string) |  |  |
-| payload | [string](#string) |  | TODO: use struct message instead. |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateReviewCommentRequest"></a>
-
-### UpdateReviewCommentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The review name Format: projects/{project}/reviews/{review} |
-| review_comment | [ReviewComment](#bytebase-v1-ReviewComment) |  |  |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateReviewRequest"></a>
-
-### UpdateReviewRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| review | [Review](#bytebase-v1-Review) |  | The review to update.
-
-The review&#39;s `name` field is used to identify the review to update. Format: projects/{project}/reviews/{review} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-ApprovalNode-GroupValue"></a>
-
-### ApprovalNode.GroupValue
-The predefined user groups are:
-- WORKSPACE_OWNER
-- WORKSPACE_DBA
-- PROJECT_OWNER
-- PROJECT_MEMBER
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| GROUP_VALUE_UNSPECIFILED | 0 |  |
-| WORKSPACE_OWNER | 1 |  |
-| WORKSPACE_DBA | 2 |  |
-| PROJECT_OWNER | 3 |  |
-| PROJECT_MEMBER | 4 |  |
-
-
-
-<a name="bytebase-v1-ApprovalNode-Type"></a>
-
-### ApprovalNode.Type
-Type of the ApprovalNode.
-type determines who should approve this node.
-ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
-See GroupValue below for the predefined user groups.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| ANY_IN_GROUP | 1 |  |
-
-
-
-<a name="bytebase-v1-ApprovalStep-Type"></a>
-
-### ApprovalStep.Type
-Type of the ApprovalStep
-ALL means every node must be approved to proceed.
-ANY means approving any node will proceed.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| ALL | 1 |  |
-| ANY | 2 |  |
-
-
-
-<a name="bytebase-v1-Review-Approver-Status"></a>
-
-### Review.Approver.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
-| REJECTED | 3 |  |
-
-
-
-<a name="bytebase-v1-ReviewStatus"></a>
-
-### ReviewStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| REVIEW_STATUS_UNSPECIFIED | 0 |  |
-| OPEN | 1 |  |
-| DONE | 2 |  |
-| CANCELED | 3 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-ReviewService"></a>
-
-### ReviewService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetReview | [GetReviewRequest](#bytebase-v1-GetReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| CreateReview | [CreateReviewRequest](#bytebase-v1-CreateReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| ListReviews | [ListReviewsRequest](#bytebase-v1-ListReviewsRequest) | [ListReviewsResponse](#bytebase-v1-ListReviewsResponse) |  |
-| UpdateReview | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| CreateReviewComment | [CreateReviewCommentRequest](#bytebase-v1-CreateReviewCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
-| UpdateReviewComment | [UpdateReviewCommentRequest](#bytebase-v1-UpdateReviewCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
-| BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
-| ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| RejectReview | [RejectReviewRequest](#bytebase-v1-RejectReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| RequestReview | [RequestReviewRequest](#bytebase-v1-RequestReviewRequest) | [Review](#bytebase-v1-Review) |  |
 
  
 
@@ -8229,6 +8229,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | column_type_names | [string](#string) | repeated | Column types of the query result. The types come from the Golang SQL driver. |
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
 | masked | [bool](#bool) | repeated | Columns are masked or not. |
+| sensitive | [bool](#bool) | repeated | Columns are sensitive or not. |
 | error | [string](#string) |  | The error message if the query failed. |
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
 | statement | [string](#string) |  | The query statement for the result. |

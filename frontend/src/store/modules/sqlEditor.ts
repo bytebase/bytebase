@@ -113,6 +113,7 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
     columnTypeNames: ["BIGINT"],
     masked: [false],
     error: "",
+    statement: "",
     rows: [
       {
         values: [

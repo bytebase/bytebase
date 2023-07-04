@@ -1070,7 +1070,7 @@
     },
     "environment-tier": {
       "name": "Environment tier",
-      "description": "The environment will appear differently from other environments.{newline}Developers cannot execute any query on this environment's databases \nusing SQL Editor by default. ",
+      "description": "The environment will appear differently from other environments.",
       "mark-env-as-production": "Mark as production environment"
     }
   },
@@ -1912,7 +1912,8 @@
       "manage-license": "Manage Instance License",
       "used-and-total-license": "Assigned / Total Instance License",
       "success-notification": "Successfully update license assignment",
-      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature."
+      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature.",
+      "missing-license-for-feature": "Missing instance license to enable {feature}. Click to assign now."
     },
     "update": {
       "success": {

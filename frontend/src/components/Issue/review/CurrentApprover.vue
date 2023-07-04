@@ -19,7 +19,7 @@
 import { computed } from "vue";
 
 import { Issue } from "@/types";
-import { Review } from "@/types/proto/v1/review_service";
+import { Review } from "@/types/proto/v1/issue_service";
 import {
   extractIssueReviewContext,
   useWrappedReviewSteps,

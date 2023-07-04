@@ -35,7 +35,7 @@ import {
   sheetSlugV1,
   connectionV1Slug as makeConnectionV1Slug,
   isSheetReadableV1,
-  isDatabaseV1Accessible,
+  isDatabaseV1Queryable,
   getDefaultTabNameFromConnection,
   isSimilarTab,
   hasWorkspacePermissionV1,
@@ -66,8 +66,8 @@ const sheetV1Store = useSheetV1Store();
 const prepareAccessControlPolicy = async () => {
   connectionTreeStore.accessControlPolicyList =
     await policyV1Store.fetchPolicies({
-      policyType: PolicyType.ACCESS_CONTROL,
-      resourceType: PolicyResourceType.DATABASE,
+      policyType: PolicyType.WORKSPACE_IAM,
+      resourceType: PolicyResourceType.WORKSPACE,
     });
 };
 
@@ -87,11 +87,7 @@ const prepareAccessibleDatabaseList = async () => {
   ).filter(
     (db) =>
       db.syncState === State.ACTIVE &&
-      isDatabaseV1Accessible(
-        db,
-        connectionTreeStore.accessControlPolicyList,
-        currentUserV1.value
-      )
+      isDatabaseV1Queryable(db, currentUserV1.value)
   );
   connectionTreeStore.tree.databaseList = databaseList;
 };
@@ -130,11 +126,7 @@ const prepareConnectionTree = async () => {
             "database",
             instance.uid
           );
-          node.disabled = !isDatabaseV1Accessible(
-            db,
-            connectionTreeStore.accessControlPolicyList,
-            currentUserV1.value
-          );
+          node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
           if (node.disabled) {
             // If a database node is not accessible
             // it's not expandable either.
@@ -167,11 +159,7 @@ const prepareConnectionTree = async () => {
             "database",
             projectAtom.id
           );
-          node.disabled = !isDatabaseV1Accessible(
-            db,
-            connectionTreeStore.accessControlPolicyList,
-            currentUserV1.value
-          );
+          node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
           if (node.disabled) {
             // If a database node is not accessible
             // it's not expandable either.

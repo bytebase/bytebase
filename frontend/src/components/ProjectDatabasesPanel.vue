@@ -88,8 +88,8 @@ const policyList = ref<Policy[]>([]);
 const preparePolicyList = () => {
   usePolicyV1Store()
     .fetchPolicies({
-      resourceType: PolicyResourceType.DATABASE,
-      policyType: PolicyType.ACCESS_CONTROL,
+      policyType: PolicyType.WORKSPACE_IAM,
+      resourceType: PolicyResourceType.WORKSPACE,
     })
     .then((list) => (policyList.value = list));
 };
@@ -98,7 +98,7 @@ watchEffect(preparePolicyList);
 
 const filteredDatabaseList = computed(() => {
   let list = [...props.databaseList].filter((database) =>
-    isDatabaseV1Accessible(database, policyList.value, currentUserV1.value)
+    isDatabaseV1Accessible(database, currentUserV1.value)
   );
   if (state.environment !== String(UNKNOWN_ID)) {
     list = list.filter(

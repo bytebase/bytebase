@@ -1070,7 +1070,7 @@
     },
     "environment-tier": {
       "name": "Nivel de entorno",
-      "description": "El entorno aparecerá de manera diferente a otros entornos.{newline}Por defecto, los desarrolladores no pueden ejecutar consultas en las \nbases de datos de este entorno utilizando el Editor de SQL. ",
+      "description": "El entorno aparecerá de manera diferente a otros entornos.",
       "mark-env-as-production": "Marcar como entorno de producción"
     }
   },
@@ -1912,7 +1912,8 @@
       "manage-license": "Administrar licencia",
       "used-and-total-license": "Licencia asignada / total",
       "success-notification": "Actualizar correctamente la asignación de licencia",
-      "missing-license-for-instances": "Tienes {count} instancias ({name}) a las que les falta la licencia requerida para desbloquear esta función."
+      "missing-license-for-instances": "Tienes {count} instancias ({name}) a las que les falta la licencia requerida para desbloquear esta función.",
+      "missing-license-for-feature": "Falta la licencia de instancia para habilitar {feature}. Haga clic para asignar ahora."
     },
     "update": {
       "success": {

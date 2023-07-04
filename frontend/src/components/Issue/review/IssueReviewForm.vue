@@ -41,7 +41,7 @@ import { Ref, computed, ref } from "vue";
 
 import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
-import { Review_Approver_Status } from "@/types/proto/v1/review_service";
+import { Review_Approver_Status } from "@/types/proto/v1/issue_service";
 import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 

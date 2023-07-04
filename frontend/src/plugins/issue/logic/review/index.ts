@@ -6,7 +6,7 @@ import {
   ApprovalTemplate,
   Review,
   Review_Approver_Status,
-} from "@/types/proto/v1/review_service";
+} from "@/types/proto/v1/issue_service";
 import {
   candidatesOfApprovalStep,
   useAuthStore,
@@ -102,7 +102,7 @@ export const provideIssueReview = (
   const store = useReviewStore();
   const review = computed(() => {
     return issue.value
-      ? store.getReviewByIssue(issue.value)
+      ? store.getIssueByIssue(issue.value)
       : Review.fromJSON({});
   });
 

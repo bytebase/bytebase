@@ -251,7 +251,7 @@ func getRiskID(name string) (int64, error) {
 	return riskID, nil
 }
 
-func getReviewID(name string) (int, error) {
+func getIssueID(name string) (int, error) {
 	tokens, err := getNameParentTokens(name, projectNamePrefix, reviewPrefix)
 	if err != nil {
 		return 0, err
