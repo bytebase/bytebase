@@ -110,7 +110,7 @@
         {{ humanizeTs(issue.updatedTs) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
-        <CurrentApprover :issue="issue" />
+        <CurrentApprover :legacy-issue="issue" />
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
         <div class="flex flex-row items-center">
