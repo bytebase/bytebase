@@ -39,8 +39,8 @@ type IssueServiceClient interface {
 	CreateIssue(ctx context.Context, in *CreateIssueRequest, opts ...grpc.CallOption) (*Review, error)
 	ListIssues(ctx context.Context, in *ListIssuesRequest, opts ...grpc.CallOption) (*ListIssuesResponse, error)
 	UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*Review, error)
-	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*ReviewComment, error)
-	UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*ReviewComment, error)
+	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
+	UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	BatchUpdateIssues(ctx context.Context, in *BatchUpdateIssuesRequest, opts ...grpc.CallOption) (*BatchUpdateIssuesResponse, error)
 	ApproveReview(ctx context.Context, in *ApproveReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	RejectReview(ctx context.Context, in *RejectReviewRequest, opts ...grpc.CallOption) (*Review, error)
@@ -91,8 +91,8 @@ func (c *issueServiceClient) UpdateIssue(ctx context.Context, in *UpdateIssueReq
 	return out, nil
 }
 
-func (c *issueServiceClient) CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*ReviewComment, error) {
-	out := new(ReviewComment)
+func (c *issueServiceClient) CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error) {
+	out := new(IssueComment)
 	err := c.cc.Invoke(ctx, IssueService_CreateIssueComment_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -100,8 +100,8 @@ func (c *issueServiceClient) CreateIssueComment(ctx context.Context, in *CreateI
 	return out, nil
 }
 
-func (c *issueServiceClient) UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*ReviewComment, error) {
-	out := new(ReviewComment)
+func (c *issueServiceClient) UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error) {
+	out := new(IssueComment)
 	err := c.cc.Invoke(ctx, IssueService_UpdateIssueComment_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -153,8 +153,8 @@ type IssueServiceServer interface {
 	CreateIssue(context.Context, *CreateIssueRequest) (*Review, error)
 	ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error)
 	UpdateIssue(context.Context, *UpdateIssueRequest) (*Review, error)
-	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*ReviewComment, error)
-	UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*ReviewComment, error)
+	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error)
+	UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*IssueComment, error)
 	BatchUpdateIssues(context.Context, *BatchUpdateIssuesRequest) (*BatchUpdateIssuesResponse, error)
 	ApproveReview(context.Context, *ApproveReviewRequest) (*Review, error)
 	RejectReview(context.Context, *RejectReviewRequest) (*Review, error)
@@ -178,10 +178,10 @@ func (UnimplementedIssueServiceServer) ListIssues(context.Context, *ListIssuesRe
 func (UnimplementedIssueServiceServer) UpdateIssue(context.Context, *UpdateIssueRequest) (*Review, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateIssue not implemented")
 }
-func (UnimplementedIssueServiceServer) CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*ReviewComment, error) {
+func (UnimplementedIssueServiceServer) CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateIssueComment not implemented")
 }
-func (UnimplementedIssueServiceServer) UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*ReviewComment, error) {
+func (UnimplementedIssueServiceServer) UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*IssueComment, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateIssueComment not implemented")
 }
 func (UnimplementedIssueServiceServer) BatchUpdateIssues(context.Context, *BatchUpdateIssuesRequest) (*BatchUpdateIssuesResponse, error) {
