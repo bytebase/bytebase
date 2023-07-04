@@ -105,6 +105,9 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 					}
 				}
 			}
+			if asAlias := columnElem.As_alias(); asAlias != nil {
+				result[len(result)-1].name = parser.NormalizeObjectNamePart(asAlias.Alias().Id_())
+			}
 		}
 	}
 
