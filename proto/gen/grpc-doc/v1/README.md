@@ -299,7 +299,7 @@
     - [ApprovalNode](#bytebase-v1-ApprovalNode)
     - [ApprovalStep](#bytebase-v1-ApprovalStep)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
-    - [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest)
+    - [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest)
     - [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest)
     - [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse)
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
@@ -308,8 +308,8 @@
     - [IssueComment](#bytebase-v1-IssueComment)
     - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
-    - [RejectReviewRequest](#bytebase-v1-RejectReviewRequest)
-    - [RequestReviewRequest](#bytebase-v1-RequestReviewRequest)
+    - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
+    - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
@@ -4813,9 +4813,9 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-ApproveReviewRequest"></a>
+<a name="bytebase-v1-ApproveIssueRequest"></a>
 
-### ApproveReviewRequest
+### ApproveIssueRequest
 
 
 
@@ -4962,9 +4962,9 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 
 
-<a name="bytebase-v1-RejectReviewRequest"></a>
+<a name="bytebase-v1-RejectIssueRequest"></a>
 
-### RejectReviewRequest
+### RejectIssueRequest
 
 
 
@@ -4978,9 +4978,9 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 
 
-<a name="bytebase-v1-RequestReviewRequest"></a>
+<a name="bytebase-v1-RequestIssueRequest"></a>
 
-### RequestReviewRequest
+### RequestIssueRequest
 
 
 
@@ -5173,9 +5173,9 @@ ANY means approving any node will proceed.
 | CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | BatchUpdateIssues | [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest) | [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse) |  |
-| ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| RejectReview | [RejectReviewRequest](#bytebase-v1-RejectReviewRequest) | [Review](#bytebase-v1-Review) |  |
-| RequestReview | [RequestReviewRequest](#bytebase-v1-RequestReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Review](#bytebase-v1-Review) |  |
+| RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Review](#bytebase-v1-Review) |  |
 
  
 

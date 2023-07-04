@@ -60,21 +60,21 @@ service IssueService {
     };
   }
 
-  rpc ApproveReview(ApproveReviewRequest) returns (Review) {
+  rpc ApproveIssue(ApproveIssueRequest) returns (Review) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/reviews/*}:approve"
       body: "*"
     };
   }
 
-  rpc RejectReview(RejectReviewRequest) returns (Review) {
+  rpc RejectIssue(RejectIssueRequest) returns (Review) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/reviews/*}:reject"
       body: "*"
     };
   }
 
-  rpc RequestReview(RequestReviewRequest) returns (Review) {
+  rpc RequestIssue(RequestIssueRequest) returns (Review) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/reviews/*}:request"
       body: "*"
@@ -156,21 +156,21 @@ message BatchUpdateIssuesResponse {
   repeated Review reviews = 1;
 }
 
-message ApproveReviewRequest {
+message ApproveIssueRequest {
   // The name of the issue to add an approver.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;
 }
 
-message RejectReviewRequest {
+message RejectIssueRequest {
   // The name of the issue to add an rejecting reviewer.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;
 }
 
-message RequestReviewRequest {
+message RequestIssueRequest {
   // The name of the issue to request a review.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];

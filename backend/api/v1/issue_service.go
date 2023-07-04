@@ -98,8 +98,8 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	return review, nil
 }
 
-// ApproveReview approves the approval flow of the review.
-func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveReviewRequest) (*v1pb.Review, error) {
+// ApproveIssue approves the approval flow of the issue.
+func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIssueRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -326,8 +326,8 @@ func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveR
 	return review, nil
 }
 
-// RejectReview rejects a review.
-func (s *IssueService) RejectReview(ctx context.Context, request *v1pb.RejectReviewRequest) (*v1pb.Review, error) {
+// RejectIssue rejects a review.
+func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssueRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -432,8 +432,8 @@ func (s *IssueService) RejectReview(ctx context.Context, request *v1pb.RejectRev
 	return review, nil
 }
 
-// RequestReview requests a review.
-func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestReviewRequest) (*v1pb.Review, error) {
+// RequestIssue requests a review.
+func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIssueRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -466,7 +466,7 @@ func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestR
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
 	}
 
-	canRequest := canRequestReview(issue.Creator, user)
+	canRequest := canRequestIssue(issue.Creator, user)
 	if !canRequest {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot request reviews because you are not the issue creator")
 	}
@@ -729,7 +729,7 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 	return issue, nil
 }
 
-func canRequestReview(issueCreator *store.UserMessage, user *store.UserMessage) bool {
+func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) bool {
 	return issueCreator.ID == user.ID
 }
 

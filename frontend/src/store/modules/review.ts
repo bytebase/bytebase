@@ -53,24 +53,24 @@ export const useReviewStore = defineStore("review", () => {
     }
   };
 
-  const approveReview = async (issue: Issue, comment?: string) => {
-    const review = await issueServiceClient.approveReview({
+  const approveIssue = async (issue: Issue, comment?: string) => {
+    const review = await issueServiceClient.approveIssue({
       name: reviewName(issue),
       comment,
     });
     await setReviewByIssue(issue, review);
   };
 
-  const rejectReview = async (issue: Issue, comment?: string) => {
-    const review = await issueServiceClient.rejectReview({
+  const rejectIssue = async (issue: Issue, comment?: string) => {
+    const review = await issueServiceClient.rejectIssue({
       name: reviewName(issue),
       comment,
     });
     await setReviewByIssue(issue, review);
   };
 
-  const requestReview = async (issue: Issue, comment?: string) => {
-    const review = await issueServiceClient.requestReview({
+  const requestIssue = async (issue: Issue, comment?: string) => {
+    const review = await issueServiceClient.requestIssue({
       name: reviewName(issue),
       comment,
     });
@@ -91,9 +91,9 @@ export const useReviewStore = defineStore("review", () => {
   return {
     getIssueByIssue,
     fetchReviewByIssue,
-    approveReview,
-    rejectReview,
-    requestReview,
+    approveIssue,
+    rejectIssue,
+    requestIssue,
     regenerateReview,
   };
 });
