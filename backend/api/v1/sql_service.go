@@ -1349,6 +1349,8 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 		if err := parser.PLSQLValidateForEditor(tree); err != nil {
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
+	case db.MongoDB, db.Redis:
+		// Do nothing.
 	default:
 		// TODO(rebelice): support multiple statements here.
 		if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), statement) {

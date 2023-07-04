@@ -128,9 +128,7 @@ export const instanceV1HasBackupRestore = (
 export const instanceV1HasReadonlyMode = (
   instanceOrEngine: Instance | Engine
 ): boolean => {
-  const engine = engineOfInstanceV1(instanceOrEngine);
-  if (engine === Engine.MONGODB) return false;
-  if (engine === Engine.REDIS) return false;
+  // For MongoDB and Redis, we rely on users setting up read-only data source for queries.
   return true;
 };
 
