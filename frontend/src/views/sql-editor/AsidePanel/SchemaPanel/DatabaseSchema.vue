@@ -72,7 +72,6 @@ import AlterSchemaButton from "./AlterSchemaButton.vue";
 import SchemaDiagramButton from "./SchemaDiagramButton.vue";
 import { Engine } from "@/types/proto/v1/common";
 import { useCurrentUserV1 } from "@/store";
-import { cloneDeep } from "lodash-es";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -96,21 +95,23 @@ const engine = computed(() => props.database.instanceEntity.engine);
 const rowClickable = computed(() => engine.value !== Engine.MONGODB);
 
 const availableSchemas = computed(() => {
-  let schemas = cloneDeep(props.databaseMetadata.schemas);
-  for (const schema of schemas) {
-    const availableTables = schema.tables.filter((table) => {
-      return isTableQueryable(
-        props.database,
-        schema.name,
-        table.name,
-        currentUser.value
-      );
+  const schemas = props.databaseMetadata.schemas
+    .map((schema) => {
+      return {
+        ...schema,
+        tables: schema.tables.filter((table) => {
+          return isTableQueryable(
+            props.database,
+            schema.name,
+            table.name,
+            currentUser.value
+          );
+        }),
+      };
+    })
+    .filter((schema) => {
+      return schema.tables.length !== 0;
     });
-    schema.tables = availableTables;
-  }
-  schemas = schemas.filter((schema) => {
-    return schema.tables.length !== 0;
-  });
   return schemas;
 });
 
