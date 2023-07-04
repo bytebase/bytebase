@@ -53,8 +53,8 @@ export function issueStatusToJSON(object: IssueStatus): string {
 
 export interface GetIssueRequest {
   /**
-   * The name of the review to retrieve.
-   * Format: projects/{project}/reviews/{review}
+   * The name of the issue to retrieve.
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   force: boolean;
@@ -62,17 +62,17 @@ export interface GetIssueRequest {
 
 export interface CreateIssueRequest {
   /**
-   * The parent, which owns this collection of reviews.
+   * The parent, which owns this collection of issues.
    * Format: projects/{project}
    */
   parent: string;
-  /** The review to create. */
-  review?: Issue;
+  /** The issue to create. */
+  issue?: Issue;
 }
 
 export interface ListIssuesRequest {
   /**
-   * The parent, which owns this collection of reviews.
+   * The parent, which owns this collection of issues.
    * Format: projects/{project}
    * Use "projects/-" to list all issues from all projects.
    */
@@ -96,7 +96,7 @@ export interface ListIssuesRequest {
 
 export interface ListIssuesResponse {
   /** The issues from the specified request. */
-  reviews: Issue[];
+  issues: Issue[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.
    * If this field is omitted, there are no subsequent pages.
@@ -109,9 +109,9 @@ export interface UpdateIssueRequest {
    * The issue to update.
    *
    * The issue's `name` field is used to identify the issue to update.
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
-  review?: Issue;
+  issue?: Issue;
   /** The list of fields to update. */
   updateMask?: string[];
 }
@@ -133,13 +133,13 @@ export interface BatchUpdateIssuesRequest {
 
 export interface BatchUpdateIssuesResponse {
   /** Issues updated. */
-  reviews: Issue[];
+  issues: Issue[];
 }
 
 export interface ApproveIssueRequest {
   /**
    * The name of the issue to add an approver.
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   comment: string;
@@ -147,8 +147,8 @@ export interface ApproveIssueRequest {
 
 export interface RejectIssueRequest {
   /**
-   * The name of the issue to add an rejecting reviewer.
-   * Format: projects/{project}/reviews/{review}
+   * The name of the issue to add an rejection.
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   comment: string;
@@ -156,8 +156,8 @@ export interface RejectIssueRequest {
 
 export interface RequestIssueRequest {
   /**
-   * The name of the issue to request a review.
-   * Format: projects/{project}/reviews/{review}
+   * The name of the issue to request a issue.
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   comment: string;
@@ -166,7 +166,7 @@ export interface RequestIssueRequest {
 export interface Issue {
   /**
    * The name of the issue.
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   name: string;
   /** The system-assigned, unique identifier for a resource. */
@@ -434,7 +434,7 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
 export interface CreateIssueCommentRequest {
   /**
    * The issue name
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   parent: string;
   issueComment?: IssueComment;
@@ -443,7 +443,7 @@ export interface CreateIssueCommentRequest {
 export interface UpdateIssueCommentRequest {
   /**
    * The issue name
-   * Format: projects/{project}/reviews/{review}
+   * Format: projects/{project}/issues/{issue}
    */
   parent: string;
   issueComment?: IssueComment;
@@ -532,7 +532,7 @@ export const GetIssueRequest = {
 };
 
 function createBaseCreateIssueRequest(): CreateIssueRequest {
-  return { parent: "", review: undefined };
+  return { parent: "", issue: undefined };
 }
 
 export const CreateIssueRequest = {
@@ -540,8 +540,8 @@ export const CreateIssueRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
-    if (message.review !== undefined) {
-      Issue.encode(message.review, writer.uint32(18).fork()).ldelim();
+    if (message.issue !== undefined) {
+      Issue.encode(message.issue, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -565,7 +565,7 @@ export const CreateIssueRequest = {
             break;
           }
 
-          message.review = Issue.decode(reader, reader.uint32());
+          message.issue = Issue.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -579,14 +579,14 @@ export const CreateIssueRequest = {
   fromJSON(object: any): CreateIssueRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      review: isSet(object.review) ? Issue.fromJSON(object.review) : undefined,
+      issue: isSet(object.issue) ? Issue.fromJSON(object.issue) : undefined,
     };
   },
 
   toJSON(message: CreateIssueRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
-    message.review !== undefined && (obj.review = message.review ? Issue.toJSON(message.review) : undefined);
+    message.issue !== undefined && (obj.issue = message.issue ? Issue.toJSON(message.issue) : undefined);
     return obj;
   },
 
@@ -597,9 +597,7 @@ export const CreateIssueRequest = {
   fromPartial(object: DeepPartial<CreateIssueRequest>): CreateIssueRequest {
     const message = createBaseCreateIssueRequest();
     message.parent = object.parent ?? "";
-    message.review = (object.review !== undefined && object.review !== null)
-      ? Issue.fromPartial(object.review)
-      : undefined;
+    message.issue = (object.issue !== undefined && object.issue !== null) ? Issue.fromPartial(object.issue) : undefined;
     return message;
   },
 };
@@ -689,12 +687,12 @@ export const ListIssuesRequest = {
 };
 
 function createBaseListIssuesResponse(): ListIssuesResponse {
-  return { reviews: [], nextPageToken: "" };
+  return { issues: [], nextPageToken: "" };
 }
 
 export const ListIssuesResponse = {
   encode(message: ListIssuesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.reviews) {
+    for (const v of message.issues) {
       Issue.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.nextPageToken !== "") {
@@ -715,7 +713,7 @@ export const ListIssuesResponse = {
             break;
           }
 
-          message.reviews.push(Issue.decode(reader, reader.uint32()));
+          message.issues.push(Issue.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -735,17 +733,17 @@ export const ListIssuesResponse = {
 
   fromJSON(object: any): ListIssuesResponse {
     return {
-      reviews: Array.isArray(object?.reviews) ? object.reviews.map((e: any) => Issue.fromJSON(e)) : [],
+      issues: Array.isArray(object?.issues) ? object.issues.map((e: any) => Issue.fromJSON(e)) : [],
       nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListIssuesResponse): unknown {
     const obj: any = {};
-    if (message.reviews) {
-      obj.reviews = message.reviews.map((e) => e ? Issue.toJSON(e) : undefined);
+    if (message.issues) {
+      obj.issues = message.issues.map((e) => e ? Issue.toJSON(e) : undefined);
     } else {
-      obj.reviews = [];
+      obj.issues = [];
     }
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
@@ -757,20 +755,20 @@ export const ListIssuesResponse = {
 
   fromPartial(object: DeepPartial<ListIssuesResponse>): ListIssuesResponse {
     const message = createBaseListIssuesResponse();
-    message.reviews = object.reviews?.map((e) => Issue.fromPartial(e)) || [];
+    message.issues = object.issues?.map((e) => Issue.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
 
 function createBaseUpdateIssueRequest(): UpdateIssueRequest {
-  return { review: undefined, updateMask: undefined };
+  return { issue: undefined, updateMask: undefined };
 }
 
 export const UpdateIssueRequest = {
   encode(message: UpdateIssueRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.review !== undefined) {
-      Issue.encode(message.review, writer.uint32(10).fork()).ldelim();
+    if (message.issue !== undefined) {
+      Issue.encode(message.issue, writer.uint32(10).fork()).ldelim();
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
@@ -790,7 +788,7 @@ export const UpdateIssueRequest = {
             break;
           }
 
-          message.review = Issue.decode(reader, reader.uint32());
+          message.issue = Issue.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -810,14 +808,14 @@ export const UpdateIssueRequest = {
 
   fromJSON(object: any): UpdateIssueRequest {
     return {
-      review: isSet(object.review) ? Issue.fromJSON(object.review) : undefined,
+      issue: isSet(object.issue) ? Issue.fromJSON(object.issue) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
   toJSON(message: UpdateIssueRequest): unknown {
     const obj: any = {};
-    message.review !== undefined && (obj.review = message.review ? Issue.toJSON(message.review) : undefined);
+    message.issue !== undefined && (obj.issue = message.issue ? Issue.toJSON(message.issue) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
@@ -828,9 +826,7 @@ export const UpdateIssueRequest = {
 
   fromPartial(object: DeepPartial<UpdateIssueRequest>): UpdateIssueRequest {
     const message = createBaseUpdateIssueRequest();
-    message.review = (object.review !== undefined && object.review !== null)
-      ? Issue.fromPartial(object.review)
-      : undefined;
+    message.issue = (object.issue !== undefined && object.issue !== null) ? Issue.fromPartial(object.issue) : undefined;
     message.updateMask = object.updateMask ?? undefined;
     return message;
   },
@@ -912,12 +908,12 @@ export const BatchUpdateIssuesRequest = {
 };
 
 function createBaseBatchUpdateIssuesResponse(): BatchUpdateIssuesResponse {
-  return { reviews: [] };
+  return { issues: [] };
 }
 
 export const BatchUpdateIssuesResponse = {
   encode(message: BatchUpdateIssuesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.reviews) {
+    for (const v of message.issues) {
       Issue.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
@@ -935,7 +931,7 @@ export const BatchUpdateIssuesResponse = {
             break;
           }
 
-          message.reviews.push(Issue.decode(reader, reader.uint32()));
+          message.issues.push(Issue.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -947,15 +943,15 @@ export const BatchUpdateIssuesResponse = {
   },
 
   fromJSON(object: any): BatchUpdateIssuesResponse {
-    return { reviews: Array.isArray(object?.reviews) ? object.reviews.map((e: any) => Issue.fromJSON(e)) : [] };
+    return { issues: Array.isArray(object?.issues) ? object.issues.map((e: any) => Issue.fromJSON(e)) : [] };
   },
 
   toJSON(message: BatchUpdateIssuesResponse): unknown {
     const obj: any = {};
-    if (message.reviews) {
-      obj.reviews = message.reviews.map((e) => e ? Issue.toJSON(e) : undefined);
+    if (message.issues) {
+      obj.issues = message.issues.map((e) => e ? Issue.toJSON(e) : undefined);
     } else {
-      obj.reviews = [];
+      obj.issues = [];
     }
     return obj;
   },
@@ -966,7 +962,7 @@ export const BatchUpdateIssuesResponse = {
 
   fromPartial(object: DeepPartial<BatchUpdateIssuesResponse>): BatchUpdateIssuesResponse {
     const message = createBaseBatchUpdateIssuesResponse();
-    message.reviews = object.reviews?.map((e) => Issue.fromPartial(e)) || [];
+    message.issues = object.issues?.map((e) => Issue.fromPartial(e)) || [];
     return message;
   },
 };
@@ -2174,9 +2170,9 @@ export const IssueServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              33,
+              32,
               18,
-              31,
+              30,
               47,
               118,
               49,
@@ -2198,12 +2194,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
@@ -2221,20 +2216,19 @@ export const IssueServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([13, 112, 97, 114, 101, 110, 116, 44, 114, 101, 118, 105, 101, 119])],
+          8410: [new Uint8Array([12, 112, 97, 114, 101, 110, 116, 44, 105, 115, 115, 117, 101])],
           578365826: [
             new Uint8Array([
-              41,
+              39,
               58,
-              6,
-              114,
-              101,
-              118,
+              5,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               34,
-              31,
+              30,
               47,
               118,
               49,
@@ -2259,12 +2253,11 @@ export const IssueServiceDefinition = {
               42,
               125,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
             ]),
           ],
@@ -2282,9 +2275,9 @@ export const IssueServiceDefinition = {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              33,
+              32,
               18,
-              31,
+              30,
               47,
               118,
               49,
@@ -2309,12 +2302,11 @@ export const IssueServiceDefinition = {
               42,
               125,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
             ]),
           ],
@@ -2329,33 +2321,29 @@ export const IssueServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [
-            new Uint8Array([18, 114, 101, 118, 105, 101, 119, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107]),
-          ],
+          8410: [new Uint8Array([17, 105, 115, 115, 117, 101, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
           578365826: [
             new Uint8Array([
-              48,
+              45,
               58,
-              6,
-              114,
-              101,
-              118,
+              5,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               50,
-              38,
+              36,
               47,
               118,
               49,
               47,
               123,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               46,
               110,
               97,
@@ -2373,12 +2361,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
@@ -2423,7 +2410,7 @@ export const IssueServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              58,
+              57,
               58,
               13,
               105,
@@ -2440,7 +2427,7 @@ export const IssueServiceDefinition = {
               110,
               116,
               34,
-              41,
+              40,
               47,
               118,
               49,
@@ -2464,12 +2451,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
@@ -2534,7 +2520,7 @@ export const IssueServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              58,
+              57,
               58,
               13,
               105,
@@ -2551,7 +2537,7 @@ export const IssueServiceDefinition = {
               110,
               116,
               50,
-              41,
+              40,
               47,
               118,
               49,
@@ -2575,12 +2561,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,
@@ -2608,12 +2593,12 @@ export const IssueServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              48,
+              47,
               58,
               1,
               42,
               34,
-              43,
+              42,
               47,
               118,
               49,
@@ -2638,12 +2623,11 @@ export const IssueServiceDefinition = {
               42,
               125,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               58,
               98,
@@ -2665,66 +2649,6 @@ export const IssueServiceDefinition = {
     approveIssue: {
       name: "ApproveIssue",
       requestType: ApproveIssueRequest,
-      requestStream: false,
-      responseType: Issue,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              44,
-              58,
-              1,
-              42,
-              34,
-              39,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              114,
-              101,
-              118,
-              105,
-              101,
-              119,
-              115,
-              47,
-              42,
-              125,
-              58,
-              97,
-              112,
-              112,
-              114,
-              111,
-              118,
-              101,
-            ]),
-          ],
-        },
-      },
-    },
-    rejectIssue: {
-      name: "RejectIssue",
-      requestType: RejectIssueRequest,
       requestStream: false,
       responseType: Issue,
       responseStream: false,
@@ -2759,12 +2683,70 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
+              115,
+              47,
+              42,
+              125,
+              58,
+              97,
+              112,
+              112,
+              114,
+              111,
+              118,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    rejectIssue: {
+      name: "RejectIssue",
+      requestType: RejectIssueRequest,
+      requestStream: false,
+      responseType: Issue,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              42,
+              58,
+              1,
+              42,
+              34,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              115,
+              115,
+              117,
+              101,
               115,
               47,
               42,
@@ -2791,12 +2773,12 @@ export const IssueServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              44,
+              43,
               58,
               1,
               42,
               34,
-              39,
+              38,
               47,
               118,
               49,
@@ -2818,12 +2800,11 @@ export const IssueServiceDefinition = {
               47,
               42,
               47,
-              114,
-              101,
-              118,
               105,
+              115,
+              115,
+              117,
               101,
-              119,
               115,
               47,
               42,

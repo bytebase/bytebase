@@ -16,7 +16,7 @@ import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
 
 const issueName = (legacyIssue: LegacyIssue) => {
-  return `projects/${legacyIssue.project.id}/reviews/${legacyIssue.id}`;
+  return `projects/${legacyIssue.project.id}/issues/${legacyIssue.id}`;
 };
 
 const emptyIssue = (legacyIssue: LegacyIssue) => {
@@ -26,6 +26,7 @@ const emptyIssue = (legacyIssue: LegacyIssue) => {
   });
 };
 
+// TODO(d): rename review store.
 export const useReviewStore = defineStore("review", () => {
   const issuesByName = ref(new Map<string, Issue>());
 
@@ -82,7 +83,7 @@ export const useReviewStore = defineStore("review", () => {
 
   const regenerateReview = async (legacyIssue: LegacyIssue) => {
     const issue = await issueServiceClient.updateIssue({
-      review: {
+      issue: {
         name: issueName(legacyIssue),
         approvalFindingDone: false,
       },

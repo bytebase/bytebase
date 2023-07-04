@@ -109,7 +109,7 @@ func request_IssueService_CreateIssue_0(ctx context.Context, marshaler runtime.M
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Review); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Issue); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -143,7 +143,7 @@ func local_request_IssueService_CreateIssue_0(ctx context.Context, marshaler run
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Review); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Issue); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -240,7 +240,7 @@ func local_request_IssueService_ListIssues_0(ctx context.Context, marshaler runt
 }
 
 var (
-	filter_IssueService_UpdateIssue_0 = &utilities.DoubleArray{Encoding: map[string]int{"review": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_IssueService_UpdateIssue_0 = &utilities.DoubleArray{Encoding: map[string]int{"issue": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
 )
 
 func request_IssueService_UpdateIssue_0(ctx context.Context, marshaler runtime.Marshaler, client IssueServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -251,11 +251,11 @@ func request_IssueService_UpdateIssue_0(ctx context.Context, marshaler runtime.M
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Review); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Issue); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
-		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Review); err != nil {
+		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Issue); err != nil {
 			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 		} else {
 			protoReq.UpdateMask = fieldMask
@@ -269,14 +269,14 @@ func request_IssueService_UpdateIssue_0(ctx context.Context, marshaler runtime.M
 		_   = err
 	)
 
-	val, ok = pathParams["review.name"]
+	val, ok = pathParams["issue.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "review.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "issue.name")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "review.name", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "issue.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "review.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "issue.name", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -299,11 +299,11 @@ func local_request_IssueService_UpdateIssue_0(ctx context.Context, marshaler run
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Review); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Issue); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
-		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Review); err != nil {
+		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Issue); err != nil {
 			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 		} else {
 			protoReq.UpdateMask = fieldMask
@@ -317,14 +317,14 @@ func local_request_IssueService_UpdateIssue_0(ctx context.Context, marshaler run
 		_   = err
 	)
 
-	val, ok = pathParams["review.name"]
+	val, ok = pathParams["issue.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "review.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "issue.name")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "review.name", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "issue.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "review.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "issue.name", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -793,7 +793,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/GetIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/reviews/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/GetIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/issues/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -818,7 +818,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/CreateIssue", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/reviews"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/CreateIssue", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -843,7 +843,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/ListIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/reviews"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/ListIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -868,7 +868,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssue", runtime.WithHTTPPathPattern("/v1/{review.name=projects/*/reviews/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssue", runtime.WithHTTPPathPattern("/v1/{issue.name=projects/*/issues/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -893,7 +893,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/CreateIssueComment", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/reviews/*}:comment"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/CreateIssueComment", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/issues/*}:comment"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -918,7 +918,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssueComment", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/reviews/*}:comment"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssueComment", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/issues/*}:comment"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -943,7 +943,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/BatchUpdateIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/reviews:batchUpdate"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/BatchUpdateIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues:batchUpdate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -968,7 +968,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/ApproveIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/reviews/*}:approve"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/ApproveIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/issues/*}:approve"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -993,7 +993,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/RejectIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/reviews/*}:reject"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/RejectIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/issues/*}:reject"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1018,7 +1018,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/RequestIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/reviews/*}:request"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/RequestIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/issues/*}:request"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1082,7 +1082,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/GetIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/reviews/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/GetIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/issues/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1104,7 +1104,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/CreateIssue", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/reviews"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/CreateIssue", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1126,7 +1126,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/ListIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/reviews"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/ListIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1148,7 +1148,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssue", runtime.WithHTTPPathPattern("/v1/{review.name=projects/*/reviews/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssue", runtime.WithHTTPPathPattern("/v1/{issue.name=projects/*/issues/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1170,7 +1170,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/CreateIssueComment", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/reviews/*}:comment"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/CreateIssueComment", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/issues/*}:comment"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1192,7 +1192,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssueComment", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/reviews/*}:comment"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/UpdateIssueComment", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/issues/*}:comment"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1214,7 +1214,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/BatchUpdateIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/reviews:batchUpdate"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/BatchUpdateIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues:batchUpdate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1236,7 +1236,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/ApproveIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/reviews/*}:approve"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/ApproveIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/issues/*}:approve"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1258,7 +1258,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/RejectIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/reviews/*}:reject"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/RejectIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/issues/*}:reject"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1280,7 +1280,7 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/RequestIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/reviews/*}:request"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/RequestIssue", runtime.WithHTTPPathPattern("/v1/{name=projects/*/issues/*}:request"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1300,25 +1300,25 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 }
 
 var (
-	pattern_IssueService_GetIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "name"}, ""))
+	pattern_IssueService_GetIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "name"}, ""))
 
-	pattern_IssueService_CreateIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "reviews"}, ""))
+	pattern_IssueService_CreateIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "issues"}, ""))
 
-	pattern_IssueService_ListIssues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "reviews"}, ""))
+	pattern_IssueService_ListIssues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "issues"}, ""))
 
-	pattern_IssueService_UpdateIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "review.name"}, ""))
+	pattern_IssueService_UpdateIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "issue.name"}, ""))
 
-	pattern_IssueService_CreateIssueComment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "parent"}, "comment"))
+	pattern_IssueService_CreateIssueComment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "parent"}, "comment"))
 
-	pattern_IssueService_UpdateIssueComment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "parent"}, "comment"))
+	pattern_IssueService_UpdateIssueComment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "parent"}, "comment"))
 
-	pattern_IssueService_BatchUpdateIssues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "reviews"}, "batchUpdate"))
+	pattern_IssueService_BatchUpdateIssues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "issues"}, "batchUpdate"))
 
-	pattern_IssueService_ApproveIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "name"}, "approve"))
+	pattern_IssueService_ApproveIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "name"}, "approve"))
 
-	pattern_IssueService_RejectIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "name"}, "reject"))
+	pattern_IssueService_RejectIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "name"}, "reject"))
 
-	pattern_IssueService_RequestIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "reviews", "name"}, "request"))
+	pattern_IssueService_RequestIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "name"}, "request"))
 )
 
 var (

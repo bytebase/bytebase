@@ -787,10 +787,10 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		PrevSchema:        h.SchemaPrev,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
 		PushEvent:         convertToPushEvent(h.Payload.GetPushEvent()),
-		Review:            "",
+		Issue:             "",
 	}
 	if h.IssueUID != nil {
-		v1pbHistory.Review = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, h.IssueProjectID, reviewPrefix, *h.IssueUID)
+		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, h.IssueProjectID, issuePrefix, *h.IssueUID)
 	}
 	return v1pbHistory, nil
 }
