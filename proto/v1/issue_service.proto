@@ -37,20 +37,20 @@ service IssueService {
     option (google.api.method_signature) = "review,update_mask";
   }
 
-  rpc CreateIssueComment(CreateIssueCommentRequest) returns (ReviewComment) {
+  rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/reviews/*}:comment"
-      body: "review_comment"
+      body: "issue_comment"
     };
-    option (google.api.method_signature) = "parent,review_comment";
+    option (google.api.method_signature) = "parent,issue_comment";
   }
 
-  rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (ReviewComment) {
+  rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
       patch: "/v1/{parent=projects/*/reviews/*}:comment"
-      body: "review_comment"
+      body: "issue_comment"
     };
-    option (google.api.method_signature) = "parent,review_comment,update_mask";
+    option (google.api.method_signature) = "parent,issue_comment,update_mask";
   }
 
   rpc BatchUpdateIssues(BatchUpdateIssuesRequest) returns (BatchUpdateIssuesResponse) {
@@ -102,12 +102,12 @@ message CreateIssueRequest {
 message ListIssuesRequest {
   // The parent, which owns this collection of reviews.
   // Format: projects/{project}
-  // Use "projects/-" to list all reviews from all projects.
+  // Use "projects/-" to list all issues from all projects.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The maximum number of reviews to return. The service may return fewer than
+  // The maximum number of issues to return. The service may return fewer than
   // this value.
-  // If unspecified, at most 50 reviews will be returned.
+  // If unspecified, at most 50 issues will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
@@ -120,7 +120,7 @@ message ListIssuesRequest {
 }
 
 message ListIssuesResponse {
-  // The reviews from the specified request.
+  // The issues from the specified request.
   repeated Review reviews = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
@@ -129,9 +129,9 @@ message ListIssuesResponse {
 }
 
 message UpdateIssueRequest {
-  // The review to update.
+  // The issue to update.
   //
-  // The review's `name` field is used to identify the review to update.
+  // The issue's `name` field is used to identify the issue to update.
   // Format: projects/{project}/reviews/{review}
   Review review = 1 [(google.api.field_behavior) = REQUIRED];
 
@@ -140,7 +140,7 @@ message UpdateIssueRequest {
 }
 
 message BatchUpdateIssuesRequest {
-  // The parent resource shared by all reviews being updated.
+  // The parent resource shared by all issues being updated.
   // Format: projects/{project}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
   // We only support updating the status of databases for now.
@@ -152,34 +152,33 @@ message BatchUpdateIssuesRequest {
 }
 
 message BatchUpdateIssuesResponse {
-  // Reviews updated.
+  // Issues updated.
   repeated Review reviews = 1;
 }
 
 message ApproveReviewRequest {
-  // The name of the review to add an approver.
+  // The name of the issue to add an approver.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;
 }
 
 message RejectReviewRequest {
-  // The name of the review to add an rejecting reviewer.
+  // The name of the issue to add an rejecting reviewer.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;
 }
 
 message RequestReviewRequest {
-  // The name of the review to request a review.
+  // The name of the issue to request a review.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;
 }
 
 message Review {
-  // The name of the review.
-  // `review` is a system generated ID.
+  // The name of the issue.
   // Format: projects/{project}/reviews/{review}
   string name = 1;
 
@@ -188,19 +187,19 @@ message Review {
 
   string title = 3;
 
-  // The plan associated with the review.
+  // The plan associated with the issue.
   // Can be empty.
   // Format: projects/{project}/plans/{plan}
   string plan = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The rollout associated with the review.
+  // The rollout associated with the issue.
   // Can be empty.
   // Format: projects/{project}/rollouts/{rollout}
   string rollout = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string description = 4;
 
-  ReviewStatus status = 5;
+  IssueStatus status = 5;
 
   // Format: users/hello@world.com
   string assignee = 6;
@@ -241,8 +240,8 @@ message Review {
   google.protobuf.Timestamp update_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-enum ReviewStatus {
-  REVIEW_STATUS_UNSPECIFIED = 0;
+enum IssueStatus {
+  ISSUE_STATUS_UNSPECIFIED = 0;
   OPEN = 1;
   DONE = 2;
   CANCELED = 3;
@@ -307,25 +306,25 @@ message ApprovalNode {
 }
 
 message CreateIssueCommentRequest {
-  // The review name
+  // The issue name
   // Format: projects/{project}/reviews/{review}
   string parent = 1;
 
-  ReviewComment review_comment = 2;
+  IssueComment issue_comment = 2;
 }
 
 message UpdateIssueCommentRequest {
-  // The review name
+  // The issue name
   // Format: projects/{project}/reviews/{review}
   string parent = 1;
 
-  ReviewComment review_comment = 2;
+  IssueComment issue_comment = 2;
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ReviewComment {
+message IssueComment {
   string uid = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string comment = 2;

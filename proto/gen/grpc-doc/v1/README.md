@@ -305,21 +305,21 @@
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
+    - [IssueComment](#bytebase-v1-IssueComment)
     - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
     - [RejectReviewRequest](#bytebase-v1-RejectReviewRequest)
     - [RequestReviewRequest](#bytebase-v1-RequestReviewRequest)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
-    - [ReviewComment](#bytebase-v1-ReviewComment)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
     - [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue)
     - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
+    - [IssueStatus](#bytebase-v1-IssueStatus)
     - [Review.Approver.Status](#bytebase-v1-Review-Approver-Status)
-    - [ReviewStatus](#bytebase-v1-ReviewStatus)
   
     - [IssueService](#bytebase-v1-IssueService)
   
@@ -4821,7 +4821,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to add an approver. Format: projects/{project}/reviews/{review} |
+| name | [string](#string) |  | The name of the issue to add an approver. Format: projects/{project}/reviews/{review} |
 | comment | [string](#string) |  |  |
 
 
@@ -4837,7 +4837,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all reviews being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
+| parent | [string](#string) |  | The parent resource shared by all issues being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
 | requests | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
 
 
@@ -4853,7 +4853,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| reviews | [Review](#bytebase-v1-Review) | repeated | Reviews updated. |
+| reviews | [Review](#bytebase-v1-Review) | repeated | Issues updated. |
 
 
 
@@ -4868,8 +4868,8 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The review name Format: projects/{project}/reviews/{review} |
-| review_comment | [ReviewComment](#bytebase-v1-ReviewComment) |  |  |
+| parent | [string](#string) |  | The issue name Format: projects/{project}/reviews/{review} |
+| issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  |  |
 
 
 
@@ -4908,6 +4908,25 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
+<a name="bytebase-v1-IssueComment"></a>
+
+### IssueComment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| uid | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
+| payload | [string](#string) |  | TODO: use struct message instead. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ListIssuesRequest"></a>
 
 ### ListIssuesRequest
@@ -4916,8 +4935,8 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} Use &#34;projects/-&#34; to list all reviews from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of reviews to return. The service may return fewer than this value. If unspecified, at most 50 reviews will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} Use &#34;projects/-&#34; to list all issues from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
@@ -4935,7 +4954,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| reviews | [Review](#bytebase-v1-Review) | repeated | The reviews from the specified request. |
+| reviews | [Review](#bytebase-v1-Review) | repeated | The issues from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
@@ -4951,7 +4970,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to add an rejecting reviewer. Format: projects/{project}/reviews/{review} |
+| name | [string](#string) |  | The name of the issue to add an rejecting reviewer. Format: projects/{project}/reviews/{review} |
 | comment | [string](#string) |  |  |
 
 
@@ -4967,7 +4986,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to request a review. Format: projects/{project}/reviews/{review} |
+| name | [string](#string) |  | The name of the issue to request a review. Format: projects/{project}/reviews/{review} |
 | comment | [string](#string) |  |  |
 
 
@@ -4983,13 +5002,13 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review. `review` is a system generated ID. Format: projects/{project}/reviews/{review} |
+| name | [string](#string) |  | The name of the issue. Format: projects/{project}/reviews/{review} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
-| plan | [string](#string) |  | The plan associated with the review. Can be empty. Format: projects/{project}/plans/{plan} |
-| rollout | [string](#string) |  | The rollout associated with the review. Can be empty. Format: projects/{project}/rollouts/{rollout} |
+| plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
+| rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | description | [string](#string) |  |  |
-| status | [ReviewStatus](#bytebase-v1-ReviewStatus) |  |  |
+| status | [IssueStatus](#bytebase-v1-IssueStatus) |  |  |
 | assignee | [string](#string) |  | Format: users/hello@world.com |
 | assignee_attention | [bool](#bool) |  |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
@@ -5022,25 +5041,6 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 
 
-<a name="bytebase-v1-ReviewComment"></a>
-
-### ReviewComment
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| uid | [string](#string) |  |  |
-| comment | [string](#string) |  |  |
-| payload | [string](#string) |  | TODO: use struct message instead. |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-UpdateIssueCommentRequest"></a>
 
 ### UpdateIssueCommentRequest
@@ -5049,8 +5049,8 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The review name Format: projects/{project}/reviews/{review} |
-| review_comment | [ReviewComment](#bytebase-v1-ReviewComment) |  |  |
+| parent | [string](#string) |  | The issue name Format: projects/{project}/reviews/{review} |
+| issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  |  |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -5066,9 +5066,9 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| review | [Review](#bytebase-v1-Review) |  | The review to update.
+| review | [Review](#bytebase-v1-Review) |  | The issue to update.
 
-The review&#39;s `name` field is used to identify the review to update. Format: projects/{project}/reviews/{review} |
+The issue&#39;s `name` field is used to identify the issue to update. Format: projects/{project}/reviews/{review} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -5127,6 +5127,20 @@ ANY means approving any node will proceed.
 
 
 
+<a name="bytebase-v1-IssueStatus"></a>
+
+### IssueStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ISSUE_STATUS_UNSPECIFIED | 0 |  |
+| OPEN | 1 |  |
+| DONE | 2 |  |
+| CANCELED | 3 |  |
+
+
+
 <a name="bytebase-v1-Review-Approver-Status"></a>
 
 ### Review.Approver.Status
@@ -5138,20 +5152,6 @@ ANY means approving any node will proceed.
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
 | REJECTED | 3 |  |
-
-
-
-<a name="bytebase-v1-ReviewStatus"></a>
-
-### ReviewStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| REVIEW_STATUS_UNSPECIFIED | 0 |  |
-| OPEN | 1 |  |
-| DONE | 2 |  |
-| CANCELED | 3 |  |
 
 
  
@@ -5170,8 +5170,8 @@ ANY means approving any node will proceed.
 | CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Review](#bytebase-v1-Review) |  |
 | ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) |  |
 | UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Review](#bytebase-v1-Review) |  |
-| CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
-| UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [ReviewComment](#bytebase-v1-ReviewComment) |  |
+| CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
+| UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | BatchUpdateIssues | [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest) | [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse) |  |
 | ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | RejectReview | [RejectReviewRequest](#bytebase-v1-RejectReviewRequest) | [Review](#bytebase-v1-Review) |  |

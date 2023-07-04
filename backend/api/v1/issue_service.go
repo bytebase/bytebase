@@ -604,8 +604,8 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 }
 
 // CreateIssueComment creates the review comment.
-func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.CreateIssueCommentRequest) (*v1pb.ReviewComment, error) {
-	if request.ReviewComment.Comment == "" {
+func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.CreateIssueCommentRequest) (*v1pb.IssueComment, error) {
+	if request.IssueComment.Comment == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "review comment is empty")
 	}
 	issue, err := s.getIssueMessage(ctx, request.Parent)
@@ -619,7 +619,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		ContainerUID: issue.UID,
 		Type:         api.ActivityIssueCommentCreate,
 		Level:        api.ActivityInfo,
-		Comment:      request.ReviewComment.Comment,
+		Comment:      request.IssueComment.Comment,
 	}
 
 	var payload api.ActivityIssueCommentCreatePayload
@@ -639,7 +639,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create review comment: %v", err.Error())
 	}
-	return &v1pb.ReviewComment{
+	return &v1pb.IssueComment{
 		Uid:        fmt.Sprintf("%d", activity.UID),
 		Comment:    activity.Comment,
 		Payload:    activity.Payload,
@@ -649,13 +649,13 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 }
 
 // UpdateIssueComment updates the review comment.
-func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.UpdateIssueCommentRequest) (*v1pb.ReviewComment, error) {
+func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.UpdateIssueCommentRequest) (*v1pb.IssueComment, error) {
 	if request.UpdateMask.Paths == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
-	activityUID, err := strconv.Atoi(request.ReviewComment.Uid)
+	activityUID, err := strconv.Atoi(request.IssueComment.Uid)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, `invalid comment id "%s": %v`, request.ReviewComment.Uid, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, `invalid comment id "%s": %v`, request.IssueComment.Uid, err.Error())
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -668,7 +668,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "comment":
-			update.Comment = &request.ReviewComment.Comment
+			update.Comment = &request.IssueComment.Comment
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask: "%s"`, path)
 		}
@@ -677,12 +677,12 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	activity, err := s.store.UpdateActivityV2(ctx, update)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
-			return nil, status.Errorf(codes.NotFound, "cannot found the review comment %s", request.ReviewComment.Uid)
+			return nil, status.Errorf(codes.NotFound, "cannot found the review comment %s", request.IssueComment.Uid)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update the review comment with error: %v", err.Error())
 	}
 
-	return &v1pb.ReviewComment{
+	return &v1pb.IssueComment{
 		Uid:        fmt.Sprintf("%d", activity.UID),
 		Comment:    activity.Comment,
 		Payload:    activity.Payload,
@@ -794,7 +794,7 @@ func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMess
 		Uid:               fmt.Sprintf("%d", issue.UID),
 		Title:             issue.Title,
 		Description:       issue.Description,
-		Status:            convertToReviewStatus(issue.Status),
+		Status:            convertToIssueStatus(issue.Status),
 		Assignee:          fmt.Sprintf("%s%s", userNamePrefix, issue.Assignee.Email),
 		AssigneeAttention: issue.NeedAttention,
 		Creator:           fmt.Sprintf("%s%s", userNamePrefix, issue.Creator.Email),
@@ -808,13 +808,13 @@ func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMess
 
 	switch issue.Status {
 	case api.IssueOpen:
-		review.Status = v1pb.ReviewStatus_OPEN
+		review.Status = v1pb.IssueStatus_OPEN
 	case api.IssueDone:
-		review.Status = v1pb.ReviewStatus_DONE
+		review.Status = v1pb.IssueStatus_DONE
 	case api.IssueCanceled:
-		review.Status = v1pb.ReviewStatus_CANCELED
+		review.Status = v1pb.IssueStatus_CANCELED
 	default:
-		review.Status = v1pb.ReviewStatus_REVIEW_STATUS_UNSPECIFIED
+		review.Status = v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
 	}
 
 	if issuePayload.Approval != nil {
@@ -837,16 +837,16 @@ func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMess
 	return review, nil
 }
 
-func convertToReviewStatus(status api.IssueStatus) v1pb.ReviewStatus {
+func convertToIssueStatus(status api.IssueStatus) v1pb.IssueStatus {
 	switch status {
 	case api.IssueOpen:
-		return v1pb.ReviewStatus_OPEN
+		return v1pb.IssueStatus_OPEN
 	case api.IssueDone:
-		return v1pb.ReviewStatus_DONE
+		return v1pb.IssueStatus_DONE
 	case api.IssueCanceled:
-		return v1pb.ReviewStatus_CANCELED
+		return v1pb.IssueStatus_CANCELED
 	default:
-		return v1pb.ReviewStatus_REVIEW_STATUS_UNSPECIFIED
+		return v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
 	}
 }
 
