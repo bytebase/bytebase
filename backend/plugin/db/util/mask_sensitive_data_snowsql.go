@@ -6,8 +6,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	snowparser "github.com/bytebase/snowsql-parser"
 
@@ -233,7 +231,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 				sensitive: column.Sensitive,
 			})
 		}
-		return result, nil
 	}
 
 	// TODO(zp): Handle the value clause.
@@ -257,12 +254,16 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 		return nil, nil
 	}
 
-	// TODO(zp): Handle the as_alias
+	// If the as alias is not nil, we should use the alias name to replace the original table name.
 	if ctx.As_alias() != nil {
-
+		id := ctx.As_alias().Alias().Id_()
+		for i := 0; i < len(result); i++ {
+			aliasName := parser.NormalizeObjectNamePart(id)
+			result[i].table = aliasName
+		}
 	}
 
-	return nil, status.Errorf(codes.Internal, "Should be unreachable")
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) (db.TableSchema, error) {
