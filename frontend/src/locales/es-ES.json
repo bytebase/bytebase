@@ -1902,6 +1902,7 @@
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
+    "contact-to-upgrade": "Comuníquese con el propietario de su espacio de trabajo o DBA para actualizar el plan",
     "upgrade-now": "Actualizar ahora",
     "instance-assignment": {
       "license": "Licencia",

@@ -19,9 +19,14 @@ import { reactive, PropType, computed } from "vue";
 import { FeatureType, planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionV1Store, pushNotification } from "@/store";
+import {
+  useSubscriptionV1Store,
+  useCurrentUserV1,
+  pushNotification,
+} from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -55,6 +60,11 @@ const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
 });
 
+const hasPermission = hasWorkspacePermissionV1(
+  "bb.permission.workspace.manage-subscription",
+  useCurrentUserV1().value.userRole
+);
+
 const hasFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
 });
@@ -67,6 +77,9 @@ const instanceMissingLicense = computed(() => {
 });
 
 const actionText = computed(() => {
+  if (!hasPermission) {
+    return "";
+  }
   if (instanceMissingLicense.value) {
     return t("subscription.instance-assignment.assign-license");
   }

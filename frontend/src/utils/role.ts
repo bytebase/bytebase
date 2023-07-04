@@ -57,7 +57,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-access-control", [false, true, true]],
   ["bb.permission.workspace.manage-custom-approval", [false, true, true]],
   ["bb.permission.workspace.manage-slow-query", [false, true, true]],
-  ["bb.permission.workspace.manage-subscription", [false, false, true]],
+  ["bb.permission.workspace.manage-subscription", [false, true, true]],
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
   ["bb.permission.workspace.audit-log", [false, true, true]],
   ["bb.permission.workspace.debug-log", [false, true, true]],
