@@ -113,7 +113,6 @@ import { NDrawer } from "naive-ui";
 
 import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
-  useConnectionTreeStore,
   useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1ByUID,
@@ -128,7 +127,7 @@ import ResultPanel from "./ResultPanel";
 import {
   allowUsingSchemaEditorV1,
   instanceV1HasReadonlyMode,
-  isDatabaseV1Accessible,
+  isDatabaseV1Queryable,
 } from "@/utils";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
@@ -150,7 +149,6 @@ const state = reactive<LocalState>({
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
-const connectionTreeStore = useConnectionTreeStore();
 const sqlEditorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
 
@@ -166,12 +164,7 @@ const allowAccess = computed(() => {
     // Allowed if connected to an instance
     return true;
   }
-  const { accessControlPolicyList } = connectionTreeStore;
-  return isDatabaseV1Accessible(
-    database,
-    accessControlPolicyList,
-    currentUserV1.value
-  );
+  return isDatabaseV1Queryable(database, currentUserV1.value);
 });
 
 const { instance } = useInstanceV1ByUID(
