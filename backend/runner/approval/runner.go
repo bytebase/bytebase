@@ -328,8 +328,7 @@ func getIssueRiskResource(issue *store.IssueMessage) store.RiskSource {
 	}
 
 	switch issue.Type {
-	case api.IssueDatabaseSchemaUpdate:
-	case api.IssueDatabaseSchemaUpdateGhost:
+	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseSchemaUpdateGhost:
 		return store.RiskSourceDatabaseSchemaUpdate
 	case api.IssueDatabaseDataUpdate:
 		return store.RiskSourceDatabaseDataUpdate
