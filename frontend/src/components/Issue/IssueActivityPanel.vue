@@ -146,7 +146,7 @@ import { extractUserResourceName } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import {
   useIssueSubscriberStore,
-  useReviewV1Store,
+  useIssueV1Store,
   useIssueStore,
   useActivityV1Store,
   useCurrentUserV1,
@@ -165,7 +165,7 @@ interface LocalState {
 }
 
 const issueStore = useIssueStore();
-const reviewV1Store = useReviewV1Store();
+const issueV1Store = useIssueV1Store();
 const activityV1Store = useActivityV1Store();
 const route = useRoute();
 
@@ -242,8 +242,8 @@ const cancelEditComment = () => {
 };
 
 const doCreateComment = (comment: string) => {
-  reviewV1Store
-    .createReviewComment({
+  issueV1Store
+    .createIssueComment({
       reviewId: issue.value.id,
       comment,
     })
@@ -295,8 +295,8 @@ const doUpdateComment = () => {
     return;
   }
   const activityId = getLogId(state.activeActivity.name);
-  reviewV1Store
-    .updateReviewComment({
+  issueV1Store
+    .updateIssueComment({
       commentId: `${activityId}`,
       reviewId: issue.value.id,
       comment: state.editComment,

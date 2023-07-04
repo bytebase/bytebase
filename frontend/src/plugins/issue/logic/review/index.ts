@@ -102,7 +102,7 @@ export const provideIssueReview = (
   const store = useReviewStore();
   const review = computed(() => {
     return issue.value
-      ? store.getReviewByIssue(issue.value)
+      ? store.getIssueByIssue(issue.value)
       : Review.fromJSON({});
   });
 

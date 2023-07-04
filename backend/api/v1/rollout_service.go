@@ -1397,7 +1397,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
 		}
 		if c.RollbackDetail != nil {
-			reviewID, err := getReviewID(c.RollbackDetail.RollbackFromReview)
+			reviewID, err := getIssueID(c.RollbackDetail.RollbackFromReview)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get review id from review %q", c.RollbackDetail.RollbackFromReview)
 			}
