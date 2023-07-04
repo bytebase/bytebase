@@ -26,9 +26,9 @@ const (
 	IssueService_CreateIssueComment_FullMethodName = "/bytebase.v1.IssueService/CreateIssueComment"
 	IssueService_UpdateIssueComment_FullMethodName = "/bytebase.v1.IssueService/UpdateIssueComment"
 	IssueService_BatchUpdateIssues_FullMethodName  = "/bytebase.v1.IssueService/BatchUpdateIssues"
-	IssueService_ApproveReview_FullMethodName      = "/bytebase.v1.IssueService/ApproveReview"
-	IssueService_RejectReview_FullMethodName       = "/bytebase.v1.IssueService/RejectReview"
-	IssueService_RequestReview_FullMethodName      = "/bytebase.v1.IssueService/RequestReview"
+	IssueService_ApproveIssue_FullMethodName       = "/bytebase.v1.IssueService/ApproveIssue"
+	IssueService_RejectIssue_FullMethodName        = "/bytebase.v1.IssueService/RejectIssue"
+	IssueService_RequestIssue_FullMethodName       = "/bytebase.v1.IssueService/RequestIssue"
 )
 
 // IssueServiceClient is the client API for IssueService service.
@@ -42,9 +42,9 @@ type IssueServiceClient interface {
 	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	BatchUpdateIssues(ctx context.Context, in *BatchUpdateIssuesRequest, opts ...grpc.CallOption) (*BatchUpdateIssuesResponse, error)
-	ApproveReview(ctx context.Context, in *ApproveReviewRequest, opts ...grpc.CallOption) (*Review, error)
-	RejectReview(ctx context.Context, in *RejectReviewRequest, opts ...grpc.CallOption) (*Review, error)
-	RequestReview(ctx context.Context, in *RequestReviewRequest, opts ...grpc.CallOption) (*Review, error)
+	ApproveIssue(ctx context.Context, in *ApproveIssueRequest, opts ...grpc.CallOption) (*Review, error)
+	RejectIssue(ctx context.Context, in *RejectIssueRequest, opts ...grpc.CallOption) (*Review, error)
+	RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Review, error)
 }
 
 type issueServiceClient struct {
@@ -118,27 +118,27 @@ func (c *issueServiceClient) BatchUpdateIssues(ctx context.Context, in *BatchUpd
 	return out, nil
 }
 
-func (c *issueServiceClient) ApproveReview(ctx context.Context, in *ApproveReviewRequest, opts ...grpc.CallOption) (*Review, error) {
+func (c *issueServiceClient) ApproveIssue(ctx context.Context, in *ApproveIssueRequest, opts ...grpc.CallOption) (*Review, error) {
 	out := new(Review)
-	err := c.cc.Invoke(ctx, IssueService_ApproveReview_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, IssueService_ApproveIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *issueServiceClient) RejectReview(ctx context.Context, in *RejectReviewRequest, opts ...grpc.CallOption) (*Review, error) {
+func (c *issueServiceClient) RejectIssue(ctx context.Context, in *RejectIssueRequest, opts ...grpc.CallOption) (*Review, error) {
 	out := new(Review)
-	err := c.cc.Invoke(ctx, IssueService_RejectReview_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, IssueService_RejectIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *issueServiceClient) RequestReview(ctx context.Context, in *RequestReviewRequest, opts ...grpc.CallOption) (*Review, error) {
+func (c *issueServiceClient) RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Review, error) {
 	out := new(Review)
-	err := c.cc.Invoke(ctx, IssueService_RequestReview_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, IssueService_RequestIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,9 +156,9 @@ type IssueServiceServer interface {
 	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error)
 	UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*IssueComment, error)
 	BatchUpdateIssues(context.Context, *BatchUpdateIssuesRequest) (*BatchUpdateIssuesResponse, error)
-	ApproveReview(context.Context, *ApproveReviewRequest) (*Review, error)
-	RejectReview(context.Context, *RejectReviewRequest) (*Review, error)
-	RequestReview(context.Context, *RequestReviewRequest) (*Review, error)
+	ApproveIssue(context.Context, *ApproveIssueRequest) (*Review, error)
+	RejectIssue(context.Context, *RejectIssueRequest) (*Review, error)
+	RequestIssue(context.Context, *RequestIssueRequest) (*Review, error)
 	mustEmbedUnimplementedIssueServiceServer()
 }
 
@@ -187,14 +187,14 @@ func (UnimplementedIssueServiceServer) UpdateIssueComment(context.Context, *Upda
 func (UnimplementedIssueServiceServer) BatchUpdateIssues(context.Context, *BatchUpdateIssuesRequest) (*BatchUpdateIssuesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateIssues not implemented")
 }
-func (UnimplementedIssueServiceServer) ApproveReview(context.Context, *ApproveReviewRequest) (*Review, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ApproveReview not implemented")
+func (UnimplementedIssueServiceServer) ApproveIssue(context.Context, *ApproveIssueRequest) (*Review, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApproveIssue not implemented")
 }
-func (UnimplementedIssueServiceServer) RejectReview(context.Context, *RejectReviewRequest) (*Review, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RejectReview not implemented")
+func (UnimplementedIssueServiceServer) RejectIssue(context.Context, *RejectIssueRequest) (*Review, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RejectIssue not implemented")
 }
-func (UnimplementedIssueServiceServer) RequestReview(context.Context, *RequestReviewRequest) (*Review, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RequestReview not implemented")
+func (UnimplementedIssueServiceServer) RequestIssue(context.Context, *RequestIssueRequest) (*Review, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestIssue not implemented")
 }
 func (UnimplementedIssueServiceServer) mustEmbedUnimplementedIssueServiceServer() {}
 
@@ -335,56 +335,56 @@ func _IssueService_BatchUpdateIssues_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _IssueService_ApproveReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ApproveReviewRequest)
+func _IssueService_ApproveIssue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApproveIssueRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(IssueServiceServer).ApproveReview(ctx, in)
+		return srv.(IssueServiceServer).ApproveIssue(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: IssueService_ApproveReview_FullMethodName,
+		FullMethod: IssueService_ApproveIssue_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IssueServiceServer).ApproveReview(ctx, req.(*ApproveReviewRequest))
+		return srv.(IssueServiceServer).ApproveIssue(ctx, req.(*ApproveIssueRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _IssueService_RejectReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RejectReviewRequest)
+func _IssueService_RejectIssue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RejectIssueRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(IssueServiceServer).RejectReview(ctx, in)
+		return srv.(IssueServiceServer).RejectIssue(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: IssueService_RejectReview_FullMethodName,
+		FullMethod: IssueService_RejectIssue_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IssueServiceServer).RejectReview(ctx, req.(*RejectReviewRequest))
+		return srv.(IssueServiceServer).RejectIssue(ctx, req.(*RejectIssueRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _IssueService_RequestReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RequestReviewRequest)
+func _IssueService_RequestIssue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestIssueRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(IssueServiceServer).RequestReview(ctx, in)
+		return srv.(IssueServiceServer).RequestIssue(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: IssueService_RequestReview_FullMethodName,
+		FullMethod: IssueService_RequestIssue_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IssueServiceServer).RequestReview(ctx, req.(*RequestReviewRequest))
+		return srv.(IssueServiceServer).RequestIssue(ctx, req.(*RequestIssueRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -425,16 +425,16 @@ var IssueService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _IssueService_BatchUpdateIssues_Handler,
 		},
 		{
-			MethodName: "ApproveReview",
-			Handler:    _IssueService_ApproveReview_Handler,
+			MethodName: "ApproveIssue",
+			Handler:    _IssueService_ApproveIssue_Handler,
 		},
 		{
-			MethodName: "RejectReview",
-			Handler:    _IssueService_RejectReview_Handler,
+			MethodName: "RejectIssue",
+			Handler:    _IssueService_RejectIssue_Handler,
 		},
 		{
-			MethodName: "RequestReview",
-			Handler:    _IssueService_RequestReview_Handler,
+			MethodName: "RequestIssue",
+			Handler:    _IssueService_RequestIssue_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

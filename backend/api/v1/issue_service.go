@@ -31,7 +31,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// IssueService implements the review service.
+// IssueService implements the issue service.
 type IssueService struct {
 	v1pb.UnimplementedIssueServiceServer
 	store              *store.Store
@@ -54,8 +54,8 @@ func NewIssueService(store *store.Store, activityManager *activity.Manager, task
 	}
 }
 
-// GetIssue gets a review.
-// Currently, only review.ApprovalTemplates and review.Approvers are set.
+// GetIssue gets a issue.
+// Currently, only issue.ApprovalTemplates and issue.Approvers are set.
 func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
@@ -93,13 +93,13 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	}
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return review, nil
 }
 
-// ApproveReview approves the approval flow of the review.
-func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveReviewRequest) (*v1pb.Review, error) {
+// ApproveIssue approves the approval flow of the issue.
+func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIssueRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -123,12 +123,12 @@ func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveR
 
 	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if rejectedStep != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot approve because the review has been rejected")
+		return nil, status.Errorf(codes.InvalidArgument, "cannot approve because the issue has been rejected")
 	}
 
 	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if step == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "the review has been approved")
+		return nil, status.Errorf(codes.InvalidArgument, "the issue has been approved")
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -276,7 +276,7 @@ func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveR
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create skipping steps activity after approving review", zap.Error(err))
+		log.Error("failed to create skipping steps activity after approving issue", zap.Error(err))
 	}
 
 	if err := func() error {
@@ -314,20 +314,20 @@ func (s *IssueService) ApproveReview(ctx context.Context, request *v1pb.ApproveR
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create approval step pending activity after creating review", zap.Error(err))
+		log.Error("failed to create approval step pending activity after creating issue", zap.Error(err))
 	}
 
-	s.onReviewApproved(ctx, issue)
+	s.onIssueApproved(ctx, issue)
 
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return review, nil
 }
 
-// RejectReview rejects a review.
-func (s *IssueService) RejectReview(ctx context.Context, request *v1pb.RejectReviewRequest) (*v1pb.Review, error) {
+// RejectIssue rejects a issue.
+func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssueRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -351,12 +351,12 @@ func (s *IssueService) RejectReview(ctx context.Context, request *v1pb.RejectRev
 
 	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if rejectedStep != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot reject because the review has been rejected")
+		return nil, status.Errorf(codes.InvalidArgument, "cannot reject because the issue has been rejected")
 	}
 
 	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if step == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "the review has been approved")
+		return nil, status.Errorf(codes.InvalidArgument, "the issue has been approved")
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -422,18 +422,18 @@ func (s *IssueService) RejectReview(ctx context.Context, request *v1pb.RejectRev
 		}
 		return nil
 	}(); err != nil {
-		log.Error("failed to create activity after rejecting review", zap.Error(err))
+		log.Error("failed to create activity after rejecting issue", zap.Error(err))
 	}
 
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return review, nil
 }
 
-// RequestReview requests a review.
-func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestReviewRequest) (*v1pb.Review, error) {
+// RequestIssue requests a issue.
+func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIssueRequest) (*v1pb.Review, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -457,7 +457,7 @@ func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestR
 
 	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if rejectedStep == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot request reviews because the issue is not rejected")
+		return nil, status.Errorf(codes.InvalidArgument, "cannot request issues because the issue is not rejected")
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -466,9 +466,9 @@ func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestR
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
 	}
 
-	canRequest := canRequestReview(issue.Creator, user)
+	canRequest := canRequestIssue(issue.Creator, user)
 	if !canRequest {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot request reviews because you are not the issue creator")
+		return nil, status.Errorf(codes.PermissionDenied, "cannot request issues because you are not the issue creator")
 	}
 
 	var newApprovers []*storepb.IssuePayloadApproval_Approver
@@ -532,17 +532,17 @@ func (s *IssueService) RequestReview(ctx context.Context, request *v1pb.RequestR
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create skipping steps activity after approving review", zap.Error(err))
+		log.Error("failed to create skipping steps activity after approving issue", zap.Error(err))
 	}
 
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return review, nil
 }
 
-// UpdateIssue updates the review.
+// UpdateIssue updates the issue.
 // It can only update approval_finding_done to false.
 func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssueRequest) (*v1pb.Review, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -598,15 +598,15 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return review, nil
 }
 
-// CreateIssueComment creates the review comment.
+// CreateIssueComment creates the issue comment.
 func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.CreateIssueCommentRequest) (*v1pb.IssueComment, error) {
 	if request.IssueComment.Comment == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "review comment is empty")
+		return nil, status.Errorf(codes.InvalidArgument, "issue comment is empty")
 	}
 	issue, err := s.getIssueMessage(ctx, request.Parent)
 	if err != nil {
@@ -637,7 +637,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 
 	activity, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create review comment: %v", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err.Error())
 	}
 	return &v1pb.IssueComment{
 		Uid:        fmt.Sprintf("%d", activity.UID),
@@ -648,7 +648,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 	}, nil
 }
 
-// UpdateIssueComment updates the review comment.
+// UpdateIssueComment updates the issue comment.
 func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.UpdateIssueCommentRequest) (*v1pb.IssueComment, error) {
 	if request.UpdateMask.Paths == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
@@ -677,9 +677,9 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	activity, err := s.store.UpdateActivityV2(ctx, update)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
-			return nil, status.Errorf(codes.NotFound, "cannot found the review comment %s", request.IssueComment.Uid)
+			return nil, status.Errorf(codes.NotFound, "cannot found the issue comment %s", request.IssueComment.Uid)
 		}
-		return nil, status.Errorf(codes.Internal, "failed to update the review comment with error: %v", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to update the issue comment with error: %v", err.Error())
 	}
 
 	return &v1pb.IssueComment{
@@ -691,7 +691,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	}, nil
 }
 
-func (s *IssueService) onReviewApproved(ctx context.Context, issue *store.IssueMessage) {
+func (s *IssueService) onIssueApproved(ctx context.Context, issue *store.IssueMessage) {
 	if issue.Type == api.IssueGrantRequest {
 		if err := func() error {
 			payload := &storepb.IssuePayload{}
@@ -729,7 +729,7 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 	return issue, nil
 }
 
-func canRequestReview(issueCreator *store.UserMessage, user *store.UserMessage) bool {
+func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) bool {
 	return issueCreator.ID == user.ID
 }
 
