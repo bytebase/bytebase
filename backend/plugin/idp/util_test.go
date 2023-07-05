@@ -58,7 +58,7 @@ func TestGetValueWithKeyFromJSONString(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		var data map[string]interface{}
+		var data map[string]any
 		err := json.Unmarshal([]byte(test.data), &data)
 		require.NoError(t, err)
 		got := GetValueWithKey(data, test.key)
