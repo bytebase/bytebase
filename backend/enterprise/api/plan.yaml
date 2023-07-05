@@ -129,10 +129,10 @@ planList:
     trialDays: 14
     unitPrice: 0
     trialPrice: 0
-    freeSeatCount: 20
+    freeSeatCount: -1
     freeInstanceCount: 0
     maximumInstanceCount: 20
-    maximumSeatCount: 20
+    maximumSeatCount: -1
     maximumTaskCount: -1
     maximumEnvironmentCount: -1
     pricePerSeatPerMonth: 0
