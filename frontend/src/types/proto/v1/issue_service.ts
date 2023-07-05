@@ -172,25 +172,14 @@ export interface Issue {
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
   title: string;
-  /**
-   * The plan associated with the issue.
-   * Can be empty.
-   * Format: projects/{project}/plans/{plan}
-   */
-  plan: string;
-  /**
-   * The rollout associated with the issue.
-   * Can be empty.
-   * Format: projects/{project}/rollouts/{rollout}
-   */
-  rollout: string;
   description: string;
+  type: Issue_Type;
   status: IssueStatus;
   /** Format: users/hello@world.com */
   assignee: string;
   assigneeAttention: boolean;
-  approvalTemplates: ApprovalTemplate[];
   approvers: Issue_Approver[];
+  approvalTemplates: ApprovalTemplate[];
   /**
    * If the value is `false`, it means that the backend is still finding matching approval templates.
    * If `true`, approval_templates & approvers & approval_finding_error are available.
@@ -206,6 +195,57 @@ export interface Issue {
   creator: string;
   createTime?: Date;
   updateTime?: Date;
+  /**
+   * The plan associated with the issue.
+   * Can be empty.
+   * Format: projects/{project}/plans/{plan}
+   */
+  plan: string;
+  /**
+   * The rollout associated with the issue.
+   * Can be empty.
+   * Format: projects/{project}/rollouts/{rollout}
+   */
+  rollout: string;
+}
+
+export enum Issue_Type {
+  TYPE_UNSPECIFIED = 0,
+  DATABASE_CHANGE = 1,
+  GRANT_REQUEST = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function issue_TypeFromJSON(object: any): Issue_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return Issue_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "DATABASE_CHANGE":
+      return Issue_Type.DATABASE_CHANGE;
+    case 2:
+    case "GRANT_REQUEST":
+      return Issue_Type.GRANT_REQUEST;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Issue_Type.UNRECOGNIZED;
+  }
+}
+
+export function issue_TypeToJSON(object: Issue_Type): string {
+  switch (object) {
+    case Issue_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case Issue_Type.DATABASE_CHANGE:
+      return "DATABASE_CHANGE";
+    case Issue_Type.GRANT_REQUEST:
+      return "GRANT_REQUEST";
+    case Issue_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface Issue_Approver {
@@ -1185,20 +1225,21 @@ function createBaseIssue(): Issue {
     name: "",
     uid: "",
     title: "",
-    plan: "",
-    rollout: "",
     description: "",
+    type: 0,
     status: 0,
     assignee: "",
     assigneeAttention: false,
-    approvalTemplates: [],
     approvers: [],
+    approvalTemplates: [],
     approvalFindingDone: false,
     approvalFindingError: "",
     subscribers: [],
     creator: "",
     createTime: undefined,
     updateTime: undefined,
+    plan: "",
+    rollout: "",
   };
 }
 
@@ -1213,47 +1254,50 @@ export const Issue = {
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
     }
-    if (message.plan !== "") {
-      writer.uint32(130).string(message.plan);
-    }
-    if (message.rollout !== "") {
-      writer.uint32(138).string(message.rollout);
-    }
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
     }
+    if (message.type !== 0) {
+      writer.uint32(40).int32(message.type);
+    }
     if (message.status !== 0) {
-      writer.uint32(40).int32(message.status);
+      writer.uint32(48).int32(message.status);
     }
     if (message.assignee !== "") {
-      writer.uint32(50).string(message.assignee);
+      writer.uint32(58).string(message.assignee);
     }
     if (message.assigneeAttention === true) {
-      writer.uint32(56).bool(message.assigneeAttention);
-    }
-    for (const v of message.approvalTemplates) {
-      ApprovalTemplate.encode(v!, writer.uint32(66).fork()).ldelim();
+      writer.uint32(64).bool(message.assigneeAttention);
     }
     for (const v of message.approvers) {
       Issue_Approver.encode(v!, writer.uint32(74).fork()).ldelim();
     }
+    for (const v of message.approvalTemplates) {
+      ApprovalTemplate.encode(v!, writer.uint32(82).fork()).ldelim();
+    }
     if (message.approvalFindingDone === true) {
-      writer.uint32(80).bool(message.approvalFindingDone);
+      writer.uint32(88).bool(message.approvalFindingDone);
     }
     if (message.approvalFindingError !== "") {
-      writer.uint32(90).string(message.approvalFindingError);
+      writer.uint32(98).string(message.approvalFindingError);
     }
     for (const v of message.subscribers) {
-      writer.uint32(98).string(v!);
+      writer.uint32(106).string(v!);
     }
     if (message.creator !== "") {
-      writer.uint32(106).string(message.creator);
+      writer.uint32(114).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(114).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(122).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(122).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(130).fork()).ldelim();
+    }
+    if (message.plan !== "") {
+      writer.uint32(138).string(message.plan);
+    }
+    if (message.rollout !== "") {
+      writer.uint32(146).string(message.rollout);
     }
     return writer;
   },
@@ -1286,20 +1330,6 @@ export const Issue = {
 
           message.title = reader.string();
           continue;
-        case 16:
-          if (tag !== 130) {
-            break;
-          }
-
-          message.plan = reader.string();
-          continue;
-        case 17:
-          if (tag !== 138) {
-            break;
-          }
-
-          message.rollout = reader.string();
-          continue;
         case 4:
           if (tag !== 34) {
             break;
@@ -1312,28 +1342,28 @@ export const Issue = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.type = reader.int32() as any;
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
           message.assignee = reader.string();
           continue;
-        case 7:
-          if (tag !== 56) {
+        case 8:
+          if (tag !== 64) {
             break;
           }
 
           message.assigneeAttention = reader.bool();
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.approvalTemplates.push(ApprovalTemplate.decode(reader, reader.uint32()));
           continue;
         case 9:
           if (tag !== 74) {
@@ -1343,46 +1373,67 @@ export const Issue = {
           message.approvers.push(Issue_Approver.decode(reader, reader.uint32()));
           continue;
         case 10:
-          if (tag !== 80) {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.approvalTemplates.push(ApprovalTemplate.decode(reader, reader.uint32()));
+          continue;
+        case 11:
+          if (tag !== 88) {
             break;
           }
 
           message.approvalFindingDone = reader.bool();
-          continue;
-        case 11:
-          if (tag !== 90) {
-            break;
-          }
-
-          message.approvalFindingError = reader.string();
           continue;
         case 12:
           if (tag !== 98) {
             break;
           }
 
-          message.subscribers.push(reader.string());
+          message.approvalFindingError = reader.string();
           continue;
         case 13:
           if (tag !== 106) {
             break;
           }
 
-          message.creator = reader.string();
+          message.subscribers.push(reader.string());
           continue;
         case 14:
           if (tag !== 114) {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.creator = reader.string();
           continue;
         case 15:
           if (tag !== 122) {
             break;
           }
 
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
           message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.plan = reader.string();
+          continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.rollout = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1398,22 +1449,23 @@ export const Issue = {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
       title: isSet(object.title) ? String(object.title) : "",
-      plan: isSet(object.plan) ? String(object.plan) : "",
-      rollout: isSet(object.rollout) ? String(object.rollout) : "",
       description: isSet(object.description) ? String(object.description) : "",
+      type: isSet(object.type) ? issue_TypeFromJSON(object.type) : 0,
       status: isSet(object.status) ? issueStatusFromJSON(object.status) : 0,
       assignee: isSet(object.assignee) ? String(object.assignee) : "",
       assigneeAttention: isSet(object.assigneeAttention) ? Boolean(object.assigneeAttention) : false,
+      approvers: Array.isArray(object?.approvers) ? object.approvers.map((e: any) => Issue_Approver.fromJSON(e)) : [],
       approvalTemplates: Array.isArray(object?.approvalTemplates)
         ? object.approvalTemplates.map((e: any) => ApprovalTemplate.fromJSON(e))
         : [],
-      approvers: Array.isArray(object?.approvers) ? object.approvers.map((e: any) => Issue_Approver.fromJSON(e)) : [],
       approvalFindingDone: isSet(object.approvalFindingDone) ? Boolean(object.approvalFindingDone) : false,
       approvalFindingError: isSet(object.approvalFindingError) ? String(object.approvalFindingError) : "",
       subscribers: Array.isArray(object?.subscribers) ? object.subscribers.map((e: any) => String(e)) : [],
       creator: isSet(object.creator) ? String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      plan: isSet(object.plan) ? String(object.plan) : "",
+      rollout: isSet(object.rollout) ? String(object.rollout) : "",
     };
   },
 
@@ -1422,21 +1474,20 @@ export const Issue = {
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
     message.title !== undefined && (obj.title = message.title);
-    message.plan !== undefined && (obj.plan = message.plan);
-    message.rollout !== undefined && (obj.rollout = message.rollout);
     message.description !== undefined && (obj.description = message.description);
+    message.type !== undefined && (obj.type = issue_TypeToJSON(message.type));
     message.status !== undefined && (obj.status = issueStatusToJSON(message.status));
     message.assignee !== undefined && (obj.assignee = message.assignee);
     message.assigneeAttention !== undefined && (obj.assigneeAttention = message.assigneeAttention);
-    if (message.approvalTemplates) {
-      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
-    } else {
-      obj.approvalTemplates = [];
-    }
     if (message.approvers) {
       obj.approvers = message.approvers.map((e) => e ? Issue_Approver.toJSON(e) : undefined);
     } else {
       obj.approvers = [];
+    }
+    if (message.approvalTemplates) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
+    } else {
+      obj.approvalTemplates = [];
     }
     message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
     message.approvalFindingError !== undefined && (obj.approvalFindingError = message.approvalFindingError);
@@ -1448,6 +1499,8 @@ export const Issue = {
     message.creator !== undefined && (obj.creator = message.creator);
     message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.plan !== undefined && (obj.plan = message.plan);
+    message.rollout !== undefined && (obj.rollout = message.rollout);
     return obj;
   },
 
@@ -1460,20 +1513,21 @@ export const Issue = {
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
-    message.plan = object.plan ?? "";
-    message.rollout = object.rollout ?? "";
     message.description = object.description ?? "";
+    message.type = object.type ?? 0;
     message.status = object.status ?? 0;
     message.assignee = object.assignee ?? "";
     message.assigneeAttention = object.assigneeAttention ?? false;
-    message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.approvers = object.approvers?.map((e) => Issue_Approver.fromPartial(e)) || [];
+    message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;
     message.approvalFindingError = object.approvalFindingError ?? "";
     message.subscribers = object.subscribers?.map((e) => e) || [];
     message.creator = object.creator ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
+    message.plan = object.plan ?? "";
+    message.rollout = object.rollout ?? "";
     return message;
   },
 };
