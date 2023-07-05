@@ -129,7 +129,9 @@ const databaseListByEnvironment = computed(() => {
 
 const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
   const dbList = databaseList.value.filter(
-    (db) => db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
+    (db) =>
+      db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
+      db.project !== DEFAULT_PROJECT_V1_NAME
   );
   // In case that each `db.project` is not reference equal
   // we run a uniq() on the list by project.id
