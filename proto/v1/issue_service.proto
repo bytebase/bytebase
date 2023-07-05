@@ -187,24 +187,21 @@ message Issue {
 
   string title = 3;
 
-  // The plan associated with the issue.
-  // Can be empty.
-  // Format: projects/{project}/plans/{plan}
-  string plan = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The rollout associated with the issue.
-  // Can be empty.
-  // Format: projects/{project}/rollouts/{rollout}
-  string rollout = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   string description = 4;
 
-  IssueStatus status = 5;
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    DATABASE_CHANGE = 1;
+    GRANT_REQUEST = 2;
+  }
+  Type type = 5;
+
+  IssueStatus status = 6;
 
   // Format: users/hello@world.com
-  string assignee = 6;
+  string assignee = 7;
 
-  bool assignee_attention = 7;
+  bool assignee_attention = 8;
 
   message Approver {
     enum Status {
@@ -219,25 +216,37 @@ message Issue {
     // Format: users/hello@world.com
     string principal = 2;
   }
-
-  repeated ApprovalTemplate approval_templates = 8;
   repeated Approver approvers = 9;
+
+  repeated ApprovalTemplate approval_templates = 10;
 
   // If the value is `false`, it means that the backend is still finding matching approval templates.
   // If `true`, approval_templates & approvers & approval_finding_error are available.
-  bool approval_finding_done = 10;
-  string approval_finding_error = 11;
+  bool approval_finding_done = 11;
+  string approval_finding_error = 12;
 
   // The subscribers.
   // Format: users/hello@world.com
-  repeated string subscribers = 12;
+  repeated string subscribers = 13;
 
   // Format: users/hello@world.com
-  string creator = 13;
+  string creator = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp create_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp update_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The plan associated with the issue.
+  // Can be empty.
+  // Format: projects/{project}/plans/{plan}
+  string plan = 17;
+
+  // The rollout associated with the issue.
+  // Can be empty.
+  // Format: projects/{project}/rollouts/{rollout}
+  string rollout = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // TODO(d): add issue payload for requesting grant.
 }
 
 enum IssueStatus {
