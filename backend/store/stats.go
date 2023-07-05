@@ -336,3 +336,45 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	}
 	return res, nil
 }
+
+// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
+// Used by the metric collector.
+func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT row_status, visibility, source, type, COUNT(*) AS count
+		FROM sheet
+		GROUP BY row_status, visibility, source, type`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []*metric.SheetCountMetric
+	for rows.Next() {
+		var sheetCount metric.SheetCountMetric
+		if err := rows.Scan(
+			&sheetCount.RowStatus,
+			&sheetCount.Visibility,
+			&sheetCount.Source,
+			&sheetCount.Type,
+			&sheetCount.Count,
+		); err != nil {
+			return nil, err
+		}
+		res = append(res, &sheetCount)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

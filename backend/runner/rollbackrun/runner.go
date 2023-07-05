@@ -139,7 +139,7 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		rollbackStatement = statementsBuffer.String()
 	}
 
-	sheet, err := r.store.CreateSheetV2(ctx, &store.SheetMessage{
+	sheet, err := r.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for rolling back task %v", task.ID),
@@ -227,7 +227,7 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		rollbackStatement = rollbackSQL
 	}
 
-	sheet, err := r.store.CreateSheetV2(ctx, &store.SheetMessage{
+	sheet, err := r.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for rolling back task %d", task.ID),
@@ -260,7 +260,7 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 		return "", ctx.Err()
 	}
 	// We cannot support rollback SQL generation for sheets because it can take lots of resources.
-	sheet, err := r.store.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := r.store.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
 	}
