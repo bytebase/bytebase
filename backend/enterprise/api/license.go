@@ -3,7 +3,6 @@ package api
 
 import (
 	"context"
-	"math"
 	"strings"
 	"time"
 
@@ -12,28 +11,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 )
-
-// PlanLimit is the type for plan limits.
-type PlanLimit int
-
-const (
-	// PlanLimitMaximumTask is the key name for maximum number of tasks for a plan.
-	PlanLimitMaximumTask PlanLimit = iota
-	// PlanLimitMaximumEnvironment is the key name for maximum number of environments for a plan.
-	PlanLimitMaximumEnvironment
-	// PlanLimitMaximumInstance is the key name for maximum number of instance for a plan.
-	PlanLimitMaximumInstance
-	// PlanLimitMaximumUser is the key name for maximum number of user for a plan.
-	PlanLimitMaximumUser
-)
-
-// PlanLimitValues is the plan limit value mapping.
-var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaximumTask:        {math.MaxInt64, math.MaxInt64, math.MaxInt64},
-	PlanLimitMaximumEnvironment: {math.MaxInt64, math.MaxInt64, math.MaxInt64},
-	PlanLimitMaximumInstance:    {20, 20, math.MaxInt64},
-	PlanLimitMaximumUser:        {20, math.MaxInt64, math.MaxInt64},
-}
 
 // validPlans is a string array of valid plan types.
 var validPlans = []api.PlanType{
