@@ -2,16 +2,16 @@
   "name": "bytebase",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
-    "dev": "npm run copy-sql-review-file && vite --mode dev-local",
-    "release": "export NODE_OPTIONS=--max_old_space_size=4096 && npm run copy-sql-review-file && vite build --mode release --outDir=../backend/server/dist --emptyOutDir",
-    "dev-embed": "export NODE OPTIONS=--max_old_space_size=4096 && npm run copy-sql-review-file && vite build --mode dev --outDir=../backend/server/dist --emptyOutDir",
-    "dev-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode dev",
-    "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
+    "dev": "npm run copy-config-file && vite --mode dev-local",
+    "release": "export NODE_OPTIONS=--max_old_space_size=4096 && npm run copy-config-file && vite build --mode release --outDir=../backend/server/dist --emptyOutDir",
+    "dev-embed": "export NODE OPTIONS=--max_old_space_size=4096 && npm run copy-config-file && vite build --mode dev --outDir=../backend/server/dist --emptyOutDir",
+    "dev-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && npm run copy-config-file && vite build --mode dev",
+    "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && npm run copy-config-file && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
     "test": "vitest run",
     "coverage": "vitest --coverage",
-    "copy-sql-review-file": "sh ./scripts/copy_sql_review_files.sh"
+    "copy-config-file": "sh ./scripts/copy_config_files.sh"
   },
   "dependencies": {
     "@bytebase/vue-kbar": "0.1.8",
