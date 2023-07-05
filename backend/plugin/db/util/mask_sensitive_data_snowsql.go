@@ -840,6 +840,73 @@ func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName snow
 	return "", db.TableSchema{}, errors.Errorf(`table %s not found in database %s`, normalizedSchemaTableName, normalizedDatabaseName)
 }
 
+// snowflakeIsFieldSensitive iterates through the fromFieldList sequentially until we find the first matching object and return the column name, and whether the column is sensitive.
+func (extractor *sensitiveFieldExtractor) snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (string, bool, error) {
+	type maskType = uint8
+	const (
+		maskNone         maskType = 0
+		maskDatabaseName maskType = 1 << iota
+		maskSchemaName
+		maskTableName
+		maskColumnName
+	)
+	mask := maskNone
+	if normalizedColumnName != "" {
+		mask |= maskColumnName
+	}
+	if normalizedTableName != "" {
+		if mask&maskColumnName == 0 {
+			return "", false, errors.Errorf(`table name %s is specified without column name`, normalizedTableName)
+		}
+		mask |= maskTableName
+	}
+	if normalizedSchemaName != "" {
+		if mask&maskTableName == 0 {
+			return "", false, errors.Errorf(`schema name %s is specified without table name`, normalizedSchemaName)
+		}
+		mask |= maskSchemaName
+	}
+	if normalizedDatabaseName != "" {
+		if mask&maskSchemaName == 0 {
+			return "", false, errors.Errorf(`database name %s is specified without schema name`, normalizedDatabaseName)
+		}
+		mask |= maskDatabaseName
+	}
+
+	if mask == maskNone {
+		return "", false, errors.Errorf(`no object name is specified`)
+	}
+
+	// We just need to iterate through the fromFieldList sequentially until we find the first matching object.
+
+	// It is safe if there are two or more objects in the fromFieldList have the same column name, because the executor
+	// will throw a compilation error if the column name is ambiguous.
+	// For example, there are two tables T1 and T2, and both of them have a column named "C1". The following query will throw
+	// a compilation error:
+	// SELECT C1 FROM T1, T2;
+	//
+	// But users can specify the table name to avoid the compilation error:
+	// SELECT T1.C1 FROM T1, T2;
+	//
+	// Further more, users can not use the original table name if they specify the alias name:
+	// SELECT T1.C1 FROM T1 AS T3, T2; -- invalid identifier 'ADDRESS.ID'
+
+	for _, field := range extractor.fromFieldList {
+		if mask&maskDatabaseName != 0 && normalizedDatabaseName != field.database {
+			continue
+		}
+		// TODO(zp): split the schema name and table name for snowflake.
+		if mask&maskTableName != 0 && fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName) != field.table {
+			continue
+		}
+		if mask&maskColumnName != 0 && normalizedColumnName != field.name {
+			continue
+		}
+		return field.name, field.sensitive, nil
+	}
+	return "", false, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+}
+
 func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, string, string) {
 	// TODO(zp): unify here with NormalizeObjectName in backend/plugin/parser/sql/snowsql.go
 	var parts []string
