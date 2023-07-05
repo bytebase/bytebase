@@ -244,7 +244,7 @@ const cancelEditComment = () => {
 const doCreateComment = (comment: string) => {
   issueV1Store
     .createIssueComment({
-      reviewId: issue.value.id,
+      issueId: issue.value.id,
       comment,
     })
     .then(() => {
@@ -298,7 +298,7 @@ const doUpdateComment = () => {
   issueV1Store
     .updateIssueComment({
       commentId: `${activityId}`,
-      reviewId: issue.value.id,
+      issueId: issue.value.id,
       comment: state.editComment,
     })
     .then(() => {

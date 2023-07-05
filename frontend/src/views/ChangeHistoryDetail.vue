@@ -27,10 +27,10 @@
                 >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
               >
               <router-link
-                :to="`/issue/${extractReviewId(changeHistory.review)}`"
+                :to="`/issue/${extractIssueId(changeHistory.issue)}`"
                 class="normal-link"
               >
-                {{ extractReviewId(changeHistory.review) }}
+                {{ extractIssueId(changeHistory.issue) }}
               </router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.duration") }}</dt>
@@ -246,7 +246,7 @@ import { CodeDiff } from "v-code-diff";
 import {
   changeHistoryLink,
   extractChangeHistoryUID,
-  extractReviewId,
+  extractIssueId,
   extractUserResourceName,
 } from "@/utils";
 import {
