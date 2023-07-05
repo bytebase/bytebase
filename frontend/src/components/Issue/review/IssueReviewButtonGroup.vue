@@ -77,7 +77,7 @@ import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 import {
   candidatesOfApprovalStep,
   useCurrentUserV1,
-  useReviewStore,
+  useIssueV1Store,
 } from "@/store";
 import { Issue } from "@/types";
 import { BBTooltipButton } from "@/bbkit";
@@ -105,7 +105,7 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const store = useReviewStore();
+const store = useIssueV1Store();
 const currentUserV1 = useCurrentUserV1();
 const issueContext = useIssueLogic();
 const issue = issueContext.issue as Ref<Issue>;

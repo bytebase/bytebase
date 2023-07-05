@@ -15,7 +15,7 @@ import {
 import {
   candidatesOfApprovalStep,
   useAuthStore,
-  useReviewStore,
+  useIssueV1Store,
   useUserStore,
 } from "@/store";
 import { IssueReviewContext, provideIssueReviewContext } from "./context";
@@ -104,7 +104,7 @@ export const provideIssueReview = (
   legacyIssue: ComputedRef<LegacyIssue | undefined>,
   events: Emittery<ReviewEvents>
 ) => {
-  const store = useReviewStore();
+  const store = useIssueV1Store();
   const issue = computed(() => {
     return legacyIssue.value
       ? store.getIssueByIssue(legacyIssue.value)
