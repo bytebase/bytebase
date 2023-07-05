@@ -40,7 +40,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     return issuesByName.value.get(issueName(issue)) ?? emptyIssue(issue);
   };
 
-  const setReviewByIssue = async (legacyIssue: LegacyIssue, issue: Issue) => {
+  const setIssueIssue = async (legacyIssue: LegacyIssue, issue: Issue) => {
     await fetchReviewApproversAndCandidates(legacyIssue, issue);
     issuesByName.value.set(issueName(legacyIssue), issue);
   };
@@ -56,7 +56,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
         name,
         force,
       });
-      await setReviewByIssue(legacyIssue, issue);
+      await setIssueIssue(legacyIssue, issue);
       return issue;
     } catch (error) {
       return Issue.fromJSON({});
@@ -68,7 +68,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       name: issueName(legacyIssue),
       comment,
     });
-    await setReviewByIssue(legacyIssue, issue);
+    await setIssueIssue(legacyIssue, issue);
   };
 
   const rejectIssue = async (legacyIssue: LegacyIssue, comment?: string) => {
@@ -76,7 +76,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       name: issueName(legacyIssue),
       comment,
     });
-    await setReviewByIssue(legacyIssue, issue);
+    await setIssueIssue(legacyIssue, issue);
   };
 
   const requestIssue = async (legacyIssue: LegacyIssue, comment?: string) => {
@@ -84,7 +84,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       name: issueName(legacyIssue),
       comment,
     });
-    await setReviewByIssue(legacyIssue, issue);
+    await setIssueIssue(legacyIssue, issue);
   };
 
   const regenerateReview = async (legacyIssue: LegacyIssue) => {
@@ -95,7 +95,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       },
       updateMask: ["approval_finding_done"],
     });
-    await setReviewByIssue(legacyIssue, issue);
+    await setIssueIssue(legacyIssue, issue);
   };
 
   const createIssueComment = async ({
@@ -139,7 +139,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
 
   return {
     getIssueByIssue,
-    fetchReviewByIssue: fetchIssueByLegacyIssue,
+    fetchIssueByLegacyIssue: fetchIssueByLegacyIssue,
     approveIssue,
     rejectIssue,
     requestIssue,
