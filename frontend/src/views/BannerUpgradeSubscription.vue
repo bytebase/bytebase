@@ -174,8 +174,8 @@ watch(
             policyType: PolicyType.BACKUP_PLAN,
           });
         if (
-          backupPolicy?.backupPlanPolicy?.schedule ??
-          defaultBackupSchedule !== defaultBackupSchedule
+          backupPolicy?.backupPlanPolicy?.schedule &&
+          backupPolicy?.backupPlanPolicy?.schedule != defaultBackupSchedule
         ) {
           set.add("bb.feature.backup-policy");
         }
@@ -188,8 +188,9 @@ watch(
             policyType: PolicyType.DEPLOYMENT_APPROVAL,
           });
         if (
-          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy ??
-          defaultApprovalStrategy !== defaultApprovalStrategy
+          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy &&
+          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy !==
+            defaultApprovalStrategy
         ) {
           set.add("bb.feature.approval-policy");
         }
