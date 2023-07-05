@@ -88,9 +88,9 @@ message PlanConfig {
       // rollback_from_task is the task from which the rollback SQL statement is generated for this task.
       // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
       string rollback_from_task = 1;
-      // rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
-      // Format: projects/{project}/reviews/{review}
-      string rollback_from_review = 2;
+      // rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
+      // Format: projects/{project}/issues/{issue}
+      string rollback_from_issue = 2;
     }
     optional RollbackDetail rollback_detail = 6;
   }

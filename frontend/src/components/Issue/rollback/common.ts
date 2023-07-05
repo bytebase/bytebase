@@ -189,7 +189,7 @@ export const useRollbackLogic = () => {
       const action = on ? "Enable" : "Disable";
       try {
         await useIssueV1Store().createIssueComment({
-          reviewId: issueEntity.id,
+          issueId: issueEntity.id,
           comment: `${action} SQL rollback log for task [${taskEntity.name}].`,
           payload: {
             issueName: issueEntity.name,
@@ -262,7 +262,7 @@ export const maybeCreateBackTraceComments = async (newIssue: Issue) => {
     ].join(" ");
     try {
       await useIssueV1Store().createIssueComment({
-        reviewId: fromIssue.id,
+        issueId: fromIssue.id,
         comment,
         payload: {
           issueName: fromIssue.name,

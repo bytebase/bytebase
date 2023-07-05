@@ -35,16 +35,16 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IssueServiceClient interface {
-	GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*Review, error)
-	CreateIssue(ctx context.Context, in *CreateIssueRequest, opts ...grpc.CallOption) (*Review, error)
+	GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	CreateIssue(ctx context.Context, in *CreateIssueRequest, opts ...grpc.CallOption) (*Issue, error)
 	ListIssues(ctx context.Context, in *ListIssuesRequest, opts ...grpc.CallOption) (*ListIssuesResponse, error)
-	UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*Review, error)
+	UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*Issue, error)
 	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	BatchUpdateIssues(ctx context.Context, in *BatchUpdateIssuesRequest, opts ...grpc.CallOption) (*BatchUpdateIssuesResponse, error)
-	ApproveIssue(ctx context.Context, in *ApproveIssueRequest, opts ...grpc.CallOption) (*Review, error)
-	RejectIssue(ctx context.Context, in *RejectIssueRequest, opts ...grpc.CallOption) (*Review, error)
-	RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Review, error)
+	ApproveIssue(ctx context.Context, in *ApproveIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	RejectIssue(ctx context.Context, in *RejectIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Issue, error)
 }
 
 type issueServiceClient struct {
@@ -55,8 +55,8 @@ func NewIssueServiceClient(cc grpc.ClientConnInterface) IssueServiceClient {
 	return &issueServiceClient{cc}
 }
 
-func (c *issueServiceClient) GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*Review, error) {
-	out := new(Review)
+func (c *issueServiceClient) GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*Issue, error) {
+	out := new(Issue)
 	err := c.cc.Invoke(ctx, IssueService_GetIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -64,8 +64,8 @@ func (c *issueServiceClient) GetIssue(ctx context.Context, in *GetIssueRequest, 
 	return out, nil
 }
 
-func (c *issueServiceClient) CreateIssue(ctx context.Context, in *CreateIssueRequest, opts ...grpc.CallOption) (*Review, error) {
-	out := new(Review)
+func (c *issueServiceClient) CreateIssue(ctx context.Context, in *CreateIssueRequest, opts ...grpc.CallOption) (*Issue, error) {
+	out := new(Issue)
 	err := c.cc.Invoke(ctx, IssueService_CreateIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -82,8 +82,8 @@ func (c *issueServiceClient) ListIssues(ctx context.Context, in *ListIssuesReque
 	return out, nil
 }
 
-func (c *issueServiceClient) UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*Review, error) {
-	out := new(Review)
+func (c *issueServiceClient) UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*Issue, error) {
+	out := new(Issue)
 	err := c.cc.Invoke(ctx, IssueService_UpdateIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -118,8 +118,8 @@ func (c *issueServiceClient) BatchUpdateIssues(ctx context.Context, in *BatchUpd
 	return out, nil
 }
 
-func (c *issueServiceClient) ApproveIssue(ctx context.Context, in *ApproveIssueRequest, opts ...grpc.CallOption) (*Review, error) {
-	out := new(Review)
+func (c *issueServiceClient) ApproveIssue(ctx context.Context, in *ApproveIssueRequest, opts ...grpc.CallOption) (*Issue, error) {
+	out := new(Issue)
 	err := c.cc.Invoke(ctx, IssueService_ApproveIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -127,8 +127,8 @@ func (c *issueServiceClient) ApproveIssue(ctx context.Context, in *ApproveIssueR
 	return out, nil
 }
 
-func (c *issueServiceClient) RejectIssue(ctx context.Context, in *RejectIssueRequest, opts ...grpc.CallOption) (*Review, error) {
-	out := new(Review)
+func (c *issueServiceClient) RejectIssue(ctx context.Context, in *RejectIssueRequest, opts ...grpc.CallOption) (*Issue, error) {
+	out := new(Issue)
 	err := c.cc.Invoke(ctx, IssueService_RejectIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -136,8 +136,8 @@ func (c *issueServiceClient) RejectIssue(ctx context.Context, in *RejectIssueReq
 	return out, nil
 }
 
-func (c *issueServiceClient) RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Review, error) {
-	out := new(Review)
+func (c *issueServiceClient) RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Issue, error) {
+	out := new(Issue)
 	err := c.cc.Invoke(ctx, IssueService_RequestIssue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -149,16 +149,16 @@ func (c *issueServiceClient) RequestIssue(ctx context.Context, in *RequestIssueR
 // All implementations must embed UnimplementedIssueServiceServer
 // for forward compatibility
 type IssueServiceServer interface {
-	GetIssue(context.Context, *GetIssueRequest) (*Review, error)
-	CreateIssue(context.Context, *CreateIssueRequest) (*Review, error)
+	GetIssue(context.Context, *GetIssueRequest) (*Issue, error)
+	CreateIssue(context.Context, *CreateIssueRequest) (*Issue, error)
 	ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error)
-	UpdateIssue(context.Context, *UpdateIssueRequest) (*Review, error)
+	UpdateIssue(context.Context, *UpdateIssueRequest) (*Issue, error)
 	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error)
 	UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*IssueComment, error)
 	BatchUpdateIssues(context.Context, *BatchUpdateIssuesRequest) (*BatchUpdateIssuesResponse, error)
-	ApproveIssue(context.Context, *ApproveIssueRequest) (*Review, error)
-	RejectIssue(context.Context, *RejectIssueRequest) (*Review, error)
-	RequestIssue(context.Context, *RequestIssueRequest) (*Review, error)
+	ApproveIssue(context.Context, *ApproveIssueRequest) (*Issue, error)
+	RejectIssue(context.Context, *RejectIssueRequest) (*Issue, error)
+	RequestIssue(context.Context, *RequestIssueRequest) (*Issue, error)
 	mustEmbedUnimplementedIssueServiceServer()
 }
 
@@ -166,16 +166,16 @@ type IssueServiceServer interface {
 type UnimplementedIssueServiceServer struct {
 }
 
-func (UnimplementedIssueServiceServer) GetIssue(context.Context, *GetIssueRequest) (*Review, error) {
+func (UnimplementedIssueServiceServer) GetIssue(context.Context, *GetIssueRequest) (*Issue, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIssue not implemented")
 }
-func (UnimplementedIssueServiceServer) CreateIssue(context.Context, *CreateIssueRequest) (*Review, error) {
+func (UnimplementedIssueServiceServer) CreateIssue(context.Context, *CreateIssueRequest) (*Issue, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateIssue not implemented")
 }
 func (UnimplementedIssueServiceServer) ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListIssues not implemented")
 }
-func (UnimplementedIssueServiceServer) UpdateIssue(context.Context, *UpdateIssueRequest) (*Review, error) {
+func (UnimplementedIssueServiceServer) UpdateIssue(context.Context, *UpdateIssueRequest) (*Issue, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateIssue not implemented")
 }
 func (UnimplementedIssueServiceServer) CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error) {
@@ -187,13 +187,13 @@ func (UnimplementedIssueServiceServer) UpdateIssueComment(context.Context, *Upda
 func (UnimplementedIssueServiceServer) BatchUpdateIssues(context.Context, *BatchUpdateIssuesRequest) (*BatchUpdateIssuesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateIssues not implemented")
 }
-func (UnimplementedIssueServiceServer) ApproveIssue(context.Context, *ApproveIssueRequest) (*Review, error) {
+func (UnimplementedIssueServiceServer) ApproveIssue(context.Context, *ApproveIssueRequest) (*Issue, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApproveIssue not implemented")
 }
-func (UnimplementedIssueServiceServer) RejectIssue(context.Context, *RejectIssueRequest) (*Review, error) {
+func (UnimplementedIssueServiceServer) RejectIssue(context.Context, *RejectIssueRequest) (*Issue, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RejectIssue not implemented")
 }
-func (UnimplementedIssueServiceServer) RequestIssue(context.Context, *RequestIssueRequest) (*Review, error) {
+func (UnimplementedIssueServiceServer) RequestIssue(context.Context, *RequestIssueRequest) (*Issue, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestIssue not implemented")
 }
 func (UnimplementedIssueServiceServer) mustEmbedUnimplementedIssueServiceServer() {}

@@ -56,7 +56,7 @@ func NewIssueService(store *store.Store, activityManager *activity.Manager, task
 
 // GetIssue gets a issue.
 // Currently, only issue.ApprovalTemplates and issue.Approvers are set.
-func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueRequest) (*v1pb.Review, error) {
+func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueRequest) (*v1pb.Issue, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -91,15 +91,15 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	if err != nil {
 		return nil, err
 	}
-	review, err := convertToReview(ctx, s.store, issue)
+	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
-	return review, nil
+	return issueV1, nil
 }
 
 // ApproveIssue approves the approval flow of the issue.
-func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIssueRequest) (*v1pb.Review, error) {
+func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIssueRequest) (*v1pb.Issue, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -319,15 +319,15 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 
 	s.onIssueApproved(ctx, issue)
 
-	review, err := convertToReview(ctx, s.store, issue)
+	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
-	return review, nil
+	return issueV1, nil
 }
 
 // RejectIssue rejects a issue.
-func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssueRequest) (*v1pb.Review, error) {
+func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssueRequest) (*v1pb.Issue, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -425,15 +425,15 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		log.Error("failed to create activity after rejecting issue", zap.Error(err))
 	}
 
-	review, err := convertToReview(ctx, s.store, issue)
+	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
-	return review, nil
+	return issueV1, nil
 }
 
 // RequestIssue requests a issue.
-func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIssueRequest) (*v1pb.Review, error) {
+func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIssueRequest) (*v1pb.Issue, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -535,21 +535,21 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 		log.Error("failed to create skipping steps activity after approving issue", zap.Error(err))
 	}
 
-	review, err := convertToReview(ctx, s.store, issue)
+	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
-	return review, nil
+	return issueV1, nil
 }
 
 // UpdateIssue updates the issue.
 // It can only update approval_finding_done to false.
-func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssueRequest) (*v1pb.Review, error) {
+func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssueRequest) (*v1pb.Issue, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	issue, err := s.getIssueMessage(ctx, request.Review.Name)
+	issue, err := s.getIssueMessage(ctx, request.Issue.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -557,7 +557,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	patch := &store.UpdateIssueMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		if path == "approval_finding_done" {
-			if request.Review.ApprovalFindingDone {
+			if request.Issue.ApprovalFindingDone {
 				return nil, status.Errorf(codes.InvalidArgument, "cannot set approval_finding_done to true")
 			}
 			payload := &storepb.IssuePayload{}
@@ -596,11 +596,11 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	review, err := convertToReview(ctx, s.store, issue)
+	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
-	return review, nil
+	return issueV1, nil
 }
 
 // CreateIssueComment creates the issue comment.
@@ -715,16 +715,16 @@ func (s *IssueService) onIssueApproved(ctx context.Context, issue *store.IssueMe
 }
 
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {
-	reviewID, err := getIssueID(name)
+	issueID, err := getIssueID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
 	}
 	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
+		return nil, status.Errorf(codes.NotFound, "issue %d not found", issueID)
 	}
 	return issue, nil
 }
@@ -783,14 +783,14 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 	return false, nil
 }
 
-func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMessage) (*v1pb.Review, error) {
+func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessage) (*v1pb.Issue, error) {
 	issuePayload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
 
-	review := &v1pb.Review{
-		Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, reviewPrefix, issue.UID),
+	issueV1 := &v1pb.Issue{
+		Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, issuePrefix, issue.UID),
 		Uid:               fmt.Sprintf("%d", issue.UID),
 		Title:             issue.Title,
 		Description:       issue.Description,
@@ -803,38 +803,38 @@ func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMess
 	}
 
 	for _, subscriber := range issue.Subscribers {
-		review.Subscribers = append(review.Subscribers, fmt.Sprintf("%s%s", userNamePrefix, subscriber.Email))
+		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", userNamePrefix, subscriber.Email))
 	}
 
 	switch issue.Status {
 	case api.IssueOpen:
-		review.Status = v1pb.IssueStatus_OPEN
+		issueV1.Status = v1pb.IssueStatus_OPEN
 	case api.IssueDone:
-		review.Status = v1pb.IssueStatus_DONE
+		issueV1.Status = v1pb.IssueStatus_DONE
 	case api.IssueCanceled:
-		review.Status = v1pb.IssueStatus_CANCELED
+		issueV1.Status = v1pb.IssueStatus_CANCELED
 	default:
-		review.Status = v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
+		issueV1.Status = v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
 	}
 
 	if issuePayload.Approval != nil {
-		review.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
-		review.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
+		issueV1.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
+		issueV1.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
 		for _, template := range issuePayload.Approval.ApprovalTemplates {
-			review.ApprovalTemplates = append(review.ApprovalTemplates, convertToApprovalTemplate(template))
+			issueV1.ApprovalTemplates = append(issueV1.ApprovalTemplates, convertToApprovalTemplate(template))
 		}
 		for _, approver := range issuePayload.Approval.Approvers {
-			convertedApprover := &v1pb.Review_Approver{Status: v1pb.Review_Approver_Status(approver.Status)}
+			convertedApprover := &v1pb.Issue_Approver{Status: v1pb.Issue_Approver_Status(approver.Status)}
 			user, err := s.GetUserByID(ctx, int(approver.PrincipalId))
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to find user by id %v", approver.PrincipalId)
 			}
 			convertedApprover.Principal = fmt.Sprintf("users/%s", user.Email)
-			review.Approvers = append(review.Approvers, convertedApprover)
+			issueV1.Approvers = append(issueV1.Approvers, convertedApprover)
 		}
 	}
 
-	return review, nil
+	return issueV1, nil
 }
 
 func convertToIssueStatus(status api.IssueStatus) v1pb.IssueStatus {

@@ -15,6 +15,6 @@ export * from "./sqlEditor";
 export * from "./sql";
 export * from "./sheet";
 export * from "./vcs";
-export * from "./review";
+export * from "./issue";
 export * from "./changeHistory";
 export * from "./risk";

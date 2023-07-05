@@ -159,6 +159,58 @@ export const isDatabaseV1Queryable = (
   return false;
 };
 
+// isTableQueryable checks if table allowed to query in SQL Editor.
+export const isTableQueryable = (
+  database: ComposedDatabase,
+  schema: string,
+  table: string,
+  user: User
+): boolean => {
+  if (!hasFeature("bb.feature.access-control")) {
+    // The current plan doesn't have access control feature.
+    // Fallback to true.
+    return true;
+  } else {
+    const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+    if (policy) {
+      const bindings = policy.workspaceIamPolicy?.bindings;
+      if (bindings) {
+        const querierBinding = bindings.find(
+          (binding) => binding.role === "roles/QUERIER"
+        );
+        if (querierBinding) {
+          const simpleExpr = resolveCELExpr(
+            querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+          );
+          const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+          if (envNameList.includes(database.instanceEntity.environment)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-access-control",
+      user.userRole
+    )
+  ) {
+    // The current user has the super privilege to access all databases.
+    // AKA. Owners and DBAs
+    return true;
+  }
+
+  const currentUserIamPolicy = useCurrentUserIamPolicy();
+  if (currentUserIamPolicy.allowToQueryDatabaseV1(database, schema, table)) {
+    return true;
+  }
+
+  // denied otherwise
+  return false;
+};
+
 type DatabaseV1FilterFields =
   | "name"
   | "project"

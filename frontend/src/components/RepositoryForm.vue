@@ -321,6 +321,7 @@
       <BBAttention
         v-if="
           instanceWithoutLicense.length > 0 &&
+          subscriptionStore.currentPlan !== PlanType.FREE &&
           hasFeature('bb.feature.vcs-sql-review')
         "
         class="my-4"
@@ -375,6 +376,7 @@ import {
   schemaChangeToJSON,
 } from "@/types/proto/v1/project_service";
 import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";

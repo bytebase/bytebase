@@ -35,7 +35,7 @@ const (
 	bookmarkPrefix               = "bookmarks/"
 	externalVersionControlPrefix = "externalVersionControls/"
 	riskPrefix                   = "risks/"
-	reviewPrefix                 = "reviews/"
+	issuePrefix                  = "issues/"
 	rolloutPrefix                = "rollouts/"
 	stagePrefix                  = "stages/"
 	taskPrefix                   = "tasks/"
@@ -75,7 +75,7 @@ var (
 )
 
 func isNumber(v string) (int, bool) {
-	n, err := strconv.ParseInt(v, 10, 64)
+	n, err := strconv.Atoi(v)
 	if err == nil {
 		return int(n), true
 	}
@@ -252,15 +252,15 @@ func getRiskID(name string) (int64, error) {
 }
 
 func getIssueID(name string) (int, error) {
-	tokens, err := getNameParentTokens(name, projectNamePrefix, reviewPrefix)
+	tokens, err := getNameParentTokens(name, projectNamePrefix, issuePrefix)
 	if err != nil {
 		return 0, err
 	}
-	reviewID, err := strconv.Atoi(tokens[1])
+	issueID, err := strconv.Atoi(tokens[1])
 	if err != nil {
-		return 0, errors.Errorf("invalid review ID %q", tokens[1])
+		return 0, errors.Errorf("invalid issue ID %q", tokens[1])
 	}
-	return reviewID, nil
+	return issueID, nil
 }
 
 func getTaskID(name string) (int, error) {

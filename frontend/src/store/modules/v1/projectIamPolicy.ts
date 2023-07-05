@@ -13,6 +13,7 @@ import {
   isOwnerOfProjectV1,
 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
+import { isUndefined } from "lodash-es";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -169,7 +170,11 @@ export const useCurrentUserIamPolicy = () => {
     return isProjectOwnerOrDeveloper(projectName);
   };
 
-  const allowToQueryDatabaseV1 = (database: ComposedDatabase) => {
+  const allowToQueryDatabaseV1 = (
+    database: ComposedDatabase,
+    schema?: string,
+    table?: string
+  ) => {
     if (hasWorkspaceSuperPrivilege) {
       return true;
     }
@@ -192,16 +197,23 @@ export const useCurrentUserIamPolicy = () => {
       ) {
         if (binding.parsedExpr?.expr) {
           const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
-          if (
-            conditionExpr.databaseResources &&
-            conditionExpr.databaseResources.length > 0
-          ) {
-            const hasDatabaseField =
-              conditionExpr.databaseResources.find(
-                (item) => item.databaseName === database.name
-              ) !== undefined;
-            if (hasDatabaseField) {
-              return true;
+          if (conditionExpr.databaseResources) {
+            for (const databaseResource of conditionExpr.databaseResources) {
+              if (databaseResource.databaseName === database.name) {
+                if (isUndefined(schema) && isUndefined(table)) {
+                  return true;
+                } else {
+                  if (
+                    isUndefined(databaseResource.schema) ||
+                    (isUndefined(databaseResource.schema) &&
+                      isUndefined(databaseResource.table)) ||
+                    (databaseResource.schema === schema &&
+                      databaseResource.table === table)
+                  ) {
+                    return true;
+                  }
+                }
+              }
             }
           } else {
             return true;

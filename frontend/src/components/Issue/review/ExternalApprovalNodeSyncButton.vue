@@ -30,7 +30,7 @@ import { useI18n } from "vue-i18n";
 
 import { Issue } from "@/types";
 import { useIssueLogic } from "../logic";
-import { pushNotification, useReviewStore } from "@/store";
+import { pushNotification, useIssueV1Store } from "@/store";
 
 const { t } = useI18n();
 const syncing = ref(false);
@@ -43,7 +43,10 @@ const syncNow = async () => {
 
   syncing.value = true;
   try {
-    await useReviewStore().fetchReviewByIssue(issue.value, true /* force */);
+    await useIssueV1Store().fetchIssueByLegacyIssue(
+      issue.value,
+      true /* force */
+    );
 
     synced.value = true;
     // Show 'synced' status for several seconds to avoid user clicking sync

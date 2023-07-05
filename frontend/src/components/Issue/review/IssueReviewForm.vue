@@ -41,13 +41,13 @@ import { Ref, computed, ref } from "vue";
 
 import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
-import { Review_Approver_Status } from "@/types/proto/v1/issue_service";
+import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 
 const props = defineProps<{
   okText: string;
-  status: Review_Approver_Status;
+  status: Issue_Approver_Status;
   buttonStyle: "PRIMARY" | "ERROR" | "NORMAL";
   reviewType: "APPROVAL" | "SEND_BACK" | "RE_REQUEST_REVIEW";
 }>();
@@ -57,7 +57,7 @@ const emit = defineEmits<{
   (
     event: "confirm",
     params: {
-      status: Review_Approver_Status;
+      status: Issue_Approver_Status;
       comment?: string;
     },
     onSuccess: () => void
@@ -81,7 +81,7 @@ const handleConfirm = (e: MouseEvent) => {
   const { left, top, width, height } = button.getBoundingClientRect();
   const { innerWidth: winWidth, innerHeight: winHeight } = window;
   const onSuccess = () => {
-    if (props.status !== Review_Approver_Status.APPROVED) {
+    if (props.status !== Issue_Approver_Status.APPROVED) {
       return;
     }
     // import the effect lib asynchronously

@@ -3,7 +3,7 @@
     <button
       v-if="allowReject"
       class="btn-normal"
-      @click="showModal(Review_Approver_Status.REJECTED)"
+      @click="showModal(Issue_Approver_Status.REJECTED)"
     >
       {{ $t("custom-approval.issue-review.send-back") }}
     </button>
@@ -16,7 +16,7 @@
       }"
       type="primary"
       tooltip-mode="DISABLED-ONLY"
-      @click="showModal(Review_Approver_Status.APPROVED)"
+      @click="showModal(Issue_Approver_Status.APPROVED)"
     >
       {{ $t("common.approve") }}
 
@@ -32,7 +32,7 @@
     <button
       v-if="allowReRequestReview"
       class="btn-primary"
-      @click="showModal(Review_Approver_Status.PENDING)"
+      @click="showModal(Issue_Approver_Status.PENDING)"
     >
       {{ $t("custom-approval.issue-review.re-request-review") }}
     </button>
@@ -77,7 +77,7 @@ import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 import {
   candidatesOfApprovalStep,
   useCurrentUserV1,
-  useReviewStore,
+  useIssueV1Store,
 } from "@/store";
 import { Issue } from "@/types";
 import { BBTooltipButton } from "@/bbkit";
@@ -86,12 +86,12 @@ import IssueReviewForm from "./IssueReviewForm.vue";
 import { extractUserUID, taskCheckRunSummary } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { StandaloneIssueStatusTransitionButtonGroup } from "../StatusTransitionButtonGroup";
-import { Review_Approver_Status } from "@/types/proto/v1/issue_service";
+import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 
 type LocalState = {
   modal?: {
     title: string;
-    status: Review_Approver_Status;
+    status: Issue_Approver_Status;
     okText: string;
     buttonStyle: "PRIMARY" | "ERROR" | "NORMAL";
     reviewType: "APPROVAL" | "SEND_BACK" | "RE_REQUEST_REVIEW";
@@ -105,7 +105,7 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const store = useReviewStore();
+const store = useIssueV1Store();
 const currentUserV1 = useCurrentUserV1();
 const issueContext = useIssueLogic();
 const issue = issueContext.issue as Ref<Issue>;
@@ -130,18 +130,18 @@ const allowApproveOrReject = computed(() => {
 const allowApprove = computed(() => {
   if (!allowApproveOrReject.value) return false;
 
-  return status.value === Review_Approver_Status.PENDING;
+  return status.value === Issue_Approver_Status.PENDING;
 });
 const allowReject = computed(() => {
   if (!allowApproveOrReject.value) return false;
-  return status.value === Review_Approver_Status.PENDING;
+  return status.value === Issue_Approver_Status.PENDING;
 });
 
 const allowReRequestReview = computed(() => {
   return (
     String(issue.value.creator.id) ===
       extractUserUID(currentUserV1.value.name) &&
-    status.value === Review_Approver_Status.REJECTED
+    status.value === Issue_Approver_Status.REJECTED
   );
 });
 
@@ -166,7 +166,7 @@ const disallowApproveReasonList = computed((): string[] => {
   return reasons;
 });
 
-const showModal = (status: Review_Approver_Status) => {
+const showModal = (status: Issue_Approver_Status) => {
   state.modal = {
     status,
     title: "",
@@ -175,19 +175,19 @@ const showModal = (status: Review_Approver_Status) => {
     reviewType: "APPROVAL",
   };
   switch (status) {
-    case Review_Approver_Status.APPROVED:
+    case Issue_Approver_Status.APPROVED:
       state.modal.title = t("custom-approval.issue-review.approve-issue");
       state.modal.okText = t("common.approval");
       state.modal.buttonStyle = "PRIMARY";
       state.modal.reviewType = "APPROVAL";
       break;
-    case Review_Approver_Status.REJECTED:
+    case Issue_Approver_Status.REJECTED:
       state.modal.title = t("custom-approval.issue-review.send-back-issue");
       state.modal.okText = t("custom-approval.issue-review.send-back");
       state.modal.buttonStyle = "PRIMARY";
       state.modal.reviewType = "SEND_BACK";
       break;
-    case Review_Approver_Status.PENDING:
+    case Issue_Approver_Status.PENDING:
       state.modal.title = t(
         "custom-approval.issue-review.re-request-review-issue"
       );
@@ -202,19 +202,19 @@ const handleModalConfirm = async (
     status,
     comment,
   }: {
-    status: Review_Approver_Status;
+    status: Issue_Approver_Status;
     comment?: string;
   },
   onSuccess: () => void
 ) => {
   state.loading = true;
   try {
-    if (status === Review_Approver_Status.APPROVED) {
+    if (status === Issue_Approver_Status.APPROVED) {
       await store.approveIssue(issue.value, comment);
       onSuccess();
-    } else if (status === Review_Approver_Status.PENDING) {
+    } else if (status === Issue_Approver_Status.PENDING) {
       await store.requestIssue(issue.value, comment);
-    } else if (status === Review_Approver_Status.REJECTED) {
+    } else if (status === Issue_Approver_Status.REJECTED) {
       await store.rejectIssue(issue.value, comment);
     }
     state.modal = undefined;

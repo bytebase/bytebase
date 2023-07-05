@@ -58,12 +58,12 @@ import { computed, Ref, ref } from "vue";
 
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 import IssueReviewPanel from "./IssueReviewPanel.vue";
-import { useReviewStore } from "@/store";
+import { useIssueV1Store } from "@/store";
 import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
 import { isGrantRequestIssueType } from "@/utils";
 
-const store = useReviewStore();
+const store = useIssueV1Store();
 const issueContext = useIssueLogic();
 const { selectedDatabase } = issueContext;
 const issue = issueContext.issue as Ref<Issue>;

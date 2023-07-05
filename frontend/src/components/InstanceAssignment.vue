@@ -78,7 +78,10 @@
                 type="checkbox"
                 class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                 :checked="isInstanceSelected(instance)"
-                :disabled="state.selectedInstance.size == instanceLicenseCount"
+                :disabled="
+                  !isInstanceSelected(instance) &&
+                  state.selectedInstance.size == instanceLicenseCount
+                "
               />
             </BBTableCell>
             <BBTableCell class="bb-grid-cell">

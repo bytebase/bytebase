@@ -117,9 +117,9 @@ message Plan {
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The resource name of the review associated with this plan.
-  // Format: projects/{project}/reviews/{review}
-  string review = 3;
+  // The resource name of the issue associated with this plan.
+  // Format: projects/{project}/issues/{issue}
+  string issue = 3;
 
   string title = 4;
   string description = 5;
@@ -206,9 +206,9 @@ message Plan {
       // rollback_from_task is the task from which the rollback SQL statement is generated for this task.
       // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
       string rollback_from_task = 1;
-      // rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
-      // Format: projects/{project}/reviews/{review}
-      string rollback_from_review = 2;
+      // rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
+      // Format: projects/{project}/issues/{issue}
+      string rollback_from_issue = 2;
     }
     optional RollbackDetail rollback_detail = 6;
   }
@@ -461,10 +461,10 @@ message Task {
     // the sheet that stores the generated rollback SQL statement.
     // Format: projects/{project}/sheets/{sheet}
     string rollback_sheet = 6;
-    // rollback_from_review is the resource name of the review that
+    // rollback_from_issue is the resource name of the issue that
     // the rollback SQL statement is generated from.
-    // Format: projects/{project}/reviews/{review}
-    string rollback_from_review = 7;
+    // Format: projects/{project}/issues/{issue}
+    string rollback_from_issue = 7;
     // rollback_from_task is the resource name of the task that
     // the rollback SQL statement is generated from.
     // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}

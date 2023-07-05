@@ -1,16 +1,21 @@
 import { computed, watch, type ComputedRef, unref } from "vue";
 import type Emittery from "emittery";
 
-import type { Issue, MaybeRef, ReviewFlow, WrappedReviewStep } from "@/types";
+import type {
+  Issue as LegacyIssue,
+  MaybeRef,
+  ReviewFlow,
+  WrappedReviewStep,
+} from "@/types";
 import {
   ApprovalTemplate,
-  Review,
-  Review_Approver_Status,
+  Issue,
+  Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import {
   candidatesOfApprovalStep,
   useAuthStore,
-  useReviewStore,
+  useIssueV1Store,
   useUserStore,
 } from "@/store";
 import { IssueReviewContext, provideIssueReviewContext } from "./context";
@@ -22,19 +27,19 @@ export type ReviewEvents = {
 };
 
 export const extractIssueReviewContext = (
-  issue: ComputedRef<Issue | undefined>,
-  review: ComputedRef<Review>
+  legacyIssue: ComputedRef<LegacyIssue | undefined>,
+  issue: ComputedRef<Issue>
 ): IssueReviewContext => {
   const ready = computed(() => {
-    return review.value.approvalFindingDone ?? false;
+    return issue.value.approvalFindingDone ?? false;
   });
   const flow = computed((): ReviewFlow => {
     if (!ready.value) return emptyFlow();
-    const { approvalTemplates, approvers } = review.value;
+    const { approvalTemplates, approvers } = issue.value;
     if (approvalTemplates.length === 0) return emptyFlow();
 
     const rejectedIndex = approvers.findIndex(
-      (ap) => ap.status === Review_Approver_Status.REJECTED
+      (ap) => ap.status === Issue_Approver_Status.REJECTED
     );
     const currentStepIndex =
       rejectedIndex >= 0 ? rejectedIndex : approvers.length;
@@ -47,10 +52,10 @@ export const extractIssueReviewContext = (
   });
   const status = computed(() => {
     if (!ready.value) {
-      return Review_Approver_Status.PENDING;
+      return Issue_Approver_Status.PENDING;
     }
-    if (review.value.approvalFindingError) {
-      return Review_Approver_Status.PENDING;
+    if (issue.value.approvalFindingError) {
+      return Issue_Approver_Status.PENDING;
     }
 
     const { template, approvers } = flow.value;
@@ -58,35 +63,35 @@ export const extractIssueReviewContext = (
 
     if (steps.length === 0) {
       // No review flow steps. That means need not manual review.
-      return Review_Approver_Status.APPROVED;
+      return Issue_Approver_Status.APPROVED;
     }
 
     if (
-      approvers.some((app) => app.status === Review_Approver_Status.REJECTED)
+      approvers.some((app) => app.status === Issue_Approver_Status.REJECTED)
     ) {
       // If any of the approvers down voted, the overall status should be 'REJECTED'
-      return Review_Approver_Status.REJECTED;
+      return Issue_Approver_Status.REJECTED;
     }
 
     // For an N-steps approval flow, we need exactly N upvote approvals to
     // pass the entire flow.
     const upVotes = approvers.filter(
-      (app) => app.status === Review_Approver_Status.APPROVED
+      (app) => app.status === Issue_Approver_Status.APPROVED
     );
     if (upVotes.length === steps.length) {
-      return Review_Approver_Status.APPROVED;
+      return Issue_Approver_Status.APPROVED;
     }
-    return Review_Approver_Status.PENDING;
+    return Issue_Approver_Status.PENDING;
   });
   const done = computed(() => {
-    return status.value === Review_Approver_Status.APPROVED;
+    return status.value === Issue_Approver_Status.APPROVED;
   });
   const error = computed(() => {
-    return review.value.approvalFindingError;
+    return issue.value.approvalFindingError;
   });
 
   return {
-    review,
+    issue: issue,
     ready,
     flow,
     status,
@@ -96,19 +101,19 @@ export const extractIssueReviewContext = (
 };
 
 export const provideIssueReview = (
-  issue: ComputedRef<Issue | undefined>,
+  legacyIssue: ComputedRef<LegacyIssue | undefined>,
   events: Emittery<ReviewEvents>
 ) => {
-  const store = useReviewStore();
-  const review = computed(() => {
-    return issue.value
-      ? store.getIssueByIssue(issue.value)
-      : Review.fromJSON({});
+  const store = useIssueV1Store();
+  const issue = computed(() => {
+    return legacyIssue.value
+      ? store.getIssueByIssue(legacyIssue.value)
+      : Issue.fromJSON({});
   });
 
   const update = () => {
-    if (issue.value) {
-      store.fetchReviewByIssue(issue.value);
+    if (legacyIssue.value) {
+      store.fetchIssueByLegacyIssue(legacyIssue.value);
     }
   };
 
@@ -122,9 +127,9 @@ export const provideIssueReview = (
   });
 
   watch(
-    () => issue.value?.id,
+    () => legacyIssue.value?.id,
     () => {
-      if (issue.value) poller.start();
+      if (legacyIssue.value) poller.start();
       else poller.stop();
     },
     {
@@ -135,13 +140,13 @@ export const provideIssueReview = (
     update();
   });
 
-  const context = extractIssueReviewContext(issue, review);
+  const context = extractIssueReviewContext(legacyIssue, issue);
 
   provideIssueReviewContext(context);
 };
 
 export const useWrappedReviewSteps = (
-  issue: MaybeRef<Issue>,
+  issue: MaybeRef<LegacyIssue>,
   context: IssueReviewContext
 ) => {
   const userStore = useUserStore();
@@ -161,7 +166,7 @@ export const useWrappedReviewSteps = (
         return "PENDING";
       }
       const approval = approvers[index];
-      if (approval && approval.status === Review_Approver_Status.REJECTED) {
+      if (approval && approval.status === Issue_Approver_Status.REJECTED) {
         return "REJECTED";
       }
       if (index < currentStepIndex) {

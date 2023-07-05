@@ -47,5 +47,6 @@ jobs:
       - name: Run pnpm release build
         run: |
           cp ../backend/plugin/advisor/config/* ./src/types
+          cp ../backend/enterprise/api/plan.yaml ./src/types
           pnpm release-docker
         working-directory: frontend

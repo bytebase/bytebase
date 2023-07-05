@@ -156,7 +156,11 @@ func (s *LicenseService) GetPlanLimitValue(name enterpriseAPI.PlanLimit) int64 {
 	if !ok {
 		return 0
 	}
-	return v[s.GetEffectivePlan()]
+	limit := v[s.GetEffectivePlan()]
+	if limit == -1 {
+		return math.MaxInt64
+	}
+	return limit
 }
 
 // RefreshCache will invalidate and refresh the subscription cache.

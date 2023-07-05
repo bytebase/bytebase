@@ -39,14 +39,15 @@ categoryList:
       - custom-approval
       - sso
       - 2fa
+      - ssh-tunnel
       - dba-workflow
       - environment-tier
       - sensitive-data
       - data-access-control
       - watermark
       - audit-log
-      - anomaly-detection
       - disallow-signup
+      - anomaly-detection
   - type: bespoke
     featureList:
       - support
@@ -59,10 +60,12 @@ planList:
     trialDays: 0
     unitPrice: 0
     trialPrice: 0
-    freeSeatCount: -1
+    freeSeatCount: 20
     freeInstanceCount: 20
     maximumInstanceCount: 20
-    maximumSeatCount: -1
+    maximumSeatCount: 20
+    maximumTaskCount: -1
+    maximumEnvironmentCount: -1
     pricePerSeatPerMonth: 0
     pricePerInstancePerMonth: 0
     featureList:
@@ -131,6 +134,8 @@ planList:
     freeInstanceCount: 0
     maximumInstanceCount: 20
     maximumSeatCount: -1
+    maximumTaskCount: -1
+    maximumEnvironmentCount: -1
     pricePerSeatPerMonth: 0
     pricePerInstancePerMonth: 100
     featureList:
@@ -201,6 +206,8 @@ planList:
     freeInstanceCount: 0
     maximumInstanceCount: -1
     maximumSeatCount: -1
+    maximumTaskCount: -1
+    maximumEnvironmentCount: -1
     pricePerSeatPerMonth: 0
     pricePerInstancePerMonth: 300
     featureList:
@@ -255,6 +262,7 @@ planList:
       - type: approval-and-backup-policy
       - type: sso
       - type: 2fa
+      - type: ssh-tunnel
       - type: custom-approval
       - type: dba-workflow
         tooltip: dba-workflow-tooltip

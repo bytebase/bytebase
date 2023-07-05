@@ -667,9 +667,29 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	case db.Oracle:
-		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
-		if err != nil {
-			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+		if instance.Options == nil || !instance.Options.SchemaTenantMode {
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
+			}
+		} else {
+			list, err := parser.ExtractResourceList(parser.Oracle, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
+			if err != nil {
+				return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", request.Statement)
+			}
+			databaseMap := make(map[string]bool)
+			for _, resource := range list {
+				databaseMap[resource.Database] = true
+			}
+			var databaseList []string
+			databaseList = append(databaseList, request.ConnectionDatabase)
+			for database := range databaseMap {
+				databaseList = append(databaseList, database)
+			}
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
+			}
 		}
 	case db.Snowflake:
 		databaseList, err := parser.ExtractDatabaseList(parser.Snowflake, request.Statement, request.ConnectionDatabase)
@@ -942,9 +962,29 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		case db.Oracle:
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
-			if err != nil {
-				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
+			if instance.Options == nil || !instance.Options.SchemaTenantMode {
+				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
+				if err != nil {
+					return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
+				}
+			} else {
+				list, err := parser.ExtractResourceList(parser.Oracle, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
+				if err != nil {
+					return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", request.Statement)
+				}
+				databaseMap := make(map[string]bool)
+				for _, resource := range list {
+					databaseMap[resource.Database] = true
+				}
+				var databaseList []string
+				databaseList = append(databaseList, request.ConnectionDatabase)
+				for database := range databaseMap {
+					databaseList = append(databaseList, database)
+				}
+				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+				if err != nil {
+					return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
+				}
 			}
 		case db.Snowflake:
 			databaseList, err := parser.ExtractDatabaseList(parser.Snowflake, request.Statement, request.ConnectionDatabase)
@@ -1170,6 +1210,17 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
+// getReadOnlyDataSource returns the read-only data source for the instance.
+// If the read-only data source is not defined, we will fallback to admin data source.
+func getReadOnlyDataSource(instance *store.InstanceMessage) *store.DataSourceMessage {
+	dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
+	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+	if dataSource == nil {
+		dataSource = adminDataSource
+	}
+	return dataSource
+}
+
 func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequest, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage) (advisor.Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || request.ConnectionDatabase == "" || database == nil {
 		return advisor.Success, nil, nil
@@ -1201,6 +1252,15 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
 
+	currentSchema := ""
+	if instance.Engine == db.Oracle {
+		if instance.Options == nil || !instance.Options.SchemaTenantMode {
+			currentSchema = getReadOnlyDataSource(instance).Username
+		} else {
+			currentSchema = database.DatabaseName
+		}
+	}
+
 	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
@@ -1216,6 +1276,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		request.Statement,
 		catalog,
 		connection,
+		currentSchema,
 	)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
@@ -1261,6 +1322,7 @@ func (s *SQLService) sqlCheck(
 	statement string,
 	catalog catalog.Catalog,
 	driver *sql.DB,
+	currentSchema string,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
 	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
@@ -1272,12 +1334,13 @@ func (s *SQLService) sqlCheck(
 	}
 
 	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:   dbCharacterSet,
-		Collation: dbCollation,
-		DbType:    dbType,
-		Catalog:   catalog,
-		Driver:    driver,
-		Context:   ctx,
+		Charset:       dbCharacterSet,
+		Collation:     dbCollation,
+		DbType:        dbType,
+		Catalog:       catalog,
+		Driver:        driver,
+		Context:       ctx,
+		CurrentSchema: currentSchema,
 	})
 	if err != nil {
 		return advisor.Error, nil, err
@@ -1381,6 +1444,9 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			}
 		}
 	case db.Oracle:
+		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
+			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
+		}
 		tree, err := parser.ParsePLSQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
@@ -1496,7 +1562,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		if dataSource == nil {
 			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
 		}
-		list, err := parser.ExtractResourceList(engine, databaseName, dataSource.Username, statement)
+		currentSchema := dataSource.Username
+		if instance.Options != nil && instance.Options.SchemaTenantMode {
+			currentSchema = databaseName
+		}
+		list, err := parser.ExtractResourceList(engine, databaseName, currentSchema, statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
@@ -1517,7 +1587,26 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		var result []parser.SchemaResource
 		for _, resource := range list {
 			if resource.Database != dbSchema.Metadata.Name {
-				// Should not happen.
+				if instance.Options == nil || !instance.Options.SchemaTenantMode {
+					continue
+				}
+				// Schema tenant mode allows cross-database query, we should check the corresponding database.
+				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &resource.Database})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+				}
+				if resourceDB == nil {
+					continue
+				}
+				resourceDBSchema, err := s.store.GetDBSchema(ctx, resourceDB.UID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+				}
+				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) {
+					// If table not found, we regard it as a CTE/alias/... and skip.
+					continue
+				}
+				result = append(result, resource)
 				continue
 			}
 

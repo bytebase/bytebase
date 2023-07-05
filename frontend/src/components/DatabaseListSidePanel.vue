@@ -14,7 +14,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import type { BBOutlineItem } from "@/bbkit/types";
-import { UNKNOWN_USER_NAME } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, UNKNOWN_USER_NAME } from "@/types";
 import {
   databaseV1Slug,
   environmentV1Name,
@@ -91,7 +91,9 @@ const databaseListByEnvironment = computed(() => {
     envToDbMap.set(environment.uid, []);
   }
   const list = [...databaseList.value].filter(
-    (db) => db.projectEntity.tenantMode !== TenantMode.TENANT_MODE_ENABLED
+    (db) =>
+      db.projectEntity.tenantMode !== TenantMode.TENANT_MODE_ENABLED &&
+      db.project !== DEFAULT_PROJECT_V1_NAME
   );
   list.sort((a: any, b: any) => {
     return a.name.localeCompare(b.name);
@@ -127,7 +129,9 @@ const databaseListByEnvironment = computed(() => {
 
 const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
   const dbList = databaseList.value.filter(
-    (db) => db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
+    (db) =>
+      db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
+      db.project !== DEFAULT_PROJECT_V1_NAME
   );
   // In case that each `db.project` is not reference equal
   // we run a uniq() on the list by project.id

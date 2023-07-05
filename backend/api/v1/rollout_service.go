@@ -428,7 +428,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet")
 	}
@@ -537,14 +537,14 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:              sheetName,
-			SchemaVersion:      payload.SchemaVersion,
-			RollbackEnabled:    payload.RollbackEnabled,
-			RollbackSqlStatus:  convertToRollbackSQLStatus(payload.RollbackSQLStatus),
-			RollbackError:      payload.RollbackError,
-			RollbackSheet:      rollbackSheetName,
-			RollbackFromReview: "",
-			RollbackFromTask:   "",
+			Sheet:             sheetName,
+			SchemaVersion:     payload.SchemaVersion,
+			RollbackEnabled:   payload.RollbackEnabled,
+			RollbackSqlStatus: convertToRollbackSQLStatus(payload.RollbackSQLStatus),
+			RollbackError:     payload.RollbackError,
+			RollbackSheet:     rollbackSheetName,
+			RollbackFromIssue: "",
+			RollbackFromTask:  "",
 		},
 	}
 	if payload.RollbackFromIssueID != 0 && payload.RollbackFromTaskID != 0 {
@@ -558,7 +558,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get rollback task %q", payload.RollbackFromTaskID)
 		}
-		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromReview = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, reviewPrefix, rollbackFromIssue.UID)
+		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromIssue = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, issuePrefix, rollbackFromIssue.UID)
 		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromTask = fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, rollbackFromIssue.Project.ResourceID, rolloutPrefix, rollbackFromTask.PipelineID, stagePrefix, rollbackFromTask.StageID, taskPrefix, rollbackFromTask.ID)
 	}
 
@@ -865,7 +865,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 				}
-				sheet, err := s.store.GetSheetV2(ctx, &store.FindSheetMessage{
+				sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 					UID: &sheetIDInt,
 				}, api.SystemBotID)
 				if err != nil {
@@ -1132,7 +1132,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheet, err := s.CreateSheetV2(ctx, &store.SheetMessage{
+		sheet, err := s.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: project.UID,
 			Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
@@ -1244,7 +1244,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1282,7 +1282,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1319,7 +1319,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1382,7 +1382,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -1397,11 +1397,11 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
 		}
 		if c.RollbackDetail != nil {
-			reviewID, err := getIssueID(c.RollbackDetail.RollbackFromReview)
+			issueID, err := getIssueID(c.RollbackDetail.RollbackFromIssue)
 			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get review id from review %q", c.RollbackDetail.RollbackFromReview)
+				return nil, nil, errors.Wrapf(err, "failed to get issue id from issue %q", c.RollbackDetail.RollbackFromIssue)
 			}
-			payload.RollbackFromIssueID = reviewID
+			payload.RollbackFromIssueID = issueID
 			taskID, err := getTaskID(c.RollbackDetail.RollbackFromTask)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get task id from task %q", c.RollbackDetail.RollbackFromTask)
@@ -1620,7 +1620,7 @@ func convertToPlan(plan *store.PlanMessage) *v1pb.Plan {
 	return &v1pb.Plan{
 		Name:        fmt.Sprintf("%s%s/%s%d", projectNamePrefix, plan.ProjectID, planPrefix, plan.UID),
 		Uid:         fmt.Sprintf("%d", plan.UID),
-		Review:      "",
+		Issue:       "",
 		Title:       plan.Name,
 		Description: plan.Description,
 		Steps:       convertToPlanSteps(plan.Config.Steps),
@@ -1722,8 +1722,8 @@ func convertToPlanSpecChangeDatabaseConfigRollbackDetail(d *storepb.PlanConfig_C
 		return nil
 	}
 	return &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
-		RollbackFromReview: d.RollbackFromReview,
-		RollbackFromTask:   d.RollbackFromReview,
+		RollbackFromIssue: d.RollbackFromIssue,
+		RollbackFromTask:  d.RollbackFromIssue,
 	}
 }
 
@@ -2060,7 +2060,7 @@ func (s *RolloutService) createPipeline(ctx context.Context, creatorID int, pipe
 }
 
 func getResourceNameForSheet(ctx context.Context, s *store.Store, sheetUID int) (string, error) {
-	sheet, err := s.GetSheetV2(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get sheet")
 	}

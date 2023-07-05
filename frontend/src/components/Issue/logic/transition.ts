@@ -1,7 +1,8 @@
 import { computed, Ref } from "vue";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
-  Issue,
+  Issue as LegacyIssue,
+  Pipeline,
   IssueStatusTransitionType,
   ISSUE_STATUS_TRANSITION_LIST,
   IssueStatusTransition,
@@ -27,10 +28,10 @@ import {
 } from "./";
 import { useIssueLogic } from ".";
 import { User } from "@/types/proto/v1/auth_service";
-import { Review } from "@/types/proto/v1/issue_service";
+import { Issue } from "@/types/proto/v1/issue_service";
 import { extractIssueReviewContext } from "@/plugins/issue/logic";
 
-export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
+export const useIssueTransitionLogic = (issue: Ref<LegacyIssue>) => {
   const { create, activeTaskOfPipeline, allowApplyTaskStatusTransition } =
     useIssueLogic();
 
@@ -70,7 +71,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   });
 
   const getApplicableIssueStatusTransitionList = (
-    issue: Issue
+    issue: LegacyIssue
   ): IssueStatusTransition[] => {
     if (create.value) {
       return [];
@@ -78,7 +79,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     return calcApplicableIssueStatusTransitionList(issue);
   };
 
-  const getApplicableStageStatusTransitionList = (issue: Issue) => {
+  const getApplicableStageStatusTransitionList = (issue: LegacyIssue) => {
     if (create.value) {
       return [];
     }
@@ -90,7 +91,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
         if (isAllowedToApplyTaskTransition.value) {
           // Only "Approve" can be applied to current stage by now.
           const ROLLOUT = TASK_STATUS_TRANSITION_LIST.get("ROLLOUT")!;
-          const currentStage = activeStage(issue.pipeline);
+          const currentStage = activeStage(issue.pipeline as Pipeline);
 
           const pendingApprovalTaskList = currentStage.taskList.filter(
             (task) => {
@@ -115,7 +116,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   };
 
   const getApplicableTaskStatusTransitionList = (
-    issue: Issue
+    issue: LegacyIssue
   ): TaskStatusTransition[] => {
     if (create.value) {
       return [];
@@ -126,9 +127,10 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
         return [];
       case "OPEN": {
         if (isAllowedToApplyTaskTransition.value) {
-          const currentTask = activeTaskOfPipeline(issue.pipeline);
-          return applicableTaskTransition(issue.pipeline).filter((transition) =>
-            allowApplyTaskStatusTransition(currentTask, transition.to)
+          const currentTask = activeTaskOfPipeline(issue.pipeline as Pipeline);
+          return applicableTaskTransition(issue.pipeline as Pipeline).filter(
+            (transition) =>
+              allowApplyTaskStatusTransition(currentTask, transition.to)
           );
         }
 
@@ -161,9 +163,9 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
 };
 
 export const calcApplicableIssueStatusTransitionList = (
-  issue: Issue
+  issue: LegacyIssue
 ): IssueStatusTransition[] => {
-  const issueEntity = issue as Issue;
+  const issueEntity = issue as LegacyIssue;
   const transitionTypeList: IssueStatusTransitionType[] = [];
   const currentUserV1 = useCurrentUserV1();
 
@@ -193,8 +195,8 @@ export const calcApplicableIssueStatusTransitionList = (
     }
 
     if (isDatabaseRelatedIssueType(issue.type)) {
-      const currentTask = activeTask(issue.pipeline);
-      const flattenTaskList = allTaskList(issue.pipeline);
+      const currentTask = activeTask(issue.pipeline as Pipeline);
+      const flattenTaskList = allTaskList(issue.pipeline as Pipeline);
       if (flattenTaskList.some((task) => task.status === "RUNNING")) {
         // Disallow any issue status transition if some of the tasks are in RUNNING state.
         return;
@@ -229,7 +231,10 @@ export function isApplicableTransition<
   );
 }
 
-const allowUserToApplyIssueStatusTransition = (issue: Issue, user: User) => {
+const allowUserToApplyIssueStatusTransition = (
+  issue: LegacyIssue,
+  user: User
+) => {
   // Workspace level high-privileged user (DBA/OWNER) are always allowed.
   if (
     hasWorkspacePermissionV1(
@@ -262,12 +267,12 @@ const allowUserToApplyIssueStatusTransition = (issue: Issue, user: User) => {
   return false;
 };
 
-function isIssueReviewDone(issue: Issue) {
+function isIssueReviewDone(issue: LegacyIssue) {
   const review = computed(() => {
     try {
-      return Review.fromJSON(issue.payload.approval);
+      return Issue.fromJSON(issue.payload.approval);
     } catch {
-      return Review.fromJSON({});
+      return Issue.fromJSON({});
     }
   });
   const context = extractIssueReviewContext(
