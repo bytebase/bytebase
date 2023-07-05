@@ -127,7 +127,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_sta
 				result[i].sensitive = right[i].sensitive
 			}
 		}
-
 	}
 	return result, nil
 }
@@ -166,16 +165,25 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 	for _, iSelectListElem := range selectList.AllSelect_list_elem() {
 		// TODO(zp): handle expression elem
 		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
-			// TODO(zp): handle object_name
+			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string
+			if v := columnElem.Alias(); v != nil {
+				normalizedTableName = parser.NormalizeObjectNamePart(v.Id_())
+			} else if v := columnElem.Object_name(); v != nil {
+				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(v, "", "")
+			}
 			if columnElem.STAR() != nil {
-				result = append(result, fromFieldList...)
-			} else if columnElem.Column_name() != nil {
-				columnName := parser.NormalizeObjectNamePart(columnElem.Column_name().Id_())
-				for _, fromField := range fromFieldList {
-					if fromField.name == columnName {
-						result = append(result, fromField)
-					}
+				left, err := extractor.getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", ctx.GetStart().GetLine())
 				}
+				result = append(result, left...)
+			} else if columnElem.Column_name() != nil {
+				normalizedColumnName = parser.NormalizeObjectNamePart(columnElem.Column_name().Id_())
+				left, err := extractor.snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, columnElem.Column_name().GetStart().GetLine())
+				}
+				result = append(result, left)
 			} else if columnElem.DOLLAR() != nil {
 				columnPosition, err := strconv.Atoi(columnElem.Column_position().Num().GetText())
 				if err != nil {
@@ -184,10 +192,14 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 				if columnPosition < 1 {
 					return nil, errors.Wrapf(err, "column position %d is invalid because it is less than 1 near line %d", columnPosition, columnElem.Column_position().Num().GetStart().GetLine())
 				}
-				if columnPosition > len(fromFieldList) {
-					return nil, errors.Wrapf(err, "column position is invalid because want to try get the %d column near line %d, but FROM clause only returns %d columns", columnPosition, columnElem.Column_position().Num().GetStart().GetLine(), len(fromFieldList))
+				left, err := extractor.getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", ctx.GetStart().GetLine())
 				}
-				result = append(result, fromFieldList[columnPosition-1])
+				if columnPosition > len(left) {
+					return nil, errors.Wrapf(err, "column position is invalid because want to try get the %d column near line %d, but FROM clause only returns %d columns for %q.%q.%q", columnPosition, columnElem.Column_position().Num().GetStart().GetLine(), len(left), normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+				}
+				result = append(result, left[columnPosition-1])
 			}
 			if asAlias := columnElem.As_alias(); asAlias != nil {
 				result[len(result)-1].name = parser.NormalizeObjectNamePart(asAlias.Alias().Id_())
@@ -259,8 +271,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			return extractor.isSnowSQLExprSensitive(v)
 		}
 		if v := ctx.Full_column_name(); v != nil {
-			// TODO(zp): handle full column_name
-
+			return extractor.isSnowSQLExprSensitive(v)
 		}
 		if v := ctx.Bracket_expression(); v != nil {
 			return extractor.isSnowSQLExprSensitive(v)
@@ -291,6 +302,13 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			}
 		}
 		return ctx.GetText(), false, nil
+	case *snowparser.Full_column_nameContext:
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizedFullColumnName(ctx)
+		fieldInfo, err := extractor.snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+		if err != nil {
+			return "", false, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
+		}
+		return fieldInfo.name, fieldInfo.sensitive, nil
 	case *snowparser.Object_nameContext:
 		return ctx.GetText(), false, nil
 	case *snowparser.Trim_expressionContext:
@@ -520,6 +538,9 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 		return ctx.GetText(), sensitive, nil
 	case *snowparser.Primitive_expressionContext:
+		if v := ctx.Id_(); v != nil {
+			return extractor.isSnowSQLExprSensitive(v)
+		}
 		return ctx.GetText(), false, nil
 	case *snowparser.Function_callContext:
 		if v := ctx.Ranking_windowed_function(); v != nil {
@@ -644,6 +665,14 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			}
 		}
 		return ctx.GetText(), false, nil
+	case *snowparser.Id_Context:
+		normalizedColumnName := parser.NormalizeObjectNamePart(ctx)
+		fieldInfo, err := extractor.snowflakeIsFieldSensitive("", "", "", normalizedColumnName)
+		if err != nil {
+			return "", false, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
+		}
+		return fieldInfo.name, fieldInfo.sensitive, nil
+
 	}
 	panic("never reach here")
 }
@@ -840,8 +869,47 @@ func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName snow
 	return "", db.TableSchema{}, errors.Errorf(`table %s not found in database %s`, normalizedSchemaTableName, normalizedDatabaseName)
 }
 
+func (extractor *sensitiveFieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]fieldInfo, error) {
+	type maskType = uint8
+	const (
+		maskNone         maskType = 0
+		maskDatabaseName maskType = 1 << iota
+		maskSchemaName
+		maskTableName
+	)
+	mask := maskNone
+	if normalizedTableName != "" {
+		mask |= maskTableName
+	}
+	if normalizedSchemaName != "" {
+		if mask&maskTableName == 0 {
+			return nil, errors.Errorf(`table name %s is specified without column name`, normalizedTableName)
+		}
+		mask |= maskSchemaName
+	}
+	if normalizedDatabaseName != "" {
+		if mask&maskSchemaName == 0 {
+			return nil, errors.Errorf(`database name %s is specified without schema name`, normalizedDatabaseName)
+		}
+		mask |= maskDatabaseName
+	}
+
+	var result []fieldInfo
+	for _, field := range extractor.fromFieldList {
+		if mask&maskDatabaseName != 0 && normalizedDatabaseName != field.database {
+			continue
+		}
+		// TODO(zp): split the schema name and table name for snowflake.
+		if mask&maskTableName != 0 && fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName) != field.table {
+			continue
+		}
+		result = append(result, field)
+	}
+	return result, nil
+}
+
 // snowflakeIsFieldSensitive iterates through the fromFieldList sequentially until we find the first matching object and return the column name, and whether the column is sensitive.
-func (extractor *sensitiveFieldExtractor) snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (string, bool, error) {
+func (extractor *sensitiveFieldExtractor) snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (fieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -856,25 +924,25 @@ func (extractor *sensitiveFieldExtractor) snowflakeIsFieldSensitive(normalizedDa
 	}
 	if normalizedTableName != "" {
 		if mask&maskColumnName == 0 {
-			return "", false, errors.Errorf(`table name %s is specified without column name`, normalizedTableName)
+			return fieldInfo{}, errors.Errorf(`table name %s is specified without column name`, normalizedTableName)
 		}
 		mask |= maskTableName
 	}
 	if normalizedSchemaName != "" {
 		if mask&maskTableName == 0 {
-			return "", false, errors.Errorf(`schema name %s is specified without table name`, normalizedSchemaName)
+			return fieldInfo{}, errors.Errorf(`schema name %s is specified without table name`, normalizedSchemaName)
 		}
 		mask |= maskSchemaName
 	}
 	if normalizedDatabaseName != "" {
 		if mask&maskSchemaName == 0 {
-			return "", false, errors.Errorf(`database name %s is specified without schema name`, normalizedDatabaseName)
+			return fieldInfo{}, errors.Errorf(`database name %s is specified without schema name`, normalizedDatabaseName)
 		}
 		mask |= maskDatabaseName
 	}
 
 	if mask == maskNone {
-		return "", false, errors.Errorf(`no object name is specified`)
+		return fieldInfo{}, errors.Errorf(`no object name is specified`)
 	}
 
 	// We just need to iterate through the fromFieldList sequentially until we find the first matching object.
@@ -896,15 +964,31 @@ func (extractor *sensitiveFieldExtractor) snowflakeIsFieldSensitive(normalizedDa
 			continue
 		}
 		// TODO(zp): split the schema name and table name for snowflake.
-		if mask&maskTableName != 0 && fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName) != field.table {
+		if mask&maskTableName != 0 && fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName) != field.table && field.table != normalizedTableName {
 			continue
 		}
 		if mask&maskColumnName != 0 && normalizedColumnName != field.name {
 			continue
 		}
-		return field.name, field.sensitive, nil
+		return field, nil
 	}
-	return "", false, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+	return fieldInfo{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+}
+
+func normalizedFullColumnName(ctx snowparser.IFull_column_nameContext) (normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) {
+	if ctx.GetDb_name() != nil {
+		normalizedDatabaseName = parser.NormalizeObjectNamePart(ctx.GetDb_name())
+	}
+	if ctx.GetSchema() != nil {
+		normalizedSchemaName = parser.NormalizeObjectNamePart(ctx.GetSchema())
+	}
+	if ctx.GetTab_name() != nil {
+		normalizedTableName = parser.NormalizeObjectNamePart(ctx.GetTab_name())
+	}
+	if ctx.GetCol_name() != nil {
+		normalizedColumnName = parser.NormalizeObjectNamePart(ctx.GetCol_name())
+	}
+	return
 }
 
 func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, string, string) {
