@@ -369,7 +369,7 @@ const transferOutDatabase = () => {
 };
 
 const createInstance = () => {
-  const instanceList = useInstanceV1Store().instanceList;
+  const instanceList = useInstanceV1Store().activeInstanceList;
   if (subscriptionStore.instanceCount <= instanceList.length) {
     state.featureName = "bb.feature.instance-count";
     state.showFeatureModal = true;
