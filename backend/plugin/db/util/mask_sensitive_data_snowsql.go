@@ -841,8 +841,8 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 	// If the as alias is not nil, we should use the alias name to replace the original table name.
 	if ctx.As_alias() != nil {
 		id := ctx.As_alias().Alias().Id_()
+		aliasName := parser.NormalizeObjectNamePart(id)
 		for i := 0; i < len(result); i++ {
-			aliasName := parser.NormalizeObjectNamePart(id)
 			result[i].table = aliasName
 		}
 	}
