@@ -65,14 +65,7 @@
         v-if="!hasDataAccessControlFeature"
         class="absolute w-full h-full inset-0 z-10 bg-gray-300/80 flex flex-col items-center justify-center"
       >
-        <button
-          type="button"
-          class="btn-primary whitespace-nowrap shadow"
-          @click.prevent="handleUpgradeSubscription"
-        >
-          <heroicons-solid:sparkles class="text-white w-5 h-auto mr-1" />
-          {{ $t("subscription.upgrade") }}
-        </button>
+        <UpgradeSubscriptionButton />
       </div>
     </div>
   </div>
@@ -103,7 +96,7 @@ import {
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import { Expr } from "@/types/proto/google/type/expr";
 import { useDebounceFn } from "@vueuse/core";
-import { useRouter } from "vue-router";
+import UpgradeSubscriptionButton from "@/components/UpgradeSubscriptionButton.vue";
 
 interface EnvironmentPolicy {
   environment: Environment;
@@ -118,7 +111,6 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const router = useRouter();
 const environmentList = useEnvironmentV1List();
 const policyStore = usePolicyV1Store();
 const currentUserV1 = useCurrentUserV1();
@@ -198,10 +190,6 @@ onMounted(async () => {
   }
   state.isLoading = false;
 });
-
-const handleUpgradeSubscription = () => {
-  router.push({ name: "setting.workspace.subscription" });
-};
 
 const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
   const workspaceIamPolicy: IamPolicy = IamPolicy.fromPartial({});

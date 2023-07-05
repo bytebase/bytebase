@@ -73,7 +73,8 @@
         :table="table"
         :columns="columns"
         :data="data"
-        :sensitive="sensitive"
+        :masked="props.result.masked"
+        :sensitive="props.result.sensitive"
         :keyword="state.search"
       />
     </div>
@@ -301,10 +302,6 @@ const data = computed(() => {
     });
   }
   return temp;
-});
-
-const sensitive = computed(() => {
-  return props.result.masked;
 });
 
 const table = useVueTable<string[]>({

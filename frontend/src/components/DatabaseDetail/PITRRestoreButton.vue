@@ -239,6 +239,9 @@ const buttonActionList = computed((): PITRButtonAction[] => {
 });
 
 const onClickPITRButton = (action: PITRButtonAction) => {
+  if (!hasPITRFeature.value) {
+    return;
+  }
   const { step, mode } = action.params;
   openDialog(step, mode);
 };

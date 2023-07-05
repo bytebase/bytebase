@@ -100,8 +100,8 @@
             class="w-full flex flex-row justify-start items-center"
           >
             <SelectTableForm
-              :project-id="state.projectId"
-              :database-id="state.databaseId"
+              :project-id="(state.projectId as string)"
+              :database-id="state.databaseId as string"
               :selected-database-resource-list="
                 selectedTableResource ? [selectedTableResource] : []
               "

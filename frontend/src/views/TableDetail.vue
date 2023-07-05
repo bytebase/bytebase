@@ -176,7 +176,7 @@ import {
   bytesToString,
   hasWorkspacePermissionV1,
   idFromSlug,
-  isDatabaseV1Accessible,
+  isDatabaseV1Queryable,
   isGhostTable,
 } from "@/utils";
 import {
@@ -223,12 +223,6 @@ const instanceEngine = computed(() => {
   return database.value.instanceEntity.engine;
 });
 
-const accessControlPolicy = usePolicyByParentAndType(
-  computed(() => ({
-    parentPath: database.value.name,
-    policyType: PolicyType.ACCESS_CONTROL,
-  }))
-);
 const allowQuery = computed(() => {
   if (
     database.value.project === EMPTY_PROJECT_NAME ||
@@ -239,9 +233,7 @@ const allowQuery = computed(() => {
       currentUserV1.value.userRole
     );
   }
-  const policy = accessControlPolicy.value;
-  const list = policy ? [policy] : [];
-  return isDatabaseV1Accessible(database.value, list, currentUserV1.value);
+  return isDatabaseV1Queryable(database.value, currentUserV1.value);
 });
 const hasSchemaProperty = computed(
   () => instanceEngine.value === Engine.POSTGRES

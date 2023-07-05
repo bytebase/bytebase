@@ -429,6 +429,9 @@ type ConnectionConfig struct {
 	SID         string
 	ServiceName string
 	SSHConfig   SSHConfig
+	// SchemaTenantMode is the Oracle specific mode.
+	// If true, bytebase will treat the schema as a database.
+	SchemaTenantMode bool
 }
 
 // SSHConfig is the configuration for connection over SSH.
@@ -454,6 +457,8 @@ type QueryContext struct {
 	ReadOnly              bool
 	SensitiveDataMaskType SensitiveDataMaskType
 	SensitiveSchemaInfo   *SensitiveSchemaInfo
+	// EnableSensitive will set to be true if the database instance has license.
+	EnableSensitive bool
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string

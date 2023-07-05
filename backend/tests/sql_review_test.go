@@ -279,6 +279,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			ColumnNames:     []string{"count(*)"},
 			ColumnTypeNames: []string{"BIGINT"},
 			Masked:          []bool{false},
+			Sensitive:       []bool{false},
 			Rows: []*v1pb.QueryRow{
 				{
 					Values: []*v1pb.RowValue{

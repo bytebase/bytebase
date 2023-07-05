@@ -81,6 +81,7 @@ import {
   UNKNOWN_USER_NAME,
   ComposedDatabase,
   ComposedDatabaseGroup,
+  DEFAULT_PROJECT_V1_NAME,
 } from "../types";
 import {
   filterDatabaseV1ByKeyword,
@@ -131,8 +132,8 @@ const policyList = ref<Policy[]>([]);
 const preparePolicyList = () => {
   usePolicyV1Store()
     .fetchPolicies({
-      resourceType: PolicyResourceType.DATABASE,
-      policyType: PolicyType.ACCESS_CONTROL,
+      policyType: PolicyType.WORKSPACE_IAM,
+      resourceType: PolicyResourceType.WORKSPACE,
     })
     .then((list) => (policyList.value = list));
 };
@@ -203,9 +204,11 @@ const changeSearchText = (searchText: string) => {
 };
 
 const filteredDatabaseList = computed(() => {
-  let list = [...state.databaseV1List].filter((database) =>
-    isDatabaseV1Accessible(database, policyList.value, currentUserV1.value)
-  );
+  let list = [...state.databaseV1List]
+    .filter((database) => database.project !== DEFAULT_PROJECT_V1_NAME)
+    .filter((database) =>
+      isDatabaseV1Accessible(database, currentUserV1.value)
+    );
   const environment = selectedEnvironment.value;
   if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
     list = list.filter(

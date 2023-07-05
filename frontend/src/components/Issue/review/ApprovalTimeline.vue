@@ -73,7 +73,7 @@ import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store";
 import Candidates from "./Candidates.vue";
 import ExternalApprovalSyncButton from "./ExternalApprovalNodeSyncButton.vue";
-import { ApprovalStep } from "@/types/proto/v1/review_service";
+import { ApprovalStep } from "@/types/proto/v1/issue_service";
 
 const USER_SYSTEM_BOT = "users/1";
 

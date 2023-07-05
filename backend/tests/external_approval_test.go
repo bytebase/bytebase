@@ -170,11 +170,11 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	for {
-		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1pb.GetReviewRequest{
-			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
+		issue, err := ctl.issueServiceClient.GetIssue(ctx, &v1pb.GetIssueRequest{
+			Name: fmt.Sprintf("projects/%d/issues/%d", issue.ProjectID, issue.ID),
 		})
 		a.NoError(err)
-		if review.ApprovalFindingDone {
+		if issue.ApprovalFindingDone {
 			break
 		}
 		time.Sleep(time.Second)
@@ -361,11 +361,11 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	for {
-		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1pb.GetReviewRequest{
-			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
+		issue, err := ctl.issueServiceClient.GetIssue(ctx, &v1pb.GetIssueRequest{
+			Name: fmt.Sprintf("projects/%d/issues/%d", issue.ProjectID, issue.ID),
 		})
 		a.NoError(err)
-		if review.ApprovalFindingDone {
+		if issue.ApprovalFindingDone {
 			break
 		}
 		time.Sleep(time.Second)

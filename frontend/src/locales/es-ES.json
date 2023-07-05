@@ -1902,6 +1902,7 @@
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
+    "contact-to-upgrade": "Comuníquese con el propietario de su espacio de trabajo o DBA para actualizar el plan",
     "upgrade-now": "Actualizar ahora",
     "instance-assignment": {
       "license": "Licencia",
@@ -1912,7 +1913,8 @@
       "manage-license": "Administrar licencia",
       "used-and-total-license": "Licencia asignada / total",
       "success-notification": "Actualizar correctamente la asignación de licencia",
-      "missing-license-for-instances": "Tienes {count} instancias ({name}) a las que les falta la licencia requerida para desbloquear esta función."
+      "missing-license-for-instances": "Tienes {count} instancias ({name}) a las que les falta la licencia requerida para desbloquear esta función.",
+      "missing-license-for-feature": "Falta la licencia de instancia para habilitar {feature}. Haga clic para asignar ahora."
     },
     "update": {
       "success": {

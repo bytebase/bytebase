@@ -32,6 +32,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -61,15 +62,23 @@ type SQLService struct {
 	schemaSyncer    *schemasync.Syncer
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewSQLService creates a SQLService.
-func NewSQLService(store *store.Store, schemaSyncer *schemasync.Syncer, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager) *SQLService {
+func NewSQLService(
+	store *store.Store,
+	schemaSyncer *schemasync.Syncer,
+	dbFactory *dbfactory.DBFactory,
+	activityManager *activity.Manager,
+	licenseService enterpriseAPI.LicenseService,
+) *SQLService {
 	return &SQLService{
 		store:           store,
 		schemaSyncer:    schemaSyncer,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		licenseService:  licenseService,
 	}
 }
 
@@ -343,6 +352,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
 		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 		SensitiveSchemaInfo:   sensitiveSchemaInfo,
+		EnableSensitive:       s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	durationNs := time.Now().UnixNano() - start
 	if err != nil {
@@ -620,20 +630,22 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 
-	// Check if the caller is admin for exporting with admin mode.
-	if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
-		return nil, nil, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
-	}
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		// Check if the caller is admin for exporting with admin mode.
+		if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
+			return nil, nil, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
+		}
 
-	// Check if the environment is open for export privileges.
-	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if !result {
-		// Check if the user has permission to execute the export.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
+		// Check if the environment is open for export privileges.
+		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+		if err != nil {
 			return nil, nil, nil, nil, err
+		}
+		if !result {
+			// Check if the user has permission to execute the export.
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, request.Format); err != nil {
+				return nil, nil, nil, nil, err
+			}
 		}
 	}
 
@@ -845,6 +857,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
 		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
 		SensitiveSchemaInfo:   sensitiveSchemaInfo,
+		EnableSensitive:       s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	select {
 	case <-ctx.Done():
@@ -880,15 +893,17 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
-	// Check if the environment is open for query privileges.
-	result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
-	if err != nil {
-		return nil, nil, advisor.Success, nil, nil, nil, err
-	}
-	if !result {
-		// Check if the user has permission to execute the query.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		// Check if the environment is open for query privileges.
+		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
+		if err != nil {
 			return nil, nil, advisor.Success, nil, nil, nil, err
+		}
+		if !result {
+			// Check if the user has permission to execute the query.
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, err
+			}
 		}
 	}
 
@@ -1349,6 +1364,8 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 		if err := parser.PLSQLValidateForEditor(tree); err != nil {
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
+	case db.MongoDB, db.Redis:
+		// Do nothing.
 	default:
 		// TODO(rebelice): support multiple statements here.
 		if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), statement) {
@@ -1753,6 +1770,15 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 	pass := false
 	usedExpression := ""
 	for _, binding := range projectPolicy.Bindings {
+		// Project owner has all permissions.
+		if binding.Role == api.Role(common.ProjectOwner) {
+			for _, member := range binding.Members {
+				if member.ID == principalID {
+					pass = true
+					break
+				}
+			}
+		}
 		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
 			continue
 		}
@@ -1782,7 +1808,7 @@ func evaluateCondition(expression string, attributes map[string]any) (bool, erro
 	if expression == "" {
 		return true, nil
 	}
-	env, err := cel.NewEnv(iamPolicyCELAttributes...)
+	env, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
 	if err != nil {
 		return false, err
 	}

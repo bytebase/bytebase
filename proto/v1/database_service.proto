@@ -930,8 +930,8 @@ message ChangeHistory {
   string schema = 14;
   string prev_schema = 15;
   google.protobuf.Duration execution_duration = 16;
-  // Format: projects/{project}/reviews/{review}
-  string review = 17;
+  // Format: projects/{project}/issues/{issue}
+  string issue = 17;
 
   PushEvent push_event = 18;
 }

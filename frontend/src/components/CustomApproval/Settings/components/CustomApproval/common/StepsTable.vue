@@ -74,7 +74,7 @@ import {
   ApprovalNode_Type,
   ApprovalStep,
   ApprovalStep_Type,
-} from "@/types/proto/v1/review_service";
+} from "@/types/proto/v1/issue_service";
 import { useCustomApprovalContext } from "../context";
 import { SpinnerButton } from "../../common";
 import { approvalNodeText } from "@/utils";

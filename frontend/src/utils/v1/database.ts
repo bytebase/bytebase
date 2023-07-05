@@ -2,7 +2,6 @@ import { orderBy } from "lodash-es";
 import slug from "slug";
 
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { Policy } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
 import {
   hasFeature,
@@ -16,6 +15,7 @@ import { isDev, semverCompare } from "../util";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
+import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
@@ -71,9 +71,10 @@ export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
   }
   return false;
 };
+
+// isDatabaseV1Accessible checks if database accessible for user.
 export const isDatabaseV1Accessible = (
   database: ComposedDatabase,
-  policyList: Policy[],
   user: User
 ): boolean => {
   if (!hasFeature("bb.feature.access-control")) {
@@ -93,27 +94,116 @@ export const isDatabaseV1Accessible = (
     return true;
   }
 
-  const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
-  if (policy) {
-    const bindings = policy.workspaceIamPolicy?.bindings;
-    if (bindings) {
-      const querierBinding = bindings.find(
-        (binding) => binding.role === "roles/QUERIER"
-      );
-      if (querierBinding) {
-        const simpleExpr = resolveCELExpr(
-          querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+  // If user is owner or developer of its projects, we will show the database in the UI.
+  if (
+    isOwnerOfProjectV1(database.projectEntity.iamPolicy, user) ||
+    isDeveloperOfProjectV1(database.projectEntity.iamPolicy, user)
+  ) {
+    return true;
+  }
+
+  if (isDatabaseV1Queryable(database, user)) {
+    return true;
+  }
+
+  return false;
+};
+
+// isDatabaseV1Queryable checks if database allowed to query in SQL Editor.
+export const isDatabaseV1Queryable = (
+  database: ComposedDatabase,
+  user: User
+): boolean => {
+  if (!hasFeature("bb.feature.access-control")) {
+    // The current plan doesn't have access control feature.
+    // Fallback to true.
+    return true;
+  } else {
+    const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+    if (policy) {
+      const bindings = policy.workspaceIamPolicy?.bindings;
+      if (bindings) {
+        const querierBinding = bindings.find(
+          (binding) => binding.role === "roles/QUERIER"
         );
-        const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-        if (envNameList.includes(database.instanceEntity.environment)) {
-          return true;
+        if (querierBinding) {
+          const simpleExpr = resolveCELExpr(
+            querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+          );
+          const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+          if (envNameList.includes(database.instanceEntity.environment)) {
+            return true;
+          }
         }
       }
     }
   }
 
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-access-control",
+      user.userRole
+    )
+  ) {
+    // The current user has the super privilege to access all databases.
+    // AKA. Owners and DBAs
+    return true;
+  }
+
   const currentUserIamPolicy = useCurrentUserIamPolicy();
   if (currentUserIamPolicy.allowToQueryDatabaseV1(database)) {
+    return true;
+  }
+
+  // denied otherwise
+  return false;
+};
+
+// isTableQueryable checks if table allowed to query in SQL Editor.
+export const isTableQueryable = (
+  database: ComposedDatabase,
+  schema: string,
+  table: string,
+  user: User
+): boolean => {
+  if (!hasFeature("bb.feature.access-control")) {
+    // The current plan doesn't have access control feature.
+    // Fallback to true.
+    return true;
+  } else {
+    const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+    if (policy) {
+      const bindings = policy.workspaceIamPolicy?.bindings;
+      if (bindings) {
+        const querierBinding = bindings.find(
+          (binding) => binding.role === "roles/QUERIER"
+        );
+        if (querierBinding) {
+          const simpleExpr = resolveCELExpr(
+            querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+          );
+          const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+          if (envNameList.includes(database.instanceEntity.environment)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-access-control",
+      user.userRole
+    )
+  ) {
+    // The current user has the super privilege to access all databases.
+    // AKA. Owners and DBAs
+    return true;
+  }
+
+  const currentUserIamPolicy = useCurrentUserIamPolicy();
+  if (currentUserIamPolicy.allowToQueryDatabaseV1(database, schema, table)) {
     return true;
   }
 

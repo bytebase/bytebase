@@ -46,7 +46,7 @@
                 {{ $t("common.demo-mode") }}
               </div>
               <router-link
-                v-else-if="!isFreePlan"
+                v-else-if="!isFreePlan || !hasPermission"
                 to="/setting/subscription"
                 exact-active-class=""
                 class="text-sm flex"
@@ -115,7 +115,7 @@
               {{ $t("common.demo-mode") }}
             </div>
             <router-link
-              v-else-if="!isFreePlan"
+              v-else-if="!isFreePlan || !hasPermission"
               to="/setting/subscription"
               exact-active-class=""
               class="text-sm flex whitespace-nowrap mr-1"
@@ -256,6 +256,7 @@ import {
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -273,6 +274,11 @@ const state = reactive<LocalState>({
   showTrialModal: false,
   showReleaseModal: false,
 });
+
+const hasPermission = hasWorkspacePermissionV1(
+  "bb.permission.workspace.manage-subscription",
+  useCurrentUserV1().value.userRole
+);
 
 const { isDemo } = storeToRefs(actuatorStore);
 
@@ -354,7 +360,10 @@ const currentPlan = computed((): string => {
     case PlanType.ENTERPRISE:
       return "subscription.plan.enterprise.title";
     default:
-      return "subscription.plan.try";
+      if (hasPermission) {
+        return "subscription.plan.try";
+      }
+      return "subscription.plan.free.title";
   }
 });
 

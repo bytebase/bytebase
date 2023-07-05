@@ -161,7 +161,7 @@ type controller struct {
 	profile                  componentConfig.Profile
 	client                   *http.Client
 	grpcConn                 *grpc.ClientConn
-	reviewServiceClient      v1pb.ReviewServiceClient
+	issueServiceClient       v1pb.IssueServiceClient
 	orgPolicyServiceClient   v1pb.OrgPolicyServiceClient
 	projectServiceClient     v1pb.ProjectServiceClient
 	authServiceClient        v1pb.AuthServiceClient
@@ -435,7 +435,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		return nil, errors.Wrap(err, "failed to dial grpc")
 	}
 	ctl.grpcConn = grpcConn
-	ctl.reviewServiceClient = v1pb.NewReviewServiceClient(ctl.grpcConn)
+	ctl.issueServiceClient = v1pb.NewIssueServiceClient(ctl.grpcConn)
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)

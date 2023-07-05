@@ -3,7 +3,7 @@ import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
-import { ApprovalTemplate } from "./review_service";
+import { ApprovalTemplate } from "./issue_service";
 import { PlanType, planTypeFromJSON, planTypeToJSON } from "./subscription_service";
 
 export const protobufPackage = "bytebase.v1";

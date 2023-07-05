@@ -183,12 +183,12 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	}
 
 	var fieldMaskInfo []bool
+	var fieldSensitiveInfo []bool
+
 	for i := range columnNames {
-		if len(fieldList) > 0 && fieldList[i].Sensitive {
-			fieldMaskInfo = append(fieldMaskInfo, true)
-		} else {
-			fieldMaskInfo = append(fieldMaskInfo, false)
-		}
+		sensitive := len(fieldList) > 0 && fieldList[i].Sensitive
+		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
+		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
@@ -203,7 +203,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows(rows, dbType, columnTypes, columnTypeNames, fieldList)
+	data, err := readRows(rows, dbType, columnTypes, columnTypeNames, fieldMaskInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		return nil, err
 	}
 
-	return []any{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
+	return []any{columnNames, columnTypeNames, data, fieldMaskInfo, fieldSensitiveInfo}, nil
 }
 
 // Query2 will execute a readonly / SELECT query.
@@ -248,12 +248,11 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 	}
 
 	var fieldMaskInfo []bool
+	var fieldSensitiveInfo []bool
 	for i := range columnNames {
-		if len(fieldList) > 0 && fieldList[i].Sensitive {
-			fieldMaskInfo = append(fieldMaskInfo, true)
-		} else {
-			fieldMaskInfo = append(fieldMaskInfo, false)
-		}
+		sensitive := len(fieldList) > 0 && fieldList[i].Sensitive
+		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
+		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
@@ -268,7 +267,7 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows2(rows, columnTypes, columnTypeNames, fieldList)
+	data, err := readRows2(rows, columnTypes, columnTypeNames, fieldMaskInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -282,6 +281,7 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
 		Masked:          fieldMaskInfo,
+		Sensitive:       fieldSensitiveInfo,
 	}, nil
 }
 
@@ -439,7 +439,7 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 }
 
 // TODO(rebelice): remove the readRows and rename readRows2 to readRows if legacy API is deprecated.
-func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]*v1pb.QueryRow, error) {
+func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldMaskInfo []bool) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
 	if len(columnTypes) == 0 {
 		// No rows.
@@ -470,7 +470,7 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 
 		var rowData v1pb.QueryRow
 		for i := range columnTypes {
-			if len(fieldList) > 0 && fieldList[i].Sensitive {
+			if len(fieldMaskInfo) > 0 && fieldMaskInfo[i] {
 				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}})
 				continue
 			}
@@ -504,9 +504,9 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 	return data, nil
 }
 
-func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
+func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldMaskInfo []bool) ([]any, error) {
 	if dbType == db.ClickHouse {
-		return readRowsForClickhouse(rows, columnTypes, columnTypeNames, fieldList)
+		return readRowsForClickhouse(rows, columnTypes, columnTypeNames, fieldMaskInfo)
 	}
 	data := []any{}
 	for rows.Next() {
@@ -533,7 +533,7 @@ func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, col
 
 		rowData := []any{}
 		for i := range columnTypes {
-			if len(fieldList) > 0 && fieldList[i].Sensitive {
+			if len(fieldMaskInfo) > 0 && fieldMaskInfo[i] {
 				rowData = append(rowData, "******")
 				continue
 			}
@@ -724,7 +724,7 @@ func ConvertYesNo(s string) (bool, error) {
 	}
 }
 
-func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
+func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldMaskInfo []bool) ([]any, error) {
 	data := []any{}
 
 	for rows.Next() {
@@ -750,7 +750,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 
 		rowData := []any{}
 		for i := range cols {
-			if len(fieldList) > 0 && fieldList[i].Sensitive {
+			if len(fieldMaskInfo) > 0 && fieldMaskInfo[i] {
 				rowData = append(rowData, "******")
 				continue
 			}

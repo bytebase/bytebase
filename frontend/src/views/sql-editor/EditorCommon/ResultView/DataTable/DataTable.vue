@@ -39,6 +39,12 @@
                     v-if="isSensitiveColumn(header.index)"
                     class="ml-0.5 shrink-0"
                   />
+                  <FeatureBadgeForInstanceLicense
+                    v-else-if="isColumnMissingSensitive(header.index)"
+                    :show="true"
+                    custom-class="ml-0.5 shrink-0"
+                    feature="bb.feature.sensitive-data"
+                  />
                 </div>
 
                 <!-- The drag-to-resize handler -->
@@ -105,6 +111,10 @@ const props = defineProps({
     type: Array as PropType<boolean[]>,
     default: () => [],
   },
+  masked: {
+    type: Array as PropType<boolean[]>,
+    default: () => [],
+  },
   table: {
     type: Object as PropType<Table<string[]>>,
     required: true,
@@ -128,7 +138,11 @@ const tableResize = useTableColumnWidthLogic({
 const data = computed(() => props.data);
 
 const isSensitiveColumn = (index: number): boolean => {
-  return props.sensitive[index] ?? false;
+  return props.masked[index] ?? false;
+};
+
+const isColumnMissingSensitive = (index: number): boolean => {
+  return (props.sensitive[index] ?? false) && !isSensitiveColumn(index);
 };
 
 const renderCellValue = (value: any) => {

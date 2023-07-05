@@ -32,9 +32,10 @@ func init() {
 
 // Driver is the Oracle driver.
 type Driver struct {
-	db           *sql.DB
-	databaseName string
-	serviceName  string
+	db               *sql.DB
+	databaseName     string
+	serviceName      string
+	schemaTenantMode bool
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -59,6 +60,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	driver.db = db
 	driver.databaseName = config.Database
 	driver.serviceName = config.ServiceName
+	driver.schemaTenantMode = config.SchemaTenantMode
 	return driver, nil
 }
 

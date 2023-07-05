@@ -56,7 +56,11 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 		dataSource.SID = ""
 		databaseName = database.DatabaseName
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, datashare, false /* readOnly */)
+	schemaTenantMode := false
+	if instance.Options != nil && instance.Options.SchemaTenantMode {
+		schemaTenantMode = true
+	}
+	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, datashare, false /* readOnly */, schemaTenantMode)
 }
 
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
@@ -87,11 +91,15 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		dataSource.SID = ""
 		databaseName = database.DatabaseName
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, database.DataShare, true /* readOnly */)
+	schemaTenantMode := false
+	if instance.Options != nil && instance.Options.SchemaTenantMode {
+		schemaTenantMode = true
+	}
+	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, database.DataShare, true /* readOnly */, schemaTenantMode)
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, datashare, readOnly bool) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, datashare, readOnly bool, schemaTenantMode bool) (db.Driver, error) {
 	dbBinDir := ""
 	switch engine {
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
@@ -166,6 +174,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dat
 			ServiceName:            dataSource.ServiceName,
 			SSHConfig:              sshConfig,
 			ReadOnly:               readOnly,
+			SchemaTenantMode:       schemaTenantMode,
 		},
 		db.ConnectionContext{
 			InstanceID: instanceID,

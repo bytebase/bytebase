@@ -1,6 +1,6 @@
 apiVersion: v2
 name: bytebase
-version: 1.0.3
+version: 1.0.4
 description: Safe database schema change and version control for DevOps teams.
 type: application
 home: https://bytebase.com/

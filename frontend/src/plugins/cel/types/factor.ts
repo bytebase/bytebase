@@ -18,7 +18,6 @@ export const StringFactorList = [
   "environment_id", // using `environment.resource_id`
   "project_id", // using `project.resource_id`
   "database_name",
-  "table_name",
   "db_engine",
   "sql_type",
 

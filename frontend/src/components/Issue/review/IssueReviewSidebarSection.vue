@@ -40,8 +40,15 @@
       >
     </div>
     <IssueReviewPanel v-else-if="steps.length > 0" />
-    <div v-else class="flex items-center mt-1 text-sm text-control-placeholder">
+    <div
+      v-else
+      class="flex items-center mt-1 text-sm text-control-placeholder gap-x-1"
+    >
       {{ $t("custom-approval.approval-flow.skip") }}
+      <FeatureBadgeForInstanceLicense
+        feature="bb.feature.custom-approval"
+        :instance="selectedDatabase?.instanceEntity"
+      />
     </div>
   </div>
 </template>
@@ -51,13 +58,14 @@ import { computed, Ref, ref } from "vue";
 
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 import IssueReviewPanel from "./IssueReviewPanel.vue";
-import { useReviewStore } from "@/store";
+import { useIssueV1Store } from "@/store";
 import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
 import { isGrantRequestIssueType } from "@/utils";
 
-const store = useReviewStore();
+const store = useIssueV1Store();
 const issueContext = useIssueLogic();
+const { selectedDatabase } = issueContext;
 const issue = issueContext.issue as Ref<Issue>;
 const context = useIssueReviewContext();
 const { ready, error, flow } = context;

@@ -45,6 +45,18 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
 	}
 
+	if driver.schemaTenantMode {
+		databases, err := driver.syncSchemaTenantModeInstance(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &db.InstanceMetadata{
+			Version:   version,
+			Databases: databases,
+		}, nil
+	}
+
 	var databases []*storepb.DatabaseMetadata
 	// sync CDB
 	cdbRows, err := driver.db.QueryContext(ctx, "SELECT name FROM v$database")
@@ -99,8 +111,36 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}, nil
 }
 
+func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	schemas, err := getSchemas(txn)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*storepb.DatabaseMetadata
+
+	for _, schema := range schemas {
+		result = append(result, &storepb.DatabaseMetadata{
+			Name:        schema,
+			ServiceName: "",
+		})
+	}
+
+	return result, nil
+}
+
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+	if driver.schemaTenantMode {
+		return driver.syncSchemaTenantModeDBSchema(ctx)
+	}
+
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -111,11 +151,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
-	tableMap, err := getTables(txn)
+	tableMap, err := getTables(txn, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
-	viewMap, err := getViews(txn)
+	viewMap, err := getViews(txn, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
@@ -135,6 +175,38 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 			Views:  viewMap[schemaName],
 		})
 	}
+	return databaseMetadata, nil
+}
+
+func (driver *Driver) syncSchemaTenantModeDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	tableMap, err := getTables(txn, driver.databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
+	}
+	viewMap, err := getViews(txn, driver.databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
+	}
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	databaseMetadata := &storepb.DatabaseMetadata{
+		Name:        driver.databaseName,
+		ServiceName: driver.serviceName,
+	}
+	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+		Name:   driver.databaseName,
+		Tables: tableMap[driver.databaseName],
+		Views:  viewMap[driver.databaseName],
+	})
 	return databaseMetadata, nil
 }
 
@@ -165,22 +237,32 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
-	columnMap, err := getTableColumns(txn)
+func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetadata, error) {
+	columnMap, err := getTableColumns(txn, schemaName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get table columns")
 	}
-	indexMap, err := getIndexes(txn)
+	indexMap, err := getIndexes(txn, schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
 	}
 	// TODO(d): foreign keys.
 	tableMap := make(map[string][]*storepb.TableMetadata)
-	query := fmt.Sprintf(`
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
 		FROM all_tables
 		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
 		ORDER BY OWNER, TABLE_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, NUM_ROWS
+		FROM all_tables
+		WHERE OWNER = '%s'
+		ORDER BY TABLE_NAME`, schemaName)
+	}
+
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -209,12 +291,14 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 }
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+func getTableColumns(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 
 	// https://github.com/bytebase/bytebase/issues/6663
 	// Invisible columns don't have column ID so that we need to filter out them.
-	query := fmt.Sprintf(`
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
 		SELECT
 			OWNER,
 			TABLE_NAME,
@@ -226,6 +310,21 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 		FROM sys.all_tab_columns
 		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COLUMN_ID IS NOT NULL
 		ORDER BY OWNER, TABLE_NAME, COLUMN_ID`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT
+			OWNER,
+			TABLE_NAME,
+			COLUMN_NAME,
+			DATA_TYPE,
+			COLUMN_ID,
+			DATA_DEFAULT,
+			NULLABLE
+		FROM sys.all_tab_columns
+		WHERE OWNER = '%s' AND COLUMN_ID IS NOT NULL
+		ORDER BY TABLE_NAME, COLUMN_ID`, schemaName)
+	}
+
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -259,15 +358,24 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 }
 
 // getIndexes gets all indices of a database.
-func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
 	expressionsMap := make(map[db.IndexKey][]string)
-	queryColumn := fmt.Sprintf(`
+	queryColumn := ""
+	if schemaName == "" {
+		queryColumn = fmt.Sprintf(`
 		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_NAME
 		FROM sys.all_ind_columns
 		WHERE TABLE_OWNER NOT IN (%s) AND TABLE_OWNER NOT LIKE 'APEX_%%'
 		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, systemSchema)
+	} else {
+		queryColumn = fmt.Sprintf(`
+		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_NAME
+		FROM sys.all_ind_columns
+		WHERE TABLE_OWNER = '%s'
+		ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
+	}
 	colRows, err := txn.Query(queryColumn)
 	if err != nil {
 		return nil, err
@@ -284,11 +392,20 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	if err := colRows.Err(); err != nil {
 		return nil, err
 	}
-	queryExpression := fmt.Sprintf(`
+	queryExpression := ""
+	if schemaName == "" {
+		queryExpression = fmt.Sprintf(`
 		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION
 		FROM sys.all_ind_expressions
 		WHERE TABLE_OWNER NOT IN (%s) AND TABLE_OWNER NOT LIKE 'APEX_%%'
 		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, systemSchema)
+	} else {
+		queryExpression = fmt.Sprintf(`
+		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION
+		FROM sys.all_ind_expressions
+		WHERE TABLE_OWNER = '%s'
+		ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
+	}
 	expRows, err := txn.Query(queryExpression)
 	if err != nil {
 		return nil, err
@@ -311,11 +428,20 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	if err := expRows.Err(); err != nil {
 		return nil, err
 	}
-	query := fmt.Sprintf(`
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
 		SELECT OWNER, TABLE_NAME, INDEX_NAME, UNIQUENESS, INDEX_TYPE
 		FROM sys.all_indexes
 		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
 		ORDER BY OWNER, TABLE_NAME, INDEX_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, INDEX_NAME, UNIQUENESS, INDEX_TYPE
+		FROM sys.all_indexes
+		WHERE OWNER = '%s'
+		ORDER BY TABLE_NAME, INDEX_NAME`, schemaName)
+	}
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -347,15 +473,26 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 }
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
+func getViews(txn *sql.Tx, schemaName string) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
-	query := fmt.Sprintf(`
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
 		SELECT OWNER, VIEW_NAME, TEXT
 		FROM sys.all_views
 		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
 		ORDER BY owner, view_name
 	`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, VIEW_NAME, TEXT
+		FROM sys.all_views
+		WHERE OWNER = '%s'
+		ORDER BY view_name
+	`, schemaName)
+	}
+
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err

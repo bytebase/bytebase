@@ -73,7 +73,7 @@
         <BBTableCell v-for="(dbList, i) in matrix.stages" :key="i">
           <div
             v-if="databaseList.length > 0"
-            class="flex flex-col items-start space-y-1"
+            class="flex flex-col items-start w-max mx-auto space-y-1"
           >
             <DatabaseMatrixItem
               v-for="db in dbList"
@@ -87,7 +87,7 @@
         <BBTableCell v-if="hasRest">
           <div
             v-if="databaseList.length > 0"
-            class="flex flex-col items-start space-y-1"
+            class="flex flex-col items-start w-max mx-auto space-y-1"
           >
             <DatabaseMatrixItem
               v-for="db in matrix.rest"

@@ -64,11 +64,6 @@ export const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  table_name: uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-    ...StringOperatorList,
-  ]),
   db_engine: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,

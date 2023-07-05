@@ -1897,6 +1897,7 @@
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
+    "contact-to-upgrade": "请联系 DBA 或所有者来升级到试用版",
     "upgrade-now": "现在升级",
     "instance-assignment": {
       "license": "证书",
@@ -1907,7 +1908,8 @@
       "manage-license": "管理证书",
       "used-and-total-license": "已分配 / 总实例证书",
       "success-notification": "证书分配更新成功",
-      "missing-license-for-instances": "您有 {count} 个实例（{name}）缺失开启该功能的证书。"
+      "missing-license-for-instances": "您有 {count} 个实例（{name}）缺失开启该功能的证书。",
+      "missing-license-for-feature": "缺少实例证书以启用{feature}。点击去分配证书。"
     },
     "update": {
       "success": {

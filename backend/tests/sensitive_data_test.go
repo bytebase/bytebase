@@ -26,6 +26,7 @@ var (
 		ColumnNames:     []string{"id", "name", "author"},
 		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
 		Masked:          []bool{true, false, true},
+		Sensitive:       []bool{true, false, true},
 		Rows: []*v1pb.QueryRow{
 			{
 				Values: []*v1pb.RowValue{

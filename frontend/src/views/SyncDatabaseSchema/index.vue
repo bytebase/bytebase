@@ -78,17 +78,29 @@
                 class="w-full"
                 :selected-item="state.sourceSchema.changeHistory"
                 :item-list="
-                databaseChangeHistoryList(state.sourceSchema.databaseId as string)
-              "
+                  databaseChangeHistoryList(state.sourceSchema.databaseId as string)
+                "
                 :placeholder="$t('change-history.select')"
                 :show-prefix-item="databaseChangeHistoryList(state.sourceSchema.databaseId as string).length > 0"
                 @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
               >
                 <template
-                  #menuItem="{ item: changeHistory }: { item: ChangeHistory }"
+                  #menuItem="{
+                    item: changeHistory,
+                    index,
+                  }: {
+                    item: ChangeHistory,
+                    index: number,
+                  }"
                 >
                   <div class="flex justify-between mr-2">
-                    <NEllipsis class="pr-2" :tooltip="false">
+                    <FeatureBadge
+                      v-if="index > 0"
+                      feature="bb.feature.sync-schema-all-versions"
+                      custom-class="mr-1"
+                      :instance="database?.instanceEntity"
+                    />
+                    <NEllipsis class="flex-1 pr-2" :tooltip="false">
                       {{ changeHistory.version }} -
                       {{ changeHistory.description }}
                     </NEllipsis>
@@ -219,7 +231,7 @@ const hasSyncSchemaFeature = computed(() => {
 
 const shouldShowMoreVersionButton = computed(() => {
   return (
-    !hasSyncSchemaFeature.value &&
+    hasSyncSchemaFeature.value &&
     databaseChangeHistoryList(state.sourceSchema.databaseId as string).length >
       0
   );
@@ -237,8 +249,7 @@ const allowNext = computed(() => {
     return (
       isValidId(state.sourceSchema.environmentId) &&
       isValidId(state.sourceSchema.databaseId) &&
-      !isUndefined(state.sourceSchema.changeHistory) &&
-      hasSyncSchemaFeature.value
+      !isUndefined(state.sourceSchema.changeHistory)
     );
   } else {
     if (!targetDatabaseViewRef.value) {
@@ -266,9 +277,6 @@ const databaseChangeHistoryList = (databaseId: string) => {
       allowedMigrationTypeList.includes(changeHistory.type)
     );
 
-  if (!hasSyncSchemaFeature.value) {
-    return list.length > 0 ? [head(list)] : [];
-  }
   return list;
 };
 
@@ -296,14 +304,19 @@ const handleSourceDatabaseSelect = async (databaseId: string) => {
     state.sourceSchema.environmentId =
       database.instanceEntity.environmentEntity.uid;
     state.sourceSchema.databaseId = databaseId;
-
-    if (!hasSyncSchemaFeature.value) {
-      state.showFeatureModal = true;
-    }
   }
 };
 
 const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
+  const list = databaseChangeHistoryList(
+    state.sourceSchema.databaseId as string
+  );
+  const index = list.findIndex((data) => data.uid === changeHistory.uid);
+  if (index > 0 && !hasSyncSchemaFeature.value) {
+    state.showFeatureModal = true;
+    state.sourceSchema.changeHistory = head(list);
+    return;
+  }
   state.sourceSchema.changeHistory = changeHistory;
 };
 

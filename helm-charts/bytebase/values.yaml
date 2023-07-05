@@ -9,7 +9,8 @@ bytebase:
     existingPgURLSecretKey: ""
     pg: postgresql://user:secret@host:port/dbname
     data: /var/opt/bytebase
-  version: 2.0.0
+    external-url: "https://www.bytebase.com/docs/get-started/install/external-url"
+  version: 2.3.0
   registryMirrorHost: ""
   persistence:
     storage: 2Gi

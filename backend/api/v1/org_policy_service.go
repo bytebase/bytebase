@@ -653,7 +653,7 @@ func convertToV1PBWorkspaceIAMPolicy(policy *storepb.IamPolicy) (*v1pb.Policy_Wo
 			Condition: binding.Condition,
 		}
 
-		env, err := cel.NewEnv(iamPolicyCELAttributes...)
+		env, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create cel environment")
 		}

@@ -1902,6 +1902,7 @@
     "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required",
     "trial-for-days": "You can start a free trial for {days} days - no credit card required",
     "upgrade-trial": "You can upgrade your free trial to this plan",
+    "contact-to-upgrade": "Contact your Workspace Owner or DBA to upgrade the plan",
     "upgrade-now": "Upgrade Now",
     "instance-assignment": {
       "license": "License",
@@ -1912,7 +1913,8 @@
       "manage-license": "Manage Instance License",
       "used-and-total-license": "Assigned / Total Instance License",
       "success-notification": "Successfully update license assignment",
-      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature."
+      "missing-license-for-instances": "You have {count} instances ({name}) missing required license to unlock this feature.",
+      "missing-license-for-feature": "Missing instance license to enable {feature}. Click to assign now."
     },
     "update": {
       "success": {

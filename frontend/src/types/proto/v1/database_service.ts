@@ -977,8 +977,8 @@ export interface ChangeHistory {
   schema: string;
   prevSchema: string;
   executionDuration?: Duration;
-  /** Format: projects/{project}/reviews/{review} */
-  review: string;
+  /** Format: projects/{project}/issues/{issue} */
+  issue: string;
   pushEvent?: PushEvent;
 }
 
@@ -5704,7 +5704,7 @@ function createBaseChangeHistory(): ChangeHistory {
     schema: "",
     prevSchema: "",
     executionDuration: undefined,
-    review: "",
+    issue: "",
     pushEvent: undefined,
   };
 }
@@ -5759,8 +5759,8 @@ export const ChangeHistory = {
     if (message.executionDuration !== undefined) {
       Duration.encode(message.executionDuration, writer.uint32(130).fork()).ldelim();
     }
-    if (message.review !== "") {
-      writer.uint32(138).string(message.review);
+    if (message.issue !== "") {
+      writer.uint32(138).string(message.issue);
     }
     if (message.pushEvent !== undefined) {
       PushEvent.encode(message.pushEvent, writer.uint32(146).fork()).ldelim();
@@ -5892,7 +5892,7 @@ export const ChangeHistory = {
             break;
           }
 
-          message.review = reader.string();
+          message.issue = reader.string();
           continue;
         case 18:
           if (tag !== 146) {
@@ -5928,7 +5928,7 @@ export const ChangeHistory = {
       schema: isSet(object.schema) ? String(object.schema) : "",
       prevSchema: isSet(object.prevSchema) ? String(object.prevSchema) : "",
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
-      review: isSet(object.review) ? String(object.review) : "",
+      issue: isSet(object.issue) ? String(object.issue) : "",
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
   },
@@ -5952,7 +5952,7 @@ export const ChangeHistory = {
     message.prevSchema !== undefined && (obj.prevSchema = message.prevSchema);
     message.executionDuration !== undefined &&
       (obj.executionDuration = message.executionDuration ? Duration.toJSON(message.executionDuration) : undefined);
-    message.review !== undefined && (obj.review = message.review);
+    message.issue !== undefined && (obj.issue = message.issue);
     message.pushEvent !== undefined &&
       (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
@@ -5982,7 +5982,7 @@ export const ChangeHistory = {
     message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)
       ? Duration.fromPartial(object.executionDuration)
       : undefined;
-    message.review = object.review ?? "";
+    message.issue = object.issue ?? "";
     message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
       ? PushEvent.fromPartial(object.pushEvent)
       : undefined;

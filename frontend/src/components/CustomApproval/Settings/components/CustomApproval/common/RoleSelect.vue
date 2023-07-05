@@ -20,7 +20,7 @@ import {
   ApprovalNode,
   ApprovalNode_GroupValue,
   ApprovalNode_Type,
-} from "@/types/proto/v1/review_service";
+} from "@/types/proto/v1/issue_service";
 import { useCustomApprovalContext } from "../context";
 import { approvalNodeGroupValueText, approvalNodeRoleText } from "@/utils";
 import { useRoleStore, useSettingV1Store } from "@/store";

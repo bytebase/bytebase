@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row items-center">
-    <template v-if="issue.status !== 'OPEN' || done">
+    <template v-if="legacyIssue.status !== 'OPEN' || done">
       <span>-</span>
     </template>
     <template v-else-if="!ready">
@@ -18,8 +18,8 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import { Issue } from "@/types";
-import { Review } from "@/types/proto/v1/review_service";
+import { Issue as LegacyIssue } from "@/types";
+import { Issue } from "@/types/proto/v1/issue_service";
 import {
   extractIssueReviewContext,
   useWrappedReviewSteps,
@@ -27,25 +27,25 @@ import {
 import { useAuthStore } from "@/store";
 
 const props = defineProps<{
-  issue: Issue;
+  legacyIssue: LegacyIssue;
 }>();
 
-const review = computed(() => {
+const issue = computed(() => {
   try {
-    return Review.fromJSON(props.issue.payload.approval);
+    return Issue.fromJSON(props.legacyIssue.payload.approval);
   } catch {
-    return Review.fromJSON({});
+    return Issue.fromJSON({});
   }
 });
 
 const context = extractIssueReviewContext(
-  computed(() => props.issue),
-  review
+  computed(() => props.legacyIssue),
+  issue
 );
 const { ready, done } = context;
 const currentUserName = computed(() => useAuthStore().currentUser.name);
-const issue = computed(() => props.issue);
-const wrappedSteps = useWrappedReviewSteps(issue, context);
+const legacyIssue = computed(() => props.legacyIssue);
+const wrappedSteps = useWrappedReviewSteps(legacyIssue, context);
 
 const currentStep = computed(() => {
   return wrappedSteps.value?.find((step) => step.status === "CURRENT");

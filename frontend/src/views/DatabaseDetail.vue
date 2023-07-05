@@ -269,7 +269,7 @@ import {
   instanceV1SupportSlowQuery,
   hasPermissionInProjectV1,
   instanceV1HasAlterSchema,
-  isDatabaseV1Accessible,
+  isDatabaseV1Queryable,
   allowUsingSchemaEditorV1,
 } from "@/utils";
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME, ComposedDatabase } from "@/types";
@@ -284,8 +284,6 @@ import {
   useDBSchemaV1Store,
   useGracefulRequest,
 } from "@/store";
-import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import {
   EnvironmentV1Name,
   InstanceV1Name,
@@ -367,16 +365,8 @@ const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(database.value.instanceEntity);
 });
 
-const accessControlPolicy = usePolicyByParentAndType(
-  computed(() => ({
-    parentPath: database.value.name,
-    policyType: PolicyType.ACCESS_CONTROL,
-  }))
-);
 const allowQuery = computed(() => {
-  const policy = accessControlPolicy.value;
-  const list = policy ? [policy] : [];
-  return isDatabaseV1Accessible(database.value, list, currentUserV1.value);
+  return isDatabaseV1Queryable(database.value, currentUserV1.value);
 });
 
 // Project can be transferred if meets either of the condition below:
