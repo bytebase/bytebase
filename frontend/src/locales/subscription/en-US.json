@@ -125,6 +125,7 @@
         "watermark": "Watermark",
         "sso": "Single Sign-On (SSO)",
         "2fa": "Two-Factor Authentication (2FA)",
+        "ssh-tunnel": "SSH Tunnel",
         "custom-approval": "Custom approval",
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",

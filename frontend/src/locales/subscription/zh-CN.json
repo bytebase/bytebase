@@ -125,6 +125,7 @@
         "watermark": "水印",
         "sso": "SSO 单点登录",
         "2fa": "双重认证 (2FA)",
+        "ssh-tunnel": "SSH Tunnel",
         "custom-approval": "自定义审批",
         "dba-workflow": "DBA 工作流",
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
