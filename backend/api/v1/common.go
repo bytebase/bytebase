@@ -75,7 +75,7 @@ var (
 )
 
 func isNumber(v string) (int, bool) {
-	n, err := strconv.ParseInt(v, 10, 64)
+	n, err := strconv.Atoi(v)
 	if err == nil {
 		return int(n), true
 	}
