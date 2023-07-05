@@ -38,3 +38,4 @@ dist/
 docs/openapi/swagger.json
 docs/sqlservice/swagger.json
 frontend/src/types/sql-review.*.yaml
+frontend/src/types/plan.yaml
