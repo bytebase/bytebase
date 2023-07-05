@@ -2,7 +2,6 @@
 package util
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -842,10 +841,10 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName snowparser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, db.TableSchema, error) {
+func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName snowparser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
 	normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(objectName, "", "")
 	// For snowflake, we should find the table schema in cteOuterSchemaInfo by ascending order.
-	if normalizedDatabaseName == "" {
+	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
 		for _, tableSchema := range extractor.cteOuterSchemaInfo {
 			// TODO(zp): handle the public hack.
 			if normalizedTableName == tableSchema.Name {
@@ -853,20 +852,24 @@ func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName snow
 			}
 		}
 	}
-	normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(objectName, fallbackDatabaseName, fallbackSchemaName)
-	normalizedSchemaTableName := fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName)
+	normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(objectName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
 	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
-		if databaseSchema.Name != normalizedDatabaseName {
+		if normalizedDatabaseName != "" && normalizedDatabaseName != databaseSchema.Name {
 			continue
 		}
-		for _, tableSchema := range databaseSchema.TableList {
-			if normalizedSchemaTableName != tableSchema.Name {
+		for _, schemaSchema := range databaseSchema.SchemaList {
+			if normalizedSchemaName != "" && normalizedSchemaName != schemaSchema.Name {
 				continue
 			}
-			return normalizedDatabaseName, tableSchema, nil
+			for _, tableSchema := range schemaSchema.TableList {
+				if normalizedTableName != tableSchema.Name {
+					continue
+				}
+				return normalizedDatabaseName, tableSchema, nil
+			}
 		}
 	}
-	return "", db.TableSchema{}, errors.Errorf(`table %s not found in database %s`, normalizedSchemaTableName, normalizedDatabaseName)
+	return "", db.TableSchema{}, errors.Errorf(`table %s.%s.%s is not found`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 }
 
 func (extractor *sensitiveFieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]fieldInfo, error) {
@@ -899,8 +902,10 @@ func (extractor *sensitiveFieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(no
 		if mask&maskDatabaseName != 0 && normalizedDatabaseName != field.database {
 			continue
 		}
-		// TODO(zp): split the schema name and table name for snowflake.
-		if mask&maskTableName != 0 && fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName) != field.table {
+		if mask&maskSchemaName != 0 && normalizedSchemaName != field.schema {
+			continue
+		}
+		if mask&maskTableName != 0 && normalizedTableName != field.table {
 			continue
 		}
 		result = append(result, field)
@@ -963,8 +968,10 @@ func (extractor *sensitiveFieldExtractor) snowflakeIsFieldSensitive(normalizedDa
 		if mask&maskDatabaseName != 0 && normalizedDatabaseName != field.database {
 			continue
 		}
-		// TODO(zp): split the schema name and table name for snowflake.
-		if mask&maskTableName != 0 && fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName) != field.table && field.table != normalizedTableName {
+		if mask&maskSchemaName != 0 && normalizedSchemaName != field.schema {
+			continue
+		}
+		if mask&maskTableName != 0 && normalizedTableName != field.table {
 			continue
 		}
 		if mask&maskColumnName != 0 && normalizedColumnName != field.name {
@@ -991,13 +998,13 @@ func normalizedFullColumnName(ctx snowparser.IFull_column_nameContext) (normaliz
 	return
 }
 
-func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, string, string) {
+func normalizedObjectName(objectName snowparser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string) {
 	// TODO(zp): unify here with NormalizeObjectName in backend/plugin/parser/sql/snowsql.go
 	var parts []string
 	if objectName == nil {
 		return "", "", ""
 	}
-	database := fallbackDatabaseName
+	database := normalizedFallbackDatabaseName
 	if d := objectName.GetD(); d != nil {
 		normalizedD := parser.NormalizeObjectNamePart(d)
 		if normalizedD != "" {
@@ -1006,7 +1013,7 @@ func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDat
 	}
 	parts = append(parts, database)
 
-	schema := fallbackSchemaName
+	schema := normalizedFallbackSchemaName
 	if s := objectName.GetS(); s != nil {
 		normalizedS := parser.NormalizeObjectNamePart(s)
 		if normalizedS != "" {

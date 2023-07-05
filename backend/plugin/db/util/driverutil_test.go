@@ -1568,51 +1568,56 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			DatabaseList: []db.DatabaseSchema{
 				{
 					Name: defaultDatabase,
-					TableList: []db.TableSchema{
+					SchemaList: []db.SchemaSchema{
 						{
-							Name: "PUBLIC.T1",
-							ColumnList: []db.ColumnInfo{
+							Name: "PUBLIC",
+							TableList: []db.TableSchema{
 								{
-									Name:      "A",
-									Sensitive: true,
+									Name: "T1",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "A",
+											Sensitive: true,
+										},
+										{
+											Name:      "B",
+											Sensitive: false,
+										},
+										{
+											Name:      "C",
+											Sensitive: false,
+										},
+										{
+											Name:      "D",
+											Sensitive: true,
+										},
+									},
 								},
 								{
-									Name:      "B",
-									Sensitive: false,
+									Name: "T2",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "A",
+											Sensitive: false,
+										},
+										{
+											Name:      "E",
+											Sensitive: false,
+										},
+									},
 								},
 								{
-									Name:      "C",
-									Sensitive: false,
-								},
-								{
-									Name:      "D",
-									Sensitive: true,
-								},
-							},
-						},
-						{
-							Name: "PUBLIC.T2",
-							ColumnList: []db.ColumnInfo{
-								{
-									Name:      "A",
-									Sensitive: false,
-								},
-								{
-									Name:      "E",
-									Sensitive: false,
-								},
-							},
-						},
-						{
-							Name: "PUBLIC.T3",
-							ColumnList: []db.ColumnInfo{
-								{
-									Name:      "E",
-									Sensitive: true,
-								},
-								{
-									Name:      "F",
-									Sensitive: false,
+									Name: "T3",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "E",
+											Sensitive: true,
+										},
+										{
+											Name:      "F",
+											Sensitive: false,
+										},
+									},
 								},
 							},
 						},
