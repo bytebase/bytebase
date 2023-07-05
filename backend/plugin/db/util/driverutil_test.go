@@ -1658,10 +1658,10 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		{
 			// Test for multiple CTE
 			statement: `
-			WITH TT1 AS (
+			WITH TT1 (T1_COL1, T1_COL2, T1_COL3, T1_COL4) AS (
 				SELECT * FROM T1
 			),
-			TT2 AS (
+			TT2 (T2_COL1, T2_COL2) AS (
 				SELECT * FROM T2
 			)
 			SELECT * FROM TT1 JOIN TT2;
@@ -1669,27 +1669,27 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
+					Name:      "T1_COL1",
 					Sensitive: true,
 				},
 				{
-					Name:      "B",
+					Name:      "T1_COL2",
 					Sensitive: false,
 				},
 				{
-					Name:      "C",
+					Name:      "T1_COL3",
 					Sensitive: false,
 				},
 				{
-					Name:      "D",
+					Name:      "T1_COL4",
 					Sensitive: true,
 				},
 				{
-					Name:      "A",
+					Name:      "T2_COL1",
 					Sensitive: false,
 				},
 				{
-					Name:      "E",
+					Name:      "T2_COL2",
 					Sensitive: false,
 				},
 			},

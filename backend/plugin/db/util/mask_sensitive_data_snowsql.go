@@ -71,7 +71,17 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_sta
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
 			}
-			// TODO(zp): handle column list
+
+			if commandTableExpression.Column_list() != nil {
+				if len(result) != len(commandTableExpression.Column_list().AllColumn_name()) {
+					return nil, errors.Wrapf(err, "the length of the column list in cte is %d, but body returns %d fields", len(commandTableExpression.Column_list().AllColumn_name()), len(result))
+				}
+				for i, columnName := range commandTableExpression.Column_list().AllColumn_name() {
+					normalizedColumnName := parser.NormalizeObjectNamePart(columnName.Id_())
+					result[i].name = normalizedColumnName
+				}
+			}
+
 			allSetOperators := ctx.AllSet_operators()
 			for i, setOperator := range allSetOperators {
 				// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
