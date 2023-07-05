@@ -960,6 +960,19 @@ const routes: Array<RouteRecordRaw> = [
             },
             props: { content: true },
           },
+          {
+            path: "issue-v1/:issueSlug",
+            name: "workspace.issue.detail.v1",
+            meta: {
+              allowBookmark: true,
+              overrideTitle: true,
+            },
+            components: {
+              content: () => import("../views/IssueDetailV1.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true },
+          },
           // Resource name related routes.
           {
             path: "projects/:projectName",
