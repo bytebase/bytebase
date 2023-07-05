@@ -175,7 +175,7 @@ watch(
           });
         if (
           backupPolicy?.backupPlanPolicy?.schedule &&
-          backupPolicy?.backupPlanPolicy?.schedule != defaultBackupSchedule
+          backupPolicy?.backupPlanPolicy?.schedule !== defaultBackupSchedule
         ) {
           set.add("bb.feature.backup-policy");
         }
