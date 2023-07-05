@@ -1628,6 +1628,79 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for multiple CTE
+			statement: `
+			WITH TT1 AS (
+				SELECT * FROM T1
+			),
+			TT2 AS (
+				SELECT * FROM T2
+			)
+			SELECT * FROM TT1 JOIN TT2;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+				{
+					Name:      "A",
+					Sensitive: false,
+				},
+				{
+					Name:      "E",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for set operators(UNION, INTERSECT, ...)
+			statement:  `SELECT A, B FROM T1 UNION SELECT * FROM T2 INTERSECT SELECT * FROM T3`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for subquery in from cluase with as alias.
+			statement:  `SELECT T.A, A, B FROM (SELECT * FROM T1) AS T`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+			},
+		},
+		{
 			// Test for field name.
 			statement:  "SELECT $1, A, T.B AS N, T.C from T1 AS T",
 			schemaInfo: defaultDatabaseSchema,

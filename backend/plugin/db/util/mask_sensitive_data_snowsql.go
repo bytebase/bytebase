@@ -58,11 +58,82 @@ func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparse
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_statement(ctx snowparser.IQuery_statementContext) ([]fieldInfo, error) {
-	// TODO(zp): handle CTE.
-	// if ctx.With_expression() != nil {}
+	if ctx.With_expression() != nil {
+		// TODO(zp): handle recursive CTE
+		allCommandTableExpression := ctx.With_expression().AllCommon_table_expression()
+		originalDatabaseSchema := extractor.schemaInfo.DatabaseList
+		defer func() {
+			extractor.schemaInfo.DatabaseList = originalDatabaseSchema
+		}()
+
+		for _, commandTableExpression := range allCommandTableExpression {
+			normalizedCTEName := parser.NormalizeObjectNamePart(commandTableExpression.Id_())
+			result, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(commandTableExpression.Select_statement())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
+			}
+			// TODO(zp): handle column list
+			allSetOperators := ctx.AllSet_operators()
+			for i, setOperator := range allSetOperators {
+				// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
+				// So we only need to extract the sensitive fields of the right part.
+				right, err := extractor.extractSnowsqlSensitiveFieldSet_operator(setOperator)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, setOperator.GetStart().GetLine())
+				}
+				if len(result) != len(right) {
+					return nil, errors.Wrapf(err, "the number of columns in the select statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", commandTableExpression.Select_statement().GetStart().GetLine(), len(result), i+1, setOperator.GetStart().GetLine(), len(right))
+				}
+				for i := range right {
+					if !result[i].sensitive {
+						result[i].sensitive = right[i].sensitive
+					}
+				}
+			}
+			// Append to the extractor.schemaInfo.DatabaseList
+			columnList := make([]db.ColumnInfo, 0, len(result))
+			for _, field := range result {
+				columnList = append(columnList, db.ColumnInfo{
+					Name:      field.name,
+					Sensitive: field.sensitive,
+				})
+			}
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, db.TableSchema{
+				Name:       normalizedCTEName,
+				ColumnList: columnList,
+			})
+		}
+	}
 
 	selectStatement := ctx.Select_statement()
-	return extractor.extractSnowsqlSensitiveFieldsSelect_statement(selectStatement)
+	result, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(selectStatement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", selectStatement.GetStart().GetLine())
+	}
+
+	allSetOperators := ctx.AllSet_operators()
+	for i, setOperator := range allSetOperators {
+		// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
+		// So we only need to extract the sensitive fields of the right part.
+		right, err := extractor.extractSnowsqlSensitiveFieldSet_operator(setOperator)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, setOperator.GetStart().GetLine())
+		}
+		if len(result) != len(right) {
+			return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", selectStatement.GetStart().GetLine(), len(result), i+1, setOperator.GetStart().GetLine(), len(right))
+		}
+		for i := range right {
+			if !result[i].sensitive {
+				result[i].sensitive = right[i].sensitive
+			}
+		}
+
+	}
+	return result, nil
+}
+
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldSet_operator(ctx snowparser.ISet_operatorsContext) ([]fieldInfo, error) {
+	return extractor.extractSnowsqlSensitiveFieldsSelect_statement(ctx.Select_statement())
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_statement(ctx snowparser.ISelect_statementContext) ([]fieldInfo, error) {
@@ -121,10 +192,35 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 			if asAlias := columnElem.As_alias(); asAlias != nil {
 				result[len(result)-1].name = parser.NormalizeObjectNamePart(asAlias.Alias().Id_())
 			}
+		} else if expressionElem := iSelectListElem.Expression_elem(); expressionElem != nil {
+
 		}
 	}
 
 	return result, nil
+}
+
+// The closure of the IExprContext
+func (extractor *sensitiveFieldExtractor) isExprSensitive(ctx antlr.RuleContext) (string, bool, error) {
+	switch ctx := ctx.(type) {
+	case *snowparser.Primitive_expressionContext:
+		return ctx.GetText(), false, nil
+	case *snowparser.Function_callContext:
+		if v := ctx.Ranking_windowed_function(); v != nil {
+			return extractor.isExprSensitive(v)
+		}
+		panic("never reach here")
+	case *snowparser.Ranking_windowed_functionContext:
+		if v := ctx.Expr(); v != nil {
+			return extractor.isExprSensitive(v)
+		}
+		if v := ctx.Over_clause(); v != nil {
+			return extractor.isExprSensitive(v)
+		}
+		panic("never reach here")
+	case *snowparser.
+
+	}
 }
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFrom_clause(ctx snowparser.IFrom_clauseContext) ([]fieldInfo, error) {
@@ -241,15 +337,14 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 	var result []fieldInfo
 
 	if objectName := ctx.Object_name(); objectName != nil {
-		database, schema, table := normalizedObjectName(objectName, extractor.currentDatabase, "PUBLIC")
-		tableSchema, err := extractor.snowsqlFindTableSchema(database, schema, table)
+		normalizedDatabaseName, tableSchema, err := extractor.snowsqlFindTableSchema(objectName, extractor.currentDatabase, "PUBLIC")
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find column list of table %q.%q.%q", database, schema, table)
+			return nil, err
 		}
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, fieldInfo{
-				database:  database,
-				table:     table,
+				database:  normalizedDatabaseName,
+				table:     tableSchema.Name,
 				name:      column.Name,
 				sensitive: column.Sensitive,
 			})
@@ -267,9 +362,13 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 		return nil, nil
 	}
 
-	// TODO(zp): Handle the subquery.
 	if ctx.Subquery() != nil {
-		return nil, nil
+		// TODO(zp): handle recursive and multiple cte.
+		subqueryResult, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(ctx.Subquery().Query_statement().Select_statement())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract sensitive fields of subquery near line %d", ctx.Subquery().GetStart().GetLine())
+		}
+		result = append(result, subqueryResult...)
 	}
 
 	// TODO(zp): Handle the flatten table.
@@ -289,7 +388,18 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) (db.TableSchema, error) {
+func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName snowparser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, db.TableSchema, error) {
+	normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(objectName, "", "")
+	// For snowflake, we should find the table schema in cteOuterSchemaInfo by ascending order.
+	if normalizedDatabaseName == "" {
+		for _, tableSchema := range extractor.cteOuterSchemaInfo {
+			// TODO(zp): handle the public hack.
+			if normalizedTableName == tableSchema.Name {
+				return normalizedDatabaseName, tableSchema, nil
+			}
+		}
+	}
+	normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(objectName, fallbackDatabaseName, fallbackSchemaName)
 	normalizedSchemaTableName := fmt.Sprintf(`%s.%s`, normalizedSchemaName, normalizedTableName)
 	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
 		if databaseSchema.Name != normalizedDatabaseName {
@@ -299,10 +409,10 @@ func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(normalizedDatab
 			if normalizedSchemaTableName != tableSchema.Name {
 				continue
 			}
-			return tableSchema, nil
+			return normalizedDatabaseName, tableSchema, nil
 		}
 	}
-	return db.TableSchema{}, errors.Errorf(`table %s not found in database %s`, normalizedSchemaTableName, normalizedDatabaseName)
+	return "", db.TableSchema{}, errors.Errorf(`table %s not found in database %s`, normalizedSchemaTableName, normalizedDatabaseName)
 }
 
 func normalizedObjectName(objectName snowparser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, string, string) {
