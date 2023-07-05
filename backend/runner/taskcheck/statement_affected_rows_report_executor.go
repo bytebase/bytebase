@@ -55,7 +55,7 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 	if !api.IsTaskCheckReportSupported(instance.Engine) {
 		return nil, nil
 	}
-	sheet, err := s.store.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
 	}

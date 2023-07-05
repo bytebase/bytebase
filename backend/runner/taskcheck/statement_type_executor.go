@@ -54,7 +54,7 @@ func (exec *StatementTypeExecutor) Run(ctx context.Context, _ *store.TaskCheckRu
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, err
 	}
-	sheet, err := exec.store.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := exec.store.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
 	}
