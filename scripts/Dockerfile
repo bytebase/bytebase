@@ -20,6 +20,7 @@ RUN pnpm install --frozen-lockfile
 COPY ./frontend/ .
 # Copy the SQL review config files to the frontend
 COPY ./backend/plugin/advisor/config/ ./src/types
+COPY ./backend/enterprise/api/plan.yaml ./src/types/
 
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
