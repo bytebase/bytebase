@@ -33,7 +33,6 @@
               )
             "
           />
-          <div>{{ props.sensitiveDataList }}</div>
         </div>
       </BBTableCell>
       <BBTableCell class="w-16" :left-padding="showSensitiveColumn ? 2 : 4">
