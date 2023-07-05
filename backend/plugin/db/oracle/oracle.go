@@ -43,7 +43,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Oracle driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
@@ -56,6 +56,11 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	db, err := sql.Open("oracle", dsn)
 	if err != nil {
 		return nil, err
+	}
+	if config.SchemaTenantMode {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = %s", driver.databaseName)); err != nil {
+			return nil, errors.Wrapf(err, "failed to set current schema to %q", driver.databaseName)
+		}
 	}
 	driver.db = db
 	driver.databaseName = config.Database
