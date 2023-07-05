@@ -81,6 +81,7 @@ import {
   UNKNOWN_USER_NAME,
   ComposedDatabase,
   ComposedDatabaseGroup,
+  DEFAULT_PROJECT_V1_NAME,
 } from "../types";
 import {
   filterDatabaseV1ByKeyword,
@@ -203,9 +204,11 @@ const changeSearchText = (searchText: string) => {
 };
 
 const filteredDatabaseList = computed(() => {
-  let list = [...state.databaseV1List].filter((database) =>
-    isDatabaseV1Accessible(database, currentUserV1.value)
-  );
+  let list = [...state.databaseV1List]
+    .filter((database) => database.project !== DEFAULT_PROJECT_V1_NAME)
+    .filter((database) =>
+      isDatabaseV1Accessible(database, currentUserV1.value)
+    );
   const environment = selectedEnvironment.value;
   if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
     list = list.filter(
