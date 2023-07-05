@@ -4,20 +4,20 @@ import "testing"
 
 func TestGetValueWithKey(t *testing.T) {
 	tests := []struct {
-		data map[string]interface{}
+		data map[string]any
 		key  string
-		want interface{}
+		want any
 	}{
 		{
-			data: map[string]interface{}{
+			data: map[string]any{
 				"user": "test",
 			},
 			key:  "user",
 			want: "test",
 		},
 		{
-			data: map[string]interface{}{
-				"data": map[string]interface{}{
+			data: map[string]any{
+				"data": map[string]any{
 					"user": "test",
 				},
 			},
