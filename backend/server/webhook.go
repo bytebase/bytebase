@@ -1503,7 +1503,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
-	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+	sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: repoInfo.project.UID,
 		Name:       file,
@@ -1570,7 +1570,7 @@ func (s *Server) prepareIssueFromFile(
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
-			sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+			sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 				CreatorID:  api.SystemBotID,
 				ProjectUID: repoInfo.project.UID,
 				Name:       fileInfo.item.FileName,
@@ -1606,7 +1606,7 @@ func (s *Server) prepareIssueFromFile(
 			}
 		}
 
-		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
@@ -1656,7 +1656,7 @@ func (s *Server) prepareIssueFromFile(
 	}
 
 	if fileInfo.item.ItemType == vcs.FileItemTypeAdded {
-		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
@@ -1730,7 +1730,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			return nil
 		}
 
-		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: issue.Project.UID,
 			Name:       fileName,

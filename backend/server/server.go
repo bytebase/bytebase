@@ -1139,13 +1139,13 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		Source:      api.SheetFromBytebase,
 		Type:        api.SheetForSQL,
 	}
-	_, err = s.store.CreateSheetV2(ctx, sheetCreate)
+	_, err = s.store.CreateSheet(ctx, sheetCreate)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create sample sheet")
 	}
 
 	// Create a schema update issue and start with creating the sheet for the schema update.
-	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+	sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
 		ProjectUID:  project.UID,
