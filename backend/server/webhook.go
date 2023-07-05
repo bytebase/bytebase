@@ -420,7 +420,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			// of the xml file
 			// 2. If we can find it, then we will extract the sql from the mapper xml
 			// 3. match the environments in the configuration xml, look for the sql-review policy in the environment and apply it.
-			var isMybatisMapperXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis.org/dtd/mybatis-3-mapper.dtd`)
+			var isMybatisMapperXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis\.org/dtd/mybatis-3-mapper\.dtd`)
 
 			mybatisMapperXMLFiles := make(map[string]string)
 			var commitID string
@@ -2027,7 +2027,7 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *re
 	var mybatisMapperXMLFileData []*mybatisMapperXMLFileDatum
 	// isMybatisConfigXMLRegex is the regex to match the mybatis configuration XML file, if it can match the file content,
 	// we regard the file as the mybatis configuration XML file.
-	var isMybatisConfigXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis.org/dtd/mybatis-3-config.dtd`)
+	var isMybatisConfigXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis\.org/dtd/mybatis-3-config\.dtd`)
 	// configPathCache is the cache of the mybatis configuration XML file directory,
 	// the key is the mybatis mapper XML file ls-tree syntax directory, and value is the mybatis configuration XML file ls-tree syntax path.
 	configPathCache := make(map[string]string)
