@@ -962,6 +962,7 @@ func (extractor *sensitiveFieldExtractor) extractMySQLSensitiveField(statement s
 type fieldInfo struct {
 	name      string
 	table     string
+	schema    string
 	database  string
 	sensitive bool
 }

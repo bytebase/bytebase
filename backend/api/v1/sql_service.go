@@ -1136,10 +1136,15 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		}
 
 		databaseSchema := db.DatabaseSchema{
-			Name:      databaseName,
-			TableList: []db.TableSchema{},
+			Name:       databaseName,
+			SchemaList: []db.SchemaSchema{},
+			TableList:  []db.TableSchema{},
 		}
 		for _, schema := range dbSchema.Metadata.Schemas {
+			schemaSchema := db.SchemaSchema{
+				Name:      schema.Name,
+				TableList: []db.TableSchema{},
+			}
 			for _, table := range schema.Tables {
 				tableSchema := db.TableSchema{
 					Name:       table.Name,
@@ -1147,9 +1152,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				}
 				if instance.Engine == db.Postgres || instance.Engine == db.Redshift {
 					tableSchema.Name = fmt.Sprintf("%s.%s", schema.Name, table.Name)
-				}
-				if instance.Engine == db.Snowflake {
-					tableSchema.Name = fmt.Sprintf(`%s.%s`, schema.Name, table.Name)
 				}
 				for _, column := range table.Columns {
 					_, sensitive := columnMap[api.SensitiveData{
@@ -1162,11 +1164,24 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						Sensitive: sensitive,
 					})
 				}
-				databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+				if instance.Engine == db.Snowflake {
+					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
+				} else {
+					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+				}
+			}
+			if instance.Engine == db.Snowflake {
+				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 			}
 		}
-		if len(databaseSchema.TableList) > 0 {
-			isEmpty = false
+		if instance.Engine == db.Snowflake {
+			if len(databaseSchema.SchemaList) > 0 {
+				isEmpty = false
+			}
+		} else {
+			if len(databaseSchema.TableList) > 0 {
+				isEmpty = false
+			}
 		}
 		result.DatabaseList = append(result.DatabaseList, databaseSchema)
 	}
