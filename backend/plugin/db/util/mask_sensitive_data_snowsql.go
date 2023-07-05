@@ -172,7 +172,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 		selectList = ctx.Select_clause().Select_list_no_top().Select_list()
 	}
 	for _, iSelectListElem := range selectList.AllSelect_list_elem() {
-		// TODO(zp): handle expression elem
 		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
 			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string
 			if v := columnElem.Alias(); v != nil {
@@ -826,7 +825,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 	}
 
 	if ctx.Subquery() != nil {
-		// TODO(zp): handle recursive and multiple cte.
+		// TODO(zp): handle recursive cte.
 		subqueryResult, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(ctx.Subquery().Query_statement().Select_statement())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields of subquery near line %d", ctx.Subquery().GetStart().GetLine())
@@ -856,7 +855,6 @@ func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName snow
 	// For snowflake, we should find the table schema in cteOuterSchemaInfo by ascending order.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
 		for _, tableSchema := range extractor.cteOuterSchemaInfo {
-			// TODO(zp): handle the public hack.
 			if normalizedTableName == tableSchema.Name {
 				return normalizedDatabaseName, tableSchema, nil
 			}
