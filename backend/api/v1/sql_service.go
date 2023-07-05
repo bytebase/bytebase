@@ -658,18 +658,18 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
 		}
 
-		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase, false /* skipNotFoundDatabase */)
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	case db.Postgres:
-		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase, false /* skipNotFoundDatabase */)
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	case db.Oracle:
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase, false /* skipNotFoundDatabase */)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
@@ -687,7 +687,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			for database := range databaseMap {
 				databaseList = append(databaseList, database)
 			}
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase, true /* skipNotFoundDatabase */)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
@@ -943,18 +943,18 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
 			}
 
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase, false /* skipNotFoundDatabase */)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		case db.Postgres, db.Redshift:
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase, false /* skipNotFoundDatabase */)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		case db.Oracle:
 			if instance.Options == nil || !instance.Options.SchemaTenantMode {
-				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase, false /* skipNotFoundDatabase */)
+				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 				if err != nil {
 					return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 				}
@@ -972,7 +972,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				for database := range databaseMap {
 					databaseList = append(databaseList, database)
 				}
-				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase, true /* skipNotFoundDatabase */)
+				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
 				if err != nil {
 					return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 				}
@@ -1034,7 +1034,7 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 	return activity, nil
 }
 
-func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store.InstanceMessage, databaseList []string, currentDatabase string, skipNotFoundDatabase bool) (*db.SensitiveSchemaInfo, error) {
+func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store.InstanceMessage, databaseList []string, currentDatabase string) (*db.SensitiveSchemaInfo, error) {
 	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
 	isEmpty := true
 	result := &db.SensitiveSchemaInfo{
@@ -1058,9 +1058,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			return nil, err
 		}
 		if database == nil {
-			if skipNotFoundDatabase {
-				continue
-			}
 			return nil, errors.Errorf("database %q not found", databaseName)
 		}
 
