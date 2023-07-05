@@ -113,7 +113,7 @@ export const provideIssueReview = (
 
   const update = () => {
     if (legacyIssue.value) {
-      store.fetchReviewByIssue(legacyIssue.value);
+      store.fetchIssueByLegacyIssue(legacyIssue.value);
     }
   };
 
