@@ -830,7 +830,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
-	vcsID, err := strconv.ParseInt(request.ProjectGitopsInfo.VcsUid, 10, 64)
+	vcsID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
 	}
