@@ -125,6 +125,7 @@
         "watermark": "Marca de agua",
         "sso": "Inicio de Sesión Único (SSO)",
         "2fa": "Autenticación de dos factores (2FA)",
+        "ssh-tunnel": "SSH Tunnel",
         "custom-approval": "Aprobación personalizada",
         "dba-workflow": "Flujo de Trabajo DBA",
         "dba-workflow-tooltip": "Solo permita que el DBA y el Propietario creen o transfieran la base de datos",

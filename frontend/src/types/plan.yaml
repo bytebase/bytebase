@@ -39,14 +39,15 @@ categoryList:
       - custom-approval
       - sso
       - 2fa
+      - ssh-tunnel
       - dba-workflow
       - environment-tier
       - sensitive-data
       - data-access-control
       - watermark
       - audit-log
-      - anomaly-detection
       - disallow-signup
+      - anomaly-detection
   - type: bespoke
     featureList:
       - support
@@ -255,6 +256,7 @@ planList:
       - type: approval-and-backup-policy
       - type: sso
       - type: 2fa
+      - type: ssh-tunnel
       - type: custom-approval
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
