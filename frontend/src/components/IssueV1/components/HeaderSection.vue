@@ -1,5 +1,5 @@
 <template>
-  <div class="md:flex md:items-center md:justify-between">
+  <div class="md:flex md:items-center md:justify-between px-4 pb-4">
     <div class="flex-1 min-w-0">
       <div class="flex flex-col">
         <div class="flex items-center gap-x-2">
@@ -120,7 +120,7 @@ import { reactive, watch, computed } from "vue";
 
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import {
-  activeTaskOfRollout,
+  activeTaskInRollout,
   extractUserResourceName,
   extractUserUID,
   isDatabaseRelatedIssue,
@@ -209,7 +209,7 @@ const issueTaskStatus = computed(() => {
     return Task_Status.PENDING_APPROVAL;
   }
 
-  return activeTaskOfRollout(issue.value.rolloutEntity).status;
+  return activeTaskInRollout(issue.value.rolloutEntity).status;
 });
 
 watch(

@@ -1,10 +1,16 @@
 <template>
+  <div class="issue-debug">
+    <div>activeStage: {{ activeStage.name }} / {{ activeStage.title }}</div>
+    <div>
+      selectedStage: {{ selectedStage.name }} / {{ selectedStage.title }}
+    </div>
+  </div>
   <div class="max-w-full lg:flex divide-y lg:divide-y-0">
     <div class="stage-item" :class="stageClass(stage, 0)">
       <TaskStatusIcon
         :create="isCreating"
         :active="isActiveStage(stage)"
-        :status="stage.tasks[0]?.status ?? Task_Status.PENDING"
+        :status="activeTaskInStageV1(stage).status"
         :ignore-task-check-status="true"
       />
 
@@ -38,16 +44,16 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
 import { NPopover } from "naive-ui";
 
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
-// import { activeTaskInStage } from "@/utils";
+import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
 import { useIssueContext } from "../logic";
-import { Stage, Task_Status } from "@/types/proto/v1/rollout_service";
-import { computed } from "vue";
+import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 
-const { isCreating, issue } = useIssueContext();
+const { isCreating, issue, activeStage, selectedStage } = useIssueContext();
 
 const stage = computed(() => {
   return issue.value.rolloutEntity.stages[0] ?? Stage.fromJSON({});
@@ -57,29 +63,20 @@ const isValidStage = (stage: Stage, index: number): boolean => {
   return true; // todo
 };
 
-const isSelectedStage = (stage: Stage): boolean => {
-  return true; // todo
-  // return stage === selectedStage.value;
-};
-
 const isActiveStage = (stage: Stage): boolean => {
   if (isCreating.value) {
     // In create mode we don't have an ActiveStage
     return false;
   }
 
-  return true; // todo
+  const activeTask = activeTaskInRollout(issue.value.rolloutEntity);
+  const taskFound = stage.tasks.find((t) => t.uid === activeTask.uid);
+  if (taskFound) {
+    // A stage is "Active" if the ActiveTaskOfPipeline is inside this stage
+    return true;
+  }
 
-  // const activeTask = activeTaskOfPipeline((issue.value as Issue).pipeline!);
-  // const taskFound = (stage as Stage).taskList.find(
-  //   (t) => t.id === activeTask.id
-  // );
-  // if (taskFound) {
-  //   // A stage is "Active" if the ActiveTaskOfPipeline is inside this stage
-  //   return true;
-  // }
-
-  // return false;
+  return false;
 };
 
 const stageClass = (stage: Stage, index: number): string[] => {
@@ -87,10 +84,9 @@ const stageClass = (stage: Stage, index: number): string[] => {
 
   if (!isValidStage(stage, index)) classList.push("invalid");
   if (isCreating.value) classList.push("create");
-  if (isSelectedStage(stage)) classList.push("selected");
   if (isActiveStage(stage)) classList.push("active");
-  // const task = activeTaskOfStage(stage as Stage);
-  // classList.push(`status_${task.status.toLowerCase()}`);
+  const task = activeTaskInStageV1(stage);
+  classList.push(`status_${task_StatusToJSON(task.status).toLowerCase()}`);
 
   return classList;
 };
@@ -124,9 +120,6 @@ const onClickStage = (stage: Stage, index: number) => {
 
 .stage-item .text {
   @apply cursor-pointer ml-4 flex-col space-y-1;
-}
-.stage-item.selected .text .with-underline {
-  @apply underline;
 }
 .stage-item.active .text {
   @apply font-bold;

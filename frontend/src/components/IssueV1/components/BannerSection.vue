@@ -47,7 +47,7 @@
 import { computed } from "vue";
 import dayjs from "dayjs";
 
-import { activeTaskOfRollout, isDatabaseRelatedIssue } from "@/utils";
+import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { useIssueContext } from "../logic";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
@@ -83,7 +83,7 @@ const showPendingRollout = computed(() => {
   //   return false;
   // }
 
-  const task = activeTaskOfRollout(issue.value.rolloutEntity);
+  const task = activeTaskInRollout(issue.value.rolloutEntity);
   return task.status === Task_Status.PENDING_APPROVAL;
 });
 
@@ -93,7 +93,7 @@ const showEarliestAllowedTimeBanner = computed(() => {
     return false;
   }
 
-  const task = activeTaskOfRollout(issue.value.rolloutEntity);
+  const task = activeTaskInRollout(issue.value.rolloutEntity);
 
   if (task.status !== Task_Status.PENDING) {
     return false;
@@ -105,7 +105,7 @@ const showEarliestAllowedTimeBanner = computed(() => {
 });
 
 const earliestAllowedTime = computed(() => {
-  // const task = activeTaskOfRollout(issue.value.rolloutEntity);
+  // const task = activeTaskInRollout(issue.value.rolloutEntity);
   const tz = "UTC" + dayjs().format("ZZ");
   return dayjs().format(`YYYY-MM-DD HH:mm:ss ${tz}`);
   // return dayjs(task.earliestAllowedTs * 1000).format(

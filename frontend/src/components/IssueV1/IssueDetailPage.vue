@@ -1,15 +1,15 @@
 <template>
-  <div>
+  <div class="divide-y">
     <BannerSection v-if="!isCreating" />
 
-    <HeaderSection />
+    <HeaderSection class="!border-t-0" />
 
     <StageSection />
 
     <TaskListSection />
   </div>
 
-  <div class="bg-red-200/50">
+  <div class="issue-debug">
     <pre class="text-xs">{{ JSON.stringify(issue, null, "  ") }}</pre>
   </div>
 </template>

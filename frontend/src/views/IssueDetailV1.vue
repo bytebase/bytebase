@@ -30,7 +30,11 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import { issueServiceClient } from "@/grpcweb";
 import { useIssueStore, useProjectV1Store } from "@/store";
-import { IssueDetailPage, provideIssueContext } from "@/components/IssueV1";
+import {
+  IssueDetailPage,
+  provideIssueContext,
+  useBaseIssueContext,
+} from "@/components/IssueV1";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -59,10 +63,11 @@ const issueUID = computed(() => {
 });
 
 const isCreating = computed(() => issueUID.value === String(EMPTY_ID));
-
+const ready = ref(false);
 const issue = ref(unknownIssue());
 
 const tryFetchIssue = async (uid: string) => {
+  ready.value = false;
   const legacyIssue = await useIssueStore().fetchIssueById(Number(uid));
   // console.log("legacyIssue", legacyIssue);
 
@@ -99,6 +104,7 @@ const tryFetchIssue = async (uid: string) => {
     project,
     projectEntity,
   };
+  ready.value = true;
 };
 
 watchEffect(() => {
@@ -120,6 +126,11 @@ provideIssueContext(
   {
     isCreating,
     issue,
+    ...useBaseIssueContext({
+      isCreating,
+      ready,
+      issue,
+    }),
   },
   true /* root */
 );
@@ -182,3 +193,9 @@ const tryCreate = async () => {
   }
 };
 </script>
+
+<style lang="postcss">
+.issue-debug {
+  @apply bg-red-200/50 font-mono text-xs;
+}
+</style>

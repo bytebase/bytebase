@@ -1,4 +1,8 @@
 <template>
+  <div class="issue-debug">
+    <div>activeTask: {{ activeTask.name }} / {{ activeTask.title }}</div>
+    <div>selectedTask: {{ selectedTask.name }} / {{ selectedTask.title }}</div>
+  </div>
   <div v-if="shouldShowTaskBar" class="relative">
     <div
       ref="taskBar"
@@ -29,6 +33,7 @@
                   v-if="isActiveTask(task)"
                   class="w-5 h-5 inline-block mb-0.5"
                 />
+                <span class="issue-debug">#{{ task.uid }}</span>
                 <span>{{ databaseForTask(task).databaseName }}</span>
                 <span v-if="schemaVersionForTask(task)" class="schema-version">
                   ({{ schemaVersionForTask(task) }})
@@ -55,7 +60,7 @@
 import { computed, ref } from "vue";
 
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
-import { activeTaskOfRollout, extractDatabaseResourceName } from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { InstanceV1Name } from "@/components/v2";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
@@ -70,7 +75,8 @@ import { unknownDatabase } from "@/types";
 
 const databaseStore = useDatabaseV1Store();
 
-const { isCreating, issue } = useIssueContext();
+const { isCreating, issue, events, activeTask, selectedTask } =
+  useIssueContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 
@@ -86,13 +92,12 @@ const shouldShowTaskBar = computed(() => {
 });
 
 const isSelectedTask = (task: Task): boolean => {
-  // return task === selectedTask.value;
-  return false;
+  return task === selectedTask.value;
 };
 
 const isActiveTask = (task: Task): boolean => {
   if (isCreating.value) return false;
-  return activeTaskOfRollout(rollout.value).uid === task.uid;
+  return task === activeTask.value;
 };
 
 const extractCoreDatabaseInfoFromDatabaseCreateTask = (task: Task) => {
@@ -182,6 +187,7 @@ const taskClass = (task: Task) => {
 // });
 
 const onClickTask = (task: Task, index: number) => {
+  events.emit("select-task", { task });
   // const stageId = selectedStageIdOrIndex.value;
   // const taskName = task.name;
   // const taskId = isCreating ? index + 1 : (task as Task).id;
