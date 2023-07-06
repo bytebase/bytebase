@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-x-2">
+  <div class="flex items-center flex-wrap gap-2">
     <div class="textlabel">
       {{ $t("common.database") }}
     </div>
@@ -21,12 +21,9 @@
             : $t("task.database-create.pending")
         }}
       </span>
-
-      <InstanceV1Name
-        :instance="coreDatabaseInfo.instanceEntity"
-        :plain="true"
-      />
     </div>
+
+    <InstanceV1Name :instance="coreDatabaseInfo.instanceEntity" :plain="true" />
   </div>
 </template>
 
