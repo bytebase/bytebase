@@ -1,6 +1,6 @@
 <template>
-  <div v-if="show" class="max-w-full lg:flex divide-y lg:divide-y-0">
-    <div class="stage-item" :class="stageClass(stage)">
+  <div v-if="show" class="w-full px-4 py-2 flex flex-col gap-y-2">
+    <div class="stage" :class="stageClass(stage)">
       <TaskStatusIcon
         :create="isCreating"
         :active="isActiveStage(stage)"
@@ -31,18 +31,18 @@
         <span>Missing SQL statement</span>
       </NTooltip>
     </div>
-  </div>
 
-  <div v-if="show" class="lg:flex items-center justify-between">
-    <div
-      class="flex flex-col lg:flex-row lg:flex-wrap lg:items-center justify-start gap-y-2 gap-x-4 py-2 px-4 text-sm"
-    >
-      <StageSelect />
-      <DatabaseInfo />
-      <EnvironmentInfo />
-    </div>
-    <div class="lg:flex items-center justify-end">
-      <div class="issue-debug">(put `When` here if needed)</div>
+    <div class="lg:flex items-center justify-between">
+      <div
+        class="flex flex-col lg:flex-row lg:flex-wrap lg:items-center justify-start gap-y-2 gap-x-4 text-sm"
+      >
+        <StageSelect />
+        <DatabaseInfo />
+        <EnvironmentInfo />
+      </div>
+      <div class="lg:flex items-center justify-end">
+        <div class="issue-debug">(put `When` here if needed)</div>
+      </div>
     </div>
   </div>
 </template>
@@ -126,35 +126,35 @@ const taskTitleOfStage = (stage: Stage) => {
 </script>
 
 <style scoped lang="postcss">
-.stage-item {
-  @apply cursor-default flex items-center justify-start w-full px-4 py-2 text-sm font-medium relative;
+.stage {
+  @apply cursor-default flex items-center justify-start w-full text-sm font-medium relative;
   @apply lg:w-auto lg:flex-1;
 }
-.stage-item.invalid {
+.stage.invalid {
   @apply pr-10;
 }
 
-.stage-item .text {
+.stage .text {
   @apply cursor-pointer ml-4 flex-col space-y-1;
 }
-.stage-item.active .text {
+.stage.active .text {
   @apply font-bold;
 }
-.stage-item.status_done .text {
+.stage.status_done .text {
   @apply text-control;
 }
-.stage-item.status_pending .text,
-.stage-item.status_pending_approval .text {
+.stage.status_pending .text,
+.stage.status_pending_approval .text {
   @apply text-control;
 }
-.stage-item.active.status_pending .text,
-.stage-item.active.status_pending_approval .text {
+.stage.active.status_pending .text,
+.stage.active.status_pending_approval .text {
   @apply text-info;
 }
-.stage-item.status_running .text {
+.stage.status_running .text {
   @apply text-info;
 }
-.stage-item.status_failed .text {
+.stage.status_failed .text {
   @apply text-red-500;
 }
 </style>
