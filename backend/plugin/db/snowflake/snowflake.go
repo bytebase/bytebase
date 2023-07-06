@@ -282,8 +282,8 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
-	return stmt
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+	// return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+	return fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, limit)
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {

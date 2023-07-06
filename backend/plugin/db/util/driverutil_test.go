@@ -1854,5 +1854,4 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		require.NoError(t, err, test.statement)
 		require.Equal(t, test.fieldList, res, test.statement)
 	}
-
 }

@@ -43,7 +43,7 @@ func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparse
 		return
 	}
 
-	result, err := l.extractor.extractSnowsqlSensitiveFieldsQuery_statement(ctx.Query_statement())
+	result, err := l.extractor.extractSnowsqlSensitiveFieldsQueryStatement(ctx.Query_statement())
 	if err != nil {
 		l.err = err
 		return
@@ -56,7 +56,7 @@ func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparse
 	}
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_statement(ctx snowparser.IQuery_statementContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx snowparser.IQuery_statementContext) ([]fieldInfo, error) {
 	if ctx.With_expression() != nil {
 		// TODO(zp): handle recursive CTE
 		allCommandTableExpression := ctx.With_expression().AllCommon_table_expression()
@@ -67,7 +67,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_sta
 
 		for _, commandTableExpression := range allCommandTableExpression {
 			normalizedCTEName := parser.NormalizeObjectNamePart(commandTableExpression.Id_())
-			result, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(commandTableExpression.Select_statement())
+			result, err := extractor.extractSnowsqlSensitiveFieldsSelectStatement(commandTableExpression.Select_statement())
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
 			}
@@ -86,7 +86,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_sta
 			for i, setOperator := range allSetOperators {
 				// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
 				// So we only need to extract the sensitive fields of the right part.
-				right, err := extractor.extractSnowsqlSensitiveFieldSet_operator(setOperator)
+				right, err := extractor.extractSnowsqlSensitiveFieldSetOperator(setOperator)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, setOperator.GetStart().GetLine())
 				}
@@ -115,7 +115,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_sta
 	}
 
 	selectStatement := ctx.Select_statement()
-	result, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(selectStatement)
+	result, err := extractor.extractSnowsqlSensitiveFieldsSelectStatement(selectStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", selectStatement.GetStart().GetLine())
 	}
@@ -124,7 +124,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_sta
 	for i, setOperator := range allSetOperators {
 		// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
 		// So we only need to extract the sensitive fields of the right part.
-		right, err := extractor.extractSnowsqlSensitiveFieldSet_operator(setOperator)
+		right, err := extractor.extractSnowsqlSensitiveFieldSetOperator(setOperator)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, setOperator.GetStart().GetLine())
 		}
@@ -140,11 +140,11 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQuery_sta
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldSet_operator(ctx snowparser.ISet_operatorsContext) ([]fieldInfo, error) {
-	return extractor.extractSnowsqlSensitiveFieldsSelect_statement(ctx.Select_statement())
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldSetOperator(ctx snowparser.ISet_operatorsContext) ([]fieldInfo, error) {
+	return extractor.extractSnowsqlSensitiveFieldsSelectStatement(ctx.Select_statement())
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_statement(ctx snowparser.ISelect_statementContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectStatement(ctx snowparser.ISelect_statementContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -152,7 +152,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 	var fromFieldList []fieldInfo
 	var err error
 	if ctx.Select_optional_clauses().From_clause() != nil {
-		fromFieldList, err = extractor.extractSnowsqlSensitiveFieldsFrom_clause(ctx.Select_optional_clauses().From_clause())
+		fromFieldList, err = extractor.extractSnowsqlSensitiveFieldsFromClause(ctx.Select_optional_clauses().From_clause())
 		if err != nil {
 			return nil, err
 		}
@@ -242,7 +242,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelect_st
 	return result, nil
 }
 
-// The closure of the IExprContext
+// The closure of the IExprContext.
 func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleContext) (string, bool, error) {
 	switch ctx := ctx.(type) {
 	case *snowparser.ExprContext:
@@ -496,7 +496,9 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", searchCondition.GetText(), searchCondition.GetStart().GetLine())
 				}
-				return ctx.GetText(), isSensitive, nil
+				if isSensitive {
+					return ctx.GetText(), true, nil
+				}
 			}
 			return ctx.GetText(), false, nil
 		}
@@ -533,7 +535,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 		return ctx.GetText(), false, nil
 	case *snowparser.SubqueryContext:
-		fields, err := extractor.extractSnowsqlSensitiveFieldsQuery_statement(ctx.Query_statement())
+		fields, err := extractor.extractSnowsqlSensitiveFieldsQueryStatement(ctx.Query_statement())
 		if err != nil {
 			return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.GetText(), ctx.GetStart().GetLine())
 		}
@@ -685,15 +687,15 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 	panic("never reach here")
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFrom_clause(ctx snowparser.IFrom_clauseContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFromClause(ctx snowparser.IFrom_clauseContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
-	return extractor.extractSnowsqlSensitiveFieldsTable_sources(ctx.Table_sources())
+	return extractor.extractSnowsqlSensitiveFieldsTableSources(ctx.Table_sources())
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sources(ctx snowparser.ITable_sourcesContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSources(ctx snowparser.ITable_sourcesContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -701,7 +703,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sou
 	var result []fieldInfo
 	// If there are multiple table sources, the default join type is CROSS JOIN.
 	for _, tableSource := range allTableSources {
-		tableSourceResult, err := extractor.extractSnowsqlSensitiveFieldsTable_source(tableSource)
+		tableSourceResult, err := extractor.extractSnowsqlSensitiveFieldsTableSource(tableSource)
 		if err != nil {
 			return nil, err
 		}
@@ -710,14 +712,14 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sou
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_source(ctx snowparser.ITable_sourceContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSource(ctx snowparser.ITable_sourceContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
-	return extractor.extractSnowsqlSensitiveFieldsTable_source_item_joined(ctx.Table_source_item_joined())
+	return extractor.extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx.Table_source_item_joined())
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_source_item_joined(ctx snowparser.ITable_source_item_joinedContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx snowparser.ITable_source_item_joinedContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -725,21 +727,21 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sou
 	var left []fieldInfo
 	var err error
 	if ctx.Object_ref() != nil {
-		left, err = extractor.extractSnowsqlSensitiveFieldsObject_ref(ctx.Object_ref())
+		left, err = extractor.extractSnowsqlSensitiveFieldsObjectRef(ctx.Object_ref())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the object ref near line %d", ctx.Object_ref().GetStart().GetLine())
 		}
 	}
 
 	if ctx.Table_source_item_joined() != nil {
-		left, err = extractor.extractSnowsqlSensitiveFieldsTable_source_item_joined(ctx.Table_source_item_joined())
+		left, err = extractor.extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx.Table_source_item_joined())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the table source item joined near line %d", ctx.Table_source_item_joined().GetStart().GetLine())
 		}
 	}
 
 	for i, joinClause := range ctx.AllJoin_clause() {
-		left, err = extractor.extractSnowsqlSensitiveFieldsJoin_clause(joinClause, left)
+		left, err = extractor.extractSnowsqlSensitiveFieldsJoinClause(joinClause, left)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the #%d join clause near line %d", i+1, joinClause.GetStart().GetLine())
 		}
@@ -748,8 +750,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTable_sou
 	return left, nil
 }
 
-// extractSnowsqlSensitiveFieldsJoin_clause extracts sensitive fields from join clause, and return the
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoin_clause(ctx snowparser.IJoin_clauseContext, left []fieldInfo) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoinClause(ctx snowparser.IJoin_clauseContext, left []fieldInfo) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -757,7 +758,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoin_clau
 	// Snowflake has 6 types of join:
 	// INNER JOIN, LEFT OUTER JOIN, RIGHT OUTER JOIN, FULL OUTER JOIN, CROSS JOIN, and NATURAL JOIN.
 	// Only the result(column num) of NATURAL JOIN may be reduced.
-	right, err := extractor.extractSnowsqlSensitiveFieldsObject_ref(ctx.Object_ref())
+	right, err := extractor.extractSnowsqlSensitiveFieldsObjectRef(ctx.Object_ref())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the right part of the JOIN near line %d", ctx.Object_ref().GetStart().GetLine())
 	}
@@ -791,7 +792,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoin_clau
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_ref(ctx snowparser.IObject_refContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx snowparser.IObject_refContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -826,7 +827,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObject_re
 
 	if ctx.Subquery() != nil {
 		// TODO(zp): handle recursive cte.
-		subqueryResult, err := extractor.extractSnowsqlSensitiveFieldsSelect_statement(ctx.Subquery().Query_statement().Select_statement())
+		subqueryResult, err := extractor.extractSnowsqlSensitiveFieldsSelectStatement(ctx.Subquery().Query_statement().Select_statement())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields of subquery near line %d", ctx.Subquery().GetStart().GetLine())
 		}
@@ -1003,7 +1004,7 @@ func normalizedFullColumnName(ctx snowparser.IFull_column_nameContext) (normaliz
 	if ctx.GetCol_name() != nil {
 		normalizedColumnName = parser.NormalizeObjectNamePart(ctx.GetCol_name())
 	}
-	return
+	return normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName
 }
 
 func normalizedObjectName(objectName snowparser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string) {
