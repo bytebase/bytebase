@@ -587,7 +587,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}, nil
 	}
 
-	var accessToken, refreshToken string
+	var accessToken string
+	var refreshToken string
 	if loginUser.Type == api.EndUser {
 		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {

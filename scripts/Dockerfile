@@ -33,10 +33,8 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 RUN --mount=type=cache,target=/frontend-build/node_modules,rw \
     pnpm "${RELEASE}-docker"
 
-# NOTES: do update ARG GO_VERSION when update golang builder image tag
 FROM --platform=${BUILDPLATFORM} golang:1.20.5 as backend
 
-ARG GO_VERSION="1.20.5"
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION="development"
@@ -71,7 +69,7 @@ COPY ./scripts/VERSION .
 # go-sqlite3 requires CGO_ENABLED
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
-    VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
+    GO_VERSION=`go env GOVERSION` && VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     --tags "${RELEASE},embed_frontend" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
@@ -105,9 +103,9 @@ RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase 
 # Our HEALTHCHECK instruction in dockerfile needs curl.
 # Install psmisc to use killall command in demo.sh used by render.com.
 RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
+    apt-get update -qq && \
     apt-get install --no-install-recommends --fix-missing -y locales curl psmisc postgresql-client procps && \
-    rm -rf /var/lib/apt/lists/*
+    rm -r /var/lib/apt/lists /var/cache/apt/archives
 
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").

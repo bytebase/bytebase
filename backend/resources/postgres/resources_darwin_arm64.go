@@ -2,5 +2,5 @@ package postgres
 
 import "embed"
 
-//go:embed postgres-darwin-arm64.txz
+//go:embed postgres-darwin-amd64.txz
 var resources embed.FS

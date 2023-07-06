@@ -38,11 +38,10 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 
 // Install installs mongoutil in resourceDir.
 func Install(resourceDir string) (string, error) {
-	tarName, version, err := getTarNameAndVersion()
+	tarName, version, err := utils.GetTarNameAndVersion("mongoutil", ".txz")
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get tarball name and version")
+		return "", err
 	}
-
 	mongoutilDir := path.Join(resourceDir, version)
 	if _, err := os.Stat(mongoutilDir); err != nil {
 		if !os.IsNotExist(err) {
@@ -54,7 +53,6 @@ func Install(resourceDir string) (string, error) {
 			return "", errors.Wrap(err, "cannot install mongoutil")
 		}
 	}
-
 	return path.Join(mongoutilDir, "bin"), nil
 }
 

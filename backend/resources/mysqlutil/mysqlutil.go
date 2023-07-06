@@ -1,4 +1,3 @@
-// Package mysqlutil provides the resource for MySQL utility packages.
 package mysqlutil
 
 import (
@@ -8,8 +7,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"runtime"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -64,27 +61,12 @@ func getExecutableVersion(binName binaryName, binDir string) (string, error) {
 	return v.String(), nil
 }
 
-func getTarNameAndVersion() (tarname string, version string, err error) {
-	var tarName string
-	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
-		tarName = "mysqlutil-8.0.28-macos11-arm64.tar.gz"
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "mysqlutil-8.0.28-macos11-x86_64.tar.gz"
-	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		tarName = "mysqlutil-8.0.28-linux-glibc2.17-x86_64.tar.gz"
-	default:
-		return "", "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
-	}
-	return tarName, strings.TrimSuffix(tarName, "tar.gz"), nil
-}
-
 // Install will extract the mysqlutil tar in resourceDir.
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
-	tarName, version, err := getTarNameAndVersion()
+	tarName, version, err := utils.GetTarNameAndVersion("mysqlutil-8.0.32", ".tar.gz")
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get tarball name and version")
+		return "", err
 	}
 
 	mysqlutilDir := path.Join(resourceDir, version)

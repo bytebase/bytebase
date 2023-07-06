@@ -2,6 +2,7 @@ version: "3.7"
 
 services:
   bb:
+    # platform: linux/amd64
     image: bytebase/bytebase:${BB_VERSION}
     init: true
     container_name: bytebase

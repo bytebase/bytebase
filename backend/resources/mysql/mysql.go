@@ -101,16 +101,25 @@ func Install(resourceDir string) (string, error) {
 	var extractFn func(io.Reader, string) error
 	switch {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
-		tarName = "mysql-8.0.28-macos11-arm64.tar.gz"
-		version = "mysql-8.0.28-macos11-arm64"
+		tarName = "mysql-8.0.32-macos13-arm64.tar.gz"
+		version = "mysql-8.0.32-macos13-arm64"
+		extractFn = utils.ExtractTarGz
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
+		tarName = "mysql-8.0.32-macos13-x86_64.tar.gz"
+		version = "mysql-8.0.32-macos13-x86_64"
+		extractFn = utils.ExtractTarGz
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		tarName = "mysql-8.0.32-linux-glibc2.17-aarch64.tar.gz"
+		version = "mysql-8.0.32-linux-glibc2.17-aarch64"
 		extractFn = utils.ExtractTarGz
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		tarName = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz"
-		version = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal"
+		tarName = "mysql-8.0.32-linux-glibc2.17-x86_64-minimal.tar.xz"
+		version = "mysql-8.0.32-linux-glibc2.17-x86_64-minimal"
 		extractFn = utils.ExtractTarXz
 	default:
 		return "", errors.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
 	}
+
 	mysqlBinDir := filepath.Join(resourceDir, version)
 	needInstall := false
 	if _, err := os.Stat(mysqlBinDir); err != nil {

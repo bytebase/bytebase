@@ -29,7 +29,6 @@ if [ "${BUILDX_ENABLED}" == "true" ]; then
     DOCKER_BUILD_CMD="buildx build --platform ${BUILD_PLATFORMS}"
     DOCKER_PUSH_CMD_HELP="$ docker ${DOCKER_BUILD_CMD} -f ./scripts/Dockerfile \
     --build-arg VERSION=${VERSION} \
-    --build-arg GO_VERSION="$(go version)" \
     --build-arg GIT_COMMIT="$(git rev-parse HEAD)"\
     --build-arg BUILD_TIME="${BUILD_TIME}" \
     --build-arg BUILD_USER="$(id -u -n)" \
@@ -37,12 +36,11 @@ if [ "${BUILDX_ENABLED}" == "true" ]; then
     --push ."
 else
     DOCKER_BUILD_CMD="build"
-    DOCKER_PUSH_CMD_HELP="$$ docker tag bytebase/bytebase bytebase/bytebase:${VERSION}; docker push bytebase/bytebase:${VERSION}"
+    DOCKER_PUSH_CMD_HELP="$ docker tag bytebase/bytebase bytebase/bytebase:${VERSION}; docker push bytebase/bytebase:${VERSION}"
 fi
 
 DOCKER_BUILDKIT=1 docker ${DOCKER_BUILD_CMD} -f ./scripts/Dockerfile \
     --build-arg VERSION=${VERSION} \
-    --build-arg GO_VERSION="$(go version)" \
     --build-arg GIT_COMMIT="$(git rev-parse HEAD)"\
     --build-arg BUILD_TIME="${BUILD_TIME}" \
     --build-arg BUILD_USER="$(id -u -n)" \
