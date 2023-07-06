@@ -548,6 +548,7 @@
             "openai-key": {
               "self": "OpenAI API Key",
               "description": "提供 OpenAI API Key 以在 SQL 编辑器中开启 ChatSQL 的能力。{viewDoc}",
+              "find-my-key": "找到我的 Key",
               "placeholder": "OpenAI API Key 通常以 sk-***** 开头"
             },
             "openai-endpoint": {
