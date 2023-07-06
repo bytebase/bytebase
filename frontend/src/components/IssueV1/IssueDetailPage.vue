@@ -14,7 +14,7 @@
 
     <DescriptionSection />
 
-    <ActivitySection />
+    <ActivitySection v-if="!isCreating" />
   </div>
 
   <div class="issue-debug">
