@@ -1,12 +1,14 @@
 <template>
   <div class="issue-debug">
-    <div>activeStage: {{ activeStage.name }} / {{ activeStage.title }}</div>
     <div>
-      selectedStage: {{ selectedStage.name }} / {{ selectedStage.title }}
+      activeStage: {{ activeStage.name }} title='{{ activeStage.title }}'
+    </div>
+    <div>
+      selectedStage: {{ selectedStage.name }} title='{{ selectedStage.title }}'
     </div>
   </div>
   <div class="max-w-full lg:flex divide-y lg:divide-y-0">
-    <div class="stage-item" :class="stageClass(stage, 0)">
+    <div class="stage-item" :class="stageClass(stage)">
       <TaskStatusIcon
         :create="isCreating"
         :active="isActiveStage(stage)"
@@ -14,7 +16,7 @@
         :ignore-task-check-status="true"
       />
 
-      <div class="text" @click.prevent="onClickStage(stage, 0)">
+      <div class="text">
         <span class="text-sm min-w-32 lg:min-w-fit with-underline">
           {{ $t("common.stage") }} - {{ stage.title }}
         </span>
@@ -28,11 +30,10 @@
         </span>
       </div>
 
-      <NPopover v-if="!isValidStage(stage, 0)" trigger="hover" placement="top">
+      <NPopover v-if="!isValidStage(stage)" trigger="hover" placement="top">
         <template #trigger>
           <span
             class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover font-normal absolute right-3"
-            @click="onClickStage(stage, 0)"
           >
             !
           </span>
@@ -52,6 +53,8 @@ import StageSummary from "./StageSummary.vue";
 import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
 import { useIssueContext } from "../logic";
 import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
+import { first } from "lodash-es";
+import { emptyTask } from "@/types";
 
 const { isCreating, issue, activeStage, selectedStage } = useIssueContext();
 
@@ -59,7 +62,7 @@ const stage = computed(() => {
   return issue.value.rolloutEntity.stages[0] ?? Stage.fromJSON({});
 });
 
-const isValidStage = (stage: Stage, index: number): boolean => {
+const isValidStage = (stage: Stage): boolean => {
   return true; // todo
 };
 
@@ -79,10 +82,10 @@ const isActiveStage = (stage: Stage): boolean => {
   return false;
 };
 
-const stageClass = (stage: Stage, index: number): string[] => {
+const stageClass = (stage: Stage): string[] => {
   const classList: string[] = [];
 
-  if (!isValidStage(stage, index)) classList.push("invalid");
+  if (!isValidStage(stage)) classList.push("invalid");
   if (isCreating.value) classList.push("create");
   if (isActiveStage(stage)) classList.push("active");
   const task = activeTaskInStageV1(stage);
@@ -92,20 +95,8 @@ const stageClass = (stage: Stage, index: number): string[] => {
 };
 
 const taskTitleOfStage = (stage: Stage) => {
-  if (isCreating.value) {
-    // return stage.taskList[0].status;
-    return stage.tasks[0]?.title ?? "?????";
-  }
-  return stage.tasks[0]?.title ?? "?????";
-  // return activeTaskInStage(stage as Stage).name;
-};
-
-const onClickStage = (stage: Stage, index: number) => {
-  // if (isCreating.value) {
-  //   selectStageOrTask(index);
-  //   return;
-  // }
-  // selectStageOrTask(Number((stage as Stage).id));
+  const task = isCreating ? first(stage.tasks) : activeTaskInStageV1(stage);
+  return (task ?? emptyTask()).title;
 };
 </script>
 
@@ -133,10 +124,10 @@ const onClickStage = (stage: Stage, index: number) => {
 }
 .stage-item.active.status_pending .text,
 .stage-item.active.status_pending_approval .text {
-  @apply text-info;
+  @apply text-control;
 }
 .stage-item.status_running .text {
-  @apply text-info;
+  @apply text-control;
 }
 .stage-item.status_failed .text {
   @apply text-red-500;

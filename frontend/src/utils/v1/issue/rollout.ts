@@ -50,7 +50,7 @@ export const activeStageInRollout = (rollout: Rollout): Stage => {
   const activeTask = activeTaskInRollout(rollout);
   if (activeTask.name !== EMPTY_TASK_NAME) {
     const stage = rollout.stages.find((stage) =>
-      stage.tasks.findIndex((task) => task.name === activeTask.name)
+      stage.tasks.includes(activeTask)
     );
     if (stage) {
       return stage;
