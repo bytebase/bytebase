@@ -319,6 +319,7 @@
     - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
+    - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueStatus](#bytebase-v1-IssueStatus)
   
     - [IssueService](#bytebase-v1-IssueService)
@@ -4919,20 +4920,21 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | name | [string](#string) |  | The name of the issue. Format: projects/{project}/issues/{issue} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
-| plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
-| rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | description | [string](#string) |  |  |
+| type | [Issue.Type](#bytebase-v1-Issue-Type) |  |  |
 | status | [IssueStatus](#bytebase-v1-IssueStatus) |  |  |
 | assignee | [string](#string) |  | Format: users/hello@world.com |
 | assignee_attention | [bool](#bool) |  |  |
-| approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approvers | [Issue.Approver](#bytebase-v1-Issue-Approver) | repeated |  |
+| approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
 | approval_finding_error | [string](#string) |  |  |
 | subscribers | [string](#string) | repeated | The subscribers. Format: users/hello@world.com |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
+| rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 
 
 
@@ -5138,6 +5140,19 @@ ANY means approving any node will proceed.
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
 | REJECTED | 3 |  |
+
+
+
+<a name="bytebase-v1-Issue-Type"></a>
+
+### Issue.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| DATABASE_CHANGE | 1 |  |
+| GRANT_REQUEST | 2 |  |
 
 
 

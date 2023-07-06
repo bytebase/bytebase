@@ -215,15 +215,16 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 	}
 }
 
-func extractSnowflakeResourceList(currentDatabase string, currentSchema string, statement string) ([]SchemaResource, error) {
-	tree, err := ParseSnowSQL(statement)
+// extractSnowflakeNormalizeResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
+func extractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]SchemaResource, error) {
+	tree, err := ParseSnowSQL(selectStatement)
 	if err != nil {
 		return nil, err
 	}
 
 	l := &snowsqlResourceExtractListener{
-		currentDatabase: currentDatabase,
-		currentSchema:   currentSchema,
+		currentDatabase: currentNormalizedDatabase,
+		currentSchema:   currentNormalizedSchema,
 		resourceMap:     make(map[string]SchemaResource),
 	}
 

@@ -71,7 +71,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 // buildSnowflakeDSN returns the Snowflake Golang DSN and a redacted version of the DSN.
 func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 	snowConfig := &snow.Config{
-		Database: config.Database,
+		Database: fmt.Sprintf(`"%s"`, config.Database),
 		User:     config.Username,
 		Password: config.Password,
 	}
@@ -282,7 +282,8 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+	// return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+	return fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, limit)
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
