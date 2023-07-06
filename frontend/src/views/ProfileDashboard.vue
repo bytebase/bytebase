@@ -228,8 +228,8 @@
   </main>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.2fa"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 

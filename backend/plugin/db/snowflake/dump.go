@@ -56,7 +56,6 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 	for _, dbName := range dumpableDbNames {
 		// includeCreateDatabaseStmt should be false if dumping a single database.
 		dumpSingleDatabase := len(dumpableDbNames) == 1
-		dbName = strings.ToUpper(dbName)
 		if err := dumpOneDatabase(ctx, txn, dbName, out, dumpSingleDatabase); err != nil {
 			return err
 		}
@@ -76,7 +75,7 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 		}
 	}
 
-	query := fmt.Sprintf(`SELECT GET_DDL('DATABASE', '%s', true)`, database)
+	query := fmt.Sprintf(`SELECT GET_DDL('DATABASE', '"%s"', true)`, database)
 	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return util.FormatErrorWithQuery(err, query)

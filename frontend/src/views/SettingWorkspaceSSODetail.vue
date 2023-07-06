@@ -25,8 +25,8 @@
   />
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.sso"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>

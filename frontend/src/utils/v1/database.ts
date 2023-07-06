@@ -16,6 +16,11 @@ import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
+import { policyNamePrefix } from "@/store/modules/v1/common";
+import {
+  PolicyType,
+  policyTypeToJSON,
+} from "@/types/proto/v1/org_policy_service";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
@@ -119,7 +124,10 @@ export const isDatabaseV1Queryable = (
     // Fallback to true.
     return true;
   } else {
-    const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+    const name = `${policyNamePrefix}${policyTypeToJSON(
+      PolicyType.WORKSPACE_IAM
+    )}`;
+    const policy = usePolicyV1Store().getPolicyByName(name);
     if (policy) {
       const bindings = policy.workspaceIamPolicy?.bindings;
       if (bindings) {
@@ -171,7 +179,10 @@ export const isTableQueryable = (
     // Fallback to true.
     return true;
   } else {
-    const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+    const name = `${policyNamePrefix}${policyTypeToJSON(
+      PolicyType.WORKSPACE_IAM
+    )}`;
+    const policy = usePolicyV1Store().getPolicyByName(name);
     if (policy) {
       const bindings = policy.workspaceIamPolicy?.bindings;
       if (bindings) {

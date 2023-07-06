@@ -87,7 +87,7 @@ linters-settings:
   govet:
     settings:
       printf: # The name of the analyzer, run `go tool vet help` to see the list of all analyzers
-        funcs: # Run `go tool vet help printf` to see the full configuration of `printf`
+        funcs: # Run `go tool vet help printf` to see the full configuration of `printf`.
           - common.Errorf
   forbidigo:
     forbid:

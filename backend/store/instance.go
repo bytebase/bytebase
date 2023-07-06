@@ -552,7 +552,7 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context) ([]*I
 	return instances, nil
 }
 
-var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE"
+var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE AND row_status = 'NORMAL'"
 
 // CheckActivationLimit checks if activation instance count reaches the limit.
 func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int) error {

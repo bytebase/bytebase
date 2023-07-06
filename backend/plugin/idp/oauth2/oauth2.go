@@ -14,6 +14,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/idp"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -107,7 +108,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 	log.Debug("User info", zap.Any("claims", claims))
 
 	userInfo := &storepb.IdentityProviderUserInfo{}
-	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {
+	if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Identifier).(string); ok {
 		userInfo.Identifier = v
 	}
 	if userInfo.Identifier == "" {
@@ -117,7 +118,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 
 	// Best effort to map optional fields
 	if p.config.FieldMapping.DisplayName != "" {
-		if v, ok := claims[p.config.FieldMapping.DisplayName].(string); ok {
+		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.DisplayName).(string); ok {
 			userInfo.DisplayName = v
 		}
 	}
@@ -125,7 +126,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		userInfo.DisplayName = userInfo.Identifier
 	}
 	if p.config.FieldMapping.Email != "" {
-		if v, ok := claims[p.config.FieldMapping.Email].(string); ok {
+		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Email).(string); ok {
 			userInfo.Email = v
 		}
 	}

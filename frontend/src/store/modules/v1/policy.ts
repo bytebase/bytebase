@@ -100,11 +100,11 @@ export const usePolicyV1Store = defineStore("policy_v1", {
     }) {
       const name = `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
         policyType
-      )}`;
+      ).toLowerCase()}`;
       return this.getOrFetchPolicyByName(name, refresh);
     },
     async getOrFetchPolicyByName(name: string, refresh = false) {
-      const cachedData = this.getPolicyByName(name);
+      const cachedData = this.getPolicyByName(name.toLowerCase());
       if (cachedData && !refresh) {
         return cachedData;
       }
@@ -128,7 +128,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
     }) {
       const name = `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
         policyType
-      )}`;
+      ).toLowerCase()}`;
       return this.getPolicyByName(name);
     },
     getPolicyByName(name: string) {
@@ -222,7 +222,9 @@ export const usePolicyByParentAndType = (
   return computed(() => {
     const { parentPath, policyType } = unref(params);
     const res = store.getPolicyByName(
-      `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policyType)}`
+      `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
+        policyType
+      ).toLowerCase()}`
     );
     return res;
   });

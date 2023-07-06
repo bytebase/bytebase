@@ -1331,8 +1331,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
 					for migrationDetailIdx, migrationDetail := range migrationDetailList {
-						// CreateSheetV2 for each migration detail.
-						sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+						// CreateSheet for each migration detail.
+						sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 							ProjectUID:  project.UID,
 							DatabaseUID: &migrationDetail.DatabaseID,
 							CreatorID:   creatorID,
@@ -1582,7 +1582,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	if err != nil {
 		return nil, err
 	}
-	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+	sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
