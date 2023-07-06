@@ -36,7 +36,11 @@
                 href="https://platform.openai.com/account/api-keys"
                 class="normal-link"
                 target="_blank"
-                >{{ $t("common.view-doc") }}</a
+                >{{
+                  $t(
+                    "settings.general.workspace.plugin.openai.openai-key.find-my-key"
+                  )
+                }}</a
               >
             </template>
           </i18n-t>
