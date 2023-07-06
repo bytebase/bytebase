@@ -827,7 +827,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 
 	if ctx.Subquery() != nil {
 		// TODO(zp): handle recursive cte.
-		subqueryResult, err := extractor.extractSnowsqlSensitiveFieldsSelectStatement(ctx.Subquery().Query_statement().Select_statement())
+		subqueryResult, err := extractor.extractSnowsqlSensitiveFieldsQueryStatement(ctx.Subquery().Query_statement())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields of subquery near line %d", ctx.Subquery().GetStart().GetLine())
 		}
