@@ -260,7 +260,8 @@
     "warehouse": "Almacén",
     "schedule": "Horario",
     "state": "Estado",
-    "condition": "Condición"
+    "condition": "Condición",
+    "search-user": "Buscar usuario"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

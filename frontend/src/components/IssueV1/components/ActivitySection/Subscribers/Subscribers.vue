@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-x-4">
+  <div class="flex items-center gap-x-2">
     <SubscribeButton />
     <SubscriberList />
   </div>

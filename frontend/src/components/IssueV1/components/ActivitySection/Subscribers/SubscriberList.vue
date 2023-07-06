@@ -4,8 +4,10 @@
     :value="issue.subscribers"
     :options="options"
     :render-label="renderLabel"
-    placement="left"
+    :scrollable="true"
     trigger="click"
+    placement="left"
+    @update:show="onUpdateShow"
     @update:value="onUpdateSubscribers"
   >
     <NButton quaternary style="--n-padding: 0 4px 0 12px">
@@ -17,18 +19,22 @@
           size="SMALL"
           class="ml-[-18px] first:ml-0"
         />
-        <heroicons:ellipsis-vertical class="w-5 h-5" />
+        <heroicons:ellipsis-horizontal class="w-5 h-5" />
       </div>
     </NButton>
 
-    <template #action>
-      <NInput v-model:value="keyword" />
+    <template v-if="false" #action>
+      <NInput
+        ref="filterInputRef"
+        v-model:value="keyword"
+        :placeholder="$t('common.search-user')"
+      />
     </template>
   </NPopselect>
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref } from "vue";
+import { computed, h, nextTick, ref } from "vue";
 import {
   NButton,
   NPopselect,
@@ -39,7 +45,7 @@ import {
 
 import { useIssueContext } from "@/components/IssueV1";
 import { useUserStore } from "@/store";
-import { filterUserListByKeyword, unknownUser } from "@/types";
+import { unknownUser } from "@/types";
 import { extractUserResourceName } from "@/utils";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { User, UserType } from "@/types/proto/v1/auth_service";
@@ -53,6 +59,7 @@ type UserSelectOption = SelectOption & {
 const userStore = useUserStore();
 const { issue } = useIssueContext();
 const keyword = ref("");
+const filterInputRef = ref<InstanceType<typeof NInput>>();
 
 const subscriberList = computed(() => {
   return issue.value.subscribers.map((subscriber) => {
@@ -63,12 +70,7 @@ const subscriberList = computed(() => {
 
 const options = computed(() => {
   const subscribers = new Set(issue.value.subscribers);
-
-  const filteredUserList = filterUserListByKeyword(
-    userStore.userList,
-    keyword.value
-  );
-  const options = filteredUserList
+  const options = userStore.userList
     .filter((user) => user.userType === UserType.USER)
     .map<UserSelectOption>((user) => ({
       user,
@@ -111,6 +113,10 @@ const options = computed(() => {
 });
 
 const renderLabel = (option: SelectOption | SelectGroupOption) => {
+  if (option.type === "group") {
+    return null;
+  }
+
   const { user } = option as UserSelectOption;
 
   return h(SubscriberListItem, { user });
@@ -118,5 +124,14 @@ const renderLabel = (option: SelectOption | SelectGroupOption) => {
 
 const onUpdateSubscribers = async (subscribers: string[]) => {
   issue.value.subscribers = subscribers;
+  keyword.value = "";
+};
+
+const onUpdateShow = (show: boolean) => {
+  if (show) {
+    nextTick(() => {
+      filterInputRef.value?.focus();
+    });
+  }
 };
 </script>

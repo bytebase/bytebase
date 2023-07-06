@@ -257,7 +257,8 @@
     "warehouse": "仓库",
     "schedule": "计划",
     "state": "状态",
-    "condition": "条件"
+    "condition": "条件",
+    "search-user": "搜索用户"
   },
   "error-page": {
     "go-back-home": "回到主页"

@@ -260,7 +260,8 @@
     "warehouse": "Warehouse",
     "schedule": "Schedule",
     "state": "State",
-    "condition": "Condition"
+    "condition": "Condition",
+    "search-user": "Search user"
   },
   "error-page": {
     "go-back-home": "Go back home"
