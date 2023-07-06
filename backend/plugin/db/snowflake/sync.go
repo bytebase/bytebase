@@ -157,7 +157,7 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 	query := fmt.Sprintf(`
 		SELECT
 			SCHEMA_NAME
-		FROM %s.INFORMATION_SCHEMA.SCHEMATA
+		FROM "%s".INFORMATION_SCHEMA.SCHEMATA
 		WHERE %s`, database, excludeWhere)
 
 	rows, err := driver.db.QueryContext(ctx, query)
@@ -232,7 +232,7 @@ func (driver *Driver) getStreamSchema(ctx context.Context, database string) (map
 
 	for schemaName, streamList := range streamMap {
 		for _, stream := range streamList {
-			definitionQuery := fmt.Sprintf("SELECT GET_DDL('STREAM', %s, TRUE);", fmt.Sprintf(`'"%s"."%s"."%s"'`, database, schemaName, stream.Name))
+			definitionQuery := fmt.Sprintf("SELECT GET_DDL('STREAM', '%s', TRUE);", fmt.Sprintf(`"%s"."%s"."%s"`, database, schemaName, stream.Name))
 			var definition string
 			if err := driver.db.QueryRow(definitionQuery).Scan(&definition); err != nil {
 				return nil, err
@@ -319,7 +319,7 @@ func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[s
 
 	for schemaName, taskList := range taskMap {
 		for _, task := range taskList {
-			definitionQuery := fmt.Sprintf("SELECT GET_DDL('TASK', %s, TRUE);", fmt.Sprintf(`'"%s"."%s"."%s"'`, database, schemaName, task.Name))
+			definitionQuery := fmt.Sprintf("SELECT GET_DDL('TASK', '%s', TRUE);", fmt.Sprintf(`"%s"."%s"."%s"`, database, schemaName, task.Name))
 			var definition string
 			if err := driver.db.QueryRow(definitionQuery).Scan(&definition); err != nil {
 				return nil, err
@@ -361,7 +361,7 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 			IFNULL(CHARACTER_SET_NAME, ''),
 			IFNULL(COLLATION_NAME, ''),
 			IFNULL(COMMENT, '')
-		FROM %s.INFORMATION_SCHEMA.COLUMNS
+		FROM "%s".INFORMATION_SCHEMA.COLUMNS
 		WHERE %s
 		ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION`, database, excludeWhere)
 	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
@@ -410,7 +410,7 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 			ROW_COUNT,
 			BYTES,
 			IFNULL(COMMENT, '')
-		FROM %s.INFORMATION_SCHEMA.TABLES
+		FROM "%s".INFORMATION_SCHEMA.TABLES
 		WHERE TABLE_TYPE = 'BASE TABLE' AND %s
 		ORDER BY TABLE_SCHEMA, TABLE_NAME`, database, excludeWhere)
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
@@ -430,6 +430,9 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 		); err != nil {
 			return nil, nil, err
 		}
+		if columns, ok := columnMap[db.TableKey{Schema: schemaName, Table: table.Name}]; ok {
+			table.Columns = columns
+		}
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
@@ -443,7 +446,7 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 			TABLE_NAME,
 			IFNULL(VIEW_DEFINITION, ''),
 			IFNULL(COMMENT, '')
-		FROM %s.INFORMATION_SCHEMA.VIEWS
+		FROM "%s".INFORMATION_SCHEMA.VIEWS
 		WHERE %s
 		ORDER BY TABLE_SCHEMA, TABLE_NAME`, database, excludeWhere)
 	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
@@ -461,6 +464,17 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 			&view.Comment,
 		); err != nil {
 			return nil, nil, err
+		}
+		if columns, ok := columnMap[db.TableKey{Schema: schemaName, Table: view.Name}]; ok {
+			for _, column := range columns {
+				// TODO(zp): We get column by query the INFORMATION_SCHEMA.COLUMNS, which does not contains the view column belongs to which database.
+				// So in the Snowflake, one view column may belongs to different databases, it may cause some confusing behavior in the Data Anonymization.
+				view.DependentColumns = append(view.DependentColumns, &storepb.DependentColumn{
+					Schema: schemaName,
+					Table:  view.Name,
+					Column: column.Name,
+				})
+			}
 		}
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
