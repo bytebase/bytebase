@@ -1,5 +1,10 @@
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
-import { Rollout, Stage, Task } from "@/types/proto/v1/rollout_service";
+import {
+  Rollout,
+  Stage,
+  Task,
+  Task_Type,
+} from "@/types/proto/v1/rollout_service";
 import {
   EMPTY_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
@@ -55,3 +60,13 @@ export const unknownTask = () => {
     title: "<<Unknown task>>",
   });
 };
+
+export const TaskTypeV1WithStatement: Task_Type[] = [
+  Task_Type.GENERAL,
+  Task_Type.DATABASE_CREATE,
+  Task_Type.DATABASE_DATA_UPDATE,
+  Task_Type.DATABASE_SCHEMA_BASELINE,
+  Task_Type.DATABASE_SCHEMA_UPDATE,
+  Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
+  Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
+];

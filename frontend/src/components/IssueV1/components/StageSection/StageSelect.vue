@@ -19,7 +19,7 @@ import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
 import { Stage } from "@/types/proto/v1/rollout_service";
-import { useIssueContext } from "../logic";
+import { useIssueContext } from "../../logic";
 import { first } from "lodash-es";
 
 type StageSelectOption = SelectOption & {

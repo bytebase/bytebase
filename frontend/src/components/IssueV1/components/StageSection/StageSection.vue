@@ -1,11 +1,4 @@
 <template>
-  <div class="issue-debug">
-    <div>activeStage: {{ activeStage.name }} '{{ activeStage.title }}'</div>
-    <div>
-      selectedStage: {{ selectedStage.name }} '{{ selectedStage.title }}'
-    </div>
-  </div>
-
   <div v-if="show" class="max-w-full lg:flex divide-y lg:divide-y-0">
     <div class="stage-item" :class="stageClass(stage)">
       <TaskStatusIcon
@@ -29,41 +22,47 @@
         </span>
       </div>
 
-      <NPopover v-if="!isValidStage(stage)" trigger="hover" placement="top">
+      <NTooltip v-if="!isValidStage(stage)" trigger="hover" placement="top">
         <template #trigger>
-          <span
-            class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover font-normal absolute right-3"
-          >
-            !
-          </span>
+          <heroicons:exclamation-circle-solid
+            class="w-6 h-6 ml-2 text-error hover:text-error-hover"
+          />
         </template>
         <span>Missing SQL statement</span>
-      </NPopover>
+      </NTooltip>
     </div>
   </div>
 
-  <div v-if="show" class="flex items-center justify-between">
-    <div class="flex items-center justify-start">
+  <div v-if="show" class="lg:flex items-center justify-between">
+    <div
+      class="flex flex-col lg:flex-row lg:flex-wrap lg:items-center justify-start gap-y-2 gap-x-4 py-2 px-4 text-sm"
+    >
       <StageSelect />
+      <DatabaseInfo />
+      <EnvironmentInfo />
     </div>
-    <div class="flex items-center justify-end">right</div>
+    <div class="lg:flex items-center justify-end">
+      (put `When` here if needed)
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { NPopover } from "naive-ui";
+import { NTooltip } from "naive-ui";
 import { first } from "lodash-es";
 
-import { EMPTY_STAGE_NAME, emptyTask } from "@/types";
-import TaskStatusIcon from "./TaskStatusIcon.vue";
+import { EMPTY_STAGE_NAME, TaskTypeV1WithStatement, emptyTask } from "@/types";
+import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
 import StageSelect from "./StageSelect.vue";
+import DatabaseInfo from "./DatabaseInfo.vue";
+import EnvironmentInfo from "./EnvironmentInfo.vue";
 import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
-import { useIssueContext } from "../logic";
+import { useIssueContext } from "../../logic";
 import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 
-const { isCreating, issue, activeStage, selectedStage } = useIssueContext();
+const { isCreating, issue, selectedStage } = useIssueContext();
 
 const stage = selectedStage;
 
@@ -72,7 +71,20 @@ const show = computed(() => {
 });
 
 const isValidStage = (stage: Stage): boolean => {
-  return true; // todo
+  if (!isCreating.value) {
+    return true;
+  }
+
+  for (const task of stage.tasks) {
+    if (TaskTypeV1WithStatement.includes(task.type)) {
+      return false;
+      // if (task.)
+      // if (task.sheetId === undefined || task.sheetId === UNKNOWN_ID) {
+      //   return false;
+      // }
+    }
+  }
+  return true;
 };
 
 const isActiveStage = (stage: Stage): boolean => {

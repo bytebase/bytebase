@@ -3,7 +3,7 @@
     <div>activeTask: {{ activeTask.name }} '{{ activeTask.title }}'</div>
     <div>selectedTask: {{ selectedTask.name }} '{{ selectedTask.title }}'</div>
   </div>
-  <div v-if="shouldShowTaskBar" class="relative">
+  <div v-if="true || shouldShowTaskBar" class="relative">
     <div
       ref="taskBar"
       class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
@@ -34,7 +34,7 @@
                   class="w-5 h-5 inline-block mb-0.5"
                 />
                 <span class="issue-debug">#{{ task.uid }}</span>
-                <span>{{ databaseForTask(task).databaseName }}</span>
+                <span>{{ databaseForTask(issue, task).databaseName }}</span>
                 <span v-if="schemaVersionForTask(task)" class="schema-version">
                   ({{ schemaVersionForTask(task) }})
                 </span>
@@ -45,7 +45,7 @@
           <div class="flex items-center justify-between px-1 py-1">
             <div class="flex flex-1 items-center whitespace-pre-wrap">
               <InstanceV1Name
-                :instance="databaseForTask(task).instanceEntity"
+                :instance="databaseForTask(issue, task).instanceEntity"
                 :link="false"
               />
             </div>
@@ -59,21 +59,12 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
 
-import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
-import { extractDatabaseResourceName } from "@/utils";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { InstanceV1Name } from "@/components/v2";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
-import { useIssueContext } from "../logic";
+import { useIssueContext, databaseForTask } from "../logic";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
-import {
-  Task,
-  Task_Type,
-  task_StatusToJSON,
-} from "@/types/proto/v1/rollout_service";
-import { unknownDatabase } from "@/types";
-
-const databaseStore = useDatabaseV1Store();
+import { Task, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 
 const { isCreating, issue, events, selectedStage, activeTask, selectedTask } =
   useIssueContext();
@@ -96,58 +87,6 @@ const isSelectedTask = (task: Task): boolean => {
 const isActiveTask = (task: Task): boolean => {
   if (isCreating.value) return false;
   return task === activeTask.value;
-};
-
-const extractCoreDatabaseInfoFromDatabaseCreateTask = (task: Task) => {
-  const coreDatabaseInfo = (instance: string, databaseName: string) => {
-    const instanceEntity = useInstanceV1Store().getInstanceByName(instance);
-    return {
-      name: `${instance}/databases/${databaseName}`,
-      databaseName,
-      instance,
-      instanceEntity,
-      project: project.value.name,
-      projectEntity: project.value,
-    };
-  };
-
-  if (task.databaseCreate) {
-    const databaseName = task.databaseCreate.database;
-    const instance = task.target;
-    return coreDatabaseInfo(instance, databaseName);
-  }
-  if (task.databaseRestoreRestore) {
-    const db = extractDatabaseResourceName(task.databaseRestoreRestore.target);
-    const databaseName = db.database;
-    const instance = `instances/${db.instance}`;
-    return coreDatabaseInfo(instance, databaseName);
-  }
-
-  return unknownDatabase();
-};
-
-const databaseForTask = (task: Task) => {
-  if (isCreating.value) {
-    return databaseStore.getDatabaseByName(task.target);
-  }
-
-  if (
-    task.type === Task_Type.DATABASE_CREATE ||
-    task.type === Task_Type.DATABASE_RESTORE_RESTORE
-  ) {
-    // The database is not created yet.
-    // extract database info from the task's and payload's properties.
-    return extractCoreDatabaseInfoFromDatabaseCreateTask(task);
-  } else {
-    if (
-      task.databaseDataUpdate ||
-      task.databaseSchemaUpdate ||
-      task.databaseRestoreRestore
-    ) {
-      return databaseStore.getDatabaseByName(task.target);
-    }
-  }
-  return unknownDatabase();
 };
 
 const schemaVersionForTask = (task: Task): string => {

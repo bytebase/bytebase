@@ -356,7 +356,11 @@
     },
     "execution-time": "Execution time",
     "run-checks": "Run checks",
-    "run-checks-in-current-stage": "Run checks in current stage"
+    "run-checks-in-current-stage": "Run checks in current stage",
+    "database-create": {
+      "pending": "(pending create)",
+      "created": "(created)"
+    }
   },
   "banner": {
     "update-license": "Update license",

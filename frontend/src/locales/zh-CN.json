@@ -353,7 +353,11 @@
     },
     "execution-time": "执行时间",
     "run-checks": "运行检查",
-    "run-checks-in-current-stage": "运行当前阶段的所有检查"
+    "run-checks-in-current-stage": "运行当前阶段的所有检查",
+    "database-create": {
+      "pending": "（待创建）",
+      "created": "（已创建）"
+    }
   },
   "banner": {
     "update-license": "更新证书",

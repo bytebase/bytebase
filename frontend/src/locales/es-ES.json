@@ -356,7 +356,11 @@
     },
     "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
-    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual"
+    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual",
+    "database-create": {
+      "pending": "(pendiente de crear)",
+      "created": "(creado)"
+    }
   },
   "banner": {
     "update-license": "Actualizar licencia",

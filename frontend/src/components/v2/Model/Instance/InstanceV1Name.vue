@@ -3,7 +3,7 @@
     :is="link ? 'router-link' : tag"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
-    :class="link && 'normal-link'"
+    :class="link && !plain && 'normal-link'"
   >
     <InstanceV1EngineIcon
       v-if="icon && iconPosition === 'prefix'"
@@ -32,12 +32,14 @@ const props = withDefaults(
     tag?: string;
     link?: boolean;
     icon?: boolean;
+    plain?: boolean;
     iconPosition?: "prefix" | "suffix";
   }>(),
   {
     tag: "span",
     link: true,
     icon: true,
+    plain: false,
     iconPosition: "prefix",
   }
 );
