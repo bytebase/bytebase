@@ -4,7 +4,8 @@
       <div>{{ issueUID }}</div>
       <div><NButton @click="tryCreate">try create</NButton></div>
     </template>
-    <IssueDetailPage />
+    <IssueDetailPage v-if="ready" />
+    <BBSpin v-else />
   </div>
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -113,6 +114,8 @@ const tryFetchIssue = async (uid: string) => {
   //   }
   // );
   // console.log("taskRunList", taskRunList);
+
+  await new Promise((r) => setTimeout(r, 500));
   ready.value = true;
 };
 
@@ -148,7 +151,7 @@ const documentTitle = computed(() => {
   if (isCreating.value) {
     return t("issue.new-issue");
   } else {
-    if (issue.value.uid !== String(UNKNOWN_ID)) {
+    if (ready.value && issue.value.uid !== String(UNKNOWN_ID)) {
       return issue.value.title;
     }
   }
