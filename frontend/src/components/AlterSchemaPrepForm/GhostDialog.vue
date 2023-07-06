@@ -53,8 +53,8 @@
   </BBDialog>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.online-migration"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>

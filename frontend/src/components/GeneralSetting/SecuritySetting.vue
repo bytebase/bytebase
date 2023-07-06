@@ -92,7 +92,7 @@
   </div>
 
   <FeatureModal
-    v-if="state.featureNameForModal"
+    :open="state.featureNameForModal"
     :feature="state.featureNameForModal"
     @cancel="state.featureNameForModal = undefined"
   />

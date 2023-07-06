@@ -32,8 +32,8 @@
     />
 
     <FeatureModal
-      v-if="showFeatureModal"
       feature="bb.feature.custom-role"
+      :open="showFeatureModal"
       @cancel="showFeatureModal = false"
     />
   </div>
