@@ -1747,3 +1747,298 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
+
+func TestSnowSQLExtractSensitiveField(t *testing.T) {
+	var (
+		defaultDatabase       = "SNOWFLAKE"
+		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
+			DatabaseList: []db.DatabaseSchema{
+				{
+					Name: defaultDatabase,
+					SchemaList: []db.SchemaSchema{
+						{
+							Name: "PUBLIC",
+							TableList: []db.TableSchema{
+								{
+									Name: "T1",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "A",
+											Sensitive: true,
+										},
+										{
+											Name:      "B",
+											Sensitive: false,
+										},
+										{
+											Name:      "C",
+											Sensitive: false,
+										},
+										{
+											Name:      "D",
+											Sensitive: true,
+										},
+									},
+								},
+								{
+									Name: "T2",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "A",
+											Sensitive: false,
+										},
+										{
+											Name:      "E",
+											Sensitive: false,
+										},
+									},
+								},
+								{
+									Name: "T3",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "E",
+											Sensitive: true,
+										},
+										{
+											Name:      "F",
+											Sensitive: false,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	)
+
+	tests := []struct {
+		statement  string
+		schemaInfo *db.SensitiveSchemaInfo
+		fieldList  []db.SensitiveField
+	}{
+		{
+			// Test for expression.
+			statement:  `SELECT (SELECT A FROM T1 LIMIT 1), A + 1, 1, FUNCTIONCALL(D) FROM T1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "(SELECTAFROMT1LIMIT1)",
+					Sensitive: true,
+				},
+				{
+					Name:      "A+1",
+					Sensitive: true,
+				},
+				{
+					Name:      "1",
+					Sensitive: false,
+				},
+				{
+					Name:      "FUNCTIONCALL(D)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for multiple CTE
+			statement: `
+			WITH TT1 (T1_COL1, T1_COL2, T1_COL3, T1_COL4) AS (
+				SELECT * FROM T1
+			),
+			TT2 (T2_COL1, T2_COL2) AS (
+				SELECT * FROM T2
+			)
+			SELECT * FROM TT1 JOIN TT2;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "T1_COL1",
+					Sensitive: true,
+				},
+				{
+					Name:      "T1_COL2",
+					Sensitive: false,
+				},
+				{
+					Name:      "T1_COL3",
+					Sensitive: false,
+				},
+				{
+					Name:      "T1_COL4",
+					Sensitive: true,
+				},
+				{
+					Name:      "T2_COL1",
+					Sensitive: false,
+				},
+				{
+					Name:      "T2_COL2",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for set operators(UNION, INTERSECT, ...)
+			statement:  `SELECT A, B FROM T1 UNION SELECT * FROM T2 INTERSECT SELECT * FROM T3`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for subquery in from cluase with as alias.
+			statement:  `SELECT T.A, A, B FROM (SELECT * FROM T1) AS T`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for field name.
+			statement:  "SELECT $1, A, T.B AS N, T.C from T1 AS T",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "N",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			statement:  `SELECT * FROM T1, T2, T3;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+				{
+					Name:      "A",
+					Sensitive: false,
+				},
+				{
+					Name:      "E",
+					Sensitive: false,
+				},
+				{
+					Name:      "E",
+					Sensitive: true,
+				},
+				{
+					Name:      "F",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			statement:  `SELECT A, E, F FROM T1 NATURAL JOIN T2 NATURAL JOIN T3;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "E",
+					Sensitive: true,
+				},
+				{
+					Name:      "F",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			statement:  `SELECT A, B, D FROM T1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			statement:  `SELECT * FROM T1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		res, err := extractSensitiveField(db.Snowflake, test.statement, defaultDatabase, test.schemaInfo)
+		require.NoError(t, err, test.statement)
+		require.Equal(t, test.fieldList, res, test.statement)
+	}
+}

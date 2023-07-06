@@ -147,7 +147,8 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.TIDB ||
       engine.value === Engine.POSTGRES ||
       engine.value === Engine.REDSHIFT ||
-      engine.value === Engine.ORACLE)
+      engine.value === Engine.ORACLE ||
+      engine.value === Engine.SNOWFLAKE)
   );
 });
 

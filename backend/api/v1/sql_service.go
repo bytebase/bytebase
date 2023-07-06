@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -653,7 +652,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 	switch instance.Engine {
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
-		databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement)
+		databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
 		}
@@ -691,6 +690,16 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			if err != nil {
 				return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
+		}
+	case db.Snowflake:
+		databaseList, err := parser.ExtractDatabaseList(parser.Snowflake, request.Statement, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
+		}
+
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	}
 
@@ -938,7 +947,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	if adviceStatus != advisor.Error {
 		switch instance.Engine {
 		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
-			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement)
+			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
 			}
@@ -976,6 +985,16 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				if err != nil {
 					return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 				}
+			}
+		case db.Snowflake:
+			databaseList, err := parser.ExtractDatabaseList(parser.Snowflake, request.Statement, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
+			}
+
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		}
 	}
@@ -1061,16 +1080,16 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			return nil, errors.Errorf("database %q not found", databaseName)
 		}
 
-		columnMap := make(sensitiveDataMap)
 		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database %q in instance %q", databaseName, instance.Title))
+			return nil, status.Errorf(codes.Internal, "Failed to find sensitive data policy for database %q in instance %q: %v", databaseName, instance.Title, err)
 		}
 		if len(policy.SensitiveDataList) == 0 {
 			// If there is no sensitive data policy, return nil to skip mask sensitive data.
 			return nil, nil
 		}
 
+		columnMap := make(sensitiveDataMap)
 		for _, data := range policy.SensitiveDataList {
 			columnMap[api.SensitiveData{
 				Schema: data.Schema,
@@ -1081,7 +1100,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 
 		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
+			return nil, status.Errorf(codes.Internal, "Failed to find schema for database %q in instance %q: %v", databaseName, instance.Title, err)
 		}
 
 		if instance.Engine == db.Oracle {
@@ -1117,10 +1136,15 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		}
 
 		databaseSchema := db.DatabaseSchema{
-			Name:      databaseName,
-			TableList: []db.TableSchema{},
+			Name:       databaseName,
+			SchemaList: []db.SchemaSchema{},
+			TableList:  []db.TableSchema{},
 		}
 		for _, schema := range dbSchema.Metadata.Schemas {
+			schemaSchema := db.SchemaSchema{
+				Name:      schema.Name,
+				TableList: []db.TableSchema{},
+			}
 			for _, table := range schema.Tables {
 				tableSchema := db.TableSchema{
 					Name:       table.Name,
@@ -1140,11 +1164,24 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						Sensitive: sensitive,
 					})
 				}
-				databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+				if instance.Engine == db.Snowflake {
+					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
+				} else {
+					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+				}
+			}
+			if instance.Engine == db.Snowflake {
+				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 			}
 		}
-		if len(databaseSchema.TableList) > 0 {
-			isEmpty = false
+		if instance.Engine == db.Snowflake {
+			if len(databaseSchema.SchemaList) > 0 {
+				isEmpty = false
+			}
+		} else {
+			if len(databaseSchema.TableList) > 0 {
+				isEmpty = false
+			}
 		}
 		result.DatabaseList = append(result.DatabaseList, databaseSchema)
 	}
@@ -1166,6 +1203,8 @@ func isExcludeDatabase(dbType db.Type, database string) bool {
 			return true
 		}
 		return database == "metrics_schema"
+	case db.Snowflake:
+		return database == "SNOWFLAKE"
 	default:
 		return false
 	}

@@ -629,6 +629,16 @@ type SensitiveSchemaInfo struct {
 
 // DatabaseSchema is the database schema using to extract sensitive fields.
 type DatabaseSchema struct {
+	Name       string
+	SchemaList []SchemaSchema
+
+	// !!DEPRECATED!!, should use SchemaList instead.
+	// TODO(rebelice/zp): Migrate MySQL/PostgreSQL/Oracle to SchemaList.
+	TableList []TableSchema
+}
+
+// SchemaSchema is the schema of the schema using to extract sensitive fields.
+type SchemaSchema struct {
 	Name      string
 	TableList []TableSchema
 }

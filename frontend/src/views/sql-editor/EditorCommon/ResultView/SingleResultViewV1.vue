@@ -342,7 +342,7 @@ const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL") => {
     databaseId === String(UNKNOWN_ID)
       ? ""
       : databaseStore.getDatabaseByUID(databaseId).name;
-  const statement = props.params.query;
+  const statement = props.result.statement;
   const admin = tabStore.currentTab.mode === TabMode.Admin;
   const limit = admin ? 0 : RESULT_ROWS_LIMIT;
   exportData({
