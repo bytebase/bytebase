@@ -132,7 +132,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       return this.getPolicyByName(name);
     },
     getPolicyByName(name: string) {
-      return this.policyMapByName.get(name);
+      return this.policyMapByName.get(name.toLowerCase());
     },
     async createPolicy(parent: string, policy: Partial<Policy>) {
       const createdPolicy = await policyServiceClient.createPolicy({
