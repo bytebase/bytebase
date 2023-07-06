@@ -71,7 +71,7 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		// The resource list for Postgres may contains table, view and temporary table.
 		return extractPostgresResourceList(currentDatabase, "public", sql)
 	case Snowflake:
-		return extractSnowflakeResourceList(currentDatabase, "PUBLIC", sql)
+		return extractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
@@ -747,13 +747,31 @@ func TypeString(tp byte) string {
 }
 
 // ExtractDatabaseList extracts all databases from statement.
-func ExtractDatabaseList(engineType EngineType, statement string) ([]string, error) {
+func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormalizedDatabaseName string) ([]string, error) {
 	switch engineType {
 	case MySQL, TiDB, MariaDB, OceanBase:
 		return extractMySQLDatabaseList(statement)
+	case Snowflake:
+		return extractSnowSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
+}
+
+// extractSnowSQLNormalizedDatabaseList extracts all databases from statement, and normalizes the database name.
+// If the database name is not specified, it will fallback to the normalizedDatabaseName.
+func extractSnowSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
+	schemaPlaceholder := "schema_placeholder"
+	schemaResource, err := extractSnowflakeNormalizeResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, resource := range schemaResource {
+		result = append(result, resource.Database)
+	}
+	return result, nil
 }
 
 func newMySQLParser() *tidbparser.Parser {
@@ -776,7 +794,7 @@ func extractMySQLDatabaseList(statement string) ([]string, error) {
 	}
 
 	for _, node := range nodeList {
-		databaseList := extractDatabaseListFromNode(node)
+		databaseList := extractMySQLDatabaseListFromNode(node)
 		for _, database := range databaseList {
 			databaseMap[database] = true
 		}
@@ -792,8 +810,8 @@ func extractMySQLDatabaseList(statement string) ([]string, error) {
 	return databaseList, nil
 }
 
-// extractDatabaseListFromNode extracts all the database from node.
-func extractDatabaseListFromNode(in tidbast.Node) []string {
+// extractMySQLDatabaseListFromNode extracts all the database from node.
+func extractMySQLDatabaseListFromNode(in tidbast.Node) []string {
 	tableNameList := ExtractMySQLTableList(in, false /* asName */)
 
 	databaseMap := make(map[string]bool)

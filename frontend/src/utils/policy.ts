@@ -6,6 +6,11 @@ import { User } from "@/types/proto/v1/auth_service";
 import { resolveCELExpr } from "@/plugins/cel";
 import { extractEnvironmentNameListFromExpr } from "./v1";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import {
+  PolicyType,
+  policyTypeToJSON,
+} from "@/types/proto/v1/org_policy_service";
+import { policyNamePrefix } from "@/store/modules/v1/common";
 
 export const isInstanceAccessible = (instance: Instance, user: User) => {
   if (!hasFeature("bb.feature.access-control")) {
@@ -51,7 +56,11 @@ export const isDatabaseAccessible = (
   }
 
   if (hasFeature("bb.feature.access-control")) {
-    const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
+    const policy = usePolicyV1Store().getPolicyByName(
+      `${policyNamePrefix}/${policyTypeToJSON(
+        PolicyType.WORKSPACE_IAM
+      ).toLowerCase()}`
+    );
     if (policy) {
       const bindings = policy.workspaceIamPolicy?.bindings;
       if (bindings) {
