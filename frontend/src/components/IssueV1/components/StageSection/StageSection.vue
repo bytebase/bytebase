@@ -135,7 +135,7 @@ const taskTitleOfStage = (stage: Stage) => {
 }
 
 .stage .text {
-  @apply cursor-pointer ml-4 flex-col space-y-1;
+  @apply cursor-pointer ml-4 flex flex-col gap-y-0.5;
 }
 .stage.active .text {
   @apply font-bold;
