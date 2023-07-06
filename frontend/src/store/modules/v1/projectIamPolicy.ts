@@ -197,7 +197,10 @@ export const useCurrentUserIamPolicy = () => {
       ) {
         if (binding.parsedExpr?.expr) {
           const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
-          if (conditionExpr.databaseResources) {
+          if (
+            conditionExpr.databaseResources &&
+            conditionExpr.databaseResources.length > 0
+          ) {
             for (const databaseResource of conditionExpr.databaseResources) {
               if (databaseResource.databaseName === database.name) {
                 if (isUndefined(schema) && isUndefined(table)) {
