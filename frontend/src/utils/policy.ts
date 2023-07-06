@@ -56,11 +56,10 @@ export const isDatabaseAccessible = (
   }
 
   if (hasFeature("bb.feature.access-control")) {
-    const policy = usePolicyV1Store().getPolicyByName(
-      `${policyNamePrefix}/${policyTypeToJSON(
-        PolicyType.WORKSPACE_IAM
-      ).toLowerCase()}`
-    );
+    const name = `${policyNamePrefix}${policyTypeToJSON(
+      PolicyType.WORKSPACE_IAM
+    )}`;
+    const policy = usePolicyV1Store().getPolicyByName(name);
     if (policy) {
       const bindings = policy.workspaceIamPolicy?.bindings;
       if (bindings) {
