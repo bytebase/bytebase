@@ -1,5 +1,7 @@
 <template>
   <div class="divide-y">
+    <div class="issue-debug">phase: {{ phase }}</div>
+
     <BannerSection v-if="!isCreating" />
 
     <HeaderSection class="!border-t-0" />
@@ -23,5 +25,5 @@ import {
   TaskListSection,
 } from "./components";
 
-const { isCreating, issue } = useIssueContext();
+const { isCreating, phase, issue } = useIssueContext();
 </script>

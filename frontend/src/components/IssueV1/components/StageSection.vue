@@ -1,13 +1,12 @@
 <template>
   <div class="issue-debug">
+    <div>activeStage: {{ activeStage.name }} '{{ activeStage.title }}'</div>
     <div>
-      activeStage: {{ activeStage.name }} title='{{ activeStage.title }}'
-    </div>
-    <div>
-      selectedStage: {{ selectedStage.name }} title='{{ selectedStage.title }}'
+      selectedStage: {{ selectedStage.name }} '{{ selectedStage.title }}'
     </div>
   </div>
-  <div class="max-w-full lg:flex divide-y lg:divide-y-0">
+
+  <div v-if="show" class="max-w-full lg:flex divide-y lg:divide-y-0">
     <div class="stage-item" :class="stageClass(stage)">
       <TaskStatusIcon
         :create="isCreating"
@@ -42,24 +41,34 @@
       </NPopover>
     </div>
   </div>
+
+  <div v-if="show" class="flex items-center justify-between">
+    <div class="flex items-center justify-start">
+      <StageSelect />
+    </div>
+    <div class="flex items-center justify-end">right</div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
 import { NPopover } from "naive-ui";
+import { first } from "lodash-es";
 
+import { EMPTY_STAGE_NAME, emptyTask } from "@/types";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
+import StageSelect from "./StageSelect.vue";
 import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
 import { useIssueContext } from "../logic";
 import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
-import { first } from "lodash-es";
-import { emptyTask } from "@/types";
 
 const { isCreating, issue, activeStage, selectedStage } = useIssueContext();
 
-const stage = computed(() => {
-  return issue.value.rolloutEntity.stages[0] ?? Stage.fromJSON({});
+const stage = selectedStage;
+
+const show = computed(() => {
+  return stage.value.name !== EMPTY_STAGE_NAME;
 });
 
 const isValidStage = (stage: Stage): boolean => {
@@ -124,10 +133,10 @@ const taskTitleOfStage = (stage: Stage) => {
 }
 .stage-item.active.status_pending .text,
 .stage-item.active.status_pending_approval .text {
-  @apply text-control;
+  @apply text-info;
 }
 .stage-item.status_running .text {
-  @apply text-control;
+  @apply text-info;
 }
 .stage-item.status_failed .text {
   @apply text-red-500;

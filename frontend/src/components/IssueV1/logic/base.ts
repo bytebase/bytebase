@@ -3,7 +3,7 @@ import { useRoute, useRouter } from "vue-router";
 import Emittery from "emittery";
 import { first } from "lodash-es";
 
-import { IssueContext } from "./context";
+import { IssueContext, IssuePhase } from "./context";
 import { Stage, Task } from "@/types/proto/v1/rollout_service";
 import {
   activeStageInRollout,
@@ -121,7 +121,14 @@ export const useBaseIssueContext = (
 
   const reviewContext = extractReviewContext(issue);
 
+  const phase = computed((): IssuePhase => {
+    if (isCreating.value) return "CREATE";
+
+    return reviewContext.done.value ? "ROLLOUT" : "REVIEW";
+  });
+
   return {
+    phase,
     events,
     reviewContext,
     activeStage,

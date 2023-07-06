@@ -1,7 +1,7 @@
 <template>
   <div class="issue-debug">
-    <div>activeTask: {{ activeTask.name }} / {{ activeTask.title }}</div>
-    <div>selectedTask: {{ selectedTask.name }} / {{ selectedTask.title }}</div>
+    <div>activeTask: {{ activeTask.name }} '{{ activeTask.title }}'</div>
+    <div>selectedTask: {{ selectedTask.name }} '{{ selectedTask.title }}'</div>
   </div>
   <div v-if="shouldShowTaskBar" class="relative">
     <div
@@ -75,12 +75,10 @@ import { unknownDatabase } from "@/types";
 
 const databaseStore = useDatabaseV1Store();
 
-const { isCreating, issue, events, activeTask, selectedTask } =
+const { isCreating, issue, events, selectedStage, activeTask, selectedTask } =
   useIssueContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, 192);
-
-const selectedStage = computed(() => rollout.value.stages[0]); // todo
 
 const project = computed(() => issue.value.projectEntity);
 const rollout = computed(() => issue.value.rolloutEntity);
