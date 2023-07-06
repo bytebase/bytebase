@@ -72,20 +72,68 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractContext(ctx antlr.ParserRu
 	}
 }
 
+func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
+	return extractor.plsqlExtractNonRecursiveCTE(ctx)
+}
+
+func (extractor *sensitiveFieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
+	fieldList, err := extractor.plsqlExtractSubquery(ctx.Subquery())
+	if err != nil {
+		return db.TableSchema{}, err
+	}
+
+	if ctx.Paren_column_list() != nil {
+		var columnNameList []string
+		for _, column := range ctx.Paren_column_list().Column_list().AllColumn_name() {
+			_, _, columnName, err := plsqlNormalizeColumnName("", column)
+			if err != nil {
+				return db.TableSchema{}, err
+			}
+			columnNameList = append(columnNameList, columnName)
+		}
+		if len(columnNameList) != len(fieldList) {
+			return db.TableSchema{}, errors.Errorf("column list and subquery must have the same number of columns")
+		}
+		for i, columnName := range columnNameList {
+			fieldList[i].name = columnName
+		}
+	}
+
+	tableName := parser.PLSQLNormalizeIdentifierContext(ctx.Query_name().Identifier())
+
+	result := db.TableSchema{
+		Name:       tableName,
+		ColumnList: []db.ColumnInfo{},
+	}
+	for _, field := range fieldList {
+		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+			Name:      field.name,
+			Sensitive: field.sensitive,
+		})
+	}
+	return result, nil
+}
+
+func (extractor *sensitiveFieldExtractor) plsqlExtractSelectOnlyStatement(ctx plsql.ISelect_only_statementContext) ([]fieldInfo, error) {
+	if ctx == nil {
+		return nil, nil
+	}
+
+	subquery := ctx.Subquery()
+	if subquery == nil {
+		return nil, nil
+	}
+
+	return extractor.plsqlExtractSubquery(subquery)
+}
+
 func (extractor *sensitiveFieldExtractor) plsqlExtractSelect(ctx plsql.ISelect_statementContext) ([]fieldInfo, error) {
 	selectOnlyStatement := ctx.Select_only_statement()
 	if selectOnlyStatement == nil {
 		return nil, nil
 	}
 
-	// TODO(rebelice): handle CTE
-
-	subquery := selectOnlyStatement.Subquery()
-	if subquery == nil {
-		return nil, nil
-	}
-
-	return extractor.plsqlExtractSubquery(subquery)
+	return extractor.plsqlExtractSelectOnlyStatement(selectOnlyStatement)
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractSubquery(ctx plsql.ISubqueryContext) ([]fieldInfo, error) {
@@ -141,6 +189,21 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryBasicElements(ctx 
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContext) (result []fieldInfo, err error) {
+	withClause := ctx.Subquery_factoring_clause()
+	if withClause != nil {
+		cteOuterLength := len(extractor.cteOuterSchemaInfo)
+		defer func() {
+			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
+		}()
+		for _, cte := range withClause.AllFactoring_element() {
+			cteTable, err := extractor.plsqlExtractFactoringElement(cte)
+			if err != nil {
+				return nil, err
+			}
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+		}
+	}
+
 	var fromFieldList []fieldInfo
 	fromClause := ctx.From_clause()
 	if fromClause != nil {
@@ -505,7 +568,6 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		return extractor.plsqlExistSensitiveExpression(list)
 	case plsql.ISelect_only_statementContext:
-		// TODO(rebelice): handle CTE
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
@@ -514,7 +576,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 			schemaInfo:      extractor.schemaInfo,
 			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
 		}
-		fieldList, err := subqueryExtractor.plsqlExtractSubquery(rule.Subquery())
+		fieldList, err := subqueryExtractor.plsqlExtractSelectOnlyStatement(rule)
 		if err != nil {
 			return "", false, err
 		}
@@ -981,7 +1043,22 @@ func (extractor *sensitiveFieldExtractor) plsqlFindTableSchema(schemaName, table
 			ColumnList: []db.ColumnInfo{},
 		}, nil
 	}
-	// TODO(rebelice): handle CTE tables
+
+	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
+	//
+	//  with tt2 as (
+	//    with tt2 as (select * from t)
+	//    select max(a) from tt2)
+	//  select * from tt2
+	//
+	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(extractor.cteOuterSchemaInfo) - 1; i >= 0; i-- {
+		table := extractor.cteOuterSchemaInfo[i]
+		if table.Name == tableName && schemaName == extractor.currentDatabase {
+			return table, nil
+		}
+	}
 
 	for _, schema := range extractor.schemaInfo.DatabaseList {
 		if schema.Name != schemaName {
