@@ -100,7 +100,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
     }) {
       const name = `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
         policyType
-      )}`;
+      ).toLowerCase()}`;
       return this.getOrFetchPolicyByName(name, refresh);
     },
     async getOrFetchPolicyByName(name: string, refresh = false) {
