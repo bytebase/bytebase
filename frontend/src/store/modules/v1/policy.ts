@@ -104,7 +104,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       return this.getOrFetchPolicyByName(name, refresh);
     },
     async getOrFetchPolicyByName(name: string, refresh = false) {
-      const cachedData = this.getPolicyByName(name);
+      const cachedData = this.getPolicyByName(name.toLowerCase());
       if (cachedData && !refresh) {
         return cachedData;
       }
