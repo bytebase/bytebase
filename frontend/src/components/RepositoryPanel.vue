@@ -257,8 +257,8 @@
     </div>
   </BBModal>
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.vcs-sql-review"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>

@@ -184,8 +184,8 @@
     </NDrawer>
   </div>
   <FeatureModal
-    v-if="showFeatureModal"
     feature="bb.feature.encrypted-secrets"
+    :open="showFeatureModal"
     :instance="database.instanceEntity"
     @cancel="showFeatureModal = false"
   />

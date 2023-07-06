@@ -202,8 +202,8 @@
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.multi-tenancy"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
   <div
