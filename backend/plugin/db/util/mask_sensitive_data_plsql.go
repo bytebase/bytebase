@@ -73,7 +73,116 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractContext(ctx antlr.ParserRu
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
+	// Deal with recursive CTE first.
+	tableName := parser.PLSQLNormalizeIdentifierContext(ctx.Query_name().Identifier())
+
+	if yes, lastPart := extractor.plsqlIsRecursiveCTE(ctx); yes {
+		subquery := ctx.Subquery()
+		initialField, err := extractor.plsqlExtractSubqueryExceptLastPart(subquery)
+		if err != nil {
+			return db.TableSchema{}, err
+		}
+
+		if ctx.Paren_column_list() != nil {
+			var columnNameList []string
+			for _, column := range ctx.Paren_column_list().Column_list().AllColumn_name() {
+				_, _, columnName, err := plsqlNormalizeColumnName("", column)
+				if err != nil {
+					return db.TableSchema{}, err
+				}
+				columnNameList = append(columnNameList, columnName)
+			}
+			if len(columnNameList) != len(initialField) {
+				return db.TableSchema{}, errors.Errorf("column list and subquery must have the same number of columns")
+			}
+			for i, columnName := range columnNameList {
+				initialField[i].name = columnName
+			}
+		}
+
+		cteInfo := db.TableSchema{
+			Name:       tableName,
+			ColumnList: []db.ColumnInfo{},
+		}
+		for _, field := range initialField {
+			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
+				Name:      field.name,
+				Sensitive: field.sensitive,
+			})
+		}
+
+		// Compute dependent closures.
+		// There are two ways to compute dependent closures:
+		//   1. find the all dependent edges, then use graph theory traversal to find the closure.
+		//   2. Iterate to simulate the CTE recursive process, each turn check whether the Sensitive state has changed, and stop if no change.
+		//
+		// Consider the option 2 can easy to implementation, because the simulate process has been written.
+		// On the other hand, the number of iterations of the entire algorithm will not exceed the length of fields.
+		// In actual use, the length of fields will not be more than 20 generally.
+		// So I think it's OK for now.
+		// If any performance issues in use, optimize here.
+		extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteInfo)
+		defer func() {
+			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:len(extractor.cteOuterSchemaInfo)-1]
+		}()
+		for {
+			fieldList, err := extractor.plsqlExtractSubqueryBasicElements(lastPart.Subquery_basic_elements())
+			if err != nil {
+				return db.TableSchema{}, err
+			}
+			if len(fieldList) != len(cteInfo.ColumnList) {
+				return db.TableSchema{}, errors.Errorf("recursive WITH clause members must have the same number of columns")
+			}
+
+			changed := false
+			for i, field := range fieldList {
+				if field.sensitive != cteInfo.ColumnList[i].Sensitive {
+					changed = true
+					cteInfo.ColumnList[i].Sensitive = true
+				}
+			}
+
+			if !changed {
+				break
+			}
+			extractor.cteOuterSchemaInfo[len(extractor.cteOuterSchemaInfo)-1] = cteInfo
+		}
+		return cteInfo, nil
+	}
+
 	return extractor.plsqlExtractNonRecursiveCTE(ctx)
+}
+
+func (*sensitiveFieldExtractor) plsqlIsRecursiveCTE(ctx plsql.IFactoring_elementContext) (bool, plsql.ISubquery_operation_partContext) {
+	subquery := ctx.Subquery()
+	allParts := subquery.AllSubquery_operation_part()
+	if len(allParts) == 0 {
+		return false, nil
+	}
+	lastPart := allParts[len(allParts)-1]
+	return lastPart.ALL() != nil, lastPart
+}
+
+func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryExceptLastPart(ctx plsql.ISubqueryContext) ([]fieldInfo, error) {
+	subqueryBasicElements := ctx.Subquery_basic_elements()
+	if subqueryBasicElements == nil {
+		return nil, nil
+	}
+
+	leftField, err := extractor.plsqlExtractSubqueryBasicElements(subqueryBasicElements)
+	if err != nil {
+		return nil, err
+	}
+
+	allParts := ctx.AllSubquery_operation_part()
+	for _, part := range allParts[:len(allParts)-1] {
+		leftField, err = extractor.plsqlExtractSubqueryOperationPart(part, leftField)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return leftField, nil
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
@@ -167,13 +276,17 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryOperationPart(ctx 
 		return nil, errors.Errorf("each UNION/INTERSECT/EXCEPT query must have the same number of columns")
 	}
 
+	var result []fieldInfo
 	for i, field := range rightField {
-		if field.sensitive {
-			leftField[i].sensitive = true
-		}
+		result = append(result, fieldInfo{
+			name:      leftField[i].name,
+			table:     leftField[i].table,
+			database:  leftField[i].database,
+			sensitive: leftField[i].sensitive || field.sensitive,
+		})
 	}
 
-	return leftField, nil
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryBasicElements(ctx plsql.ISubquery_basic_elementsContext) ([]fieldInfo, error) {

@@ -1260,6 +1260,66 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for Recursive Common Table Expression dependent closures.
+			statement: `
+				with t1(cc1, cc2, cc3, n) as (
+					select a as c1, b as c2, c as c3, 1 as n from t
+					union all
+					select cc1 * cc2, cc2 + cc1, cc3 * cc2, n + 1 from t1 where n < 5
+				)
+				select * from t1;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "CC1",
+					Sensitive: true,
+				},
+				{
+					Name:      "CC2",
+					Sensitive: true,
+				},
+				{
+					Name:      "CC3",
+					Sensitive: true,
+				},
+				{
+					Name:      "N",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for Recursive Common Table Expression.
+			statement: `
+				with t1 as (
+					select 1 as c1, 2 as c2, 3 as c3, 1 as n from DUAL
+					union all
+					select c1 * a, c2 * b, c3 * d, n + 1 from t1, t where n < 5
+				)
+				select * from t1;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "C1",
+					Sensitive: true,
+				},
+				{
+					Name:      "C2",
+					Sensitive: false,
+				},
+				{
+					Name:      "C3",
+					Sensitive: true,
+				},
+				{
+					Name:      "N",
+					Sensitive: false,
+				},
+			},
+		},
+		{
 			// Test that Common Table Expression rename field names.
 			statement:  `with t1(d, c, b, a) as (select * from t) select * from t1`,
 			schemaInfo: defaultDatabaseSchema,
