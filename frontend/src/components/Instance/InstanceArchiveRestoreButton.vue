@@ -42,8 +42,8 @@
     </template>
   </template>
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.instance-count"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>

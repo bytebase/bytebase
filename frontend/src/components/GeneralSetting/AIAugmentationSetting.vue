@@ -96,8 +96,8 @@
     </div>
 
     <FeatureModal
-      v-if="state.showFeatureModal"
       feature="bb.feature.plugin.openai"
+      :open="state.showFeatureModal"
       @cancel="state.showFeatureModal = false"
     />
   </div>

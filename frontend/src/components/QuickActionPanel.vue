@@ -297,7 +297,7 @@
   />
 
   <FeatureModal
-    v-if="state.showFeatureModal && state.feature"
+    :open="state.showFeatureModal && state.feature"
     :feature="state.feature"
     @cancel="state.showFeatureModal = false"
   />

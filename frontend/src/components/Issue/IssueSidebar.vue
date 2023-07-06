@@ -279,7 +279,7 @@
       @remove-subscriber-id="(subscriberId) => removeSubscriberId(subscriberId)"
     />
     <FeatureModal
-      v-if="state.showFeatureModal"
+      :open="state.showFeatureModal"
       :feature="'bb.feature.task-schedule-time'"
       :instance="database?.instanceEntity"
       @cancel="state.showFeatureModal = false"

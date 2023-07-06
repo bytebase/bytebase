@@ -1,5 +1,5 @@
 <template>
-  <BBModal :title="title" @close="$emit('cancel')">
+  <BBModal v-if="open" :title="title" @close="$emit('cancel')">
     <div class="min-w-0 md:min-w-[400px] max-w-4xl">
       <div class="flex items-start space-x-2 mt-3">
         <div class="flex items-center">
@@ -120,10 +120,14 @@
       </div>
     </div>
   </BBModal>
+  <InstanceAssignment
+    :show="state.showInstanceAssignmentDrawer"
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
+import { PropType, computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
@@ -136,7 +140,15 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
+interface LocalState {
+  showInstanceAssignmentDrawer: boolean;
+}
+
 const props = defineProps({
+  open: {
+    required: true,
+    type: Boolean,
+  },
   feature: {
     required: true,
     type: String as PropType<FeatureType>,
@@ -145,6 +157,10 @@ const props = defineProps({
     type: Object as PropType<Instance>,
     default: undefined,
   },
+});
+
+const state = reactive<LocalState>({
+  showInstanceAssignmentDrawer: false,
 });
 
 const emit = defineEmits(["cancel"]);
@@ -172,14 +188,14 @@ const title = computed(() => {
 });
 
 const ok = () => {
-  router.push({
-    name: "setting.workspace.subscription",
-    query: instanceMissingLicense.value
-      ? {
-          manageLicense: 1,
-        }
-      : {},
-  });
+  if (instanceMissingLicense.value) {
+    state.showInstanceAssignmentDrawer = true;
+  } else {
+    router.push({
+      name: "setting.workspace.subscription",
+    });
+  }
+  emit("cancel");
 };
 
 const isRequiredInPlan = Array.isArray(

@@ -23,7 +23,7 @@
           <input
             type="checkbox"
             class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-            :disabled="!allowAdmin || instanceMissingLicense"
+            :disabled="!allowAdmin"
             :checked="isSensitiveColumn(column)"
             @input="
               toggleSensitiveColumn(
@@ -70,9 +70,9 @@
   </BBTable>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.sensitive-data"
     :instance="database.instanceEntity"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
