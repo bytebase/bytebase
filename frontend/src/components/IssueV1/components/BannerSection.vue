@@ -48,25 +48,26 @@ import { computed } from "vue";
 import dayjs from "dayjs";
 
 import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import {
+  IssueStatus,
+  Issue_Approver_Status,
+} from "@/types/proto/v1/issue_service";
 import { useIssueContext } from "../logic";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 
-const { isCreating, issue } = useIssueContext();
-// const reviewContext = useIssueReviewContext();
+const { isCreating, issue, reviewContext } = useIssueContext();
+const { status: reviewStatus } = reviewContext;
 
 const showPendingReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  return false; // todo
-  // return reviewContext.status.value === Issue_Approver_Status.PENDING;
+  return reviewStatus.value === Issue_Approver_Status.PENDING;
 });
 
 const showRejectedReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  return false; // todo
-  // return reviewContext.status.value === Issue_Approver_Status.REJECTED;
+  return reviewStatus.value === Issue_Approver_Status.REJECTED;
 });
 
 const showCancelBanner = computed(() => {
@@ -79,9 +80,9 @@ const showSuccessBanner = computed(() => {
 
 const showPendingRollout = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  // if (!isDatabaseRelatedIssueType(issue.value.type)) {
-  //   return false;
-  // }
+  if (!isDatabaseRelatedIssue(issue.value)) {
+    return false;
+  }
 
   const task = activeTaskInRollout(issue.value.rolloutEntity);
   return task.status === Task_Status.PENDING_APPROVAL;

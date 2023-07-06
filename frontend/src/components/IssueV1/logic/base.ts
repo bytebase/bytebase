@@ -15,10 +15,11 @@ import {
   taskV1Slug,
 } from "@/utils";
 import { emptyStage, emptyTask } from "@/types";
+import { extractReviewContext } from "./review";
 
 export const useBaseIssueContext = (
   context: Pick<IssueContext, "isCreating" | "ready" | "issue">
-) => {
+): Partial<IssueContext> => {
   const { isCreating, issue } = context;
   const route = useRoute();
   const router = useRouter();
@@ -118,8 +119,11 @@ export const useBaseIssueContext = (
     });
   });
 
+  const reviewContext = extractReviewContext(issue);
+
   return {
     events,
+    reviewContext,
     activeStage,
     activeTask,
     selectedStage,

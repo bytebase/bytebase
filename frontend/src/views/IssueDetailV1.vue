@@ -20,7 +20,14 @@ import { useI18n } from "vue-i18n";
 
 import { useTitle } from "@vueuse/core";
 import { extractProjectResourceName, idFromSlug } from "@/utils";
-import { EMPTY_ID, UNKNOWN_ID, emptyIssue, unknownIssue } from "@/types";
+import {
+  EMPTY_ID,
+  EMPTY_ROLLOUT_NAME,
+  UNKNOWN_ID,
+  emptyIssue,
+  emptyRollout,
+  unknownIssue,
+} from "@/types";
 import { rolloutServiceClient } from "@/grpcweb";
 import {
   Plan_ChangeDatabaseConfig,
@@ -69,30 +76,12 @@ const issue = ref(unknownIssue());
 const tryFetchIssue = async (uid: string) => {
   ready.value = false;
   const legacyIssue = await useIssueStore().fetchIssueById(Number(uid));
-  // console.log("legacyIssue", legacyIssue);
 
   const rawIssue = await issueServiceClient.getIssue({
     name: `projects/-/issues/${uid}`,
   });
-  // console.log("issue", rawIssue);
-  const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  // issue.plan = `${projectResource}/plans/101`;
-  rawIssue.rollout = `${project}/rollouts/${legacyIssue.pipeline?.id}`;
-  // const plan = await rolloutServiceClient.getPlan({
-  //   name: issue.plan,
-  // });
-  // console.log("plan", plan);
-  const rolloutEntity = await rolloutServiceClient.getRollout({
-    name: rawIssue.rollout,
-  });
-  // console.log("rollout", rollout);
-  // const { plans: taskRunList } = await rolloutServiceClient.listRolloutTaskRuns(
-  //   {
-  //     parent: rollout.name,
-  //   }
-  // );
-  // console.log("taskRunList", taskRunList);
 
+  const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
   const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
     project
   );
@@ -100,10 +89,30 @@ const tryFetchIssue = async (uid: string) => {
   issue.value = {
     ...rawIssue,
     planEntity: undefined,
-    rolloutEntity,
+    rollout: EMPTY_ROLLOUT_NAME,
+    rolloutEntity: emptyRollout(),
     project,
     projectEntity,
   };
+
+  if (legacyIssue.pipeline) {
+    const rollout = `${project}/rollouts/${legacyIssue.pipeline.id}`;
+    rawIssue.rollout = rollout;
+    issue.value.rollout = rollout;
+    issue.value.rolloutEntity = await rolloutServiceClient.getRollout({
+      name: rollout,
+    });
+  }
+  // const plan = await rolloutServiceClient.getPlan({
+  //   name: issue.plan,
+  // });
+  // console.log("plan", plan);
+  // const { plans: taskRunList } = await rolloutServiceClient.listRolloutTaskRuns(
+  //   {
+  //     parent: rollout.name,
+  //   }
+  // );
+  // console.log("taskRunList", taskRunList);
   ready.value = true;
 };
 

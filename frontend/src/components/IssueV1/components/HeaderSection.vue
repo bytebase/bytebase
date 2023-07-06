@@ -22,26 +22,41 @@
           />
 
           <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-            <div v-if="showExportCenterLink">
-              <router-link
-                class="btn-primary"
-                :to="{
-                  name: 'workspace.export-center',
-                  hash: `#${issue.uid}`,
-                }"
-              >
-                <heroicons-outline:download class="w-5 h-5 mr-2" />
-                <span>{{ $t("export-center.self") }}</span>
-              </router-link>
+            <div class="issue-debug">
+              <div>showReviewButtonGroup: {{ showReviewButtonGroup }}</div>
+              <div>showRolloutButtonGroup: {{ showRolloutButtonGroup }}</div>
+              <div>
+                allowEditNameAndDescription: {{ allowEditNameAndDescription }}
+              </div>
+              <div>
+                isFinishedGrantRequestIssueByCurrentUser:
+                {{ isFinishedGrantRequestIssueByCurrentUser }}
+              </div>
+              <div>showExportCenterLink: {{ showExportCenterLink }}</div>
+              <div>showSQLEditorLink: {{ showSQLEditorLink }}</div>
             </div>
-            <div v-else-if="showSQLEditorLink">
-              <button class="btn-primary" @click="gotoSQLEditor">
-                <heroicons-solid:terminal class="w-5 h-5 mr-2" />
-                <span>{{ $t("sql-editor.self") }}</span>
-              </button>
-            </div>
-            <IssueReviewButtonGroup v-else-if="showReviewButtonGroup" />
-            <CombinedRolloutButtonGroup v-else-if="showRolloutButtonGroup" />
+            <template v-if="false">
+              <div v-if="showExportCenterLink">
+                <router-link
+                  class="btn-primary"
+                  :to="{
+                    name: 'workspace.export-center',
+                    hash: `#${issue.uid}`,
+                  }"
+                >
+                  <heroicons-outline:download class="w-5 h-5 mr-2" />
+                  <span>{{ $t("export-center.self") }}</span>
+                </router-link>
+              </div>
+              <div v-else-if="showSQLEditorLink">
+                <button class="btn-primary" @click="gotoSQLEditor">
+                  <heroicons-solid:terminal class="w-5 h-5 mr-2" />
+                  <span>{{ $t("sql-editor.self") }}</span>
+                </button>
+              </div>
+              <IssueReviewButtonGroup v-else-if="showReviewButtonGroup" />
+              <CombinedRolloutButtonGroup v-else-if="showRolloutButtonGroup" />
+            </template>
           </div>
         </div>
 
@@ -138,7 +153,8 @@ interface LocalState {
 }
 
 const currentUser = useCurrentUserV1();
-const { isCreating, issue } = useIssueContext();
+const { isCreating, issue, reviewContext } = useIssueContext();
+const { done: reviewDone } = reviewContext;
 
 const state = reactive<LocalState>({
   editing: false,
@@ -186,8 +202,7 @@ const showReviewButtonGroup = computed(() => {
   // if (reviewError.value) return false;
   // User can cancel issue when it's in review.
   if (isGrantRequestIssue(issue.value)) return true;
-  return false; // todo
-  // return !reviewDone.value;
+  return !reviewDone.value;
 });
 
 /**
