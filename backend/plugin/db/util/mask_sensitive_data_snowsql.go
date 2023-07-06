@@ -682,7 +682,6 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			return "", false, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
 		return fieldInfo.name, fieldInfo.sensitive, nil
-
 	}
 	panic("never reach here")
 }
