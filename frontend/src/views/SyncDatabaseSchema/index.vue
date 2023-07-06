@@ -136,8 +136,8 @@
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.sync-schema-all-versions"
+    :open="state.showFeatureModal"
     :instance="database?.instanceEntity"
     @cancel="state.showFeatureModal = false"
   />

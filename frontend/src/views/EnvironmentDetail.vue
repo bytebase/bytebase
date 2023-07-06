@@ -14,7 +14,7 @@
     @update-policy="updatePolicy"
   />
   <FeatureModal
-    v-if="state.missingRequiredFeature != undefined"
+    :open="state.missingRequiredFeature != undefined"
     :feature="state.missingRequiredFeature"
     @cancel="state.missingRequiredFeature = undefined"
   />

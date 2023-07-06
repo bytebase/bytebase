@@ -91,7 +91,7 @@
   </div>
 
   <FeatureModal
-    v-if="state.requiredFeatureName"
+    :open="state.requiredFeatureName"
     :feature="state.requiredFeatureName"
     @cancel="state.requiredFeatureName = undefined"
   />

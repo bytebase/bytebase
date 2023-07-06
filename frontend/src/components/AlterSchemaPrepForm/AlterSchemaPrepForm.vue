@@ -279,7 +279,7 @@
   </DrawerContent>
 
   <FeatureModal
-    v-if="featureModalContext.feature"
+    :open="featureModalContext.feature"
     :feature="featureModalContext.feature"
     @cancel="featureModalContext.feature = undefined"
   />
