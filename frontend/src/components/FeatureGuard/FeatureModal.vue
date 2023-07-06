@@ -1,5 +1,5 @@
 <template>
-  <BBModal v-if="open" :title="title" @close="$emit('cancel')">
+  <BBModal v-if="open && feature" :title="title" @close="$emit('cancel')">
     <div class="min-w-0 md:min-w-[400px] max-w-4xl">
       <div class="flex items-start space-x-2 mt-3">
         <div class="flex items-center">
@@ -152,6 +152,7 @@ const props = defineProps({
   feature: {
     required: true,
     type: String as PropType<FeatureType>,
+    default: "",
   },
   instance: {
     type: Object as PropType<Instance>,
