@@ -6,7 +6,12 @@
     <div class="flex items-center gap-x-1">
       <SQLEditorButtonV1 v-if="database" :database="database" />
 
-      <DatabaseV1Name v-if="database" :database="database" :plain="true" />
+      <DatabaseV1Name
+        v-if="database"
+        :database="database"
+        :plain="true"
+        class="hover:underline"
+      />
       <span v-else>
         {{ coreDatabaseInfo.databaseName }}
       </span>
@@ -23,7 +28,11 @@
       </span>
     </div>
 
-    <InstanceV1Name :instance="coreDatabaseInfo.instanceEntity" :plain="true" />
+    <InstanceV1Name
+      :instance="coreDatabaseInfo.instanceEntity"
+      :plain="true"
+      class="hover:underline"
+    />
   </div>
 </template>
 

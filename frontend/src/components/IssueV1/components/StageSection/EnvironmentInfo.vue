@@ -3,7 +3,11 @@
     <div class="textlabel">
       {{ $t("common.environment") }}
     </div>
-    <EnvironmentV1Name :environment="environment" :plain="true" />
+    <EnvironmentV1Name
+      :environment="environment"
+      :plain="true"
+      class="hover:underline"
+    />
   </div>
 </template>
 
