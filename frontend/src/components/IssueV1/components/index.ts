@@ -4,6 +4,7 @@ import StageSection from "./StageSection";
 import TaskListSection from "./TaskListSection";
 import StatementSection from "./StatementSection";
 import DescriptionSection from "./DescriptionSection";
+import ActivitySection from "./ActivitySection";
 
 export {
   BannerSection,
@@ -12,4 +13,5 @@ export {
   TaskListSection,
   StatementSection,
   DescriptionSection,
+  ActivitySection,
 };

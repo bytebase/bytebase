@@ -13,6 +13,8 @@
     <StatementSection />
 
     <DescriptionSection />
+
+    <ActivitySection />
   </div>
 
   <div class="issue-debug">
@@ -29,6 +31,7 @@ import {
   TaskListSection,
   StatementSection,
   DescriptionSection,
+  ActivitySection,
 } from "./components";
 
 const { isCreating, phase, issue } = useIssueContext();

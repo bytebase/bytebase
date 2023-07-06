@@ -1,13 +1,25 @@
 import slug from "slug";
 import { last } from "lodash-es";
 
-import { EMPTY_TASK_NAME, emptyStage, emptyTask } from "@/types";
+import {
+  EMPTY_TASK_NAME,
+  emptyStage,
+  emptyTask,
+  unknownTask,
+  unknownStage,
+} from "@/types";
 import {
   Rollout,
   Stage,
   Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
+
+export const extractRolloutUID = (name: string) => {
+  const pattern = /(?:^|\/)rollouts\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
 
 export const stageV1Slug = (stage: Stage): string => {
   return [slug(stage.title), stage.uid].join("-");
@@ -57,4 +69,37 @@ export const activeStageInRollout = (rollout: Rollout): Stage => {
     }
   }
   return emptyStage();
+};
+
+export const findTaskByUID = (
+  rollout: Rollout | undefined,
+  uid: string
+): Task => {
+  for (const stage of rollout?.stages ?? []) {
+    for (const task of stage.tasks) {
+      if (task.uid == uid) {
+        return task;
+      }
+    }
+  }
+  return unknownTask();
+};
+
+export const findStageByUID = (
+  rollout: Rollout | undefined,
+  uid: string
+): Stage => {
+  return (rollout?.stages ?? []).find((s) => s.uid === uid) ?? unknownStage();
+};
+
+export const extractSchemaVersionFromTask = (task: Task): string => {
+  // The schema version is specified in the filename
+  // parsed and stored to the payload.schemaVersion
+  // fallback to empty if we can't read the field.
+  return (
+    task.databaseDataUpdate?.schemaVersion ??
+    task.databaseSchemaBaseline?.schemaVersion ??
+    task.databaseSchemaUpdate?.schemaVersion ??
+    ""
+  );
 };

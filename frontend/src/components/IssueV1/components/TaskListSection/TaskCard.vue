@@ -68,6 +68,7 @@ import { InstanceV1Name } from "@/components/v2";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 import TaskProgress from "./TaskProgress.vue";
+import { extractSchemaVersionFromTask } from "@/utils";
 
 type SecondaryViewMode = "INSTANCE" | "TASK_TITLE";
 
@@ -104,16 +105,7 @@ const schemaVersion = computed(() => {
   if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) return "";
   if (project.value.workflow === Workflow.UI) return "";
 
-  // The schema version is specified in the filename
-  // parsed and stored to the payload.schemaVersion
-  // fallback to empty if we can't read the field.
-  const { task } = props;
-  return (
-    task.databaseDataUpdate?.schemaVersion ??
-    task.databaseSchemaBaseline?.schemaVersion ??
-    task.databaseSchemaUpdate?.schemaVersion ??
-    ""
-  );
+  return extractSchemaVersionFromTask(props.task);
 });
 
 const taskClass = computed(() => {
