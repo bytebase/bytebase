@@ -1,9 +1,5 @@
 <template>
-  <div class="issue-debug">
-    <div>activeTask: {{ activeTask.name }} '{{ activeTask.title }}'</div>
-    <div>selectedTask: {{ selectedTask.name }} '{{ selectedTask.title }}'</div>
-  </div>
-  <div v-if="true || shouldShowTaskBar" class="relative">
+  <div v-if="shouldShowTaskBar" class="relative">
     <div
       ref="taskBar"
       class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
@@ -24,7 +20,7 @@ import { useVerticalScrollState } from "@/composables/useScrollState";
 import { useIssueContext } from "../../logic";
 import TaskCard from "./TaskCard.vue";
 
-const { issue, selectedStage, activeTask, selectedTask } = useIssueContext();
+const { issue, selectedStage } = useIssueContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 

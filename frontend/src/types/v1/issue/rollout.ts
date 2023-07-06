@@ -61,7 +61,7 @@ export const unknownTask = () => {
   });
 };
 
-export const TaskTypeV1WithStatement: Task_Type[] = [
+export const TaskTypeListWithStatement: Task_Type[] = [
   Task_Type.GENERAL,
   Task_Type.DATABASE_CREATE,
   Task_Type.DATABASE_DATA_UPDATE,
@@ -69,4 +69,9 @@ export const TaskTypeV1WithStatement: Task_Type[] = [
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
+];
+
+export const TaskTypeListWithProgress: Task_Type[] = [
+  Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
+  Task_Type.DATABASE_RESTORE_RESTORE,
 ];

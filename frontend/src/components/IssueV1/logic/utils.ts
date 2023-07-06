@@ -71,7 +71,8 @@ export const databaseForTask = (issue: ComposedIssue, task: Task) => {
     if (
       task.databaseDataUpdate ||
       task.databaseSchemaUpdate ||
-      task.databaseRestoreRestore
+      task.databaseRestoreRestore ||
+      task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER
     ) {
       return useDatabaseV1Store().getDatabaseByName(task.target);
     }

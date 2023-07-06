@@ -42,7 +42,7 @@
       <EnvironmentInfo />
     </div>
     <div class="lg:flex items-center justify-end">
-      (put `When` here if needed)
+      <div class="issue-debug">(put `When` here if needed)</div>
     </div>
   </div>
 </template>
@@ -52,7 +52,11 @@ import { computed } from "vue";
 import { NTooltip } from "naive-ui";
 import { first } from "lodash-es";
 
-import { EMPTY_STAGE_NAME, TaskTypeV1WithStatement, emptyTask } from "@/types";
+import {
+  EMPTY_STAGE_NAME,
+  TaskTypeListWithStatement,
+  emptyTask,
+} from "@/types";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
 import StageSelect from "./StageSelect.vue";
@@ -76,7 +80,7 @@ const isValidStage = (stage: Stage): boolean => {
   }
 
   for (const task of stage.tasks) {
-    if (TaskTypeV1WithStatement.includes(task.type)) {
+    if (TaskTypeListWithStatement.includes(task.type)) {
       return false;
       // if (task.)
       // if (task.sheetId === undefined || task.sheetId === UNKNOWN_ID) {

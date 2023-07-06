@@ -1,63 +1,101 @@
 <template>
   <div
-    class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 justify-between items-center overflow-hidden"
+    class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
     :class="taskClass"
     :data-task-uid="isCreating ? '-creating-' : task.uid"
     @click="onClickTask(task)"
   >
-    <div class="flex items-center pb-1">
-      <div class="flex items-center flex-1 gap-x-1">
-        <TaskStatusIcon
-          :create="isCreating"
-          :active="active"
-          :status="task.status"
-          :task="task"
-          class="transform scale-75"
-        />
-        <div class="name flex-1 space-x-1 overflow-x-hidden">
-          <heroicons:arrow-small-right
-            v-if="active"
-            class="w-5 h-5 inline-block mb-0.5"
+    <div class="flex-1 flex flex-col gap-y-1">
+      <div class="flex items-center">
+        <div class="flex items-center flex-1 gap-x-1">
+          <TaskStatusIcon
+            :create="isCreating"
+            :active="active"
+            :status="task.status"
+            :task="task"
+            class="transform scale-75"
           />
-          <span class="issue-debug">#{{ task.uid }}</span>
-          <span>{{ databaseForTask(issue, task).databaseName }}</span>
-          <span v-if="schemaVersion" class="schema-version">
-            ({{ schemaVersion }})
-          </span>
+          <div class="name flex-1 space-x-1 overflow-x-hidden">
+            <heroicons:arrow-small-right
+              v-if="active"
+              class="w-5 h-5 inline-block mb-0.5"
+            />
+            <span>{{ databaseForTask(issue, task).databaseName }}</span>
+            <span v-if="schemaVersion" class="schema-version">
+              ({{ schemaVersion }})
+            </span>
+          </div>
+        </div>
+        <TaskExtraActionsButton :task="task" />
+      </div>
+      <div class="flex items-center justify-between px-1 text-sm">
+        <div
+          v-if="secondaryViewMode === 'INSTANCE'"
+          class="flex flex-1 items-center whitespace-pre-wrap"
+        >
+          <InstanceV1Name
+            :instance="databaseForTask(issue, task).instanceEntity"
+            :link="false"
+          />
+        </div>
+        <div
+          v-if="secondaryViewMode === 'TASK_TITLE'"
+          class="flex flex-1 items-center whitespace-pre-wrap break-all"
+        >
+          {{ taskTitle }}
         </div>
       </div>
-      <!-- <TaskExtraActionsButton :task="(task as Task)" /> -->
     </div>
-    <div class="flex items-center justify-between px-1 py-1">
-      <div class="flex flex-1 items-center whitespace-pre-wrap">
-        <InstanceV1Name
-          :instance="databaseForTask(issue, task).instanceEntity"
-          :link="false"
-        />
-      </div>
+    <div v-if="shouldShowTaskProgress" class="flex flex-col justify-center">
+      <TaskProgress :task="task" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 
-import { Task, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
+import { TaskTypeListWithProgress } from "@/types";
+import {
+  Task,
+  Task_Type,
+  task_StatusToJSON,
+} from "@/types/proto/v1/rollout_service";
 import { databaseForTask, useIssueContext } from "../../logic";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import { InstanceV1Name } from "@/components/v2";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
+import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
+import TaskProgress from "./TaskProgress.vue";
 
-const { isCreating, issue, activeTask, selectedTask, events } =
-  useIssueContext();
+type SecondaryViewMode = "INSTANCE" | "TASK_TITLE";
 
 const props = defineProps<{
   task: Task;
 }>();
 
+const { t } = useI18n();
+const { isCreating, issue, activeTask, selectedTask, events } =
+  useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 const active = computed(() => props.task === activeTask.value);
 const selected = computed(() => props.task === selectedTask.value);
+
+const secondaryViewMode = computed((): SecondaryViewMode => {
+  if (
+    [
+      Task_Type.DATABASE_CREATE,
+      Task_Type.DATABASE_RESTORE_RESTORE,
+      Task_Type.DATABASE_RESTORE_CUTOVER,
+      Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
+      Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
+    ].includes(props.task.type)
+  ) {
+    return "TASK_TITLE";
+  }
+  return "INSTANCE";
+});
 
 const schemaVersion = computed(() => {
   // show the schema version for a task if
@@ -87,6 +125,21 @@ const taskClass = computed(() => {
   if (isCreating.value) classes.push("create");
   classes.push(`status_${task_StatusToJSON(task.status).toLowerCase()}`);
   return classes;
+});
+
+const shouldShowTaskProgress = computed(() => {
+  return TaskTypeListWithProgress.includes(props.task.type);
+});
+
+const taskTitle = computed(() => {
+  const type = props.task.type;
+  if (type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC) {
+    return t("task.type.bb-task-database-schema-update-ghost-sync");
+  }
+  if (type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER) {
+    return t("task.type.bb-task-database-schema-update-ghost-cutover");
+  }
+  return props.task.title;
 });
 
 const onClickTask = (task: Task) => {
