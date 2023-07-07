@@ -717,7 +717,7 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 	var approvers []*storepb.IssuePayloadApproval_Approver
 	var activities []*store.ActivityMessage
 
-	step := FindNextPendingStep(approval.ApprovalTemplates[0], approvers)
+	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 	if step == nil {
 		return nil, nil, nil
 	}

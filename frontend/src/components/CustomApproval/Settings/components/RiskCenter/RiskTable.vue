@@ -56,7 +56,7 @@ defineProps<{
 
 const { t } = useI18n();
 const context = useRiskCenterContext();
-const { allowAdmin } = context;
+const { hasFeature, showFeatureModal, allowAdmin } = context;
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
@@ -80,6 +80,10 @@ const COLUMN_LIST = computed(() => {
 });
 
 const editRisk = (risk: Risk) => {
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
+    return;
+  }
   context.dialog.value = {
     mode: "EDIT",
     risk,
