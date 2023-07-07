@@ -37,7 +37,7 @@
           >{{ $t("common.retry") }}</NButton
         >
       </div>
-      <ApprovalTimeline
+      <Timeline
         v-else-if="wrappedSteps && wrappedSteps.length > 0"
         :steps="wrappedSteps"
       />
@@ -64,7 +64,7 @@ import {
   useIssueContext,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1";
-import ApprovalTimeline from "./ApprovalTimeline.vue";
+import Timeline from "./Timeline.vue";
 
 const { issue, reviewContext, selectedTask } = useIssueContext();
 const { ready, error } = reviewContext;

@@ -1,7 +1,7 @@
 <template>
   <NTimeline
     :horizontal="true"
-    :icon-size="32"
+    :icon-size="28"
     class="bb-approval-timeline-horizontal"
   >
     <NTimelineItem v-for="step in steps" :key="step.index">
