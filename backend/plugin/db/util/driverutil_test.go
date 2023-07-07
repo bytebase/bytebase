@@ -1820,6 +1820,35 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for recursive CTE.
+			statement: `WITH CTE_01 AS (
+				SELECT A AS C1, B AS C2, C AS C3, 1 AS N FROM T1
+				UNION ALL
+				SELECT C1 * C2, C2 + C1, C3 * C2, N + 1 FROM CTE_01 WHERE N < 5
+			)
+			SELECT * FROM CTE_01;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "C1",
+					Sensitive: true,
+				},
+				{
+					Name:      "C2",
+					Sensitive: true,
+				},
+				{
+					Name:      "C3",
+					Sensitive: true,
+				},
+				{
+					Name:      "N",
+					Sensitive: false,
+				},
+			},
+		},
+		{
 			// Test for UNPIVOT.
 			statement:  `SELECT * FROM T1 UNPIVOT(E FOR F IN (B, C, D));`,
 			schemaInfo: defaultDatabaseSchema,
