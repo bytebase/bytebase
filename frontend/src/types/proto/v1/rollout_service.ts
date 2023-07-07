@@ -553,6 +553,16 @@ export interface GetRolloutRequest {
   name: string;
 }
 
+export interface PreviewRolloutRequest {
+  /**
+   * The name of the project.
+   * Format: projects/{project}
+   */
+  project: string;
+  /** The plan used to preview rollout. */
+  plan?: Plan;
+}
+
 export interface Rollout {
   /**
    * The resource name of the rollout.
@@ -2758,6 +2768,77 @@ export const GetRolloutRequest = {
   },
 };
 
+function createBasePreviewRolloutRequest(): PreviewRolloutRequest {
+  return { project: "", plan: undefined };
+}
+
+export const PreviewRolloutRequest = {
+  encode(message: PreviewRolloutRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.plan !== undefined) {
+      Plan.encode(message.plan, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PreviewRolloutRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewRolloutRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.project = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.plan = Plan.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewRolloutRequest {
+    return {
+      project: isSet(object.project) ? String(object.project) : "",
+      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
+    };
+  },
+
+  toJSON(message: PreviewRolloutRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    message.plan !== undefined && (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewRolloutRequest>): PreviewRolloutRequest {
+    return PreviewRolloutRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<PreviewRolloutRequest>): PreviewRolloutRequest {
+    const message = createBasePreviewRolloutRequest();
+    message.project = object.project ?? "";
+    message.plan = (object.plan !== undefined && object.plan !== null) ? Plan.fromPartial(object.plan) : undefined;
+    return message;
+  },
+};
+
 function createBaseRollout(): Rollout {
   return { name: "", uid: "", plan: "", title: "", stages: [] };
 }
@@ -4379,6 +4460,67 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    previewRollout: {
+      name: "PreviewRollout",
+      requestType: PreviewRolloutRequest,
+      requestStream: false,
+      responseType: Rollout,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              44,
+              58,
+              1,
+              42,
+              34,
+              39,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              58,
+              112,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+              82,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
     listRolloutTaskRuns: {
       name: "ListRolloutTaskRuns",
       requestType: ListPlansRequest,
@@ -4503,6 +4645,7 @@ export interface RolloutServiceImplementation<CallContextExt = {}> {
   createPlan(request: CreatePlanRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Plan>>;
   updatePlan(request: UpdatePlanRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Plan>>;
   getRollout(request: GetRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
+  previewRollout(request: PreviewRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
   listRolloutTaskRuns(
     request: ListPlansRequest,
     context: CallContext & CallContextExt,
@@ -4519,6 +4662,7 @@ export interface RolloutServiceClient<CallOptionsExt = {}> {
   createPlan(request: DeepPartial<CreatePlanRequest>, options?: CallOptions & CallOptionsExt): Promise<Plan>;
   updatePlan(request: DeepPartial<UpdatePlanRequest>, options?: CallOptions & CallOptionsExt): Promise<Plan>;
   getRollout(request: DeepPartial<GetRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
+  previewRollout(request: DeepPartial<PreviewRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
   listRolloutTaskRuns(
     request: DeepPartial<ListPlansRequest>,
     options?: CallOptions & CallOptionsExt,
