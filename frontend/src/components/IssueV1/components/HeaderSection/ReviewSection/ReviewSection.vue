@@ -15,14 +15,14 @@
     <div class="">
       <div
         v-if="!ready"
-        class="flex items-center gap-x-2 mt-1 text-sm text-control-placeholder"
+        class="flex items-center gap-x-2 text-sm text-control-placeholder"
       >
         <BBSpin class="w-4 h-4" />
         <span>
           {{ $t("custom-approval.issue-review.generating-approval-flow") }}
         </span>
       </div>
-      <div v-else-if="error" class="flex items-center gap-x-2 mt-0.5">
+      <div v-else-if="error" class="flex items-center gap-x-2">
         <NTooltip>
           <template #trigger>
             <span class="text-error text-sm">{{ $t("common.error") }}</span>
@@ -43,12 +43,12 @@
       />
       <div
         v-else
-        class="flex items-center mt-1 text-sm text-control-placeholder gap-x-1"
+        class="flex items-center text-sm text-control-placeholder gap-x-1"
       >
         {{ $t("custom-approval.approval-flow.skip") }}
         <FeatureBadgeForInstanceLicense
           feature="bb.feature.custom-approval"
-          :instance="selectedDatabase?.instanceEntity"
+          :instance="selectedDatabase.instanceEntity"
         />
       </div>
     </div>
