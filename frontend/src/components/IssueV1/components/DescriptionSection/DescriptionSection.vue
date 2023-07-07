@@ -66,9 +66,13 @@ import { useI18n } from "vue-i18n";
 import { NInput, NButton } from "naive-ui";
 
 import { useIssueContext } from "../../logic";
-import { hasWorkspacePermissionV1, isGrantRequestIssue } from "@/utils";
+import {
+  extractUserResourceName,
+  hasWorkspacePermissionV1,
+  isGrantRequestIssue,
+} from "@/utils";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { extractUserEmail, pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification, useCurrentUserV1 } from "@/store";
 import { issueServiceClient } from "@/grpcweb";
 
 type LocalState = {
@@ -104,8 +108,8 @@ const allowEdit = computed(() => {
   }
 
   if (
-    extractUserEmail(issue.value.assignee) === currentUser.value.email ||
-    extractUserEmail(issue.value.creator) === currentUser.value.email
+    extractUserResourceName(issue.value.assignee) === currentUser.value.email ||
+    extractUserResourceName(issue.value.creator) === currentUser.value.email
   ) {
     // Allowed if current user is the assignee or creator.
     return true;

@@ -1,5 +1,5 @@
 import BannerSection from "./BannerSection.vue";
-import HeaderSection from "./HeaderSection.vue";
+import HeaderSection from "./HeaderSection";
 import StageSection from "./StageSection";
 import TaskListSection from "./TaskListSection";
 import StatementSection from "./StatementSection";
