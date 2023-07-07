@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-x-3">
+  <div class="flex items-center justify-end gap-x-3">
     <div class="issue-debug">
       <div>showReviewButtonGroup: {{ showReviewButtonGroup }}</div>
       <div>showRolloutButtonGroup: {{ showRolloutButtonGroup }}</div>
@@ -32,15 +32,19 @@
       <IssueReviewButtonGroup v-else-if="showReviewButtonGroup" />
       <CombinedRolloutButtonGroup v-else-if="showRolloutButtonGroup" />
     </template>
+
+    <IssueReviewButtonGroup v-if="showReviewButtonGroup" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useCurrentUserV1 } from "@/store";
-import { useIssueContext } from "../../logic";
 import { computed } from "vue";
+
 import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { useCurrentUserV1 } from "@/store";
 import { isGrantRequestIssue } from "@/utils";
+import { useIssueContext } from "../../../logic";
+import { IssueReviewButtonGroup } from "./review";
 
 const currentUser = useCurrentUserV1();
 const { isCreating, issue, reviewContext } = useIssueContext();

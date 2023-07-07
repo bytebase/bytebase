@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-4 py-2"
+    class="flex flex-col gap-2 md:flex-row md:items-stretch md:justify-between px-4 py-2"
   >
     <div class="flex-1">
       <div class="flex flex-col gap-y-1">
@@ -39,8 +39,8 @@ import { Task_Status } from "@/types/proto/v1/rollout_service";
 import Title from "./Title.vue";
 import Description from "./Description.vue";
 import VCSInfo from "./VCSInfo.vue";
-import Actions from "./Actions.vue";
-import Assignee from "./Assignee.vue";
+import Actions from "./Actions";
+import Assignee from "./Assignee";
 import RollbackFromTips from "./RollbackFromTips.vue";
 
 const { isCreating, issue } = useIssueContext();

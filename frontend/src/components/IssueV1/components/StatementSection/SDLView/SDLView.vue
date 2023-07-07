@@ -21,10 +21,10 @@
       </div>
       <template v-else-if="sdlState.detail">
         <NTabs v-model:value="state.tab" class="mb-1">
-          <NTab name="diff" :disabled="!!sdlState.detail.error">
+          <NTab name="DIFF" :disabled="!!sdlState.detail.error">
             <div class="flex items-center gap-x-1">
               {{ $t("issue.sdl.schema-change") }}
-              <NTooltip>
+              <NTooltip :disabled="!!sdlState.detail.error">
                 <template #trigger>
                   <heroicons:question-mark-circle class="w-4 h-4" />
                 </template>
@@ -39,10 +39,10 @@
               </NTooltip>
             </div>
           </NTab>
-          <NTab name="statement" :disabled="!!sdlState.detail.error">
+          <NTab name="STATEMENT" :disabled="!!sdlState.detail.error">
             {{ $t("issue.sdl.generated-ddl-statements") }}
           </NTab>
-          <NTab name="schema">
+          <NTab name="SCHEMA">
             {{ $t("issue.sdl.full-schema") }}
           </NTab>
         </NTabs>

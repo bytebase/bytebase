@@ -34,14 +34,18 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { NTooltip } from "naive-ui";
 
-import { pushNotification, useCurrentUserV1, useIssueStore } from "@/store";
 import { ComposedIssue } from "@/types";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { AppIMSetting_IMType } from "@/types/proto/v1/setting_service";
 import { Workflow } from "@/types/proto/v1/project_service";
-import { extractUserResourceName, extractUserUID } from "@/utils";
-import { useIssueContext } from "../../logic";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { extractUserResourceName, extractUserUID } from "@/utils";
+import {
+  pushNotification,
+  useSettingV1Store,
+  useCurrentUserV1,
+  useIssueStore,
+} from "@/store";
+import { useIssueContext } from "../../../logic";
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();

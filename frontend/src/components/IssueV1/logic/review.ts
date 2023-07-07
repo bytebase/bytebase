@@ -1,8 +1,20 @@
-import { Ref, computed } from "vue";
+import { Ref, computed, unref } from "vue";
 
-import { ReviewFlow, emptyFlow } from "@/types";
+import {
+  ReviewFlow,
+  emptyFlow,
+  MaybeRef,
+  ComposedIssue,
+  WrappedReviewStep,
+} from "@/types";
 import { Issue, Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import { ReviewContext } from "./context";
+import {
+  candidatesOfApprovalStepV1,
+  useAuthStore,
+  useUserStore,
+} from "@/store";
+import { extractUserResourceName } from "@/utils";
 
 export const extractReviewContext = (issue: Ref<Issue>): ReviewContext => {
   const ready = computed(() => {
@@ -72,4 +84,64 @@ export const extractReviewContext = (issue: Ref<Issue>): ReviewContext => {
     done,
     error,
   };
+};
+
+export const useWrappedReviewStepsV1 = (
+  issue: MaybeRef<ComposedIssue>,
+  context: ReviewContext
+) => {
+  const userStore = useUserStore();
+  const currentUserName = computed(() => useAuthStore().currentUser.name);
+  return computed(() => {
+    const { flow, done } = context;
+    const steps = flow.value.template.flow?.steps;
+    const approvers = flow.value.approvers;
+    const currentStepIndex = flow.value.currentStepIndex ?? -1;
+
+    const statusOfStep = (index: number) => {
+      if (done.value) {
+        return "APPROVED";
+      }
+      if (index >= (steps?.length ?? 0)) {
+        // Out of index
+        return "PENDING";
+      }
+      const approval = approvers[index];
+      if (approval && approval.status === Issue_Approver_Status.REJECTED) {
+        return "REJECTED";
+      }
+      if (index < currentStepIndex) {
+        return "APPROVED";
+      }
+      if (index === currentStepIndex) {
+        return "CURRENT";
+      }
+      return "PENDING";
+    };
+    const approverOfStep = (index: number) => {
+      const principal = approvers[index]?.principal;
+      if (!principal) return undefined;
+      const email = extractUserResourceName(principal);
+      return userStore.getUserByEmail(email);
+    };
+    const candidatesOfStep = (index: number) => {
+      const step = steps?.[index];
+      if (!step) return [];
+      const users = candidatesOfApprovalStepV1(unref(issue), step);
+      const idx = users.indexOf(currentUserName.value);
+      if (idx > 0) {
+        users.splice(idx, 1);
+        users.unshift(currentUserName.value);
+      }
+      return users.map((user) => userStore.getUserByName(user)!);
+    };
+
+    return steps?.map<WrappedReviewStep>((step, index) => ({
+      index,
+      step,
+      status: statusOfStep(index),
+      approver: approverOfStep(index),
+      candidates: candidatesOfStep(index),
+    }));
+  });
 };

@@ -1,9 +1,12 @@
 <template>
-  <div ref="editorContainerRef" v-bind="$attrs"></div>
-  <BBSpin
-    v-if="!isEditorLoaded"
-    class="h-full w-full flex items-center justify-center"
-  />
+  <div ref="editorContainerRef" v-bind="$attrs" class="relative">
+    <div
+      v-if="!isEditorLoaded"
+      class="absolute inset-0 flex flex-col items-center justify-center"
+    >
+      <BBSpin />
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>

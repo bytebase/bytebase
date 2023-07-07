@@ -23,21 +23,22 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+
+import { useUserStore } from "@/store";
+import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
+import { extractUserResourceName, extractUserUID } from "@/utils";
+import { User } from "@/types/proto/v1/auth_service";
 import { UserSelect } from "@/components/v2";
 import {
   allowUserToBeAssignee,
   useCurrentRollOutPolicyForActiveEnvironment,
   useIssueContext,
-} from "../../logic";
+} from "../../../logic";
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
-import { User } from "@/types/proto/v1/auth_service";
-import { useUserStore } from "@/store";
-import { computed } from "vue";
-import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
-import { extractUserResourceName, extractUserUID } from "@/utils";
 
 const userStore = useUserStore();
-const { isCreating, issue } = useIssueContext();
+const { isCreating, phase, issue } = useIssueContext();
 
 const assigneeUID = computed(() => {
   const assignee = issue.value.assignee;
