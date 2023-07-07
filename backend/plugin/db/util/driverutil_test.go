@@ -1820,6 +1820,21 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for correlated sub-query.
+			statement:  `SELECT A, (SELECT MAX(B) > Y.A FROM T1 X) FROM T1 Y`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "(SELECTMAX(B)>Y.AFROMT1X)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for CTE in CTE.
 			statement: `WITH TT1 (T1_COL1, T1_COL2) AS (
 				WITH TT2 (T1_COL1, T1_COL2, T1_COL3) AS (
