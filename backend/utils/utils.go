@@ -764,13 +764,21 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 	if node == nil {
 		return errors.Errorf("external approval node %s not found", externalNodeID)
 	}
-	uri, err := relayClient.Create(node.Endpoint, relay.CreatePayload{})
+	id, err := relayClient.Create(node.Endpoint, &relay.CreatePayload{
+		IssueID:     fmt.Sprintf("%d", issue.UID),
+		Title:       issue.Title,
+		Description: issue.Description,
+		Project:     issue.Project.ResourceID,
+		CreateTime:  issue.CreatedTime,
+		Creator:     issue.Creator.Email,
+		Assignee:    issue.Assignee.Email,
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create external approval")
 	}
 	payload, err := json.Marshal(&api.ExternalApprovalPayloadRelay{
 		ExternalApprovalNodeID: node.Id,
-		URI:                    uri,
+		ID:                     id,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal external approval payload")
