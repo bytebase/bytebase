@@ -71,6 +71,12 @@
       content: WHERE clause is required for SELECT statement.
       line: 1
       details: ""
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: WHERE clause is required for SELECT statement.
+      line: 5
+      details: ""
 - statement: |-
     MERGE INTO target_table USING (
       SELECT id, description FROM source_table
