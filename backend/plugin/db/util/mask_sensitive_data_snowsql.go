@@ -58,7 +58,6 @@ func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparse
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx snowparser.IQuery_statementContext) ([]fieldInfo, error) {
 	if ctx.With_expression() != nil {
-
 		allCommandTableExpression := ctx.With_expression().AllCommon_table_expression()
 		originalDatabaseSchema := extractor.schemaInfo.DatabaseList
 		defer func() {
