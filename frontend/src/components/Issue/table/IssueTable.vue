@@ -368,6 +368,16 @@ const clickIssue = (_: number, row: number, e: MouseEvent) => {
 };
 
 const clickIssueStep = (issue: Issue, step: BBStep) => {
+  if (!isDatabaseRelatedIssueType(issue.type)) {
+    router.push({
+      name: "workspace.issue.detail",
+      params: {
+        issueSlug: issueSlug(issue.name, issue.id),
+      },
+    });
+    return;
+  }
+
   const task = step.payload as Task;
   const stageIndex = issue.pipeline!.stageList.findIndex((item) => {
     return item.id == task.stage.id;
