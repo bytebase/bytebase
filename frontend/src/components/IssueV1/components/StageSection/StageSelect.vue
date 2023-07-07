@@ -67,6 +67,8 @@ const activeOrFirstTaskInStage = (stage: Stage) => {
 
 const handleSelectStage = (name: string) => {
   const stage = stageList.value.find((s) => s.name === name);
+  if (stage === selectedStage.value) return;
+
   if (stage) {
     const task = activeOrFirstTaskInStage(stage);
     if (task) {

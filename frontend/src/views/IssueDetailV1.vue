@@ -5,7 +5,9 @@
       <div><NButton @click="tryCreate">try create</NButton></div>
     </template>
     <IssueDetailPage v-if="ready" />
-    <BBSpin v-else />
+    <div v-else class="w-full h-full flex flex-col items-center justify-center">
+      <BBSpin />
+    </div>
   </div>
   <FeatureModal
     v-if="state.showFeatureModal"
