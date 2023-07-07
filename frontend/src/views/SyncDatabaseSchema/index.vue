@@ -210,11 +210,11 @@ const state = reactive<LocalState>({
 });
 
 const prepareFullViewChangeHistory = async () => {
-  if (!state.sourceSchema.changeHistory) {
+  const changeHistory = state.sourceSchema.changeHistory;
+  if (!changeHistory || changeHistory.uid === String(UNKNOWN_ID)) {
     return;
   }
 
-  const changeHistory = state.sourceSchema.changeHistory;
   const cache = fullViewChangeHistoryCache.value.get(changeHistory.name);
   if (!cache) {
     const fullViewChangeHistory = await changeHistoryStore.fetchChangeHistory({
