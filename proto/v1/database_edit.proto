@@ -1,0 +1,206 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/field_behavior.proto";
+
+option go_package = "generated-go/v1";
+
+message DatabaseEdit {
+  // The name of the database to retrieve.
+  // Format: instances/{instance}/databases/{database}.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // List of schema creation contexts.
+  repeated CreateSchemaContext create_schema_contexts = 2;
+
+  // List of schema renaming contexts.
+  repeated RenameSchemaContext rename_schema_contexts = 3;
+
+  // List of schema dropping contexts.
+  repeated DropSchemaContext drop_schema_contexts = 4;
+
+  // List of table creation contexts.
+  repeated CreateTableContext create_table_contexts = 5;
+
+  // List of table alteration contexts.
+  repeated AlterTableContext alter_table_contexts = 6;
+
+  // List of table renaming contexts.
+  repeated RenameTableContext rename_table_contexts = 7;
+
+  // List of table dropping contexts.
+  repeated DropTableContext drop_table_contexts = 8;
+}
+
+message CreateSchemaContext {
+  // The name of the schema to create.
+  string name = 1;
+}
+
+message RenameSchemaContext {
+  // The old name of the schema.
+  string old_name = 1;
+
+  // The new name of the schema.
+  string new_name = 2;
+}
+
+message DropSchemaContext {
+  // The name of the schema to drop.
+  string name = 1;
+}
+
+message CreateTableContext {
+  // The name of the table to create.
+  string name = 1;
+
+  // The schema of the table.
+  string schema = 2;
+
+  // The type of the table.
+  string type = 3;
+
+  // The engine of the table.
+  string engine = 4;
+
+  // The character set of the table.
+  string character_set = 5;
+
+  // The collation of the table.
+  string collation = 6;
+
+  // The comment of the table.
+  string comment = 7;
+
+  // List of column addition contexts.
+  repeated AddColumnContext add_column_contexts = 8;
+
+  // List of primary key columns.
+  repeated string primary_keys = 9;
+
+  // List of foreign key addition contexts.
+  repeated AddForeignKeyContext add_foreign_key_contexts = 10;
+}
+
+message AlterTableContext {
+  // The name of the table to alter.
+  string name = 1;
+
+  // The schema of the table.
+  string schema = 2;
+
+  // List of column addition contexts.
+  repeated AddColumnContext add_column_contexts = 3;
+
+  // List of column alteration contexts.
+  repeated AlterColumnContext alter_column_contexts = 4;
+
+  // List of column dropping contexts.
+  repeated DropColumnContext drop_column_contexts = 5;
+
+  // List of primary key columns to be dropped.
+  repeated string drop_primary_keys = 6;
+
+  // List of primary key columns.
+  repeated string primary_keys = 7;
+
+  // List of foreign key columns to be dropped.
+  repeated string drop_foreign_keys = 8;
+
+  // List of foreign key addition contexts.
+  repeated AddForeignKeyContext add_foreign_key_contexts = 9;
+}
+
+message RenameTableContext {
+  // The schema of the table.
+  string schema = 1;
+
+  // The old name of the table.
+  string old_name = 2;
+
+  // The new name of the table.
+  string new_name = 3;
+}
+
+message DropTableContext {
+  // The name of the table to drop.
+  string name = 1;
+
+  // The schema of the table.
+  string schema = 2;
+}
+
+message AddColumnContext {
+  // The name of the column to add.
+  string name = 1;
+
+  // The type of the column.
+  string type = 2;
+
+  // The character set of the column.
+  string character_set = 3;
+
+  // The collation of the column.
+  string collation = 4;
+
+  // The comment of the column.
+  string comment = 5;
+
+  // Whether the column is nullable.
+  bool nullable = 6;
+
+  // The default value of the column.
+  string default_value = 7;
+
+  // Whether the column has a default value.
+  bool has_default_value = 8;
+}
+
+message AlterColumnContext {
+  // The old name of the column.
+  string old_name = 1;
+
+  // The new name of the column.
+  string new_name = 2;
+
+  // The type of the column.
+  string type = 3;
+
+  // The character set of the column.
+  string character_set = 4;
+
+  // The collation of the column.
+  string collation = 5;
+
+  // The comment of the column.
+  string comment = 6;
+
+  // Whether the column is nullable.
+  bool nullable = 7;
+
+  // The default value of the column.
+  string default_value = 8;
+
+  // Whether the default value of the column has changed.
+  bool is_default_value_changed = 9;
+}
+
+message DropColumnContext {
+  // The name of the column to drop.
+  string name = 1;
+}
+
+message AddForeignKeyContext {
+  // The column of the foreign key.
+  string column = 1;
+
+  // The referenced schema of the foreign key.
+  string referenced_schema = 2;
+
+  // The referenced table of the foreign key.
+  string referenced_table = 3;
+
+  // The referenced column of the foreign key.
+  string referenced_column = 4;
+}
