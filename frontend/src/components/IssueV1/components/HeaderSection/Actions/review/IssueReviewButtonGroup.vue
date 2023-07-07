@@ -1,53 +1,49 @@
 <template>
-  <div class="flex flex-col items-end gap-y-4">
-    <div class="flex items-stretch gap-x-4">
-      <button
-        v-if="allowReject"
-        class="btn-normal"
-        @click="showModal(Issue_Approver_Status.REJECTED)"
-      >
-        {{ $t("custom-approval.issue-review.send-back") }}
-      </button>
+  <div class="flex items-stretch gap-x-4">
+    <button
+      v-if="allowReject"
+      class="btn-normal"
+      @click="showModal(Issue_Approver_Status.REJECTED)"
+    >
+      {{ $t("custom-approval.issue-review.send-back") }}
+    </button>
 
-      <BBTooltipButton
-        v-if="allowApprove"
-        :disabled="disallowApproveReasonList.length > 0"
-        :tooltip-props="{
-          placement: 'bottom-end',
-        }"
-        type="primary"
-        tooltip-mode="DISABLED-ONLY"
-        @click="showModal(Issue_Approver_Status.APPROVED)"
-      >
-        {{ $t("common.approve") }}
+    <BBTooltipButton
+      v-if="allowApprove"
+      :disabled="disallowApproveReasonList.length > 0"
+      :tooltip-props="{
+        placement: 'bottom-end',
+      }"
+      type="primary"
+      tooltip-mode="DISABLED-ONLY"
+      @click="showModal(Issue_Approver_Status.APPROVED)"
+    >
+      {{ $t("common.approve") }}
 
-        <template #tooltip>
-          <div class="whitespace-pre-line max-w-[20rem]">
-            <div v-for="(reason, i) in disallowApproveReasonList" :key="i">
-              {{ reason }}
-            </div>
+      <template #tooltip>
+        <div class="whitespace-pre-line max-w-[20rem]">
+          <div v-for="(reason, i) in disallowApproveReasonList" :key="i">
+            {{ reason }}
           </div>
-        </template>
-      </BBTooltipButton>
+        </div>
+      </template>
+    </BBTooltipButton>
 
-      <button
-        v-if="allowReRequestReview"
-        class="btn-primary"
-        @click="showModal(Issue_Approver_Status.PENDING)"
-      >
-        {{ $t("custom-approval.issue-review.re-request-review") }}
-      </button>
+    <button
+      v-if="allowReRequestReview"
+      class="btn-primary"
+      @click="showModal(Issue_Approver_Status.PENDING)"
+    >
+      {{ $t("custom-approval.issue-review.re-request-review") }}
+    </button>
 
-      <!-- <StandaloneIssueStatusTransitionButtonGroup
+    <!-- <StandaloneIssueStatusTransitionButtonGroup
       :display-mode="
         allowApprove || allowReject || allowReRequestReview
           ? 'DROPDOWN'
           : 'BUTTON'
       "
     /> -->
-    </div>
-
-    <ReviewSection />
   </div>
 
   <BBModal
@@ -84,7 +80,6 @@ import { BBTooltipButton } from "@/bbkit";
 import { extractUserResourceName } from "@/utils";
 import ReviewForm from "./ReviewForm.vue";
 import { useIssueContext } from "@/components/IssueV1";
-import ReviewSection from "./ReviewSection.vue";
 // import { StandaloneIssueStatusTransitionButtonGroup } from "../StatusTransitionButtonGroup";
 
 type LocalState = {

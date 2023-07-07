@@ -38,7 +38,7 @@ import {
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const userStore = useUserStore();
-const { isCreating, phase, issue } = useIssueContext();
+const { isCreating, issue } = useIssueContext();
 
 const assigneeUID = computed(() => {
   const assignee = issue.value.assignee;

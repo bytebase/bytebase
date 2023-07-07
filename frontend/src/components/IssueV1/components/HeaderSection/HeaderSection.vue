@@ -22,8 +22,9 @@
         <RollbackFromTips />
       </div>
     </div>
-    <div class="flex flex-col gap-y-2">
+    <div class="flex flex-col items-end gap-y-2">
       <Actions />
+      <ReviewSection v-if="!isCreating" />
       <Assignee />
     </div>
   </div>
@@ -40,6 +41,7 @@ import Title from "./Title.vue";
 import Description from "./Description.vue";
 import VCSInfo from "./VCSInfo.vue";
 import Actions from "./Actions";
+import ReviewSection from "./ReviewSection";
 import Assignee from "./Assignee";
 import RollbackFromTips from "./RollbackFromTips.vue";
 
