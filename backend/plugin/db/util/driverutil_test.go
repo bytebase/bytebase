@@ -1820,6 +1820,27 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for CTE in CTE.
+			statement: `WITH TT1 (T1_COL1, T1_COL2) AS (
+				WITH TT2 (T1_COL1, T1_COL2, T1_COL3) AS (
+					SELECT A, B, C FROM T1
+				)
+				SELECT T1_COL1, T1_COL2 FROM TT2
+			)
+			SELECT * FROM TT1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "T1_COL1",
+					Sensitive: true,
+				},
+				{
+					Name:      "T1_COL2",
+					Sensitive: false,
+				},
+			},
+		},
+		{
 			// Test for expression.
 			statement:  `SELECT (SELECT A FROM T1 LIMIT 1), A + 1, 1, FUNCTIONCALL(D) FROM T1;`,
 			schemaInfo: defaultDatabaseSchema,
