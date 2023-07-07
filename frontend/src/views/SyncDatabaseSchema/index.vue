@@ -276,7 +276,7 @@ const fullViewSourceSchema = computed(() => {
   );
   return {
     ...state.sourceSchema,
-    changeHistory: fullViewChangeHistory,
+    changeHistory: fullViewChangeHistory || state.sourceSchema.changeHistory,
   };
 });
 
