@@ -7,7 +7,7 @@ import {
   PlanCheckRun_Type,
 } from "@/types/proto/v1/rollout_service";
 import { AdviceOption } from "@/components/MonacoEditor";
-import { useIssueContext } from "../../../logic";
+import { useIssueContext } from "../../logic";
 
 export const useSQLAdviceMarkers = () => {
   const { isCreating, issue, selectedTask } = useIssueContext();

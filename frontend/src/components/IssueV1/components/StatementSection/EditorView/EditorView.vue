@@ -160,7 +160,7 @@ import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import { EditState, useTempEditState } from "./useTempEditState";
-import { useSQLAdviceMarkers } from "./useSQLAdviceMarkers";
+import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
 
 type LocalState = EditState & {

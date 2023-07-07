@@ -11,7 +11,7 @@ import { useIssueContext } from "../../logic";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { TaskTypeListWithStatement } from "@/types";
 import EditorView from "./EditorView";
-import SDLView from "./SDLView.vue";
+import SDLView from "./SDLView";
 
 const { isCreating, selectedTask } = useIssueContext();
 

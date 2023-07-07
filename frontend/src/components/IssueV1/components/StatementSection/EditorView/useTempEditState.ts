@@ -1,8 +1,8 @@
-import { useSheetByName } from "@/store";
-import { UNKNOWN_ID } from "@/types";
-import { sheetNameOfTaskV1 } from "@/utils";
 import { computed, nextTick, ref, watch } from "vue";
+
+import { UNKNOWN_ID } from "@/types";
 import { useIssueContext } from "../../../logic";
+import { useTaskSheet } from "../useTaskSheet";
 
 export type EditState = {
   isEditing: boolean;
@@ -11,13 +11,7 @@ export type EditState = {
 
 export const useTempEditState = (state: EditState) => {
   const { isCreating, selectedTask } = useIssueContext();
-
-  const sheetName = computed(() => sheetNameOfTaskV1(selectedTask.value));
-  const { sheet, ready: sheetReady } = useSheetByName(sheetName);
-  const sheetStatement = computed(() => {
-    if (!sheetReady.value || !sheet.value) return "";
-    return new TextDecoder().decode(sheet.value.content);
-  });
+  const { sheet, sheetName, sheetReady, sheetStatement } = useTaskSheet();
 
   let stopWatching = () => {
     // noop
