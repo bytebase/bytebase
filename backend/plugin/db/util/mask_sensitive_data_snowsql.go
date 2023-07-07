@@ -141,10 +141,10 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 		if err != nil {
 			return nil, err
 		}
-		originalFromFields := extractor.fromFieldList
-		extractor.fromFieldList = fromFieldList
+		originalFromFieldsLength := len(extractor.fromFieldList)
+		extractor.fromFieldList = append(extractor.fromFieldList, fromFieldList...)
 		defer func() {
-			extractor.fromFieldList = originalFromFields
+			extractor.fromFieldList = extractor.fromFieldList[:originalFromFieldsLength]
 		}()
 	}
 
@@ -829,6 +829,12 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 		aliasName := parser.NormalizeObjectNamePart(id)
 		for i := 0; i < len(result); i++ {
 			result[i].table = aliasName
+			// We can safely set the database and schema to empty string because the
+			// user cannot use the original table name to access the column.
+			// For example, the following query is illegal:
+			// SELECT T1.A FROM T1 AS T2;
+			result[i].schema = ""
+			result[i].database = ""
 		}
 	}
 
