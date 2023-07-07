@@ -25,7 +25,7 @@ type ExternalApprovalPayloadFeishu struct {
 // ExternalApprovalPayloadRelay is the payload for relay type ExternalApproval.
 type ExternalApprovalPayloadRelay struct {
 	ExternalApprovalNodeID string `json:"externalApprovalNodeId"`
-	URI                    string `json:"uri"`
+	ID                     string `json:"id"`
 }
 
 // ExternalApprovalEventActionType is the type of the action which the user took.
