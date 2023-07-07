@@ -257,7 +257,6 @@ import {
 } from "@/store";
 import {
   ChangeHistory,
-  ChangeHistoryView,
   ChangeHistory_Type,
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
@@ -294,7 +293,6 @@ watch(
     useDatabaseV1Store().getOrFetchDatabaseByName(parent);
     changeHistoryStore.fetchChangeHistoryList({
       parent,
-      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
     });
   },
   { immediate: true }

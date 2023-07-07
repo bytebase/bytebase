@@ -164,6 +164,7 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import { instanceV1Name } from "@/utils";
 import {
   ChangeHistory,
+  ChangeHistoryView,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 
@@ -426,6 +427,7 @@ watch(
       const changeHistoryList = (
         await changeHistoryStore.fetchChangeHistoryList({
           parent: database.name,
+          view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
         })
       ).filter((changeHistory) =>
         allowedMigrationTypeList.includes(changeHistory.type)
