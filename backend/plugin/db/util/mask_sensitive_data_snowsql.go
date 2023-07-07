@@ -824,7 +824,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 	}
 
 	if ctx.Pivot_unpivot() != nil {
-		//TODO(zp): handle unpivot
 		if v := ctx.Pivot_unpivot(); v.PIVOT() != nil {
 			pivotColumnName := v.AllId_()[1]
 			normalizedPivotColumnName := parser.NormalizeObjectNamePart(pivotColumnName)
@@ -861,6 +860,45 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 					sensitive: pivotColumnInOriginalResult.sensitive,
 				})
 			}
+		} else if v := ctx.Pivot_unpivot(); v.UNPIVOT() != nil {
+			var strippedColumnIndices []int
+			var strippedColumnInOriginalResult []fieldInfo
+			for idx, columnName := range v.Column_list().AllColumn_name() {
+				normalizedColumnName := parser.NormalizeObjectNamePart(columnName.Id_())
+				for i, field := range result {
+					if field.name == normalizedColumnName {
+						strippedColumnIndices = append(strippedColumnIndices, i)
+						strippedColumnInOriginalResult = append(strippedColumnInOriginalResult, field)
+						break
+					}
+				}
+				if len(strippedColumnIndices) != idx+1 {
+					return nil, errors.Errorf(`column %s is not found from field list %+v`, normalizedColumnName, result)
+				}
+				result = append(result[:strippedColumnIndices[idx]], result[strippedColumnIndices[idx]+1:]...)
+			}
+
+			shouldBeSensitive := false
+			for _, field := range strippedColumnInOriginalResult {
+				if field.sensitive {
+					shouldBeSensitive = true
+					break
+				}
+			}
+
+			valueColumnName := v.Id_(0)
+			normalizedValueColumnName := parser.NormalizeObjectNamePart(valueColumnName)
+
+			nameColumnName := v.Column_name().Id_()
+			normalizedNameColumnName := parser.NormalizeObjectNamePart(nameColumnName)
+
+			result = append(result, fieldInfo{
+				name:      normalizedNameColumnName,
+				sensitive: false,
+			}, fieldInfo{
+				name:      normalizedValueColumnName,
+				sensitive: shouldBeSensitive,
+			})
 		}
 	}
 
