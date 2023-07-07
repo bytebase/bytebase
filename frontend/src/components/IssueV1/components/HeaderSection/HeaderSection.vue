@@ -22,7 +22,7 @@
         <RollbackFromTips />
       </div>
     </div>
-    <div class="flex flex-col items-end gap-y-2">
+    <div class="flex flex-col items-end gap-y-4">
       <Actions />
       <ReviewSection v-if="!isCreating" />
       <Assignee />

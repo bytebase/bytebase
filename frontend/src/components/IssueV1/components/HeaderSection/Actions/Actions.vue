@@ -1,9 +1,5 @@
 <template>
-  <div class="flex items-center justify-end gap-x-3">
-    <div class="issue-debug">
-      <div>actionType: {{ actionType }}</div>
-    </div>
-
+  <div class="flex flex-col items-end">
     <NButton v-if="actionType === 'CREATE'" type="primary" size="large">
       {{ $t("common.create") }}
     </NButton>
@@ -58,11 +54,13 @@ const actionType = computed((): ActionType => {
   }
   if (isGrantRequestIssue(issue.value)) {
     if (isFinishedGrantRequestIssueByCurrentUser.value) {
+      // eslint-disable-next-line
       if (false) {
         // TODO: check request export payload
         // return issue.value.pa.payload.grantRequest?.role === PresetRoleType.EXPORTER;
         return "EXPORT-CENTER";
       }
+      // eslint-disable-next-line
       if (false) {
         // TODO: check request query payload
         // return issue.value.payload.grantRequest?.role === PresetRoleType.QUERIER;

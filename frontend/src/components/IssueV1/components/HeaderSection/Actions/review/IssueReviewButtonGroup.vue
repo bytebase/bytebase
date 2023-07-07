@@ -1,20 +1,22 @@
 <template>
   <div class="flex items-stretch gap-x-4">
-    <button
+    <NButton
       v-if="allowReject"
-      class="btn-normal"
+      type="default"
+      size="large"
       @click="showModal(Issue_Approver_Status.REJECTED)"
     >
       {{ $t("custom-approval.issue-review.send-back") }}
-    </button>
+    </NButton>
 
-    <BBTooltipButton
+    <TooltipButton
       v-if="allowApprove"
       :disabled="disallowApproveReasonList.length > 0"
       :tooltip-props="{
-        placement: 'bottom-end',
+        placement: 'top-end',
       }"
       type="primary"
+      size="large"
       tooltip-mode="DISABLED-ONLY"
       @click="showModal(Issue_Approver_Status.APPROVED)"
     >
@@ -27,15 +29,16 @@
           </div>
         </div>
       </template>
-    </BBTooltipButton>
+    </TooltipButton>
 
-    <button
+    <NButton
       v-if="allowReRequestReview"
-      class="btn-primary"
+      type="primary"
+      size="large"
       @click="showModal(Issue_Approver_Status.PENDING)"
     >
       {{ $t("custom-approval.issue-review.re-request-review") }}
-    </button>
+    </NButton>
 
     <!-- <StandaloneIssueStatusTransitionButtonGroup
       :display-mode="
@@ -73,13 +76,15 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { NButton } from "naive-ui";
 
 import { candidatesOfApprovalStepV1, useCurrentUserV1 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { BBTooltipButton } from "@/bbkit";
 import { extractUserResourceName } from "@/utils";
 import ReviewForm from "./ReviewForm.vue";
+
 import { useIssueContext } from "@/components/IssueV1";
+import { TooltipButton } from "@/components/v2";
 // import { StandaloneIssueStatusTransitionButtonGroup } from "../StatusTransitionButtonGroup";
 
 type LocalState = {
@@ -138,7 +143,7 @@ const allowReRequestReview = computed(() => {
 
 const allTaskChecksPassed = computed(() => {
   // TODO
-  return true;
+  return false;
   // const taskList =
   //   issue.value.pipeline?.stageList.flatMap((stage) => stage.taskList) ?? [];
   // return taskList.every((task) => {
