@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0"
+    class="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0"
     :class="iconClass"
   >
     <heroicons-outline:thumb-up

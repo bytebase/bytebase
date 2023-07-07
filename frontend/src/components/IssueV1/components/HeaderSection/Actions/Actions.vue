@@ -1,50 +1,41 @@
 <template>
   <div class="flex items-center justify-end gap-x-3">
     <div class="issue-debug">
-      <div>showReviewButtonGroup: {{ showReviewButtonGroup }}</div>
-      <div>showRolloutButtonGroup: {{ showRolloutButtonGroup }}</div>
-      <div>
-        isFinishedGrantRequestIssueByCurrentUser:
-        {{ isFinishedGrantRequestIssueByCurrentUser }}
-      </div>
-      <div>showExportCenterLink: {{ showExportCenterLink }}</div>
-      <div>showSQLEditorLink: {{ showSQLEditorLink }}</div>
+      <div>actionType: {{ actionType }}</div>
     </div>
-    <template v-if="false">
-      <div v-if="showExportCenterLink">
-        <router-link
-          class="btn-primary"
-          :to="{
-            name: 'workspace.export-center',
-            hash: `#${issue.uid}`,
-          }"
-        >
-          <heroicons-outline:download class="w-5 h-5 mr-2" />
-          <span>{{ $t("export-center.self") }}</span>
-        </router-link>
-      </div>
-      <div v-else-if="showSQLEditorLink">
-        <button class="btn-primary" @click="gotoSQLEditor">
-          <heroicons-solid:terminal class="w-5 h-5 mr-2" />
-          <span>{{ $t("sql-editor.self") }}</span>
-        </button>
-      </div>
-      <IssueReviewButtonGroup v-else-if="showReviewButtonGroup" />
-      <CombinedRolloutButtonGroup v-else-if="showRolloutButtonGroup" />
-    </template>
 
-    <IssueReviewButtonGroup v-if="showReviewButtonGroup" />
+    <NButton v-if="actionType === 'CREATE'" type="primary" size="large">
+      {{ $t("common.create") }}
+    </NButton>
+
+    <ExportCenterButton v-if="actionType === 'EXPORT-CENTER'" />
+
+    <SQLEditorButton v-if="actionType === 'SQL-EDITOR'" />
+
+    <IssueReviewButtonGroup v-if="actionType === 'REVIEW'" />
+
+    <CombinedRolloutButtonGroup v-if="actionType === 'ROLLOUT'" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { NButton } from "naive-ui";
 
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { useCurrentUserV1 } from "@/store";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { IssueReviewButtonGroup } from "./review";
+import { CombinedRolloutButtonGroup } from "./rollout";
+import { ExportCenterButton, SQLEditorButton } from "./request";
+
+type ActionType =
+  | "CREATE"
+  | "EXPORT-CENTER"
+  | "SQL-EDITOR"
+  | "REVIEW"
+  | "ROLLOUT";
 
 const currentUser = useCurrentUserV1();
 const { isCreating, issue, reviewContext } = useIssueContext();
@@ -61,71 +52,26 @@ const isFinishedGrantRequestIssueByCurrentUser = computed(() => {
   return true;
 });
 
-const showExportCenterLink = computed(() => {
-  if (!isFinishedGrantRequestIssueByCurrentUser.value) return false;
-  return false; // todo
-  // return issue.value.pa.payload.grantRequest?.role === PresetRoleType.EXPORTER;
-});
+const actionType = computed((): ActionType => {
+  if (isCreating.value) {
+    return "CREATE";
+  }
+  if (isGrantRequestIssue(issue.value)) {
+    if (isFinishedGrantRequestIssueByCurrentUser.value) {
+      if (false) {
+        // TODO: check request export payload
+        // return issue.value.pa.payload.grantRequest?.role === PresetRoleType.EXPORTER;
+        return "EXPORT-CENTER";
+      }
+      if (false) {
+        // TODO: check request query payload
+        // return issue.value.payload.grantRequest?.role === PresetRoleType.QUERIER;
+        return "SQL-EDITOR";
+      }
+    }
+    return "REVIEW";
+  }
 
-const showSQLEditorLink = computed(() => {
-  if (!isFinishedGrantRequestIssueByCurrentUser.value) return false;
-  return false; // todo
-  // return issue.value.payload.grantRequest?.role === PresetRoleType.QUERIER;
+  return reviewDone.value ? "ROLLOUT" : "REVIEW";
 });
-
-/**
- * Send back / Approve
- * + cancel issue (dropdown)
- */
-const showReviewButtonGroup = computed(() => {
-  if (isCreating.value) return false;
-  // if (reviewError.value) return false;
-  // User can cancel issue when it's in review.
-  if (isGrantRequestIssue(issue.value)) return true;
-  return !reviewDone.value;
-});
-
-/**
- * Rollout / Retry
- * + cancel issue (dropdown)
- * + skip all failed tasks in current stage (dropdown)
- */
-const showRolloutButtonGroup = computed(() => {
-  if (isCreating.value) return true;
-  if (isGrantRequestIssue(issue.value)) return false;
-
-  return false; // todo
-  // return reviewDone.value;
-});
-const gotoSQLEditor = async () => {
-  // const grantRequest = issue.value.payload.grantRequest as GrantRequestPayload;
-  // const conditionExpression = await convertFromCELString(
-  //   grantRequest.condition.expression
-  // );
-  // if (
-  //   conditionExpression.databaseResources !== undefined &&
-  //   conditionExpression.databaseResources.length > 0
-  // ) {
-  //   const databaseResourceName = conditionExpression.databaseResources[0]
-  //     .databaseName as string;
-  //   const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
-  //     databaseResourceName
-  //   );
-  //   if (db.uid !== String(UNKNOWN_ID)) {
-  //     const slug = connectionV1Slug(db.instanceEntity, db);
-  //     const url = router.resolve({
-  //       name: "sql-editor.detail",
-  //       params: {
-  //         connectionSlug: slug,
-  //       },
-  //     });
-  //     window.open(url.fullPath, "__BLANK");
-  //     return;
-  //   }
-  // }
-  // const url = router.resolve({
-  //   name: "sql-editor.home",
-  // });
-  // window.open(url.fullPath, "__BLANK");
-};
 </script>
