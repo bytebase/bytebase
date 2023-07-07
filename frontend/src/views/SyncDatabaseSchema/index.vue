@@ -129,7 +129,7 @@
         <SelectTargetDatabasesView
           ref="targetDatabaseViewRef"
           :project-id="state.projectId!"
-          :source-schema="state.sourceSchema as any"
+          :source-schema="fullSourceSchema as any"
         />
       </template>
     </BBStepTab>
@@ -200,12 +200,37 @@ const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const subscriptionV1Store = useSubscriptionV1Store();
+const fullViewChangeHistoryCache = ref<Map<string, ChangeHistory>>(new Map());
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
   currentStep: SELECT_SOURCE_DATABASE,
   sourceSchema: {},
   showFeatureModal: false,
+});
+
+const prepareFullViewChangeHistory = async () => {
+  if (!state.sourceSchema.changeHistory) {
+    return;
+  }
+
+  const changeHistory = state.sourceSchema.changeHistory;
+  const cache = fullViewChangeHistoryCache.value.get(changeHistory.name);
+  if (!cache) {
+    const fullViewChangeHistory = await changeHistoryStore.fetchChangeHistory({
+      name: changeHistory.name,
+      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+    });
+    fullViewChangeHistoryCache.value.set(
+      fullViewChangeHistory.name,
+      fullViewChangeHistory
+    );
+  }
+};
+
+watch(() => state.sourceSchema.changeHistory, prepareFullViewChangeHistory, {
+  immediate: true,
+  deep: true,
 });
 
 const isValidId = (id: any): id is string => {
@@ -243,6 +268,16 @@ const stepTabList = computed(() => {
     { title: t("database.sync-schema.select-source-schema") },
     { title: t("database.sync-schema.select-target-databases") },
   ];
+});
+
+const fullSourceSchema = computed(() => {
+  const fullViewChangeHistory = fullViewChangeHistoryCache.value.get(
+    state.sourceSchema.changeHistory?.name || ""
+  );
+  return {
+    ...state.sourceSchema,
+    changeHistory: fullViewChangeHistory,
+  };
 });
 
 const allowNext = computed(() => {
@@ -427,7 +462,6 @@ watch(
       const changeHistoryList = (
         await changeHistoryStore.fetchChangeHistoryList({
           parent: database.name,
-          view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
         })
       ).filter((changeHistory) =>
         allowedMigrationTypeList.includes(changeHistory.type)
