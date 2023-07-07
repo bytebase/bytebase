@@ -61,14 +61,58 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 		allCommandTableExpression := ctx.With_expression().AllCommon_table_expression()
 
 		for _, commandTableExpression := range allCommandTableExpression {
-			if commandTableExpression.RECURSIVE() != nil || commandTableExpression.UNION() != nil {
-				// TODO(zp): handle recursive CTE
-				continue
-			}
+			var result []fieldInfo
+			var err error
 			normalizedCTEName := parser.NormalizeObjectNamePart(commandTableExpression.Id_())
-			result, err := extractor.extractSnowsqlSensitiveFieldsQueryStatement(commandTableExpression.Query_statement())
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
+
+			if commandTableExpression.RECURSIVE() != nil || commandTableExpression.UNION() != nil {
+				// TODO(zp): refactor code
+				fieldsInAnchorClause, err := extractor.extractSnowsqlSensitiveFieldsQueryStatement(commandTableExpression.Anchor_clause().Query_statement())
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
+				}
+
+				tempCTEOuterSchemaInfo := db.TableSchema{
+					Name: normalizedCTEName,
+				}
+				for i := 0; i < len(fieldsInAnchorClause); i++ {
+					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, db.ColumnInfo{
+						Name:      fieldsInAnchorClause[i].name,
+						Sensitive: fieldsInAnchorClause[i].sensitive,
+					})
+					result = append(result, fieldsInAnchorClause[i])
+				}
+				originalSize := len(extractor.cteOuterSchemaInfo)
+				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, tempCTEOuterSchemaInfo)
+				for {
+					change := false
+					fieldsInRecursiveClause, err := extractor.extractSnowsqlSensitiveFieldsQueryStatement(commandTableExpression.Recursive_clause().Query_statement())
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q near line %d", normalizedCTEName, commandTableExpression.Recursive_clause().GetStart().GetLine())
+					}
+					if len(fieldsInRecursiveClause) != len(tempCTEOuterSchemaInfo.ColumnList) {
+						return nil, errors.Wrapf(err, "recursive clause returns %d fields, but anchor clause returns %d fields in recursive CTE %q near line %d", len(fieldsInRecursiveClause), len(tempCTEOuterSchemaInfo.ColumnList), normalizedCTEName, commandTableExpression.GetStart().GetLine())
+					}
+					extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
+					for i := 0; i < len(fieldsInRecursiveClause); i++ {
+						if (!tempCTEOuterSchemaInfo.ColumnList[i].Sensitive) && fieldsInRecursiveClause[i].sensitive {
+							change = true
+							tempCTEOuterSchemaInfo.ColumnList[i].Sensitive = true
+							result[i].sensitive = true
+						}
+					}
+					if !change {
+						break
+					}
+					originalSize = len(extractor.cteOuterSchemaInfo)
+					extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, tempCTEOuterSchemaInfo)
+				}
+				extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
+			} else {
+				result, err = extractor.extractSnowsqlSensitiveFieldsQueryStatement(commandTableExpression.Query_statement())
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
+				}
 			}
 
 			if commandTableExpression.Column_list() != nil {
