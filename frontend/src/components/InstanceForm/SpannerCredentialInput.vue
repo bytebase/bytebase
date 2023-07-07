@@ -7,7 +7,7 @@
     <p class="textinfolabel">
       <span>{{ $t("instance.create-gcp-credentials") }}</span>
       <a
-        href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
+        href="https://www.bytebase.com/docs/get-started/instance/#create-a-google-cloud-service-account-as-the-credential?source=console"
         target="_blank"
         class="normal-link inline-flex items-center ml-1"
       >
