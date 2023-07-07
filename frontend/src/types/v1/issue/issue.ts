@@ -1,6 +1,11 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
 import { Issue } from "../../proto/v1/issue_service";
-import { Plan, Rollout } from "../../proto/v1/rollout_service";
+import {
+  Plan,
+  PlanCheckRun,
+  Rollout,
+  TaskRun,
+} from "../../proto/v1/rollout_service";
 import {
   ComposedProject,
   EMPTY_PROJECT_NAME,
@@ -17,7 +22,9 @@ import {
 
 export interface ComposedIssue extends Issue {
   planEntity: Plan | undefined;
+  planCheckRunList: PlanCheckRun[];
   rolloutEntity: Rollout;
+  rolloutTaskRunList: TaskRun[];
   project: string;
   projectEntity: ComposedProject;
 }
@@ -32,7 +39,9 @@ export const emptyIssue = (): ComposedIssue => {
       rollout: EMPTY_ROLLOUT_NAME,
     }),
     planEntity: undefined,
+    planCheckRunList: [],
     rolloutEntity: emptyRollout(),
+    rolloutTaskRunList: [],
     project: EMPTY_PROJECT_NAME,
     projectEntity: emptyProject(),
   };
@@ -45,7 +54,9 @@ export const unknownIssue = (): ComposedIssue => {
       rollout: UNKNOWN_ROLLOUT_NAME,
     }),
     planEntity: undefined,
+    planCheckRunList: [],
     rolloutEntity: unknownRollout(),
+    rolloutTaskRunList: [],
     project: UNKNOWN_PROJECT_NAME,
     projectEntity: unknownProject(),
   };
