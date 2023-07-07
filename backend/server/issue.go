@@ -1337,9 +1337,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							DatabaseUID: &migrationDetail.DatabaseID,
 							CreatorID:   creatorID,
 							Statement:   migrationDetail.Statement,
-							Visibility:  api.ProjectSheet,
-							Source:      api.SheetFromBytebaseArtifact,
-							Type:        api.SheetForSQL,
+							Visibility:  store.ProjectSheet,
+							Source:      store.SheetFromBytebaseArtifact,
+							Type:        store.SheetForSQL,
 							Payload:     "",
 						})
 						if err != nil {
@@ -1587,9 +1587,9 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		ProjectUID: project.UID,
 		Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
 		Statement:  statement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+		Visibility: store.ProjectSheet,
+		Source:     store.SheetFromBytebaseArtifact,
+		Type:       store.SheetForSQL,
 		Payload:    "{}",
 	})
 	if err != nil {
