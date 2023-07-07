@@ -823,6 +823,47 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 		return nil, nil
 	}
 
+	if ctx.Pivot_unpivot() != nil {
+		//TODO(zp): handle unpivot
+		if v := ctx.Pivot_unpivot(); v.PIVOT() != nil {
+			pivotColumnName := v.AllId_()[1]
+			normalizedPivotColumnName := parser.NormalizeObjectNamePart(pivotColumnName)
+			pivotColumnIndex := -1
+			for i, field := range result {
+				if field.name == normalizedPivotColumnName {
+					pivotColumnIndex = i
+					break
+				}
+			}
+			if pivotColumnIndex == -1 {
+				return nil, errors.Errorf(`pivot column %s is not found from field list %+v`, normalizedPivotColumnName, result)
+			}
+			pivotColumnInOriginalResult := result[pivotColumnIndex]
+			result = append(result[:pivotColumnIndex], result[pivotColumnIndex+1:]...)
+
+			valueColumnName := v.AllId_()[2]
+			normalizedValueColumnName := parser.NormalizeObjectNamePart(valueColumnName)
+			valueColumnIndex := -1
+			for i, field := range result {
+				if field.name == normalizedValueColumnName {
+					valueColumnIndex = i
+					break
+				}
+			}
+			if valueColumnIndex == -1 {
+				return nil, errors.Errorf(`value column %s is not found from field list %+v`, normalizedValueColumnName, result)
+			}
+			result = append(result[:valueColumnIndex], result[valueColumnIndex+1:]...)
+
+			for _, literal := range v.AllLiteral() {
+				result = append(result, fieldInfo{
+					name:      literal.GetText(),
+					sensitive: pivotColumnInOriginalResult.sensitive,
+				})
+			}
+		}
+	}
+
 	// If the as alias is not nil, we should use the alias name to replace the original table name.
 	if ctx.As_alias() != nil {
 		id := ctx.As_alias().Alias().Id_()

@@ -1820,6 +1820,33 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for PIVOT.
+			statement:  `SELECT TT1.* FROM T1 PIVOT(MAX(A) FOR B IN ('a', 'b', 'c')) AS TT1`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+				{
+					Name:      `'a'`,
+					Sensitive: true,
+				},
+				{
+					Name:      `'b'`,
+					Sensitive: true,
+				},
+				{
+					Name:      `'c'`,
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for correlated sub-query.
 			statement:  `SELECT A, (SELECT MAX(B) > Y.A FROM T1 X) FROM T1 Y`,
 			schemaInfo: defaultDatabaseSchema,
