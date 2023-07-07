@@ -35,7 +35,7 @@ const (
 	// MFATempTokenAudienceFmt is the format of the MFA temp token audience.
 	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
 	apiTokenDuration        = 2 * time.Hour
-	accessTokenDuration     = 24 * time.Hour
+	accessTokenDuration     = 8 * time.Hour
 	refreshTokenDuration    = 7 * 24 * time.Hour
 	// RefreshThresholdDuration is the threshold duration for refreshing token.
 	RefreshThresholdDuration = 1 * time.Hour
