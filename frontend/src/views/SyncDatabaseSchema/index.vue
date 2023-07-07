@@ -129,7 +129,7 @@
         <SelectTargetDatabasesView
           ref="targetDatabaseViewRef"
           :project-id="state.projectId!"
-          :source-schema="fullSourceSchema as any"
+          :source-schema="fullViewSourceSchema as any"
         />
       </template>
     </BBStepTab>
@@ -270,7 +270,7 @@ const stepTabList = computed(() => {
   ];
 });
 
-const fullSourceSchema = computed(() => {
+const fullViewSourceSchema = computed(() => {
   const fullViewChangeHistory = fullViewChangeHistoryCache.value.get(
     state.sourceSchema.changeHistory?.name || ""
   );
