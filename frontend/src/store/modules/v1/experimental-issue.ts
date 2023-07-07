@@ -1,10 +1,21 @@
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
-import { ComposedIssue, emptyRollout, EMPTY_ROLLOUT_NAME } from "@/types";
+import {
+  ComposedIssue,
+  emptyIssue,
+  emptyRollout,
+  EMPTY_ID,
+  EMPTY_ROLLOUT_NAME,
+  unknownIssue,
+  UNKNOWN_ID,
+} from "@/types";
 import { extractProjectResourceName } from "@/utils";
 import { useIssueStore } from "../issue";
 import { useProjectV1Store } from "./project";
 
 export const experimentalFetchIssueByUID = async (uid: string) => {
+  if (uid === String(EMPTY_ID)) return emptyIssue();
+  if (uid === String(UNKNOWN_ID)) return unknownIssue();
+
   const legacyIssue = await useIssueStore().fetchIssueById(Number(uid));
 
   const rawIssue = await issueServiceClient.getIssue({

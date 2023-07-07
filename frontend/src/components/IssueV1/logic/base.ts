@@ -4,18 +4,20 @@ import Emittery from "emittery";
 import { first } from "lodash-es";
 
 import { IssueContext, IssuePhase } from "./context";
-import { Stage, Task } from "@/types/proto/v1/rollout_service";
+import { Stage, Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   activeStageInRollout,
   activeTaskInRollout,
   activeTaskInStageV1,
+  flattenTaskV1List,
   idFromSlug,
   indexOrUIDFromSlug,
   stageV1Slug,
   taskV1Slug,
 } from "@/utils";
-import { emptyStage, emptyTask } from "@/types";
+import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
 import { extractReviewContext } from "./review";
+import { TenantMode } from "@/types/proto/v1/project_service";
 
 export const useBaseIssueContext = (
   context: Pick<IssueContext, "isCreating" | "ready" | "issue">
@@ -25,18 +27,20 @@ export const useBaseIssueContext = (
   const router = useRouter();
   const events: IssueContext["events"] = new Emittery();
 
+  const rollout = computed(() => issue.value.rolloutEntity);
+  const project = computed(() => issue.value.projectEntity);
+
   const activeStage = computed((): Stage => {
-    return activeStageInRollout(issue.value.rolloutEntity);
+    return activeStageInRollout(rollout.value);
   });
   const activeTask = computed((): Task => {
-    return activeTaskInRollout(issue.value.rolloutEntity);
+    return activeTaskInRollout(rollout.value);
   });
 
   const selectedStage = computed((): Stage => {
     const stageSlug = route.query.stage as string;
     const taskSlug = route.query.task as string;
-    const rollout = issue.value.rolloutEntity;
-    const stageList = rollout.stages;
+    const stageList = rollout.value.stages;
 
     // Index is used when `isCreating === true`
     // UID is used when otherwise
@@ -67,7 +71,7 @@ export const useBaseIssueContext = (
       return first(stageList) ?? emptyStage();
     }
 
-    return activeStageInRollout(rollout);
+    return activeStageInRollout(rollout.value);
   });
   const selectedTask = computed((): Task => {
     const taskSlug = route.query.task as string;
@@ -96,7 +100,7 @@ export const useBaseIssueContext = (
   });
 
   events.on("select-task", ({ task }) => {
-    const stages = issue.value.rolloutEntity.stages;
+    const stages = rollout.value.stages;
     const stage = stages.find(
       (stage) => stage.tasks.findIndex((t) => t === task) >= 0
     );
@@ -127,8 +131,44 @@ export const useBaseIssueContext = (
     return reviewContext.done.value ? "ROLLOUT" : "REVIEW";
   });
 
+  const isGhostMode = computed(() => {
+    return flattenTaskV1List(rollout.value).some((task) => {
+      return [
+        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
+        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
+      ].includes(task.type);
+    });
+  });
+  const isPITRMode = computed(() => {
+    return flattenTaskV1List(rollout.value).some((task) => {
+      return [
+        Task_Type.DATABASE_RESTORE_RESTORE,
+        Task_Type.DATABASE_RESTORE_CUTOVER,
+        Task_Type.DATABASE_CREATE,
+      ].includes(task.type);
+    });
+  });
+  const isTenantMode = computed((): boolean => {
+    // To sync databases schema in tenant mode, we use normal project logic to create issue.
+    if (isCreating.value && route.query.mode !== "tenant") return false;
+    if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED)
+      return false;
+
+    // We support single database migration in tenant mode projects.
+    // So a pipeline should be tenant mode when it contains more
+    // than one tasks.
+    return (
+      flattenTaskV1List(rollout.value).filter((task) =>
+        TaskTypeListWithStatement.includes(task.type)
+      ).length > 1
+    );
+  });
+
   return {
     phase,
+    isGhostMode,
+    isPITRMode,
+    isTenantMode,
     events,
     reviewContext,
     activeStage,

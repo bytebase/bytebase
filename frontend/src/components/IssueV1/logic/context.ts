@@ -34,6 +34,9 @@ export type IssueContext = {
   ready: Ref<boolean>;
   issue: Ref<ComposedIssue>;
   phase: Ref<IssuePhase>;
+  isGhostMode: Ref<boolean>;
+  isPITRMode: Ref<boolean>;
+  isTenantMode: Ref<boolean>;
 
   // review status
   reviewContext: ReviewContext;
