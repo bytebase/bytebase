@@ -58,7 +58,7 @@ defineEmits<{
 const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
-const { allowAdmin } = context;
+const { hasFeature, showFeatureModal, allowAdmin } = context;
 
 const attrs = useAttrs();
 const selectAttrs = computed(() => ({
@@ -85,6 +85,10 @@ const selectedRule = computed(() => {
 const toApprovalFlow = () => {
   const rule = selectedRule.value;
   if (!rule) {
+    return;
+  }
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
     return;
   }
   context.dialog.value = {
