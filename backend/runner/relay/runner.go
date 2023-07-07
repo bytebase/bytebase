@@ -130,12 +130,12 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 	if err != nil {
 		return errors.Wrapf(err, "failed to get external approval node %s", payload.ExternalApprovalNodeID)
 	}
-	uri := payload.URI
-	status, err := r.Client.GetStatus(node.Endpoint, uri)
+	id := payload.ID
+	resp, err := r.Client.GetApproval(node.Endpoint, id)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, uri: %s", node.Id, node.Endpoint, uri)
+		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, id: %s", node.Id, node.Endpoint, id)
 	}
-	if status == relayplugin.StatusApproved {
+	if resp.Status == relayplugin.StatusApproved {
 		if err := r.approveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 		}); err != nil {
 			return err
 		}
-	} else if status == relayplugin.StatusRejected {
+	} else if resp.Status == relayplugin.StatusRejected {
 		if err := r.rejectExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
@@ -207,8 +207,8 @@ func (r *Runner) cancelExternalApproval(ctx context.Context, issueUID int) {
 			continue
 		}
 		go func() {
-			if err := r.Client.UpdateStatus(node.Endpoint, payload.URI); err != nil {
-				log.Error("failed to update external approval status", zap.String("endpoint", node.Endpoint), zap.String("uri", payload.URI), zap.Error(err))
+			if err := r.Client.UpdateApproval(node.Endpoint, payload.ID, &relayplugin.UpdatePayload{}); err != nil {
+				log.Error("failed to update external approval status", zap.String("endpoint", node.Endpoint), zap.String("id", payload.ID), zap.Error(err))
 			}
 		}()
 	}
