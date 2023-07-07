@@ -1137,9 +1137,9 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			ProjectUID: project.UID,
 			Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
-			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebaseArtifact,
-			Type:       api.SheetForSQL,
+			Visibility: store.ProjectSheet,
+			Source:     store.SheetFromBytebaseArtifact,
+			Type:       store.SheetForSQL,
 			Payload:    "{}",
 		})
 		if err != nil {

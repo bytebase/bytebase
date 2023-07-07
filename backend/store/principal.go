@@ -15,6 +15,9 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+// SystemBotID is the ID of the system robot.
+const SystemBotID = 1
+
 // GetPrincipalByID gets an instance of Principal by ID.
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	user, err := s.GetUserByID(ctx, id)
