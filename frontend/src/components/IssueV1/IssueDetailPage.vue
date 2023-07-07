@@ -12,6 +12,8 @@
 
     <TaskRunSection v-if="!isCreating" />
 
+    <PlanCheckSection v-if="!isCreating" />
+
     <StatementSection />
 
     <DescriptionSection />
@@ -32,6 +34,7 @@ import {
   StageSection,
   TaskListSection,
   TaskRunSection,
+  PlanCheckSection,
   StatementSection,
   DescriptionSection,
   ActivitySection,
