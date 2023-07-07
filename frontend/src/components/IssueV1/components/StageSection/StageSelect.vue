@@ -21,6 +21,8 @@ import { useI18n } from "vue-i18n";
 import { Stage } from "@/types/proto/v1/rollout_service";
 import { useIssueContext } from "../../logic";
 import { first } from "lodash-es";
+import { activeTaskInStageV1 } from "@/utils";
+import { EMPTY_TASK_NAME } from "@/types";
 
 type StageSelectOption = SelectOption & {
   stage: Stage;
@@ -52,10 +54,21 @@ const renderLabel = (option: SelectOption) => {
   ]);
 };
 
+const activeOrFirstTaskInStage = (stage: Stage) => {
+  if (isCreating.value) {
+    return first(stage.tasks);
+  }
+  const activeTask = activeTaskInStageV1(stage);
+  if (activeTask.name === EMPTY_TASK_NAME) {
+    return first(stage.tasks);
+  }
+  return activeTask;
+};
+
 const handleSelectStage = (name: string) => {
   const stage = stageList.value.find((s) => s.name === name);
   if (stage) {
-    const task = first(stage.tasks);
+    const task = activeOrFirstTaskInStage(stage);
     if (task) {
       events.emit("select-task", { task });
     }
