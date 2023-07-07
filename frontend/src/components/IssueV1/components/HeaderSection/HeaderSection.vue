@@ -12,18 +12,19 @@
             />
           </div>
 
-          <IssueTitle />
+          <Title />
         </div>
 
-        <IssueDescription />
+        <Description />
 
-        <IssueVCSInfo />
+        <VCSInfo />
 
         <slot name="tips"></slot>
       </div>
     </div>
-    <div>
-      <IssueActions />
+    <div class="flex flex-col gap-y-2">
+      <Actions />
+      <Assignee />
     </div>
   </div>
 </template>
@@ -35,10 +36,11 @@ import IssueStatusIcon from "../IssueStatusIcon.vue";
 import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import IssueTitle from "./IssueTitle.vue";
-import IssueDescription from "./IssueDescription.vue";
-import IssueVCSInfo from "./IssueVCSInfo.vue";
-import IssueActions from "./IssueActions.vue";
+import Title from "./Title.vue";
+import Description from "./Description.vue";
+import VCSInfo from "./VCSInfo.vue";
+import Actions from "./Actions.vue";
+import Assignee from "./Assignee.vue";
 
 const { isCreating, issue } = useIssueContext();
 
