@@ -13,9 +13,18 @@ import { v4 as uuidv4 } from "uuid";
 import { useCustomApprovalContext } from "../context";
 import { ExternalApprovalSetting_Node } from "@/types/proto/v1/setting_service";
 const context = useCustomApprovalContext();
-const { allowAdmin, externalApprovalNodeContext } = context;
+const {
+  hasFeature,
+  showFeatureModal,
+  allowAdmin,
+  externalApprovalNodeContext,
+} = context;
 
 const createNode = () => {
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
+    return;
+  }
   externalApprovalNodeContext.value = {
     mode: "CREATE",
     node: ExternalApprovalSetting_Node.fromJSON({
