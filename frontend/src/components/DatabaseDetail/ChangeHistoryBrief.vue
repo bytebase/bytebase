@@ -21,11 +21,11 @@
       </label>
       <div class="flex-1">
         <a
-          :href="`/issue/${extractIssueId(changeHistory.issue)}`"
+          :href="`/issue/${extractIssueUID(changeHistory.issue)}`"
           target="__BLANK"
           class="normal-link flex items-center gap-x-1"
         >
-          {{ extractIssueId(changeHistory.issue) }}
+          {{ extractIssueUID(changeHistory.issue) }}
         </a>
       </div>
     </div>
@@ -83,7 +83,7 @@ import { computed, PropType } from "vue";
 import dayjs from "dayjs";
 import {
   extractUserResourceName,
-  extractIssueId,
+  extractIssueUID,
   changeHistoryLink as makeChangeHistoryLink,
 } from "@/utils";
 import { ComposedDatabase } from "@/types";

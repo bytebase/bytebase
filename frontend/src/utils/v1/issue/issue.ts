@@ -1,7 +1,13 @@
+import slug from "slug";
+
 import { ComposedIssue, EMPTY_ROLLOUT_NAME } from "@/types";
 import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
 
-export const extractIssueId = (name: string) => {
+export const issueV1Slug = (issue: ComposedIssue) => {
+  return [slug(issue.title), issue.uid].join("-");
+};
+
+export const extractIssueUID = (name: string) => {
   const pattern = /(?:^|\/)issues\/(\d+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";

@@ -22,15 +22,8 @@ import { _RouteLocationBase } from "vue-router";
 import { useI18n } from "vue-i18n";
 
 import { useTitle } from "@vueuse/core";
-import { extractProjectResourceName, idFromSlug } from "@/utils";
-import {
-  EMPTY_ID,
-  EMPTY_ROLLOUT_NAME,
-  UNKNOWN_ID,
-  emptyIssue,
-  emptyRollout,
-  unknownIssue,
-} from "@/types";
+import { idFromSlug } from "@/utils";
+import { EMPTY_ID, UNKNOWN_ID, emptyIssue, unknownIssue } from "@/types";
 import { rolloutServiceClient } from "@/grpcweb";
 import {
   Plan_ChangeDatabaseConfig,
@@ -38,8 +31,7 @@ import {
   Plan_Spec,
   Plan_Step,
 } from "@/types/proto/v1/rollout_service";
-import { issueServiceClient } from "@/grpcweb";
-import { useIssueStore, useProjectV1Store } from "@/store";
+import { experimentalFetchIssueByUID } from "@/store";
 import {
   IssueDetailPage,
   provideIssueContext,
@@ -78,46 +70,7 @@ const issue = ref(unknownIssue());
 
 const tryFetchIssue = async (uid: string) => {
   ready.value = false;
-  const legacyIssue = await useIssueStore().fetchIssueById(Number(uid));
-
-  const rawIssue = await issueServiceClient.getIssue({
-    name: `projects/-/issues/${uid}`,
-  });
-
-  const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
-    project
-  );
-
-  issue.value = {
-    ...rawIssue,
-    planEntity: undefined,
-    rollout: EMPTY_ROLLOUT_NAME,
-    rolloutEntity: emptyRollout(),
-    project,
-    projectEntity,
-  };
-
-  if (legacyIssue.pipeline) {
-    const rollout = `${project}/rollouts/${legacyIssue.pipeline.id}`;
-    rawIssue.rollout = rollout;
-    issue.value.rollout = rollout;
-    issue.value.rolloutEntity = await rolloutServiceClient.getRollout({
-      name: rollout,
-    });
-  }
-  // const plan = await rolloutServiceClient.getPlan({
-  //   name: issue.plan,
-  // });
-  // console.log("plan", plan);
-  // const { plans: taskRunList } = await rolloutServiceClient.listRolloutTaskRuns(
-  //   {
-  //     parent: rollout.name,
-  //   }
-  // );
-  // console.log("taskRunList", taskRunList);
-
-  await new Promise((r) => setTimeout(r, 500));
+  issue.value = await experimentalFetchIssueByUID(uid);
   ready.value = true;
 };
 

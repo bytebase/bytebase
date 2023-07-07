@@ -1,5 +1,6 @@
 import slug from "slug";
 import { last } from "lodash-es";
+import { stringify } from "qs";
 
 import {
   EMPTY_TASK_NAME,
@@ -7,6 +8,7 @@ import {
   emptyTask,
   unknownTask,
   unknownStage,
+  ComposedIssue,
 } from "@/types";
 import {
   Rollout,
@@ -14,9 +16,16 @@ import {
   Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
+import { issueV1Slug } from "./issue";
 
 export const extractRolloutUID = (name: string) => {
   const pattern = /(?:^|\/)rollouts\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
+export const extractTaskUID = (name: string) => {
+  const pattern = /(?:^|\/)tasks\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
 };
@@ -111,4 +120,26 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
     task.databaseSchemaUpdate?.sheet ??
     ""
   );
+};
+
+export const buildIssueV1LinkWithTask = (
+  issue: ComposedIssue,
+  task: Task,
+  simple = false
+) => {
+  const stage = issue.rolloutEntity.stages.find(
+    (s) => s.tasks.findIndex((t) => t.uid === task.uid) >= 0
+  );
+
+  const issueSlug = simple ? issue.uid : issueV1Slug(issue);
+  const query: Record<string, string> = {};
+  if (stage) {
+    query.stage = simple ? stage.uid : stageV1Slug(stage);
+  }
+  query.task = simple ? task.uid : taskV1Slug(task);
+
+  const querystring = stringify(query);
+  const url = `/issue/${issueSlug}?${querystring}`;
+
+  return url;
 };

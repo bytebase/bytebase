@@ -19,7 +19,7 @@
 
         <VCSInfo />
 
-        <slot name="tips"></slot>
+        <RollbackFromTips />
       </div>
     </div>
     <div class="flex flex-col gap-y-2">
@@ -41,6 +41,7 @@ import Description from "./Description.vue";
 import VCSInfo from "./VCSInfo.vue";
 import Actions from "./Actions.vue";
 import Assignee from "./Assignee.vue";
+import RollbackFromTips from "./RollbackFromTips.vue";
 
 const { isCreating, issue } = useIssueContext();
 

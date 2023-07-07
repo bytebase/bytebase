@@ -57,13 +57,13 @@
         >
       </BBTableCell>
       <BBTableCell>
-        <template v-if="extractIssueId(history.issue)">
+        <template v-if="extractIssueUID(history.issue)">
           <!--Short circuit the click event to prevent propagating to row click-->
           <router-link
-            :to="`/issue/${extractIssueId(history.issue)}`"
+            :to="`/issue/${extractIssueUID(history.issue)}`"
             class="normal-link"
             @click.stop=""
-            >{{ extractIssueId(history.issue) }}
+            >{{ extractIssueUID(history.issue) }}
           </router-link>
         </template>
       </BBTableCell>
@@ -95,7 +95,7 @@ import { useI18n } from "vue-i18n";
 import { ComposedDatabase } from "@/types";
 import { BBTableSectionDataSource } from "@/bbkit/types";
 import {
-  extractIssueId,
+  extractIssueUID,
   humanizeDate,
   extractUserResourceName,
   changeHistoryLink,
