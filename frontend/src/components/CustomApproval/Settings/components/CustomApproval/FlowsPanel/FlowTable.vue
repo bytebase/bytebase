@@ -89,7 +89,7 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
-const { allowAdmin, dialog } = context;
+const { hasFeature, showFeatureModal, allowAdmin, dialog } = context;
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
@@ -125,6 +125,10 @@ const filteredApprovalRuleList = computed(() => {
 });
 
 const editApprovalTemplate = (rule: LocalApprovalRule) => {
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
+    return;
+  }
   dialog.value = {
     mode: "EDIT",
     rule,
