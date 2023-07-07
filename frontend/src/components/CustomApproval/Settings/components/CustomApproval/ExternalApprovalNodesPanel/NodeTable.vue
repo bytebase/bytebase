@@ -54,7 +54,12 @@ import { cloneDeep, pullAt } from "lodash-es";
 const { t } = useI18n();
 const context = useCustomApprovalContext();
 const settingStore = useSettingV1Store();
-const { allowAdmin, externalApprovalNodeContext } = context;
+const {
+  hasFeature,
+  showFeatureModal,
+  allowAdmin,
+  externalApprovalNodeContext,
+} = context;
 
 const settingValue = computed(() => {
   const setting = settingStore.getSettingByName(
@@ -88,6 +93,10 @@ const nodeList = computed(() => {
 });
 
 const editOrViewNode = (node: ExternalApprovalSetting_Node) => {
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
+    return;
+  }
   externalApprovalNodeContext.value = {
     mode: "EDIT",
     node,
