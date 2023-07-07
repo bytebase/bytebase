@@ -51,9 +51,6 @@ const assigneeUID = computed(() => {
 
 const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 const filterAssignee = (user: User): boolean => {
-  if (extractUserUID(user.name) == assigneeUID.value) {
-    return true;
-  }
   const project = issue.value.projectEntity;
   return allowUserToBeAssignee(
     user,
