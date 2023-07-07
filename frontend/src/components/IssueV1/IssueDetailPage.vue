@@ -10,6 +10,8 @@
 
     <TaskListSection />
 
+    <TaskRunSection v-if="!isCreating" />
+
     <StatementSection />
 
     <DescriptionSection />
@@ -29,6 +31,7 @@ import {
   HeaderSection,
   StageSection,
   TaskListSection,
+  TaskRunSection,
   StatementSection,
   DescriptionSection,
   ActivitySection,

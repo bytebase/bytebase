@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, unref, watchEffect } from "vue";
+import { computed, ref, unref, watch, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
 import { isEqual, isUndefined, isEmpty } from "lodash-es";
 import { Sheet, SheetOrganizer } from "@/types/proto/v1/sheet_service";
@@ -18,7 +18,10 @@ interface SheetState {
   sheetByName: Map<string, Sheet>;
 }
 
-const REQUEST_CACHE = new Map<string /* uid */, Promise<Sheet | undefined>>();
+const REQUEST_CACHE = new Map<
+  string /* sheetResourceName */,
+  Promise<Sheet | undefined>
+>();
 
 export const useSheetV1Store = defineStore("sheet_v1", {
   state: (): SheetState => ({
@@ -136,15 +139,33 @@ export const useSheetV1Store = defineStore("sheet_v1", {
       return updatedSheet;
     },
     async fetchSheetByName(name: string) {
-      try {
-        const sheet = await sheetServiceClient.getSheet({
-          name,
-        });
-        this.sheetByName.set(sheet.name, sheet);
-        return sheet;
-      } catch {
-        return;
+      const cached = REQUEST_CACHE.get(name);
+      if (cached) {
+        return cached;
       }
+
+      const runner = async () => {
+        try {
+          return await sheetServiceClient.getSheet({
+            name,
+          });
+        } catch {
+          return undefined;
+        }
+      };
+
+      const request = runner();
+      request.then((sheet) => {
+        if (sheet) {
+          this.sheetByName.set(sheet.name, sheet);
+        } else {
+          // If the request failed (e.g., "Too many requests")
+          // Remove the cache entry so we can retry when needed.
+          REQUEST_CACHE.delete(name);
+        }
+      });
+      REQUEST_CACHE.set(name, request);
+      return request;
     },
     getSheetByName(name: string) {
       const sheet = this.sheetByName.get(name);
@@ -158,6 +179,10 @@ export const useSheetV1Store = defineStore("sheet_v1", {
       }
     },
     async getOrFetchSheetByUid(uid: SheetId) {
+      if (uid === undefined || uid === "undefined") {
+        console.warn("undefined sheet uid");
+        return;
+      }
       if (uid === UNKNOWN_ID) {
         return;
       }
@@ -166,29 +191,9 @@ export const useSheetV1Store = defineStore("sheet_v1", {
         return sheet;
       }
 
-      const cached = REQUEST_CACHE.get(String(uid));
-      if (cached) {
-        return cached;
-      }
-
-      const runner = () => {
-        return this.fetchSheetByName(
-          `${projectNamePrefix}-/${sheetNamePrefix}${uid}`
-        );
-      };
-
-      const request = runner();
-      request.then((sheet) => {
-        if (sheet) {
-          this.sheetByName.set(sheet.name, sheet);
-        } else {
-          // If the request failed (e.g., "Too many requests")
-          // Remove the cache entry so we can retry when needed.
-          REQUEST_CACHE.delete(String(uid));
-        }
-      });
-      REQUEST_CACHE.set(String(uid), request);
-      return request;
+      return this.fetchSheetByName(
+        `${projectNamePrefix}-/${sheetNamePrefix}${uid}`
+      );
     },
     async getOrFetchSheetByName(name: string) {
       const storedSheet = this.sheetByName.get(name);
@@ -282,4 +287,23 @@ export const useSheetStatementByUid = (sheetId: MaybeRef<SheetId>) => {
       store.getSheetByUid(unref(sheetId))?.content
     );
   });
+};
+
+export const useSheetByName = (name: MaybeRef<string>) => {
+  const store = useSheetV1Store();
+  const ready = ref(false);
+  const sheet = computed(() => store.getSheetByName(unref(name)));
+  watch(
+    () => unref(name),
+    (name) => {
+      if (!name) return;
+
+      ready.value = false;
+      store.getOrFetchSheetByName(name).finally(() => {
+        ready.value = true;
+      });
+    },
+    { immediate: true }
+  );
+  return { ready, sheet };
 };

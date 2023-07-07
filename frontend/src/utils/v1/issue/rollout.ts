@@ -103,3 +103,12 @@ export const extractSchemaVersionFromTask = (task: Task): string => {
     ""
   );
 };
+
+export const sheetNameOfTaskV1 = (task: Task): string => {
+  return (
+    task.databaseCreate?.sheet ??
+    task.databaseDataUpdate?.sheet ??
+    task.databaseSchemaUpdate?.sheet ??
+    ""
+  );
+};
