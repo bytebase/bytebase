@@ -58,7 +58,6 @@ func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparse
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx snowparser.IQuery_statementContext) ([]fieldInfo, error) {
 	if ctx.With_expression() != nil {
-		// TODO(zp): handle recursive CTE
 		allCommandTableExpression := ctx.With_expression().AllCommon_table_expression()
 		originalDatabaseSchema := extractor.schemaInfo.DatabaseList
 		defer func() {
@@ -66,8 +65,12 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 		}()
 
 		for _, commandTableExpression := range allCommandTableExpression {
+			if commandTableExpression.RECURSIVE() != nil || commandTableExpression.UNION() != nil {
+				// TODO(zp): handle recursive CTE
+				continue
+			}
 			normalizedCTEName := parser.NormalizeObjectNamePart(commandTableExpression.Id_())
-			result, err := extractor.extractSnowsqlSensitiveFieldsSelectStatement(commandTableExpression.Select_statement())
+			result, err := extractor.extractSnowsqlSensitiveFieldsQueryStatement(commandTableExpression.Query_statement())
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
 			}
@@ -79,24 +82,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 				for i, columnName := range commandTableExpression.Column_list().AllColumn_name() {
 					normalizedColumnName := parser.NormalizeObjectNamePart(columnName.Id_())
 					result[i].name = normalizedColumnName
-				}
-			}
-
-			allSetOperators := ctx.AllSet_operators()
-			for i, setOperator := range allSetOperators {
-				// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
-				// So we only need to extract the sensitive fields of the right part.
-				right, err := extractor.extractSnowsqlSensitiveFieldSetOperator(setOperator)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, setOperator.GetStart().GetLine())
-				}
-				if len(result) != len(right) {
-					return nil, errors.Wrapf(err, "the number of columns in the select statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", commandTableExpression.Select_statement().GetStart().GetLine(), len(result), i+1, setOperator.GetStart().GetLine(), len(right))
-				}
-				for i := range right {
-					if !result[i].sensitive {
-						result[i].sensitive = right[i].sensitive
-					}
 				}
 			}
 			// Append to the extractor.schemaInfo.DatabaseList
@@ -156,10 +141,10 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 		if err != nil {
 			return nil, err
 		}
-		originalFromFields := extractor.fromFieldList
-		extractor.fromFieldList = fromFieldList
+		originalFromFieldsLength := len(extractor.fromFieldList)
+		extractor.fromFieldList = append(extractor.fromFieldList, fromFieldList...)
 		defer func() {
-			extractor.fromFieldList = originalFromFields
+			extractor.fromFieldList = extractor.fromFieldList[:originalFromFieldsLength]
 		}()
 	}
 
@@ -838,12 +823,97 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 		return nil, nil
 	}
 
+	if ctx.Pivot_unpivot() != nil {
+		if v := ctx.Pivot_unpivot(); v.PIVOT() != nil {
+			pivotColumnName := v.AllId_()[1]
+			normalizedPivotColumnName := parser.NormalizeObjectNamePart(pivotColumnName)
+			pivotColumnIndex := -1
+			for i, field := range result {
+				if field.name == normalizedPivotColumnName {
+					pivotColumnIndex = i
+					break
+				}
+			}
+			if pivotColumnIndex == -1 {
+				return nil, errors.Errorf(`pivot column %s is not found from field list %+v`, normalizedPivotColumnName, result)
+			}
+			pivotColumnInOriginalResult := result[pivotColumnIndex]
+			result = append(result[:pivotColumnIndex], result[pivotColumnIndex+1:]...)
+
+			valueColumnName := v.AllId_()[2]
+			normalizedValueColumnName := parser.NormalizeObjectNamePart(valueColumnName)
+			valueColumnIndex := -1
+			for i, field := range result {
+				if field.name == normalizedValueColumnName {
+					valueColumnIndex = i
+					break
+				}
+			}
+			if valueColumnIndex == -1 {
+				return nil, errors.Errorf(`value column %s is not found from field list %+v`, normalizedValueColumnName, result)
+			}
+			result = append(result[:valueColumnIndex], result[valueColumnIndex+1:]...)
+
+			for _, literal := range v.AllLiteral() {
+				result = append(result, fieldInfo{
+					name:      literal.GetText(),
+					sensitive: pivotColumnInOriginalResult.sensitive,
+				})
+			}
+		} else if v := ctx.Pivot_unpivot(); v.UNPIVOT() != nil {
+			var strippedColumnIndices []int
+			var strippedColumnInOriginalResult []fieldInfo
+			for idx, columnName := range v.Column_list().AllColumn_name() {
+				normalizedColumnName := parser.NormalizeObjectNamePart(columnName.Id_())
+				for i, field := range result {
+					if field.name == normalizedColumnName {
+						strippedColumnIndices = append(strippedColumnIndices, i)
+						strippedColumnInOriginalResult = append(strippedColumnInOriginalResult, field)
+						break
+					}
+				}
+				if len(strippedColumnIndices) != idx+1 {
+					return nil, errors.Errorf(`column %s is not found from field list %+v`, normalizedColumnName, result)
+				}
+				result = append(result[:strippedColumnIndices[idx]], result[strippedColumnIndices[idx]+1:]...)
+			}
+
+			shouldBeSensitive := false
+			for _, field := range strippedColumnInOriginalResult {
+				if field.sensitive {
+					shouldBeSensitive = true
+					break
+				}
+			}
+
+			valueColumnName := v.Id_(0)
+			normalizedValueColumnName := parser.NormalizeObjectNamePart(valueColumnName)
+
+			nameColumnName := v.Column_name().Id_()
+			normalizedNameColumnName := parser.NormalizeObjectNamePart(nameColumnName)
+
+			result = append(result, fieldInfo{
+				name:      normalizedNameColumnName,
+				sensitive: false,
+			}, fieldInfo{
+				name:      normalizedValueColumnName,
+				sensitive: shouldBeSensitive,
+			})
+		}
+	}
+
 	// If the as alias is not nil, we should use the alias name to replace the original table name.
 	if ctx.As_alias() != nil {
 		id := ctx.As_alias().Alias().Id_()
 		aliasName := parser.NormalizeObjectNamePart(id)
 		for i := 0; i < len(result); i++ {
 			result[i].table = aliasName
+			// We can safely set the database and schema to empty string because the
+			// user cannot use the original table name to access the column.
+			// For example, the following query is illegal:
+			// SELECT T1.A FROM T1 AS T2;
+			result[i].schema = ""
+			result[i].database = ""
 		}
 	}
 
