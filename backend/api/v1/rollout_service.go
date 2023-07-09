@@ -217,6 +217,11 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	return convertToPlan(plan), nil
 }
 
+// PreviewRollout previews the rollout for a plan.
+func (*RolloutService) PreviewRollout(context.Context, *v1pb.PreviewRolloutRequest) (*v1pb.Rollout, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PreviewRollout not implemented")
+}
+
 // GetRollout gets a rollout.
 func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRolloutRequest) (*v1pb.Rollout, error) {
 	projectID, rolloutID, err := getProjectIDRolloutID(request.Name)
