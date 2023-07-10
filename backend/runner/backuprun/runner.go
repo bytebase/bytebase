@@ -483,7 +483,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	}
 
 	createdStage := createdStages[0]
-	if _, err := r.store.CreateTasksV2(ctx, &store.TaskCreate{
+	if _, err := r.store.CreateTasksV2(ctx, &store.RolloutTask{
 		Name:       fmt.Sprintf("backup-%s", backupName),
 		PipelineID: pipeline.ID,
 		StageID:    createdStage.ID,
