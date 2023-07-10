@@ -199,6 +199,10 @@ func TestDecodeBase64String(t *testing.T) {
 			want:      "",
 		},
 		{
+			statement: "U0VMRUNUIG5hbWUgRlJPTSBlbXBsb3llZTs=",
+			want:      "SELECT name FROM employee;",
+		},
+		{
 			statement: "U0VMRUNUIG5hbWUgQVMg5aeT5ZCNIEZST00gZW1wbG95ZWU7",
 			want:      "SELECT name AS 姓名 FROM employee;",
 		},
