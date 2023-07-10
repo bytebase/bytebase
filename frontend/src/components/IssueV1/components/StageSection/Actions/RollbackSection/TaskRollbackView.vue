@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center gap-x-3">
-    <div class="textlabel flex items-center">
+  <div v-if="rollbackUIType !== 'NONE'" class="contents">
+    <h2 class="textlabel flex items-center">
       <span class="mr-1">{{ $t("task.rollback.sql-rollback") }}</span>
       <NTooltip>
         <template #trigger>
@@ -19,9 +19,21 @@
           </template>
         </i18n-t>
       </NTooltip>
+    </h2>
+
+    <div class="col-span-2 flex items-center">
+      <RollbackSwitch v-if="rollbackUIType === 'SWITCH'" />
+      <RollbackStatus v-if="rollbackUIType === 'FULL'" />
     </div>
-    <div class="issue-debug w-[12rem]">Rollback section if needed</div>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script lang="ts" setup>
+import { NTooltip } from "naive-ui";
+
+import RollbackSwitch from "./RollbackSwitch.vue";
+import RollbackStatus from "./RollbackStatus.vue";
+import { useRollbackLogic } from "./common";
+
+const { rollbackUIType } = useRollbackLogic();
+</script>

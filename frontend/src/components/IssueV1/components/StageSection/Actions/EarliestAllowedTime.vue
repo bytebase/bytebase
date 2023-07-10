@@ -17,8 +17,82 @@
         {{ "UTC" + dayjs().format("ZZ") }}
       </div>
     </h2>
-    <div class="issue-debug">(put `When` here if needed)</div>
+    <div class="w-[12rem]">
+      <NDatePicker
+        v-if="allowEditEarliestAllowedTime"
+        :is-date-disabled="isDayPassed"
+        :placeholder="$t('task.earliest-allowed-time-unset')"
+        type="datetime"
+        clearable
+        @update:value="handleUpdateEarliestAllowedTime"
+      />
+
+      <div v-else class="tooltip-wrapper">
+        <span class="tooltip w-48 textlabel">{{
+          $t("task.earliest-allowed-time-no-modify")
+        }}</span>
+        <span class="textfield col-span-2 text-sm font-medium text-main">
+          {{
+            earliestAllowedTime === 0
+              ? $t("task.earliest-allowed-time-unset")
+              : dayjs(earliestAllowedTime * 1000).format("LLL")
+          }}
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { computed } from "vue";
+import { useNow } from "@vueuse/core";
+import { NDatePicker } from "naive-ui";
+import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+
+import { useCurrentUserV1 } from "@/store";
+import { extractUserResourceName } from "@/utils";
+import { useIssueContext } from "@/components/IssueV1";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
+
+dayjs.extend(isSameOrAfter);
+
+const currentUser = useCurrentUserV1();
+const { isCreating, issue, isTenantMode, selectedTask } = useIssueContext();
+
+const earliestAllowedTime = computed(() => {
+  return 0;
+});
+
+const allowEditEarliestAllowedTime = computed(() => {
+  if (isTenantMode.value) {
+    return false;
+  }
+  if (isCreating.value) {
+    return true;
+  }
+  // only the assignee is allowed to modify EarliestAllowedTime
+  const task = selectedTask.value;
+
+  if (issue.value.status !== IssueStatus.OPEN) {
+    return false;
+  }
+  if (
+    ![Task_Status.PENDING, Task_Status.PENDING_APPROVAL].includes(task.status)
+  ) {
+    return false;
+  }
+
+  return (
+    extractUserResourceName(issue.value.creator) === currentUser.value.email
+  );
+});
+
+const handleUpdateEarliestAllowedTime = () => {
+  //
+};
+
+const now = useNow();
+const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now.value, "day");
+</script>
