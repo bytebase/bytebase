@@ -1,0 +1,52 @@
+- statement: DROP DATABASE DB;
+  want:
+    - status: WARN
+      code: 101
+      title: schema.backward-compatibility
+      content: Drop database "DB" may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+- statement: DROP SCHEMA SCHEMA1;
+  want:
+    - status: WARN
+      code: 112
+      title: schema.backward-compatibility
+      content: Drop schema "TEST_DB.SCHEMA1" may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+- statement: DROP TABLE T;
+  want:
+    - status: WARN
+      code: 103
+      title: schema.backward-compatibility
+      content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+- statement: ALTER TABLE T DROP COLUMN COL1;
+  want:
+    - status: WARN
+      code: 105
+      title: schema.backward-compatibility
+      content: Drop column "COL1" may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE IF NOT EXISTS T(ID INT);
+    DROP TABLE T;
+  want:
+    - status: WARN
+      code: 103
+      title: schema.backward-compatibility
+      content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE T(ID INT);
+    DROP TABLE T;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

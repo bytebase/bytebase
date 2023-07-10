@@ -1293,6 +1293,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		catalog,
 		connection,
 		currentSchema,
+		database.DatabaseName,
 	)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
@@ -1339,6 +1340,7 @@ func (s *SQLService) sqlCheck(
 	catalog catalog.Catalog,
 	driver *sql.DB,
 	currentSchema string,
+	currentDatabase string,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
 	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
@@ -1350,13 +1352,14 @@ func (s *SQLService) sqlCheck(
 	}
 
 	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:       dbCharacterSet,
-		Collation:     dbCollation,
-		DbType:        dbType,
-		Catalog:       catalog,
-		Driver:        driver,
-		Context:       ctx,
-		CurrentSchema: currentSchema,
+		Charset:         dbCharacterSet,
+		Collation:       dbCollation,
+		DbType:          dbType,
+		Catalog:         catalog,
+		Driver:          driver,
+		Context:         ctx,
+		CurrentSchema:   currentSchema,
+		CurrentDatabase: currentDatabase,
 	})
 	if err != nil {
 		return advisor.Error, nil, err
