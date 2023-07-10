@@ -391,10 +391,10 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if err != nil {
 		return nil, err
 	}
-	if len(pipelineCreate.StageList) == 0 {
+	if len(pipelineCreate.Stages) == 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "no database matched for deployment")
 	}
-	firstEnvironmentID := pipelineCreate.StageList[0].EnvironmentID
+	firstEnvironmentID := pipelineCreate.Stages[0].EnvironmentID
 
 	if issueCreate.AssigneeID == api.UnknownID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
@@ -445,7 +445,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	for _, stage := range pipelineCreate.StageList {
+	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 				UID: &task.InstanceID,
@@ -666,14 +666,14 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 	return composedIssue, nil
 }
 
-func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCreate *store.Rollout) (*store.PipelineMessage, error) {
+func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCreate *store.PipelineMessage) (*store.PipelineMessage, error) {
 	pipelineCreated, err := s.store.CreatePipelineV2(ctx, &store.PipelineMessage{Name: pipelineCreate.Name}, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
 
 	var stageCreates []*store.StageMessage
-	for _, stage := range pipelineCreate.StageList {
+	for _, stage := range pipelineCreate.Stages {
 		stageCreates = append(stageCreates, &store.StageMessage{
 			Name:          stage.Name,
 			EnvironmentID: stage.EnvironmentID,
@@ -688,7 +688,7 @@ func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCrea
 		return nil, errors.Errorf("failed to create stages, expect to have created %d stages, got %d", len(stageCreates), len(createdStages))
 	}
 
-	for i, stageCreate := range pipelineCreate.StageList {
+	for i, stageCreate := range pipelineCreate.Stages {
 		createdStage := createdStages[i]
 
 		var taskCreateList []*store.TaskMessage
@@ -718,7 +718,7 @@ func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCrea
 	return pipelineCreated, nil
 }
 
-func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*store.Rollout, error) {
+func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*store.PipelineMessage, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
 		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate)
@@ -731,7 +731,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 	}
 }
 
-func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*store.Rollout, error) {
+func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*store.PipelineMessage, error) {
 	c := api.CreateDatabaseContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -804,15 +804,15 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			Payload:      string(restoreBytes),
 		})
 
-		return &store.Rollout{
+		return &store.PipelineMessage{
 			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
-			StageList: []store.RolloutStage{
+			Stages: []store.StageMessage{
 				{
 					Name:          environment.Title,
 					EnvironmentID: environment.UID,
 					TaskList:      taskCreateList,
 					// TODO(zp): Find a common way to merge taskCreateList and TaskIndexDAGList.
-					TaskIndexDAGList: []api.TaskIndexDAG{
+					TaskIndexDAGList: []store.TaskIndexDAG{
 						{
 							FromIndex: 0,
 							ToIndex:   1,
@@ -823,9 +823,9 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		}, nil
 	}
 
-	return &store.Rollout{
+	return &store.PipelineMessage{
 		Name: fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
-		StageList: []store.RolloutStage{
+		Stages: []store.StageMessage{
 			{
 				Name:          environment.Title,
 				EnvironmentID: environment.UID,
@@ -835,7 +835,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}, nil
 }
 
-func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCreate *api.IssueCreate) (*store.Rollout, error) {
+func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCreate *api.IssueCreate) (*store.PipelineMessage, error) {
 	c := api.PITRContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -882,9 +882,9 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		return nil, err
 	}
 
-	return &store.Rollout{
+	return &store.PipelineMessage{
 		Name: "Database Point-in-time Recovery pipeline",
-		StageList: []store.RolloutStage{
+		Stages: []store.StageMessage{
 			{
 				Name:             environment.Title,
 				EnvironmentID:    environment.UID,
@@ -895,7 +895,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}, nil
 }
 
-func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*store.Rollout, error) {
+func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*store.PipelineMessage, error) {
 	c := api.MigrationContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -1081,7 +1081,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	}
 
 	if issueCreate.Type == api.IssueDatabaseSchemaUpdateGhost {
-		create := &store.Rollout{
+		create := &store.PipelineMessage{
 			Name: "Update database schema (gh-ost) pipeline",
 		}
 		for i, databaseList := range aggregatedMatrix {
@@ -1091,7 +1091,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 			var environmentID string
 			var taskCreateLists [][]store.TaskMessage
-			var taskIndexDAGLists [][]api.TaskIndexDAG
+			var taskIndexDAGLists [][]store.TaskIndexDAG
 			for _, database := range databaseList {
 				if environmentID != "" && environmentID != database.EnvironmentID {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
@@ -1122,7 +1122,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if err != nil {
 				return nil, err
 			}
-			create.StageList = append(create.StageList, store.RolloutStage{
+			create.Stages = append(create.Stages, store.StageMessage{
 				Name:             deploySchedule.Deployments[i].Name,
 				EnvironmentID:    environment.UID,
 				TaskList:         taskCreateList,
@@ -1131,7 +1131,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 		return create, nil
 	}
-	create := &store.Rollout{
+	create := &store.PipelineMessage{
 		Name: "Change database pipeline",
 	}
 
@@ -1142,7 +1142,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 		var environmentID string
 		var taskCreateList []store.TaskMessage
-		var taskIndexDAGList []api.TaskIndexDAG
+		var taskIndexDAGList []store.TaskIndexDAG
 		for _, database := range databaseList {
 			if environmentID != "" && environmentID != database.EnvironmentID {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
@@ -1221,7 +1221,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					var prevSchemaGroup *store.SchemaGroupMessage
 					var emptyStatementsBuffer strings.Builder
 					var taskCreateListGroup [][]store.TaskMessage
-					var taskIndexDAGListGroup [][]api.TaskIndexDAG
+					var taskIndexDAGListGroup [][]store.TaskIndexDAG
 					for _, singleStatement := range singleStatements {
 						// We don't want empty statements(likes comments) to be involved in the match/replace SchemaGroup operation. We will
 						// put them in the next valid statement.
@@ -1242,9 +1242,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 									if err != nil {
 										return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
 									}
-									var tempTaskIndexDAGList []api.TaskIndexDAG
+									var tempTaskIndexDAGList []store.TaskIndexDAG
 									for i := 0; i < len(taskCreates)-1; i++ {
-										tempTaskIndexDAGList = append(tempTaskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+										tempTaskIndexDAGList = append(tempTaskIndexDAGList, store.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 									}
 									taskIndexDAGListGroup = append(taskIndexDAGListGroup, tempTaskIndexDAGList)
 									taskCreateListGroup = append(taskCreateListGroup, taskCreates)
@@ -1271,9 +1271,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 								if err != nil {
 									return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
 								}
-								var tempTaskIndexDAGList []api.TaskIndexDAG
+								var tempTaskIndexDAGList []store.TaskIndexDAG
 								for i := 0; i < len(taskCreates)-1; i++ {
-									tempTaskIndexDAGList = append(tempTaskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+									tempTaskIndexDAGList = append(tempTaskIndexDAGList, store.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 								}
 								taskIndexDAGListGroup = append(taskIndexDAGListGroup, tempTaskIndexDAGList)
 								taskCreateListGroup = append(taskCreateListGroup, taskCreates)
@@ -1297,9 +1297,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					if err != nil {
 						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
 					}
-					var tempTaskIndexDAGList []api.TaskIndexDAG
+					var tempTaskIndexDAGList []store.TaskIndexDAG
 					for i := 0; i < len(taskCreates)-1; i++ {
-						tempTaskIndexDAGList = append(tempTaskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+						tempTaskIndexDAGList = append(tempTaskIndexDAGList, store.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
 					taskIndexDAGListGroup = append(taskIndexDAGListGroup, tempTaskIndexDAGList)
 					taskCreateListGroup = append(taskCreateListGroup, taskCreates)
@@ -1327,7 +1327,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				} else {
 					// Create grouping batch change issue.
 					for i := 0; i < len(migrationDetailList)-1; i++ {
-						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+						taskIndexDAGList = append(taskIndexDAGList, store.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
 					for migrationDetailIdx, migrationDetail := range migrationDetailList {
 						// CreateSheet for each migration detail.
@@ -1355,7 +1355,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				}
 			} else {
 				for i := 0; i < len(migrationDetailList)-1; i++ {
-					taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+					taskIndexDAGList = append(taskIndexDAGList, store.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 				}
 				for _, migrationDetail := range migrationDetailList {
 					taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail), "")
@@ -1371,7 +1371,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		if err != nil {
 			return nil, err
 		}
-		create.StageList = append(create.StageList, store.RolloutStage{
+		create.Stages = append(create.Stages, store.StageMessage{
 			Name:             deploySchedule.Deployments[i].Name,
 			EnvironmentID:    environment.UID,
 			TaskList:         taskCreateList,
@@ -1621,7 +1621,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	}, nil
 }
 
-func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.DatabaseMessage, instance *store.InstanceMessage, projectID int, c api.PITRContext) ([]store.TaskMessage, []api.TaskIndexDAG, error) {
+func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.DatabaseMessage, instance *store.InstanceMessage, projectID int, c api.PITRContext) ([]store.TaskMessage, []store.TaskIndexDAG, error) {
 	var taskCreateList []store.TaskMessage
 	// Restore payload
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
@@ -1693,7 +1693,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.D
 		})
 	}
 	// We make sure that createPITRTaskList will always return 2 tasks.
-	taskIndexDAGList := []api.TaskIndexDAG{
+	taskIndexDAGList := []store.TaskIndexDAG{
 		{
 			FromIndex: 0,
 			ToIndex:   1,
@@ -1769,7 +1769,7 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 }
 
 // creates gh-ost TaskCreate list and dependency.
-func createGhostTaskList(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, detail *api.MigrationDetail, schemaVersion string) ([]store.TaskMessage, []api.TaskIndexDAG, error) {
+func createGhostTaskList(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, detail *api.MigrationDetail, schemaVersion string) ([]store.TaskMessage, []store.TaskIndexDAG, error) {
 	var taskCreateList []store.TaskMessage
 	// task "sync"
 	payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
@@ -1809,7 +1809,7 @@ func createGhostTaskList(database *store.DatabaseMessage, instance *store.Instan
 
 	// The below list means that taskCreateList[0] blocks taskCreateList[1].
 	// In other words, task "sync" blocks task "cutover".
-	taskIndexDAGList := []api.TaskIndexDAG{
+	taskIndexDAGList := []store.TaskIndexDAG{
 		{FromIndex: 0, ToIndex: 1},
 	}
 	return taskCreateList, taskIndexDAGList, nil

@@ -265,9 +265,9 @@ func TestMergeTaskCreateLists(t *testing.T) {
 	tests := []struct {
 		name               string
 		taskCreateLists    [][]store.TaskMessage
-		taskIndexDAGLists  [][]api.TaskIndexDAG
+		taskIndexDAGLists  [][]store.TaskIndexDAG
 		wantTaskCreateList []store.TaskMessage
-		wantTaskDAGList    []api.TaskIndexDAG
+		wantTaskDAGList    []store.TaskIndexDAG
 	}{
 		{
 			name: "simple, len=1",
@@ -276,7 +276,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 				},
@@ -284,7 +284,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 			wantTaskCreateList: []store.TaskMessage{
 				{}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 			},
 		},
@@ -298,7 +298,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{}, {}, {}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 					{FromIndex: 1, ToIndex: 3},
@@ -310,7 +310,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 			wantTaskCreateList: []store.TaskMessage{
 				{}, {}, {}, {}, {}, {}, {}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 				{FromIndex: 1, ToIndex: 3},
 				{FromIndex: 5, ToIndex: 6},
@@ -329,7 +329,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{}, {}, {}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 					{FromIndex: 1, ToIndex: 3},
@@ -344,7 +344,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 			wantTaskCreateList: []store.TaskMessage{
 				{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 				{FromIndex: 1, ToIndex: 3},
 				{FromIndex: 5, ToIndex: 6},
