@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1817,12 +1818,16 @@ func (s *SQLService) checkQueryRights(
 	isExport := exportFormat != v1pb.ExportRequest_FORMAT_UNSPECIFIED
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
+		statement, err := decodeBase64String(statement)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument, "failed to decode statement: %v", err)
+		}
 		attributes := map[string]any{
 			"request.time":      time.Now(),
 			"resource.database": databaseResourceURL,
 			"resource.schema":   resource.Schema,
 			"resource.table":    resource.Table,
-			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.statement": statement,
 			"request.row_limit": limit,
 		}
 
@@ -2063,4 +2068,20 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 	default:
 		return false
 	}
+}
+
+// decodeBase64String decodes a base64 string.
+func decodeBase64String(encodedString string) (string, error) {
+	decodedString, err := base64.StdEncoding.DecodeString(encodedString)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to decode base64 string")
+	}
+
+	escapedString := url.QueryEscape(string(decodedString))
+	unescapedString, err := url.QueryUnescape(escapedString)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to unescape string")
+	}
+
+	return unescapedString, nil
 }

@@ -427,7 +427,11 @@ const doCreateIssue = async () => {
   expression.push(`request.export_format == "${state.exportFormat}"`);
   expression.push(`request.row_limit == ${state.maxRowCount}`);
   if (state.exportMethod === "SQL") {
-    expression.push(`request.statement == "${btoa(state.statement)}"`);
+    expression.push(
+      `request.statement == "${btoa(
+        unescape(encodeURIComponent(state.statement))
+      )}"`
+    );
     const cel = stringifyDatabaseResources([
       {
         databaseName: selectedDatabase.value!.name,
