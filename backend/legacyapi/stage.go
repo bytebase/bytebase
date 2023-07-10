@@ -30,22 +30,6 @@ type Stage struct {
 	Name string `jsonapi:"attr,name"`
 }
 
-// StageCreate is the API message for creating a stage.
-type StageCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	EnvironmentID    int
-	PipelineID       int
-	TaskList         []TaskCreate
-	TaskIndexDAGList []TaskIndexDAG
-
-	// Domain specific fields
-	Name string
-}
-
 // TaskIndexDAG describes task dependency relationship using array index to represent task.
 // It is needed because we don't know task id before insertion, so we describe the dependency
 // using the in-memory representation, i.e, the array index.

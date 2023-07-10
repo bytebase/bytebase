@@ -289,35 +289,6 @@ type Progress struct {
 	Payload string `json:"payload"`
 }
 
-// TaskCreate is the API message for creating a task.
-type TaskCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	PipelineID int
-	StageID    int
-	InstanceID int `jsonapi:"attr,instanceId"`
-	// Tasks such as creating database may not have database.
-	DatabaseID *int `jsonapi:"attr,databaseId"`
-
-	// Domain specific fields
-	Name   string     `jsonapi:"attr,name"`
-	Status TaskStatus `jsonapi:"attr,status"`
-	Type   TaskType   `jsonapi:"attr,type"`
-	// Payload is derived from fields below it
-	Payload           string
-	EarliestAllowedTs int64  `jsonapi:"attr,earliestAllowedTs"`
-	DatabaseName      string `jsonapi:"attr,databaseName"`
-	CharacterSet      string `jsonapi:"attr,characterSet"`
-	Collation         string `jsonapi:"attr,collation"`
-	Labels            string `jsonapi:"attr,labels"`
-	BackupID          *int   `jsonapi:"attr,backupId"`
-	// Statement used by grouping batch change, Bytebase use it to render.
-	Statement string `jsonapi:"attr,statement"`
-}
-
 // TaskFind is the API message for finding tasks.
 type TaskFind struct {
 	ID *int
