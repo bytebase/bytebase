@@ -2,30 +2,23 @@ package store
 
 import api "github.com/bytebase/bytebase/backend/legacyapi"
 
-// PipelineCreate is the API message for creating a pipeline.
-type PipelineCreate struct {
-	StageList []StageCreate
+// Rollout is the API message for creating a pipeline.
+type Rollout struct {
 	Name      string
+	StageList []RolloutStage
 }
 
-// StageCreate is the API message for creating a stage.
-type StageCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
+// RolloutStage is the API message for a rollout stage.
+type RolloutStage struct {
+	Name             string
 	EnvironmentID    int
 	PipelineID       int
-	TaskList         []TaskCreate
+	TaskList         []RolloutTask
 	TaskIndexDAGList []api.TaskIndexDAG
-
-	// Domain specific fields
-	Name string
 }
 
-// TaskCreate is the API message for creating a task.
-type TaskCreate struct {
+// RolloutTask is the API message for a rollout task.
+type RolloutTask struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	CreatorID int
