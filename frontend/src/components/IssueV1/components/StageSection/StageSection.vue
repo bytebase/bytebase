@@ -13,12 +13,10 @@
           {{ $t("common.stage") }} - {{ stage.title }}
         </span>
         <span class="text-xs flex flex-col gap-1 md:flex-row md:items-center">
-          <slot name="task-name-of-stage" :stage="stage" :index="0">
-            <div class="whitespace-pre-wrap break-all with-underline">
-              {{ taskTitleOfStage(stage) }}
-            </div>
-            <StageSummary :stage="(stage as Stage)" />
-          </slot>
+          <div class="whitespace-pre-wrap break-all with-underline">
+            {{ taskTitleOfStage(stage) }}
+          </div>
+          <StageSummary :stage="(stage as Stage)" />
         </span>
       </div>
 
@@ -33,13 +31,8 @@
     </div>
 
     <div class="lg:flex items-center justify-between">
-      <div
-        class="flex flex-col lg:flex-row lg:flex-wrap lg:items-center justify-start gap-y-2 gap-x-4 text-sm"
-      >
-        <StageSelect />
-        <DatabaseInfo />
-        <EnvironmentInfo />
-      </div>
+      <StageInfo />
+
       <div class="lg:flex items-center justify-end">
         <div class="issue-debug">(put `When` here if needed)</div>
       </div>
@@ -59,9 +52,7 @@ import {
 } from "@/types";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
-import StageSelect from "./StageSelect.vue";
-import DatabaseInfo from "./DatabaseInfo.vue";
-import EnvironmentInfo from "./EnvironmentInfo.vue";
+import StageInfo from "./StageInfo";
 import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
 import { useIssueContext } from "../../logic";
 import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";

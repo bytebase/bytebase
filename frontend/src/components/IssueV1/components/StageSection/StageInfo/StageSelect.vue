@@ -17,12 +17,12 @@
 import { computed, h } from "vue";
 import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { first } from "lodash-es";
 
 import { Stage } from "@/types/proto/v1/rollout_service";
-import { useIssueContext } from "../../logic";
-import { first } from "lodash-es";
 import { activeTaskInStageV1 } from "@/utils";
 import { EMPTY_TASK_NAME } from "@/types";
+import { useIssueContext } from "../../../logic";
 
 type StageSelectOption = SelectOption & {
   stage: Stage;

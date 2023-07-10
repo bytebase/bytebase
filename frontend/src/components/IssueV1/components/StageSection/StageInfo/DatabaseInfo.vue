@@ -40,11 +40,11 @@
 import { computed } from "vue";
 
 import { UNKNOWN_ID } from "@/types";
-import { databaseForTask, useIssueContext } from "../../logic";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
+import { databaseForTask, useIssueContext } from "../../../logic";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
 

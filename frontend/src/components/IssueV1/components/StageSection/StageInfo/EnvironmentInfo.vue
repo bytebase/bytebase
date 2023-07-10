@@ -15,9 +15,9 @@
 import { computed } from "vue";
 
 import { unknownEnvironment } from "@/types";
-import { useIssueContext } from "../../logic";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
+import { useIssueContext } from "../../../logic";
 
 const { selectedStage } = useIssueContext();
 
