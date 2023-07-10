@@ -118,7 +118,7 @@ message ListSchemaDesignsRequest {
 
 message ListSchemaDesignsResponse {
   // The schema designs from the specified request.
-  repeated SchemaDesign schemaDesigns = 1;
+  repeated SchemaDesign schema_designs = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
