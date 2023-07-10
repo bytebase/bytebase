@@ -56,7 +56,7 @@ func (s *Store) FindIssueStripped(ctx context.Context, find *FindIssueMessage) (
 
 // CreateIssueValidateOnly creates an issue for validation purpose
 // Do NOT write to the database.
-func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api.PipelineCreate, create *IssueMessage, creatorID int) (*api.Issue, error) {
+func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *PipelineCreate, create *IssueMessage, creatorID int) (*api.Issue, error) {
 	pipeline, err := s.createPipelineValidateOnly(ctx, pipelineCreate)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api
 
 // createPipelineValidateOnly creates a pipeline for validation purpose
 // Do NOT write to the database.
-func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
+func (s *Store) createPipelineValidateOnly(ctx context.Context, create *PipelineCreate) (*api.Pipeline, error) {
 	creator, err := s.GetPrincipalByID(ctx, api.SystemBotID)
 	if err != nil {
 		return nil, err

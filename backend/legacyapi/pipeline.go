@@ -10,9 +10,3 @@ type Pipeline struct {
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
 }
-
-// PipelineCreate is the API message for creating a pipeline.
-type PipelineCreate struct {
-	StageList []StageCreate
-	Name      string
-}
