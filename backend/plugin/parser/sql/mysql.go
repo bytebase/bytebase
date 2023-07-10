@@ -23,7 +23,7 @@ type MySQLParseResult struct {
 func ParseMySQL(statement string) ([]*MySQLParseResult, error) {
 	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
 	var err error
-	statement, err = dealWithDelimiter(statement)
+	statement, err = DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,8 @@ func ParseMySQL(statement string) ([]*MySQLParseResult, error) {
 	return parseInputStream(antlr.NewInputStream(statement))
 }
 
-func dealWithDelimiter(statement string) (string, error) {
+// DealWithDelimiter deals with delimiter in the given SQL statement.
+func DealWithDelimiter(statement string) (string, error) {
 	has, list, err := hasDelimiter(statement)
 	if err != nil {
 		return "", err
@@ -65,7 +66,7 @@ func dealWithDelimiter(statement string) (string, error) {
 func SplitMySQL(statement string) ([]SingleSQL, error) {
 	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
 	var err error
-	statement, err = dealWithDelimiter(statement)
+	statement, err = DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
 	}
