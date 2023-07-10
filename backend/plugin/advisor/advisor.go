@@ -429,6 +429,9 @@ const (
 
 	// SnowflakeNoSelectAll is an advisor type for Snowflake no select all.
 	SnowflakeNoSelectAll Type = "bb.plugin.advisor.snowflake.select.no-select-all"
+
+	// SnowflakeTableDropNamingConvention is an advisor type for Snowflake table drop with naming convention.
+	SnowflakeTableDropNamingConvention Type = "bb.plugin.advisor.snowflake.table.drop-naming-convention"
 )
 
 // Advice is the result of an advisor.

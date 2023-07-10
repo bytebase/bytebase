@@ -1,0 +1,16 @@
+- statement: DROP TABLE IF EXISTS FOO_DELETE
+  want:
+    - status: WARN
+      code: 603
+      title: table.drop-naming-convention
+      content: '"FOO_DELETE" mismatches drop table naming convention, naming format should be "_delete$"'
+      line: 1
+      details: ""
+- statement: DROP TABLE IF EXISTS FOO
+  want:
+    - status: WARN
+      code: 603
+      title: table.drop-naming-convention
+      content: '"FOO" mismatches drop table naming convention, naming format should be "_delete$"'
+      line: 1
+      details: ""
