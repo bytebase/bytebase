@@ -31,26 +31,35 @@ type SchemaDesign struct {
 
 	// The name of the schema design.
 	// Format: projects/{project}/schemaDesigns/{schemaDesign}
+	// {schemaDesign} should be the id of a sheet.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The title of schema design. AKA sheet's title.
+	// The title of schema design. AKA sheet's name.
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	// Current editing schema.
-	Schema                 string            `protobuf:"bytes,3,opt,name=schema,proto3" json:"schema,omitempty"`
-	SchemaMetadata         *DatabaseMetadata `protobuf:"bytes,4,opt,name=schema_metadata,json=schemaMetadata,proto3" json:"schema_metadata,omitempty"`
-	BaselineSchema         string            `protobuf:"bytes,5,opt,name=baseline_schema,json=baselineSchema,proto3" json:"baseline_schema,omitempty"`
+	// The schema of schema design. AKA sheet's statement.
+	Schema string `protobuf:"bytes,3,opt,name=schema,proto3" json:"schema,omitempty"`
+	// The metadata of the current editing schema.
+	SchemaMetadata *DatabaseMetadata `protobuf:"bytes,4,opt,name=schema_metadata,json=schemaMetadata,proto3" json:"schema_metadata,omitempty"`
+	// The baseline schema.
+	BaselineSchema string `protobuf:"bytes,5,opt,name=baseline_schema,json=baselineSchema,proto3" json:"baseline_schema,omitempty"`
+	// The metadata of the baseline schema.
 	BaselineSchemaMetadata *DatabaseMetadata `protobuf:"bytes,6,opt,name=baseline_schema_metadata,json=baselineSchemaMetadata,proto3" json:"baseline_schema_metadata,omitempty"`
-	Engine                 Engine            `protobuf:"varint,7,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	// The database engine of the schema design.
+	Engine Engine `protobuf:"varint,7,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
 	// The name of the baseline database.
 	// Format: instances/{instance}/databases/{database}
 	BaselineDatabase string `protobuf:"bytes,8,opt,name=baseline_database,json=baselineDatabase,proto3" json:"baseline_database,omitempty"`
-	SchemaVersion    string `protobuf:"bytes,9,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	// The selected schema version of the baseline database.
+	// If not specified, the latest schema of database will be used as baseline schema.
+	SchemaVersion string `protobuf:"bytes,9,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
 	// The creator of the schema design.
 	// Format: users/{email}
 	Creator string `protobuf:"bytes,10,opt,name=creator,proto3" json:"creator,omitempty"`
 	// The updater of the schema design.
 	// Format: users/{email}
-	Updater    string                 `protobuf:"bytes,11,opt,name=updater,proto3" json:"updater,omitempty"`
+	Updater string `protobuf:"bytes,11,opt,name=updater,proto3" json:"updater,omitempty"`
+	// The timestamp when the schema design was created.
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// The timestamp when the schema design was last updated.
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 }
 

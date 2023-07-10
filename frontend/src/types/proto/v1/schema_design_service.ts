@@ -13,21 +13,30 @@ export interface SchemaDesign {
   /**
    * The name of the schema design.
    * Format: projects/{project}/schemaDesigns/{schemaDesign}
+   * {schemaDesign} should be the id of a sheet.
    */
   name: string;
-  /** The title of schema design. AKA sheet's title. */
+  /** The title of schema design. AKA sheet's name. */
   title: string;
-  /** Current editing schema. */
+  /** The schema of schema design. AKA sheet's statement. */
   schema: string;
+  /** The metadata of the current editing schema. */
   schemaMetadata?: DatabaseMetadata;
+  /** The baseline schema. */
   baselineSchema: string;
+  /** The metadata of the baseline schema. */
   baselineSchemaMetadata?: DatabaseMetadata;
+  /** The database engine of the schema design. */
   engine: Engine;
   /**
    * The name of the baseline database.
    * Format: instances/{instance}/databases/{database}
    */
   baselineDatabase: string;
+  /**
+   * The selected schema version of the baseline database.
+   * If not specified, the latest schema of database will be used as baseline schema.
+   */
   schemaVersion: string;
   /**
    * The creator of the schema design.
@@ -39,7 +48,9 @@ export interface SchemaDesign {
    * Format: users/{email}
    */
   updater: string;
+  /** The timestamp when the schema design was created. */
   createTime?: Date;
+  /** The timestamp when the schema design was last updated. */
   updateTime?: Date;
 }
 
