@@ -20,6 +20,7 @@ func TestSnowflakeRules(t *testing.T) {
 		advisor.SchemaRuleRequiredColumn,
 		advisor.SchemaRuleIdentifierCase,
 		advisor.SchemaRuleColumnNotNull,
+		advisor.SchemaRuleStatementNoSelectAll,
 	}
 
 	for _, rule := range snowflakeRules {
