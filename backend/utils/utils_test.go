@@ -266,7 +266,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 		name               string
 		taskCreateLists    [][]*store.TaskMessage
 		taskIndexDAGLists  [][]store.TaskIndexDAG
-		wantTaskCreateList []store.TaskMessage
+		wantTaskCreateList []*store.TaskMessage
 		wantTaskDAGList    []store.TaskIndexDAG
 	}{
 		{
@@ -281,7 +281,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{FromIndex: 0, ToIndex: 1},
 				},
 			},
-			wantTaskCreateList: []store.TaskMessage{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {},
 			},
 			wantTaskDAGList: []store.TaskIndexDAG{
@@ -307,7 +307,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{FromIndex: 1, ToIndex: 2},
 				},
 			},
-			wantTaskCreateList: []store.TaskMessage{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {}, {}, {}, {}, {}, {}, {},
 			},
 			wantTaskDAGList: []store.TaskIndexDAG{
@@ -341,7 +341,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{FromIndex: 1, ToIndex: 2},
 				},
 			},
-			wantTaskCreateList: []store.TaskMessage{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
 			},
 			wantTaskDAGList: []store.TaskIndexDAG{
