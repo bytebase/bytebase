@@ -1818,7 +1818,7 @@ func (s *SQLService) checkQueryRights(
 	isExport := exportFormat != v1pb.ExportRequest_FORMAT_UNSPECIFIED
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
-		statement, err := DecodeBase64String(statement)
+		statement, err := decodeBase64String(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to decode statement: %v", err)
 		}
@@ -2070,8 +2070,8 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 	}
 }
 
-// DecodeBase64String decodes a base64 string.
-func DecodeBase64String(encodedString string) (string, error) {
+// decodeBase64String decodes a base64 string.
+func decodeBase64String(encodedString string) (string, error) {
 	decodedString, err := base64.StdEncoding.DecodeString(encodedString)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to decode base64 string")

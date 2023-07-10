@@ -209,7 +209,7 @@ func TestDecodeBase64String(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, err := DecodeBase64String(test.statement)
+		got, err := decodeBase64String(test.statement)
 		assert.NoError(t, err)
 		assert.Equal(t, test.want, got)
 	}
