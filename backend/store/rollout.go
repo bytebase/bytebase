@@ -33,22 +33,18 @@ type TaskCreate struct {
 	// Related fields
 	PipelineID int
 	StageID    int
-	InstanceID int `jsonapi:"attr,instanceId"`
+	InstanceID int
 	// Tasks such as creating database may not have database.
-	DatabaseID *int `jsonapi:"attr,databaseId"`
+	DatabaseID *int
 
 	// Domain specific fields
-	Name   string         `jsonapi:"attr,name"`
-	Status api.TaskStatus `jsonapi:"attr,status"`
-	Type   api.TaskType   `jsonapi:"attr,type"`
+	Name   string
+	Status api.TaskStatus
+	Type   api.TaskType
 	// Payload is derived from fields below it
 	Payload           string
-	EarliestAllowedTs int64  `jsonapi:"attr,earliestAllowedTs"`
-	DatabaseName      string `jsonapi:"attr,databaseName"`
-	CharacterSet      string `jsonapi:"attr,characterSet"`
-	Collation         string `jsonapi:"attr,collation"`
-	Labels            string `jsonapi:"attr,labels"`
-	BackupID          *int   `jsonapi:"attr,backupId"`
+	EarliestAllowedTs int64
+	DatabaseName      string
 	// Statement used by grouping batch change, Bytebase use it to render.
-	Statement string `jsonapi:"attr,statement"`
+	Statement string
 }
