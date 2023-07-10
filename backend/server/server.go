@@ -1135,9 +1135,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		DatabaseUID: &database.UID,
 		Name:        "Sample Sheet",
 		Statement:   "SELECT * FROM salary;",
-		Visibility:  api.ProjectSheet,
-		Source:      api.SheetFromBytebase,
-		Type:        api.SheetForSQL,
+		Visibility:  store.ProjectSheet,
+		Source:      store.SheetFromBytebase,
+		Type:        store.SheetForSQL,
 	}
 	_, err = s.store.CreateSheet(ctx, sheetCreate)
 	if err != nil {
@@ -1153,9 +1153,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 
 		Name:       "Alter table sheet for Sample Issue",
 		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+		Visibility: store.ProjectSheet,
+		Source:     store.SheetFromBytebaseArtifact,
+		Type:       store.SheetForSQL,
 		Payload:    "{}",
 	})
 	if err != nil {

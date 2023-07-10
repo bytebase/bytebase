@@ -107,6 +107,20 @@
   
     - [CelService](#bytebase-v1-CelService)
   
+- [v1/database_edit.proto](#v1_database_edit-proto)
+    - [AddColumnContext](#bytebase-v1-AddColumnContext)
+    - [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext)
+    - [AlterColumnContext](#bytebase-v1-AlterColumnContext)
+    - [AlterTableContext](#bytebase-v1-AlterTableContext)
+    - [CreateSchemaContext](#bytebase-v1-CreateSchemaContext)
+    - [CreateTableContext](#bytebase-v1-CreateTableContext)
+    - [DatabaseEdit](#bytebase-v1-DatabaseEdit)
+    - [DropColumnContext](#bytebase-v1-DropColumnContext)
+    - [DropSchemaContext](#bytebase-v1-DropSchemaContext)
+    - [DropTableContext](#bytebase-v1-DropTableContext)
+    - [RenameSchemaContext](#bytebase-v1-RenameSchemaContext)
+    - [RenameTableContext](#bytebase-v1-RenameTableContext)
+  
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
     - [FileCommit](#bytebase-v1-FileCommit)
@@ -455,6 +469,17 @@
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
+  
+- [v1/schema_design_service.proto](#v1_schema_design_service-proto)
+    - [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest)
+    - [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest)
+    - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
+    - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
+    - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
+    - [SchemaDesign](#bytebase-v1-SchemaDesign)
+    - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
+  
+    - [SchemaDesignService](#bytebase-v1-SchemaDesignService)
   
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
     - [Feature](#bytebase-v1-Feature)
@@ -1931,6 +1956,247 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 | ----------- | ------------ | ------------- | ------------|
 | Parse | [ParseRequest](#bytebase-v1-ParseRequest) | [ParseResponse](#bytebase-v1-ParseResponse) |  |
 | Deparse | [DeparseRequest](#bytebase-v1-DeparseRequest) | [DeparseResponse](#bytebase-v1-DeparseResponse) |  |
+
+ 
+
+
+
+<a name="v1_database_edit-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/database_edit.proto
+
+
+
+<a name="bytebase-v1-AddColumnContext"></a>
+
+### AddColumnContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the column to add. |
+| type | [string](#string) |  | The type of the column. |
+| character_set | [string](#string) |  | The character set of the column. |
+| collation | [string](#string) |  | The collation of the column. |
+| comment | [string](#string) |  | The comment of the column. |
+| nullable | [bool](#bool) |  | Whether the column is nullable. |
+| default_value | [string](#string) |  | The default value of the column. |
+| has_default_value | [bool](#bool) |  | Whether the column has a default value. |
+
+
+
+
+
+
+<a name="bytebase-v1-AddForeignKeyContext"></a>
+
+### AddForeignKeyContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column | [string](#string) |  | The column of the foreign key. |
+| referenced_schema | [string](#string) |  | The referenced schema of the foreign key. |
+| referenced_table | [string](#string) |  | The referenced table of the foreign key. |
+| referenced_column | [string](#string) |  | The referenced column of the foreign key. |
+
+
+
+
+
+
+<a name="bytebase-v1-AlterColumnContext"></a>
+
+### AlterColumnContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| old_name | [string](#string) |  | The old name of the column. |
+| new_name | [string](#string) |  | The new name of the column. |
+| type | [string](#string) |  | The type of the column. |
+| character_set | [string](#string) |  | The character set of the column. |
+| collation | [string](#string) |  | The collation of the column. |
+| comment | [string](#string) |  | The comment of the column. |
+| nullable | [bool](#bool) |  | Whether the column is nullable. |
+| default_value | [string](#string) |  | The default value of the column. |
+| is_default_value_changed | [bool](#bool) |  | Whether the default value of the column has changed. |
+
+
+
+
+
+
+<a name="bytebase-v1-AlterTableContext"></a>
+
+### AlterTableContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the table to alter. |
+| schema | [string](#string) |  | The schema of the table. |
+| add_column_contexts | [AddColumnContext](#bytebase-v1-AddColumnContext) | repeated | List of column addition contexts. |
+| alter_column_contexts | [AlterColumnContext](#bytebase-v1-AlterColumnContext) | repeated | List of column alteration contexts. |
+| drop_column_contexts | [DropColumnContext](#bytebase-v1-DropColumnContext) | repeated | List of column dropping contexts. |
+| drop_primary_keys | [string](#string) | repeated | List of primary key columns to be dropped. |
+| primary_keys | [string](#string) | repeated | List of primary key columns. |
+| drop_foreign_keys | [string](#string) | repeated | List of foreign key columns to be dropped. |
+| add_foreign_key_contexts | [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext) | repeated | List of foreign key addition contexts. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateSchemaContext"></a>
+
+### CreateSchemaContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateTableContext"></a>
+
+### CreateTableContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the table to create. |
+| schema | [string](#string) |  | The schema of the table. |
+| type | [string](#string) |  | The type of the table. |
+| engine | [string](#string) |  | The engine of the table. |
+| character_set | [string](#string) |  | The character set of the table. |
+| collation | [string](#string) |  | The collation of the table. |
+| comment | [string](#string) |  | The comment of the table. |
+| add_column_contexts | [AddColumnContext](#bytebase-v1-AddColumnContext) | repeated | List of column addition contexts. |
+| primary_keys | [string](#string) | repeated | List of primary key columns. |
+| add_foreign_key_contexts | [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext) | repeated | List of foreign key addition contexts. |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseEdit"></a>
+
+### DatabaseEdit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| create_schema_contexts | [CreateSchemaContext](#bytebase-v1-CreateSchemaContext) | repeated | List of schema creation contexts. |
+| rename_schema_contexts | [RenameSchemaContext](#bytebase-v1-RenameSchemaContext) | repeated | List of schema renaming contexts. |
+| drop_schema_contexts | [DropSchemaContext](#bytebase-v1-DropSchemaContext) | repeated | List of schema dropping contexts. |
+| create_table_contexts | [CreateTableContext](#bytebase-v1-CreateTableContext) | repeated | List of table creation contexts. |
+| alter_table_contexts | [AlterTableContext](#bytebase-v1-AlterTableContext) | repeated | List of table alteration contexts. |
+| rename_table_contexts | [RenameTableContext](#bytebase-v1-RenameTableContext) | repeated | List of table renaming contexts. |
+| drop_table_contexts | [DropTableContext](#bytebase-v1-DropTableContext) | repeated | List of table dropping contexts. |
+
+
+
+
+
+
+<a name="bytebase-v1-DropColumnContext"></a>
+
+### DropColumnContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the column to drop. |
+
+
+
+
+
+
+<a name="bytebase-v1-DropSchemaContext"></a>
+
+### DropSchemaContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema to drop. |
+
+
+
+
+
+
+<a name="bytebase-v1-DropTableContext"></a>
+
+### DropTableContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the table to drop. |
+| schema | [string](#string) |  | The schema of the table. |
+
+
+
+
+
+
+<a name="bytebase-v1-RenameSchemaContext"></a>
+
+### RenameSchemaContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| old_name | [string](#string) |  | The old name of the schema. |
+| new_name | [string](#string) |  | The new name of the schema. |
+
+
+
+
+
+
+<a name="bytebase-v1-RenameTableContext"></a>
+
+### RenameTableContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema of the table. |
+| old_name | [string](#string) |  | The old name of the table. |
+| new_name | [string](#string) |  | The new name of the table. |
+
+
+
+
+
+ 
+
+ 
+
+ 
 
  
 
@@ -7266,6 +7532,163 @@ Type is the database change type.
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListRolloutTaskRuns | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
+
+ 
+
+
+
+<a name="v1_schema_design_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/schema_design_service.proto
+
+
+
+<a name="bytebase-v1-CreateSchemaDesignRequest"></a>
+
+### CreateSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} Use &#34;projects/-&#34; to list all schema designs. |
+| schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteSchemaDesignRequest"></a>
+
+### DeleteSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema design to delete. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSchemaDesignRequest"></a>
+
+### GetSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema design to retrieve. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSchemaDesignsRequest"></a>
+
+### ListSchemaDesignsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the schema design. Foramt: projects/{project} |
+| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
+| page_size | [int32](#int32) |  | The maximum number of schema designs to return. The service may return fewer than this value. If unspecified, at most 50 schema designs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListSchemaDesigns` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListSchemaDesigns` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSchemaDesignsResponse"></a>
+
+### ListSchemaDesignsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_designs | [SchemaDesign](#bytebase-v1-SchemaDesign) | repeated | The schema designs from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaDesign"></a>
+
+### SchemaDesign
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema design. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+| title | [string](#string) |  | The title of schema design. AKA sheet&#39;s title. |
+| schema | [string](#string) |  | Current editing schema. |
+| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
+| baseline_schema | [string](#string) |  |  |
+| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
+| schema_version | [string](#string) |  |  |
+| creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
+| updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSchemaDesignRequest"></a>
+
+### UpdateSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  | The schema design to update.
+
+The schema design&#39;s `name` field is used to identify the schema design to update. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SchemaDesignService"></a>
+
+### SchemaDesignService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetSchemaDesign | [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| ListSchemaDesigns | [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest) | [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse) |  |
+| CreateSchemaDesign | [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| UpdateSchemaDesign | [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

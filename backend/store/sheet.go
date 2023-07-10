@@ -10,7 +10,42 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
+)
+
+// SheetVisibility is the visibility of a sheet.
+type SheetVisibility string
+
+const (
+	// PrivateSheet is the sheet visibility for PRIVATE. Only sheet OWNER can read/write.
+	PrivateSheet SheetVisibility = "PRIVATE"
+	// ProjectSheet is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
+	ProjectSheet SheetVisibility = "PROJECT"
+	// PublicSheet is the sheet visibility for PUBLIC. Sheet OWNER can read/write, and all others can read.
+	PublicSheet SheetVisibility = "PUBLIC"
+)
+
+// SheetSource is the type of sheet origin source.
+type SheetSource string
+
+const (
+	// SheetFromBytebase is the sheet created by Bytebase. e.g. SQL Editor.
+	SheetFromBytebase SheetSource = "BYTEBASE"
+	// SheetFromBytebaseArtifact is the artifact sheet.
+	SheetFromBytebaseArtifact SheetSource = "BYTEBASE_ARTIFACT"
+	// SheetFromGitLab is the sheet synced from GitLab (for both GitLab.com and self-hosted GitLab).
+	SheetFromGitLab SheetSource = "GITLAB"
+	// SheetFromGitHub is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise).
+	SheetFromGitHub SheetSource = "GITHUB"
+	// SheetFromBitbucket is the sheet synced from Bitbucket.
+	SheetFromBitbucket SheetSource = "BITBUCKET"
+)
+
+// SheetType is the type of sheet.
+type SheetType string
+
+const (
+	// SheetForSQL is the sheet that used for saving SQL statements.
+	SheetForSQL SheetType = "SQL"
 )
 
 // SheetMessage is the message for a sheet.
@@ -26,9 +61,9 @@ type SheetMessage struct {
 
 	Name       string
 	Statement  string
-	Visibility api.SheetVisibility
-	Source     api.SheetSource
-	Type       api.SheetType
+	Visibility SheetVisibility
+	Source     SheetSource
+	Type       SheetType
 	Payload    string
 
 	// Output only fields
@@ -40,7 +75,7 @@ type SheetMessage struct {
 	Pinned      bool
 
 	// Internal fields
-	rowStatus api.RowStatus
+	rowStatus RowStatus
 	createdTs int64
 	updatedTs int64
 }
@@ -50,7 +85,7 @@ type FindSheetMessage struct {
 	UID *int
 
 	// Standard fields
-	RowStatus *api.RowStatus
+	RowStatus *RowStatus
 
 	// Used to find the creator's sheet list.
 	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
@@ -68,9 +103,9 @@ type FindSheetMessage struct {
 
 	// Domain fields
 	Name         *string
-	Visibilities []api.SheetVisibility
-	Source       *api.SheetSource
-	Type         *api.SheetType
+	Visibilities []SheetVisibility
+	Source       *SheetSource
+	Type         *SheetType
 	Payload      *string
 	// Used to find (un)starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
 	// For now, we only need the starred sheets.
@@ -100,7 +135,7 @@ func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, erro
 		return statement, nil
 	}
 
-	sheets, err := s.ListSheets(ctx, &FindSheetMessage{UID: &id, LoadFull: true}, api.SystemBotID)
+	sheets, err := s.ListSheets(ctx, &FindSheetMessage{UID: &id, LoadFull: true}, SystemBotID)
 	if err != nil {
 		return "", err
 	}

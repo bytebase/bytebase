@@ -209,7 +209,7 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 }
 
 // CreateTasksV2 creates a new task.
-func (s *Store) CreateTasksV2(ctx context.Context, creates ...*api.TaskCreate) ([]*TaskMessage, error) {
+func (s *Store) CreateTasksV2(ctx context.Context, creates ...*RolloutTask) ([]*TaskMessage, error) {
 	var query strings.Builder
 	var values []any
 	var queryValues []string

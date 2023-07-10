@@ -1040,6 +1040,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLNoSelectAll, nil
 		case db.Oracle:
 			return OracleNoSelectAll, nil
+		case db.Snowflake:
+			return SnowflakeNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
