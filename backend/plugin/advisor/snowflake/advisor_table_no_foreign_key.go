@@ -106,7 +106,7 @@ func (l *tableNoForeignKeyChecker) generateAdvice() ([]advisor.Advice, error) {
 // EnterCreate_table is called when production create_table is entered.
 func (l *tableNoForeignKeyChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	originalTableName := ctx.Object_name()
-	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName)
+	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName, "", "PUBLIC")
 
 	l.tableForeignKeyTimes[normalizedTableName] = 0
 	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()
@@ -167,7 +167,7 @@ func (l *tableNoForeignKeyChecker) EnterAlter_table(ctx *parser.Alter_tableConte
 		return
 	}
 	originalTableName := ctx.Object_name(0)
-	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName)
+	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName, "", "PUBLIC")
 
 	l.currentNormalizedTableName = normalizedTableName
 	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()

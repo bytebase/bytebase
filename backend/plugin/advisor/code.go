@@ -22,6 +22,7 @@ const (
 	CompatibilityAddCheck      Code = 109
 	CompatibilityAlterCheck    Code = 110
 	CompatibilityAlterColumn   Code = 111
+	CompatibilityDropSchema    Code = 112
 
 	// 201 ~ 299 statement error code.
 	StatementSyntaxError             Code = 201
