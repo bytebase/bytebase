@@ -30,12 +30,10 @@
       </NTooltip>
     </div>
 
-    <div class="lg:flex items-center justify-between">
+    <div class="lg:flex items-start justify-between">
       <StageInfo />
 
-      <div class="lg:flex items-center justify-end">
-        <div class="issue-debug">(put `When` here if needed)</div>
-      </div>
+      <Actions />
     </div>
   </div>
 </template>
@@ -53,6 +51,7 @@ import {
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
 import StageInfo from "./StageInfo";
+import Actions from "./Actions";
 import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
 import { useIssueContext } from "../../logic";
 import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";

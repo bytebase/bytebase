@@ -26,7 +26,7 @@
               {{ $t("issue.sdl.schema-change") }}
               <NTooltip :disabled="!!sdlState.detail.error">
                 <template #trigger>
-                  <heroicons:question-mark-circle class="w-4 h-4" />
+                  <heroicons-outline:question-mark-circle class="w-4 h-4" />
                 </template>
                 <div class="whitespace-nowrap">
                   <span>{{ $t("issue.sdl.left-schema-may-change") }}</span>

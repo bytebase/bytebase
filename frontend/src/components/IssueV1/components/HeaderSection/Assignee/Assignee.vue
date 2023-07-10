@@ -4,7 +4,7 @@
       <span class="textlabel">{{ $t("common.assignee") }}</span>
       <NTooltip>
         <template #trigger>
-          <heroicons:question-mark-circle class="w-4 h-4" />
+          <heroicons-outline:question-mark-circle class="w-4 h-4" />
         </template>
         <div class="max-w-[12rem]">
           {{ $t("issue.assignee-tooltip") }}

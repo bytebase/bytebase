@@ -7,7 +7,7 @@
           {{ $t("issue.approval-flow.tooltip") }}
         </div>
         <template #trigger>
-          <heroicons:question-mark-circle />
+          <heroicons-outline:question-mark-circle />
         </template>
       </NTooltip>
     </div>
