@@ -353,11 +353,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		where = append(where, "(NOT (task.type='bb.task.database.data.update' AND task.payload->>'rollbackFromTaskId' IS NOT NULL))")
 	}
 
-	payloadField := "task.payload"
-	if find.StripPayload {
-		payloadField = "''"
-	}
-
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -378,14 +373,14 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			task.name,
 			task.status,
 			task.type,
-			%s,
+			task.payload,
 			task.earliest_allowed_ts,
 			ARRAY_AGG (task_dag.from_task_id) blocked_by
 		FROM task
 		LEFT JOIN task_dag ON task.id = task_dag.to_task_id
 		WHERE %s
 		GROUP BY task.id
-		ORDER BY task.id ASC`, payloadField, strings.Join(where, " AND ")),
+		ORDER BY task.id ASC`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
