@@ -69,7 +69,7 @@
               (<router-link to="/setting/subscription" class="accent-link">
                 {{
                   $t("subscription.instance-assignment.n-license-remain", {
-                    n: availableLicenseCount,
+                    n: availableLicenseCountText,
                   })
                 }}</router-link
               >)
@@ -761,6 +761,13 @@ const availableLicenseCount = computed(() => {
   );
 });
 
+const availableLicenseCountText = computed((): string => {
+  if (subscriptionStore.instanceLicenseCount === Number.MAX_VALUE) {
+    return t("subscription.unlimited");
+  }
+  return `${availableLicenseCount.value}`;
+});
+
 const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   return {
     uid: instance?.uid ?? String(UNKNOWN_ID),
@@ -772,7 +779,8 @@ const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
     activation: instance
       ? instance.activation
-      : availableLicenseCount.value > 0,
+      : subscriptionStore.currentPlan !== PlanType.FREE &&
+        availableLicenseCount.value > 0,
   };
 };
 
