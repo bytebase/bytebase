@@ -453,7 +453,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 }
 
 func (s *Store) composeSimplePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
-	// Strip the task payload statement to reduce the response size.
 	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", pipeline.ID)

@@ -264,14 +264,14 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 func TestMergeTaskCreateLists(t *testing.T) {
 	tests := []struct {
 		name               string
-		taskCreateLists    [][]store.TaskMessage
+		taskCreateLists    [][]*store.TaskMessage
 		taskIndexDAGLists  [][]store.TaskIndexDAG
 		wantTaskCreateList []store.TaskMessage
 		wantTaskDAGList    []store.TaskIndexDAG
 	}{
 		{
 			name: "simple, len=1",
-			taskCreateLists: [][]store.TaskMessage{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {},
 				},
@@ -290,7 +290,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 		},
 		{
 			name: "len=2",
-			taskCreateLists: [][]store.TaskMessage{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {}, {}, {},
 				},
@@ -318,7 +318,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 		},
 		{
 			name: "len=3",
-			taskCreateLists: [][]store.TaskMessage{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {}, {}, {},
 				},
