@@ -219,7 +219,7 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 		where, args = append(where, fmt.Sprintf("sheet.type = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PayloadType; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.payload->'type' = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.payload->>'type' = $%d", len(args)+1)), append(args, *v)
 	}
 	statementField := fmt.Sprintf("LEFT(sheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
