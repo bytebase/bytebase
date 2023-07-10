@@ -26,6 +26,7 @@ import { idFromSlug } from "@/utils";
 import { EMPTY_ID, UNKNOWN_ID, emptyIssue, unknownIssue } from "@/types";
 import { rolloutServiceClient } from "@/grpcweb";
 import {
+  Plan,
   Plan_ChangeDatabaseConfig,
   Plan_ChangeDatabaseConfig_Type,
   Plan_Spec,
@@ -130,11 +131,18 @@ const tryCreate = async () => {
     const step = Plan_Step.fromJSON({
       specs: [spec],
     });
-    const plan = await rolloutServiceClient.createPlan({
-      parent: projectResource,
-      plan: {
-        steps: [step],
-      },
+    const plan = Plan.fromJSON({
+      steps: [step],
+    });
+    // const plan = await rolloutServiceClient.createPlan({
+    //   parent: projectResource,
+    //   plan: {
+    //     steps: [step],
+    //   },
+    // });
+    await rolloutServiceClient.previewRollout({
+      project: projectResource,
+      plan,
     });
     console.log("plan", plan);
     // const issue = await issueServiceClient.createIssue({
