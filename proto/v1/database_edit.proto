@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package bytebase.v1;
 
-import "google/api/field_behavior.proto";
-
 option go_package = "generated-go/v1";
 
 message DatabaseEdit {
