@@ -107,6 +107,20 @@
   
     - [CelService](#bytebase-v1-CelService)
   
+- [v1/database_edit.proto](#v1_database_edit-proto)
+    - [AddColumnContext](#bytebase-v1-AddColumnContext)
+    - [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext)
+    - [AlterColumnContext](#bytebase-v1-AlterColumnContext)
+    - [AlterTableContext](#bytebase-v1-AlterTableContext)
+    - [CreateSchemaContext](#bytebase-v1-CreateSchemaContext)
+    - [CreateTableContext](#bytebase-v1-CreateTableContext)
+    - [DatabaseEdit](#bytebase-v1-DatabaseEdit)
+    - [DropColumnContext](#bytebase-v1-DropColumnContext)
+    - [DropSchemaContext](#bytebase-v1-DropSchemaContext)
+    - [DropTableContext](#bytebase-v1-DropTableContext)
+    - [RenameSchemaContext](#bytebase-v1-RenameSchemaContext)
+    - [RenameTableContext](#bytebase-v1-RenameTableContext)
+  
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
     - [FileCommit](#bytebase-v1-FileCommit)
@@ -1931,6 +1945,247 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 | ----------- | ------------ | ------------- | ------------|
 | Parse | [ParseRequest](#bytebase-v1-ParseRequest) | [ParseResponse](#bytebase-v1-ParseResponse) |  |
 | Deparse | [DeparseRequest](#bytebase-v1-DeparseRequest) | [DeparseResponse](#bytebase-v1-DeparseResponse) |  |
+
+ 
+
+
+
+<a name="v1_database_edit-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/database_edit.proto
+
+
+
+<a name="bytebase-v1-AddColumnContext"></a>
+
+### AddColumnContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the column to add. |
+| type | [string](#string) |  | The type of the column. |
+| character_set | [string](#string) |  | The character set of the column. |
+| collation | [string](#string) |  | The collation of the column. |
+| comment | [string](#string) |  | The comment of the column. |
+| nullable | [bool](#bool) |  | Whether the column is nullable. |
+| default_value | [string](#string) |  | The default value of the column. |
+| has_default_value | [bool](#bool) |  | Whether the column has a default value. |
+
+
+
+
+
+
+<a name="bytebase-v1-AddForeignKeyContext"></a>
+
+### AddForeignKeyContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column | [string](#string) |  | The column of the foreign key. |
+| referenced_schema | [string](#string) |  | The referenced schema of the foreign key. |
+| referenced_table | [string](#string) |  | The referenced table of the foreign key. |
+| referenced_column | [string](#string) |  | The referenced column of the foreign key. |
+
+
+
+
+
+
+<a name="bytebase-v1-AlterColumnContext"></a>
+
+### AlterColumnContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| old_name | [string](#string) |  | The old name of the column. |
+| new_name | [string](#string) |  | The new name of the column. |
+| type | [string](#string) |  | The type of the column. |
+| character_set | [string](#string) |  | The character set of the column. |
+| collation | [string](#string) |  | The collation of the column. |
+| comment | [string](#string) |  | The comment of the column. |
+| nullable | [bool](#bool) |  | Whether the column is nullable. |
+| default_value | [string](#string) |  | The default value of the column. |
+| is_default_value_changed | [bool](#bool) |  | Whether the default value of the column has changed. |
+
+
+
+
+
+
+<a name="bytebase-v1-AlterTableContext"></a>
+
+### AlterTableContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the table to alter. |
+| schema | [string](#string) |  | The schema of the table. |
+| add_column_contexts | [AddColumnContext](#bytebase-v1-AddColumnContext) | repeated | List of column addition contexts. |
+| alter_column_contexts | [AlterColumnContext](#bytebase-v1-AlterColumnContext) | repeated | List of column alteration contexts. |
+| drop_column_contexts | [DropColumnContext](#bytebase-v1-DropColumnContext) | repeated | List of column dropping contexts. |
+| drop_primary_keys | [string](#string) | repeated | List of primary key columns to be dropped. |
+| primary_keys | [string](#string) | repeated | List of primary key columns. |
+| drop_foreign_keys | [string](#string) | repeated | List of foreign key columns to be dropped. |
+| add_foreign_key_contexts | [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext) | repeated | List of foreign key addition contexts. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateSchemaContext"></a>
+
+### CreateSchemaContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateTableContext"></a>
+
+### CreateTableContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the table to create. |
+| schema | [string](#string) |  | The schema of the table. |
+| type | [string](#string) |  | The type of the table. |
+| engine | [string](#string) |  | The engine of the table. |
+| character_set | [string](#string) |  | The character set of the table. |
+| collation | [string](#string) |  | The collation of the table. |
+| comment | [string](#string) |  | The comment of the table. |
+| add_column_contexts | [AddColumnContext](#bytebase-v1-AddColumnContext) | repeated | List of column addition contexts. |
+| primary_keys | [string](#string) | repeated | List of primary key columns. |
+| add_foreign_key_contexts | [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext) | repeated | List of foreign key addition contexts. |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseEdit"></a>
+
+### DatabaseEdit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| create_schema_contexts | [CreateSchemaContext](#bytebase-v1-CreateSchemaContext) | repeated | List of schema creation contexts. |
+| rename_schema_contexts | [RenameSchemaContext](#bytebase-v1-RenameSchemaContext) | repeated | List of schema renaming contexts. |
+| drop_schema_contexts | [DropSchemaContext](#bytebase-v1-DropSchemaContext) | repeated | List of schema dropping contexts. |
+| create_table_contexts | [CreateTableContext](#bytebase-v1-CreateTableContext) | repeated | List of table creation contexts. |
+| alter_table_contexts | [AlterTableContext](#bytebase-v1-AlterTableContext) | repeated | List of table alteration contexts. |
+| rename_table_contexts | [RenameTableContext](#bytebase-v1-RenameTableContext) | repeated | List of table renaming contexts. |
+| drop_table_contexts | [DropTableContext](#bytebase-v1-DropTableContext) | repeated | List of table dropping contexts. |
+
+
+
+
+
+
+<a name="bytebase-v1-DropColumnContext"></a>
+
+### DropColumnContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the column to drop. |
+
+
+
+
+
+
+<a name="bytebase-v1-DropSchemaContext"></a>
+
+### DropSchemaContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema to drop. |
+
+
+
+
+
+
+<a name="bytebase-v1-DropTableContext"></a>
+
+### DropTableContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the table to drop. |
+| schema | [string](#string) |  | The schema of the table. |
+
+
+
+
+
+
+<a name="bytebase-v1-RenameSchemaContext"></a>
+
+### RenameSchemaContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| old_name | [string](#string) |  | The old name of the schema. |
+| new_name | [string](#string) |  | The new name of the schema. |
+
+
+
+
+
+
+<a name="bytebase-v1-RenameTableContext"></a>
+
+### RenameTableContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema of the table. |
+| old_name | [string](#string) |  | The old name of the table. |
+| new_name | [string](#string) |  | The new name of the table. |
+
+
+
+
+
+ 
+
+ 
+
+ 
 
  
 
