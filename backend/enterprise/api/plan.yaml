@@ -10,9 +10,11 @@ categoryList:
       - change-history
       - terraform-provider
       - schedule-change
-      - database-group
+      - rollout-policy
       - disaster-recovery
       - sync-schema
+      - custom-approval
+      - database-group
       - batch-change
   - type: sql-editor
     featureList:
@@ -35,8 +37,7 @@ categoryList:
       - rbac
       - slow-query
       - archiving
-      - approval-and-backup-policy
-      - custom-approval
+      - backup-policy
       - sso
       - 2fa
       - ssh-tunnel
@@ -90,6 +91,9 @@ planList:
         content: sync-schema-basic
         tooltip: sync-schema-basic-tooltip
       - type: terraform-provider
+      - type: rollout-policy
+        content: rollout-policy-basic
+        tooltip: rollout-policy-basic-tooltip
       # SQL Editor
       - type: auto-complete
       - type: schema-editor
@@ -162,6 +166,9 @@ planList:
         tooltip: sync-schema-advanced-tooltip
       - type: terraform-provider
       - type: schedule-change
+      - type: rollout-policy
+        content: rollout-policy-advanced
+        tooltip: rollout-policy-advanced-tooltip
       # SQL Editor
       - type: auto-complete
       - type: schema-editor
@@ -186,7 +193,7 @@ planList:
         content: anomaly-detection-basic
         tooltip: anomaly-detection-basic-tooltip
       - type: rbac
-      - type: approval-and-backup-policy
+      - type: backup-policy
       # Bespoke
       - type: support
         content: support-email
@@ -194,7 +201,7 @@ planList:
       - email-support
       - everything-in-free-plan
       - sql-check-anomaly-detection
-      - approval-and-backup-policy
+      - backup-policy
       - online-schema-migration
       - pitr
   - type: 2
@@ -234,6 +241,10 @@ planList:
       - type: terraform-provider
       - type: schedule-change
       - type: database-group
+      - type: rollout-policy
+        content: rollout-policy-advanced
+        tooltip: rollout-policy-advanced-tooltip
+      - type: custom-approval
       # SQL Editor
       - type: auto-complete
       - type: schema-editor
@@ -259,11 +270,10 @@ planList:
         content: anomaly-detection-advanced
         tooltip: anomaly-detection-advanced-tooltip
       - type: rbac
-      - type: approval-and-backup-policy
+      - type: backup-policy
       - type: sso
       - type: 2fa
       - type: ssh-tunnel
-      - type: custom-approval
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
       - type: environment-tier
