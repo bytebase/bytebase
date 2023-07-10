@@ -349,16 +349,18 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.Debug = profile.Debug
 	e.HideBanner = true
 	e.HidePort = true
+	grpcSkipper := func(c echo.Context) bool {
+		// Skip grpc and webhook calls.
+		return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
+			strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute") ||
+			strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix)
+	}
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Skipper: func(c echo.Context) bool {
-			// Skip grpc and webhook calls.
-			return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
-				strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix) ||
-				strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute")
-		},
+		Skipper: grpcSkipper,
 		Timeout: 30 * time.Second,
 	}))
 	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Skipper: grpcSkipper,
 		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
 			middleware.RateLimiterMemoryStoreConfig{Rate: 30, Burst: 60, ExpiresIn: 3 * time.Minute},
 		),
@@ -534,9 +536,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
+	grpc.EnableTracing = true
 	s.grpcServer = grpc.NewServer(
 		// Override the maximum receiving message size to 100M for uploading large sheets.
 		grpc.MaxRecvMsgSize(100*1024*1024),
+		grpc.InitialWindowSize(100000000),
+		grpc.InitialConnWindowSize(100000000),
 		grpc.ChainUnaryInterceptor(
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
