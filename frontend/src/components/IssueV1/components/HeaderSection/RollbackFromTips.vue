@@ -93,7 +93,6 @@ const rollbackFromIssue = ref(unknownIssue()); // TODO: useComposedIssueByUID
 watch(
   rollbackFromIssueUID,
   (uid) => {
-    console.log("issue uid", uid);
     experimentalFetchIssueByUID(uid).then((issue) => {
       if (issue.uid === rollbackFromIssueUID.value) {
         rollbackFromIssue.value = issue;
