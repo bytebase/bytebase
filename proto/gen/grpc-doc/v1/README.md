@@ -470,6 +470,17 @@
   
     - [RolloutService](#bytebase-v1-RolloutService)
   
+- [v1/schema_design_service.proto](#v1_schema_design_service-proto)
+    - [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest)
+    - [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest)
+    - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
+    - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
+    - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
+    - [SchemaDesign](#bytebase-v1-SchemaDesign)
+    - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
+  
+    - [SchemaDesignService](#bytebase-v1-SchemaDesignService)
+  
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
     - [Feature](#bytebase-v1-Feature)
     - [Feature.MatrixEntry](#bytebase-v1-Feature-MatrixEntry)
@@ -7521,6 +7532,163 @@ Type is the database change type.
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListRolloutTaskRuns | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
+
+ 
+
+
+
+<a name="v1_schema_design_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/schema_design_service.proto
+
+
+
+<a name="bytebase-v1-CreateSchemaDesignRequest"></a>
+
+### CreateSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} Use &#34;projects/-&#34; to list all schema designs. |
+| schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteSchemaDesignRequest"></a>
+
+### DeleteSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema design to delete. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSchemaDesignRequest"></a>
+
+### GetSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema design to retrieve. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSchemaDesignsRequest"></a>
+
+### ListSchemaDesignsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the schema design. Foramt: projects/{project} |
+| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
+| page_size | [int32](#int32) |  | The maximum number of schema designs to return. The service may return fewer than this value. If unspecified, at most 50 schema designs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListSchemaDesigns` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListSchemaDesigns` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSchemaDesignsResponse"></a>
+
+### ListSchemaDesignsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_designs | [SchemaDesign](#bytebase-v1-SchemaDesign) | repeated | The schema designs from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaDesign"></a>
+
+### SchemaDesign
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the schema design. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+| title | [string](#string) |  | The title of schema design. AKA sheet&#39;s title. |
+| schema | [string](#string) |  | Current editing schema. |
+| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
+| baseline_schema | [string](#string) |  |  |
+| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
+| schema_version | [string](#string) |  |  |
+| creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
+| updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSchemaDesignRequest"></a>
+
+### UpdateSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  | The schema design to update.
+
+The schema design&#39;s `name` field is used to identify the schema design to update. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SchemaDesignService"></a>
+
+### SchemaDesignService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetSchemaDesign | [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| ListSchemaDesigns | [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest) | [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse) |  |
+| CreateSchemaDesign | [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| UpdateSchemaDesign | [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
