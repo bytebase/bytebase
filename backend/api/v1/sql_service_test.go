@@ -188,3 +188,29 @@ func TestExportSQL(t *testing.T) {
 		a.Equal(test.want, string(got))
 	}
 }
+
+func TestDecodeBase64String(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      string
+	}{
+		{
+			statement: "",
+			want:      "",
+		},
+		{
+			statement: "U0VMRUNUIG5hbWUgQVMg5aeT5ZCNIEZST00gZW1wbG95ZWU7",
+			want:      "SELECT name AS 姓名 FROM employee;",
+		},
+		{
+			statement: "aGVsbG8g5ZOI5Za9IPCfkYs=",
+			want:      "hello 哈喽 👋",
+		},
+	}
+
+	for _, test := range tests {
+		got, err := DecodeBase64String(test.statement)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, got)
+	}
+}
