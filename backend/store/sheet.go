@@ -106,7 +106,7 @@ type FindSheetMessage struct {
 	Visibilities []SheetVisibility
 	Source       *SheetSource
 	Type         *SheetType
-	Payload      *string
+	PayloadType  *string
 	// Used to find (un)starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
 	// For now, we only need the starred sheets.
 	OrganizerPrincipalIDStarred    *int
@@ -217,6 +217,9 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.type = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PayloadType; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.payload->'type' = $%d", len(args)+1)), append(args, *v)
 	}
 	statementField := fmt.Sprintf("LEFT(sheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
