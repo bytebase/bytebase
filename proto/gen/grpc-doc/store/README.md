@@ -112,8 +112,11 @@
   
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
+    - [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign)
     - [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue)
     - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
+  
+    - [SheetPayload.Type](#bytebase-store-SheetPayload-Type)
   
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
@@ -1655,8 +1658,25 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| type | [SheetPayload.Type](#bytebase-store-SheetPayload-Type) |  |  |
 | vcs_payload | [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload) |  |  |
 | used_by_issues | [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue) | repeated | used_by_issues link to the issues where the sheet is used. |
+| schema_design | [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SheetPayload-SchemaDesign"></a>
+
+### SheetPayload.SchemaDesign
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| baseline_sheet_id | [int64](#int64) |  |  |
 
 
 
@@ -1699,6 +1719,18 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
  
+
+
+<a name="bytebase-store-SheetPayload-Type"></a>
+
+### SheetPayload.Type
+Type of the SheetPayload.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| SCHEMA_DESIGN | 1 |  |
+
 
  
 
