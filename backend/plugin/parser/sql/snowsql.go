@@ -242,26 +242,24 @@ func extractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedD
 }
 
 // NormalizeObjectName normalizes the given object name.
-func NormalizeObjectName(objectName parser.IObject_nameContext) string {
+func NormalizeObjectName(objectName parser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) string {
 	var parts []string
 
+	database := fallbackDatabaseName
 	if d := objectName.GetD(); d != nil {
 		normalizedD := NormalizeObjectNamePart(d)
 		if normalizedD != "" {
-			parts = append(parts, normalizedD)
+			database = normalizedD
 		}
 	}
+	parts = append(parts, database)
 
-	var schema string
+	schema := fallbackSchemaName
 	if s := objectName.GetS(); s != nil {
 		normalizedS := NormalizeObjectNamePart(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
-	}
-	if schema == "" {
-		// Backfill default schema "PUBLIC" if schema is not specified.
-		schema = "PUBLIC"
 	}
 	parts = append(parts, schema)
 
@@ -271,6 +269,36 @@ func NormalizeObjectName(objectName parser.IObject_nameContext) string {
 			parts = append(parts, normalizedO)
 		}
 	}
+	return strings.Join(parts, ".")
+}
+
+// NormalizeSchemaName normalizes the given schema name.
+func NormalizeSchemaName(schemaName parser.ISchema_nameContext, fallbackDatabaseName string) string {
+	ids := schemaName.AllId_()
+
+	var parts []string
+	database := fallbackDatabaseName
+	if len(ids) == 2 {
+		normalizedD := NormalizeObjectNamePart(ids[0])
+		if normalizedD != "" {
+			database = normalizedD
+		}
+	}
+	parts = append(parts, database)
+
+	var schema string
+	if len(ids) == 2 {
+		normalizedS := NormalizeObjectNamePart(ids[1])
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	} else {
+		normalizedS := NormalizeObjectNamePart(ids[0])
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	}
+	parts = append(parts, schema)
 	return strings.Join(parts, ".")
 }
 

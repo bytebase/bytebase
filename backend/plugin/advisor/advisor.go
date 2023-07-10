@@ -432,6 +432,9 @@ const (
 
 	// SnowflakeTableDropNamingConvention is an advisor type for Snowflake table drop with naming convention.
 	SnowflakeTableDropNamingConvention Type = "bb.plugin.advisor.snowflake.table.drop-naming-convention"
+
+	// SnowflakeMigrationCompatibility is an advisor type for Snowflake migration compatibility.
+	SnowflakeMigrationCompatibility Type = "bb.plugin.advisor.snowflake.migration-compatibility"
 )
 
 // Advice is the result of an advisor.
@@ -493,6 +496,8 @@ type Context struct {
 	Driver  *sql.DB
 	Context context.Context
 
+	// CurrentDatabase is the current database. Special for Snowflake.
+	CurrentDatabase string
 	// CurrentSchema is the current schema. Special for Oracle.
 	CurrentSchema string
 }
