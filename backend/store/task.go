@@ -41,6 +41,10 @@ type TaskMessage struct {
 	Payload           string
 	EarliestAllowedTs int64
 	BlockedBy         []int
+
+	DatabaseName string
+	// Statement used by grouping batch change, Bytebase use it to render.
+	Statement string
 }
 
 func (task *TaskMessage) toTask() *api.Task {
@@ -209,7 +213,7 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 }
 
 // CreateTasksV2 creates a new task.
-func (s *Store) CreateTasksV2(ctx context.Context, creates ...*RolloutTask) ([]*TaskMessage, error) {
+func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*TaskMessage, error) {
 	var query strings.Builder
 	var values []any
 	var queryValues []string
