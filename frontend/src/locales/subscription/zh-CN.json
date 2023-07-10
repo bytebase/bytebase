@@ -75,6 +75,11 @@
         "disaster-recovery-basic-tooltip": "数据库备份和恢复",
         "disaster-recovery-advanced": "高级",
         "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 恢复到指定时间点 (PITR)",
+        "rollout-policy": "发布策略",
+        "rollout-policy-basic": "基础",
+        "rollout-policy-basic-tooltip": "自动发布",
+        "rollout-policy-advanced": "高级",
+        "rollout-policy-advanced-tooltip": "自动发布 + 审核发布",
         "sql-check": "100+ SQL 自动检查",
         "schedule-change": "设定任务执行时间",
         "database-group": "数据库组",
@@ -83,7 +88,8 @@
         "sync-schema-basic-tooltip": "同步最新的 schema 版本",
         "sync-schema-advanced": "高级",
         "sync-schema-advanced-tooltip": "同步任意的 schema 版本",
-        "terraform-provider": "Terraform 集成"
+        "terraform-provider": "Terraform 集成",
+        "custom-approval": "自定义审批"
       }
     },
     "sql-editor": {
@@ -126,11 +132,10 @@
         "sso": "SSO 单点登录",
         "2fa": "双重认证 (2FA)",
         "ssh-tunnel": "SSH Tunnel",
-        "custom-approval": "自定义审批",
         "dba-workflow": "DBA 工作流",
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
         "environment-tier": "环境分级",
-        "approval-and-backup-policy": "审核和备份策略",
+        "backup-policy": "审核和备份策略",
         "sensitive-data": "数据脱敏",
         "data-access-control": "数据访问控制",
         "anomaly-detection": "异常检测",
@@ -169,7 +174,7 @@
     "gitlab-login": "通过 GitLab 登录",
     "online-schema-migration": "在线大表结构变更",
     "sql-check-anomaly-detection": "高阶 SQL 检查和异常检测",
-    "approval-and-backup-policy": "审核和备份策略",
+    "backup-policy": "备份策略",
     "sla": "专属客户成功经理以及 SLA 支持",
     "everything-in-team-plan": "所有团队版的功能",
     "batch-change-multi-environment": "多环境批量变更",
