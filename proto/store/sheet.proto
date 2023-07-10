@@ -28,7 +28,7 @@ message SheetPayload {
   }
   // used_by_issues link to the issues where the sheet is used.
   repeated UsedByIssue used_by_issues = 3;
-  
+
   message SchemaDesign {
     int64 baseline_sheet_id = 1;
   }
