@@ -39,11 +39,12 @@ func (*MigrationCompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	listener := &migrationCompatibilityChecker{
-		level:                            level,
-		title:                            string(ctx.Rule.Type),
-		currentDatabase:                  ctx.CurrentDatabase,
-		normalizedNewCreateTableNameMap:  make(map[string]bool),
-		normalizedNewCreateSchemaNameMap: make(map[string]bool),
+		level:                              level,
+		title:                              string(ctx.Rule.Type),
+		currentDatabase:                    ctx.CurrentDatabase,
+		normalizedNewCreateTableNameMap:    make(map[string]bool),
+		normalizedNewCreateSchemaNameMap:   make(map[string]bool),
+		normalizedNewCreateDatabaseNameMap: make(map[string]bool),
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
