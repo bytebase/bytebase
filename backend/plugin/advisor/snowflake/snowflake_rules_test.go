@@ -22,9 +22,10 @@ func TestSnowflakeRules(t *testing.T) {
 		advisor.SchemaRuleColumnNotNull,
 		advisor.SchemaRuleStatementNoSelectAll,
 		advisor.SchemaRuleTableDropNamingConvention,
+		advisor.SchemaRuleSchemaBackwardCompatibility,
 	}
 
 	for _, rule := range snowflakeRules {
-		advisor.RunSQLReviewRuleTest(t, rule, db.Snowflake, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, db.Snowflake, true /* record */)
 	}
 }
