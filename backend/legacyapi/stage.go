@@ -30,14 +30,6 @@ type Stage struct {
 	Name string `jsonapi:"attr,name"`
 }
 
-// TaskIndexDAG describes task dependency relationship using array index to represent task.
-// It is needed because we don't know task id before insertion, so we describe the dependency
-// using the in-memory representation, i.e, the array index.
-type TaskIndexDAG struct {
-	FromIndex int
-	ToIndex   int
-}
-
 // StageAllTaskStatusPatch is the API message for patching task status for all tasks in a stage.
 type StageAllTaskStatusPatch struct {
 	ID int
