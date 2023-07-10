@@ -7,30 +7,26 @@ import "google/api/field_behavior.proto";
 option go_package = "generated-go/v1";
 
 message DatabaseEdit {
-  // The name of the database to retrieve.
-  // Format: instances/{instance}/databases/{database}.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-
   // List of schema creation contexts.
-  repeated CreateSchemaContext create_schema_contexts = 2;
+  repeated CreateSchemaContext create_schema_contexts = 1;
 
   // List of schema renaming contexts.
-  repeated RenameSchemaContext rename_schema_contexts = 3;
+  repeated RenameSchemaContext rename_schema_contexts = 2;
 
   // List of schema dropping contexts.
-  repeated DropSchemaContext drop_schema_contexts = 4;
+  repeated DropSchemaContext drop_schema_contexts = 3;
 
   // List of table creation contexts.
-  repeated CreateTableContext create_table_contexts = 5;
+  repeated CreateTableContext create_table_contexts = 4;
 
   // List of table alteration contexts.
-  repeated AlterTableContext alter_table_contexts = 6;
+  repeated AlterTableContext alter_table_contexts = 5;
 
   // List of table renaming contexts.
-  repeated RenameTableContext rename_table_contexts = 7;
+  repeated RenameTableContext rename_table_contexts = 6;
 
   // List of table dropping contexts.
-  repeated DropTableContext drop_table_contexts = 8;
+  repeated DropTableContext drop_table_contexts = 7;
 }
 
 message CreateSchemaContext {
