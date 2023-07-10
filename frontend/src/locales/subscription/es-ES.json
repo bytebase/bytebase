@@ -75,6 +75,11 @@
         "disaster-recovery-basic-tooltip": "Respaldo de Base de Datos / restauración",
         "disaster-recovery-advanced": "Avanzado",
         "disaster-recovery-advanced-tooltip": "Respaldo de Base de Datos / restauración + Recuperación en un punto en el tiempo (PITR)",
+        "rollout-policy": "Política de Despliegue",
+        "rollout-policy-basic": "Básica",
+        "rollout-policy-basic-tooltip": "Despliegue Automático",
+        "rollout-policy-advanced": "Avanzado",
+        "rollout-policy-advanced-tooltip": "Despliegue automático + manual",
         "sql-check": "100+ Comprobación automática de SQL",
         "schedule-change": "Cambio programado en un momento específico",
         "database-group": "Grupo de Base de Datos",
@@ -83,7 +88,8 @@
         "sync-schema-basic-tooltip": "Sincronizar desde la última versión del esquema",
         "sync-schema-advanced": "Avanzado",
         "sync-schema-advanced-tooltip": "Sincronizar desde una versión de esquema arbitraria",
-        "terraform-provider": "Integración de Terraform"
+        "terraform-provider": "Integración de Terraform",
+        "custom-approval": "Aprobación personalizada"
       }
     },
     "sql-editor": {
@@ -126,11 +132,10 @@
         "sso": "Inicio de Sesión Único (SSO)",
         "2fa": "Autenticación de dos factores (2FA)",
         "ssh-tunnel": "SSH Tunnel",
-        "custom-approval": "Aprobación personalizada",
         "dba-workflow": "Flujo de Trabajo DBA",
         "dba-workflow-tooltip": "Solo permita que el DBA y el Propietario creen o transfieran la base de datos",
         "environment-tier": "Nivel de entorno",
-        "approval-and-backup-policy": "Política de aprobación y respaldo",
+        "backup-policy": "Política de respaldo",
         "sensitive-data": "Enmascaramiento de datos confidenciales",
         "data-access-control": "Control de acceso a datos",
         "anomaly-detection": "Detección de anomalías",
@@ -169,7 +174,7 @@
     "gitlab-login": "GitLab login",
     "online-schema-migration": "Migración de esquema en línea para tablas grandes",
     "sql-check-anomaly-detection": "Comprobación avanzada de SQL y detección de anomalías",
-    "approval-and-backup-policy": "Política de revisión y copia de seguridad",
+    "backup-policy": "Política de revisión y copia de seguridad",
     "sla": "Soporte dedicado de CSM y SLA",
     "everything-in-team-plan": "Todo en plan de equipo",
     "batch-change-multi-environment": "Cambio de lote multi-entorno",
