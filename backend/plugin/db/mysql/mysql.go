@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -198,7 +197,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 // QueryConn querys a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +206,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	}
 	// https://dev.mysql.com/doc/c-api/8.0/en/mysql-affected-rows.html
 	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
-	if len(singleSQLs) == 1 && bbparser.IsMySQLAffectedRowsStatement(singleSQLs[0].Text) {
+	if len(singleSQLs) == 1 && parser.IsMySQLAffectedRowsStatement(singleSQLs[0].Text) {
 		sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
 		if err != nil {
 			return nil, err
@@ -227,7 +226,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 // QueryConn2 queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +261,7 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (strin
 	}
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bbparser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	if singleSQL.Empty {
 		return nil, nil
 	}
@@ -295,5 +294,5 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, bbparser.MySQL, conn, statement)
+	return util.RunStatement(ctx, parser.MySQL, conn, statement)
 }
