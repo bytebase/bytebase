@@ -13,7 +13,7 @@
 
           <template #default>
             <div class="flex flex-col gap-y-2 text-sm">
-              <div class="whitespace-nowrap">
+              <div class="whitespace-nowrap textlabel">
                 {{ approvalNodeText(step.step.nodes[0]) }}
               </div>
               <hr />
