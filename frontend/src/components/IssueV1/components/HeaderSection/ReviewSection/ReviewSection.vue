@@ -3,11 +3,11 @@
     <div class="textlabel flex items-center gap-x-1">
       <span>{{ $t("issue.approval-flow.self") }}</span>
       <NTooltip v-if="showApprovalTooltip">
-        <div class="max-w-[24rem]">
+        <div class="max-w-[22rem]">
           {{ $t("issue.approval-flow.tooltip") }}
         </div>
         <template #trigger>
-          <heroicons-outline:question-mark-circle />
+          <heroicons:question-mark-circle />
         </template>
       </NTooltip>
     </div>

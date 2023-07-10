@@ -6,7 +6,9 @@
         <template #trigger>
           <heroicons:question-mark-circle class="w-4 h-4" />
         </template>
-        <div>{{ $t("issue.assignee-tooltip") }}</div>
+        <div class="max-w-[12rem]">
+          {{ $t("issue.assignee-tooltip") }}
+        </div>
       </NTooltip>
       <span v-if="true || isCreating" class="text-red-600">*</span>
 
