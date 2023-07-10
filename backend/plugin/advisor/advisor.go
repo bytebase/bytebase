@@ -426,6 +426,9 @@ const (
 
 	// SnowflakeColumnNoNull is an advisor type for Snowflake column no NULL value.
 	SnowflakeColumnNoNull Type = "bb.plugin.advisor.snowflake.column.no-null"
+
+	// SnowflakeNoSelectAll is an advisor type for Snowflake no select all.
+	SnowflakeNoSelectAll Type = "bb.plugin.advisor.snowflake.select.no-select-all"
 )
 
 // Advice is the result of an advisor.
