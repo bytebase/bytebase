@@ -32,8 +32,8 @@
   <RiskDialog />
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.custom-approval"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>

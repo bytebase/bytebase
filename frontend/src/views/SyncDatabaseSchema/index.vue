@@ -129,15 +129,15 @@
         <SelectTargetDatabasesView
           ref="targetDatabaseViewRef"
           :project-id="state.projectId!"
-          :source-schema="state.sourceSchema as any"
+          :source-schema="fullViewSourceSchema as any"
         />
       </template>
     </BBStepTab>
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.sync-schema-all-versions"
+    :open="state.showFeatureModal"
     :instance="database?.instanceEntity"
     @cancel="state.showFeatureModal = false"
   />
@@ -164,6 +164,7 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import { instanceV1Name } from "@/utils";
 import {
   ChangeHistory,
+  ChangeHistoryView,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 
@@ -199,12 +200,37 @@ const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const subscriptionV1Store = useSubscriptionV1Store();
+const fullViewChangeHistoryCache = ref<Map<string, ChangeHistory>>(new Map());
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
   currentStep: SELECT_SOURCE_DATABASE,
   sourceSchema: {},
   showFeatureModal: false,
+});
+
+const prepareFullViewChangeHistory = async () => {
+  const changeHistory = state.sourceSchema.changeHistory;
+  if (!changeHistory || changeHistory.uid === String(UNKNOWN_ID)) {
+    return;
+  }
+
+  const cache = fullViewChangeHistoryCache.value.get(changeHistory.name);
+  if (!cache) {
+    const fullViewChangeHistory = await changeHistoryStore.fetchChangeHistory({
+      name: changeHistory.name,
+      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+    });
+    fullViewChangeHistoryCache.value.set(
+      fullViewChangeHistory.name,
+      fullViewChangeHistory
+    );
+  }
+};
+
+watch(() => state.sourceSchema.changeHistory, prepareFullViewChangeHistory, {
+  immediate: true,
+  deep: true,
 });
 
 const isValidId = (id: any): id is string => {
@@ -242,6 +268,16 @@ const stepTabList = computed(() => {
     { title: t("database.sync-schema.select-source-schema") },
     { title: t("database.sync-schema.select-target-databases") },
   ];
+});
+
+const fullViewSourceSchema = computed(() => {
+  const fullViewChangeHistory = fullViewChangeHistoryCache.value.get(
+    state.sourceSchema.changeHistory?.name || ""
+  );
+  return {
+    ...state.sourceSchema,
+    changeHistory: fullViewChangeHistory || state.sourceSchema.changeHistory,
+  };
 });
 
 const allowNext = computed(() => {

@@ -1260,7 +1260,194 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
-			statement:  `SELECT * FROM t;`,
+			// Test for Recursive Common Table Expression dependent closures.
+			statement: `
+				with t1(cc1, cc2, cc3, n) as (
+					select a as c1, b as c2, c as c3, 1 as n from t
+					union all
+					select cc1 * cc2, cc2 + cc1, cc3 * cc2, n + 1 from t1 where n < 5
+				)
+				select * from t1;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "CC1",
+					Sensitive: true,
+				},
+				{
+					Name:      "CC2",
+					Sensitive: true,
+				},
+				{
+					Name:      "CC3",
+					Sensitive: true,
+				},
+				{
+					Name:      "N",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for Recursive Common Table Expression.
+			statement: `
+				with t1 as (
+					select 1 as c1, 2 as c2, 3 as c3, 1 as n from DUAL
+					union all
+					select c1 * a, c2 * b, c3 * d, n + 1 from t1, t where n < 5
+				)
+				select * from t1;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "C1",
+					Sensitive: true,
+				},
+				{
+					Name:      "C2",
+					Sensitive: false,
+				},
+				{
+					Name:      "C3",
+					Sensitive: true,
+				},
+				{
+					Name:      "N",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test that Common Table Expression rename field names.
+			statement:  `with t1(d, c, b, a) as (select * from t) select * from t1`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for Common Table Expression with UNION.
+			statement:  `with t1 as (select * from t), t2 as (select * from t1) select * from (select * from t1 union all select * from t2)`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for Common Table Expression reference.
+			statement:  `with t1 as (select * from t), t2 as (select * from t1) select * from t2`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for multi-level Common Table Expression.
+			statement:  `with tt2 as (with tt2 as (select * from t) select MAX(A) from tt2) select * from tt2`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "MAX(A)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for Common Table Expression.
+			statement:  `with t1 as (select * from t) select * from t1`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "B",
+					Sensitive: false,
+				},
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for UNION.
+			statement:  `select 1 as c1, 2 as c2, 3 as c3, 4 from DUAL UNION ALL select * from t`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "C1",
+					Sensitive: true,
+				},
+				{
+					Name:      "C2",
+					Sensitive: false,
+				},
+				{
+					Name:      "C3",
+					Sensitive: false,
+				},
+				{
+					Name:      "4",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for UNION.
+			statement:  `select * from t UNION ALL select * from t`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
@@ -1632,6 +1819,117 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		schemaInfo *db.SensitiveSchemaInfo
 		fieldList  []db.SensitiveField
 	}{
+		{
+			// Test for recursive CTE.
+			statement: `WITH CTE_01 AS (
+				SELECT A AS C1, B AS C2, C AS C3, 1 AS N FROM T1
+				UNION ALL
+				SELECT C1 * C2, C2 + C1, C3 * C2, N + 1 FROM CTE_01 WHERE N < 5
+			)
+			SELECT * FROM CTE_01;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "C1",
+					Sensitive: true,
+				},
+				{
+					Name:      "C2",
+					Sensitive: true,
+				},
+				{
+					Name:      "C3",
+					Sensitive: true,
+				},
+				{
+					Name:      "N",
+					Sensitive: false,
+				},
+			},
+		},
+		{
+			// Test for UNPIVOT.
+			statement:  `SELECT * FROM T1 UNPIVOT(E FOR F IN (B, C, D));`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "F",
+					Sensitive: false,
+				},
+				{
+					Name:      "E",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for PIVOT.
+			statement:  `SELECT TT1.* FROM T1 PIVOT(MAX(A) FOR B IN ('a', 'b', 'c')) AS TT1`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "C",
+					Sensitive: false,
+				},
+				{
+					Name:      "D",
+					Sensitive: true,
+				},
+				{
+					Name:      `'a'`,
+					Sensitive: true,
+				},
+				{
+					Name:      `'b'`,
+					Sensitive: true,
+				},
+				{
+					Name:      `'c'`,
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for correlated sub-query.
+			statement:  `SELECT A, (SELECT MAX(B) > Y.A FROM T1 X) FROM T1 Y`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "A",
+					Sensitive: true,
+				},
+				{
+					Name:      "(SELECTMAX(B)>Y.AFROMT1X)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for CTE in CTE.
+			statement: `WITH TT1 (T1_COL1, T1_COL2) AS (
+				WITH TT2 (T1_COL1, T1_COL2, T1_COL3) AS (
+					SELECT A, B, C FROM T1
+				)
+				SELECT T1_COL1, T1_COL2 FROM TT2
+			)
+			SELECT * FROM TT1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "T1_COL1",
+					Sensitive: true,
+				},
+				{
+					Name:      "T1_COL2",
+					Sensitive: false,
+				},
+			},
+		},
 		{
 			// Test for expression.
 			statement:  `SELECT (SELECT A FROM T1 LIMIT 1), A + 1, 1, FUNCTIONCALL(D) FROM T1;`,

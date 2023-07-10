@@ -608,8 +608,8 @@
   </component>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.read-replica-connection"
+    :open="state.showFeatureModal"
     :instance="instance"
     @cancel="state.showFeatureModal = false"
   />

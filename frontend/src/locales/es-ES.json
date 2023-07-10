@@ -552,6 +552,7 @@
             "openai-key": {
               "self": "Clave de API de OpenAI",
               "description": "Proporcione una clave de API de OpenAI para habilitar la capacidad ChatSQL en el Editor de SQL. {viewDoc}",
+              "find-my-key": "Encuentra mi llave",
               "placeholder": "Una clave de API de OpenAI generalmente comienza con sk-*****"
             },
             "openai-endpoint": {

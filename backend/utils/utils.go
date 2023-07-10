@@ -369,11 +369,11 @@ func GetTaskSkippedAndReason(task *api.Task) (bool, string, error) {
 
 // MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
 // The index of returned taskIndexDAG list is set regarding the merged taskCreate.
-func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists [][]api.TaskIndexDAG) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func MergeTaskCreateLists(taskCreateLists [][]store.TaskCreate, taskIndexDAGLists [][]api.TaskIndexDAG) ([]store.TaskCreate, []api.TaskIndexDAG, error) {
 	if len(taskCreateLists) != len(taskIndexDAGLists) {
 		return nil, nil, errors.Errorf("expect taskCreateLists and taskIndexDAGLists to have the same length, get %d, %d respectively", len(taskCreateLists), len(taskIndexDAGLists))
 	}
-	var resTaskCreateList []api.TaskCreate
+	var resTaskCreateList []store.TaskCreate
 	var resTaskIndexDAGList []api.TaskIndexDAG
 	offset := 0
 	for i := range taskCreateLists {
@@ -717,7 +717,7 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 	var approvers []*storepb.IssuePayloadApproval_Approver
 	var activities []*store.ActivityMessage
 
-	step := FindNextPendingStep(approval.ApprovalTemplates[0], approvers)
+	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 	if step == nil {
 		return nil, nil, nil
 	}
@@ -764,13 +764,21 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 	if node == nil {
 		return errors.Errorf("external approval node %s not found", externalNodeID)
 	}
-	uri, err := relayClient.Create(node.Endpoint, relay.CreatePayload{})
+	id, err := relayClient.Create(node.Endpoint, &relay.CreatePayload{
+		IssueID:     fmt.Sprintf("%d", issue.UID),
+		Title:       issue.Title,
+		Description: issue.Description,
+		Project:     issue.Project.ResourceID,
+		CreateTime:  issue.CreatedTime,
+		Creator:     issue.Creator.Email,
+		Assignee:    issue.Assignee.Email,
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create external approval")
 	}
 	payload, err := json.Marshal(&api.ExternalApprovalPayloadRelay{
 		ExternalApprovalNodeID: node.Id,
-		URI:                    uri,
+		ID:                     id,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal external approval payload")

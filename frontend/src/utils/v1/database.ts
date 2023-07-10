@@ -124,11 +124,10 @@ export const isDatabaseV1Queryable = (
     // Fallback to true.
     return true;
   } else {
-    const policy = usePolicyV1Store().getPolicyByName(
-      `${policyNamePrefix}/${policyTypeToJSON(
-        PolicyType.WORKSPACE_IAM
-      ).toLowerCase()}`
-    );
+    const name = `${policyNamePrefix}${policyTypeToJSON(
+      PolicyType.WORKSPACE_IAM
+    )}`;
+    const policy = usePolicyV1Store().getPolicyByName(name);
     if (policy) {
       const bindings = policy.workspaceIamPolicy?.bindings;
       if (bindings) {
@@ -180,11 +179,10 @@ export const isTableQueryable = (
     // Fallback to true.
     return true;
   } else {
-    const policy = usePolicyV1Store().getPolicyByName(
-      `${policyNamePrefix}/${policyTypeToJSON(
-        PolicyType.WORKSPACE_IAM
-      ).toLowerCase()}`
-    );
+    const name = `${policyNamePrefix}${policyTypeToJSON(
+      PolicyType.WORKSPACE_IAM
+    )}`;
+    const policy = usePolicyV1Store().getPolicyByName(name);
     if (policy) {
       const bindings = policy.workspaceIamPolicy?.bindings;
       if (bindings) {

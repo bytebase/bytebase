@@ -1508,9 +1508,9 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		ProjectUID: repoInfo.project.UID,
 		Name:       file,
 		Statement:  sdl,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+		Visibility: store.ProjectSheet,
+		Source:     store.SheetFromBytebaseArtifact,
+		Type:       store.SheetForSQL,
 	})
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
@@ -1575,9 +1575,9 @@ func (s *Server) prepareIssueFromFile(
 				ProjectUID: repoInfo.project.UID,
 				Name:       fileInfo.item.FileName,
 				Statement:  content,
-				Visibility: api.ProjectSheet,
-				Source:     api.SheetFromBytebaseArtifact,
-				Type:       api.SheetForSQL,
+				Visibility: store.ProjectSheet,
+				Source:     store.SheetFromBytebaseArtifact,
+				Type:       store.SheetForSQL,
 			})
 			if err != nil {
 				activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1611,9 +1611,9 @@ func (s *Server) prepareIssueFromFile(
 			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  migrationFile.Statement,
-			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebaseArtifact,
-			Type:       api.SheetForSQL,
+			Visibility: store.ProjectSheet,
+			Source:     store.SheetFromBytebaseArtifact,
+			Type:       store.SheetForSQL,
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1661,9 +1661,9 @@ func (s *Server) prepareIssueFromFile(
 			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  content,
-			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebaseArtifact,
-			Type:       api.SheetForSQL,
+			Visibility: store.ProjectSheet,
+			Source:     store.SheetFromBytebaseArtifact,
+			Type:       store.SheetForSQL,
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1735,9 +1735,9 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			ProjectUID: issue.Project.UID,
 			Name:       fileName,
 			Statement:  statement,
-			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebaseArtifact,
-			Type:       api.SheetForSQL,
+			Visibility: store.ProjectSheet,
+			Source:     store.SheetFromBytebaseArtifact,
+			Type:       store.SheetForSQL,
 		})
 		if err != nil {
 			return err

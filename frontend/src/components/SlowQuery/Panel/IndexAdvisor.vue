@@ -43,8 +43,8 @@
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.index-advisor"
+    :open="state.showFeatureModal"
     :instance="slowQueryLog.database.instanceEntity"
     @cancel="state.showFeatureModal = false"
   />

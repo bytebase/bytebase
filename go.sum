@@ -139,10 +139,10 @@ github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da h1:DlK8ipp+t
 github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
 github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7 h1:RDN6UnjTq4HR4LKrN8Yav4XfwUoGRjTocvWmzGr6Usc=
 github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7/go.mod h1:XAxmVqz1tEGqizcQ3YSdN90vCOHBWjJi8URL1er5+cA=
-github.com/bytebase/plsql-parser v0.0.0-20230612081829-80675dfad134 h1:4NWP76NVYstvWPtZu4JwRmKDHK+1PudmODEdCQLfU8g=
-github.com/bytebase/plsql-parser v0.0.0-20230612081829-80675dfad134/go.mod h1:kL1Tk89SNE7wPnUzkVMJ9v012an5z8as7OUmkapJQGs=
-github.com/bytebase/snowsql-parser v0.0.0-20230619103403-e8242fa5f60b h1:KFawcJxVM9AyZNwR4T/9SLa4lgj0fWC7vIbAmYppmPM=
-github.com/bytebase/snowsql-parser v0.0.0-20230619103403-e8242fa5f60b/go.mod h1:gJ1aclz1e9xLArQTbCpDjL+A79Jt3Ro9+/QEw8A6vMM=
+github.com/bytebase/plsql-parser v0.0.0-20230706061841-c93470b91bee h1:W1WQ38mOrC41E6F4LlIpnlq4D3vAonNmyTcXbjN48cs=
+github.com/bytebase/plsql-parser v0.0.0-20230706061841-c93470b91bee/go.mod h1:kL1Tk89SNE7wPnUzkVMJ9v012an5z8as7OUmkapJQGs=
+github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9 h1:XLSpYgrzleY2HFnCSDnYMbqOoZ3QrAdwXs7rca39Fjc=
+github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9/go.mod h1:gJ1aclz1e9xLArQTbCpDjL+A79Jt3Ro9+/QEw8A6vMM=
 github.com/bytebase/tidb v0.0.0-20230329095902-fe196d3c77d0 h1:h0LzCFbiCKWy/TbnE5amjDf+/j+06chImQwEhe+TbHc=
 github.com/bytebase/tidb v0.0.0-20230329095902-fe196d3c77d0/go.mod h1:xrVXE+0V54QRGgrD9o+tuZmBDDx8vJpQgrPtRQvodWo=
 github.com/bytebase/tidb/parser v0.0.0-20230329095902-fe196d3c77d0 h1:Xdq53fvcG9qeUKkxdNbR9B1JLbfeIjhW2N0xxFbaZNg=
@@ -828,8 +828,8 @@ github.com/siddontang/go v0.0.0-20180604090527-bdc77568d726/go.mod h1:3yhqj7WBBf
 github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07/go.mod h1:yFdBgwXP24JziuRl2NMUahT7nGLNOKi1SIiFxMttVD4=
 github.com/siddontang/go-log v0.0.0-20190221022429-1e957dd83bed h1:KMgQoLJGCq1IoZpLZE3AIffh9veYWoVlsvA4ib55TMM=
 github.com/siddontang/go-log v0.0.0-20190221022429-1e957dd83bed/go.mod h1:yFdBgwXP24JziuRl2NMUahT7nGLNOKi1SIiFxMttVD4=
-github.com/sijms/go-ora/v2 v2.7.7 h1:AhbsMzp6kkcxjPfBMqh6+GQ+3BTs6A/ezYvwAmaXVdM=
-github.com/sijms/go-ora/v2 v2.7.7/go.mod h1:EHxlY6x7y9HAsdfumurRfTd+v8NrEOTR3Xl4FWlH6xk=
+github.com/sijms/go-ora/v2 v2.7.8 h1:6G4a+L9atTJFRCIOENi05CEE6gMxCGYS9CFimhqPqlw=
+github.com/sijms/go-ora/v2 v2.7.8/go.mod h1:EHxlY6x7y9HAsdfumurRfTd+v8NrEOTR3Xl4FWlH6xk=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
