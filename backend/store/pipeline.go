@@ -14,7 +14,7 @@ import (
 // PipelineMessage is the message for pipelines.
 type PipelineMessage struct {
 	Name   string
-	Stages []StageMessage
+	Stages []*StageMessage
 	// Output only.
 	ID int
 }
