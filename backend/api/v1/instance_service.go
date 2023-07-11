@@ -197,6 +197,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			patch.DataSources = &datasourceList
 		case "activation":
 			patch.Activation = &request.Instance.Activation
+		case "options":
+			patch.Options = convertToInstanceOptions(request.Instance.Options)
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -220,6 +222,15 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	// TODO(d): sync instance databases.
 
 	return convertToInstance(ins), nil
+}
+
+func convertToInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOptions {
+	if options == nil {
+		return nil
+	}
+	return &storepb.InstanceOptions{
+		SchemaTenantMode: options.SchemaTenantMode,
+	}
 }
 
 // SyncSlowQueries syncs slow queries for an instance.
