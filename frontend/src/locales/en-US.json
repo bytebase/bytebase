@@ -1287,8 +1287,10 @@
       "errors": {
         "select-target-project": "Select target project",
         "select-at-least-one-database": "Select at least one database"
-      }
-    }
+      },
+      "select-target-project": "Select target project"
+    },
+    "transfer-database-from-to": "Transfer database from source project to target project"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
