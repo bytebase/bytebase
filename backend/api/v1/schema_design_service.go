@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"strconv"
 
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -186,15 +188,63 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	return schemaDesign, nil
 }
 
-// // UpdateSchemaDesign updates an existing schema design.
-// func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-// 	return nil, nil
-// }
+// UpdateSchemaDesign updates an existing schema design.
+func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	_, sheetID, err := getProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	sheetUID, err := strconv.Atoi(sheetID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
+	}
+	if !slices.Contains(request.UpdateMask.Paths, "schema") {
+		return nil, status.Errorf(codes.InvalidArgument, "schema is required")
+	}
 
-// // DeleteSchemaDesign deletes an existing schema design.
-// func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
-// 	return &emptypb.Empty{}, nil
-// }
+	schemaDesign := request.SchemaDesign
+	ddl, err := diffDatabaseMetadatas(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata)
+	if err != nil {
+		return nil, err
+	}
+	schema, err := dryRunDDL(ddl, schemaDesign.Schema)
+	if err != nil {
+		return nil, err
+	}
+	sheetUpdate := &store.PatchSheetMessage{
+		UID:       sheetUID,
+		Statement: &schema,
+	}
+	sheet, err := s.store.PatchSheet(ctx, sheetUpdate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update sheet: %v", err))
+	}
+	schemaDesign, err = s.convertSheetToSchemaDesign(ctx, sheet)
+	if err != nil {
+		return nil, err
+	}
+	return schemaDesign, nil
+}
+
+// DeleteSchemaDesign deletes an existing schema design.
+func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
+	_, sheetID, err := getProjectResourceIDAndSchemaDesignSheetID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	sheetUID, err := strconv.Atoi(sheetID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	}
+	err = s.store.DeleteSheet(ctx, sheetUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
+	}
+	return &emptypb.Empty{}, nil
+}
 
 func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
