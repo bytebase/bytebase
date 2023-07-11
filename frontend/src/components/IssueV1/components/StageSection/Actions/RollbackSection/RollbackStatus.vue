@@ -154,7 +154,7 @@ const tryRollbackTask = async () => {
     const issueName = [
       `Rollback`,
       `#${issue.value.uid}`,
-      `${issue.value.name}`,
+      `${issue.value.title}`,
     ].join(" ");
 
     const originalSheet = await sheetV1Store.getOrFetchSheetByName(
