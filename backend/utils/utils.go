@@ -369,11 +369,11 @@ func GetTaskSkippedAndReason(task *api.Task) (bool, string, error) {
 
 // MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
 // The index of returned taskIndexDAG list is set regarding the merged taskCreate.
-func MergeTaskCreateLists(taskCreateLists [][]store.TaskMessage, taskIndexDAGLists [][]store.TaskIndexDAG) ([]store.TaskMessage, []store.TaskIndexDAG, error) {
+func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLists [][]store.TaskIndexDAG) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if len(taskCreateLists) != len(taskIndexDAGLists) {
 		return nil, nil, errors.Errorf("expect taskCreateLists and taskIndexDAGLists to have the same length, get %d, %d respectively", len(taskCreateLists), len(taskIndexDAGLists))
 	}
-	var resTaskCreateList []store.TaskMessage
+	var resTaskCreateList []*store.TaskMessage
 	var resTaskIndexDAGList []store.TaskIndexDAG
 	offset := 0
 	for i := range taskCreateLists {

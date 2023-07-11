@@ -9,16 +9,18 @@ import (
 
 // StageMessage is the message for stage.
 type StageMessage struct {
-	Name             string
-	EnvironmentID    int
-	PipelineID       int
-	TaskList         []TaskMessage
-	TaskIndexDAGList []TaskIndexDAG
+	Name          string
+	EnvironmentID int
+	PipelineID    int
+	TaskList      []*TaskMessage
 
 	// Active is true if not all tasks are done within the stage.
 	Active bool
 	// Output only.
 	ID int
+
+	// TODO(d): this is used to create the tasks.
+	TaskIndexDAGList []TaskIndexDAG
 }
 
 // TaskIndexDAG describes task dependency relationship using array index to represent task.
