@@ -218,8 +218,38 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 }
 
 // PreviewRollout previews the rollout for a plan.
-func (*RolloutService) PreviewRollout(context.Context, *v1pb.PreviewRolloutRequest) (*v1pb.Rollout, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PreviewRollout not implemented")
+func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.PreviewRolloutRequest) (*v1pb.Rollout, error) {
+	projectID, err := getProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+
+	if err := validateSteps(request.Plan.Steps); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan steps, error: %v", err)
+	}
+
+	rollout, err := s.getPipelineCreate(ctx, request.Plan.Steps, project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
+	}
+	if len(rollout.Stages) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "plan has no stage created")
+	}
+
+	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+	}
+	return rolloutV1, nil
 }
 
 // GetRollout gets a rollout.
