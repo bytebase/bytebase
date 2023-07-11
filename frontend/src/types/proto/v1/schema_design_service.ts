@@ -107,7 +107,6 @@ export interface CreateSchemaDesignRequest {
   /**
    * The parent, which owns this collection of schema designs.
    * Format: project/{project}
-   * Use "projects/-" to list all schema designs.
    */
   parent: string;
   schemaDesign?: SchemaDesign;
