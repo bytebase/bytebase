@@ -157,11 +157,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
 	}
-	ddl, err := diffDatabaseMetadatas(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata)
-	if err != nil {
-		return nil, err
-	}
-	schema, err := dryRunDDL(ddl, schemaDesign.Schema)
+	schema, err := getDesignSchema(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata, schemaDesign.BaselineSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -207,11 +203,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	}
 
 	schemaDesign := request.SchemaDesign
-	ddl, err := diffDatabaseMetadatas(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata)
-	if err != nil {
-		return nil, err
-	}
-	schema, err := dryRunDDL(ddl, schemaDesign.Schema)
+	schema, err := getDesignSchema(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata, schemaDesign.BaselineSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +307,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	schema := sheet.Statement
-	schemaMetadata, err := transformSchemaStringToDatabaseMetadata(schema)
+	schemaMetadata, err := transformSchemaToDatabaseMetadata(schema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
@@ -341,7 +333,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 			schemaVersion = changeHistory.UID
 		}
 	}
-	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(baselineSchema)
+	baselineSchemaMetadata, err := transformSchemaToDatabaseMetadata(baselineSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
@@ -363,20 +355,14 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}, nil
 }
 
-func transformSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
+func transformSchemaToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 	// TODO: implement this.
 	log.Info(fmt.Sprintf("schema: %s", schema))
 	return &v1pb.DatabaseMetadata{}, nil
 }
 
-func diffDatabaseMetadatas(from *v1pb.DatabaseMetadata, to *v1pb.DatabaseMetadata) (string, error) {
+func getDesignSchema(from *v1pb.DatabaseMetadata, to *v1pb.DatabaseMetadata, baselineSchema string) (string, error) {
 	// TODO: implement this.
-	log.Info(fmt.Sprintf("database metadatas: %+v, %+v", from, to))
-	return "", nil
-}
-
-func dryRunDDL(ddl string, schema string) (string, error) {
-	// TODO: implement this
-	log.Info(fmt.Sprintf("ddl: %s, schema: %s", ddl, schema))
+	log.Info(fmt.Sprintf("from: %+v, to: %+v, baseline schema: %s", from, to, baselineSchema))
 	return "", nil
 }
