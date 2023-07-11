@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/common.proto";
+
 option go_package = "generated-go/store";
 
 message SheetPayload {
@@ -31,6 +33,7 @@ message SheetPayload {
 
   message SchemaDesign {
     int64 baseline_sheet_id = 1;
+    Engine engine = 2;
   }
   SchemaDesign schema_design = 4;
 }
