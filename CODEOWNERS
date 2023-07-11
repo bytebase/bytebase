@@ -1,13 +1,14 @@
 # Default
-*                            @d-bytebase @ecmadao
+*                            @d-bytebase @bytebase/bytebase-dev
 
-# Backend and API.
-/backend/                    @d-bytebase @ecmadao @rebelice
-/proto/                      @d-bytebase @ecmadao
+# API and schema
+proto                        @d-bytebase @ecmadao
+backend/migrator/migration   @d-bytebase @ecmadao
 
-# Frontend.
-/frontend/                   @LiuJi-Jim @boojack
+# Backend
+backend                      @d-bytebase @ecmadao @bytebase/bytebase-dev
+go.mod                       @d-bytebase @ecmadao @bytebase/bytebase-dev
 
-# Dependency files.
-frontend/package.json        @d-bytebase @LiuJi-Jim
-go.mod                       @d-bytebase @ecmadao
+# Frontend
+frontend                     @LiuJi-Jim @boojack
+frontend/package.json        @LiuJi-Jim @boojack
