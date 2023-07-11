@@ -24,6 +24,7 @@ const (
 	RolloutService_CreatePlan_FullMethodName          = "/bytebase.v1.RolloutService/CreatePlan"
 	RolloutService_UpdatePlan_FullMethodName          = "/bytebase.v1.RolloutService/UpdatePlan"
 	RolloutService_GetRollout_FullMethodName          = "/bytebase.v1.RolloutService/GetRollout"
+	RolloutService_CreateRollout_FullMethodName       = "/bytebase.v1.RolloutService/CreateRollout"
 	RolloutService_PreviewRollout_FullMethodName      = "/bytebase.v1.RolloutService/PreviewRollout"
 	RolloutService_ListRolloutTaskRuns_FullMethodName = "/bytebase.v1.RolloutService/ListRolloutTaskRuns"
 	RolloutService_ListPlanCheckRuns_FullMethodName   = "/bytebase.v1.RolloutService/ListPlanCheckRuns"
@@ -38,6 +39,7 @@ type RolloutServiceClient interface {
 	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	GetRollout(ctx context.Context, in *GetRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
+	CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	ListRolloutTaskRuns(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
 	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
@@ -96,6 +98,15 @@ func (c *rolloutServiceClient) GetRollout(ctx context.Context, in *GetRolloutReq
 	return out, nil
 }
 
+func (c *rolloutServiceClient) CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error) {
+	out := new(Rollout)
+	err := c.cc.Invoke(ctx, RolloutService_CreateRollout_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *rolloutServiceClient) PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error) {
 	out := new(Rollout)
 	err := c.cc.Invoke(ctx, RolloutService_PreviewRollout_FullMethodName, in, out, opts...)
@@ -132,6 +143,7 @@ type RolloutServiceServer interface {
 	CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error)
 	UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error)
 	GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error)
+	CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error)
 	PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error)
 	ListRolloutTaskRuns(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
 	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
@@ -156,6 +168,9 @@ func (UnimplementedRolloutServiceServer) UpdatePlan(context.Context, *UpdatePlan
 }
 func (UnimplementedRolloutServiceServer) GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRollout not implemented")
+}
+func (UnimplementedRolloutServiceServer) CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRollout not implemented")
 }
 func (UnimplementedRolloutServiceServer) PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PreviewRollout not implemented")
@@ -269,6 +284,24 @@ func _RolloutService_GetRollout_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RolloutService_CreateRollout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRolloutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).CreateRollout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_CreateRollout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).CreateRollout(ctx, req.(*CreateRolloutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RolloutService_PreviewRollout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PreviewRolloutRequest)
 	if err := dec(in); err != nil {
@@ -349,6 +382,10 @@ var RolloutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRollout",
 			Handler:    _RolloutService_GetRollout_Handler,
+		},
+		{
+			MethodName: "CreateRollout",
+			Handler:    _RolloutService_CreateRollout_Handler,
 		},
 		{
 			MethodName: "PreviewRollout",
