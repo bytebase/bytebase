@@ -193,7 +193,7 @@ const checkResultList = computed((): TaskCheckResult[] => {
 
 const categoryAndTitle = (checkResult: TaskCheckResult): [string, string] => {
   if (checkResult.code === SQLReviewPolicyErrorCode.EMPTY_POLICY) {
-    const title = `${checkResult.title} (${checkResult.code})`;
+    const title = messageWithCode(checkResult.title, checkResult.code);
     return ["", title];
   }
   if (LocalizedSQLRuleErrorCodes.has(checkResult.code)) {
@@ -202,14 +202,18 @@ const categoryAndTitle = (checkResult: TaskCheckResult): [string, string] => {
       const ruleLocalization = getRuleLocalization(rule.type);
       const key = `sql-review.category.${rule.category.toLowerCase()}`;
       const category = t(key);
-      const title = `${ruleLocalization.title} (${checkResult.code})`;
+      const title = messageWithCode(ruleLocalization.title, checkResult.code);
       return [category, title];
     } else {
-      return ["", `${checkResult.title} (${checkResult.code})`];
+      return ["", messageWithCode(checkResult.title, checkResult.code)];
     }
   }
 
   return ["", checkResult.title];
+};
+
+const messageWithCode = (message: string, code: number) => {
+  return `${message} #${code}`;
 };
 
 const errorCodeLink = (
@@ -276,7 +280,7 @@ const COLUMN_LIST = computed((): BBTableColumn[] => {
 });
 
 const reviewPolicy = useReviewPolicyByEnvironmentId(
-  computed(() => props.task.instance.environment.id)
+  computed(() => String(props.task.instance.environment.id))
 );
 const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
   const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
