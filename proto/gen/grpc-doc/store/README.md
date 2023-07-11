@@ -31,6 +31,8 @@
 - [store/common.proto](#store_common-proto)
     - [PageToken](#bytebase-store-PageToken)
   
+    - [Engine](#bytebase-store-Engine)
+  
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
@@ -492,6 +494,31 @@ Used internally for obfuscating the page token.
 
 
  
+
+
+<a name="bytebase-store-Engine"></a>
+
+### Engine
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENGINE_UNSPECIFIED | 0 |  |
+| CLICKHOUSE | 1 |  |
+| MYSQL | 2 |  |
+| POSTGRES | 3 |  |
+| SNOWFLAKE | 4 |  |
+| SQLITE | 5 |  |
+| TIDB | 6 |  |
+| MONGODB | 7 |  |
+| REDIS | 8 |  |
+| ORACLE | 9 |  |
+| SPANNER | 10 |  |
+| MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
+
 
  
 
@@ -1677,6 +1704,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | baseline_sheet_id | [int64](#int64) |  |  |
+| engine | [Engine](#bytebase-store-Engine) |  |  |
 
 
 
