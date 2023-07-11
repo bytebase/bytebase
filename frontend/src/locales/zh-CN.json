@@ -1282,8 +1282,10 @@
       "errors": {
         "select-target-project": "选择目标项目",
         "select-at-least-one-database": "至少选择一个数据库"
-      }
-    }
+      },
+      "select-target-project": "选择目标项目"
+    },
+    "transfer-database-from-to": "将数据库从源项目转移到目标项目"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
