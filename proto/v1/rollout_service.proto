@@ -42,6 +42,14 @@ service RolloutService {
     option (google.api.method_signature) = "name";
   }
 
+  rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/rollouts"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "";
+  }
+
   rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:previewRollout",
@@ -334,6 +342,15 @@ message GetRolloutRequest {
   // The name of the rollout to retrieve.
   // Format: projects/{project}/rollouts/{rollout}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CreateRolloutRequest {
+  // The parent project where this rollout will be created.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The plan used to create rollout.
+  string plan = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message PreviewRolloutRequest {

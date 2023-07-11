@@ -428,6 +428,7 @@
   
 - [v1/rollout_service.proto](#v1_rollout_service-proto)
     - [CreatePlanRequest](#bytebase-v1-CreatePlanRequest)
+    - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
     - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
     - [GetRolloutRequest](#bytebase-v1-GetRolloutRequest)
     - [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest)
@@ -6823,6 +6824,22 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
+<a name="bytebase-v1-CreateRolloutRequest"></a>
+
+### CreateRolloutRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
+| plan | [string](#string) |  | The plan used to create rollout. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetPlanRequest"></a>
 
 ### GetPlanRequest
@@ -7529,6 +7546,7 @@ Type is the database change type.
 | CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
+| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListRolloutTaskRuns | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
