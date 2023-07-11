@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -70,7 +71,7 @@ func (s *SchemaDesignService) ListSchemaDesigns(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project: %v", err))
 	}
 	schemaDesignSheetType := storepb.SheetPayload_SCHEMA_DESIGN.String()
-	sheets, err := s.listSheet(ctx, &store.FindSheetMessage{
+	sheets, err := s.listSheets(ctx, &store.FindSheetMessage{
 		ProjectUID:  &project.UID,
 		PayloadType: &schemaDesignSheetType,
 	})
@@ -92,7 +93,110 @@ func (s *SchemaDesignService) ListSchemaDesigns(ctx context.Context, request *v1
 	return response, nil
 }
 
-func (s *SchemaDesignService) listSheet(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {
+// CreateSchemaDesign creates a new schema design.
+func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v1pb.CreateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	projectID, err := getProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project: %v", err))
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project not found: %v", projectID))
+	}
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	schemaDesign := request.SchemaDesign
+	instanceID, databaseName, err := getInstanceDatabaseID(schemaDesign.BaselineDatabase)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	find := &store.FindDatabaseMessage{}
+	databaseUID, isNumber := isNumber(databaseName)
+	if isNumber {
+		// Expected format: "instances/{ignored_value}/database/{uid}"
+		find.UID = &databaseUID
+	} else {
+		// Expected format: "instances/{instance}/database/{database}"
+		find.InstanceID = &instanceID
+		find.DatabaseName = &databaseName
+	}
+	database, err := s.store.GetDatabaseV2(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	schemaVersionUID, err := strconv.ParseInt(schemaDesign.SchemaVersion, 10, 64)
+	if err != nil || schemaVersionUID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema version %s, must be positive integer", schemaDesign.SchemaVersion))
+	}
+	changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		ID: &schemaVersionUID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if changeHistory == nil {
+		return nil, status.Errorf(codes.NotFound, "schema version %d not found", schemaVersionUID)
+	}
+	schemaDesignSheetPayload := &storepb.SheetPayload{
+		Type: storepb.SheetPayload_SCHEMA_DESIGN,
+		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
+			BaselineSheetId: int64(*changeHistory.SheetID),
+		},
+	}
+	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
+	}
+	ddl, err := diffDatabaseMetadatas(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata)
+	if err != nil {
+		return nil, err
+	}
+	schema, err := dryRunDDL(ddl, schemaDesign.Schema)
+	if err != nil {
+		return nil, err
+	}
+
+	sheetCreate := &store.SheetMessage{
+		Name:        schemaDesign.Title,
+		ProjectUID:  project.UID,
+		DatabaseUID: &database.UID,
+		Statement:   schema,
+		Visibility:  store.ProjectSheet,
+		Source:      store.SheetFromBytebaseArtifact,
+		Type:        store.SheetForSQL,
+		CreatorID:   currentPrincipalID,
+		UpdaterID:   currentPrincipalID,
+		Payload:     string(payloadBytes),
+	}
+	sheet, err := s.store.CreateSheet(ctx, sheetCreate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
+	}
+	schemaDesign, err = s.convertSheetToSchemaDesign(ctx, sheet)
+	if err != nil {
+		return nil, err
+	}
+	return schemaDesign, nil
+}
+
+// // UpdateSchemaDesign updates an existing schema design.
+// func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+// 	return nil, nil
+// }
+
+// // DeleteSchemaDesign deletes an existing schema design.
+// func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
+// 	return &emptypb.Empty{}, nil
+// }
+
+func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	list, err := s.store.ListSheets(ctx, find, currentPrincipalID)
 	if err != nil {
@@ -114,6 +218,15 @@ func (s *SchemaDesignService) getSheet(ctx context.Context, find *store.FindShee
 }
 
 func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sheet *store.SheetMessage) (*v1pb.SchemaDesign, error) {
+	sheetPayload := &storepb.SheetPayload{}
+	err := protojson.Unmarshal([]byte(sheet.Payload), sheetPayload)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
+	}
+	if sheetPayload.Type != storepb.SheetPayload_SCHEMA_DESIGN || sheetPayload.SchemaDesign == nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unwanted sheet type: %v", sheetPayload.Type))
+	}
+
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		UID: &sheet.ProjectUID,
 	})
@@ -165,14 +278,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	sheetPayload := &storepb.SheetPayload{}
-	err = protojson.Unmarshal([]byte(sheet.Payload), sheetPayload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
-	}
-	if sheetPayload.Type != storepb.SheetPayload_SCHEMA_DESIGN || sheetPayload.SchemaDesign == nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unwanted sheet type: %v", sheetPayload.Type))
-	}
 	baselineSheetID := int(sheetPayload.SchemaDesign.BaselineSheetId)
 	baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
 		UID: &baselineSheetID,
@@ -216,7 +321,20 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}, nil
 }
 
-func transformSchemaStringToDatabaseMetadata(_ string) (*v1pb.DatabaseMetadata, error) {
+func transformSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 	// TODO: implement this.
+	log.Info(fmt.Sprintf("schema: %s", schema))
 	return &v1pb.DatabaseMetadata{}, nil
+}
+
+func diffDatabaseMetadatas(from *v1pb.DatabaseMetadata, to *v1pb.DatabaseMetadata) (string, error) {
+	// TODO: implement this.
+	log.Info(fmt.Sprintf("database metadatas: %+v, %+v", from, to))
+	return "", nil
+}
+
+func dryRunDDL(ddl string, schema string) (string, error) {
+	// TODO: implement this
+	log.Info(fmt.Sprintf("ddl: %s, schema: %s", ddl, schema))
+	return "", nil
 }
