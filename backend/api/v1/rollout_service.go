@@ -237,95 +237,53 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
-	pipeline, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+	rollout, err := s.store.GetRollout(ctx, rolloutID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
 	}
-	stages, err := s.store.ListStageV2(ctx, rolloutID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get stages, error: %v", err)
-	}
-	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get tasks, error: %v", err)
-	}
 
-	rollout, err := convertToRollout(ctx, s.store, project, pipeline, stages, tasks)
+	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
 	}
-	return rollout, nil
+	return rolloutV1, nil
 }
 
-func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, pipeline *store.PipelineMessage, stages []*store.StageMessage, tasks []*store.TaskMessage) (*v1pb.Rollout, error) {
-	rollout := &v1pb.Rollout{
-		Name:   fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, pipeline.ID),
-		Uid:    fmt.Sprintf("%d", pipeline.ID),
+func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
+	rolloutV1 := &v1pb.Rollout{
+		Name:   fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, rollout.ID),
+		Uid:    fmt.Sprintf("%d", rollout.ID),
 		Plan:   "",
-		Title:  pipeline.Name,
+		Title:  rollout.Name,
 		Stages: nil,
 	}
-
-	rolloutStageByID := make(map[int]*v1pb.Stage)
-	rolloutTaskByID := make(map[int]*v1pb.Task)
-
-	for _, stage := range stages {
-		rolloutStage, err := convertToStage(ctx, s, project, stage)
+	for _, stage := range rollout.Stages {
+		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+			UID: &stage.EnvironmentID,
+		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert stage, error: %v", err)
+			return nil, errors.Wrapf(err, "failed to get environment %d", stage.EnvironmentID)
 		}
-		rollout.Stages = append(rollout.Stages, rolloutStage)
-		rolloutStageByID[stage.ID] = rolloutStage
-	}
-
-	for _, task := range tasks {
-		rolloutTask, err := convertToTask(ctx, s, project, task)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert task, error: %v", err)
+		if environment == nil {
+			return nil, errors.Errorf("environment %d not found", stage.EnvironmentID)
 		}
-		rolloutTaskByID[task.ID] = rolloutTask
-
-		rolloutStage, ok := rolloutStageByID[task.StageID]
-		if !ok {
-			return nil, errors.Errorf("cannot find stage %d of task %d in pipeline %d", task.StageID, task.ID, task.PipelineID)
+		rolloutStage := &v1pb.Stage{
+			Name:        fmt.Sprintf("%s%s/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, rollout.ID, stagePrefix, stage.ID),
+			Uid:         fmt.Sprintf("%d", stage.ID),
+			Environment: fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+			Title:       stage.Name,
 		}
-		rolloutStage.Tasks = append(rolloutStage.Tasks, rolloutTask)
-	}
-
-	for _, task := range tasks {
-		rolloutTask, ok := rolloutTaskByID[task.ID]
-		if !ok {
-			return nil, errors.Errorf("cannot find task %d in pipeline %d", task.ID, task.PipelineID)
-		}
-		for _, blockingTask := range task.BlockedBy {
-			blockingRolloutTask, ok := rolloutTaskByID[blockingTask]
-			if !ok {
-				return nil, errors.Errorf("cannot find blocking task %d of task %d in pipeline %d", blockingTask, task.ID, task.PipelineID)
+		for _, task := range stage.TaskList {
+			rolloutTask, err := convertToTask(ctx, s, project, task)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to convert task, error: %v", err)
 			}
-			rolloutTask.BlockedByTasks = append(rolloutTask.BlockedByTasks, blockingRolloutTask.Name)
+			rolloutStage.Tasks = append(rolloutStage.Tasks, rolloutTask)
 		}
-	}
 
-	return rollout, nil
-}
-
-func convertToStage(ctx context.Context, s *store.Store, project *store.ProjectMessage, stage *store.StageMessage) (*v1pb.Stage, error) {
-	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		UID: &stage.EnvironmentID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get environment %d", stage.EnvironmentID)
+		rolloutV1.Stages = append(rolloutV1.Stages, rolloutStage)
 	}
-	if environment == nil {
-		return nil, errors.Errorf("environment %d not found", stage.EnvironmentID)
-	}
-	return &v1pb.Stage{
-		Name:        fmt.Sprintf("%s%s/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, stage.PipelineID, stagePrefix, stage.ID),
-		Uid:         fmt.Sprintf("%d", stage.ID),
-		Environment: fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
-		Title:       stage.Name,
-		Tasks:       nil,
-	}, nil
+	return rolloutV1, nil
 }
 
 func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
