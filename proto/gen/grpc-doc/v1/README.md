@@ -33,6 +33,7 @@
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy)
     - [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy)
+    - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
@@ -965,6 +966,21 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
+<a name="bytebase-v1-DisableCopyDataPolicy"></a>
+
+### DisableCopyDataPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetPolicyRequest"></a>
 
 ### GetPolicyRequest
@@ -1036,6 +1052,7 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
 | slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
+| disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
@@ -1220,6 +1237,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | SENSITIVE_DATA | 5 |  |
 | ACCESS_CONTROL | 6 |  |
 | SLOW_QUERY | 7 |  |
+| DISABLE_COPY_DATA | 8 |  |
 
 
 
