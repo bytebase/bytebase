@@ -1465,7 +1465,7 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
 		}
-		tree, err := parser.ParsePLSQL(statement)
+		tree, _, err := parser.ParsePLSQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
