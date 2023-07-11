@@ -51,6 +51,7 @@ const (
 	pipelineNamePrefix           = "pipelines/"
 	logNamePrefix                = "logs/"
 	inboxNamePrefix              = "inbox/"
+	schemaDesignPrefix           = "schemaDesigns/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -309,6 +310,14 @@ func getRoleID(name string) (string, error) {
 
 func getProjectResourceIDSheetID(name string) (string, string, error) {
 	tokens, err := getNameParentTokens(name, projectNamePrefix, sheetIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+func getProjectResourceIDAndSchemaDesignSheetID(name string) (string, string, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, schemaDesignPrefix)
 	if err != nil {
 		return "", "", err
 	}

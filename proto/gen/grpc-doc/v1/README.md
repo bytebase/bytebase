@@ -7552,7 +7552,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} Use &#34;projects/-&#34; to list all schema designs. |
+| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} |
 | schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |  |
 
 

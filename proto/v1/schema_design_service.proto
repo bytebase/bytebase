@@ -137,7 +137,6 @@ message ListSchemaDesignsResponse {
 message CreateSchemaDesignRequest {
   // The parent, which owns this collection of schema designs.
   // Format: project/{project}
-  // Use "projects/-" to list all schema designs.
   string parent = 1;
 
   SchemaDesign schema_design = 2;
