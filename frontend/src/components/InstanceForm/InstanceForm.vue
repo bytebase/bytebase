@@ -1388,7 +1388,7 @@ const doUpdate = async () => {
       instancePatch.options?.schemaTenantMode !==
       instance.options?.schemaTenantMode
     ) {
-      updateMask.push("schema_tenant_mode");
+      updateMask.push("options.schema_tenant_mode");
     }
     return await instanceV1Store.updateInstance(instancePatch, updateMask);
   };
