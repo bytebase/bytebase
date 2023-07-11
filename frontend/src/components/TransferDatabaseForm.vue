@@ -137,7 +137,11 @@ const filteredDatabaseList = computed(() => {
     // Default uses instance filter
     if (state.transferSource === "DEFAULT") {
       const instance = state.instanceFilter;
-      if (instance && instance.name !== UNKNOWN_INSTANCE_NAME) {
+      if (
+        instance &&
+        instance.name !== UNKNOWN_INSTANCE_NAME &&
+        db.instance !== instance.name
+      ) {
         return false;
       }
     }
