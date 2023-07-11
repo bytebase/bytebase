@@ -969,7 +969,13 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "used-for-testing-connection": "仅作测试连接用",
     "all": "所有实例",
-    "force-archive-description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
+    "force-archive-description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。",
+    "sync-mode": {
+      "self": "同步模式",
+      "sync-self": "同步自身",
+      "sync-all": "同步自身和所有包含的数据库（CDB + PDB）",
+      "description": "Bytebase 会同步连接数据库及其所有包含的数据库。仅适用于Oracle 12c。"
+    }
   },
   "environment": {
     "id": "环境 ID",
