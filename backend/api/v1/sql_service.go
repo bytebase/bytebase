@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -2071,7 +2070,6 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 
 // encodeToBase64String encodes the statement to base64 string.
 func encodeToBase64String(statement string) string {
-	encodedURI := url.QueryEscape(statement)
-	base64Encoded := base64.StdEncoding.EncodeToString([]byte(encodedURI))
+	base64Encoded := base64.StdEncoding.EncodeToString([]byte(statement))
 	return base64Encoded
 }
