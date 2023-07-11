@@ -188,3 +188,34 @@ func TestExportSQL(t *testing.T) {
 		a.Equal(test.want, string(got))
 	}
 }
+
+func TestEncodeToBase64String(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{
+			input: "",
+			want:  "",
+		},
+		{
+			input: "select * from employee",
+			want:  "c2VsZWN0ICogZnJvbSBlbXBsb3llZQ==",
+		},
+		{
+			input: "select name as 姓名 from employee",
+			want:  "c2VsZWN0IG5hbWUgYXMg5aeT5ZCNIGZyb20gZW1wbG95ZWU=",
+		},
+		{
+			input: "Hello 哈喽 👋",
+			want:  "SGVsbG8g5ZOI5Za9IPCfkYs=",
+		},
+	}
+
+	for _, test := range tests {
+		got := encodeToBase64String(test.input)
+		if got != test.want {
+			t.Errorf("encodeToBase64String(%q) = %q, want %q", test.input, got, test.want)
+		}
+	}
+}
