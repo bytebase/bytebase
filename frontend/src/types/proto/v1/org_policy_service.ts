@@ -19,6 +19,7 @@ export enum PolicyType {
   SENSITIVE_DATA = 5,
   ACCESS_CONTROL = 6,
   SLOW_QUERY = 7,
+  DISABLE_COPY_DATA = 8,
   UNRECOGNIZED = -1,
 }
 
@@ -48,6 +49,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 7:
     case "SLOW_QUERY":
       return PolicyType.SLOW_QUERY;
+    case 8:
+    case "DISABLE_COPY_DATA":
+      return PolicyType.DISABLE_COPY_DATA;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -73,6 +77,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "ACCESS_CONTROL";
     case PolicyType.SLOW_QUERY:
       return "SLOW_QUERY";
+    case PolicyType.DISABLE_COPY_DATA:
+      return "DISABLE_COPY_DATA";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -451,6 +457,7 @@ export interface Policy {
   accessControlPolicy?: AccessControlPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
   slowQueryPolicy?: SlowQueryPolicy | undefined;
+  disableCopyDataPolicy?: DisableCopyDataPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -475,6 +482,10 @@ export interface BackupPlanPolicy {
 }
 
 export interface SlowQueryPolicy {
+  active: boolean;
+}
+
+export interface DisableCopyDataPolicy {
   active: boolean;
 }
 
@@ -993,6 +1004,7 @@ function createBasePolicy(): Policy {
     accessControlPolicy: undefined,
     sqlReviewPolicy: undefined,
     slowQueryPolicy: undefined,
+    disableCopyDataPolicy: undefined,
     enforce: false,
     resourceType: 0,
     resourceUid: "",
@@ -1033,6 +1045,9 @@ export const Policy = {
     }
     if (message.slowQueryPolicy !== undefined) {
       SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(98).fork()).ldelim();
+    }
+    if (message.disableCopyDataPolicy !== undefined) {
+      DisableCopyDataPolicy.encode(message.disableCopyDataPolicy, writer.uint32(130).fork()).ldelim();
     }
     if (message.enforce === true) {
       writer.uint32(104).bool(message.enforce);
@@ -1130,6 +1145,13 @@ export const Policy = {
 
           message.slowQueryPolicy = SlowQueryPolicy.decode(reader, reader.uint32());
           continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.disableCopyDataPolicy = DisableCopyDataPolicy.decode(reader, reader.uint32());
+          continue;
         case 13:
           if (tag !== 104) {
             break;
@@ -1179,6 +1201,9 @@ export const Policy = {
         : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
       slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
+      disableCopyDataPolicy: isSet(object.disableCopyDataPolicy)
+        ? DisableCopyDataPolicy.fromJSON(object.disableCopyDataPolicy)
+        : undefined,
       enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType) ? policyResourceTypeFromJSON(object.resourceType) : 0,
       resourceUid: isSet(object.resourceUid) ? String(object.resourceUid) : "",
@@ -1208,6 +1233,9 @@ export const Policy = {
       (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
     message.slowQueryPolicy !== undefined &&
       (obj.slowQueryPolicy = message.slowQueryPolicy ? SlowQueryPolicy.toJSON(message.slowQueryPolicy) : undefined);
+    message.disableCopyDataPolicy !== undefined && (obj.disableCopyDataPolicy = message.disableCopyDataPolicy
+      ? DisableCopyDataPolicy.toJSON(message.disableCopyDataPolicy)
+      : undefined);
     message.enforce !== undefined && (obj.enforce = message.enforce);
     message.resourceType !== undefined && (obj.resourceType = policyResourceTypeToJSON(message.resourceType));
     message.resourceUid !== undefined && (obj.resourceUid = message.resourceUid);
@@ -1246,6 +1274,10 @@ export const Policy = {
     message.slowQueryPolicy = (object.slowQueryPolicy !== undefined && object.slowQueryPolicy !== null)
       ? SlowQueryPolicy.fromPartial(object.slowQueryPolicy)
       : undefined;
+    message.disableCopyDataPolicy =
+      (object.disableCopyDataPolicy !== undefined && object.disableCopyDataPolicy !== null)
+        ? DisableCopyDataPolicy.fromPartial(object.disableCopyDataPolicy)
+        : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? 0;
     message.resourceUid = object.resourceUid ?? "";
@@ -1542,6 +1574,62 @@ export const SlowQueryPolicy = {
 
   fromPartial(object: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
     const message = createBaseSlowQueryPolicy();
+    message.active = object.active ?? false;
+    return message;
+  },
+};
+
+function createBaseDisableCopyDataPolicy(): DisableCopyDataPolicy {
+  return { active: false };
+}
+
+export const DisableCopyDataPolicy = {
+  encode(message: DisableCopyDataPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.active === true) {
+      writer.uint32(8).bool(message.active);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DisableCopyDataPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDisableCopyDataPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.active = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DisableCopyDataPolicy {
+    return { active: isSet(object.active) ? Boolean(object.active) : false };
+  },
+
+  toJSON(message: DisableCopyDataPolicy): unknown {
+    const obj: any = {};
+    message.active !== undefined && (obj.active = message.active);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
+    return DisableCopyDataPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
+    const message = createBaseDisableCopyDataPolicy();
     message.active = object.active ?? false;
     return message;
   },
