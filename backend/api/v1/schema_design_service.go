@@ -150,6 +150,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
 			BaselineSheetId: int64(*changeHistory.SheetID),
+			Engine:          storepb.Engine(schemaDesign.Engine),
 		},
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
@@ -297,15 +298,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the database: %d", sheet.DatabaseUID))
 	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &database.InstanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get instance: %v", err))
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the instance: %s", database.InstanceID))
-	}
 
 	creator, err := s.store.GetUserByID(ctx, sheet.CreatorID)
 	if err != nil {
@@ -361,7 +353,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		SchemaMetadata:         schemaMetadata,
 		BaselineSchema:         baselineSchema,
 		BaselineSchemaMetadata: baselineSchemaMetadata,
-		Engine:                 convertToEngine(instance.Engine),
+		Engine:                 v1pb.Engine(sheetPayload.SchemaDesign.Engine),
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		SchemaVersion:          schemaVersion,
 		Creator:                fmt.Sprintf("users/%s", creator.Email),
