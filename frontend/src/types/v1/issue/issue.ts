@@ -37,6 +37,7 @@ export const emptyIssue = (): ComposedIssue => {
     ...Issue.fromJSON({
       name: EMPTY_ISSUE_NAME,
       rollout: EMPTY_ROLLOUT_NAME,
+      uid: String(EMPTY_ID),
     }),
     planEntity: undefined,
     planCheckRunList: [],
@@ -52,6 +53,7 @@ export const unknownIssue = (): ComposedIssue => {
     ...Issue.fromJSON({
       name: UNKNOWN_ISSUE_NAME,
       rollout: UNKNOWN_ROLLOUT_NAME,
+      uid: String(UNKNOWN_ID),
     }),
     planEntity: undefined,
     planCheckRunList: [],

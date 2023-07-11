@@ -143,3 +143,7 @@ export const buildIssueV1LinkWithTask = (
 
   return url;
 };
+
+export const isTaskV1Skipped = (task: Task): boolean => {
+  return task.status === Task_Status.SKIPPED;
+};

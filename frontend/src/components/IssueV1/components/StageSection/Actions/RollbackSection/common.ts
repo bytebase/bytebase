@@ -1,35 +1,18 @@
 import { computed } from "vue";
-import { head } from "lodash-es";
 
+import { ComposedIssue, UNKNOWN_ID } from "@/types";
 import {
-  ComposedDatabase,
-  Issue,
-  IssueCreate,
-  IssueId,
-  MigrationContext,
-  Task,
-  TaskCreate,
-  TaskDatabaseDataUpdatePayload,
-  TaskId,
-  UNKNOWN_ID,
-} from "@/types";
-import {
-  extractUserUID,
+  extractUserResourceName,
+  flattenTaskV1List,
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
-  isTaskCreate,
-  isTaskSkipped,
+  isTaskV1Skipped,
   semverCompare,
 } from "@/utils";
-import { flattenTaskList, useIssueLogic } from "../logic";
-import {
-  useIssueV1Store,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useIssueStore,
-  useProjectV1Store,
-} from "@/store";
+import { useCurrentUserV1, experimentalFetchIssueByName } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
+import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
 
@@ -38,26 +21,19 @@ export type RollbackUIType =
   | "FULL" // Show featured rollback status
   | "NONE"; // Nothing
 
-export const useRollbackLogic = () => {
+export const useRollbackContext = () => {
   const currentUserV1 = useCurrentUserV1();
-  const context = useIssueLogic();
-  const {
-    create,
-    issue,
-    isTenantMode,
-    selectedTask: task,
-    patchTask,
-  } = context;
+  const context = useIssueContext();
+  const { isCreating, issue, selectedTask: task } = context;
+  const project = computed(() => issue.value.projectEntity);
 
   // Decide with type of UI should be displayed.
   const rollbackUIType = computed((): RollbackUIType => {
-    if (issue.value.type !== "bb.issue.database.data.update") {
+    if (task.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
       return "NONE";
     }
-    if (task.value.type !== "bb.task.database.data.update") {
-      return "NONE";
-    }
-    const database = databaseOfTask(task.value);
+
+    const database = databaseForTask(issue.value, task.value);
     const { engine, engineVersion } = database.instanceEntity;
     switch (engine) {
       case Engine.MYSQL:
@@ -74,18 +50,17 @@ export const useRollbackLogic = () => {
         return "NONE";
     }
 
-    if (create.value) {
+    if (isCreating.value) {
       return "SWITCH";
     }
-    const taskEntity = task.value as Task;
-    if (taskEntity.status === "DONE") {
-      if (isTaskSkipped(taskEntity)) {
+    if (task.value.status === Task_Status.DONE) {
+      if (isTaskV1Skipped(task.value)) {
         // Rollback is not available for skipped tasks.
         return "NONE";
       }
       return "FULL";
     }
-    if (taskEntity.status === "CANCELED") {
+    if (task.value.status === Task_Status.CANCELED) {
       return "NONE";
     }
 
@@ -98,30 +73,25 @@ export const useRollbackLogic = () => {
       return false;
     }
 
-    if (create.value) {
+    if (isCreating.value) {
       return true;
     }
 
-    const issueEntity = issue.value as Issue;
     const user = currentUserV1.value;
-    const userUID = extractUserUID(user.name);
 
-    if (userUID === String(issueEntity.creator.id)) {
+    if (user.email === extractUserResourceName(issue.value.creator)) {
       // Allowed to the issue creator
       return true;
     }
 
-    if (userUID === String(issueEntity.assignee.id)) {
+    if (user.email === extractUserResourceName(issue.value.assignee)) {
       // Allowed to the issue assignee
       return true;
     }
 
-    const projectV1 = useProjectV1Store().getProjectByUID(
-      String(issueEntity.project.id)
-    );
     if (
       hasPermissionInProjectV1(
-        projectV1.iamPolicy,
+        project.value.iamPolicy,
         user,
         "bb.permission.project.admin-database"
       )
@@ -142,63 +112,79 @@ export const useRollbackLogic = () => {
   });
 
   const rollbackEnabled = computed((): boolean => {
-    if (create.value) {
-      if (isTenantMode.value) {
-        // In tenant mode, all tasks share a common MigrationDetail
-        const issueCreate = issue.value as IssueCreate;
-        const createContext = issueCreate.createContext as MigrationContext;
-        const migrationDetail = head(createContext.detailList);
-        return migrationDetail?.rollbackEnabled ?? false;
-      }
-      // In standard mode, every task has a independent TaskCreate with its
-      // own rollbackEnabled field.
-      const taskCreate = task.value as TaskCreate;
-      return taskCreate.rollbackEnabled ?? false;
+    if (isCreating.value) {
+      // TODO: see if rollback enabled from issue plan
+      return false;
+
+      // if (isTenantMode.value) {
+      //   // In tenant mode, all tasks share a common MigrationDetail
+      //   const issueCreate = issue.value as IssueCreate;
+      //   const createContext = issueCreate.createContext as MigrationContext;
+      //   const migrationDetail = head(createContext.detailList);
+      //   return migrationDetail?.rollbackEnabled ?? false;
+      // }
+      // // In standard mode, every task has a independent TaskCreate with its
+      // // own rollbackEnabled field.
+      // const taskCreate = task.value as TaskCreate;
+      // return taskCreate.rollbackEnabled ?? false;
     } else {
-      const taskEntity = task.value as Task;
-      const payload = taskEntity.payload as
-        | TaskDatabaseDataUpdatePayload
-        | undefined;
-      return payload?.rollbackEnabled ?? false;
+      return task.value.databaseDataUpdate?.rollbackEnabled ?? false;
+      // const taskEntity = task.value as Task;
+      // const payload = taskEntity.payload as
+      //   | TaskDatabaseDataUpdatePayload
+      //   | undefined;
+      // return payload?.rollbackEnabled ?? false;
     }
   });
 
   const toggleRollback = async (on: boolean) => {
-    if (create.value) {
-      if (isTenantMode.value) {
-        // In tenant mode, all tasks share a common MigrationDetail
-        const issueCreate = issue.value as IssueCreate;
-        const createContext = issueCreate.createContext as MigrationContext;
-        createContext.detailList.forEach((detail) => {
-          detail.rollbackEnabled = on;
-        });
-      } else {
-        // In standard mode, every task has a independent TaskCreate with its
-        // own rollbackEnabled field.
-        const taskCreate = task.value as TaskCreate;
-        taskCreate.rollbackEnabled = on;
+    if (isCreating.value) {
+      // TODO: update issue plan
+      const config = task.value.databaseDataUpdate;
+      if (config) {
+        config.rollbackEnabled = on;
       }
-    } else {
-      // Once the issue has been created, we need to patch the task.
-      const taskEntity = task.value as Task;
-      await patchTask(taskEntity.id, {
-        rollbackEnabled: on,
-      });
 
-      const issueEntity = issue.value as Issue;
-      const action = on ? "Enable" : "Disable";
-      try {
-        await useIssueV1Store().createIssueComment({
-          issueId: issueEntity.id,
-          comment: `${action} SQL rollback log for task [${taskEntity.name}].`,
-          payload: {
-            issueName: issueEntity.name,
-          },
-        });
-      } catch {
-        // do nothing
-        // failing to comment to won't be too bad
+      // if (isTenantMode.value) {
+      //   // In tenant mode, all tasks share a common MigrationDetail
+      //   const issueCreate = issue.value as IssueCreate;
+      //   const createContext = issueCreate.createContext as MigrationContext;
+      //   createContext.detailList.forEach((detail) => {
+      //     detail.rollbackEnabled = on;
+      //   });
+      // } else {
+      //   // In standard mode, every task has a independent TaskCreate with its
+      //   // own rollbackEnabled field.
+      //   const taskCreate = task.value as TaskCreate;
+      //   taskCreate.rollbackEnabled = on;
+      // }
+    } else {
+      // TODO: patch plan to reconcile rollout/stages/tasks
+      const config = task.value.databaseDataUpdate;
+      if (config) {
+        config.rollbackEnabled = on;
       }
+
+      // // Once the issue has been created, we need to patch the task.
+      // const taskEntity = task.value as Task;
+      // await patchTask(taskEntity.id, {
+      //   rollbackEnabled: on,
+      // });
+
+      // const issueEntity = issue.value as Issue;
+      // const action = on ? "Enable" : "Disable";
+      // try {
+      //   await useIssueV1Store().createIssueComment({
+      //     issueId: issueEntity.id,
+      //     comment: `${action} SQL rollback log for task [${taskEntity.name}].`,
+      //     payload: {
+      //       issueName: issueEntity.name,
+      //     },
+      //   });
+      // } catch {
+      //   // do nothing
+      //   // failing to comment to won't be too bad
+      // }
     }
   };
 
@@ -210,70 +196,66 @@ export const useRollbackLogic = () => {
   };
 };
 
-const databaseOfTask = (task: Task | TaskCreate): ComposedDatabase => {
-  const uid = isTaskCreate(task)
-    ? String((task as TaskCreate).databaseId!)
-    : String(task.database!.id);
-  return useDatabaseV1Store().getDatabaseByUID(uid);
-};
-
-export const maybeCreateBackTraceComments = async (newIssue: Issue) => {
-  if (newIssue.type !== "bb.issue.database.data.update") return;
+export const maybeCreateBackTraceComments = async (newIssue: ComposedIssue) => {
   const rollbackList = [] as Array<{
     byTask: Task;
-    fromIssueId: IssueId;
-    fromTaskId: TaskId;
+    fromIssue: string;
+    fromTask: string;
   }>;
-  const taskList = flattenTaskList<Task>(newIssue);
+  const taskList = flattenTaskV1List(newIssue.rolloutEntity);
   for (let i = 0; i < taskList.length; i++) {
     const byTask = taskList[i];
-    if (byTask.type !== "bb.task.database.data.update") continue;
-    const payload = byTask.payload as TaskDatabaseDataUpdatePayload;
-    if (!payload) continue;
-    if (
-      payload.rollbackFromIssueId &&
-      payload.rollbackFromIssueId !== UNKNOWN_ID &&
-      payload.rollbackFromTaskId &&
-      payload.rollbackFromTaskId !== UNKNOWN_ID
-    ) {
+    if (byTask.type !== Task_Type.DATABASE_DATA_UPDATE) {
+      continue;
+    }
+    const config = byTask.databaseDataUpdate;
+    if (!config) {
+      continue;
+    }
+    if (config.rollbackFromIssue && config.rollbackFromTask) {
       rollbackList.push({
         byTask,
-        fromIssueId: payload.rollbackFromIssueId,
-        fromTaskId: payload.rollbackFromTaskId,
+        fromIssue: config.rollbackFromIssue,
+        fromTask: config.rollbackFromTask,
       });
     }
   }
   if (rollbackList.length === 0) return;
 
-  const issueStore = useIssueStore();
   for (let i = 0; i < rollbackList.length; i++) {
-    const { byTask, fromIssueId, fromTaskId } = rollbackList[i];
-    const fromIssue = await issueStore.getOrFetchIssueById(fromIssueId);
-    if (fromIssue.id === UNKNOWN_ID) continue;
-    const fromTask = flattenTaskList<Task>(fromIssue).find(
-      (task) => task.id === fromTaskId
-    );
-    if (!fromTask || fromTask.id === UNKNOWN_ID) continue;
+    const {
+      // byTask,
+      fromIssue: fromIssueName,
+      fromTask: fromTaskName,
+    } = rollbackList[i];
+    const fromIssue = await experimentalFetchIssueByName(fromIssueName);
 
-    const comment = [
-      `Create issue #${newIssue.id}`,
-      "to rollback task",
-      `[${fromTask.name}]`,
-    ].join(" ");
+    if (fromIssue.uid === String(UNKNOWN_ID)) continue;
+    const fromTask = flattenTaskV1List(fromIssue.rolloutEntity).find(
+      (task) => task.name === fromTaskName
+    );
+    if (!fromTask || fromTask.uid === String(UNKNOWN_ID)) continue;
+
+    // const comment = [
+    //   `Create issue #${newIssue.uid}`,
+    //   "to rollback task",
+    //   `[${fromTask.title}]`,
+    // ].join(" ");
     try {
-      await useIssueV1Store().createIssueComment({
-        issueId: fromIssue.id,
-        comment,
-        payload: {
-          issueName: fromIssue.name,
-          taskRollbackBy: {
-            issueId: fromIssue.id,
-            taskId: fromTask.id,
-            rollbackByIssueId: newIssue.id,
-            rollbackByTaskId: byTask.id,
-          },
-        },
-      });
+      // TODO: create comment
+      // await useIssueV1Store().createIssueComment({
+      //   issueId: fromIssue.uid,
+      //   comment,
+      //   payload: {
+      //     issueName: fromIssue.name,
+      //     taskRollbackBy: {
+      //       issueId: fromIssue.id,
+      //       taskId: fromTask.id,
+      //       rollbackByIssueId: newIssue.id,
+      //       rollbackByTaskId: byTask.id,
+      //     },
+      //   },
+      // });
     } catch {
       // do nothing
       // failing to comment to won't be too bad

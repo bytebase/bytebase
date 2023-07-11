@@ -8,5 +8,5 @@
 
 <script setup lang="ts">
 import EarliestAllowedTime from "./EarliestAllowedTime.vue";
-import RollbackSection from "./RollbackSection.vue";
+import RollbackSection from "./RollbackSection";
 </script>

@@ -24,9 +24,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { NTooltip } from "naive-ui";
-import { useRollbackLogic } from "./common";
+import { useRollbackContext } from "./common";
 
-const { allowRollback, toggleRollback } = useRollbackLogic();
+const { allowRollback, toggleRollback } = useRollbackContext();
 
 const disabled = computed(() => !allowRollback.value);
 </script>

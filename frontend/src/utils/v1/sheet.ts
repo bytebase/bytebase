@@ -23,6 +23,12 @@ import {
   getSheetPathByLegacyProject,
 } from "@/store/modules/v1/common";
 
+export const extractSheetUID = (name: string) => {
+  const pattern = /(?:^|\/)sheets\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
 export const isSheetReadableV1 = (sheet: Sheet) => {
   const currentUserV1 = useCurrentUserV1();
 
