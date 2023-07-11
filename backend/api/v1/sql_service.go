@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1821,7 +1823,7 @@ func (s *SQLService) checkQueryRights(
 			"resource.database": databaseResourceURL,
 			"resource.schema":   resource.Schema,
 			"resource.table":    resource.Table,
-			"request.statement": statement,
+			"request.statement": encodeToBase64String(statement),
 			"request.row_limit": limit,
 		}
 
@@ -2062,4 +2064,11 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 	default:
 		return false
 	}
+}
+
+// encodeToBase64String encodes the statement to base64 string.
+func encodeToBase64String(statement string) string {
+	encodedURI := url.QueryEscape(statement)
+	base64Encoded := base64.StdEncoding.EncodeToString([]byte(encodedURI))
+	return base64Encoded
 }
