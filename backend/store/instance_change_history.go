@@ -58,6 +58,7 @@ type FindInstanceChangeHistoryMessage struct {
 	ID         *int64
 	InstanceID *int
 	DatabaseID *int
+	SheetID    *int
 	Source     *db.MigrationSource
 	Version    *string
 	Limit      *int
@@ -316,6 +317,9 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_change_history.database_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.SheetID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_change_history.sheet_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.Source; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_change_history.source = $%d", len(args)+1)), append(args, *v)
 	}
@@ -471,6 +475,22 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	}
 
 	return list, nil
+}
+
+// GetInstanceChangeHistory gets the instance change history.
+func (s *Store) GetInstanceChangeHistory(ctx context.Context, find *FindInstanceChangeHistoryMessage) (*InstanceChangeHistoryMessage, error) {
+	list, err := s.ListInstanceChangeHistory(ctx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(list) == 0 {
+		return nil, nil
+	}
+	if len(list) > 1 {
+		return nil, errors.Errorf("expected 1 change history, got %d", len(list))
+	}
+
+	return list[0], nil
 }
 
 // UpdateInstanceChangeHistory updates an instance change history.

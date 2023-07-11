@@ -387,7 +387,6 @@ type CreateSchemaDesignRequest struct {
 
 	// The parent, which owns this collection of schema designs.
 	// Format: project/{project}
-	// Use "projects/-" to list all schema designs.
 	Parent       string        `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	SchemaDesign *SchemaDesign `protobuf:"bytes,2,opt,name=schema_design,json=schemaDesign,proto3" json:"schema_design,omitempty"`
 }
