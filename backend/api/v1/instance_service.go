@@ -197,8 +197,14 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			patch.DataSources = &datasourceList
 		case "activation":
 			patch.Activation = &request.Instance.Activation
-		case "options":
-			patch.Options = convertToInstanceOptions(request.Instance.Options)
+		case "options.schema_tenant_mode":
+			if patch.Options == nil {
+				patch.Options = &storepb.InstanceOptions{
+					SchemaTenantMode: request.Instance.Options.SchemaTenantMode,
+				}
+			} else {
+				patch.Options.SchemaTenantMode = request.Instance.Options.SchemaTenantMode
+			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -222,15 +228,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	// TODO(d): sync instance databases.
 
 	return convertToInstance(ins), nil
-}
-
-func convertToInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOptions {
-	if options == nil {
-		return nil
-	}
-	return &storepb.InstanceOptions{
-		SchemaTenantMode: options.SchemaTenantMode,
-	}
 }
 
 // SyncSlowQueries syncs slow queries for an instance.
