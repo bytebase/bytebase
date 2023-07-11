@@ -75,6 +75,11 @@
         "disaster-recovery-basic-tooltip": "Database backup / restore",
         "disaster-recovery-advanced": "Advanced",
         "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
+        "rollout-policy": "Rollout Policy",
+        "rollout-policy-basic": "Basic",
+        "rollout-policy-basic-tooltip": "Automatic rollout",
+        "rollout-policy-advanced": "Advanced",
+        "rollout-policy-advanced-tooltip": "Automatic + manual rollout",
         "sql-check": "100+ Automated SQL check",
         "schedule-change": "Scheduled change at specific time",
         "database-group": "Database Group",
@@ -83,7 +88,8 @@
         "sync-schema-basic-tooltip": "Sync from the latest schema version",
         "sync-schema-advanced": "Advanced",
         "sync-schema-advanced-tooltip": "Sync from arbitrary schema version",
-        "terraform-provider": "Terraform Integration"
+        "terraform-provider": "Terraform Integration",
+        "custom-approval": "Custom approval"
       }
     },
     "sql-editor": {
@@ -126,11 +132,10 @@
         "sso": "Single Sign-On (SSO)",
         "2fa": "Two-Factor Authentication (2FA)",
         "ssh-tunnel": "SSH Tunnel",
-        "custom-approval": "Custom approval",
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
         "environment-tier": "Environment tier",
-        "approval-and-backup-policy": "Approval and backup policy",
+        "backup-policy": "Backup policy",
         "sensitive-data": "Sensitive data masking",
         "data-access-control": "Data access control",
         "anomaly-detection": "Anomaly detection",
@@ -169,7 +174,7 @@
     "gitlab-login": "GitLab login",
     "online-schema-migration": "Large table online schema migration",
     "sql-check-anomaly-detection": "Advanced SQL check and anomaly detection",
-    "approval-and-backup-policy": "Review and backup policy",
+    "backup-policy": "Review and backup policy",
     "sla": "Dedicated CSM and SLA support",
     "everything-in-team-plan": "Everything in team plan",
     "batch-change-multi-environment": "Multi-environment batch change",

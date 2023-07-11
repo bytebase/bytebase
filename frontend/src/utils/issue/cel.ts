@@ -107,7 +107,9 @@ export const stringifyConditionExpression = (
   }
   if (conditionExpression.statement !== undefined) {
     expression.push(
-      `request.statement == "${btoa(conditionExpression.statement)}"`
+      `request.statement == "${btoa(
+        unescape(encodeURIComponent(conditionExpression.statement))
+      )}"`
     );
   }
   if (conditionExpression.rowLimit !== undefined) {
@@ -245,7 +247,7 @@ export const convertFromCELString = async (
               databaseResource.schema = right;
             }
           } else if (left === "request.statement") {
-            const statement = atob(right);
+            const statement = decodeURIComponent(escape(window.atob(right)));
             conditionExpression.statement = statement;
           } else if (left === "request.export_format") {
             conditionExpression.exportFormat = right;
@@ -329,7 +331,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               databaseResource.schema = right;
             }
           } else if (left === "request.statement") {
-            const statement = atob(right);
+            const statement = decodeURIComponent(escape(window.atob(right)));
             conditionExpression.statement = statement;
           } else if (left === "request.export_format") {
             conditionExpression.exportFormat = right;

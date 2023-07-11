@@ -69,7 +69,7 @@
               (<router-link to="/setting/subscription" class="accent-link">
                 {{
                   $t("subscription.instance-assignment.n-license-remain", {
-                    n: availableLicenseCount,
+                    n: availableLicenseCountText,
                   })
                 }}</router-link
               >)
@@ -114,6 +114,13 @@
               @select-environment-id="handleSelectEnvironmentUID"
             />
           </div>
+
+          <OracleSyncModeInput
+            v-if="basicInfo.engine === Engine.ORACLE"
+            :schema-tenant-mode="basicInfo.options?.schemaTenantMode ?? false"
+            :allow-edit="allowEdit"
+            @update:schema-tenant-mode="changeSyncMode"
+          />
 
           <div class="sm:col-span-3 sm:col-start-1">
             <template v-if="basicInfo.engine !== Engine.SPANNER">
@@ -669,6 +676,7 @@ import {
 } from "@/store";
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
+import OracleSyncModeInput from "./OracleSyncModeInput.vue";
 import SslCertificateForm from "./SslCertificateForm.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
@@ -681,6 +689,7 @@ import {
   DataSource,
   DataSourceType,
   Instance,
+  InstanceOptions,
 } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { instanceServiceClient } from "@/grpcweb";
@@ -761,6 +770,13 @@ const availableLicenseCount = computed(() => {
   );
 });
 
+const availableLicenseCountText = computed((): string => {
+  if (subscriptionStore.instanceLicenseCount === Number.MAX_VALUE) {
+    return t("subscription.unlimited");
+  }
+  return `${availableLicenseCount.value}`;
+});
+
 const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   return {
     uid: instance?.uid ?? String(UNKNOWN_ID),
@@ -772,7 +788,11 @@ const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
     activation: instance
       ? instance.activation
-      : availableLicenseCount.value > 0,
+      : subscriptionStore.currentPlan !== PlanType.FREE &&
+        availableLicenseCount.value > 0,
+    options: instance?.options ?? {
+      schemaTenantMode: true, // default to true
+    },
   };
 };
 
@@ -1092,6 +1112,13 @@ const changeInstanceEngine = (engine: Engine) => {
   basicInfo.value.engine = engine;
 };
 
+const changeSyncMode = (schemaTenantMode: boolean) => {
+  if (!basicInfo.value.options) {
+    basicInfo.value.options = InstanceOptions.fromJSON({});
+  }
+  basicInfo.value.options.schemaTenantMode = schemaTenantMode;
+};
+
 const trimInputValue = (target: Event["target"]) => {
   return ((target as HTMLInputElement)?.value ?? "").trim();
 };
@@ -1356,6 +1383,12 @@ const doUpdate = async () => {
     }
     if (instancePatch.activation !== instance.activation) {
       updateMask.push("activation");
+    }
+    if (
+      instancePatch.options?.schemaTenantMode !==
+      instance.options?.schemaTenantMode
+    ) {
+      updateMask.push("options.schema_tenant_mode");
     }
     return await instanceV1Store.updateInstance(instancePatch, updateMask);
   };

@@ -977,7 +977,13 @@
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
     "all": "Todas las instancias",
-    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
+    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán.",
+    "sync-mode": {
+      "self": "Modo de sincronización",
+      "sync-self": "Sincronizarse",
+      "sync-all": "Sincronización propia y de todas las bases de datos (CDB + PDB)",
+      "description": "Bytebase sincronizará la base de datos de conexión, así como todas las bases de datos que la contienen. Solo aplicable a Oracle 12c."
+    }
   },
   "environment": {
     "id": "ID del Entorno",
@@ -1292,8 +1298,10 @@
       "errors": {
         "select-target-project": "Seleccionar proyecto de destino",
         "select-at-least-one-database": "Seleccione al menos una base de datos"
-      }
-    }
+      },
+      "select-target-project": "Seleccionar proyecto de destino"
+    },
+    "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",

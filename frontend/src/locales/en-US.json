@@ -977,7 +977,13 @@
     "create-gcp-credentials": "To create Credentials, see",
     "used-for-testing-connection": "Used for testing connections only",
     "all": "All instances",
-    "force-archive-description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
+    "force-archive-description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted.",
+    "sync-mode": {
+      "self": "Sync Mode",
+      "sync-self": "Sync self",
+      "sync-all": "Sync self and all containing databases (CDB + PDB)",
+      "description": "Bytebase will sync the connecting database as well as its all containing databases. Only applicable to Oracle 12c+."
+    }
   },
   "environment": {
     "id": "Environment ID",
@@ -1292,8 +1298,10 @@
       "errors": {
         "select-target-project": "Select target project",
         "select-at-least-one-database": "Select at least one database"
-      }
-    }
+      },
+      "select-target-project": "Select target project"
+    },
+    "transfer-database-from-to": "Transfer database from source project to target project"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

@@ -49,26 +49,33 @@ service SchemaDesignService {
 message SchemaDesign {
   // The name of the schema design.
   // Format: projects/{project}/schemaDesigns/{schemaDesign}
+  // {schemaDesign} should be the id of a sheet.
   string name = 1;
 
-  // The title of schema design. AKA sheet's title.
+  // The title of schema design. AKA sheet's name.
   string title = 2;
 
-  // Current editing schema.
+  // The schema of schema design. AKA sheet's statement.
   string schema = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The metadata of the current editing schema.
   DatabaseMetadata schema_metadata = 4;
 
+  // The baseline schema.
   string baseline_schema = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The metadata of the baseline schema.
   DatabaseMetadata baseline_schema_metadata = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The database engine of the schema design.
   Engine engine = 7;
 
   // The name of the baseline database.
   // Format: instances/{instance}/databases/{database}
   string baseline_database = 8 [(google.api.field_behavior) = IMMUTABLE];
 
+  // The selected schema version of the baseline database.
+  // If not specified, the latest schema of database will be used as baseline schema.
   string schema_version = 9 [(google.api.field_behavior) = IMMUTABLE];
 
   // The creator of the schema design.
@@ -79,8 +86,10 @@ message SchemaDesign {
   // Format: users/{email}
   string updater = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The timestamp when the schema design was created.
   google.protobuf.Timestamp create_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The timestamp when the schema design was last updated.
   google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
@@ -128,7 +137,6 @@ message ListSchemaDesignsResponse {
 message CreateSchemaDesignRequest {
   // The parent, which owns this collection of schema designs.
   // Format: project/{project}
-  // Use "projects/-" to list all schema designs.
   string parent = 1;
 
   SchemaDesign schema_design = 2;

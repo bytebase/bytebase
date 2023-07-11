@@ -7552,7 +7552,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} Use &#34;projects/-&#34; to list all schema designs. |
+| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} |
 | schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |  |
 
 
@@ -7634,19 +7634,19 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the schema design. Format: projects/{project}/schemaDesigns/{schemaDesign} |
-| title | [string](#string) |  | The title of schema design. AKA sheet&#39;s title. |
-| schema | [string](#string) |  | Current editing schema. |
-| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
-| baseline_schema | [string](#string) |  |  |
-| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| name | [string](#string) |  | The name of the schema design. Format: projects/{project}/schemaDesigns/{schemaDesign} {schemaDesign} should be the id of a sheet. |
+| title | [string](#string) |  | The title of schema design. AKA sheet&#39;s name. |
+| schema | [string](#string) |  | The schema of schema design. AKA sheet&#39;s statement. |
+| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the current editing schema. |
+| baseline_schema | [string](#string) |  | The baseline schema. |
+| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the baseline schema. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema design. |
 | baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
-| schema_version | [string](#string) |  |  |
+| schema_version | [string](#string) |  | The selected schema version of the baseline database. If not specified, the latest schema of database will be used as baseline schema. |
 | creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
 | updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was created. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was last updated. |
 
 
 

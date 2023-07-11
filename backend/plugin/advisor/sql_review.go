@@ -476,6 +476,8 @@ type SQLReviewCheckContext struct {
 	Driver    *sql.DB
 	Context   context.Context
 
+	// Snowflake specific fields
+	CurrentDatabase string
 	// Oracle specific fields
 	CurrentSchema string
 }
@@ -724,14 +726,15 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:       checkContext.Charset,
-				Collation:     checkContext.Collation,
-				AST:           ast,
-				Rule:          rule,
-				Catalog:       finder,
-				Driver:        checkContext.Driver,
-				Context:       checkContext.Context,
-				CurrentSchema: checkContext.CurrentSchema,
+				Charset:         checkContext.Charset,
+				Collation:       checkContext.Collation,
+				AST:             ast,
+				Rule:            rule,
+				Catalog:         finder,
+				Driver:          checkContext.Driver,
+				Context:         checkContext.Context,
+				CurrentSchema:   checkContext.CurrentSchema,
+				CurrentDatabase: checkContext.CurrentDatabase,
 			},
 			statements,
 		)
@@ -1040,6 +1043,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLNoSelectAll, nil
 		case db.Oracle:
 			return OracleNoSelectAll, nil
+		case db.Snowflake:
+			return SnowflakeNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
@@ -1047,6 +1052,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLMigrationCompatibility, nil
 		case db.Postgres:
 			return PostgreSQLMigrationCompatibility, nil
+		case db.Snowflake:
+			return SnowflakeMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
@@ -1257,6 +1264,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLTableDropNamingConvention, nil
 		case db.Postgres:
 			return PostgreSQLTableDropNamingConvention, nil
+		case db.Snowflake:
+			return SnowflakeTableDropNamingConvention, nil
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {

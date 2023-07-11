@@ -426,6 +426,15 @@ const (
 
 	// SnowflakeColumnNoNull is an advisor type for Snowflake column no NULL value.
 	SnowflakeColumnNoNull Type = "bb.plugin.advisor.snowflake.column.no-null"
+
+	// SnowflakeNoSelectAll is an advisor type for Snowflake no select all.
+	SnowflakeNoSelectAll Type = "bb.plugin.advisor.snowflake.select.no-select-all"
+
+	// SnowflakeTableDropNamingConvention is an advisor type for Snowflake table drop with naming convention.
+	SnowflakeTableDropNamingConvention Type = "bb.plugin.advisor.snowflake.table.drop-naming-convention"
+
+	// SnowflakeMigrationCompatibility is an advisor type for Snowflake migration compatibility.
+	SnowflakeMigrationCompatibility Type = "bb.plugin.advisor.snowflake.migration-compatibility"
 )
 
 // Advice is the result of an advisor.
@@ -487,6 +496,8 @@ type Context struct {
 	Driver  *sql.DB
 	Context context.Context
 
+	// CurrentDatabase is the current database. Special for Snowflake.
+	CurrentDatabase string
 	// CurrentSchema is the current schema. Special for Oracle.
 	CurrentSchema string
 }

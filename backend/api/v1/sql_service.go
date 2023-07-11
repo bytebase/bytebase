@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1292,6 +1293,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		catalog,
 		connection,
 		currentSchema,
+		database.DatabaseName,
 	)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
@@ -1338,6 +1340,7 @@ func (s *SQLService) sqlCheck(
 	catalog catalog.Catalog,
 	driver *sql.DB,
 	currentSchema string,
+	currentDatabase string,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
 	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
@@ -1349,13 +1352,14 @@ func (s *SQLService) sqlCheck(
 	}
 
 	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:       dbCharacterSet,
-		Collation:     dbCollation,
-		DbType:        dbType,
-		Catalog:       catalog,
-		Driver:        driver,
-		Context:       ctx,
-		CurrentSchema: currentSchema,
+		Charset:         dbCharacterSet,
+		Collation:       dbCollation,
+		DbType:          dbType,
+		Catalog:         catalog,
+		Driver:          driver,
+		Context:         ctx,
+		CurrentSchema:   currentSchema,
+		CurrentDatabase: currentDatabase,
 	})
 	if err != nil {
 		return advisor.Error, nil, err
@@ -1822,7 +1826,7 @@ func (s *SQLService) checkQueryRights(
 			"resource.database": databaseResourceURL,
 			"resource.schema":   resource.Schema,
 			"resource.table":    resource.Table,
-			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.statement": encodeToBase64String(statement),
 			"request.row_limit": limit,
 		}
 
@@ -2063,4 +2067,11 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 	default:
 		return false
 	}
+}
+
+// encodeToBase64String encodes the statement to base64 string.
+func encodeToBase64String(statement string) string {
+	encodedURI := url.QueryEscape(statement)
+	base64Encoded := base64.StdEncoding.EncodeToString([]byte(encodedURI))
+	return base64Encoded
 }
