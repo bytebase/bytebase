@@ -1,6 +1,7 @@
 /* eslint-disable */
 import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
+import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.store";
 
@@ -62,6 +63,7 @@ export interface SheetPayload_UsedByIssue {
 
 export interface SheetPayload_SchemaDesign {
   baselineSheetId: number;
+  engine: Engine;
 }
 
 function createBaseSheetPayload(): SheetPayload {
@@ -368,13 +370,16 @@ export const SheetPayload_UsedByIssue = {
 };
 
 function createBaseSheetPayload_SchemaDesign(): SheetPayload_SchemaDesign {
-  return { baselineSheetId: 0 };
+  return { baselineSheetId: 0, engine: 0 };
 }
 
 export const SheetPayload_SchemaDesign = {
   encode(message: SheetPayload_SchemaDesign, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.baselineSheetId !== 0) {
       writer.uint32(8).int64(message.baselineSheetId);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
     }
     return writer;
   },
@@ -393,6 +398,13 @@ export const SheetPayload_SchemaDesign = {
 
           message.baselineSheetId = longToNumber(reader.int64() as Long);
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -403,12 +415,16 @@ export const SheetPayload_SchemaDesign = {
   },
 
   fromJSON(object: any): SheetPayload_SchemaDesign {
-    return { baselineSheetId: isSet(object.baselineSheetId) ? Number(object.baselineSheetId) : 0 };
+    return {
+      baselineSheetId: isSet(object.baselineSheetId) ? Number(object.baselineSheetId) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+    };
   },
 
   toJSON(message: SheetPayload_SchemaDesign): unknown {
     const obj: any = {};
     message.baselineSheetId !== undefined && (obj.baselineSheetId = Math.round(message.baselineSheetId));
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     return obj;
   },
 
@@ -419,6 +435,7 @@ export const SheetPayload_SchemaDesign = {
   fromPartial(object: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
     const message = createBaseSheetPayload_SchemaDesign();
     message.baselineSheetId = object.baselineSheetId ?? 0;
+    message.engine = object.engine ?? 0;
     return message;
   },
 };
