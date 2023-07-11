@@ -10,5 +10,5 @@ backend                      @d-bytebase @ecmadao @bytebase/bytebase-dev
 go.mod                       @d-bytebase @ecmadao @bytebase/bytebase-dev
 
 # Frontend
-frontend                     @LiuJi-Jim @boojack
-frontend/package.json        @LiuJi-Jim @boojack
+frontend                     @LiuJi-Jim @boojack @bytebase/bytebase-dev
+frontend/package.json        @LiuJi-Jim @boojack @bytebase/bytebase-dev
