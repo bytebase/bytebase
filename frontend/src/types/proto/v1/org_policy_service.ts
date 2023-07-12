@@ -353,7 +353,7 @@ export interface CreatePolicyRequest {
    */
   parent: string;
   /** The policy to create. */
-  policy?: Policy;
+  policy?: Policy | undefined;
   type: PolicyType;
 }
 
@@ -368,9 +368,13 @@ export interface UpdatePolicyRequest {
    * Instance resource name: instances/instance-id.
    * Database resource name: instances/instance-id/databases/database-name.
    */
-  policy?: Policy;
+  policy?:
+    | Policy
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?:
+    | string[]
+    | undefined;
   /**
    * If set to true, and the policy is not found, a new policy will be created.
    * In this situation, `update_mask` is ignored.
@@ -478,7 +482,7 @@ export interface DeploymentApprovalStrategy {
 
 export interface BackupPlanPolicy {
   schedule: BackupPlanSchedule;
-  retentionDuration?: Duration;
+  retentionDuration?: Duration | undefined;
 }
 
 export interface SlowQueryPolicy {

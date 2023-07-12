@@ -10,9 +10,11 @@ export const protobufPackage = "google.api.expr.v1alpha1";
 /** An expression together with source information as returned by the parser. */
 export interface ParsedExpr {
   /** The parsed expression. */
-  expr?: Expr;
+  expr?:
+    | Expr
+    | undefined;
   /** The source info derived from input that generated the parsed `expr`. */
-  sourceInfo?: SourceInfo;
+  sourceInfo?: SourceInfo | undefined;
 }
 
 /**
@@ -86,7 +88,9 @@ export interface Expr_Select {
    * For example, in the select expression `request.auth`, the `request`
    * portion of the expression is the `operand`.
    */
-  operand?: Expr;
+  operand?:
+    | Expr
+    | undefined;
   /**
    * Required. The name of the field to select.
    *
@@ -112,7 +116,9 @@ export interface Expr_Call {
    * The target of an method call-style expression. For example, `x` in
    * `x.f()`.
    */
-  target?: Expr;
+  target?:
+    | Expr
+    | undefined;
   /** Required. The name of the function or method being called. */
   function: string;
   /** The arguments. */
@@ -179,7 +185,9 @@ export interface Expr_CreateStruct_Entry {
    * optional-typed value. If the optional value is present, the key will be
    * set; however, if the optional value is absent, the key will be unset.
    */
-  value?: Expr;
+  value?:
+    | Expr
+    | undefined;
   /** Whether the key-value pair is optional. */
   optionalEntry: boolean;
 }
@@ -216,30 +224,38 @@ export interface Expr_Comprehension {
   /** The name of the iteration variable. */
   iterVar: string;
   /** The range over which var iterates. */
-  iterRange?: Expr;
+  iterRange?:
+    | Expr
+    | undefined;
   /** The name of the variable used for accumulation of the result. */
   accuVar: string;
   /** The initial value of the accumulator. */
-  accuInit?: Expr;
+  accuInit?:
+    | Expr
+    | undefined;
   /**
    * An expression which can contain iter_var and accu_var.
    *
    * Returns false when the result has been computed and may be used as
    * a hint to short-circuit the remainder of the comprehension.
    */
-  loopCondition?: Expr;
+  loopCondition?:
+    | Expr
+    | undefined;
   /**
    * An expression which can contain iter_var and accu_var.
    *
    * Computes the next value of accu_var.
    */
-  loopStep?: Expr;
+  loopStep?:
+    | Expr
+    | undefined;
   /**
    * An expression which can contain accu_var.
    *
    * Computes the result.
    */
-  result?: Expr;
+  result?: Expr | undefined;
 }
 
 /**
@@ -352,7 +368,7 @@ export interface SourceInfo_PositionsEntry {
 
 export interface SourceInfo_MacroCallsEntry {
   key: number;
-  value?: Expr;
+  value?: Expr | undefined;
 }
 
 /** A specific position in source. */
@@ -1877,10 +1893,10 @@ export const SourcePosition = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }

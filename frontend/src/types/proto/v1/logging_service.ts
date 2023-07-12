@@ -78,8 +78,8 @@ export interface LogEntity {
    * Format: users/{email}
    */
   creator: string;
-  createTime?: Date;
-  updateTime?: Date;
+  createTime?: Date | undefined;
+  updateTime?: Date | undefined;
   action: LogEntity_Action;
   level: LogEntity_Level;
   /**

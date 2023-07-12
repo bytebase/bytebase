@@ -25,7 +25,7 @@ export interface AdminExecuteRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The timeout for the request. */
-  timeout?: Duration;
+  timeout?: Duration | undefined;
 }
 
 export interface AdminExecuteResponse {
@@ -125,7 +125,7 @@ export interface QueryRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The timeout for the request. */
-  timeout?: Duration;
+  timeout?: Duration | undefined;
 }
 
 export interface QueryResponse {
@@ -152,7 +152,9 @@ export interface QueryResult {
   /** The error message if the query failed. */
   error: string;
   /** The time it takes to execute the query. */
-  latency?: Duration;
+  latency?:
+    | Duration
+    | undefined;
   /** The query statement for the result. */
   statement: string;
 }
@@ -176,7 +178,7 @@ export interface RowValue {
     | number
     | undefined;
   /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
-  valueValue?: any;
+  valueValue?: any | undefined;
 }
 
 export interface Advice {
@@ -1700,10 +1702,10 @@ export interface SQLServiceClient<CallOptionsExt = {}> {
   ): AsyncIterable<AdminExecuteResponse>;
 }
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }

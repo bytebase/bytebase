@@ -60,8 +60,8 @@ export interface Anomaly {
   databaseBackupPolicyViolationDetail?: Anomaly_DatabaseBackupPolicyViolationDetail | undefined;
   databaseBackupMissingDetail?: Anomaly_DatabaseBackupMissingDetail | undefined;
   databaseSchemaDriftDetail?: Anomaly_DatabaseSchemaDriftDetail | undefined;
-  createTime?: Date;
-  updateTime?: Date;
+  createTime?: Date | undefined;
+  updateTime?: Date | undefined;
 }
 
 /** AnomalyType is the type of the anomaly. */
@@ -235,7 +235,7 @@ export interface Anomaly_DatabaseBackupMissingDetail {
   /** expected_schedule is the expected backup plan schedule in the database. */
   expectedSchedule: BackupPlanSchedule;
   /** latest_backup_time is the latest backup time in the database. */
-  latestBackupTime?: Date;
+  latestBackupTime?: Date | undefined;
 }
 
 /** DatabaseSchemaDriftDetail is the detail for database schema drift anomaly. */
