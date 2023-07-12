@@ -570,7 +570,9 @@
       "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
       "skip-approval": "Saltar aprobación manual",
       "query-data": "Consulta de datos",
-      "export-data": "Exportación de datos"
+      "export-data": "Exportación de datos",
+      "disallowed": "no permitido",
+      "copy-data-from-sql-editor": "Copiar datos del editor de SQL"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",

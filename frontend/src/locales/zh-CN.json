@@ -567,7 +567,9 @@
       "description": "配置审批流来控制数据的查询和导出。{link}",
       "skip-approval": "跳过人工审批",
       "query-data": "数据查询",
-      "export-data": "数据导出"
+      "export-data": "数据导出",
+      "disallowed": "禁止",
+      "copy-data-from-sql-editor": "从 SQL 编辑器复制数据"
     },
     "release": {
       "new-version-available": "有新版本可更新",
