@@ -18,8 +18,9 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref, watchEffect } from "vue";
-import { _RouteLocationBase } from "vue-router";
+import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { v4 as uuidv4 } from "uuid";
 
 import { useTitle } from "@vueuse/core";
 import { idFromSlug } from "@/utils";
@@ -32,7 +33,11 @@ import {
   Plan_Spec,
   Plan_Step,
 } from "@/types/proto/v1/rollout_service";
-import { experimentalFetchIssueByUID } from "@/store";
+import {
+  experimentalFetchIssueByUID,
+  useDatabaseV1Store,
+  useProjectV1Store,
+} from "@/store";
 import {
   IssueDetailPage,
   provideIssueContext,
@@ -52,6 +57,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 
+const route = useRoute();
 const state = reactive<LocalState>({
   showFeatureModal: false,
 });
@@ -75,15 +81,86 @@ const tryFetchIssue = async (uid: string) => {
   ready.value = true;
 };
 
+const tryInitializeIssue = async (uid: string) => {
+  ready.value = false;
+  // if (uid === String(UNKNOWN_ID)) {
+  //   issue.value = unknownIssue();
+  // }
+  // if (uid === String(EMPTY_ID)) {
+  //   issue.value = emptyIssue();
+  // }
+
+  const project = await useProjectV1Store().getOrFetchProjectByUID(
+    route.query.project as string
+  );
+  // const template = route.query.template as TemplateType;
+
+  issue.value = emptyIssue();
+  issue.value.project = project.name;
+  issue.value.projectEntity = project;
+
+  const test = async (
+    type: Plan_ChangeDatabaseConfig_Type,
+    targets: string[]
+  ) => {
+    const specs = targets.map((target) => {
+      const config = Plan_ChangeDatabaseConfig.fromJSON({
+        target,
+        // sheet: `${project.name}/sheets/101`,
+        sheet: `${project.name}/sheets/10086`,
+        type,
+        rollbackEnabled: true,
+      });
+      const spec = Plan_Spec.fromJSON({
+        changeDatabaseConfig: config,
+        id: uuidv4(),
+      });
+      return spec;
+    });
+    const step = Plan_Step.fromJSON({
+      specs,
+    });
+    const plan = Plan.fromJSON({
+      steps: [step],
+    });
+    console.log("plan", plan);
+    issue.value.plan = plan.name;
+    issue.value.planEntity = plan;
+    const rollout = await rolloutServiceClient.previewRollout({
+      project: project.name,
+      plan,
+    });
+    console.log("rollout", rollout);
+    issue.value.rollout = rollout.name;
+    issue.value.rolloutEntity = rollout;
+  };
+
+  if (route.query.mode === "tenant") {
+    await test(Plan_ChangeDatabaseConfig_Type.DATA, [
+      `${project.name}/deploymentConfig`,
+    ]);
+  } else {
+    const databaseUIDList = (route.query.databaseList as string).split(",");
+
+    const databaseList = await Promise.all(
+      databaseUIDList.map((uid) =>
+        useDatabaseV1Store().getOrFetchDatabaseByUID(uid)
+      )
+    );
+    await test(
+      Plan_ChangeDatabaseConfig_Type.DATA,
+      databaseList.map((db) => db.name)
+    );
+  }
+
+  ready.value = true;
+};
+
 watchEffect(() => {
   const uid = issueUID.value;
 
-  if (uid === String(UNKNOWN_ID)) {
-    issue.value = unknownIssue();
-    return;
-  }
-  if (uid === String(EMPTY_ID)) {
-    issue.value = emptyIssue();
+  if (uid === String(UNKNOWN_ID) || uid === String(EMPTY_ID)) {
+    tryInitializeIssue(uid);
     return;
   }
 
@@ -140,11 +217,12 @@ const tryCreate = async () => {
     //     steps: [step],
     //   },
     // });
-    await rolloutServiceClient.previewRollout({
+    const rollout = await rolloutServiceClient.previewRollout({
       project: projectResource,
       plan,
     });
     console.log("plan", plan);
+    console.log("rollout", rollout);
     // const issue = await issueServiceClient.createIssue({
     //   parent: projectResource,
     //   review: {
