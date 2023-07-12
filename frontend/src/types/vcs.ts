@@ -10,8 +10,8 @@ export type VCSUIType =
   | "GITLAB_SELF_HOST"
   | "GITLAB_COM"
   | "GITHUB_COM"
+  | "GITHUB_ENTERPRISE"
   | "BITBUCKET_ORG";
-
 export interface VCSConfig {
   type: ExternalVersionControl_Type;
   uiType: VCSUIType;
