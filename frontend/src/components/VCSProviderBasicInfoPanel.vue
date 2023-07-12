@@ -4,7 +4,7 @@
     {{ $t("gitops.setting.add-git-provider.choose") }}
     <span class="text-red-600">*</span>
   </div>
-  <div class="pt-4 radio-set-row">
+  <div class="flex flex-wrap pt-4 radio-set-row gap-4">
     <label class="radio space-x-2">
       <input
         v-model="config.uiType"
@@ -49,6 +49,19 @@
     <label class="radio space-x-2">
       <input
         v-model="config.uiType"
+        name="GitHub Enterprise"
+        tabindex="-1"
+        type="radio"
+        class="btn"
+        value="GITHUB_ENTERPRISE"
+        @change="changeUIType()"
+      />
+      <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+      <span class="whitespace-nowrap">GitHub Enterprise</span>
+    </label>
+    <label class="radio space-x-2">
+      <input
+        v-model="config.uiType"
         name="Bitbucket.org"
         tabindex="-1"
         type="radio"
@@ -59,21 +72,6 @@
       <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
       <span class="whitespace-nowrap">Bitbucket.org</span>
     </label>
-  </div>
-  <div class="mt-4 relative">
-    <div class="relative flex justify-start">
-      <span class="pr-2 bg-white text-xs text-control-light">
-        {{ $t("common.coming-later") }}
-      </span>
-    </div>
-  </div>
-  <div class="mt-2 flex flex-row itmes-center space-x-4 text-xs">
-    <div class="flex flex-row space-x-2 items-center text-control">
-      <div class="h-5 w-5">
-        <img src="../assets/github-logo.svg" />
-      </div>
-      <label class="whitespace-nowrap">GitHub Enterprise</label>
-    </div>
   </div>
   <div class="mt-6 pt-6 border-t border-block-border textlabel">
     {{ instanceUrlLabel }} <span class="text-red-600">*</span>
@@ -155,7 +153,11 @@ export default defineComponent({
           return "GitLab.com";
         }
       } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
-        return "GitHub.com";
+        if (props.config.uiType == "GITHUB_COM") {
+          return "GitHub.com";
+        } else if (props.config.uiType === "GITHUB_ENTERPRISE") {
+          return "GitHub Enterprise";
+        }
       } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return "Bitbucket.org";
       }
@@ -187,7 +189,11 @@ export default defineComponent({
           return "https://gitlab.com";
         }
       } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
-        return "https://github.com";
+        if (props.config.uiType == "GITHUB_COM") {
+          return "https://github.com";
+        } else if (props.config.uiType == "GITHUB_ENTERPRISE") {
+          return "https://github.companyname.com";
+        }
       } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return "https://bitbucket.org";
       }
@@ -197,7 +203,8 @@ export default defineComponent({
     // github.com instance url is always https://github.com
     const instanceUrlDisabled = computed((): boolean => {
       return (
-        props.config.type === ExternalVersionControl_Type.GITHUB ||
+        (props.config.type === ExternalVersionControl_Type.GITHUB &&
+          props.config.uiType == "GITHUB_COM") ||
         props.config.type === ExternalVersionControl_Type.BITBUCKET ||
         (props.config.type === ExternalVersionControl_Type.GITLAB &&
           props.config.uiType == "GITLAB_COM")
@@ -255,6 +262,13 @@ export default defineComponent({
         props.config.instanceUrl = "https://github.com";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = "GitHub.com";
+      } else if (props.config.uiType == "GITHUB_ENTERPRISE") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = ExternalVersionControl_Type.GITHUB;
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.instanceUrl = "";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.name = "Self Hosted GitHub";
       } else if (props.config.uiType == "BITBUCKET_ORG") {
         // eslint-disable-next-line vue/no-mutating-props
         props.config.type = ExternalVersionControl_Type.BITBUCKET;
