@@ -71,7 +71,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
     uid: nextUID(),
   });
   plan.name = `${project.name}/plans/${plan.uid}`;
-  if (route.query.mode === "tenant") {
+  if (route.query.mode === "tenant" && databaseUIDList.length === 0) {
     // build tenant plan
     const spec = await buildSpecForTenant(params);
     plan.steps = [
