@@ -185,6 +185,8 @@ message ListPoliciesResponse {
 }
 
 message Policy {
+  reserved 10;
+
   // The name of the policy.
   // Format: {resource name}/policies/{policy type}
   // Workspace resource name: "".
@@ -205,7 +207,6 @@ message Policy {
     DeploymentApprovalPolicy deployment_approval_policy = 7;
     BackupPlanPolicy backup_plan_policy = 8;
     SensitiveDataPolicy sensitive_data_policy = 9;
-    AccessControlPolicy access_control_policy = 10;
     SQLReviewPolicy sql_review_policy = 11;
     SlowQueryPolicy slow_query_policy = 12;
     DisableCopyDataPolicy disable_copy_data_policy = 16;
@@ -221,13 +222,14 @@ message Policy {
 }
 
 enum PolicyType {
+  reserved 6;
+
   POLICY_TYPE_UNSPECIFIED = 0;
   WORKSPACE_IAM = 1;
   DEPLOYMENT_APPROVAL = 2;
   BACKUP_PLAN = 3;
   SQL_REVIEW = 4;
   SENSITIVE_DATA = 5;
-  ACCESS_CONTROL = 6;
   SLOW_QUERY = 7;
   DISABLE_COPY_DATA = 8;
 }
@@ -298,14 +300,6 @@ message SensitiveData {
 enum SensitiveDataMaskType {
   MASK_TYPE_UNSPECIFIED = 0;
   DEFAULT = 1;
-}
-
-message AccessControlPolicy {
-  repeated AccessControlRule disallow_rules = 1;
-}
-
-message AccessControlRule {
-  bool full_database = 1;
 }
 
 message SQLReviewPolicy {
