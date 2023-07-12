@@ -572,7 +572,7 @@
       "query-data": "Consulta de datos",
       "export-data": "Exportación de datos",
       "disallowed": "no permitido",
-      "copy-data-from-sql-editor": "Copiar datos del editor SQL"
+      "copy-data-from-sql-editor": "Copiar datos del editor de SQL"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",

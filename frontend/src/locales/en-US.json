@@ -572,7 +572,7 @@
       "query-data": "Query Data",
       "export-data": "Export Data",
       "disallowed": "Disallowed",
-      "copy-data-from-sql-editor": "Copy data from SQL editor"
+      "copy-data-from-sql-editor": "Copy Data From SQL Editor"
     },
     "release": {
       "new-version-available": "New version is available",
