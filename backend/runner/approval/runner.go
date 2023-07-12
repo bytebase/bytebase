@@ -181,27 +181,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return false, err
 	}
 
-	// For grant request, we will use a default approval template(Project owner) if no template is found.
-	if approvalTemplate == nil && issue.Type == api.IssueGrantRequest {
-		approvalTemplate = &storepb.ApprovalTemplate{
-			Flow: &storepb.ApprovalFlow{
-				Steps: []*storepb.ApprovalStep{
-					{
-						Type: storepb.ApprovalStep_ANY,
-						Nodes: []*storepb.ApprovalNode{
-							{
-								Type: storepb.ApprovalNode_ANY_IN_GROUP,
-								Payload: &storepb.ApprovalNode_GroupValue_{
-									GroupValue: storepb.ApprovalNode_PROJECT_OWNER,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-	}
-
 	payload.Approval = &storepb.IssuePayloadApproval{
 		ApprovalFindingDone: true,
 		ApprovalTemplates:   nil,
