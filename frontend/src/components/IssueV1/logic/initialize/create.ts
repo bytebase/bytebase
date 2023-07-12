@@ -6,12 +6,7 @@ import {
   useEnvironmentV1Store,
   useProjectV1Store,
 } from "@/store";
-import {
-  ComposedDatabase,
-  ComposedProject,
-  emptyIssue,
-  UNKNOWN_ID,
-} from "@/types";
+import { ComposedProject, emptyIssue, UNKNOWN_ID } from "@/types";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -44,7 +39,7 @@ export const createIssue = async (route: _RouteLocationBase) => {
   issue.type = Issue_Type.DATABASE_CHANGE;
   issue.status = IssueStatus.OPEN;
 
-  const databaseUIDList = (route.query.databaseList as string)
+  const databaseUIDList = ((route.query.databaseList as string) || "")
     .split(",")
     .filter((uid) => uid && uid !== String(UNKNOWN_ID));
   await prepareDatabaseList(databaseUIDList, project.uid);
@@ -78,7 +73,12 @@ export const buildPlan = async (params: CreateIssueParams) => {
   plan.name = `${project.name}/plans/${plan.uid}`;
   if (route.query.mode === "tenant") {
     // build tenant plan
-    console.log("TBD tenant");
+    const spec = await buildSpecForTenant(params);
+    plan.steps = [
+      {
+        specs: [spec],
+      },
+    ];
     return plan;
   } else {
     // build standard plan
@@ -108,7 +108,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
       const { databases } = stageList[i];
       for (let j = 0; j < databases.length; j++) {
         const db = databases[j];
-        const spec = await buildSpecForDatabase(db, params);
+        const spec = await buildSpecForTarget(db.name, params);
         step.specs.push(spec);
       }
       plan.steps.push(step);
@@ -118,9 +118,13 @@ export const buildPlan = async (params: CreateIssueParams) => {
   }
 };
 
-export const buildSpecForDatabase = async (
-  database: ComposedDatabase,
-  { route }: CreateIssueParams
+export const buildSpecForTenant = async (params: CreateIssueParams) => {
+  return buildSpecForTarget(`${params.project.name}/deploymentConfig`, params);
+};
+
+export const buildSpecForTarget = async (
+  target: string,
+  { project, route }: CreateIssueParams
 ) => {
   const template = route.query.template as TemplateType;
   const spec = Plan_Spec.fromJSON({
@@ -128,15 +132,20 @@ export const buildSpecForDatabase = async (
   });
   if (template === "bb.issue.database.data.update") {
     spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
-      target: database.name,
+      target,
       type: Plan_ChangeDatabaseConfig_Type.DATA,
-      sheet: "projects/-/sheets/101",
+      sheet: `${project.name}/sheets/${nextUID()}`,
     });
   }
   if (template === "bb.issue.database.schema.update") {
+    const type =
+      route.query.ghost === "1"
+        ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
+        : Plan_ChangeDatabaseConfig_Type.MIGRATE;
     spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
-      target: database.name,
-      type: Plan_ChangeDatabaseConfig_Type.MIGRATE,
+      target,
+      type,
+      sheet: `${project.name}/sheets/${nextUID()}`,
     });
   }
   return spec;

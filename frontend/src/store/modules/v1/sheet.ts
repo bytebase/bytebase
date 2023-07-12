@@ -11,7 +11,7 @@ import {
   sheetNamePrefix,
   getProjectAndSheetId,
 } from "./common";
-import { isSheetReadableV1 } from "@/utils";
+import { extractSheetUID, isSheetReadableV1 } from "@/utils";
 import { UNKNOWN_ID, SheetId, MaybeRef } from "@/types";
 
 interface SheetState {
@@ -297,6 +297,7 @@ export const useSheetByName = (name: MaybeRef<string>) => {
     () => unref(name),
     (name) => {
       if (!name) return;
+      if (extractSheetUID(name) === String(UNKNOWN_ID)) return;
 
       ready.value = false;
       store.getOrFetchSheetByName(name).finally(() => {
