@@ -56,7 +56,7 @@ export interface CreatePlanRequest {
    */
   parent: string;
   /** The plan to create. */
-  plan?: Plan;
+  plan?: Plan | undefined;
 }
 
 export interface UpdatePlanRequest {
@@ -66,9 +66,11 @@ export interface UpdatePlanRequest {
    * The plan's `name` field is used to identify the plan to update.
    * Format: projects/{project}/plans/{plan}
    */
-  plan?: Plan;
+  plan?:
+    | Plan
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface Plan {
@@ -97,7 +99,9 @@ export interface Plan_Step {
 
 export interface Plan_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
-  earliestAllowedTime?: Date;
+  earliestAllowedTime?:
+    | Date
+    | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
@@ -570,7 +574,7 @@ export interface PreviewRolloutRequest {
    */
   project: string;
   /** The plan used to preview rollout. */
-  plan?: Plan;
+  plan?: Plan | undefined;
 }
 
 export interface Rollout {
@@ -953,8 +957,8 @@ export interface TaskRun {
   creator: string;
   /** Format: user:hello@world.com */
   updater: string;
-  createTime?: Date;
-  updateTime?: Date;
+  createTime?: Date | undefined;
+  updateTime?: Date | undefined;
   title: string;
   status: TaskRun_Status;
   /** Below are the results of a task run. */
@@ -4813,10 +4817,10 @@ export interface RolloutServiceClient<CallOptionsExt = {}> {
   ): Promise<ListPlanCheckRunsResponse>;
 }
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
