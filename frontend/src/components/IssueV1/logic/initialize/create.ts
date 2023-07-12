@@ -148,6 +148,12 @@ export const buildSpecForTarget = async (
       sheet: `${project.name}/sheets/${nextUID()}`,
     });
   }
+  if (template === "bb.issue.database.schema.baseline") {
+    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
+      target,
+      type: Plan_ChangeDatabaseConfig_Type.BASELINE,
+    });
+  }
   return spec;
 };
 

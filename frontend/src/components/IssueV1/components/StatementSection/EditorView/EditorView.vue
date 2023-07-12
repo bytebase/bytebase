@@ -363,7 +363,7 @@ const handleMonacoEditorReady = () => {
 watch(
   [sheetStatement, sheetReady],
   ([statement, ready]) => {
-    if (!ready) return;
+    // if (!ready) return;
     state.statement = statement;
   },
   { immediate: true }
