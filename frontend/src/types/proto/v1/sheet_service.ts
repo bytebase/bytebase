@@ -15,7 +15,7 @@ export interface CreateSheetRequest {
    */
   parent: string;
   /** The sheet to create. */
-  sheet?: Sheet;
+  sheet?: Sheet | undefined;
 }
 
 export interface GetSheetRequest {
@@ -35,7 +35,9 @@ export interface UpdateSheetRequest {
    * The sheet's `name` field is used to identify the sheet to update.
    * Format: projects/{project}/sheets/{sheet}
    */
-  sheet?: Sheet;
+  sheet?:
+    | Sheet
+    | undefined;
   /**
    * The list of fields to be updated.
    * Fields are specified relative to the sheet.
@@ -46,7 +48,7 @@ export interface UpdateSheetRequest {
    * - `starred`
    * - `visibility`
    */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface UpdateSheetOrganizerRequest {
@@ -56,7 +58,9 @@ export interface UpdateSheetOrganizerRequest {
    * The organizer's `sheet` field is used to identify the sheet.
    * Format: projects/{project}/sheets/{sheet}
    */
-  organizer?: SheetOrganizer;
+  organizer?:
+    | SheetOrganizer
+    | undefined;
   /**
    * The list of fields to be updated.
    * Fields are specified relative to the sheet organizer.
@@ -64,7 +68,7 @@ export interface UpdateSheetOrganizerRequest {
    * - `starred`
    * - `pinned`
    */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface SheetOrganizer {
@@ -158,9 +162,13 @@ export interface Sheet {
    */
   creator: string;
   /** The create time of the sheet. */
-  createTime?: Date;
+  createTime?:
+    | Date
+    | undefined;
   /** The last update time of the sheet. */
-  updateTime?: Date;
+  updateTime?:
+    | Date
+    | undefined;
   /**
    * The content of the sheet.
    * By default, it will be cut off, if it doesn't match the `content_size`, you can
@@ -1678,10 +1686,10 @@ export interface SheetServiceClient<CallOptionsExt = {}> {
   syncSheets(request: DeepPartial<SyncSheetsRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }

@@ -49,12 +49,12 @@ export function nullValueToJSON(object: NullValue): string {
  */
 export interface Struct {
   /** Unordered map of dynamically typed values. */
-  fields: { [key: string]: any };
+  fields: { [key: string]: any | undefined };
 }
 
 export interface Struct_FieldsEntry {
   key: string;
-  value?: any;
+  value?: any | undefined;
 }
 
 /**
@@ -83,9 +83,11 @@ export interface Value {
     | boolean
     | undefined;
   /** Represents a structured value. */
-  structValue?: { [key: string]: any };
+  structValue?:
+    | { [key: string]: any }
+    | undefined;
   /** Represents a repeated `Value`. */
-  listValue?: Array<any>;
+  listValue?: Array<any> | undefined;
 }
 
 /**
@@ -141,8 +143,8 @@ export const Struct = {
   fromJSON(object: any): Struct {
     return {
       fields: isObject(object.fields)
-        ? Object.entries(object.fields).reduce<{ [key: string]: any }>((acc, [key, value]) => {
-          acc[key] = value as any;
+        ? Object.entries(object.fields).reduce<{ [key: string]: any | undefined }>((acc, [key, value]) => {
+          acc[key] = value as any | undefined;
           return acc;
         }, {})
         : {},
@@ -166,12 +168,15 @@ export const Struct = {
 
   fromPartial(object: DeepPartial<Struct>): Struct {
     const message = createBaseStruct();
-    message.fields = Object.entries(object.fields ?? {}).reduce<{ [key: string]: any }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = value;
-      }
-      return acc;
-    }, {});
+    message.fields = Object.entries(object.fields ?? {}).reduce<{ [key: string]: any | undefined }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      {},
+    );
     return message;
   },
 

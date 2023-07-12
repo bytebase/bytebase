@@ -82,7 +82,9 @@ export interface ListIdentityProvidersResponse {
 
 export interface CreateIdentityProviderRequest {
   /** The identity provider to create. */
-  identityProvider?: IdentityProvider;
+  identityProvider?:
+    | IdentityProvider
+    | undefined;
   /**
    * The ID to use for the identity provider, which will become the final component of
    * the identity provider's resource name.
@@ -100,9 +102,11 @@ export interface UpdateIdentityProviderRequest {
    * The identity provider's `name` field is used to identify the identity provider to update.
    * Format: idps/{identity_provider}
    */
-  identityProvider?: IdentityProvider;
+  identityProvider?:
+    | IdentityProvider
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteIdentityProviderRequest {
@@ -123,7 +127,7 @@ export interface UndeleteIdentityProviderRequest {
 
 export interface TestIdentityProviderRequest {
   /** The identity provider to test connection including uncreated. */
-  identityProvider?: IdentityProvider;
+  identityProvider?: IdentityProvider | undefined;
   oauth2Context?: OAuth2IdentityProviderTestRequestContext | undefined;
 }
 
@@ -147,7 +151,7 @@ export interface IdentityProvider {
   title: string;
   domain: string;
   type: IdentityProviderType;
-  config?: IdentityProviderConfig;
+  config?: IdentityProviderConfig | undefined;
 }
 
 export interface IdentityProviderConfig {
@@ -163,7 +167,7 @@ export interface OAuth2IdentityProviderConfig {
   clientId: string;
   clientSecret: string;
   scopes: string[];
-  fieldMapping?: FieldMapping;
+  fieldMapping?: FieldMapping | undefined;
   skipTlsVerify: boolean;
 }
 
@@ -173,7 +177,7 @@ export interface OIDCIdentityProviderConfig {
   clientId: string;
   clientSecret: string;
   scopes: string[];
-  fieldMapping?: FieldMapping;
+  fieldMapping?: FieldMapping | undefined;
   skipTlsVerify: boolean;
 }
 

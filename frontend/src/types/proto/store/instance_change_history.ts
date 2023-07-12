@@ -5,7 +5,7 @@ import { PushEvent } from "./vcs";
 export const protobufPackage = "bytebase.store";
 
 export interface InstanceChangeHistoryPayload {
-  pushEvent?: PushEvent;
+  pushEvent?: PushEvent | undefined;
 }
 
 function createBaseInstanceChangeHistoryPayload(): InstanceChangeHistoryPayload {
