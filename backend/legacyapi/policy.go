@@ -47,6 +47,8 @@ const (
 	PolicyTypeAccessControl PolicyType = "bb.policy.access-control"
 	// PolicyTypeSlowQuery is the slow query policy type.
 	PolicyTypeSlowQuery PolicyType = "bb.policy.slow-query"
+	// PolicyTypeDisableCopyData is the disable copy data policy type.
+	PolicyTypeDisableCopyData PolicyType = "bb.policy.disable-copy-data"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -272,6 +274,29 @@ func UnmarshalSlowQueryPolicy(payload string) (*SlowQueryPolicy, error) {
 
 // String will return the string representation of the policy.
 func (p *SlowQueryPolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// DisableCopyDataPolicy is the policy configuration for disabling copying data.
+type DisableCopyDataPolicy struct {
+	Active bool `json:"active"`
+}
+
+// UnmarshalDisableCopyDataPolicyPolicy will unmarshal payload to disable copy data policy.
+func UnmarshalDisableCopyDataPolicyPolicy(payload string) (*DisableCopyDataPolicy, error) {
+	var p DisableCopyDataPolicy
+	if err := json.Unmarshal([]byte(payload), &p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal disable copy data policy %q", payload)
+	}
+	return &p, nil
+}
+
+// String will return the string representation of the policy.
+func (p *DisableCopyDataPolicy) String() (string, error) {
 	s, err := json.Marshal(p)
 	if err != nil {
 		return "", err
