@@ -37,9 +37,9 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  expression?: ParsedExpr;
-  template?: ApprovalTemplate;
-  condition?: Expr;
+  expression?: ParsedExpr | undefined;
+  template?: ApprovalTemplate | undefined;
+  condition?: Expr | undefined;
 }
 
 export interface ExternalApprovalSetting {

@@ -7,10 +7,12 @@ export const protobufPackage = "bytebase.store";
 
 export interface SheetPayload {
   type: SheetPayload_Type;
-  vcsPayload?: SheetPayload_VCSPayload;
+  vcsPayload?:
+    | SheetPayload_VCSPayload
+    | undefined;
   /** used_by_issues link to the issues where the sheet is used. */
   usedByIssues: SheetPayload_UsedByIssue[];
-  schemaDesign?: SheetPayload_SchemaDesign;
+  schemaDesign?: SheetPayload_SchemaDesign | undefined;
 }
 
 /** Type of the SheetPayload. */
@@ -440,10 +442,10 @@ export const SheetPayload_SchemaDesign = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
