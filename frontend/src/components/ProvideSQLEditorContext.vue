@@ -69,6 +69,10 @@ const prepareAccessControlPolicy = async () => {
       policyType: PolicyType.WORKSPACE_IAM,
       resourceType: PolicyResourceType.WORKSPACE,
     });
+  await policyV1Store.fetchPolicies({
+    resourceType: PolicyResourceType.ENVIRONMENT,
+    policyType: PolicyType.DISABLE_COPY_DATA,
+  });
 };
 
 const prepareAccessibleDatabaseList = async () => {
