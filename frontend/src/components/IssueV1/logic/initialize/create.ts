@@ -119,7 +119,9 @@ export const buildPlan = async (params: CreateIssueParams) => {
 };
 
 export const buildSpecForTenant = async (params: CreateIssueParams) => {
-  return buildSpecForTarget(`${params.project.name}/deploymentConfig`, params);
+  const group = (params.route.query.databaseGroupName as string) || "";
+  const target = group ? group : `${params.project.name}/deploymentConfig`;
+  return buildSpecForTarget(target, params);
 };
 
 export const buildSpecForTarget = async (
