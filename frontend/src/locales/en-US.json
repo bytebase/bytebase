@@ -570,7 +570,9 @@
       "description": "Configure approval flow to control data query and export. {link}",
       "skip-approval": "Skip approval",
       "query-data": "Query Data",
-      "export-data": "Export Data"
+      "export-data": "Export Data",
+      "disallowed": "Disallowed",
+      "copy-data-from-sql-editor": "Copy data from SQL editor"
     },
     "release": {
       "new-version-available": "New version is available",

@@ -2,6 +2,7 @@ import { type Ref, type InjectionKey, provide, inject } from "vue";
 
 export type SQLResultViewContext = {
   dark: Ref<boolean>;
+  disallowCopyingData: Ref<boolean>;
 };
 
 export const KEY = Symbol(
