@@ -533,7 +533,7 @@ func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func oracleSyntaxCheck(statement string) (any, []Advice) {
-	tree, err := parser.ParsePLSQL(statement + ";")
+	tree, _, err := parser.ParsePLSQL(statement + ";")
 	if err != nil {
 		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
 			return nil, []Advice{
