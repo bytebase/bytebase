@@ -335,7 +335,7 @@ devDependencies:
     specifier: 3.2.1
     version: 3.2.1(postcss@8.4.21)
   ts-proto:
-    specifier: ^v1.152.1
+    specifier: ^1.152.1
     version: 1.152.1
   typescript:
     specifier: 4.8.4
