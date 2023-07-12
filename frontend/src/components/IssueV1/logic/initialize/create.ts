@@ -147,6 +147,7 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
     project: params.project.name,
     plan,
   });
+  // Touch UIDs for each object for local referencing
   rollout.plan = plan.name;
   rollout.uid = nextUID();
   rollout.name = `${params.project.name}/rollouts/${rollout.uid}`;
@@ -199,7 +200,7 @@ const prepareDatabaseListByProject = async (project: string) => {
 };
 
 const state = {
-  uid: 101,
+  uid: 10000000,
 };
 const nextUID = () => {
   return String(state.uid++);
