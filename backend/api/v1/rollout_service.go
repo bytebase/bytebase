@@ -209,7 +209,19 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if len(pipelineCreate.Stages) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment")
 	}
-	firstEnvironmentID := pipelineCreate.Stages[0].EnvironmentID
+	pipeline, err := s.createPipeline(ctx, creatorID, pipelineCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update pipeline ID in the plan.
+	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:         planID,
+		UpdaterID:   creatorID,
+		PipelineUID: &pipelineCreate.ID,
+	}); err != nil {
+		return nil, err
+	}
 
 	issueCreateMessage := &store.IssueMessage{
 		Project:     project,
@@ -218,10 +230,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		Description: plan.Description,
 		Assignee:    nil,
 	}
-
-	// Update planMessage.PipelineUID = &pipeline.ID
-
 	// Find an assignee.
+	firstEnvironmentID := pipelineCreate.Stages[0].EnvironmentID
 	assignee, err := s.taskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreateMessage.Project.UID, issueCreateMessage.Type)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find a default assignee, error: %v", err)
@@ -243,10 +253,6 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	}
 	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
 
-	pipeline, err := s.createPipeline(ctx, creatorID, pipelineCreate)
-	if err != nil {
-		return nil, err
-	}
 	issueCreateMessage.PipelineUID = &pipeline.ID
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
 	if err != nil {

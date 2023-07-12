@@ -34,9 +34,10 @@ type FindPlanMessage struct {
 
 // UpdatePlanMessage is the message to update a plan.
 type UpdatePlanMessage struct {
-	UID       int64
-	UpdaterID int
-	Config    *storepb.PlanConfig
+	UID         int64
+	PipelineUID *int
+	Config      *storepb.PlanConfig
+	UpdaterID   int
 }
 
 // CreatePlan creates a new plan.
@@ -191,6 +192,9 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 			return errors.Wrapf(err, "failed to marshal plan config")
 		}
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, config)
+	}
+	if v := patch.PipelineUID; v != nil {
+		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, v)
 	}
 
 	args = append(args, patch.UID)
