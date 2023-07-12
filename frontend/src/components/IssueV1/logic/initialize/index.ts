@@ -12,6 +12,7 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
 
   const issue = computedAsync(
     async () => {
+      console.log("call computed async", isCreating.value, issueSlug.value);
       if (isCreating.value) {
         return createIssue(route);
       } else {

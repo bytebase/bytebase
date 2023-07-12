@@ -1,4 +1,5 @@
 <template>
+  <div class="issue-debug">rollbackDetail: {{ rollbackDetail }}</div>
   <div
     v-if="shouldShowTips"
     class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
@@ -22,16 +23,19 @@ import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { RollbackDetail, UNKNOWN_ID, unknownIssue, unknownTask } from "@/types";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   buildIssueV1LinkWithTask,
   extractIssueUID,
   extractTaskUID,
   flattenTaskV1List,
 } from "@/utils";
-import { getRollbackTaskMappingFromQuery, useIssueContext } from "../../logic";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "../../logic";
 import { experimentalFetchIssueByUID } from "@/store";
+import {
+  databaseForTask,
+  getRollbackTaskMappingFromQuery,
+  useIssueContext,
+} from "../../logic";
 
 const { isCreating, issue, selectedTask } = useIssueContext();
 const route = useRoute();
@@ -51,10 +55,7 @@ const rollbackDetail = computed((): RollbackDetail | undefined => {
   if (!isCreating.value) return undefined;
   // Try to find out the relationship between databaseId and rollback issue/task
   // Id from the URL query.
-  const databaseUID = extractCoreDatabaseInfoFromDatabaseCreateTask(
-    issue.value.projectEntity,
-    selectedTask.value
-  ).uid;
+  const databaseUID = databaseForTask(issue.value, selectedTask.value).uid;
 
   const mapping = getRollbackTaskMappingFromQuery(route);
   return mapping.get(databaseUID);
@@ -62,7 +63,7 @@ const rollbackDetail = computed((): RollbackDetail | undefined => {
 
 const rollbackFromIssueUID = computed(() => {
   if (isCreating.value) {
-    return String(rollbackDetail.value?.issueId) || String(UNKNOWN_ID);
+    return String(rollbackDetail.value?.issueId ?? UNKNOWN_ID);
   }
   if (taskConfig.value) {
     return (
@@ -74,7 +75,7 @@ const rollbackFromIssueUID = computed(() => {
 
 const rollbackFromTaskUID = computed(() => {
   if (isCreating.value) {
-    return String(rollbackDetail.value?.taskId) || String(UNKNOWN_ID);
+    return String(rollbackDetail.value?.taskId ?? UNKNOWN_ID);
   }
   if (taskConfig.value) {
     return (

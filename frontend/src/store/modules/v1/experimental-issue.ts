@@ -15,6 +15,11 @@ import { useIssueStore } from "../issue";
 import { useProjectV1Store } from "./project";
 
 export const experimentalFetchIssueByUID = async (uid: string) => {
+  if (uid === "undefined") {
+    console.warn("undefined issue uid");
+    return unknownIssue();
+  }
+
   if (uid === String(EMPTY_ID)) return emptyIssue();
   if (uid === String(UNKNOWN_ID)) return unknownIssue();
 
