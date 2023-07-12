@@ -163,7 +163,7 @@ const tryChangeStep = (
   if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
     let authorizeUrl = `${state.config.instanceUrl}/oauth/authorize`;
     if (state.config.type === ExternalVersionControl_Type.GITHUB) {
-      authorizeUrl = `https://github.com/login/oauth/authorize`;
+      authorizeUrl = `${state.config.instanceUrl}/login/oauth/authorize`;
     } else if (state.config.type === ExternalVersionControl_Type.BITBUCKET) {
       authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
     }
