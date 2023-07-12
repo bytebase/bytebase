@@ -1,5 +1,5 @@
 <template>
-  <div class="relative select-none">
+  <div class="relative" :class="[disallowCopyingData && 'select-none']">
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div ref="wrapperRef" class="overflow-hidden" v-html="html"></div>
     <div v-if="truncated" class="absolute right-0 top-1/2 translate-y-[-50%]">
@@ -35,11 +35,13 @@ import { NButton } from "naive-ui";
 import { useResizeObserver } from "@vueuse/core";
 
 import { BBModal } from "@/bbkit";
+import { useSQLResultViewContext } from "../context";
 
 defineProps<{
   html?: string;
 }>();
 
+const { disallowCopyingData } = useSQLResultViewContext();
 const wrapperRef = ref<HTMLDivElement>();
 const truncated = ref(false);
 const showModal = ref(false);

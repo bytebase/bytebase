@@ -51,6 +51,14 @@
               {{ $t("settings.access-control.skip-approval") }}
             </NCheckbox>
           </BBTableCell>
+          <BBTableCell>
+            <NCheckbox
+              v-model:checked="policy.disallowCopyingDataFromSQLEditor"
+              :disabled="!allowAdmin"
+            >
+              {{ $t("settings.access-control.disallowed") }}
+            </NCheckbox>
+          </BBTableCell>
         </template>
       </BBTable>
 
@@ -82,7 +90,12 @@ import { NCheckbox } from "naive-ui";
 import { computed, reactive, watch, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { featureToRef, useCurrentUserV1, useEnvironmentV1List } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUserV1,
+  useEnvironmentV1List,
+} from "@/store";
 import { BBTableColumn } from "@/bbkit/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
@@ -102,6 +115,7 @@ interface EnvironmentPolicy {
   environment: Environment;
   allowQueryData: boolean;
   allowExportData: boolean;
+  disallowCopyingDataFromSQLEditor: boolean;
 }
 
 interface LocalState {
@@ -124,6 +138,7 @@ const state = reactive<LocalState>({
       environment,
       allowQueryData: defaultValue,
       allowExportData: defaultValue,
+      disallowCopyingDataFromSQLEditor: defaultValue,
     };
   }),
 });
@@ -145,6 +160,9 @@ const COLUMN_LIST = computed((): BBTableColumn[] => [
   {
     title: t("settings.access-control.export-data"),
   },
+  {
+    title: t("settings.access-control.copy-data-from-sql-editor"),
+  },
 ]);
 
 onMounted(async () => {
@@ -153,42 +171,70 @@ onMounted(async () => {
     return;
   }
 
-  const policy = await policyStore.getOrFetchPolicyByName(
-    "policies/WORKSPACE_IAM"
-  );
-  if (!policy || !policy.workspaceIamPolicy) {
-    state.isLoading = false;
-    return;
-  }
-
-  for (const binding of policy.workspaceIamPolicy.bindings) {
-    if (!binding.members.includes("allUsers")) {
-      continue;
+  const processWorkspaceIAMPolicy = async () => {
+    const policy = await policyStore.getOrFetchPolicyByName(
+      "policies/WORKSPACE_IAM"
+    );
+    if (!policy || !policy.workspaceIamPolicy) {
+      return;
     }
 
-    if (binding.parsedExpr?.expr) {
-      const simpleExpr = resolveCELExpr(binding.parsedExpr.expr);
-      const args = simpleExpr.args;
-      if (
-        simpleExpr.operator !== "@in" ||
-        args[0] !== "resource.environment_name"
-      ) {
+    for (const binding of policy.workspaceIamPolicy.bindings) {
+      if (!binding.members.includes("allUsers")) {
         continue;
       }
 
-      const environmentNameList = args[1] as string[];
-      for (const environmentPolicy of state.environmentPolicyList) {
-        if (environmentNameList.includes(environmentPolicy.environment.name)) {
-          if (binding.role === "roles/QUERIER") {
-            environmentPolicy.allowQueryData = true;
-          } else if (binding.role === "roles/EXPORTER") {
-            environmentPolicy.allowExportData = true;
+      if (binding.parsedExpr?.expr) {
+        const simpleExpr = resolveCELExpr(binding.parsedExpr.expr);
+        const args = simpleExpr.args;
+        if (
+          simpleExpr.operator !== "@in" ||
+          args[0] !== "resource.environment_name"
+        ) {
+          continue;
+        }
+
+        const environmentNameList = args[1] as string[];
+        for (const environmentPolicy of state.environmentPolicyList) {
+          if (
+            environmentNameList.includes(environmentPolicy.environment.name)
+          ) {
+            if (binding.role === "roles/QUERIER") {
+              environmentPolicy.allowQueryData = true;
+            } else if (binding.role === "roles/EXPORTER") {
+              environmentPolicy.allowExportData = true;
+            }
           }
         }
       }
     }
+  };
+  const processEnvironmentDisableCopyDataPolicy = async () => {
+    const policyList = await policyStore.fetchPolicies({
+      resourceType: PolicyResourceType.ENVIRONMENT,
+      policyType: PolicyType.DISABLE_COPY_DATA,
+    });
+    policyList.forEach((policy) => {
+      if (policy.disableCopyDataPolicy?.active) {
+        const environmentPolicy = state.environmentPolicyList.find(
+          (ep) => ep.environment.uid === policy.resourceUid
+        );
+        if (environmentPolicy) {
+          environmentPolicy.disallowCopyingDataFromSQLEditor = true;
+        }
+      }
+    });
+  };
+
+  try {
+    await Promise.allSettled([
+      processWorkspaceIAMPolicy(),
+      processEnvironmentDisableCopyDataPolicy(),
+    ]);
+    state.isLoading = true;
+  } finally {
+    state.isLoading = false;
   }
-  state.isLoading = false;
 });
 
 const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
@@ -225,7 +271,7 @@ const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
   return workspaceIamPolicy;
 };
 
-const upsertWorkspaceIAMPolicy = useDebounceFn(async () => {
+const upsertPolicy = useDebounceFn(async () => {
   if (!hasDataAccessControlFeature.value) {
     state.showFeatureModal = true;
     return;
@@ -235,18 +281,44 @@ const upsertWorkspaceIAMPolicy = useDebounceFn(async () => {
     return;
   }
 
-  await policyStore.createPolicy("", {
-    type: PolicyType.WORKSPACE_IAM,
-    resourceType: PolicyResourceType.WORKSPACE,
-    resourceUid: "1",
-    workspaceIamPolicy: buildWorkspaceIAMPolicy(state.environmentPolicyList),
+  const upsertWorkspaceIAMPolicy = async () => {
+    await policyStore.createPolicy("", {
+      type: PolicyType.WORKSPACE_IAM,
+      resourceType: PolicyResourceType.WORKSPACE,
+      resourceUid: "1",
+      workspaceIamPolicy: buildWorkspaceIAMPolicy(state.environmentPolicyList),
+    });
+  };
+
+  const upsertEnvironmentDisableCopyDataPolicy = async () => {
+    for (let i = 0; i < state.environmentPolicyList.length; i++) {
+      const environmentPolicy = state.environmentPolicyList[i];
+      await policyStore.createPolicy(environmentPolicy.environment.name, {
+        type: PolicyType.DISABLE_COPY_DATA,
+        resourceType: PolicyResourceType.ENVIRONMENT,
+        disableCopyDataPolicy: {
+          active: environmentPolicy.disallowCopyingDataFromSQLEditor,
+        },
+      });
+    }
+  };
+
+  await Promise.allSettled([
+    upsertWorkspaceIAMPolicy(),
+    upsertEnvironmentDisableCopyDataPolicy(),
+  ]);
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
   });
 }, 200);
 
 watch(
   () => state.environmentPolicyList,
   async () => {
-    await upsertWorkspaceIAMPolicy();
+    await upsertPolicy();
   },
   {
     deep: true,
