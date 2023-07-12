@@ -346,10 +346,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	sheet, err := getResourceNameForSheet(ctx, s, payload.SheetID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
-	}
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		UID: &task.InstanceID,
 	})
@@ -370,7 +366,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Project:      "",
 				Database:     payload.DatabaseName,
 				Table:        payload.TableName,
-				Sheet:        sheet,
+				Sheet:        getResourceNameForSheet(project, payload.SheetID),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
 			},
@@ -421,20 +417,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet")
-	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet not found")
-	}
-	sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet project")
-	}
-	if sheetProject == nil {
-		return nil, errors.Errorf("sheet project not found")
-	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
@@ -453,7 +435,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
-				Sheet:         fmt.Sprintf("%s%s/%s%d", projectNamePrefix, sheetProject.ResourceID, sheetIDPrefix, sheet.UID),
+				Sheet:         getResourceNameForSheet(project, payload.SheetID),
 				SchemaVersion: payload.SchemaVersion,
 			},
 		},
@@ -498,17 +480,9 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	sheetName, err := getResourceNameForSheet(ctx, s, payload.SheetID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet resource name")
-	}
 	var rollbackSheetName string
 	if payload.RollbackSheetID != 0 {
-		sheetName, err := getResourceNameForSheet(ctx, s, payload.RollbackSheetID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get rollback sheet resource name")
-		}
-		rollbackSheetName = sheetName
+		rollbackSheetName = getResourceNameForSheet(project, payload.RollbackSheetID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
@@ -530,7 +504,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:             sheetName,
+			Sheet:             getResourceNameForSheet(project, payload.SheetID),
 			SchemaVersion:     payload.SchemaVersion,
 			RollbackEnabled:   payload.RollbackEnabled,
 			RollbackSqlStatus: convertToRollbackSQLStatus(payload.RollbackSQLStatus),
@@ -1237,13 +1211,6 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
-		}
-		if sheet == nil {
-			return nil, nil, errors.Errorf("sheet %q not found", sheetID)
-		}
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
@@ -1275,13 +1242,6 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
-		}
-		if sheet == nil {
-			return nil, nil, errors.Errorf("sheet %q not found", sheetID)
-		}
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			SheetID:       sheetID,
 			SchemaVersion: c.SchemaVersion,
@@ -1311,13 +1271,6 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		sheetID, err := strconv.Atoi(sheetIDStr)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
-		}
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
-		}
-		if sheet == nil {
-			return nil, nil, errors.Errorf("sheet %q not found", sheetID)
 		}
 		var taskCreateList []*store.TaskMessage
 		// task "sync"
@@ -1374,13 +1327,6 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		sheetID, err := strconv.Atoi(sheetIDStr)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
-		}
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
-		}
-		if sheet == nil {
-			return nil, nil, errors.Errorf("sheet %q not found", sheetID)
 		}
 		payload := api.TaskDatabaseDataUpdatePayload{
 			SheetID:           sheetID,
@@ -2052,20 +1998,6 @@ func (s *RolloutService) createPipeline(ctx context.Context, creatorID int, pipe
 	return pipelineCreated, nil
 }
 
-func getResourceNameForSheet(ctx context.Context, s *store.Store, sheetUID int) (string, error) {
-	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get sheet")
-	}
-	if sheet == nil {
-		return "", errors.Errorf("sheet not found")
-	}
-	sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get sheet project")
-	}
-	if sheetProject == nil {
-		return "", errors.Errorf("sheet project not found")
-	}
-	return fmt.Sprintf("%s%s/%s%d", projectNamePrefix, sheetProject.ResourceID, sheetIDPrefix, sheet.UID), nil
+func getResourceNameForSheet(project *store.ProjectMessage, sheetUID int) string {
+	return fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, sheetIDPrefix, sheetUID)
 }

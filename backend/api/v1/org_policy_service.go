@@ -533,17 +533,17 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			}
 		}
 		return payload.String()
-	case v1pb.PolicyType_ACCESS_CONTROL:
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureAccessControl); err != nil {
-			return "", status.Errorf(codes.PermissionDenied, err.Error())
-		}
-		payload, err := convertToAccessControlPolicyPayload(policy.GetAccessControlPolicy())
+	case v1pb.PolicyType_SLOW_QUERY:
+		payload, err := convertToSlowQueryPolicyPayload(policy.GetSlowQueryPolicy())
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		return payload.String()
-	case v1pb.PolicyType_SLOW_QUERY:
-		payload, err := convertToSlowQueryPolicyPayload(policy.GetSlowQueryPolicy())
+	case v1pb.PolicyType_DISABLE_COPY_DATA:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureAccessControl); err != nil {
+			return "", status.Errorf(codes.PermissionDenied, err.Error())
+		}
+		payload, err := convertToDisableCopyDataPolicyPayload(policy.GetDisableCopyDataPolicy())
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -617,16 +617,16 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 			return nil, err
 		}
 		policy.Policy = payload
-	case api.PolicyTypeAccessControl:
-		pType = v1pb.PolicyType_ACCESS_CONTROL
-		payload, err := convertToV1PBAccessControlPolicy(policyMessage.Payload)
+	case api.PolicyTypeSlowQuery:
+		pType = v1pb.PolicyType_SLOW_QUERY
+		payload, err := convertToV1PBSlowQueryPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
 		policy.Policy = payload
-	case api.PolicyTypeSlowQuery:
-		pType = v1pb.PolicyType_SLOW_QUERY
-		payload, err := convertToV1PBSlowQueryPolicy(policyMessage.Payload)
+	case api.PolicyTypeDisableCopyData:
+		pType = v1pb.PolicyType_DISABLE_COPY_DATA
+		payload, err := convertToV1PBDisableCopyDataPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -753,38 +753,6 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 		Name:     policy.Name,
 		RuleList: ruleList,
 	}), nil
-}
-
-func convertToV1PBAccessControlPolicy(payloadStr string) (*v1pb.Policy_AccessControlPolicy, error) {
-	payload, err := api.UnmarshalAccessControlPolicy(payloadStr)
-	if err != nil {
-		return nil, err
-	}
-
-	var disallowRules []*v1pb.AccessControlRule
-	for _, rule := range payload.DisallowRuleList {
-		disallowRules = append(disallowRules, &v1pb.AccessControlRule{
-			FullDatabase: rule.FullDatabase,
-		})
-	}
-	return &v1pb.Policy_AccessControlPolicy{
-		AccessControlPolicy: &v1pb.AccessControlPolicy{
-			DisallowRules: disallowRules,
-		},
-	}, nil
-}
-
-func convertToAccessControlPolicyPayload(policy *v1pb.AccessControlPolicy) (*api.AccessControlPolicy, error) {
-	var disallowRuleList []api.AccessControlRule
-	for _, rule := range policy.DisallowRules {
-		disallowRuleList = append(disallowRuleList, api.AccessControlRule{
-			FullDatabase: rule.FullDatabase,
-		})
-	}
-
-	return &api.AccessControlPolicy{
-		DisallowRuleList: disallowRuleList,
-	}, nil
 }
 
 func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPolicy, error) {
@@ -989,6 +957,24 @@ func convertToSlowQueryPolicyPayload(policy *v1pb.SlowQueryPolicy) (*api.SlowQue
 	}, nil
 }
 
+func convertToV1PBDisableCopyDataPolicy(payloadStr string) (*v1pb.Policy_DisableCopyDataPolicy, error) {
+	payload, err := api.UnmarshalSlowQueryPolicy(payloadStr)
+	if err != nil {
+		return nil, err
+	}
+	return &v1pb.Policy_DisableCopyDataPolicy{
+		DisableCopyDataPolicy: &v1pb.DisableCopyDataPolicy{
+			Active: payload.Active,
+		},
+	}, nil
+}
+
+func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) (*api.DisableCopyDataPolicy, error) {
+	return &api.DisableCopyDataPolicy{
+		Active: policy.Active,
+	}, nil
+}
+
 func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
 	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 	switch issueType {
@@ -1020,10 +1006,10 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeSQLReview, nil
 	case v1pb.PolicyType_SENSITIVE_DATA.String():
 		return api.PolicyTypeSensitiveData, nil
-	case v1pb.PolicyType_ACCESS_CONTROL.String():
-		return api.PolicyTypeAccessControl, nil
 	case v1pb.PolicyType_SLOW_QUERY.String():
 		return api.PolicyTypeSlowQuery, nil
+	case v1pb.PolicyType_DISABLE_COPY_DATA.String():
+		return api.PolicyTypeDisableCopyData, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
 }

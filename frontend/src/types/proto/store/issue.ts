@@ -7,9 +7,9 @@ import { IssuePayloadApproval } from "./approval";
 export const protobufPackage = "bytebase.store";
 
 export interface IssuePayload {
-  approval?: IssuePayloadApproval;
-  grantRequest?: GrantRequest;
-  grouping?: Grouping;
+  approval?: IssuePayloadApproval | undefined;
+  grantRequest?: GrantRequest | undefined;
+  grouping?: Grouping | undefined;
 }
 
 export interface Grouping {
@@ -22,8 +22,8 @@ export interface GrantRequest {
   role: string;
   /** The requested user, e.g. users/hello@bytebase.com. */
   user: string;
-  condition?: Expr;
-  expiration?: Duration;
+  condition?: Expr | undefined;
+  expiration?: Duration | undefined;
 }
 
 function createBaseIssuePayload(): IssuePayload {

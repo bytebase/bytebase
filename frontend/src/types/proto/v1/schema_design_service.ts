@@ -21,11 +21,15 @@ export interface SchemaDesign {
   /** The schema of schema design. AKA sheet's statement. */
   schema: string;
   /** The metadata of the current editing schema. */
-  schemaMetadata?: DatabaseMetadata;
+  schemaMetadata?:
+    | DatabaseMetadata
+    | undefined;
   /** The baseline schema. */
   baselineSchema: string;
   /** The metadata of the baseline schema. */
-  baselineSchemaMetadata?: DatabaseMetadata;
+  baselineSchemaMetadata?:
+    | DatabaseMetadata
+    | undefined;
   /** The database engine of the schema design. */
   engine: Engine;
   /**
@@ -49,9 +53,11 @@ export interface SchemaDesign {
    */
   updater: string;
   /** The timestamp when the schema design was created. */
-  createTime?: Date;
+  createTime?:
+    | Date
+    | undefined;
   /** The timestamp when the schema design was last updated. */
-  updateTime?: Date;
+  updateTime?: Date | undefined;
 }
 
 export interface GetSchemaDesignRequest {
@@ -109,7 +115,7 @@ export interface CreateSchemaDesignRequest {
    * Format: project/{project}
    */
   parent: string;
-  schemaDesign?: SchemaDesign;
+  schemaDesign?: SchemaDesign | undefined;
 }
 
 export interface UpdateSchemaDesignRequest {
@@ -119,9 +125,11 @@ export interface UpdateSchemaDesignRequest {
    * The schema design's `name` field is used to identify the schema design to update.
    * Format: projects/{project}/schemaDesigns/{schemaDesign}
    */
-  schemaDesign?: SchemaDesign;
+  schemaDesign?:
+    | SchemaDesign
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteSchemaDesignRequest {

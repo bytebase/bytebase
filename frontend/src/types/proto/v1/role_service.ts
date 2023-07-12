@@ -34,7 +34,9 @@ export interface ListRolesResponse {
 }
 
 export interface CreateRoleRequest {
-  role?: Role;
+  role?:
+    | Role
+    | undefined;
   /**
    * The ID to use for the role, which will become the final component
    * of the role's resource name.
@@ -46,8 +48,8 @@ export interface CreateRoleRequest {
 }
 
 export interface UpdateRoleRequest {
-  role?: Role;
-  updateMask?: string[];
+  role?: Role | undefined;
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteRoleRequest {

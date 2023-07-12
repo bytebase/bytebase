@@ -164,21 +164,35 @@ export interface ClientLibrarySettings {
    */
   restNumericEnums: boolean;
   /** Settings for legacy Java features, supported in the Service YAML. */
-  javaSettings?: JavaSettings;
+  javaSettings?:
+    | JavaSettings
+    | undefined;
   /** Settings for C++ client libraries. */
-  cppSettings?: CppSettings;
+  cppSettings?:
+    | CppSettings
+    | undefined;
   /** Settings for PHP client libraries. */
-  phpSettings?: PhpSettings;
+  phpSettings?:
+    | PhpSettings
+    | undefined;
   /** Settings for Python client libraries. */
-  pythonSettings?: PythonSettings;
+  pythonSettings?:
+    | PythonSettings
+    | undefined;
   /** Settings for Node client libraries. */
-  nodeSettings?: NodeSettings;
+  nodeSettings?:
+    | NodeSettings
+    | undefined;
   /** Settings for .NET client libraries. */
-  dotnetSettings?: DotnetSettings;
+  dotnetSettings?:
+    | DotnetSettings
+    | undefined;
   /** Settings for Ruby client libraries. */
-  rubySettings?: RubySettings;
+  rubySettings?:
+    | RubySettings
+    | undefined;
   /** Settings for Go client libraries. */
-  goSettings?: GoSettings;
+  goSettings?: GoSettings | undefined;
 }
 
 /**
@@ -269,7 +283,7 @@ export interface JavaSettings {
    */
   serviceClassNames: { [key: string]: string };
   /** Some settings. */
-  common?: CommonLanguageSettings;
+  common?: CommonLanguageSettings | undefined;
 }
 
 export interface JavaSettings_ServiceClassNamesEntry {
@@ -280,31 +294,33 @@ export interface JavaSettings_ServiceClassNamesEntry {
 /** Settings for C++ client libraries. */
 export interface CppSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings;
+  common?: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Php client libraries. */
 export interface PhpSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings;
+  common?: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Python client libraries. */
 export interface PythonSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings;
+  common?: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Node client libraries. */
 export interface NodeSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings;
+  common?: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Dotnet client libraries. */
 export interface DotnetSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings;
+  common?:
+    | CommonLanguageSettings
+    | undefined;
   /**
    * Map from original service names to renamed versions.
    * This is used when the default generated types
@@ -355,13 +371,13 @@ export interface DotnetSettings_RenamedResourcesEntry {
 /** Settings for Ruby client libraries. */
 export interface RubySettings {
   /** Some settings. */
-  common?: CommonLanguageSettings;
+  common?: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Go client libraries. */
 export interface GoSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings;
+  common?: CommonLanguageSettings | undefined;
 }
 
 /** Describes the generator configuration for a method. */
@@ -390,7 +406,7 @@ export interface MethodSettings {
    *          total_poll_timeout:
    *             seconds: 54000 # 90 minutes
    */
-  longRunning?: MethodSettings_LongRunning;
+  longRunning?: MethodSettings_LongRunning | undefined;
 }
 
 /**
@@ -405,7 +421,9 @@ export interface MethodSettings_LongRunning {
    * Initial delay after which the first poll request will be made.
    * Default value: 5 seconds.
    */
-  initialPollDelay?: Duration;
+  initialPollDelay?:
+    | Duration
+    | undefined;
   /**
    * Multiplier to gradually increase delay between subsequent polls until it
    * reaches max_poll_delay.
@@ -416,12 +434,14 @@ export interface MethodSettings_LongRunning {
    * Maximum time between two subsequent poll requests.
    * Default value: 45 seconds.
    */
-  maxPollDelay?: Duration;
+  maxPollDelay?:
+    | Duration
+    | undefined;
   /**
    * Total polling timeout.
    * Default value: 5 minutes.
    */
-  totalPollTimeout?: Duration;
+  totalPollTimeout?: Duration | undefined;
 }
 
 function createBaseCommonLanguageSettings(): CommonLanguageSettings {
