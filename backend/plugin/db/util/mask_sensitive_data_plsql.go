@@ -11,7 +11,7 @@ import (
 )
 
 func (extractor *sensitiveFieldExtractor) extractOracleSensitiveField(statement string) ([]db.SensitiveField, error) {
-	tree, err := parser.ParsePLSQL(statement)
+	tree, _, err := parser.ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
 	}

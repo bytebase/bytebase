@@ -32,7 +32,7 @@ func TestPLSQLParser(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tree, err := ParsePLSQL(test.statement)
+		tree, _, err := ParsePLSQL(test.statement)
 		if sql, ok := tree.(*plsqlparser.Sql_scriptContext); ok {
 			fmt.Println(sql.GetText())
 		}
