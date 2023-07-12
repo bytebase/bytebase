@@ -43,8 +43,6 @@ const (
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 	// PolicyTypeSensitiveData is the sensitive data policy type.
 	PolicyTypeSensitiveData PolicyType = "bb.policy.sensitive-data"
-	// PolicyTypeAccessControl is the access control policy type.
-	PolicyTypeAccessControl PolicyType = "bb.policy.access-control"
 	// PolicyTypeSlowQuery is the slow query policy type.
 	PolicyTypeSlowQuery PolicyType = "bb.policy.slow-query"
 	// PolicyTypeDisableCopyData is the disable copy data policy type.
@@ -95,8 +93,8 @@ var (
 		PolicyTypeSQLReview:        {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:  {PolicyResourceTypeEnvironment},
 		PolicyTypeSensitiveData:    {PolicyResourceTypeDatabase},
-		PolicyTypeAccessControl:    {PolicyResourceTypeEnvironment, PolicyResourceTypeDatabase},
 		PolicyTypeSlowQuery:        {PolicyResourceTypeInstance},
+		PolicyTypeDisableCopyData:  {PolicyResourceTypeEnvironment},
 	}
 )
 
@@ -219,38 +217,6 @@ func UnmarshalSensitiveDataPolicy(payload string) (*SensitiveDataPolicy, error) 
 }
 
 func (p *SensitiveDataPolicy) String() (string, error) {
-	s, err := json.Marshal(p)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
-// AccessControlPolicy is the policy configuration for data access control.
-// It is only applicable to database and environment resource type.
-// For environment resource type, DisallowRuleList defines the access control rule.
-// For database resource type, the AccessControlPolicy struct itself means allow to access.
-type AccessControlPolicy struct {
-	// Environment resource type specific fields.
-	DisallowRuleList []AccessControlRule `json:"disallowRuleList"`
-}
-
-// AccessControlRule is the disallow rule for access control policy.
-type AccessControlRule struct {
-	// FullDatabase will apply to the full database.
-	FullDatabase bool `json:"fullDatabase"`
-}
-
-// UnmarshalAccessControlPolicy will unmarshal payload to access control policy.
-func UnmarshalAccessControlPolicy(payload string) (*AccessControlPolicy, error) {
-	var p AccessControlPolicy
-	if err := json.Unmarshal([]byte(payload), &p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal access control policy %q", payload)
-	}
-	return &p, nil
-}
-
-func (p *AccessControlPolicy) String() (string, error) {
 	s, err := json.Marshal(p)
 	if err != nil {
 		return "", err

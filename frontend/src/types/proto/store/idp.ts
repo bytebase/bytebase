@@ -55,7 +55,7 @@ export interface OAuth2IdentityProviderConfig {
   clientId: string;
   clientSecret: string;
   scopes: string[];
-  fieldMapping?: FieldMapping;
+  fieldMapping?: FieldMapping | undefined;
   skipTlsVerify: boolean;
 }
 
@@ -64,7 +64,7 @@ export interface OIDCIdentityProviderConfig {
   issuer: string;
   clientId: string;
   clientSecret: string;
-  fieldMapping?: FieldMapping;
+  fieldMapping?: FieldMapping | undefined;
   skipTlsVerify: boolean;
 }
 

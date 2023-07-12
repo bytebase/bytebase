@@ -241,7 +241,9 @@ export interface ColumnMetadata {
   /** The position is the position in columns. */
   position: number;
   /** The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. */
-  default?: string;
+  default?:
+    | string
+    | undefined;
   /** The nullable is the nullable of a column. */
   nullable: boolean;
   /** The type is the type of a column. */
@@ -2258,10 +2260,10 @@ export const SecretItem = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }

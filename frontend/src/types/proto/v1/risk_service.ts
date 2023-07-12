@@ -37,7 +37,7 @@ export interface ListRisksResponse {
 
 export interface CreateRiskRequest {
   /** The risk to create. */
-  risk?: Risk;
+  risk?: Risk | undefined;
 }
 
 export interface UpdateRiskRequest {
@@ -47,9 +47,11 @@ export interface UpdateRiskRequest {
    * The risk's `name` field is used to identify the risk to update.
    * Format: risks/{risk}
    */
-  risk?: Risk;
+  risk?:
+    | Risk
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteRiskRequest {
@@ -69,7 +71,7 @@ export interface Risk {
   title: string;
   level: number;
   active: boolean;
-  condition?: Expr;
+  condition?: Expr | undefined;
 }
 
 export enum Risk_Source {
@@ -728,10 +730,10 @@ export interface RiskServiceClient<CallOptionsExt = {}> {
   deleteRisk(request: DeepPartial<DeleteRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }

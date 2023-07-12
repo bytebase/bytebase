@@ -71,7 +71,7 @@ export function issuePayloadApproval_Approver_StatusToJSON(object: IssuePayloadA
 }
 
 export interface ApprovalTemplate {
-  flow?: ApprovalFlow;
+  flow?: ApprovalFlow | undefined;
   title: string;
   description: string;
   creatorId: number;

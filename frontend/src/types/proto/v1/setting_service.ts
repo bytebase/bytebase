@@ -44,13 +44,15 @@ export interface GetSettingRequest {
 
 /** The response message for getting a setting. */
 export interface GetSettingResponse {
-  setting?: Setting;
+  setting?: Setting | undefined;
 }
 
 /** The request message for updating a setting. */
 export interface SetSettingRequest {
   /** The setting to update. */
-  setting?: Setting;
+  setting?:
+    | Setting
+    | undefined;
   /**
    * validate_only is a flag to indicate whether to validate the setting value,
    * server would not persist the setting value if it is true.
@@ -68,7 +70,7 @@ export interface Setting {
    */
   name: string;
   /** The value of the setting. */
-  value?: Value;
+  value?: Value | undefined;
 }
 
 /** The data in setting value. */
@@ -216,7 +218,7 @@ export interface AppIMSetting {
   imType: AppIMSetting_IMType;
   appId: string;
   appSecret: string;
-  externalApproval?: AppIMSetting_ExternalApproval;
+  externalApproval?: AppIMSetting_ExternalApproval | undefined;
 }
 
 export enum AppIMSetting_IMType {
@@ -288,8 +290,8 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  template?: ApprovalTemplate;
-  condition?: Expr;
+  template?: ApprovalTemplate | undefined;
+  condition?: Expr | undefined;
 }
 
 export interface ExternalApprovalSetting {
@@ -310,8 +312,8 @@ export interface ExternalApprovalSetting_Node {
 
 export interface WorkspaceTrialSetting {
   instanceCount: number;
-  expireTime?: Date;
-  issuedTime?: Date;
+  expireTime?: Date | undefined;
+  issuedTime?: Date | undefined;
   subject: string;
   orgName: string;
   plan: PlanType;

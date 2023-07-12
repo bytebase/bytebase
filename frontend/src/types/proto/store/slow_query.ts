@@ -19,11 +19,17 @@ export interface SlowQueryStatisticsItem {
   /** count is the number of slow queries with the same fingerprint. */
   count: number;
   /** latest_log_time is the time of the latest slow query with the same fingerprint. */
-  latestLogTime?: Date;
+  latestLogTime?:
+    | Date
+    | undefined;
   /** The total query time of the slow query log. */
-  totalQueryTime?: Duration;
+  totalQueryTime?:
+    | Duration
+    | undefined;
   /** The maximum query time of the slow query log. */
-  maximumQueryTime?: Duration;
+  maximumQueryTime?:
+    | Duration
+    | undefined;
   /** The total rows sent of the slow query log. */
   totalRowsSent: number;
   /** The maximum rows sent of the slow query log. */
@@ -39,11 +45,17 @@ export interface SlowQueryStatisticsItem {
 /** SlowQueryDetails is the details of a slow query. */
 export interface SlowQueryDetails {
   /** start_time is the start time of the slow query. */
-  startTime?: Date;
+  startTime?:
+    | Date
+    | undefined;
   /** query_time is the query time of the slow query. */
-  queryTime?: Duration;
+  queryTime?:
+    | Duration
+    | undefined;
   /** lock_time is the lock time of the slow query. */
-  lockTime?: Duration;
+  lockTime?:
+    | Duration
+    | undefined;
   /** rows_sent is the number of rows sent by the slow query. */
   rowsSent: number;
   /** rows_examined is the number of rows examined by the slow query. */
@@ -438,10 +450,10 @@ export const SlowQueryDetails = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }

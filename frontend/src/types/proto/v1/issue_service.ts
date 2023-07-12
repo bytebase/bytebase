@@ -67,7 +67,7 @@ export interface CreateIssueRequest {
    */
   parent: string;
   /** The issue to create. */
-  issue?: Issue;
+  issue?: Issue | undefined;
 }
 
 export interface ListIssuesRequest {
@@ -111,9 +111,11 @@ export interface UpdateIssueRequest {
    * The issue's `name` field is used to identify the issue to update.
    * Format: projects/{project}/issues/{issue}
    */
-  issue?: Issue;
+  issue?:
+    | Issue
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface BatchUpdateIssuesRequest {
@@ -193,8 +195,10 @@ export interface Issue {
   subscribers: string[];
   /** Format: users/hello@world.com */
   creator: string;
-  createTime?: Date;
-  updateTime?: Date;
+  createTime?: Date | undefined;
+  updateTime?:
+    | Date
+    | undefined;
   /**
    * The plan associated with the issue.
    * Can be empty.
@@ -301,7 +305,7 @@ export function issue_Approver_StatusToJSON(object: Issue_Approver_Status): stri
 }
 
 export interface ApprovalTemplate {
-  flow?: ApprovalFlow;
+  flow?: ApprovalFlow | undefined;
   title: string;
   description: string;
   /**
@@ -477,7 +481,7 @@ export interface CreateIssueCommentRequest {
    * Format: projects/{project}/issues/{issue}
    */
   parent: string;
-  issueComment?: IssueComment;
+  issueComment?: IssueComment | undefined;
 }
 
 export interface UpdateIssueCommentRequest {
@@ -486,9 +490,11 @@ export interface UpdateIssueCommentRequest {
    * Format: projects/{project}/issues/{issue}
    */
   parent: string;
-  issueComment?: IssueComment;
+  issueComment?:
+    | IssueComment
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface IssueComment {
@@ -496,8 +502,8 @@ export interface IssueComment {
   comment: string;
   /** TODO: use struct message instead. */
   payload: string;
-  createTime?: Date;
-  updateTime?: Date;
+  createTime?: Date | undefined;
+  updateTime?: Date | undefined;
 }
 
 function createBaseGetIssueRequest(): GetIssueRequest {
