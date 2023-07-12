@@ -10,12 +10,15 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
+
+	plsql "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
@@ -390,7 +393,29 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	var list []SingleSQL
 	var err error
 	switch engineType {
-	case Oracle, MSSQL:
+	case Oracle:
+		tree, tokens, err := ParsePLSQL(statement)
+		if err != nil {
+			return nil, err
+		}
+
+		var result []SingleSQL
+		for _, item := range tree.GetChildren() {
+			if stmt, ok := item.(plsql.IUnit_statementContext); ok {
+				stopIndex := stmt.GetStop().GetTokenIndex()
+				if stmt.GetStop().GetTokenType() == plsql.PlSqlParserSEMICOLON {
+					stopIndex--
+				}
+				lastToken := tokens.Get(stopIndex)
+				result = append(result, SingleSQL{
+					Text:     tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
+					LastLine: lastToken.GetLine(),
+					Empty:    false,
+				})
+			}
+		}
+		return result, nil
+	case MSSQL:
 		t := newTokenizer(statement)
 		list, err = t.splitStandardMultiSQL()
 	case Postgres, Redshift:
@@ -540,7 +565,21 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	var list []SingleSQL
 	var err error
 	switch engineType {
-	case Oracle, MSSQL:
+	case Oracle:
+		text := antlr.NewIoStream(src).String()
+		sqls, err := SplitMultiSQL(engineType, text)
+		if err != nil {
+			return nil, err
+		}
+		for _, sql := range sqls {
+			if f != nil {
+				if err := f(sql.Text); err != nil {
+					return nil, err
+				}
+			}
+		}
+		return sqls, nil
+	case MSSQL:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitStandardMultiSQL()
 	case Postgres, Redshift:
