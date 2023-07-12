@@ -94,31 +94,6 @@ func (s *Store) GetSensitiveDataPolicy(ctx context.Context, databaseID int) (*ap
 	return api.UnmarshalSensitiveDataPolicy(policy.Payload)
 }
 
-// GetAccessControlPolicy will get the normal access control polciy. Return nil if InheritFromParent is true.
-func (s *Store) GetAccessControlPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.AccessControlPolicy, bool, error) {
-	pType := api.PolicyTypeAccessControl
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
-		ResourceType: &resourceType,
-		ResourceUID:  &resourceID,
-		Type:         &pType,
-	})
-	if err != nil {
-		return nil, false, err
-	}
-
-	if policy == nil || !policy.Enforce {
-		// For access constrol policy, the default value for InheritFromParent is true.
-		return nil, true, nil
-	}
-
-	accessControlPolicy, err := api.UnmarshalAccessControlPolicy(policy.Payload)
-	if err != nil {
-		// For access control policy, the default value for InheritFromParent is true.
-		return nil, true, err
-	}
-	return accessControlPolicy, policy.InheritFromParent, nil
-}
-
 // GetSlowQueryPolicy will get the slow query policy for instance ID.
 func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.SlowQueryPolicy, error) {
 	pType := api.PolicyTypeSlowQuery

@@ -220,15 +220,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  computed,
-  nextTick,
-  PropType,
-  reactive,
-  ref,
-  watch,
-  watchEffect,
-} from "vue";
+import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { NTooltip, NPagination } from "naive-ui";
 import { useI18n } from "vue-i18n";
@@ -253,12 +245,6 @@ import {
   useVueTable,
 } from "@tanstack/vue-table";
 import { getScrollParent } from "@/plugins/demo/utils";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import {
-  Policy,
-  PolicyType,
-  PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
 
 type Mode =
   | "ALL"
@@ -363,19 +349,6 @@ const mixedDatabaseList = computed(() => {
   }
   return databaseList;
 });
-
-const policyList = ref<Policy[]>([]);
-
-const preparePolicyList = () => {
-  if (showSQLEditorLink.value) {
-    usePolicyV1Store()
-      .fetchPolicies({
-        resourceType: PolicyResourceType.DATABASE,
-        policyType: PolicyType.ACCESS_CONTROL,
-      })
-      .then((list) => (policyList.value = list));
-  }
-};
 
 const columnListMap = computed(() => {
   const NAME = {
@@ -505,26 +478,11 @@ const showReservedDatabaseList = () => {
   });
 };
 
-const showSQLEditorLink = computed(() => {
-  if (
-    props.mode === "ALL_SHORT" ||
-    props.mode === "ALL_TINY" ||
-    props.mode === "PROJECT_SHORT"
-  ) {
-    return false;
-  }
-  return true;
-});
-
 const allowQuery = (database: Database) => {
   const composedDatabase = databaseV1Store.getDatabaseByUID(
     String(database.id)
   );
-  return isDatabaseAccessible(
-    composedDatabase,
-    policyList.value,
-    currentUserV1.value
-  );
+  return isDatabaseAccessible(composedDatabase, currentUserV1.value);
 };
 
 const showTenantIcon = computed(() => {
@@ -566,6 +524,4 @@ const clickDatabase = (
     }
   }
 };
-
-watchEffect(preparePolicyList);
 </script>

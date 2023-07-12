@@ -1,7 +1,6 @@
 import { hasFeature, useCurrentUserIamPolicy, usePolicyV1Store } from "@/store";
 import type { ComposedDatabase, Instance } from "@/types";
 import { hasWorkspacePermissionV1 } from "./role";
-import { Policy } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
 import { resolveCELExpr } from "@/plugins/cel";
 import { extractEnvironmentNameListFromExpr } from "./v1";
@@ -41,7 +40,6 @@ export const isInstanceAccessible = (instance: Instance, user: User) => {
 
 export const isDatabaseAccessible = (
   database: ComposedDatabase,
-  policyList: Policy[],
   user: User
 ) => {
   if (
