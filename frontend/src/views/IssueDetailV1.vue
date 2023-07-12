@@ -106,8 +106,7 @@ const tryInitializeIssue = async (uid: string) => {
     const specs = targets.map((target) => {
       const config = Plan_ChangeDatabaseConfig.fromJSON({
         target,
-        // sheet: `${project.name}/sheets/101`,
-        sheet: `${project.name}/sheets/10086`,
+        sheet: `${project.name}/sheets/101`,
         type,
         rollbackEnabled: true,
       });
