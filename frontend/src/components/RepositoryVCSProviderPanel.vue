@@ -113,7 +113,7 @@ const selectVCS = (vcs: ExternalVersionControl) => {
 
   let authorizeUrl = `${vcs.url}/oauth/authorize`;
   if (vcs.type === ExternalVersionControl_Type.GITHUB) {
-    authorizeUrl = `https://github.com/login/oauth/authorize`;
+    authorizeUrl = `${vcs.url}/login/oauth/authorize`;
   } else if (vcs.type === ExternalVersionControl_Type.BITBUCKET) {
     authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
   }
