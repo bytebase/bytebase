@@ -8,7 +8,33 @@ import {
 import { Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import { extractDatabaseResourceName } from "@/utils";
 
-export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
+export const databaseForTask = (issue: ComposedIssue, task: Task) => {
+  if (
+    task.type === Task_Type.DATABASE_CREATE ||
+    task.type === Task_Type.DATABASE_RESTORE_RESTORE ||
+    task.type === Task_Type.DATABASE_RESTORE_CUTOVER
+  ) {
+    // The database is not created yet.
+    // extract database info from the task's and payload's properties.
+    return extractCoreDatabaseInfoFromDatabaseCreateTask(
+      issue.projectEntity,
+      task
+    );
+  } else {
+    if (
+      task.databaseDataUpdate ||
+      task.databaseSchemaUpdate ||
+      task.databaseRestoreRestore ||
+      task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER ||
+      task.type === Task_Type.DATABASE_SCHEMA_BASELINE
+    ) {
+      return useDatabaseV1Store().getDatabaseByName(task.target);
+    }
+  }
+  return unknownDatabase();
+};
+
+const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   project: ComposedProject,
   task: Task
 ) => {
@@ -52,31 +78,5 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
     return coreDatabaseInfo(instance, databaseName);
   }
 
-  return unknownDatabase();
-};
-
-export const databaseForTask = (issue: ComposedIssue, task: Task) => {
-  if (
-    task.type === Task_Type.DATABASE_CREATE ||
-    task.type === Task_Type.DATABASE_RESTORE_RESTORE ||
-    task.type === Task_Type.DATABASE_RESTORE_CUTOVER
-  ) {
-    // The database is not created yet.
-    // extract database info from the task's and payload's properties.
-    return extractCoreDatabaseInfoFromDatabaseCreateTask(
-      issue.projectEntity,
-      task
-    );
-  } else {
-    if (
-      task.databaseDataUpdate ||
-      task.databaseSchemaUpdate ||
-      task.databaseRestoreRestore ||
-      task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER ||
-      task.type === Task_Type.DATABASE_SCHEMA_BASELINE
-    ) {
-      return useDatabaseV1Store().getDatabaseByName(task.target);
-    }
-  }
   return unknownDatabase();
 };

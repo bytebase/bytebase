@@ -150,10 +150,7 @@ import {
   dialectOfEngineV1,
 } from "@/types";
 import { flattenTaskV1List, useInstanceV1EditorLanguage } from "@/utils";
-import {
-  extractCoreDatabaseInfoFromDatabaseCreateTask,
-  useIssueContext,
-} from "../../../logic";
+import { databaseForTask, useIssueContext } from "../../../logic";
 import { hasFeature, useUIStateStore } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
@@ -182,10 +179,7 @@ const state = reactive<LocalState>({
 const { editorRef, updateEditorHeight } = useAutoEditorHeight();
 
 const selectedDatabase = computed(() => {
-  return extractCoreDatabaseInfoFromDatabaseCreateTask(
-    project.value,
-    selectedTask.value
-  );
+  return databaseForTask(issue.value, selectedTask.value);
 });
 
 const language = useInstanceV1EditorLanguage(

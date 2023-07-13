@@ -60,7 +60,7 @@ import { computed, ref } from "vue";
 
 import { isGrantRequestIssue } from "@/utils";
 import {
-  extractCoreDatabaseInfoFromDatabaseCreateTask,
+  databaseForTask,
   useIssueContext,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1";
@@ -69,10 +69,7 @@ import Timeline from "./Timeline.vue";
 const { issue, reviewContext, selectedTask } = useIssueContext();
 const { ready, error } = reviewContext;
 const selectedDatabase = computed(() =>
-  extractCoreDatabaseInfoFromDatabaseCreateTask(
-    issue.value.projectEntity,
-    selectedTask.value
-  )
+  databaseForTask(issue.value, selectedTask.value)
 );
 
 const wrappedSteps = useWrappedReviewStepsV1(issue, reviewContext);
