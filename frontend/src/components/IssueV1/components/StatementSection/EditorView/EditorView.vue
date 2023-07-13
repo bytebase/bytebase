@@ -134,7 +134,7 @@
     <div>task: {{ selectedTask }}</div>
     <div>sheetName: {{ sheetName }}</div>
     <div>sheetReady: {{ sheetReady }}</div>
-    <div>sheetStatement: {{ sheetStatement }}</div>
+    <div>sheetStatement.length: {{ sheetStatement.length }}</div>
     <div>isTaskSheetOversize: {{ isTaskSheetOversize }}</div>
     <div>isEditorReadonly: {{ isEditorReadonly }}</div>
     <div>state.isEditing: {{ state.isEditing }}</div>
@@ -154,9 +154,14 @@ import {
   flattenTaskV1List,
   getSheetStatement,
   setSheetStatement,
+  sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import { databaseForTask, useIssueContext } from "../../../logic";
+import {
+  databaseForTask,
+  getLocalSheetByName,
+  useIssueContext,
+} from "../../../logic";
 import { hasFeature, useUIStateStore } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
@@ -165,6 +170,7 @@ import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import { EditState, useTempEditState } from "./useTempEditState";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
+import { readFileAsync } from "./utils";
 
 type LocalState = EditState & {
   showFeatureModal: boolean;
@@ -299,6 +305,9 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     // TODO
+    // find the task related plan/step/spec
+    // create a new sheet
+    // update sheet id in the spec
     resetTempEditState();
     await new Promise((r) => setTimeout(r, 500));
   } finally {
@@ -323,11 +332,15 @@ const handleUploadAndOverwrite = async () => {
   }
 };
 
-const handleUploadFile = async () => {
+const handleUploadFile = async (event: Event) => {
   try {
     state.isUploadingFile = true;
     // TODO
+    const { filename, content: statement } = await readFileAsync(event, 100);
     await new Promise((r) => setTimeout(r, 500));
+    console.log(filename, statement.substr(0, 100));
+    handleStatementChange(statement);
+
     resetTempEditState();
     updateEditorHeight();
   } finally {
@@ -336,7 +349,16 @@ const handleUploadFile = async () => {
 };
 
 const applyTaskStateToOthers = async () => {
-  // TODO
+  const taskList = flattenTaskV1List(issue.value.rolloutEntity).filter((task) =>
+    TaskTypeListWithStatement.includes(task.type)
+  );
+  for (let i = 0; i < taskList.length; i++) {
+    const task = taskList[i];
+    const sheetName = sheetNameOfTaskV1(task);
+    if (!sheetName) continue;
+    const sheet = getLocalSheetByName(sheetName);
+    setSheetStatement(sheet, state.statement);
+  }
 };
 
 const handleStatementChange = (value: string) => {
@@ -359,9 +381,8 @@ const handleMonacoEditorReady = () => {
 };
 
 watch(
-  [sheetStatement, sheetReady],
-  ([statement, ready]) => {
-    // if (!ready) return;
+  sheetStatement,
+  (statement) => {
     state.statement = statement;
   },
   { immediate: true }
