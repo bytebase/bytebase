@@ -1,10 +1,12 @@
 import { computed, ref, Ref, watch } from "vue";
 import { useRoute, useRouter, _RouteLocationBase } from "vue-router";
 
-import { ComposedIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
+import { ComposedIssue, emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { experimentalFetchIssueByUID } from "@/store";
 import { idFromSlug } from "@/utils";
 import { createIssueSkeleton } from "./create";
+
+export * from "./create";
 
 export function useInitializeIssue(issueSlug: Ref<string>) {
   const isCreating = computed(() => issueSlug.value.toLowerCase() == "new");
@@ -19,7 +21,7 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   const router = useRouter();
   const isInitializing = ref(false);
 
-  const issue = ref<ComposedIssue>();
+  const issue = ref<ComposedIssue>(emptyIssue());
 
   const runner = async (uid: string, url: string) => {
     const issue =

@@ -20,7 +20,11 @@
         </span>
       </div>
 
-      <NTooltip v-if="!isValidStage(stage)" trigger="hover" placement="top">
+      <NTooltip
+        v-if="!isCreating && !isValidStage(stage)"
+        trigger="hover"
+        placement="top"
+      >
         <template #trigger>
           <heroicons:exclamation-circle-solid
             class="w-6 h-6 ml-2 text-error hover:text-error-hover"
@@ -43,22 +47,13 @@ import { computed } from "vue";
 import { NTooltip } from "naive-ui";
 import { first } from "lodash-es";
 
-import {
-  EMPTY_STAGE_NAME,
-  TaskTypeListWithStatement,
-  emptyTask,
-} from "@/types";
+import { EMPTY_STAGE_NAME, emptyTask } from "@/types";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
 import StageInfo from "./StageInfo";
 import Actions from "./Actions";
-import {
-  activeTaskInStageV1,
-  activeTaskInRollout,
-  sheetNameOfTaskV1,
-  getSheetStatement,
-} from "@/utils";
-import { getLocalSheetByName, useIssueContext } from "../../logic";
+import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
+import { isValidStage, useIssueContext } from "../../logic";
 import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 
 const { isCreating, issue, selectedStage } = useIssueContext();
@@ -68,23 +63,6 @@ const stage = selectedStage;
 const show = computed(() => {
   return stage.value.name !== EMPTY_STAGE_NAME;
 });
-
-const isValidStage = (stage: Stage): boolean => {
-  if (!isCreating.value) {
-    return true;
-  }
-
-  for (const task of stage.tasks) {
-    if (TaskTypeListWithStatement.includes(task.type)) {
-      const sheetName = sheetNameOfTaskV1(task);
-      const sheet = getLocalSheetByName(sheetName);
-      if (!getSheetStatement(sheet)) {
-        return false;
-      }
-    }
-  }
-  return true;
-};
 
 const isActiveStage = (stage: Stage): boolean => {
   if (isCreating.value) {
@@ -105,7 +83,9 @@ const isActiveStage = (stage: Stage): boolean => {
 const stageClass = (stage: Stage): string[] => {
   const classList: string[] = [];
 
-  if (!isValidStage(stage)) classList.push("invalid");
+  if (!isCreating.value && !isValidStage(stage)) {
+    classList.push("invalid");
+  }
   if (isCreating.value) classList.push("create");
   if (isActiveStage(stage)) classList.push("active");
   const task = activeTaskInStageV1(stage);

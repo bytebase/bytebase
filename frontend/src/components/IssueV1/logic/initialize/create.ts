@@ -8,18 +8,26 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
-import { ComposedProject, emptyIssue, UNKNOWN_ID } from "@/types";
+import {
+  ComposedProject,
+  emptyIssue,
+  TaskTypeListWithStatement,
+  UNKNOWN_ID,
+} from "@/types";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
   Plan_ChangeDatabaseConfig_Type,
   Plan_Spec,
   Plan_Step,
+  Stage,
 } from "@/types/proto/v1/rollout_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { rolloutServiceClient } from "@/grpcweb";
 import { TemplateType } from "@/plugins";
 import { nextUID } from "../base";
+import { getSheetStatement, sheetNameOfTaskV1 } from "@/utils";
+import { getLocalSheetByName } from "../sheet";
 
 type CreateIssueParams = {
   databaseUIDList: string[];
@@ -226,4 +234,17 @@ const prepareDatabaseListByProject = async (project: string) => {
     parent: `instances/-`,
     filter: `project == "${project}"`,
   });
+};
+
+export const isValidStage = (stage: Stage): boolean => {
+  for (const task of stage.tasks) {
+    if (TaskTypeListWithStatement.includes(task.type)) {
+      const sheetName = sheetNameOfTaskV1(task);
+      const sheet = getLocalSheetByName(sheetName);
+      if (!getSheetStatement(sheet)) {
+        return false;
+      }
+    }
+  }
+  return true;
 };

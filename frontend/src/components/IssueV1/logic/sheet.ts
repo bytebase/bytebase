@@ -1,5 +1,10 @@
 import { reactive } from "vue";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import {
+  Sheet,
+  Sheet_Source,
+  Sheet_Type,
+  Sheet_Visibility,
+} from "@/types/proto/v1/sheet_service";
 
 const sheetsByName = reactive(new Map<string, Sheet>());
 
@@ -10,6 +15,9 @@ export const getLocalSheetByName = (name: string) => {
   }
   const sheet = Sheet.fromJSON({
     name: name,
+    source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+    visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+    type: Sheet_Type.TYPE_SQL,
   });
   sheetsByName.set(name, sheet);
   return sheet;

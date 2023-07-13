@@ -1,8 +1,6 @@
 <template>
   <div class="flex flex-col items-end">
-    <NButton v-if="actionType === 'CREATE'" type="primary" size="large">
-      {{ $t("common.create") }}
-    </NButton>
+    <CreateButton v-if="actionType === 'CREATE'" />
 
     <ExportCenterButton v-if="actionType === 'EXPORT-CENTER'" />
 
@@ -16,12 +14,12 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { NButton } from "naive-ui";
 
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { useCurrentUserV1 } from "@/store";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../../logic";
+import { CreateButton } from "./create";
 import { IssueReviewButtonGroup } from "./review";
 import { CombinedRolloutButtonGroup } from "./rollout";
 import { ExportCenterButton, SQLEditorButton } from "./request";

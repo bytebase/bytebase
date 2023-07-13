@@ -135,6 +135,10 @@
     <div>sheetName: {{ sheetName }}</div>
     <div>sheetReady: {{ sheetReady }}</div>
     <div>sheetStatement.length: {{ sheetStatement.length }}</div>
+    <div>sheet.source: {{ sheet?.source }}</div>
+    <div>sheet.type: {{ sheet?.type }}</div>
+    <div>sheet.visibility: {{ sheet?.visibility }}</div>
+    <div>sheet.title: {{ sheet?.title }}</div>
     <div>isTaskSheetOversize: {{ isTaskSheetOversize }}</div>
     <div>isEditorReadonly: {{ isEditorReadonly }}</div>
     <div>state.isEditing: {{ state.isEditing }}</div>
@@ -337,9 +341,10 @@ const handleUploadFile = async (event: Event) => {
     state.isUploadingFile = true;
     // TODO
     const { filename, content: statement } = await readFileAsync(event, 100);
-    await new Promise((r) => setTimeout(r, 500));
-    console.log(filename, statement.substring(0, 100));
     handleStatementChange(statement);
+    if (sheet.value) {
+      sheet.value.title = filename;
+    }
 
     resetTempEditState();
     updateEditorHeight();
