@@ -66,17 +66,24 @@ func (s *SchemaDesignService) ListSchemaDesigns(ctx context.Context, request *v1
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project: %v", err))
-	}
+
 	schemaDesignSheetType := storepb.SheetPayload_SCHEMA_DESIGN.String()
-	sheets, err := s.listSheets(ctx, &store.FindSheetMessage{
-		ProjectUID:  &project.UID,
+	sheetFind := &store.FindSheetMessage{
 		PayloadType: &schemaDesignSheetType,
-	})
+	}
+	if projectID != "-" {
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project: %v", err))
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project not found: %v", projectID))
+		}
+		sheetFind.ProjectUID = &project.UID
+	}
+	sheets, err := s.listSheets(ctx, sheetFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list sheet: %v", err))
 	}
