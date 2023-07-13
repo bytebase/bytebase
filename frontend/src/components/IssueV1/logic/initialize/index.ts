@@ -22,7 +22,6 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   const issue = ref<ComposedIssue>();
 
   const runner = async (uid: string, url: string) => {
-    router.resolve(url);
     const issue =
       uid === String(EMPTY_ID)
         ? await createIssue(router.resolve(url))
