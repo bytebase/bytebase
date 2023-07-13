@@ -130,12 +130,14 @@
     @cancel="state.showFeatureModal = false"
   />
 
-  <div class="issue-debug h-[10rem]">
-    <div>editor</div>
-    <div>{{ selectedTask }}</div>
+  <div class="issue-debug">
+    <div>task: {{ selectedTask }}</div>
     <div>sheetName: {{ sheetName }}</div>
     <div>sheetReady: {{ sheetReady }}</div>
+    <div>sheetStatement: {{ sheetStatement }}</div>
     <div>isTaskSheetOversize: {{ isTaskSheetOversize }}</div>
+    <div>isEditorReadonly: {{ isEditorReadonly }}</div>
+    <div>state.isEditing: {{ state.isEditing }}</div>
   </div>
 </template>
 
@@ -148,7 +150,12 @@ import {
   TaskTypeListWithStatement,
   dialectOfEngineV1,
 } from "@/types";
-import { flattenTaskV1List, useInstanceV1EditorLanguage } from "@/utils";
+import {
+  flattenTaskV1List,
+  getSheetStatement,
+  setSheetStatement,
+  useInstanceV1EditorLanguage,
+} from "@/utils";
 import { databaseForTask, useIssueContext } from "../../../logic";
 import { hasFeature, useUIStateStore } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
@@ -197,6 +204,7 @@ const { markers } = useSQLAdviceMarkers();
  * - Disallowed to edit statement
  */
 const isEditorReadonly = computed(() => {
+  if (isCreating.value) return false;
   return (
     !state.isEditing ||
     // !allowEditStatement.value || // TODO
@@ -220,12 +228,10 @@ const {
 } = useTempEditState(state);
 
 const isTaskSheetOversize = computed(() => {
+  if (isCreating.value) return false;
   if (!sheetReady.value) return false;
   if (!sheet.value) return false;
-  return (
-    new TextDecoder().decode(sheet.value.content).length <
-    sheet.value.contentSize
-  );
+  return getSheetStatement(sheet.value).length < sheet.value.contentSize;
 });
 
 const shouldShowEditButton = computed(() => {
@@ -340,10 +346,9 @@ const handleStatementChange = (value: string) => {
 
   state.statement = value;
   if (isCreating.value) {
-    // If we are creating an issue, emit the event immediately when every
-    // time the user types.
-    // TODO: apply editing statement to plan(s)
-    // updateStatement(state.editStatement);
+    // When creating an issue, update the local sheet directly.
+    if (!sheet.value) return;
+    setSheetStatement(sheet.value, value);
   }
 };
 
