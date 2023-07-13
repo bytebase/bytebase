@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -12,9 +13,13 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -306,8 +311,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the updater: %d", sheet.UpdaterID))
 	}
 
+	engine := v1pb.Engine(sheetPayload.SchemaDesign.Engine)
 	schema := sheet.Statement
-	schemaMetadata, err := transformSchemaToDatabaseMetadata(schema)
+	schemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, schema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
@@ -333,7 +339,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 			schemaVersion = changeHistory.UID
 		}
 	}
-	baselineSchemaMetadata, err := transformSchemaToDatabaseMetadata(baselineSchema)
+	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, baselineSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
@@ -345,7 +351,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		SchemaMetadata:         schemaMetadata,
 		BaselineSchema:         baselineSchema,
 		BaselineSchemaMetadata: baselineSchemaMetadata,
-		Engine:                 v1pb.Engine(sheetPayload.SchemaDesign.Engine),
+		Engine:                 engine,
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		SchemaVersion:          schemaVersion,
 		Creator:                fmt.Sprintf("users/%s", creator.Email),
@@ -355,10 +361,167 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}, nil
 }
 
-func transformSchemaToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
-	// TODO: implement this.
-	log.Info(fmt.Sprintf("schema: %s", schema))
-	return &v1pb.DatabaseMetadata{}, nil
+func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) (*v1pb.DatabaseMetadata, error) {
+	switch engine {
+	case v1pb.Engine_MYSQL:
+		return parseMySQLSchemaStringToDatabaseMetadata(schema)
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+	}
+}
+
+func parseMySQLSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
+	list, err := parser.ParseMySQL(schema)
+	if err != nil {
+		return nil, err
+	}
+
+	listener := &mysqlTransformer{
+		state: newDatabaseState(),
+	}
+	listener.state.schemas[""] = newSchemaState()
+
+	for _, stmt := range list {
+		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
+	}
+
+	return listener.state.convertToDatabaseMetadata(), listener.err
+}
+
+type mysqlTransformer struct {
+	*mysql.BaseMySQLParserListener
+
+	state        *databaseState
+	currentTable string
+	err          error
+}
+
+type databaseState struct {
+	name    string
+	schemas map[string]*schemaState
+}
+
+func newDatabaseState() *databaseState {
+	return &databaseState{
+		schemas: make(map[string]*schemaState),
+	}
+}
+
+func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
+	schemas := []*v1pb.SchemaMetadata{}
+	for _, schema := range s.schemas {
+		schemas = append(schemas, schema.convertToSchemaMetadata())
+	}
+	return &v1pb.DatabaseMetadata{
+		Name:    s.name,
+		Schemas: schemas,
+	}
+}
+
+type schemaState struct {
+	name   string
+	tables map[string]*tableState
+}
+
+func newSchemaState() *schemaState {
+	return &schemaState{
+		tables: make(map[string]*tableState),
+	}
+}
+
+func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
+	tables := []*v1pb.TableMetadata{}
+	for _, table := range s.tables {
+		tables = append(tables, table.convertToTableMetadata())
+	}
+	return &v1pb.SchemaMetadata{
+		Name:   s.name,
+		Tables: tables,
+	}
+}
+
+type tableState struct {
+	name    string
+	columns map[string]*columnState
+}
+
+func newTableState() *tableState {
+	return &tableState{
+		columns: make(map[string]*columnState),
+	}
+}
+
+func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
+	columns := []*v1pb.ColumnMetadata{}
+	for _, column := range t.columns {
+		columns = append(columns, column.convertToColumnMetadata())
+	}
+	return &v1pb.TableMetadata{
+		Name:    t.name,
+		Columns: columns,
+	}
+}
+
+type columnState struct {
+	name string
+	tp   string
+}
+
+func (c *columnState) convertToColumnMetadata() *v1pb.ColumnMetadata {
+	return &v1pb.ColumnMetadata{
+		Name: c.name,
+		Type: c.tp,
+	}
+}
+
+// EnterCreateTable is called when production createTable is entered.
+func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if t.err != nil {
+		return
+	}
+	databaseName, tableName := parser.NormalizeMySQLTableName(ctx.TableName())
+	if databaseName != "" {
+		if t.state.name == "" {
+			t.state.name = databaseName
+		} else if t.state.name != databaseName {
+			t.err = errors.New("multiple database names found: " + t.state.name + ", " + databaseName)
+			return
+		}
+	}
+
+	schema := t.state.schemas[""]
+	if _, ok := schema.tables[tableName]; ok {
+		t.err = errors.New("multiple table names found: " + tableName)
+		return
+	}
+
+	schema.tables[tableName] = newTableState()
+	t.currentTable = tableName
+}
+
+// ExitCreateTable is called when production createTable is exited.
+func (t *mysqlTransformer) ExitCreateTable(_ *mysql.CreateTableContext) {
+	t.currentTable = ""
+}
+
+// EnterColumnDefinition is called when production columnDefinition is entered.
+func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionContext) {
+	if t.err != nil || t.currentTable == "" {
+		return
+	}
+
+	_, _, columnName := parser.NormalizeMySQLColumnName(ctx.ColumnName())
+	dataType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.FieldDefinition().DataType())
+	table := t.state.schemas[""].tables[t.currentTable]
+	if _, ok := table.columns[columnName]; ok {
+		t.err = errors.New("multiple column names found: " + columnName + " in table " + t.currentTable)
+		return
+	}
+
+	table.columns[columnName] = &columnState{
+		name: columnName,
+		tp:   dataType,
+	}
 }
 
 func getDesignSchema(from *v1pb.DatabaseMetadata, to *v1pb.DatabaseMetadata, baselineSchema string) (string, error) {
