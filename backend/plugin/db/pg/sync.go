@@ -690,7 +690,7 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	// version is a string in the form of "major.minor".
 	// We need to check if the major version is greater than or equal to 1 and the minor version is greater than or equal to 8.
 	versions := strings.Split(version, ".")
-	if len(versions) == 2 && versions[0] == "1" && versions[1] >= "8" {
+	if len(versions) == 2 && ((versions[0] == "1" && versions[1] >= "8") || versions[0] > "1") {
 		query = `
 		SELECT
 			pg_database.datname,
