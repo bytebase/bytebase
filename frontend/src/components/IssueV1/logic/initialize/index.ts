@@ -4,7 +4,7 @@ import { useRoute, useRouter, _RouteLocationBase } from "vue-router";
 import { ComposedIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { experimentalFetchIssueByUID } from "@/store";
 import { idFromSlug } from "@/utils";
-import { createIssue } from "./create";
+import { createIssueSkeleton } from "./create";
 
 export function useInitializeIssue(issueSlug: Ref<string>) {
   const isCreating = computed(() => issueSlug.value.toLowerCase() == "new");
@@ -24,7 +24,7 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   const runner = async (uid: string, url: string) => {
     const issue =
       uid === String(EMPTY_ID)
-        ? await createIssue(router.resolve(url))
+        ? await createIssueSkeleton(router.resolve(url))
         : await experimentalFetchIssueByUID(uid);
     return {
       issue,

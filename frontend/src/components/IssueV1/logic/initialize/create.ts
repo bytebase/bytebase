@@ -27,7 +27,7 @@ type CreateIssueParams = {
   route: _RouteLocationBase;
 };
 
-export const createIssue = async (route: _RouteLocationBase) => {
+export const createIssueSkeleton = async (route: _RouteLocationBase) => {
   const issue = emptyIssue();
 
   const project = await useProjectV1Store().getOrFetchProjectByUID(
