@@ -763,12 +763,42 @@ func getTriggers(txn *sql.Tx, dbType db.Type, dbName string) ([]*triggerSchema, 
 // getTriggerStmt gets the create statement of a trigger.
 func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE TRIGGER `%s`.`%s`;", dbName, triggerName)
-	var sqlmode, stmt, charset, collation, unused string
-	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
+	rows, err := txn.Query(query)
+	if err != nil {
 		return "", err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+
+	var sqlmode, stmt, charset, collation string
+	var unused any
+	for rows.Next() {
+		cols := make([]any, len(columns))
+		// The query SHOW CREATE TRIGGER returns uncertain number of columns.
+		for i := 0; i < len(columns); i++ {
+			switch columns[i] {
+			case "sql_mode":
+				cols[i] = &sqlmode
+			case "SQL Original Statement":
+				cols[i] = &stmt
+			case "character_set_client":
+				cols[i] = &charset
+			case "collation_connection":
+				cols[i] = &collation
+			default:
+				cols[i] = &unused
+			}
+		}
+		if err := rows.Scan(cols...); err != nil {
+			return "", errors.Wrapf(err, "cannot scan row from %q query", query)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
 	}
 	return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
 }
