@@ -52,8 +52,13 @@ import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
 import StageInfo from "./StageInfo";
 import Actions from "./Actions";
-import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
-import { useIssueContext } from "../../logic";
+import {
+  activeTaskInStageV1,
+  activeTaskInRollout,
+  sheetNameOfTaskV1,
+  getSheetStatement,
+} from "@/utils";
+import { getLocalSheetByName, useIssueContext } from "../../logic";
 import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 
 const { isCreating, issue, selectedStage } = useIssueContext();
@@ -71,11 +76,11 @@ const isValidStage = (stage: Stage): boolean => {
 
   for (const task of stage.tasks) {
     if (TaskTypeListWithStatement.includes(task.type)) {
-      return false;
-      // if (task.)
-      // if (task.sheetId === undefined || task.sheetId === UNKNOWN_ID) {
-      //   return false;
-      // }
+      const sheetName = sheetNameOfTaskV1(task);
+      const sheet = getLocalSheetByName(sheetName);
+      if (!getSheetStatement(sheet)) {
+        return false;
+      }
     }
   }
   return true;

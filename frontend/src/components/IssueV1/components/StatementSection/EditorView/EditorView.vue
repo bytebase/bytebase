@@ -338,7 +338,7 @@ const handleUploadFile = async (event: Event) => {
     // TODO
     const { filename, content: statement } = await readFileAsync(event, 100);
     await new Promise((r) => setTimeout(r, 500));
-    console.log(filename, statement.substr(0, 100));
+    console.log(filename, statement.substring(0, 100));
     handleStatementChange(statement);
 
     resetTempEditState();
