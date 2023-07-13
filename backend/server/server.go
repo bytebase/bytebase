@@ -599,6 +599,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.stateCfg, s.ActivityManager))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
+	v1pb.RegisterSchemaDesignServiceServer(s.grpcServer, v1.NewSchemaDesignService(s.store, s.licenseService))
 	v1pb.RegisterCelServiceServer(s.grpcServer, v1.NewCelService())
 	v1pb.RegisterLoggingServiceServer(s.grpcServer, v1.NewLoggingService(s.store))
 	v1pb.RegisterBookmarkServiceServer(s.grpcServer, v1.NewBookmarkService(s.store))
