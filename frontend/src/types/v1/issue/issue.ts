@@ -29,6 +29,9 @@ export interface ComposedIssue extends Issue {
   projectEntity: ComposedProject;
 }
 
+export const ESTABLISH_BASELINE_SQL =
+  "/* Establish baseline using current schema */";
+
 export const EMPTY_ISSUE_NAME = `projects/${EMPTY_ID}/issues/${EMPTY_ID}`;
 export const UNKNOWN_ISSUE_NAME = `projects/${UNKNOWN_ID}/issues/${UNKNOWN_ID}`;
 

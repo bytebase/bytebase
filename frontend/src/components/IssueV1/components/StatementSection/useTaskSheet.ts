@@ -1,29 +1,60 @@
-import { computed } from "vue";
-import { useSheetByName } from "@/store";
+import { computed, ref, watch } from "vue";
+import { useSheetV1Store } from "@/store";
+import {
+  extractSheetUID,
+  getSheetStatement,
+  setSheetStatement,
+  sheetNameOfTaskV1,
+} from "@/utils";
+import { getLocalSheetByName, useIssueContext } from "../../logic";
+import { ESTABLISH_BASELINE_SQL, UNKNOWN_ID } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
-import { sheetNameOfTaskV1 } from "@/utils";
-import { useIssueContext } from "../../logic";
-
-export const ESTABLISH_BASELINE_SQL =
-  "/* Establish baseline using current schema */";
 
 export const useTaskSheet = () => {
-  const { isCreating, issue, selectedTask } = useIssueContext();
+  const sheetStore = useSheetV1Store();
+  const { isCreating, selectedTask } = useIssueContext();
 
   const sheetName = computed(() => {
-    if (isCreating.value) {
-      return `${issue.value.project}/sheets/-1`;
-    }
     return sheetNameOfTaskV1(selectedTask.value);
   });
-  const { sheet, ready: sheetReady } = useSheetByName(sheetName);
-  const sheetStatement = computed(() => {
-    if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-      return ESTABLISH_BASELINE_SQL;
+  const sheetReady = ref(false);
+  const sheet = computed(() => {
+    const name = sheetName.value;
+    if (isCreating.value) {
+      return getLocalSheetByName(name);
     }
+    return sheetStore.getSheetByName(name);
+  });
+  watch(
+    [isCreating, sheetName],
+    ([isCreating, sheetName]) => {
+      if (isCreating) {
+        sheetReady.value = true;
+      } else {
+        if (!sheetName) return;
+        if (extractSheetUID(sheetName) === String(UNKNOWN_ID)) return;
 
-    if (!sheetReady.value || !sheet.value) return "";
-    return new TextDecoder().decode(sheet.value.content);
+        sheetReady.value = false;
+        sheetStore.getOrFetchSheetByName(sheetName).finally(() => {
+          sheetReady.value = true;
+        });
+      }
+    },
+    { immediate: true }
+  );
+  const sheetStatement = computed({
+    get() {
+      if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
+        return ESTABLISH_BASELINE_SQL;
+      }
+
+      if (!sheetReady.value || !sheet.value) return "";
+      return getSheetStatement(sheet.value);
+    },
+    set(statement) {
+      if (!sheetReady.value || !sheet.value) return;
+      setSheetStatement(sheet.value, statement);
+    },
   });
 
   return {

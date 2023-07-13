@@ -1,5 +1,6 @@
 import { type _RouteLocationBase } from "vue-router";
 import { v4 as uuidv4 } from "uuid";
+import { groupBy, orderBy } from "lodash-es";
 
 import {
   useDatabaseV1Store,
@@ -14,10 +15,10 @@ import {
   Plan_Spec,
   Plan_Step,
 } from "@/types/proto/v1/rollout_service";
-import { rolloutServiceClient } from "@/grpcweb";
-import { groupBy, orderBy } from "lodash-es";
-import { TemplateType } from "@/plugins";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import { rolloutServiceClient } from "@/grpcweb";
+import { TemplateType } from "@/plugins";
+import { nextUID } from "../base";
 
 type CreateIssueParams = {
   databaseUIDList: string[];
@@ -214,11 +215,4 @@ const prepareDatabaseListByProject = async (project: string) => {
     parent: `instances/-`,
     filter: `project == "${project}"`,
   });
-};
-
-const state = {
-  uid: 10000000,
-};
-const nextUID = () => {
-  return String(state.uid++);
 };

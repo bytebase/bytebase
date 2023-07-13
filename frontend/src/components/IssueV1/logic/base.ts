@@ -19,6 +19,13 @@ import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
 import { extractReviewContext } from "./review";
 import { TenantMode } from "@/types/proto/v1/project_service";
 
+const state = {
+  uid: 1,
+};
+export const nextUID = () => {
+  return String(state.uid++);
+};
+
 export const useBaseIssueContext = (
   context: Pick<IssueContext, "isCreating" | "ready" | "issue">
 ): Partial<IssueContext> => {

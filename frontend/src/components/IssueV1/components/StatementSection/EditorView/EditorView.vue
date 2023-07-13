@@ -135,7 +135,6 @@
     <div>{{ selectedTask }}</div>
     <div>sheetName: {{ sheetName }}</div>
     <div>sheetReady: {{ sheetReady }}</div>
-    <div>sheet: {{ typeof sheet }}</div>
     <div>isTaskSheetOversize: {{ isTaskSheetOversize }}</div>
   </div>
 </template>

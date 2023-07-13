@@ -166,3 +166,12 @@ export const sheetNameOfTask = (task: Task) => {
 
   return getSheetPathByLegacyProject(project, sheetId);
 };
+
+export const setSheetStatement = (sheet: Sheet, statement: string) => {
+  sheet.content = new TextEncoder().encode(statement);
+  sheet.contentSize = statement.length;
+};
+
+export const getSheetStatement = (sheet: Sheet) => {
+  return new TextDecoder().decode(sheet.content);
+};
