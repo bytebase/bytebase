@@ -15,7 +15,7 @@ interface LocalState {
 }
 
 const { schemaDesignList } = useSchemaDesignList();
-const state = reactive<LocalState>({
+const _ = reactive<LocalState>({
   tab: "TABLE",
 });
 </script>
