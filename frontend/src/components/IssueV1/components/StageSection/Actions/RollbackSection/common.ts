@@ -114,7 +114,7 @@ export const useRollbackContext = () => {
   const rollbackEnabled = computed((): boolean => {
     if (isCreating.value) {
       // TODO: see if rollback enabled from issue plan
-      return false;
+      return task.value.databaseDataUpdate?.rollbackEnabled ?? false;
 
       // if (isTenantMode.value) {
       //   // In tenant mode, all tasks share a common MigrationDetail

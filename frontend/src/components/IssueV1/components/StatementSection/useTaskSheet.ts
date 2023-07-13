@@ -7,12 +7,12 @@ import {
   sheetNameOfTaskV1,
 } from "@/utils";
 import { getLocalSheetByName, useIssueContext } from "../../logic";
-import { ESTABLISH_BASELINE_SQL, UNKNOWN_ID } from "@/types";
+import { ESTABLISH_BASELINE_SQL } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 
 export const useTaskSheet = () => {
   const sheetStore = useSheetV1Store();
-  const { isCreating, selectedTask } = useIssueContext();
+  const { selectedTask } = useIssueContext();
 
   const sheetName = computed(() => {
     return sheetNameOfTaskV1(selectedTask.value);
@@ -20,20 +20,19 @@ export const useTaskSheet = () => {
   const sheetReady = ref(false);
   const sheet = computed(() => {
     const name = sheetName.value;
-    if (isCreating.value) {
+    const uid = extractSheetUID(name);
+    if (uid.startsWith("-")) {
       return getLocalSheetByName(name);
     }
     return sheetStore.getSheetByName(name);
   });
   watch(
-    [isCreating, sheetName],
-    ([isCreating, sheetName]) => {
-      if (isCreating) {
+    sheetName,
+    (sheetName) => {
+      const uid = extractSheetUID(sheetName);
+      if (uid.startsWith("-")) {
         sheetReady.value = true;
       } else {
-        if (!sheetName) return;
-        if (extractSheetUID(sheetName) === String(UNKNOWN_ID)) return;
-
         sheetReady.value = false;
         sheetStore.getOrFetchSheetByName(sheetName).finally(() => {
           sheetReady.value = true;

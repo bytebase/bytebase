@@ -20,10 +20,10 @@ import { extractReviewContext } from "./review";
 import { TenantMode } from "@/types/proto/v1/project_service";
 
 const state = {
-  uid: 1,
+  uid: -101,
 };
 export const nextUID = () => {
-  return String(state.uid++);
+  return String(state.uid--);
 };
 
 export const useBaseIssueContext = (

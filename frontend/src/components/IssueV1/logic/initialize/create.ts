@@ -6,6 +6,7 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
+  useSheetV1Store,
 } from "@/store";
 import { ComposedProject, emptyIssue, UNKNOWN_ID } from "@/types";
 import {
@@ -137,8 +138,18 @@ export const buildSpecForTarget = async (
     spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
       target,
       type: Plan_ChangeDatabaseConfig_Type.DATA,
-      sheet: `${project.name}/sheets/${nextUID()}`,
     });
+    if (route.query.sheetId) {
+      const sheet = await useSheetV1Store().getOrFetchSheetByUid(
+        route.query.sheetId as string
+      );
+      if (sheet) {
+        spec.changeDatabaseConfig.sheet = sheet.name;
+      }
+    }
+    if (!spec.changeDatabaseConfig.sheet) {
+      spec.changeDatabaseConfig.sheet = `${project.name}/sheets/${nextUID()}`;
+    }
   }
   if (template === "bb.issue.database.schema.update") {
     const type =
