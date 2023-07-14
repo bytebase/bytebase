@@ -1583,7 +1583,8 @@
           "github-application-id-error": "应用 ID 必须是 20 个字母长度",
           "github-secret-error": "Secret 必须是 40 个字母长度",
           "bitbucket-application-id-error": "应用 ID 必须是 18 个字母长度",
-          "bitbucket-secret-error": "Secret 必须是 32 个字母长度"
+          "bitbucket-secret-error": "Secret 必须是 32 个字母长度",
+          "github-enterprise-login-as-admin": "以组织管理员身份登录您部署的 GitHub Enterprise 站点。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。"
         },
         "confirm": {
           "confirm-info": "确认信息",
