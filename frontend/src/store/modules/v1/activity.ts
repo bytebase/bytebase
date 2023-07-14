@@ -65,7 +65,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     const resp = await loggingServiceClient.listLogs({
       orderBy: find.order ? `create_time ${find.order}` : "",
       filter: buildFilter(find),
-      pageSize: find.pageSize,
+      pageSize: find.pageSize ?? 1000,
       pageToken: find.pageToken,
     });
 
