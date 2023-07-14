@@ -47,10 +47,6 @@ const { issue } = useIssueContext();
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
-  console.log(
-    "issue.value.rolloutEntity.stages",
-    issue.value.rolloutEntity.stages
-  );
   if (issue.value.rolloutEntity.stages.some((stage) => !isValidStage(stage))) {
     errorList.push("Missing SQL statement in some stages.");
   }

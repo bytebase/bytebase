@@ -10,7 +10,7 @@
           {{ $t("issue.assignee-tooltip") }}
         </div>
       </NTooltip>
-      <span v-if="true || isCreating" class="text-red-600">*</span>
+      <span v-if="isCreating" class="text-red-600">*</span>
 
       <AssigneeAttentionButton />
     </div>
@@ -20,6 +20,7 @@
       :user="assigneeUID"
       :filter="filterAssignee"
       style="width: 12rem"
+      @update:user="changeAssigneeUID"
     />
   </div>
 </template>
@@ -51,6 +52,19 @@ const assigneeUID = computed(() => {
   if (!user) return undefined;
   return extractUserUID(user.name);
 });
+
+const changeAssigneeUID = (uid: string | undefined) => {
+  if (!uid || uid === String(UNKNOWN_ID)) {
+    issue.value.assignee = "";
+    return;
+  }
+  const assignee = userStore.getUserById(uid);
+  if (!assignee) {
+    issue.value.assignee = "";
+    return;
+  }
+  issue.value.assignee = `users/${assignee.email}`;
+};
 
 const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 const filterAssignee = (user: User): boolean => {
