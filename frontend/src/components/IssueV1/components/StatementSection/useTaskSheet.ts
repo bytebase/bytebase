@@ -30,6 +30,7 @@ export const useTaskSheet = () => {
     sheetName,
     (sheetName) => {
       const uid = extractSheetUID(sheetName);
+      if (!uid) return;
       if (uid.startsWith("-")) {
         sheetReady.value = true;
       } else {
