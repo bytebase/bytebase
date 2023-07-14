@@ -93,7 +93,6 @@
       </div>
     </dl>
   </div>
-  <div>{{ config }}</div>
 </template>
 
 <script lang="ts">
