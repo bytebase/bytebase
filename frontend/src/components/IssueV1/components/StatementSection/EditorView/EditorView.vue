@@ -36,7 +36,10 @@
         </NButton>
       </div>
 
-      <div class="flex items-center justify-end gap-x-2">
+      <div
+        v-if="selectedTask.type !== Task_Type.DATABASE_SCHEMA_BASELINE"
+        class="flex items-center justify-end gap-x-2"
+      >
         <template v-if="isCreating">
           <FormatOnSaveCheckbox
             v-model:value="formatOnSave"
@@ -176,6 +179,7 @@ import { EditState, useTempEditState } from "./useTempEditState";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
 import { readFileAsync } from "./utils";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
 
 type LocalState = EditState & {
   showFeatureModal: boolean;
@@ -211,11 +215,17 @@ const { markers } = useSQLAdviceMarkers();
 /**
  * to set the MonacoEditor as readonly
  * This happens when
+ * - BASELINE issue
  * - Not in edit mode
  * - Disallowed to edit statement
  */
 const isEditorReadonly = computed(() => {
-  if (isCreating.value) return false;
+  if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
+    return true;
+  }
+  if (isCreating.value) {
+    return false;
+  }
   return (
     !state.isEditing ||
     // !allowEditStatement.value || // TODO
