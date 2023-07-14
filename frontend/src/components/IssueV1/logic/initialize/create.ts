@@ -1,6 +1,7 @@
 import { type _RouteLocationBase } from "vue-router";
 import { v4 as uuidv4 } from "uuid";
 import { groupBy, orderBy } from "lodash-es";
+import { reactive } from "vue";
 
 import {
   useDatabaseV1Store,
@@ -200,7 +201,7 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
     });
   });
 
-  return rollout;
+  return reactive(rollout);
 };
 
 export const prepareDatabaseList = async (

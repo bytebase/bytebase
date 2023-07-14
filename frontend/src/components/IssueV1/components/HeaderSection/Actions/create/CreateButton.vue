@@ -30,7 +30,10 @@ import { computed } from "vue";
 import { NTooltip, NButton } from "naive-ui";
 
 import { Issue } from "@/types/proto/v1/issue_service";
-import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
+import {
+  Plan,
+  Plan_ChangeDatabaseConfig,
+} from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { useSheetV1Store } from "@/store";
 import {
@@ -38,11 +41,16 @@ import {
   isValidStage,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 
 const { issue } = useIssueContext();
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
+  console.log(
+    "issue.value.rolloutEntity.stages",
+    issue.value.rolloutEntity.stages
+  );
   if (issue.value.rolloutEntity.stages.some((stage) => !isValidStage(stage))) {
     errorList.push("Missing SQL statement in some stages.");
   }
@@ -54,7 +62,15 @@ const issueCreateErrorList = computed(() => {
 
 const doCreateIssue = async () => {
   await createSheets();
-  console.log(Issue.toJSON(issue.value));
+  const plan = await createPlan();
+  if (!plan) return;
+
+  const createdIssue = await issueServiceClient.createIssue({
+    parent: issue.value.project,
+    issue: issue.value,
+  });
+
+  console.log("created issue", Issue.toJSON(createdIssue));
 };
 
 // Create sheets for spec configs and update their resource names.
@@ -91,5 +107,17 @@ const createSheets = async () => {
   configWithSheetList.forEach((config) => {
     config.sheet = sheetNameMap.get(config.sheet) ?? "";
   });
+};
+
+const createPlan = async () => {
+  const plan = issue.value.planEntity;
+  if (!plan) return;
+  const createdPlan = await rolloutServiceClient.createPlan({
+    parent: issue.value.project,
+    plan,
+  });
+  console.log("created plan", Plan.toJSON(createdPlan));
+  issue.value.plan = createPlan.name;
+  return createdPlan;
 };
 </script>

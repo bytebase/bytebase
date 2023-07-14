@@ -139,6 +139,7 @@
     <div>sheet.type: {{ sheet?.type }}</div>
     <div>sheet.visibility: {{ sheet?.visibility }}</div>
     <div>sheet.title: {{ sheet?.title }}</div>
+    <div>sheet.content.length: {{ sheet?.content?.length }}</div>
     <div>isTaskSheetOversize: {{ isTaskSheetOversize }}</div>
     <div>isEditorReadonly: {{ isEditorReadonly }}</div>
     <div>state.isEditing: {{ state.isEditing }}</div>
