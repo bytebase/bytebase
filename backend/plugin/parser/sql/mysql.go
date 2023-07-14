@@ -464,6 +464,43 @@ func (l *mysqlResourceExtractListener) EnterTableRef(ctx *parser.TableRefContext
 	l.resourceMap[resource.String()] = resource
 }
 
+// NormalizeMySQLTableName normalizes the given table name.
+func NormalizeMySQLTableName(ctx parser.ITableNameContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	if ctx.DotIdentifier() != nil {
+		return "", normalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+	}
+	return "", ""
+}
+
+// NormalizeMySQLColumnName normalizes the given column name.
+func NormalizeMySQLColumnName(ctx parser.IColumnNameContext) (string, string, string) {
+	if ctx.Identifier() != nil {
+		return "", "", normalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return normalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
+}
+
+func normalizeMySQLFieldIdentifier(ctx parser.IFieldIdentifierContext) (string, string, string) {
+	list := []string{}
+	if ctx.QualifiedIdentifier() != nil {
+		id1, id2 := normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+		list = append(list, id1, id2)
+	}
+
+	if ctx.DotIdentifier() != nil {
+		list = append(list, normalizeMySQLIdentifier(ctx.DotIdentifier().Identifier()))
+	}
+
+	for len(list) < 3 {
+		list = append([]string{""}, list...)
+	}
+
+	return list[0], list[1], list[2]
+}
+
 func normalizeMySQLQualifiedIdentifier(qualifiedIdentifier parser.IQualifiedIdentifierContext) (string, string) {
 	list := []string{normalizeMySQLIdentifier(qualifiedIdentifier.Identifier())}
 	if qualifiedIdentifier.DotIdentifier() != nil {
