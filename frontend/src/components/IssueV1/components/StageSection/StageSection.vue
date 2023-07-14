@@ -21,7 +21,7 @@
       </div>
 
       <NTooltip
-        v-if="!isCreating && !isValidStage(stage)"
+        v-if="isCreating && !isValidStage(stage)"
         trigger="hover"
         placement="top"
       >
@@ -83,10 +83,12 @@ const isActiveStage = (stage: Stage): boolean => {
 const stageClass = (stage: Stage): string[] => {
   const classList: string[] = [];
 
-  if (!isCreating.value && !isValidStage(stage)) {
-    classList.push("invalid");
+  if (isCreating.value) {
+    classList.push("create");
+    if (!isValidStage(stage)) {
+      classList.push("invalid");
+    }
   }
-  if (isCreating.value) classList.push("create");
   if (isActiveStage(stage)) classList.push("active");
   const task = activeTaskInStageV1(stage);
   classList.push(`status_${task_StatusToJSON(task.status).toLowerCase()}`);
