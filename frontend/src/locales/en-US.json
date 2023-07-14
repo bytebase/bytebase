@@ -1552,6 +1552,7 @@
         "add-success": "Successfully added Git provider {vcs}",
         "choose": "Choose Git provider",
         "gitlab-self-host-ce-ee": "Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)",
+        "github-self-host-ee": "Self-host GitHub Enterprise Edition (EE)",
         "basic-info": {
           "self": "Basic info",
           "gitlab-instance-url": "GitLab instance URL",

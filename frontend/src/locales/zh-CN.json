@@ -1588,7 +1588,8 @@
         "confirm": {
           "confirm-info": "确认信息",
           "confirm-description": "创建完成后，这个 Git 供应方将出现在项目面板「GitOps」Tab 下，可以被项目所有者选中。"
-        }
+        },
+        "github-self-host-ee": "自托管 GitHub 企业版 (EE)"
       },
       "git-provider": {
         "gitlab-self-host-application-id-label": "注册为 GitLab 实例级 OAuth 应用的应用 ID。",

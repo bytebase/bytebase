@@ -42,6 +42,15 @@
             <div class="whitespace-nowrap">GitHub.com</div>
           </div>
           <div
+            v-else-if="config.uiType == 'GITHUB_ENTERPRISE'"
+            class="flex flex-row items-center space-x-2"
+          >
+            <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+            <div class="whitespace-nowrap">
+              {{ $t("gitops.setting.add-git-provider.github-self-host-ee") }}
+            </div>
+          </div>
+          <div
             v-else-if="config.uiType == 'BITBUCKET_ORG'"
             class="flex flex-row items-center space-x-2"
           >
@@ -84,6 +93,7 @@
       </div>
     </dl>
   </div>
+  <div>{{ config }}</div>
 </template>
 
 <script lang="ts">
