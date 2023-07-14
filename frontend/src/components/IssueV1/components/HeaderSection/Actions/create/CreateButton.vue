@@ -42,6 +42,7 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
+import { extractSheetUID } from "@/utils";
 
 const { issue } = useIssueContext();
 
@@ -85,9 +86,13 @@ const createSheets = async () => {
     if (!config) continue;
     configWithSheetList.push(config);
     if (pendingCreateSheetMap.has(config.sheet)) continue;
-    const sheet = getLocalSheetByName(config.sheet);
-    sheet.database = config.target;
-    pendingCreateSheetMap.set(sheet.name, sheet);
+    const uid = extractSheetUID(config.sheet);
+    if (uid.startsWith("-")) {
+      // The sheet is pending create
+      const sheet = getLocalSheetByName(config.sheet);
+      sheet.database = config.target;
+      pendingCreateSheetMap.set(sheet.name, sheet);
+    }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
   const sheetNameMap = new Map<string, string>();
@@ -101,7 +106,10 @@ const createSheets = async () => {
     sheetNameMap.set(sheet.name, createdSheet.name);
   }
   configWithSheetList.forEach((config) => {
-    config.sheet = sheetNameMap.get(config.sheet) ?? "";
+    const uid = extractSheetUID(config.sheet);
+    if (uid.startsWith("-")) {
+      config.sheet = sheetNameMap.get(config.sheet) ?? "";
+    }
   });
 };
 
