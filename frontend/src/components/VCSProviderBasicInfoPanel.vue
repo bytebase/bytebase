@@ -156,7 +156,7 @@ export default defineComponent({
         if (props.config.uiType == "GITHUB_COM") {
           return "GitHub.com";
         } else if (props.config.uiType === "GITHUB_ENTERPRISE") {
-          return "GitHub Enterprise";
+          return "Self Host GitHub Enterprise";
         }
       } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return "Bitbucket.org";
@@ -268,7 +268,7 @@ export default defineComponent({
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "";
         // eslint-disable-next-line vue/no-mutating-props
-        props.config.name = "Self Hosted GitHub";
+        props.config.name = "Self Host GitHub Enterprise";
       } else if (props.config.uiType == "BITBUCKET_ORG") {
         // eslint-disable-next-line vue/no-mutating-props
         props.config.type = ExternalVersionControl_Type.BITBUCKET;

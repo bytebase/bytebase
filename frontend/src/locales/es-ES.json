@@ -1588,12 +1588,14 @@
           "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres",
           "github-secret-error": "El secreto debe ser una cadena alfanumérica de 40 caracteres",
           "bitbucket-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 18 caracteres",
-          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres"
+          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres",
+          "github-enterprise-login-as-admin": "Inicia sesión en tu sitio GitHub Enterprise como administrador de la organización. Esta cuenta debe ser un administrador de organización de GitHub (con acceso a la página de configuración de la organización)."
         },
         "confirm": {
           "confirm-info": "Confirmar la información",
           "confirm-description": "Después de la creación, este proveedor de Git se puede elegir en la pestaña \"GitOps\" del panel del proyecto por el propietario del proyecto."
-        }
+        },
+        "github-self-host-ee": "Autohospedado de GitHub Enterprise Edition (EE)"
       },
       "git-provider": {
         "gitlab-self-host-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada en toda la instancia.",
