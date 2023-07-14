@@ -28,6 +28,7 @@ import { TemplateType } from "@/plugins";
 import { nextUID } from "../base";
 import { getSheetStatement, sheetNameOfTaskV1 } from "@/utils";
 import { getLocalSheetByName } from "../sheet";
+import { trySetDefaultAssignee } from "./assignee";
 
 type CreateIssueParams = {
   databaseUIDList: string[];
@@ -70,6 +71,8 @@ export const createIssueSkeleton = async (route: _RouteLocationBase) => {
   console.log("rollout", rollout);
   issue.rollout = rollout.name;
   issue.rolloutEntity = rollout;
+
+  await trySetDefaultAssignee(issue);
 
   return issue;
 };
