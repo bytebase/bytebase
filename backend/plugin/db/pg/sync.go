@@ -681,7 +681,7 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	}
 
 	result := make(map[string]*storepb.SlowQueryStatistics)
-	version, err := driver.getVersion(ctx)
+	version, err := driver.getPGStatStatementsVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
