@@ -141,8 +141,12 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 		return nil, errors.Errorf("bind user: %v", err)
 	}
 
+	identifier := entry.GetAttributeValue(p.config.FieldMapping.Identifier)
+	if identifier == "" {
+		return nil, errors.Errorf("the attribute %q is not found or has empty value", p.config.FieldMapping.Identifier)
+	}
 	return &storepb.IdentityProviderUserInfo{
-		Identifier:  entry.GetAttributeValue(p.config.FieldMapping.Identifier),
+		Identifier:  identifier,
 		DisplayName: entry.GetAttributeValue(p.config.FieldMapping.DisplayName),
 		Email:       entry.GetAttributeValue(p.config.FieldMapping.Email),
 	}, nil
