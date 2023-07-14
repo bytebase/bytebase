@@ -2,7 +2,7 @@
   <div v-if="shouldShowTaskBar" class="relative">
     <div
       ref="taskBar"
-      class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
+      class="task-list gap-2 py-2 px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
       :class="{
         'more-bottom': taskBarScrollState.bottom,
         'more-top': taskBarScrollState.top,
