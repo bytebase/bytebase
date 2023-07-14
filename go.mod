@@ -39,6 +39,7 @@ require (
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lestrrat-go/jwx/v2 v2.0.11
 	github.com/lib/pq v1.10.7
+	github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/microsoft/go-mssqldb v1.1.0
 	github.com/nyaruka/phonenumbers v1.1.7
@@ -59,6 +60,7 @@ require (
 	github.com/swaggo/echo-swagger v1.4.0
 	github.com/swaggo/swag v1.16.1
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
+	github.com/vjeantet/ldapserver v1.0.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.13.1
 	go.mongodb.org/mongo-driver v1.12.0

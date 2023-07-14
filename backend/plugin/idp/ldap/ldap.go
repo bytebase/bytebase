@@ -1,3 +1,4 @@
+// Package ldap is the plugin for LDAP Identity Provider.
 package ldap
 
 import (
@@ -21,8 +22,10 @@ type IdentityProvider struct {
 type SecurityProtocol string
 
 const (
+	// SecurityProtocolStartTLS represents the StartTLS security protocol.
 	SecurityProtocolStartTLS SecurityProtocol = "starttls"
-	SecurityProtocolLDAPS    SecurityProtocol = "ldaps"
+	// SecurityProtocolLDAPS represents the LDAPS security protocol.
+	SecurityProtocolLDAPS SecurityProtocol = "ldaps"
 )
 
 // IdentityProviderConfig is the configuration to be consumed by the LDAP
@@ -73,12 +76,12 @@ func NewIdentityProvider(config IdentityProviderConfig) (*IdentityProvider, erro
 
 func (p *IdentityProvider) dial() (*ldap.Conn, error) {
 	addr := fmt.Sprintf("%s:%d", p.config.Host, p.config.Port)
-	tlsCfg := &tls.Config{
+	tlsConfig := &tls.Config{
 		ServerName:         p.config.Host,
 		InsecureSkipVerify: p.config.SkipTLSVerify,
 	}
 	if p.config.SecurityProtocol == SecurityProtocolLDAPS {
-		conn, err := ldap.DialTLS("tcp", addr, tlsCfg)
+		conn, err := ldap.DialTLS("tcp", addr, tlsConfig)
 		if err != nil {
 			return nil, errors.Errorf("dial TLS: %v", err)
 		}
@@ -90,7 +93,7 @@ func (p *IdentityProvider) dial() (*ldap.Conn, error) {
 		return nil, errors.Errorf("dial: %v", err)
 	}
 	if p.config.SecurityProtocol == SecurityProtocolStartTLS {
-		if err = conn.StartTLS(tlsCfg); err != nil {
+		if err = conn.StartTLS(tlsConfig); err != nil {
 			_ = conn.Close()
 			return nil, errors.Errorf("start TLS: %v", err)
 		}
@@ -98,6 +101,7 @@ func (p *IdentityProvider) dial() (*ldap.Conn, error) {
 	return conn, nil
 }
 
+// Authenticate authenticates the user with the given username and password.
 func (p *IdentityProvider) Authenticate(username, password string) (*storepb.IdentityProviderUserInfo, error) {
 	conn, err := p.dial()
 	if err != nil {
