@@ -376,11 +376,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		},
 	}))
 
-	// Disallow to be embedded in an iFrame.
-	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
-		XFrameOptions: "DENY",
-	}))
-
 	// MetricReporter middleware.
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -610,7 +605,25 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(auth.GatewayResponseModifier))
+
+	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
+	// the user has to restart the server to take the latest value.
+	gatewayModifier := auth.GatewayResponseModifier{}
+	workspaceProfileSettingName := api.SettingWorkspaceProfile
+	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
+	if err != nil {
+		return nil, err
+	}
+	if setting != nil {
+		settingValue := new(storepb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
+			return nil, err
+		}
+		if settingValue.ExternalUrl != "" {
+			gatewayModifier.ExternalURL = settingValue.ExternalUrl
+		}
+	}
+	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
