@@ -376,11 +376,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		},
 	}))
 
-	// Disallow to be embedded in an iFrame.
-	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
-		XFrameOptions: "DENY",
-	}))
-
 	// MetricReporter middleware.
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

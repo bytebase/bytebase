@@ -43,9 +43,8 @@ func setCookie(response http.ResponseWriter, key, value string, httpOnly bool) {
 		Path:    "/",
 		// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 		HttpOnly: httpOnly,
-		// For now, we allow Bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
-		// cookie.Secure = true
-		SameSite: http.SameSiteStrictMode,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 }
 
