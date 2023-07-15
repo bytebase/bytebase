@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -196,7 +195,6 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *store.Activ
 	}
 
 	// TODO: update the advice list
-
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		log.Warn("Failed to marshal activity after executing sql statement",
@@ -404,7 +402,7 @@ func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 					return nil, err
 				}
 			}
-			if _, err := buf.Write(convertValueToBytes(value)); err != nil {
+			if _, err := buf.Write(convertValueToBytesInCSV(value)); err != nil {
 				return nil, err
 			}
 		}
@@ -417,7 +415,7 @@ func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func convertValueToBytes(value *v1pb.RowValue) []byte {
+func convertValueToBytesInCSV(value *v1pb.RowValue) []byte {
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
 		var result []byte
@@ -614,7 +612,45 @@ func convertValueValueToBytes(value *structpb.Value) []byte {
 }
 
 func (*SQLService) exportJSON(result *v1pb.QueryResult) ([]byte, error) {
-	return protojson.Marshal(result)
+	var results []map[string]any
+	for _, row := range result.Rows {
+		m := make(map[string]any)
+		for i, value := range row.Values {
+			m[result.ColumnNames[i]] = convertValueToStringInJSON(value)
+		}
+		results = append(results, m)
+	}
+	return json.MarshalIndent(results, "", "  ")
+}
+
+func convertValueToStringInJSON(value *v1pb.RowValue) string {
+	switch value.Kind.(type) {
+	case *v1pb.RowValue_StringValue:
+		return value.GetStringValue()
+	case *v1pb.RowValue_Int32Value:
+		return strconv.FormatInt(int64(value.GetInt32Value()), 10)
+	case *v1pb.RowValue_Int64Value:
+		return strconv.FormatInt(value.GetInt64Value(), 10)
+	case *v1pb.RowValue_Uint32Value:
+		return strconv.FormatUint(uint64(value.GetUint32Value()), 10)
+	case *v1pb.RowValue_Uint64Value:
+		return strconv.FormatUint(value.GetUint64Value(), 10)
+	case *v1pb.RowValue_FloatValue:
+		return strconv.FormatFloat(float64(value.GetFloatValue()), 'f', -1, 32)
+	case *v1pb.RowValue_DoubleValue:
+		return strconv.FormatFloat(value.GetDoubleValue(), 'f', -1, 64)
+	case *v1pb.RowValue_BoolValue:
+		return strconv.FormatBool(value.GetBoolValue())
+	case *v1pb.RowValue_BytesValue:
+		return base64.StdEncoding.EncodeToString(value.GetBytesValue())
+	case *v1pb.RowValue_NullValue:
+		return "null"
+	case *v1pb.RowValue_ValueValue:
+		// This is used by ClickHouse and Spanner only.
+		return value.GetValueValue().String()
+	default:
+		return ""
+	}
 }
 
 func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest) (*store.InstanceMessage, *store.DatabaseMessage, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
