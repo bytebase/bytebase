@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watchEffect } from "vue";
 import { defineStore } from "pinia";
 import { schemaDesignServiceClient } from "@/grpcweb";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
@@ -15,7 +15,9 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   // Actions
   const fetchSchemaDesignList = async () => {
     const { schemaDesigns } = await schemaDesignServiceClient.listSchemaDesigns(
-      {}
+      {
+        parent: "projects/-",
+      }
     );
     for (const schemaDesign of schemaDesigns) {
       schemaDesignMapByName.set(schemaDesign.name, schemaDesign);
@@ -84,16 +86,14 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
 export const useSchemaDesignList = () => {
   const store = useSchemaDesignStore();
   const ready = ref(false);
-  watch(
-    [],
-    () => {
-      ready.value = false;
-      store.fetchSchemaDesignList().then(() => {
-        ready.value = true;
-      });
-    },
-    { immediate: true }
-  );
+
+  watchEffect(() => {
+    ready.value = false;
+    store.fetchSchemaDesignList().then(() => {
+      ready.value = true;
+    });
+  });
+
   const schemaDesignList = computed(() => {
     return store.schemaDesignList;
   });

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full pl-1 pr-2 relative overflow-y-hidden">
+  <div class="w-full h-full px-2 relative overflow-y-hidden">
     <div class="w-full sticky top-0 pt-2 h-12 bg-white z-10">
       <NInput
         v-model:value="searchPattern"
@@ -54,19 +54,19 @@
 <script lang="ts" setup>
 import { escape, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
-import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
+import { computed, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import scrollIntoView from "scroll-into-view-if-needed";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import TableIcon from "~icons/heroicons-outline/table-cells";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 
+import { Engine } from "@/types/proto/v1/common";
+import { useSchemaDesignerContext, SchemaDesignerTabType } from "./common";
 import { generateUniqueTabId } from "@/store";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "./Modals/SchemaNameModal.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
-import { Engine } from "@/types/proto/v1/common";
-import { useSchemaDesignerContext, SchemaDesignerTabType } from "./common";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -184,46 +184,53 @@ const contextMenuOptions = computed(() => {
   return [];
 });
 
-onMounted(async () => {
-  const treeNodeList: TreeNode[] = [];
-  if (engine === Engine.MYSQL) {
-    for (const table of tableList.value) {
-      const tableTreeNode: TreeNodeForTable = {
-        type: "table",
-        key: `t-${table.name}`,
-        label: table.name,
-        isLeaf: true,
-        schema: "",
-        table: table.name,
-      };
-      treeNodeList.push(tableTreeNode);
-    }
-  } else {
-    for (const schema of schemaList.value) {
-      const schemaTreeNode: TreeNodeForSchema = {
-        type: "schema",
-        key: `s-${schema.name}`,
-        label: schema.name,
-        isLeaf: false,
-        schema: schema.name,
-      };
-      treeNodeList.push(schemaTreeNode);
-      for (const table of schema.tables) {
+watch(
+  () => [schemaList.value, tableList.value],
+  () => {
+    const treeNodeList: TreeNode[] = [];
+    if (engine === Engine.MYSQL) {
+      for (const table of tableList.value) {
         const tableTreeNode: TreeNodeForTable = {
           type: "table",
-          key: `t-${schema.name}-${table.name}`,
+          key: `t-${table.name}`,
           label: table.name,
           isLeaf: true,
-          schema: schema.name,
+          schema: "",
           table: table.name,
         };
-        schemaTreeNode.children?.push(tableTreeNode);
+        treeNodeList.push(tableTreeNode);
+      }
+    } else {
+      for (const schema of schemaList.value) {
+        const schemaTreeNode: TreeNodeForSchema = {
+          type: "schema",
+          key: `s-${schema.name}`,
+          label: schema.name,
+          isLeaf: false,
+          schema: schema.name,
+        };
+        treeNodeList.push(schemaTreeNode);
+        for (const table of schema.tables) {
+          const tableTreeNode: TreeNodeForTable = {
+            type: "table",
+            key: `t-${schema.name}-${table.name}`,
+            label: table.name,
+            isLeaf: true,
+            schema: schema.name,
+            table: table.name,
+          };
+          schemaTreeNode.children?.push(tableTreeNode);
+        }
       }
     }
-  }
 
-  treeDataRef.value = treeNodeList;
-});
+    treeDataRef.value = treeNodeList;
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
 
 watch(
   () => tabState.value.currentTabId,
@@ -358,7 +365,11 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
 
 const handleContextMenuDropdownSelect = async (key: string) => {
   const treeNode = contextMenu.treeNode;
-  if (treeNode?.type === "schema") {
+  if (!treeNode) {
+    return;
+  }
+
+  if (treeNode.type === "schema") {
     if (key === "create-table") {
       state.tableNameModalContext = {
         schema: treeNode.schema,
@@ -366,7 +377,7 @@ const handleContextMenuDropdownSelect = async (key: string) => {
     } else if (key === "drop-schema") {
       dropSchema(treeNode.schema);
     }
-  } else if (treeNode?.type === "table") {
+  } else if (treeNode.type === "table") {
     if (key === "drop") {
       dropTable(treeNode.schema, treeNode.table);
     }
