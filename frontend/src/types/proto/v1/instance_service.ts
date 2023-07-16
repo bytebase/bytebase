@@ -86,7 +86,9 @@ export interface ListInstancesResponse {
 
 export interface CreateInstanceRequest {
   /** The instance to create. */
-  instance?: Instance;
+  instance?:
+    | Instance
+    | undefined;
   /**
    * The ID to use for the instance, which will become the final component of
    * the instance's resource name.
@@ -106,9 +108,11 @@ export interface UpdateInstanceRequest {
    * The instance's `name` field is used to identify the instance to update.
    * Format: instances/{instance}
    */
-  instance?: Instance;
+  instance?:
+    | Instance
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteInstanceRequest {
@@ -150,7 +154,9 @@ export interface AddDataSourceRequest {
    * Identified by type.
    * Only READ_ONLY data source can be added.
    */
-  dataSource?: DataSource;
+  dataSource?:
+    | DataSource
+    | undefined;
   /** Validate only also tests the data source connection. */
   validateOnly: boolean;
 }
@@ -165,7 +171,7 @@ export interface RemoveDataSourceRequest {
    * Identified by type.
    * Only READ_ONLY data source can be removed.
    */
-  dataSource?: DataSource;
+  dataSource?: DataSource | undefined;
 }
 
 export interface UpdateDataSourceRequest {
@@ -175,9 +181,13 @@ export interface UpdateDataSourceRequest {
    */
   instance: string;
   /** Identified by type. */
-  dataSource?: DataSource;
+  dataSource?:
+    | DataSource
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?:
+    | string[]
+    | undefined;
   /** Validate only also tests the data source connection. */
   validateOnly: boolean;
 }
@@ -219,7 +229,7 @@ export interface Instance {
    */
   environment: string;
   activation: boolean;
-  options?: InstanceOptions;
+  options?: InstanceOptions | undefined;
 }
 
 export interface DataSource {

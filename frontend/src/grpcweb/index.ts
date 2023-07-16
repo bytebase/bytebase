@@ -30,6 +30,7 @@ import { LoggingServiceDefinition } from "@/types/proto/v1/logging_service";
 import { BookmarkServiceDefinition } from "@/types/proto/v1/bookmark_service";
 import { InboxServiceDefinition } from "@/types/proto/v1/inbox_service";
 import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
+import { SchemaDesignServiceDefinition } from "@/types/proto/v1/schema_design_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -173,6 +174,11 @@ export const inboxServiceClient = clientFactory.create(
 
 export const anomalyServiceClient = clientFactory.create(
   AnomalyServiceDefinition,
+  channel
+);
+
+export const schemaDesignServiceClient = clientFactory.create(
+  SchemaDesignServiceDefinition,
   channel
 );
 

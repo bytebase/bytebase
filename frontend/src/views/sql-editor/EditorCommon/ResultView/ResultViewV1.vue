@@ -72,6 +72,8 @@ import { provideSQLResultViewContext } from "./context";
 import ErrorView from "./ErrorView.vue";
 import RequestQueryButton from "./RequestQueryButton.vue";
 import { QueryResult } from "@/types/proto/v1/sql_service";
+import { useInstanceV1Store, usePolicyV1Store, useTabStore } from "@/store";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
@@ -99,6 +101,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const connection = computed(() => useTabStore().currentTab.connection);
 
 const viewMode = computed((): ViewMode => {
   const { resultSet } = props;
@@ -136,7 +139,23 @@ const tabName = (result: QueryResult, index: number) => {
   return `${t("common.query")} #${index + 1}`;
 };
 
+const disallowCopyingData = computed(() => {
+  const instance = useInstanceV1Store().getInstanceByUID(
+    connection.value.instanceId
+  );
+  const environment = instance.environment;
+  const policy = usePolicyV1Store().getPolicyByParentAndType({
+    parentPath: environment,
+    policyType: PolicyType.DISABLE_COPY_DATA,
+  });
+  if (policy?.disableCopyDataPolicy?.active) {
+    return true;
+  }
+  return false;
+});
+
 provideSQLResultViewContext({
   dark: toRef(props, "dark"),
+  disallowCopyingData,
 });
 </script>

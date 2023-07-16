@@ -26,6 +26,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
+	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -40,17 +41,19 @@ type Runner struct {
 	dbFactory       *dbfactory.DBFactory
 	stateCfg        *state.State
 	activityManager *activity.Manager
+	taskScheduler   *taskrun.Scheduler
 	relayRunner     *relay.Runner
 	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, relayRunner *relay.Runner, licenseService enterpriseAPI.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, relayRunner *relay.Runner, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
 		store:           store,
 		dbFactory:       dbFactory,
 		stateCfg:        stateCfg,
 		activityManager: activityManager,
+		taskScheduler:   taskScheduler,
 		relayRunner:     relayRunner,
 		licenseService:  licenseService,
 	}
@@ -181,24 +184,31 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return false, err
 	}
 
-	// For grant request, we will use a default approval template(Project owner) if no template is found.
-	if approvalTemplate == nil && issue.Type == api.IssueGrantRequest {
-		approvalTemplate = &storepb.ApprovalTemplate{
-			Flow: &storepb.ApprovalFlow{
-				Steps: []*storepb.ApprovalStep{
-					{
-						Type: storepb.ApprovalStep_ANY,
-						Nodes: []*storepb.ApprovalNode{
-							{
-								Type: storepb.ApprovalNode_ANY_IN_GROUP,
-								Payload: &storepb.ApprovalNode_GroupValue_{
-									GroupValue: storepb.ApprovalNode_PROJECT_OWNER,
-								},
-							},
-						},
-					},
-				},
-			},
+	// Grant privilege and close issue similar to actions on issue approval.
+	if issue.Type == api.IssueGrantRequest && approvalTemplate == nil {
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
+			return false, err
+		}
+		userID, err := strconv.Atoi(strings.TrimPrefix(payload.GrantRequest.User, "users/"))
+		if err != nil {
+			return false, err
+		}
+		newUser, err := r.store.GetUserByID(ctx, userID)
+		if err != nil {
+			return false, err
+		}
+		// Post project IAM policy update activity.
+		if _, err := r.activityManager.CreateActivity(ctx, &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.Project.UID,
+			Type:         api.ActivityProjectMemberCreate,
+			Level:        api.ActivityInfo,
+			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, payload.GrantRequest.Role),
+		}, &activity.Metadata{}); err != nil {
+			log.Warn("Failed to create project activity", zap.Error(err))
+		}
+		if err := r.taskScheduler.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
 

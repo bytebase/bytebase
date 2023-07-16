@@ -56,7 +56,7 @@ export interface CreatePlanRequest {
    */
   parent: string;
   /** The plan to create. */
-  plan?: Plan;
+  plan?: Plan | undefined;
 }
 
 export interface UpdatePlanRequest {
@@ -66,9 +66,11 @@ export interface UpdatePlanRequest {
    * The plan's `name` field is used to identify the plan to update.
    * Format: projects/{project}/plans/{plan}
    */
-  plan?: Plan;
+  plan?:
+    | Plan
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface Plan {
@@ -97,7 +99,9 @@ export interface Plan_Step {
 
 export interface Plan_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
-  earliestAllowedTime?: Date;
+  earliestAllowedTime?:
+    | Date
+    | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
@@ -553,6 +557,16 @@ export interface GetRolloutRequest {
   name: string;
 }
 
+export interface CreateRolloutRequest {
+  /**
+   * The parent project where this rollout will be created.
+   * Format: projects/{project}
+   */
+  parent: string;
+  /** The plan used to create rollout. */
+  plan: string;
+}
+
 export interface PreviewRolloutRequest {
   /**
    * The name of the project.
@@ -560,7 +574,7 @@ export interface PreviewRolloutRequest {
    */
   project: string;
   /** The plan used to preview rollout. */
-  plan?: Plan;
+  plan?: Plan | undefined;
 }
 
 export interface Rollout {
@@ -943,8 +957,8 @@ export interface TaskRun {
   creator: string;
   /** Format: user:hello@world.com */
   updater: string;
-  createTime?: Date;
-  updateTime?: Date;
+  createTime?: Date | undefined;
+  updateTime?: Date | undefined;
   title: string;
   status: TaskRun_Status;
   /** Below are the results of a task run. */
@@ -2768,6 +2782,77 @@ export const GetRolloutRequest = {
   },
 };
 
+function createBaseCreateRolloutRequest(): CreateRolloutRequest {
+  return { parent: "", plan: "" };
+}
+
+export const CreateRolloutRequest = {
+  encode(message: CreateRolloutRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.plan !== "") {
+      writer.uint32(18).string(message.plan);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateRolloutRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateRolloutRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.plan = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateRolloutRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      plan: isSet(object.plan) ? String(object.plan) : "",
+    };
+  },
+
+  toJSON(message: CreateRolloutRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.plan !== undefined && (obj.plan = message.plan);
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateRolloutRequest>): CreateRolloutRequest {
+    return CreateRolloutRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<CreateRolloutRequest>): CreateRolloutRequest {
+    const message = createBaseCreateRolloutRequest();
+    message.parent = object.parent ?? "";
+    message.plan = object.plan ?? "";
+    return message;
+  },
+};
+
 function createBasePreviewRolloutRequest(): PreviewRolloutRequest {
   return { project: "", plan: undefined };
 }
@@ -4460,6 +4545,63 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    createRollout: {
+      name: "CreateRollout",
+      requestType: CreateRolloutRequest,
+      requestStream: false,
+      responseType: Rollout,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              40,
+              58,
+              4,
+              112,
+              108,
+              97,
+              110,
+              34,
+              32,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
     previewRollout: {
       name: "PreviewRollout",
       requestType: PreviewRolloutRequest,
@@ -4645,6 +4787,7 @@ export interface RolloutServiceImplementation<CallContextExt = {}> {
   createPlan(request: CreatePlanRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Plan>>;
   updatePlan(request: UpdatePlanRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Plan>>;
   getRollout(request: GetRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
+  createRollout(request: CreateRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
   previewRollout(request: PreviewRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
   listRolloutTaskRuns(
     request: ListPlansRequest,
@@ -4662,6 +4805,7 @@ export interface RolloutServiceClient<CallOptionsExt = {}> {
   createPlan(request: DeepPartial<CreatePlanRequest>, options?: CallOptions & CallOptionsExt): Promise<Plan>;
   updatePlan(request: DeepPartial<UpdatePlanRequest>, options?: CallOptions & CallOptionsExt): Promise<Plan>;
   getRollout(request: DeepPartial<GetRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
+  createRollout(request: DeepPartial<CreateRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
   previewRollout(request: DeepPartial<PreviewRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
   listRolloutTaskRuns(
     request: DeepPartial<ListPlansRequest>,
@@ -4673,10 +4817,10 @@ export interface RolloutServiceClient<CallOptionsExt = {}> {
   ): Promise<ListPlanCheckRunsResponse>;
 }
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }

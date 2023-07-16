@@ -12,9 +12,11 @@ export interface GetActuatorInfoRequest {
 
 export interface UpdateActuatorInfoRequest {
   /** The actuator to update. */
-  actuator?: ActuatorInfo;
+  actuator?:
+    | ActuatorInfo
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface ListDebugLogRequest {
@@ -46,7 +48,7 @@ export interface ListDebugLogResponse {
 }
 
 export interface DebugLog {
-  recordTime?: Date;
+  recordTime?: Date | undefined;
   requestPath: string;
   role: string;
   error: string;
@@ -82,7 +84,9 @@ export interface ActuatorInfo {
   /** disallow_signup is the flag to disable self-service signup. */
   disallowSignup: boolean;
   /** last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. */
-  lastActiveTime?: Date;
+  lastActiveTime?:
+    | Date
+    | undefined;
   /** require_2fa is the flag to require 2FA for all users. */
   require2fa: boolean;
   /** workspace_id is the identifier for the workspace. */

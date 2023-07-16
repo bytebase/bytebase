@@ -21,6 +21,8 @@ func TestSnowflakeRules(t *testing.T) {
 		advisor.SchemaRuleIdentifierCase,
 		advisor.SchemaRuleColumnNotNull,
 		advisor.SchemaRuleStatementNoSelectAll,
+		advisor.SchemaRuleTableDropNamingConvention,
+		advisor.SchemaRuleSchemaBackwardCompatibility,
 	}
 
 	for _, rule := range snowflakeRules {

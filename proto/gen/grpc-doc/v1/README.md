@@ -26,13 +26,12 @@
     - [IamPolicy](#bytebase-v1-IamPolicy)
   
 - [v1/org_policy_service.proto](#v1_org_policy_service-proto)
-    - [AccessControlPolicy](#bytebase-v1-AccessControlPolicy)
-    - [AccessControlRule](#bytebase-v1-AccessControlRule)
     - [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy)
     - [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy)
+    - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
@@ -428,6 +427,7 @@
   
 - [v1/rollout_service.proto](#v1_rollout_service-proto)
     - [CreatePlanRequest](#bytebase-v1-CreatePlanRequest)
+    - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
     - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
     - [GetRolloutRequest](#bytebase-v1-GetRolloutRequest)
     - [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest)
@@ -853,36 +853,6 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
-<a name="bytebase-v1-AccessControlPolicy"></a>
-
-### AccessControlPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow_rules | [AccessControlRule](#bytebase-v1-AccessControlRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AccessControlRule"></a>
-
-### AccessControlRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| full_database | [bool](#bool) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-BackupPlanPolicy"></a>
 
 ### BackupPlanPolicy
@@ -964,6 +934,21 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
+<a name="bytebase-v1-DisableCopyDataPolicy"></a>
+
+### DisableCopyDataPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetPolicyRequest"></a>
 
 ### GetPolicyRequest
@@ -1032,9 +1017,9 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
 | backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
 | sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
-| access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
 | slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
+| disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
@@ -1217,8 +1202,8 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | BACKUP_PLAN | 3 |  |
 | SQL_REVIEW | 4 |  |
 | SENSITIVE_DATA | 5 |  |
-| ACCESS_CONTROL | 6 |  |
 | SLOW_QUERY | 7 |  |
+| DISABLE_COPY_DATA | 8 |  |
 
 
 
@@ -6823,6 +6808,22 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
+<a name="bytebase-v1-CreateRolloutRequest"></a>
+
+### CreateRolloutRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
+| plan | [string](#string) |  | The plan used to create rollout. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetPlanRequest"></a>
 
 ### GetPlanRequest
@@ -7529,6 +7530,7 @@ Type is the database change type.
 | CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
+| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListRolloutTaskRuns | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
@@ -7552,7 +7554,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} Use &#34;projects/-&#34; to list all schema designs. |
+| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} |
 | schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |  |
 
 
@@ -7634,19 +7636,19 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the schema design. Format: projects/{project}/schemaDesigns/{schemaDesign} |
-| title | [string](#string) |  | The title of schema design. AKA sheet&#39;s title. |
-| schema | [string](#string) |  | Current editing schema. |
-| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
-| baseline_schema | [string](#string) |  |  |
-| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| name | [string](#string) |  | The name of the schema design. Format: projects/{project}/schemaDesigns/{schemaDesign} {schemaDesign} should be the id of a sheet. |
+| title | [string](#string) |  | The title of schema design. AKA sheet&#39;s name. |
+| schema | [string](#string) |  | The schema of schema design. AKA sheet&#39;s statement. |
+| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the current editing schema. |
+| baseline_schema | [string](#string) |  | The baseline schema. |
+| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the baseline schema. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema design. |
 | baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
-| schema_version | [string](#string) |  |  |
+| schema_version | [string](#string) |  | The selected schema version of the baseline database. If not specified, the latest schema of database will be used as baseline schema. |
 | creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
 | updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was created. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was last updated. |
 
 
 
@@ -8762,6 +8764,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | CSV | 1 |  |
 | JSON | 2 |  |
 | SQL | 3 |  |
+| XLSX | 4 |  |
 
 
  

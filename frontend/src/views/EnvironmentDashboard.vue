@@ -97,7 +97,6 @@ import {
 } from "@/store/modules/v1/policy";
 import {
   Policy,
-  PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import { emptyEnvironment } from "@/types";
@@ -264,25 +263,6 @@ const doCreate = async (
       policy: backupPolicy,
     }),
   ];
-  if (environmentTier === EnvironmentTier.PROTECTED) {
-    requests.push(
-      policyV1Store.upsertPolicy({
-        parentPath: environment.name,
-        updateMask: ["payload", "inherit_from_parent"],
-        policy: {
-          type: PolicyType.ACCESS_CONTROL,
-          inheritFromParent: true,
-          accessControlPolicy: {
-            disallowRules: [
-              {
-                fullDatabase: environmentTier === EnvironmentTier.PROTECTED,
-              },
-            ],
-          },
-        },
-      })
-    );
-  }
   await Promise.all(requests);
   state.showCreateModal = false;
   selectEnvironment(environment.order);

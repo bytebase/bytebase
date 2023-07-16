@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -24,6 +23,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
+	"github.com/xuri/excelize/v2"
 
 	tidbast "github.com/pingcap/tidb/parser/ast"
 
@@ -196,7 +196,6 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *store.Activ
 	}
 
 	// TODO: update the advice list
-
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		log.Warn("Failed to marshal activity after executing sql statement",
@@ -383,6 +382,10 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		if content, err = exportSQL(instance.Engine, statementPrefix, result[0]); err != nil {
 			return nil, durationNs, err
 		}
+	case v1pb.ExportRequest_XLSX:
+		if content, err = s.exportXLSX(result[0]); err != nil {
+			return nil, durationNs, err
+		}
 	default:
 		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
@@ -404,7 +407,7 @@ func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 					return nil, err
 				}
 			}
-			if _, err := buf.Write(convertValueToBytes(value)); err != nil {
+			if _, err := buf.Write(convertValueToBytesInCSV(value)); err != nil {
 				return nil, err
 			}
 		}
@@ -417,7 +420,7 @@ func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func convertValueToBytes(value *v1pb.RowValue) []byte {
+func convertValueToBytesInCSV(value *v1pb.RowValue) []byte {
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
 		var result []byte
@@ -614,7 +617,132 @@ func convertValueValueToBytes(value *structpb.Value) []byte {
 }
 
 func (*SQLService) exportJSON(result *v1pb.QueryResult) ([]byte, error) {
-	return protojson.Marshal(result)
+	var results []map[string]any
+	for _, row := range result.Rows {
+		m := make(map[string]any)
+		for i, value := range row.Values {
+			m[result.ColumnNames[i]] = convertValueToStringInJSON(value)
+		}
+		results = append(results, m)
+	}
+	return json.MarshalIndent(results, "", "  ")
+}
+
+func convertValueToStringInJSON(value *v1pb.RowValue) string {
+	switch value.Kind.(type) {
+	case *v1pb.RowValue_StringValue:
+		return value.GetStringValue()
+	case *v1pb.RowValue_Int32Value:
+		return strconv.FormatInt(int64(value.GetInt32Value()), 10)
+	case *v1pb.RowValue_Int64Value:
+		return strconv.FormatInt(value.GetInt64Value(), 10)
+	case *v1pb.RowValue_Uint32Value:
+		return strconv.FormatUint(uint64(value.GetUint32Value()), 10)
+	case *v1pb.RowValue_Uint64Value:
+		return strconv.FormatUint(value.GetUint64Value(), 10)
+	case *v1pb.RowValue_FloatValue:
+		return strconv.FormatFloat(float64(value.GetFloatValue()), 'f', -1, 32)
+	case *v1pb.RowValue_DoubleValue:
+		return strconv.FormatFloat(value.GetDoubleValue(), 'f', -1, 64)
+	case *v1pb.RowValue_BoolValue:
+		return strconv.FormatBool(value.GetBoolValue())
+	case *v1pb.RowValue_BytesValue:
+		return base64.StdEncoding.EncodeToString(value.GetBytesValue())
+	case *v1pb.RowValue_NullValue:
+		return "null"
+	case *v1pb.RowValue_ValueValue:
+		// This is used by ClickHouse and Spanner only.
+		return value.GetValueValue().String()
+	default:
+		return ""
+	}
+}
+
+const (
+	excelLetters   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	sheet1Name     = "Sheet1"
+	excelMaxColumn = 18278
+)
+
+func (*SQLService) exportXLSX(result *v1pb.QueryResult) ([]byte, error) {
+	f := excelize.NewFile()
+	defer f.Close()
+	index, err := f.NewSheet("Sheet1")
+	if err != nil {
+		return nil, err
+	}
+	var columnPrefixes []string
+	for i, columnName := range result.ColumnNames {
+		columnPrefix, err := getExcelColumnName(i)
+		if err != nil {
+			return nil, err
+		}
+		columnPrefixes = append(columnPrefixes, columnPrefix)
+		if err := f.SetCellValue(sheet1Name, fmt.Sprintf("%s1", columnPrefix), columnName); err != nil {
+			return nil, err
+		}
+	}
+	for i, row := range result.Rows {
+		for j, value := range row.Values {
+			columnName := fmt.Sprintf("%s%d", columnPrefixes[j], i+2)
+			if err := f.SetCellValue("Sheet1", columnName, convertValueToStringInXLSX(value)); err != nil {
+				return nil, err
+			}
+		}
+	}
+	f.SetActiveSheet(index)
+	excelBytes, err := f.WriteToBuffer()
+	if err != nil {
+		return nil, err
+	}
+	return excelBytes.Bytes(), nil
+}
+
+func getExcelColumnName(index int) (string, error) {
+	if index >= excelMaxColumn {
+		return "", errors.Errorf("index cannot be greater than %v (column ZZZ)", excelMaxColumn)
+	}
+
+	var s string
+	for {
+		remain := index % 26
+		s = string(excelLetters[remain]) + s
+		index = index/26 - 1
+		if index < 0 {
+			break
+		}
+	}
+	return s, nil
+}
+
+func convertValueToStringInXLSX(value *v1pb.RowValue) string {
+	switch value.Kind.(type) {
+	case *v1pb.RowValue_StringValue:
+		return value.GetStringValue()
+	case *v1pb.RowValue_Int32Value:
+		return strconv.FormatInt(int64(value.GetInt32Value()), 10)
+	case *v1pb.RowValue_Int64Value:
+		return strconv.FormatInt(value.GetInt64Value(), 10)
+	case *v1pb.RowValue_Uint32Value:
+		return strconv.FormatUint(uint64(value.GetUint32Value()), 10)
+	case *v1pb.RowValue_Uint64Value:
+		return strconv.FormatUint(value.GetUint64Value(), 10)
+	case *v1pb.RowValue_FloatValue:
+		return strconv.FormatFloat(float64(value.GetFloatValue()), 'f', -1, 32)
+	case *v1pb.RowValue_DoubleValue:
+		return strconv.FormatFloat(value.GetDoubleValue(), 'f', -1, 64)
+	case *v1pb.RowValue_BoolValue:
+		return strconv.FormatBool(value.GetBoolValue())
+	case *v1pb.RowValue_BytesValue:
+		return base64.StdEncoding.EncodeToString(value.GetBytesValue())
+	case *v1pb.RowValue_NullValue:
+		return ""
+	case *v1pb.RowValue_ValueValue:
+		// This is used by ClickHouse and Spanner only.
+		return value.GetValueValue().String()
+	default:
+		return ""
+	}
 }
 
 func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest) (*store.InstanceMessage, *store.DatabaseMessage, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
@@ -1292,6 +1420,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		catalog,
 		connection,
 		currentSchema,
+		database.DatabaseName,
 	)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
@@ -1338,6 +1467,7 @@ func (s *SQLService) sqlCheck(
 	catalog catalog.Catalog,
 	driver *sql.DB,
 	currentSchema string,
+	currentDatabase string,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
 	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
@@ -1349,13 +1479,14 @@ func (s *SQLService) sqlCheck(
 	}
 
 	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:       dbCharacterSet,
-		Collation:     dbCollation,
-		DbType:        dbType,
-		Catalog:       catalog,
-		Driver:        driver,
-		Context:       ctx,
-		CurrentSchema: currentSchema,
+		Charset:         dbCharacterSet,
+		Collation:       dbCollation,
+		DbType:          dbType,
+		Catalog:         catalog,
+		Driver:          driver,
+		Context:         ctx,
+		CurrentSchema:   currentSchema,
+		CurrentDatabase: currentDatabase,
 	})
 	if err != nil {
 		return advisor.Error, nil, err
@@ -1462,7 +1593,7 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
 		}
-		tree, err := parser.ParsePLSQL(statement)
+		tree, _, err := parser.ParsePLSQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
@@ -1822,7 +1953,7 @@ func (s *SQLService) checkQueryRights(
 			"resource.database": databaseResourceURL,
 			"resource.schema":   resource.Schema,
 			"resource.table":    resource.Table,
-			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.statement": encodeToBase64String(statement),
 			"request.row_limit": limit,
 		}
 
@@ -1835,6 +1966,8 @@ func (s *SQLService) checkQueryRights(
 			attributes["request.export_format"] = "JSON"
 		case v1pb.ExportRequest_SQL:
 			attributes["request.export_format"] = "SQL"
+		case v1pb.ExportRequest_XLSX:
+			attributes["request.export_format"] = "XLSX"
 		default:
 			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
 		}
@@ -2063,4 +2196,10 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 	default:
 		return false
 	}
+}
+
+// encodeToBase64String encodes the statement to base64 string.
+func encodeToBase64String(statement string) string {
+	base64Encoded := base64.StdEncoding.EncodeToString([]byte(statement))
+	return base64Encoded
 }

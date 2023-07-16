@@ -23,7 +23,7 @@ type MySQLParseResult struct {
 func ParseMySQL(statement string) ([]*MySQLParseResult, error) {
 	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
 	var err error
-	statement, err = dealWithDelimiter(statement)
+	statement, err = DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,8 @@ func ParseMySQL(statement string) ([]*MySQLParseResult, error) {
 	return parseInputStream(antlr.NewInputStream(statement))
 }
 
-func dealWithDelimiter(statement string) (string, error) {
+// DealWithDelimiter deals with delimiter in the given SQL statement.
+func DealWithDelimiter(statement string) (string, error) {
 	has, list, err := hasDelimiter(statement)
 	if err != nil {
 		return "", err
@@ -65,7 +66,7 @@ func dealWithDelimiter(statement string) (string, error) {
 func SplitMySQL(statement string) ([]SingleSQL, error) {
 	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
 	var err error
-	statement, err = dealWithDelimiter(statement)
+	statement, err = DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -461,6 +462,43 @@ func (l *mysqlResourceExtractListener) EnterTableRef(ctx *parser.TableRefContext
 	}
 	resource.Table = table
 	l.resourceMap[resource.String()] = resource
+}
+
+// NormalizeMySQLTableName normalizes the given table name.
+func NormalizeMySQLTableName(ctx parser.ITableNameContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	if ctx.DotIdentifier() != nil {
+		return "", normalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+	}
+	return "", ""
+}
+
+// NormalizeMySQLColumnName normalizes the given column name.
+func NormalizeMySQLColumnName(ctx parser.IColumnNameContext) (string, string, string) {
+	if ctx.Identifier() != nil {
+		return "", "", normalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return normalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
+}
+
+func normalizeMySQLFieldIdentifier(ctx parser.IFieldIdentifierContext) (string, string, string) {
+	list := []string{}
+	if ctx.QualifiedIdentifier() != nil {
+		id1, id2 := normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+		list = append(list, id1, id2)
+	}
+
+	if ctx.DotIdentifier() != nil {
+		list = append(list, normalizeMySQLIdentifier(ctx.DotIdentifier().Identifier()))
+	}
+
+	for len(list) < 3 {
+		list = append([]string{""}, list...)
+	}
+
+	return list[0], list[1], list[2]
 }
 
 func normalizeMySQLQualifiedIdentifier(qualifiedIdentifier parser.IQualifiedIdentifierContext) (string, string) {

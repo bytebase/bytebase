@@ -8,7 +8,7 @@ import { Timestamp } from "../google/protobuf/timestamp";
 export const protobufPackage = "bytebase.v1";
 
 export interface CreateExternalVersionControlRequest {
-  externalVersionControl?: ExternalVersionControl;
+  externalVersionControl?: ExternalVersionControl | undefined;
 }
 
 export interface GetExternalVersionControlRequest {
@@ -44,9 +44,11 @@ export interface ListExternalVersionControlsResponse {
 }
 
 export interface UpdateExternalVersionControlRequest {
-  externalVersionControl?: ExternalVersionControl;
+  externalVersionControl?:
+    | ExternalVersionControl
+    | undefined;
   /** The list of fields to be updated. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteExternalVersionControlRequest {
@@ -209,12 +211,12 @@ export interface ProjectGitOpsInfo {
   /** The webhook endpoint ID of the repository. */
   webhookEndpointId: string;
   accessToken: string;
-  expiresTime?: Date;
+  expiresTime?: Date | undefined;
   refreshToken: string;
 }
 
 export interface ExchangeTokenRequest {
-  exchangeToken?: ExchangeToken;
+  exchangeToken?: ExchangeToken | undefined;
 }
 
 export interface ExchangeToken {
@@ -233,7 +235,7 @@ export interface ExchangeToken {
 export interface OAuthToken {
   accessToken: string;
   refreshToken: string;
-  expiresTime?: Date;
+  expiresTime?: Date | undefined;
 }
 
 function createBaseCreateExternalVersionControlRequest(): CreateExternalVersionControlRequest {

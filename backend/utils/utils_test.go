@@ -264,33 +264,33 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 func TestMergeTaskCreateLists(t *testing.T) {
 	tests := []struct {
 		name               string
-		taskCreateLists    [][]store.RolloutTask
-		taskIndexDAGLists  [][]api.TaskIndexDAG
-		wantTaskCreateList []store.RolloutTask
-		wantTaskDAGList    []api.TaskIndexDAG
+		taskCreateLists    [][]*store.TaskMessage
+		taskIndexDAGLists  [][]store.TaskIndexDAG
+		wantTaskCreateList []*store.TaskMessage
+		wantTaskDAGList    []store.TaskIndexDAG
 	}{
 		{
 			name: "simple, len=1",
-			taskCreateLists: [][]store.RolloutTask{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 				},
 			},
-			wantTaskCreateList: []store.RolloutTask{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 			},
 		},
 		{
 			name: "len=2",
-			taskCreateLists: [][]store.RolloutTask{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {}, {}, {},
 				},
@@ -298,7 +298,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{}, {}, {}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 					{FromIndex: 1, ToIndex: 3},
@@ -307,10 +307,10 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{FromIndex: 1, ToIndex: 2},
 				},
 			},
-			wantTaskCreateList: []store.RolloutTask{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {}, {}, {}, {}, {}, {}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 				{FromIndex: 1, ToIndex: 3},
 				{FromIndex: 5, ToIndex: 6},
@@ -318,7 +318,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 		},
 		{
 			name: "len=3",
-			taskCreateLists: [][]store.RolloutTask{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {}, {}, {},
 				},
@@ -329,7 +329,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{}, {}, {}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 					{FromIndex: 1, ToIndex: 3},
@@ -341,10 +341,10 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{FromIndex: 1, ToIndex: 2},
 				},
 			},
-			wantTaskCreateList: []store.RolloutTask{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 				{FromIndex: 1, ToIndex: 3},
 				{FromIndex: 5, ToIndex: 6},

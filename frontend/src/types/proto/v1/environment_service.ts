@@ -86,7 +86,9 @@ export interface ListEnvironmentsResponse {
 
 export interface CreateEnvironmentRequest {
   /** The environment to create. */
-  environment?: Environment;
+  environment?:
+    | Environment
+    | undefined;
   /**
    * The ID to use for the environment, which will become the final component of
    * the environment's resource name.
@@ -104,9 +106,11 @@ export interface UpdateEnvironmentRequest {
    * The environment's `name` field is used to identify the environment to update.
    * Format: environments/{environment}
    */
-  environment?: Environment;
+  environment?:
+    | Environment
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteEnvironmentRequest {
@@ -141,7 +145,7 @@ export interface Environment {
 
 export interface UpdateEnvironmentBackupSettingRequest {
   /** The environment backup setting to update. */
-  setting?: EnvironmentBackupSetting;
+  setting?: EnvironmentBackupSetting | undefined;
 }
 
 export interface EnvironmentBackupSetting {

@@ -570,7 +570,9 @@
       "description": "Configure approval flow to control data query and export. {link}",
       "skip-approval": "Skip approval",
       "query-data": "Query Data",
-      "export-data": "Export Data"
+      "export-data": "Export Data",
+      "disallowed": "Disallowed",
+      "copy-data-from-sql-editor": "Copy Data From SQL Editor"
     },
     "release": {
       "new-version-available": "New version is available",
@@ -972,7 +974,13 @@
     "create-gcp-credentials": "To create Credentials, see",
     "used-for-testing-connection": "Used for testing connections only",
     "all": "All instances",
-    "force-archive-description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
+    "force-archive-description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted.",
+    "sync-mode": {
+      "self": "Sync Mode",
+      "sync-self": "Sync self",
+      "sync-all": "Sync self and all containing databases (CDB + PDB)",
+      "description": "Bytebase will sync the connecting database as well as its all containing databases. Only applicable to Oracle 12c+."
+    }
   },
   "environment": {
     "id": "Environment ID",
@@ -1287,8 +1295,10 @@
       "errors": {
         "select-target-project": "Select target project",
         "select-at-least-one-database": "Select at least one database"
-      }
-    }
+      },
+      "select-target-project": "Select target project"
+    },
+    "transfer-database-from-to": "Transfer database from source project to target project"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1542,6 +1552,7 @@
         "add-success": "Successfully added Git provider {vcs}",
         "choose": "Choose Git provider",
         "gitlab-self-host-ce-ee": "Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)",
+        "github-self-host-ee": "Self-host GitHub Enterprise Edition (EE)",
         "basic-info": {
           "self": "Basic info",
           "gitlab-instance-url": "GitLab instance URL",
@@ -1565,6 +1576,7 @@
           "github-login-as-admin": "Log in as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
           "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
+          "github-enterprise-login-as-admin": "Log in as an organization admin user to your hosted GitHub Enterprise site. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "bitbucket-register-oauth-application": "Register Bytebase as a Bitbucket workspace-wide OAuth consumer.",
           "bitbucket-login-as-admin": "Log in as an workspace admin user to the Bitbucket.org. The account must be an workspace admin of the Bitbucket workspace (able to access the workspace Settings page).",
           "bitbucket-visit-admin-page": "Go to the Settings page, then navigate to \"APPS AND FEATURES > OAuth consumers\" section and click \"Add a consumer\" button.",

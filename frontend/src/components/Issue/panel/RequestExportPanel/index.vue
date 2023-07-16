@@ -136,6 +136,7 @@
               <NRadio :value="'CSV'" label="CSV" />
               <NRadio :value="'JSON'" label="JSON" />
               <NRadio :value="'SQL'" label="SQL" />
+              <NRadio :value="'XLSX'" label="XLSX" />
             </NRadioGroup>
           </div>
         </div>
@@ -256,7 +257,7 @@ interface LocalState {
   customDays: number;
   maxRowCount: number;
   exportMethod: "SQL" | "DATABASE";
-  exportFormat: "CSV" | "JSON" | "SQL";
+  exportFormat: "CSV" | "JSON" | "SQL" | "XLSX";
   statement: string;
   description: string;
 }
@@ -427,7 +428,11 @@ const doCreateIssue = async () => {
   expression.push(`request.export_format == "${state.exportFormat}"`);
   expression.push(`request.row_limit == ${state.maxRowCount}`);
   if (state.exportMethod === "SQL") {
-    expression.push(`request.statement == "${btoa(state.statement)}"`);
+    expression.push(
+      `request.statement == "${btoa(
+        unescape(encodeURIComponent(state.statement))
+      )}"`
+    );
     const cel = stringifyDatabaseResources([
       {
         databaseName: selectedDatabase.value!.name,

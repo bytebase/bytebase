@@ -1,43 +1,37 @@
 package store
 
-import api "github.com/bytebase/bytebase/backend/legacyapi"
+import (
+	"context"
 
-// Rollout is the API message for creating a pipeline.
-type Rollout struct {
-	Name      string
-	StageList []RolloutStage
-}
+	"github.com/pkg/errors"
 
-// RolloutStage is the API message for a rollout stage.
-type RolloutStage struct {
-	Name             string
-	EnvironmentID    int
-	PipelineID       int
-	TaskList         []RolloutTask
-	TaskIndexDAGList []api.TaskIndexDAG
-}
+	api "github.com/bytebase/bytebase/backend/legacyapi"
+)
 
-// RolloutTask is the API message for a rollout task.
-type RolloutTask struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
+// GetRollout gets the rollout by rollout ID.
+func (s *Store) GetRollout(ctx context.Context, rolloutID int) (*PipelineMessage, error) {
+	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", rolloutID)
+	}
+	stages, err := s.ListStageV2(ctx, rolloutID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find stage list")
+	}
+	pipline, err := s.GetPipelineV2ByID(ctx, rolloutID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get pipeline")
+	}
+	rollout := *pipline
+	rollout.Stages = stages
 
-	// Related fields
-	PipelineID int
-	StageID    int
-	InstanceID int
-	// Tasks such as creating database may not have database.
-	DatabaseID *int
+	for _, stage := range stages {
+		for _, task := range tasks {
+			if task.StageID == stage.ID {
+				stage.TaskList = append(stage.TaskList, task)
+			}
+		}
+	}
 
-	// Domain specific fields
-	Name   string
-	Status api.TaskStatus
-	Type   api.TaskType
-	// Payload is derived from fields below it
-	Payload           string
-	EarliestAllowedTs int64
-	DatabaseName      string
-	// Statement used by grouping batch change, Bytebase use it to render.
-	Statement string
+	return &rollout, nil
 }

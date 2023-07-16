@@ -1,13 +1,52 @@
 /* eslint-disable */
 import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
+import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.store";
 
 export interface SheetPayload {
-  vcsPayload?: SheetPayload_VCSPayload;
+  type: SheetPayload_Type;
+  vcsPayload?:
+    | SheetPayload_VCSPayload
+    | undefined;
   /** used_by_issues link to the issues where the sheet is used. */
   usedByIssues: SheetPayload_UsedByIssue[];
+  schemaDesign?: SheetPayload_SchemaDesign | undefined;
+}
+
+/** Type of the SheetPayload. */
+export enum SheetPayload_Type {
+  TYPE_UNSPECIFIED = 0,
+  SCHEMA_DESIGN = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function sheetPayload_TypeFromJSON(object: any): SheetPayload_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return SheetPayload_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "SCHEMA_DESIGN":
+      return SheetPayload_Type.SCHEMA_DESIGN;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SheetPayload_Type.UNRECOGNIZED;
+  }
+}
+
+export function sheetPayload_TypeToJSON(object: SheetPayload_Type): string {
+  switch (object) {
+    case SheetPayload_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case SheetPayload_Type.SCHEMA_DESIGN:
+      return "SCHEMA_DESIGN";
+    case SheetPayload_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface SheetPayload_VCSPayload {
@@ -24,17 +63,28 @@ export interface SheetPayload_UsedByIssue {
   issueTitle: string;
 }
 
+export interface SheetPayload_SchemaDesign {
+  baselineSheetId: number;
+  engine: Engine;
+}
+
 function createBaseSheetPayload(): SheetPayload {
-  return { vcsPayload: undefined, usedByIssues: [] };
+  return { type: 0, vcsPayload: undefined, usedByIssues: [], schemaDesign: undefined };
 }
 
 export const SheetPayload = {
   encode(message: SheetPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
+    }
     if (message.vcsPayload !== undefined) {
-      SheetPayload_VCSPayload.encode(message.vcsPayload, writer.uint32(10).fork()).ldelim();
+      SheetPayload_VCSPayload.encode(message.vcsPayload, writer.uint32(18).fork()).ldelim();
     }
     for (const v of message.usedByIssues) {
-      SheetPayload_UsedByIssue.encode(v!, writer.uint32(18).fork()).ldelim();
+      SheetPayload_UsedByIssue.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.schemaDesign !== undefined) {
+      SheetPayload_SchemaDesign.encode(message.schemaDesign, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -47,18 +97,32 @@ export const SheetPayload = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.vcsPayload = SheetPayload_VCSPayload.decode(reader, reader.uint32());
+          message.type = reader.int32() as any;
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
+          message.vcsPayload = SheetPayload_VCSPayload.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.usedByIssues.push(SheetPayload_UsedByIssue.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.schemaDesign = SheetPayload_SchemaDesign.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -71,15 +135,18 @@ export const SheetPayload = {
 
   fromJSON(object: any): SheetPayload {
     return {
+      type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : 0,
       vcsPayload: isSet(object.vcsPayload) ? SheetPayload_VCSPayload.fromJSON(object.vcsPayload) : undefined,
       usedByIssues: Array.isArray(object?.usedByIssues)
         ? object.usedByIssues.map((e: any) => SheetPayload_UsedByIssue.fromJSON(e))
         : [],
+      schemaDesign: isSet(object.schemaDesign) ? SheetPayload_SchemaDesign.fromJSON(object.schemaDesign) : undefined,
     };
   },
 
   toJSON(message: SheetPayload): unknown {
     const obj: any = {};
+    message.type !== undefined && (obj.type = sheetPayload_TypeToJSON(message.type));
     message.vcsPayload !== undefined &&
       (obj.vcsPayload = message.vcsPayload ? SheetPayload_VCSPayload.toJSON(message.vcsPayload) : undefined);
     if (message.usedByIssues) {
@@ -87,6 +154,8 @@ export const SheetPayload = {
     } else {
       obj.usedByIssues = [];
     }
+    message.schemaDesign !== undefined &&
+      (obj.schemaDesign = message.schemaDesign ? SheetPayload_SchemaDesign.toJSON(message.schemaDesign) : undefined);
     return obj;
   },
 
@@ -96,10 +165,14 @@ export const SheetPayload = {
 
   fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
     const message = createBaseSheetPayload();
+    message.type = object.type ?? 0;
     message.vcsPayload = (object.vcsPayload !== undefined && object.vcsPayload !== null)
       ? SheetPayload_VCSPayload.fromPartial(object.vcsPayload)
       : undefined;
     message.usedByIssues = object.usedByIssues?.map((e) => SheetPayload_UsedByIssue.fromPartial(e)) || [];
+    message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
+      ? SheetPayload_SchemaDesign.fromPartial(object.schemaDesign)
+      : undefined;
     return message;
   },
 };
@@ -298,10 +371,81 @@ export const SheetPayload_UsedByIssue = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+function createBaseSheetPayload_SchemaDesign(): SheetPayload_SchemaDesign {
+  return { baselineSheetId: 0, engine: 0 };
+}
+
+export const SheetPayload_SchemaDesign = {
+  encode(message: SheetPayload_SchemaDesign, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.baselineSheetId !== 0) {
+      writer.uint32(8).int64(message.baselineSheetId);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SheetPayload_SchemaDesign {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSheetPayload_SchemaDesign();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.baselineSheetId = longToNumber(reader.int64() as Long);
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SheetPayload_SchemaDesign {
+    return {
+      baselineSheetId: isSet(object.baselineSheetId) ? Number(object.baselineSheetId) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+    };
+  },
+
+  toJSON(message: SheetPayload_SchemaDesign): unknown {
+    const obj: any = {};
+    message.baselineSheetId !== undefined && (obj.baselineSheetId = Math.round(message.baselineSheetId));
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    return obj;
+  },
+
+  create(base?: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
+    return SheetPayload_SchemaDesign.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
+    const message = createBaseSheetPayload_SchemaDesign();
+    message.baselineSheetId = object.baselineSheetId ?? 0;
+    message.engine = object.engine ?? 0;
+    return message;
+  },
+};
+
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }

@@ -349,16 +349,18 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.Debug = profile.Debug
 	e.HideBanner = true
 	e.HidePort = true
+	grpcSkipper := func(c echo.Context) bool {
+		// Skip grpc and webhook calls.
+		return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
+			strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute") ||
+			strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix)
+	}
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Skipper: func(c echo.Context) bool {
-			// Skip grpc and webhook calls.
-			return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
-				strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix) ||
-				strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute")
-		},
+		Skipper: grpcSkipper,
 		Timeout: 30 * time.Second,
 	}))
 	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Skipper: grpcSkipper,
 		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
 			middleware.RateLimiterMemoryStoreConfig{Rate: 30, Burst: 60, ExpiresIn: 3 * time.Minute},
 		),
@@ -372,11 +374,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		DenyHandler: func(context echo.Context, identifier string, err error) error {
 			return context.JSON(http.StatusTooManyRequests, nil)
 		},
-	}))
-
-	// Disallow to be embedded in an iFrame.
-	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
-		XFrameOptions: "DENY",
 	}))
 
 	// MetricReporter middleware.
@@ -426,14 +423,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile, s.licenseService)
-
-		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.TaskScheduler, s.stateCfg)
-
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
-		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
-		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.RelayRunner, s.licenseService)
-
-		s.MailSender = mail.NewSender(s.store, s.stateCfg)
 
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
@@ -447,6 +437,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
+
+		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
+		s.MailSender = mail.NewSender(s.store, s.stateCfg)
+		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.TaskScheduler, s.stateCfg)
+		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.TaskScheduler, s.RelayRunner, s.licenseService)
 
 		s.TaskCheckScheduler = taskcheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory, s.licenseService)
@@ -534,9 +529,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
+	grpc.EnableTracing = true
 	s.grpcServer = grpc.NewServer(
 		// Override the maximum receiving message size to 100M for uploading large sheets.
 		grpc.MaxRecvMsgSize(100*1024*1024),
+		grpc.InitialWindowSize(100000000),
+		grpc.InitialConnWindowSize(100000000),
 		grpc.ChainUnaryInterceptor(
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
@@ -594,6 +592,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.stateCfg, s.ActivityManager))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
+	v1pb.RegisterSchemaDesignServiceServer(s.grpcServer, v1.NewSchemaDesignService(s.store, s.licenseService))
 	v1pb.RegisterCelServiceServer(s.grpcServer, v1.NewCelService())
 	v1pb.RegisterLoggingServiceServer(s.grpcServer, v1.NewLoggingService(s.store))
 	v1pb.RegisterBookmarkServiceServer(s.grpcServer, v1.NewBookmarkService(s.store))
@@ -606,7 +605,25 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(auth.GatewayResponseModifier))
+
+	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
+	// the user has to restart the server to take the latest value.
+	gatewayModifier := auth.GatewayResponseModifier{}
+	workspaceProfileSettingName := api.SettingWorkspaceProfile
+	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
+	if err != nil {
+		return nil, err
+	}
+	if setting != nil {
+		settingValue := new(storepb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
+			return nil, err
+		}
+		if settingValue.ExternalUrl != "" {
+			gatewayModifier.ExternalURL = settingValue.ExternalUrl
+		}
+	}
+	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}

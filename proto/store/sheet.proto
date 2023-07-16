@@ -2,9 +2,18 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/common.proto";
+
 option go_package = "generated-go/store";
 
 message SheetPayload {
+  // Type of the SheetPayload.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SCHEMA_DESIGN = 1;
+  }
+  Type type = 1;
+
   message VCSPayload {
     string file_name = 1;
     string file_path = 2;
@@ -13,12 +22,18 @@ message SheetPayload {
     string last_commit_id = 5;
     int64 last_sync_ts = 6;
   }
-  VCSPayload vcs_payload = 1;
+  VCSPayload vcs_payload = 2;
 
   message UsedByIssue {
     int64 issue_id = 1;
     string issue_title = 2;
   }
   // used_by_issues link to the issues where the sheet is used.
-  repeated UsedByIssue used_by_issues = 2;
+  repeated UsedByIssue used_by_issues = 3;
+
+  message SchemaDesign {
+    int64 baseline_sheet_id = 1;
+    Engine engine = 2;
+  }
+  SchemaDesign schema_design = 4;
 }

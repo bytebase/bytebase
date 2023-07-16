@@ -16,6 +16,8 @@ import (
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -369,12 +371,12 @@ func GetTaskSkippedAndReason(task *api.Task) (bool, string, error) {
 
 // MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
 // The index of returned taskIndexDAG list is set regarding the merged taskCreate.
-func MergeTaskCreateLists(taskCreateLists [][]store.RolloutTask, taskIndexDAGLists [][]api.TaskIndexDAG) ([]store.RolloutTask, []api.TaskIndexDAG, error) {
+func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLists [][]store.TaskIndexDAG) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if len(taskCreateLists) != len(taskIndexDAGLists) {
 		return nil, nil, errors.Errorf("expect taskCreateLists and taskIndexDAGLists to have the same length, get %d, %d respectively", len(taskCreateLists), len(taskIndexDAGLists))
 	}
-	var resTaskCreateList []store.RolloutTask
-	var resTaskIndexDAGList []api.TaskIndexDAG
+	var resTaskCreateList []*store.TaskMessage
+	var resTaskIndexDAGList []store.TaskIndexDAG
 	offset := 0
 	for i := range taskCreateLists {
 		taskCreateList := taskCreateLists[i]
@@ -382,7 +384,7 @@ func MergeTaskCreateLists(taskCreateLists [][]store.RolloutTask, taskIndexDAGLis
 
 		resTaskCreateList = append(resTaskCreateList, taskCreateList...)
 		for _, dag := range taskIndexDAGList {
-			resTaskIndexDAGList = append(resTaskIndexDAGList, api.TaskIndexDAG{
+			resTaskIndexDAGList = append(resTaskIndexDAGList, store.TaskIndexDAG{
 				FromIndex: dag.FromIndex + offset,
 				ToIndex:   dag.ToIndex + offset,
 			})
@@ -791,6 +793,61 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 		RequesterUID: api.SystemBotID,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create external approval")
+	}
+	return nil
+}
+
+// UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
+func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
+	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+	if err != nil {
+		return err
+	}
+	var newConditionExpr string
+	if grantRequest.Condition != nil {
+		newConditionExpr = grantRequest.Condition.Expression
+	}
+	updated := false
+
+	userID, err := strconv.Atoi(strings.TrimPrefix(grantRequest.User, "users/"))
+	if err != nil {
+		return err
+	}
+	newUser, err := stores.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if newUser == nil {
+		return status.Errorf(codes.Internal, "user %v not found", userID)
+	}
+	for _, binding := range policy.Bindings {
+		if binding.Role != api.Role(grantRequest.Role) {
+			continue
+		}
+		var oldConditionExpr string
+		if binding.Condition != nil {
+			oldConditionExpr = binding.Condition.Expression
+		}
+		if oldConditionExpr != newConditionExpr {
+			continue
+		}
+		// Append
+		binding.Members = append(binding.Members, newUser)
+		updated = true
+		break
+	}
+	roleID := api.Role(strings.TrimPrefix(grantRequest.Role, "roles/"))
+	if !updated {
+		condition := grantRequest.Condition
+		condition.Description = fmt.Sprintf("#%d", issue.UID)
+		policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
+			Role:      roleID,
+			Members:   []*store.UserMessage{newUser},
+			Condition: condition,
+		})
+	}
+	if _, err := stores.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
+		return err
 	}
 	return nil
 }

@@ -570,7 +570,9 @@
       "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
       "skip-approval": "Saltar aprobación manual",
       "query-data": "Consulta de datos",
-      "export-data": "Exportación de datos"
+      "export-data": "Exportación de datos",
+      "disallowed": "no permitido",
+      "copy-data-from-sql-editor": "Copiar datos del editor de SQL"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
@@ -972,7 +974,13 @@
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
     "all": "Todas las instancias",
-    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
+    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán.",
+    "sync-mode": {
+      "self": "Modo de sincronización",
+      "sync-self": "Sincronizarse",
+      "sync-all": "Sincronización propia y de todas las bases de datos (CDB + PDB)",
+      "description": "Bytebase sincronizará la base de datos de conexión, así como todas las bases de datos que la contienen. Solo aplicable a Oracle 12c."
+    }
   },
   "environment": {
     "id": "ID del Entorno",
@@ -1287,8 +1295,10 @@
       "errors": {
         "select-target-project": "Seleccionar proyecto de destino",
         "select-at-least-one-database": "Seleccione al menos una base de datos"
-      }
-    }
+      },
+      "select-target-project": "Seleccionar proyecto de destino"
+    },
+    "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
@@ -1578,12 +1588,14 @@
           "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres",
           "github-secret-error": "El secreto debe ser una cadena alfanumérica de 40 caracteres",
           "bitbucket-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 18 caracteres",
-          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres"
+          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres",
+          "github-enterprise-login-as-admin": "Inicia sesión en tu sitio GitHub Enterprise como administrador de la organización. Esta cuenta debe ser un administrador de organización de GitHub (con acceso a la página de configuración de la organización)."
         },
         "confirm": {
           "confirm-info": "Confirmar la información",
           "confirm-description": "Después de la creación, este proveedor de Git se puede elegir en la pestaña \"GitOps\" del panel del proyecto por el propietario del proyecto."
-        }
+        },
+        "github-self-host-ee": "Autohospedado de GitHub Enterprise Edition (EE)"
       },
       "git-provider": {
         "gitlab-self-host-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada en toda la instancia.",
