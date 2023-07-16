@@ -78,6 +78,8 @@ var (
 		pgURL string
 		// disableMetric is the flag to disable the metric collector.
 		disableMetric bool
+		// disableSample is the flag to disable the sample instance.
+		disableSample bool
 
 		// Cloud backup configs.
 		backupRegion     string
@@ -125,6 +127,7 @@ func init() {
 	// It allows to pass the postgres connection string as an ENV to the service.
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
+	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
 
 	// Cloud backup related flags.
 	// TODO(dragonly): Add GCS usages when it's supported.
