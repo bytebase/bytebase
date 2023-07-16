@@ -65,6 +65,7 @@ message ExportRequest {
     CSV = 1;
     JSON = 2;
     SQL = 3;
+    XLSX = 4;
   }
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}

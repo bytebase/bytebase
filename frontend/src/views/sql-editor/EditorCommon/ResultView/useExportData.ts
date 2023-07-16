@@ -10,7 +10,7 @@ import { extractDatabaseResourceName } from "@/utils";
 import dayjs from "dayjs";
 
 export type ExportDataParams = {
-  format: "CSV" | "JSON" | "SQL";
+  format: "CSV" | "JSON" | "SQL" | "XLSX";
   statement: string;
   limit: number;
   database: string; // instances/{instance}/databases/{database}
