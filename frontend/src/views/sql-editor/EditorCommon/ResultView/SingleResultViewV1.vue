@@ -333,9 +333,14 @@ const exportDropdownOptions = computed(() => [
     key: "SQL",
     disabled: props.result === null || isEmpty(props.result),
   },
+  {
+    label: t("sql-editor.download-as-file", { file: "XLSX" }),
+    key: "XLSX",
+    disabled: props.result === null || isEmpty(props.result),
+  },
 ]);
 
-const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL") => {
+const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL" | "XLSX") => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
   const database =

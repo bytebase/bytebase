@@ -136,6 +136,7 @@
               <NRadio :value="'CSV'" label="CSV" />
               <NRadio :value="'JSON'" label="JSON" />
               <NRadio :value="'SQL'" label="SQL" />
+              <NRadio :value="'XLSX'" label="XLSX" />
             </NRadioGroup>
           </div>
         </div>
@@ -256,7 +257,7 @@ interface LocalState {
   customDays: number;
   maxRowCount: number;
   exportMethod: "SQL" | "DATABASE";
-  exportFormat: "CSV" | "JSON" | "SQL";
+  exportFormat: "CSV" | "JSON" | "SQL" | "XLSX";
   statement: string;
   description: string;
 }

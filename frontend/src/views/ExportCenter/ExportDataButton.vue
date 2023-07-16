@@ -78,6 +78,7 @@ const handleExportData = async () => {
       statement: exportRecord.statement,
       limit: exportRecord.maxRowCount,
       format: getExportRequestFormat(exportRecord.exportFormat),
+      admin: false,
     });
 
     const blob = new Blob([content], {
