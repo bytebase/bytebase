@@ -63,6 +63,7 @@ require (
 	github.com/vjeantet/ldapserver v1.0.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.13.1
+	github.com/xuri/excelize/v2 v2.7.1
 	go.mongodb.org/mongo-driver v1.12.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
@@ -115,9 +116,14 @@ require (
 	github.com/minio/c2goasm v0.0.0-20190812172519-36a3d3bbc4f3 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
+	github.com/richardlehane/mscfb v1.0.4 // indirect
+	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
+	github.com/xuri/efp v0.0.0-20220603152613-6918739fd470 // indirect
+	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/term v0.9.0 // indirect

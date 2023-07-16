@@ -219,3 +219,43 @@ func TestEncodeToBase64String(t *testing.T) {
 		}
 	}
 }
+
+func TestGetExcelColumnName(t *testing.T) {
+	a := assert.New(t)
+
+	tests := []struct {
+		index int
+		want  string
+	}{
+		{
+			index: 0,
+			want:  "A",
+		},
+		{
+			index: 3,
+			want:  "D",
+		},
+		{
+			index: 25,
+			want:  "Z",
+		},
+		{
+			index: 26,
+			want:  "AA",
+		},
+		{
+			index: 27,
+			want:  "AB",
+		},
+		{
+			index: excelMaxColumn - 1,
+			want:  "ZZZ",
+		},
+	}
+
+	for _, test := range tests {
+		got, err := getExcelColumnName(test.index)
+		a.NoError(err)
+		a.Equal(test.want, got)
+	}
+}

@@ -48,7 +48,7 @@ export const useSQLStore = defineStore("sql", () => {
 });
 
 export const getExportRequestFormat = (
-  format: "CSV" | "JSON" | "SQL"
+  format: "CSV" | "JSON" | "SQL" | "XLSX"
 ): ExportRequest_Format => {
   switch (format) {
     case "CSV":
@@ -57,12 +57,14 @@ export const getExportRequestFormat = (
       return ExportRequest_Format.JSON;
     case "SQL":
       return ExportRequest_Format.SQL;
+    case "XLSX":
+      return ExportRequest_Format.XLSX;
     default:
       return ExportRequest_Format.FORMAT_UNSPECIFIED;
   }
 };
 
-export const getExportFileType = (format: "CSV" | "JSON" | "SQL") => {
+export const getExportFileType = (format: "CSV" | "JSON" | "SQL" | "XLSX") => {
   switch (format) {
     case "CSV":
       return "text/csv";
@@ -70,5 +72,7 @@ export const getExportFileType = (format: "CSV" | "JSON" | "SQL") => {
       return "application/json";
     case "SQL":
       return "application/sql";
+    case "XLSX":
+      return "application/vnd.ms-excel";
   }
 };
