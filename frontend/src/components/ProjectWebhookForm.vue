@@ -152,7 +152,7 @@
           }}
 
           <a
-            href="https://www.feishu.cn/hc/zh-CN/articles/360024984973"
+            href="https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot"
             target="__blank"
             class="normal-link"
             >{{
