@@ -23,6 +23,7 @@ import { provideSchemaDesignerContext } from "./common";
 import { SchemaDesignerTabState } from "./common/type";
 import AsidePanel from "./AsidePanel.vue";
 import Designer from "./Designer.vue";
+import { Schema, convertSchemaMetadataList } from "@/types";
 
 interface LocalState {
   isLoading: boolean;
@@ -38,6 +39,7 @@ const state = reactive<LocalState>({
 });
 
 const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
+const editableSchemas = ref<Schema[]>([]);
 const baselineMetadata = ref<DatabaseMetadata>(
   DatabaseMetadata.fromPartial({})
 );
@@ -56,6 +58,7 @@ onMounted(async () => {
     DatabaseMetadata.fromPartial({});
   metadata.value =
     props.schemaDesign?.schemaMetadata || DatabaseMetadata.fromPartial({});
+  editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
   state.isLoading = false;
 });
 
@@ -63,6 +66,7 @@ provideSchemaDesignerContext({
   baselineMetadata: baselineMetadata.value,
   engine: props.engine,
   metadata: metadata,
+  editableSchemas: editableSchemas,
   tabState: tabState,
 });
 </script>

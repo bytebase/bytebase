@@ -77,13 +77,13 @@ interface BaseTreeNode extends TreeOption {
 
 interface TreeNodeForSchema extends BaseTreeNode {
   type: "schema";
-  schema: string;
+  schemaId: string;
 }
 
 interface TreeNodeForTable extends BaseTreeNode {
   type: "table";
-  schema: string;
-  table: string;
+  schemaId: string;
+  tableId: string;
 }
 
 type TreeNode = TreeNodeForSchema | TreeNodeForTable;
@@ -108,7 +108,7 @@ interface LocalState {
 const { t } = useI18n();
 const {
   engine,
-  metadata,
+  editableSchemas,
   tabState,
   addTab,
   getCurrentTab,
@@ -130,9 +130,9 @@ const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
 const treeDataRef = ref<TreeNode[]>([]);
 
-const schemaList = computed(() => Array.from(metadata.value.schemas));
+const schemaList = computed(() => editableSchemas.value);
 const tableList = computed(() =>
-  schemaList.value.map((schema) => schema.tables).flat()
+  schemaList.value.map((schema) => schema.tableList).flat()
 );
 const contextMenuOptions = computed(() => {
   const treeNode = contextMenu.treeNode;
@@ -168,7 +168,7 @@ const contextMenuOptions = computed(() => {
       return [];
     }
 
-    const table = schema.tables.find((table) => table.name === treeNode.table);
+    const table = schema.tableList.find((table) => table.id === treeNode.table);
     if (!table) {
       return [];
     }
@@ -189,14 +189,18 @@ watch(
   () => {
     const treeNodeList: TreeNode[] = [];
     if (engine === Engine.MYSQL) {
+      const schema = schemaList.value[0];
+      if (!schema) {
+        return;
+      }
       for (const table of tableList.value) {
         const tableTreeNode: TreeNodeForTable = {
           type: "table",
-          key: `t-${table.name}`,
+          key: `t-${table.id}`,
           label: table.name,
           isLeaf: true,
-          schema: "",
-          table: table.name,
+          schemaId: schema.id,
+          tableId: table.id,
         };
         treeNodeList.push(tableTreeNode);
       }
@@ -204,20 +208,20 @@ watch(
       for (const schema of schemaList.value) {
         const schemaTreeNode: TreeNodeForSchema = {
           type: "schema",
-          key: `s-${schema.name}`,
+          key: `s-${schema.id}`,
           label: schema.name,
           isLeaf: false,
-          schema: schema.name,
+          schemaId: schema.id,
         };
         treeNodeList.push(schemaTreeNode);
-        for (const table of schema.tables) {
+        for (const table of schema.tableList) {
           const tableTreeNode: TreeNodeForTable = {
             type: "table",
-            key: `t-${schema.name}-${table.name}`,
+            key: `t-${schema.id}-${table.id}`,
             label: table.name,
             isLeaf: true,
-            schema: schema.name,
-            table: table.name,
+            schemaId: schema.id,
+            tableId: table.id,
           };
           schemaTreeNode.children?.push(tableTreeNode);
         }
@@ -242,11 +246,11 @@ watch(
     }
 
     if (currentTab.type === SchemaDesignerTabType.TabForTable) {
-      const schemaTreeNodeKey = `s-${currentTab.schema}`;
+      const schemaTreeNodeKey = `s-${currentTab.schemaId}`;
       if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
         expandedKeysRef.value.push(schemaTreeNodeKey);
       }
-      const tableTreeNodeKey = `t-${currentTab.schema}-${currentTab.table}`;
+      const tableTreeNodeKey = `t-${currentTab.schemaId}-${currentTab.tableId}`;
       selectedKeysRef.value = [tableTreeNodeKey];
     }
 
@@ -338,8 +342,8 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
           addTab({
             id: generateUniqueTabId(),
             type: SchemaDesignerTabType.TabForTable,
-            schema: treeNode.schema,
-            table: treeNode.table,
+            schemaId: treeNode.schemaId,
+            tableId: treeNode.tableId,
           });
         }
 
@@ -372,14 +376,14 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   if (treeNode.type === "schema") {
     if (key === "create-table") {
       state.tableNameModalContext = {
-        schema: treeNode.schema,
+        schema: treeNode.schemaId,
       };
     } else if (key === "drop-schema") {
-      dropSchema(treeNode.schema);
+      dropSchema(treeNode.schemaId);
     }
   } else if (treeNode.type === "table") {
     if (key === "drop") {
-      dropTable(treeNode.schema, treeNode.table);
+      dropTable(treeNode.schemaId, treeNode.tableId);
     }
   }
   contextMenu.showDropdown = false;

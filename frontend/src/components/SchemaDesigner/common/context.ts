@@ -17,10 +17,10 @@ export const useSchemaDesignerContext = () => {
 export const provideSchemaDesignerContext = (
   context: Pick<
     SchemaDesignerContext,
-    "engine" | "baselineMetadata" | "metadata" | "tabState"
+    "engine" | "baselineMetadata" | "metadata" | "editableSchemas" | "tabState"
   >
 ) => {
-  const { metadata, tabState } = context;
+  const { editableSchemas, tabState } = context;
 
   provide(KEY, {
     ...context,
@@ -40,8 +40,8 @@ export const provideSchemaDesignerContext = (
 
           if (
             item.type === SchemaDesignerTabType.TabForTable &&
-            item.schema === tab.schema &&
-            item.table === tab.table
+            item.schemaId === tab.schemaId &&
+            item.tableId === tab.tableId
           ) {
             return true;
           }
@@ -63,10 +63,10 @@ export const provideSchemaDesignerContext = (
       }
     },
     // Schema related functions.
-    dropSchema: (schema: string) => {
+    dropSchema: (schemaId: string) => {
       const tabList = Array.from(tabState.value.tabMap.values());
       for (const tab of tabList) {
-        if (tab.schema === schema) {
+        if (tab.schemaId === schemaId) {
           tabState.value.tabMap.delete(tab.id);
           if (tabState.value.currentTabId === tab.id) {
             tabState.value.currentTabId = undefined;
@@ -74,19 +74,19 @@ export const provideSchemaDesignerContext = (
         }
       }
 
-      metadata.value.schemas = metadata.value.schemas.filter(
-        (item) => item.name !== schema
+      editableSchemas.value = editableSchemas.value.filter(
+        (item) => item.id !== schemaId
       );
     },
 
     // Table related functions.
-    dropTable: (schema: string, table: string) => {
+    dropTable: (schemaId: string, tableId: string) => {
       const tabList = Array.from(tabState.value.tabMap.values());
       for (const tab of tabList) {
         if (
           tab.type === SchemaDesignerTabType.TabForTable &&
-          tab.schema === schema &&
-          tab.table === table
+          tab.schemaId === schemaId &&
+          tab.tableId === tableId
         ) {
           tabState.value.tabMap.delete(tab.id);
           if (tabState.value.currentTabId === tab.id) {
@@ -95,15 +95,15 @@ export const provideSchemaDesignerContext = (
         }
       }
 
-      const schemaItem = metadata.value.schemas.find(
-        (item) => item.name === schema
+      const schemaItem = editableSchemas.value.find(
+        (item) => item.id === schemaId
       );
       if (schemaItem === undefined) {
         return;
       }
 
-      schemaItem.tables = schemaItem.tables.filter(
-        (item) => item.name !== table
+      schemaItem.tableList = schemaItem.tableList.filter(
+        (item) => item.id !== tableId
       );
     },
   });

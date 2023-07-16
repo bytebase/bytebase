@@ -1,3 +1,4 @@
+import { Schema } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { Ref } from "vue";
@@ -10,8 +11,8 @@ export enum SchemaDesignerTabType {
 export interface TableTabContext {
   id: string;
   type: SchemaDesignerTabType.TabForTable;
-  schema: string;
-  table: string;
+  schemaId: string;
+  tableId: string;
   selectedSubtab?: string;
 }
 
@@ -27,6 +28,7 @@ export interface SchemaDesignerContext {
   engine: Engine;
 
   metadata: Ref<DatabaseMetadata>;
+  editableSchemas: Ref<Schema[]>;
   tabState: Ref<SchemaDesignerTabState>;
 
   // Tab related functions.

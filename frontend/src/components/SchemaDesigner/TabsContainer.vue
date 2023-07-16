@@ -83,7 +83,7 @@ const getTabComputedClassList = (tab: TabContext) => {
 
 const getTabName = (tab: TabContext) => {
   if (tab.type === SchemaDesignerTabType.TabForTable) {
-    return tab.table || "";
+    return tab.tableId || "";
   } else {
     // Should never reach here.
     return "unknown structure";
