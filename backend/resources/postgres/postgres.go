@@ -216,6 +216,7 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 		return err
 	}
 	if !sameUser {
+		log.Info(fmt.Sprintf("Change owner of data directory %q to bytebase", pgDataDir))
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid)},
