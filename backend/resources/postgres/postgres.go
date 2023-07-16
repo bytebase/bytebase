@@ -37,8 +37,10 @@ import (
 var sampleFS embed.FS
 
 const (
-	// SampleInstanceResourceID is the resource id for the sample database.
-	SampleInstanceResourceID = "postgres-sample"
+	// TestSampleInstanceResourceID is the resource id for the test sample database.
+	TestSampleInstanceResourceID = "test-sample-instance"
+	// ProdSampleInstanceResourceID is the resource id for the prod sample database.
+	ProdSampleInstanceResourceID = "prod-sample-instance"
 	// SampleUser is the user name for the sample database.
 	SampleUser = "bbsample"
 	// SampleDatabase is the sample database name.
