@@ -294,14 +294,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
 		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
-		log.Info("-----Embedded Postgres Config BEGIN-----")
-		log.Info(fmt.Sprintf("datastorePort=%d", profile.DatastorePort))
-		log.Info(fmt.Sprintf("pgDataDir=%s", pgDataDir))
-		log.Info("-----Embedded Postgres Config END-----")
+		log.Info("-----Embedded Postgres BEGIN-----")
+		log.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, pgDataDir))
 		if err := postgres.InitDB(s.pgBinDir, pgDataDir, profile.PgUser); err != nil {
 			return nil, err
 		}
 		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoName, profile.Mode)
+		log.Info("-----Embedded Postgres END-----")
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoName, profile.Mode)
 	}
