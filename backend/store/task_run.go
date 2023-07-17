@@ -14,14 +14,16 @@ import (
 
 // TaskRunMessage is message for task run.
 type TaskRunMessage struct {
-	TaskID  int
-	Name    string
-	Status  api.TaskRunStatus
-	Type    api.TaskType
-	Code    common.Code
-	Comment string
-	Result  string
-	Payload string
+	TaskUID     int
+	StageUID    int
+	PipelineUID int
+	Name        string
+	Status      api.TaskRunStatus
+	Type        api.TaskType
+	Code        common.Code
+	Comment     string
+	Result      string
+	Payload     string
 
 	// Output only.
 	ID        int
@@ -76,7 +78,7 @@ func (taskRun *TaskRunMessage) toTaskRun() *api.TaskRun {
 		CreatedTs: taskRun.CreatedTs,
 		UpdaterID: taskRun.UpdaterID,
 		UpdatedTs: taskRun.UpdatedTs,
-		TaskID:    taskRun.TaskID,
+		TaskID:    taskRun.TaskUID,
 		Name:      taskRun.Name,
 		Status:    taskRun.Status,
 		Type:      taskRun.Type,
@@ -106,7 +108,7 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 	if _, err := tx.ExecContext(ctx, query,
 		creatorID,
 		creatorID,
-		create.TaskID,
+		create.TaskUID,
 		create.Name,
 		api.TaskRunRunning,
 		create.Type,
@@ -171,7 +173,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		&taskRun.CreatedTs,
 		&taskRun.UpdaterID,
 		&taskRun.UpdatedTs,
-		&taskRun.TaskID,
+		&taskRun.TaskUID,
 		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Type,
@@ -267,7 +269,7 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			&taskRun.CreatedTs,
 			&taskRun.UpdaterID,
 			&taskRun.UpdatedTs,
-			&taskRun.TaskID,
+			&taskRun.TaskUID,
 			&taskRun.Name,
 			&taskRun.Status,
 			&taskRun.Type,
