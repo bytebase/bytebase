@@ -674,6 +674,13 @@ func convertEngine(engine v1pb.Engine) db.Type {
 	return db.UnknownType
 }
 
+func getPageToken(limit int, offset int) (string, error) {
+	return marshalPageToken(&storepb.PageToken{
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
+}
+
 func marshalPageToken(pageToken *storepb.PageToken) (string, error) {
 	b, err := proto.Marshal(pageToken)
 	if err != nil {
