@@ -86,9 +86,6 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
 		}
-		if pageToken.Limit != request.PageSize {
-			return nil, status.Errorf(codes.InvalidArgument, "request page size does not match the page token")
-		}
 		limit = int(pageToken.Limit)
 		offset = int(pageToken.Offset)
 	}
