@@ -1,0 +1,67 @@
+- engine: 2
+  baseline: |-
+    CREATE TABLE `t` (
+      `a` int
+    );
+    CREATE TABLE `t3` (
+      `a` int
+    );
+  target:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  result: |
+    CREATE TABLE `t` (
+      `a` int
+    );
+    CREATE TABLE `t2` (
+      `b` int
+    );
