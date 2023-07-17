@@ -672,7 +672,6 @@ import {
   useInstanceV1Store,
   useSubscriptionV1Store,
   useGracefulRequest,
-  featureToRef,
 } from "@/store";
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
@@ -757,10 +756,12 @@ const state = reactive<LocalState>({
   createInstanceWarning: "",
 });
 
-const hasReadonlyReplicaFeature = featureToRef(
-  "bb.feature.read-replica-connection",
-  props.instance
-);
+const hasReadonlyReplicaFeature = computed(() => {
+  return subscriptionStore.hasInstanceFeature(
+    "bb.feature.read-replica-connection",
+    props.instance
+  );
+});
 
 const availableLicenseCount = computed(() => {
   return Math.max(
