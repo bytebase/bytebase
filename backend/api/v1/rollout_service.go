@@ -268,7 +268,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if len(pipelineCreate.Stages) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment")
 	}
-	pipeline, err := s.createPipeline(ctx, creatorID, pipelineCreate)
+	pipeline, err := s.createPipeline(ctx, project, creatorID, pipelineCreate)
 	if err != nil {
 		return nil, err
 	}
@@ -2052,8 +2052,11 @@ func getCreateDatabaseStatement(dbType db.Type, c *storepb.PlanConfig_CreateData
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }
 
-func (s *RolloutService) createPipeline(ctx context.Context, creatorID int, pipelineCreate *store.PipelineMessage) (*store.PipelineMessage, error) {
-	pipelineCreated, err := s.store.CreatePipelineV2(ctx, &store.PipelineMessage{Name: pipelineCreate.Name}, creatorID)
+func (s *RolloutService) createPipeline(ctx context.Context, project *store.ProjectMessage, creatorID int, pipelineCreate *store.PipelineMessage) (*store.PipelineMessage, error) {
+	pipelineCreated, err := s.store.CreatePipelineV2(ctx, &store.PipelineMessage{
+		Name:      pipelineCreate.Name,
+		ProjectID: project.ResourceID,
+	}, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
