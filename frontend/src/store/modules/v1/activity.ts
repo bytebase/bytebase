@@ -87,6 +87,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
       fetchActivityList({
         resource: `issues/${issue.id}`,
         order: "asc",
+        pageSize: 1000,
       }).then((resp) => resp.logEntities),
     ];
     if (isDatabaseRelatedIssueType(issue.type) && issue.pipeline) {
@@ -94,6 +95,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
         fetchActivityList({
           resource: `pipelines/${issue.pipeline.id}`,
           order: "asc",
+          pageSize: 1000,
         }).then((resp) => resp.logEntities)
       );
     } else {

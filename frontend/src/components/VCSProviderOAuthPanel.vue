@@ -281,7 +281,7 @@
           1.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.github-login-as-admin"
+              "gitops.setting.add-git-provider.oauth-info.github-enterprise-login-as-admin"
             )
           }}
           <img class="w-auto" src="../assets/github_admin_settings.png" />

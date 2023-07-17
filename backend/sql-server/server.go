@@ -76,10 +76,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	e := echo.New()
 	e.Debug = prof.Debug
-	// Disallow to be embedded in an iFrame.
-	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
-		XFrameOptions: "DENY",
-	}))
 	s.e = e
 
 	// Middleware
