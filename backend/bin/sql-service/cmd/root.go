@@ -28,6 +28,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 	// Register snowflake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
+	// Register mssql advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 
 	// Register postgres parser driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
