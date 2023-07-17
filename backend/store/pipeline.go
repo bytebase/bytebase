@@ -13,8 +13,9 @@ import (
 
 // PipelineMessage is the message for pipelines.
 type PipelineMessage struct {
-	Name   string
-	Stages []*StageMessage
+	ProjectID string
+	Name      string
+	Stages    []*StageMessage
 	// Output only.
 	ID int
 }
@@ -34,15 +35,24 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 
 	query := `
 		INSERT INTO pipeline (
+			project_id,
 			creator_id,
 			updater_id,
 			name
 		)
-		VALUES ($1, $2, $3)
+		VALUES (
+			(SELECT project.id FROM project WHERE project.resource_id = $1),
+			$2,
+			$3,
+			$4
+		)
 		RETURNING id, name
 	`
-	pipeline := &PipelineMessage{}
+	pipeline := &PipelineMessage{
+		ProjectID: create.ProjectID,
+	}
 	if err := tx.QueryRowContext(ctx, query,
+		create.ProjectID,
 		creatorID,
 		creatorID,
 		create.Name,
@@ -92,8 +102,10 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 	query := fmt.Sprintf(`
 		SELECT
 			pipeline.id,
+			project.resource_id,
 			pipeline.name
 		FROM pipeline
+		LEFT JOIN project ON pipeline.project_id = project.id
 		WHERE %s`, strings.Join(where, " AND "))
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -113,6 +125,7 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 		var pipeline PipelineMessage
 		if err := rows.Scan(
 			&pipeline.ID,
+			&pipeline.ProjectID,
 			&pipeline.Name,
 		); err != nil {
 			return nil, err
