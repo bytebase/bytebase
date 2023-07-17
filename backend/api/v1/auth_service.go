@@ -255,7 +255,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.InvalidArgument, "user %q has been deleted", userID)
+		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
 	role := ctx.Value(common.RoleContextKey).(api.Role)
@@ -414,7 +414,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.InvalidArgument, "user %q has been deleted", userID)
+		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
 	role := ctx.Value(common.RoleContextKey).(api.Role)

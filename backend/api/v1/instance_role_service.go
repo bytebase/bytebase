@@ -134,6 +134,9 @@ func (s *InstanceRoleService) CreateInstanceRole(ctx context.Context, request *v
 	if err != nil {
 		return nil, err
 	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceID)
+	}
 
 	roleUpsert := &db.DatabaseRoleUpsertMessage{
 		Name:            request.Role.RoleName,
@@ -184,6 +187,9 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceID)
 	}
 
 	upsert := &db.DatabaseRoleUpsertMessage{
@@ -242,6 +248,9 @@ func (s *InstanceRoleService) DeleteInstanceRole(ctx context.Context, request *v
 	if err != nil {
 		return nil, err
 	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceID)
+	}
 
 	if err := func() error {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
@@ -273,10 +282,6 @@ func (s *InstanceRoleService) getInstanceMessage(ctx context.Context, instanceID
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
-	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", instanceID)
-	}
-
 	return instance, nil
 }
 
