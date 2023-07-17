@@ -175,7 +175,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance.Name)
 	}
 
 	patch := &store.UpdateInstanceMessage{
@@ -237,7 +237,7 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
 	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
@@ -318,7 +318,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
@@ -383,7 +383,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
 	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
@@ -415,7 +415,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
 	// Test connection.
@@ -474,7 +474,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
 	if tp == api.RO {
@@ -624,7 +624,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
 	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {

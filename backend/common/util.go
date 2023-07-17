@@ -76,14 +76,14 @@ func GetPostgresDataDir(dataDir string, demoName string) string {
 	// we reset the demo data when starting Bytebase and this can prevent accidentally removing the
 	// production data.
 	if demoName != "" {
-		return path.Join(dataDir, fmt.Sprintf("pgdata-demo/%s", demoName))
+		return path.Join(dataDir, "pgdata-demo", demoName)
 	}
 	return path.Join(dataDir, "pgdata")
 }
 
 // GetPostgresSampleDataDir returns the data directory of postgres sample instance.
-func GetPostgresSampleDataDir(dataDir string) string {
-	return path.Join(dataDir, "pgdata-sample")
+func GetPostgresSampleDataDir(dataDir string, subDir string) string {
+	return path.Join(dataDir, "pgdata-sample", subDir)
 }
 
 // GetPostgresSocketDir returns the postgres socket directory of Bytebase.
