@@ -108,7 +108,7 @@ message SchemaTemplateSetting {
     Engine engine = 3;
 
     enum Type {
-      Type_UNSPECIFIED = 0;
+      TYPE_UNSPECIFIED = 0;
       TABLE = 1;
       FIELD = 2;
     }

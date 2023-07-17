@@ -188,7 +188,7 @@ export interface SchemaTemplateSetting_SchemaTemplate {
 }
 
 export enum SchemaTemplateSetting_SchemaTemplate_Type {
-  Type_UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
   TABLE = 1,
   FIELD = 2,
   UNRECOGNIZED = -1,
@@ -199,8 +199,8 @@ export function schemaTemplateSetting_SchemaTemplate_TypeFromJSON(
 ): SchemaTemplateSetting_SchemaTemplate_Type {
   switch (object) {
     case 0:
-    case "Type_UNSPECIFIED":
-      return SchemaTemplateSetting_SchemaTemplate_Type.Type_UNSPECIFIED;
+    case "TYPE_UNSPECIFIED":
+      return SchemaTemplateSetting_SchemaTemplate_Type.TYPE_UNSPECIFIED;
     case 1:
     case "TABLE":
       return SchemaTemplateSetting_SchemaTemplate_Type.TABLE;
@@ -218,8 +218,8 @@ export function schemaTemplateSetting_SchemaTemplate_TypeToJSON(
   object: SchemaTemplateSetting_SchemaTemplate_Type,
 ): string {
   switch (object) {
-    case SchemaTemplateSetting_SchemaTemplate_Type.Type_UNSPECIFIED:
-      return "Type_UNSPECIFIED";
+    case SchemaTemplateSetting_SchemaTemplate_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
     case SchemaTemplateSetting_SchemaTemplate_Type.TABLE:
       return "TABLE";
     case SchemaTemplateSetting_SchemaTemplate_Type.FIELD:

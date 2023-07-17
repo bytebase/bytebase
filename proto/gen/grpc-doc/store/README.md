@@ -1729,7 +1729,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| Type_UNSPECIFIED | 0 |  |
+| TYPE_UNSPECIFIED | 0 |  |
 | TABLE | 1 |  |
 | FIELD | 2 |  |
 
