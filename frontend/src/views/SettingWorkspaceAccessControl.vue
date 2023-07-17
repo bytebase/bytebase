@@ -87,7 +87,7 @@
 
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
-import { computed, reactive, watch, onMounted } from "vue";
+import { computed, reactive, watch, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 import {
@@ -318,6 +318,10 @@ const upsertPolicy = useDebounceFn(async () => {
 watch(
   () => state.environmentPolicyList,
   async () => {
+    if (state.isLoading) {
+      return;
+    }
+
     await upsertPolicy();
   },
   {
