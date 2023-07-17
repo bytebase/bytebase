@@ -492,6 +492,8 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 		return oracleSyntaxCheck(statement)
 	case db.Snowflake:
 		return snowflakeSyntaxCheck(statement)
+	case db.MSSQL:
+		return mssqlSyntaxCheck(statement)
 	}
 	return nil, []Advice{
 		{
@@ -502,6 +504,34 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 			Line:    1,
 		},
 	}
+}
+
+func mssqlSyntaxCheck(statement string) (any, []Advice) {
+	tree, err := parser.ParseTSQL(statement)
+	if err != nil {
+		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    StatementSyntaxError,
+					Title:   SyntaxErrorTitle,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	return tree, nil
 }
 
 func snowflakeSyntaxCheck(statement string) (any, []Advice) {
@@ -1045,6 +1075,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleNoSelectAll, nil
 		case db.Snowflake:
 			return SnowflakeNoSelectAll, nil
+		case db.MSSQL:
+			return MSSQLNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {

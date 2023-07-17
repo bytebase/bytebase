@@ -369,6 +369,15 @@ func FlattenSQLReviewRulesWithEngine(policy *advisor.SQLReviewPolicy) *advisor.S
 					Payload: rule.Payload,
 				})
 			}
+			if advisor.RuleExists(rule.Type, db.MSSQL) {
+				ruleList = append(ruleList, &advisor.SQLReviewRule{
+					Type:    rule.Type,
+					Level:   rule.Level,
+					Engine:  db.MSSQL,
+					Comment: rule.Comment,
+					Payload: rule.Payload,
+				})
+			}
 		}
 	}
 
