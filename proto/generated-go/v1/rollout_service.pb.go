@@ -1388,8 +1388,8 @@ type ListRolloutTaskRunsRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent, which owns this collection of plans.
-	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	// Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-/taskRuns/-" to list all taskRuns from a rollout.
+	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+	// Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of taskRuns to return. The service may return fewer than
 	// this value.
