@@ -366,7 +366,7 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 		composedTask.Updater = updater
 
 		for _, taskRun := range taskRuns {
-			if taskRun.TaskID == task.ID {
+			if taskRun.TaskUID == task.ID {
 				composedTaskRun := taskRun.toTaskRun()
 				creator, err := s.GetPrincipalByID(ctx, composedTaskRun.CreatorID)
 				if err != nil {
