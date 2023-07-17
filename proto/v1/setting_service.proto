@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
 import "v1/issue_service.proto";
 import "v1/subscription_service.proto";
+import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
@@ -101,6 +102,7 @@ message Value {
     WorkspaceApprovalSetting workspace_approval_setting_value = 6;
     WorkspaceTrialSetting workspace_trial_setting_value = 7;
     ExternalApprovalSetting external_approval_setting_value = 8;
+    SchemaTemplateSetting schema_template_setting_value = 9;
   }
 }
 
@@ -214,6 +216,47 @@ message ExternalApprovalSetting {
     string endpoint = 3;
   }
   repeated Node nodes = 1;
+}
+
+message SchemaTemplateSetting {
+  message SchemaTemplate {
+    string id = 1;
+
+    string title = 2;
+
+    Engine engine = 3;
+
+    enum Type {
+      Type_UNSPECIFIED = 0;
+      TABLE = 1;
+      FIELD = 2;
+    }
+
+    Type type = 4;
+
+    message FieldTemplatePayload {
+      string name = 1;
+
+      string type = 2;
+
+      bool primary = 3;
+
+      bool nullable = 4;
+
+      optional string default = 5;
+
+      string comment = 6;
+
+      string category = 7;
+    }
+
+    // TODO: support table template payload
+    oneof payload {
+      FieldTemplatePayload field_template_payload = 5;
+    }
+  }
+
+  repeated SchemaTemplate templates = 1;
 }
 
 message WorkspaceTrialSetting {

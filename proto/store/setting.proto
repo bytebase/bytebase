@@ -5,6 +5,7 @@ package bytebase.store;
 import "google/api/expr/v1alpha1/syntax.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -96,4 +97,45 @@ message SMTPMailDeliverySetting {
 
   // The sender email address.
   string from = 10;
+}
+
+message SchemaTemplateSetting {
+  message SchemaTemplate {
+    string id = 1;
+
+    string title = 2;
+
+    Engine engine = 3;
+
+    enum Type {
+      Type_UNSPECIFIED = 0;
+      TABLE = 1;
+      FIELD = 2;
+    }
+
+    Type type = 4;
+
+    message FieldTemplatePayload {
+      string name = 1;
+
+      string type = 2;
+
+      bool primary = 3;
+
+      bool nullable = 4;
+
+      optional string default = 5;
+
+      string comment = 6;
+
+      string category = 7;
+    }
+
+    // TODO: support table template payload
+    oneof payload {
+      FieldTemplatePayload field_template_payload = 5;
+    }
+  }
+
+  repeated SchemaTemplate templates = 1;
 }
