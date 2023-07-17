@@ -7,24 +7,40 @@
     </template>
 
     <div
-      class="space-y-4 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+      class="space-y-3 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
-      <div v-if="ready">
-        <SchemaDesignTable :schema-designs="schemaDesignList" />
-        <hr />
+      <div>
+        <NRadioGroup v-model:value="state.tab">
+          <NRadio
+            :key="'LIST'"
+            :value="'LIST'"
+            :label="'Existing Schema Design'"
+          />
+          <NRadio :key="'VIEW'" :value="'VIEW'" :label="'New Schema Design'" />
+        </NRadioGroup>
+      </div>
 
+      <template v-if="state.tab === 'LIST'">
+        <SchemaDesignTable v-if="ready" :schema-designs="schemaDesignList" />
+        <div v-else class="w-full h-[20rem] flex items-center justify-center">
+          <BBSpin />
+        </div>
+      </template>
+      <template v-else>
+        <div class="w-full flex flex-row justify-start items-center">
+          <span class="flex w-40 items-center">Name</span>
+          <BBTextField class="w-60 !py-1.5" :value="state.schemaDesignName" />
+        </div>
         <BaselineSchemaSelector @update="handleBaselineSchemaChange" />
-
         <template v-if="schemaDesign">
           <SchemaDesigner
+            ref="schemaDesignerRef"
+            :key="schemaDesignId"
             :engine="schemaDesign.engine"
             :schema-design="schemaDesign"
           />
         </template>
-      </div>
-      <div v-else class="w-full h-[20rem] flex items-center justify-center">
-        <BBSpin />
-      </div>
+      </template>
     </div>
 
     <template #footer>
@@ -35,7 +51,7 @@
           <NButton @click.prevent="cancel">
             {{ $t("common.cancel") }}
           </NButton>
-          <NButton type="primary" @click.prevent="">
+          <NButton type="primary" @click.prevent="handleConfirm">
             {{ $t("common.next") }}
           </NButton>
         </div>
@@ -45,14 +61,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive } from "vue";
-import { useSchemaDesignList } from "@/store/modules/schemaDesign";
+import { uniqueId } from "lodash-es";
+import { NRadioGroup, NRadio } from "naive-ui";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
+import {
+  useSchemaDesignList,
+  useSchemaDesignStore,
+} from "@/store/modules/schemaDesign";
 import SchemaDesignTable from "./SchemaDesignTable.vue";
 import BaselineSchemaSelector from "../BaselineSchemaSelector.vue";
 import SchemaDesigner from "../index.vue";
-import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
 interface BaselineSchema {
   projectId?: string;
@@ -61,7 +82,8 @@ interface BaselineSchema {
 }
 
 interface LocalState {
-  tab: "TABLE" | "VIEW";
+  tab: "LIST" | "VIEW";
+  schemaDesignName: string;
   baselineSchema: BaselineSchema;
 }
 
@@ -73,12 +95,15 @@ defineProps({
 });
 
 const emit = defineEmits(["dismiss"]);
+const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
+const schemaDesignStore = useSchemaDesignStore();
 const { schemaDesignList, ready } = useSchemaDesignList();
 const state = reactive<LocalState>({
-  tab: "TABLE",
+  tab: "LIST",
+  schemaDesignName: "",
   baselineSchema: {},
 });
 
@@ -101,16 +126,55 @@ const schemaDesign = computed(() => {
   return undefined;
 });
 
+const schemaDesignId = computed(() => {
+  if (!schemaDesign.value || !schemaDesign.value.name) {
+    return uniqueId();
+  } else {
+    return schemaDesign.value.name;
+  }
+});
+
 onMounted(() => {
   console.log("mounted", schemaDesignList.value);
 });
+
+const handleBaselineSchemaChange = (baselineSchema: BaselineSchema) => {
+  state.baselineSchema = baselineSchema;
+  console.log("state.baselineSchema", state.baselineSchema);
+};
 
 const cancel = () => {
   emit("dismiss");
 };
 
-const handleBaselineSchemaChange = (baselineSchema: BaselineSchema) => {
-  state.baselineSchema = baselineSchema;
-  console.log("state.baselineSchema", state.baselineSchema);
+const handleConfirm = () => {
+  if (state.tab === "VIEW") {
+    if (schemaDesign.value && schemaDesign.value.name === "") {
+      if (state.schemaDesignName === "") {
+        console.log("schemaDesignName is empty");
+        return;
+      }
+
+      const schemaDesigner = schemaDesignerRef.value;
+      if (!schemaDesigner) {
+        console.log("schemaDesigner is empty");
+        return;
+      }
+
+      // TODO(steven): calculate design schema metadata with metadata and editableSchemas.
+      schemaDesignStore.createSchemaDesign(
+        state.baselineSchema.projectId || "",
+        SchemaDesign.fromPartial({
+          title: state.schemaDesignName,
+          schemaMetadata: schemaDesigner.metadata,
+          baselineSchema: state.baselineSchema.changeHistory?.schema || "",
+          baselineSchemaMetadata: schemaDesigner.baselineMetadata,
+          engine: schemaDesign.value.engine,
+          baselineDatabase: state.baselineSchema.databaseId || "",
+          schemaVersion: state.baselineSchema.changeHistory?.name || "",
+        })
+      );
+    }
+  }
 };
 </script>

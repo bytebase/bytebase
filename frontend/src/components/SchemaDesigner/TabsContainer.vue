@@ -52,7 +52,7 @@ import {
   SchemaDesignerTabType,
 } from "./common";
 
-const { tabState, getCurrentTab } = useSchemaDesignerContext();
+const { tabState, getCurrentTab, getTable } = useSchemaDesignerContext();
 const tabsContainerRef = ref();
 const tabList = computed(() => {
   return Array.from(tabState.value.tabMap.values());
@@ -83,7 +83,8 @@ const getTabComputedClassList = (tab: TabContext) => {
 
 const getTabName = (tab: TabContext) => {
   if (tab.type === SchemaDesignerTabType.TabForTable) {
-    return tab.tableId || "";
+    const table = getTable(tab.schemaId, tab.tableId);
+    return table.name || "Uknown tab";
   } else {
     // Should never reach here.
     return "unknown structure";

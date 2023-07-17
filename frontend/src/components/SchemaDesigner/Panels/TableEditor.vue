@@ -310,10 +310,11 @@ const schema = computed(() => {
     (schema) => schema.id === currentTab.value.schemaId
   ) as Schema;
 });
-const table = ref(
-  schema.value.tableList.find(
-    (table) => table.id === currentTab.value.tableId
-  ) as Table
+const table = computed(
+  () =>
+    schema.value.tableList.find(
+      (table) => table.id === currentTab.value.tableId
+    ) as Table
 );
 const foreignKeyList = computed(() => {
   return schema.value.foreignKeyList.filter(

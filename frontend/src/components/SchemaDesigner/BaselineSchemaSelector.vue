@@ -1,10 +1,10 @@
 <template>
   <div
-    class="w-full mx-auto flex flex-col justify-start items-start space-y-4 my-8"
+    class="w-full mx-auto flex flex-col justify-start items-start space-y-3 mb-6"
   >
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center">
-        {{ $t("database.sync-schema.select-project") }}
+        {{ $t("common.project") }}
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
@@ -14,7 +14,7 @@
     </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center shrink-0">
-        {{ $t("database.sync-schema.source-database") }}
+        {{ $t("common.database") }}
       </span>
       <EnvironmentSelect
         class="!w-60 mr-4 shrink-0"
@@ -38,7 +38,6 @@
           <div class="flex items-center">
             <InstanceV1EngineIcon :instance="db.instanceEntity" />
             <span class="mx-2">{{ db.databaseName }}</span>
-
             <span class="text-gray-400">
               ({{ instanceV1Name(db.instanceEntity) }})
             </span>

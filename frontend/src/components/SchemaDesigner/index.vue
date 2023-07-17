@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!state.isLoading" class="w-full h-full border">
+  <div v-if="!state.isLoading" class="w-full h-[32rem] border rounded-lg">
     <Splitpanes
       class="default-theme w-full h-full flex flex-row overflow-hidden"
     >
@@ -24,6 +24,7 @@ import { SchemaDesignerTabState } from "./common/type";
 import AsidePanel from "./AsidePanel.vue";
 import Designer from "./Designer.vue";
 import { Schema, convertSchemaMetadataList } from "@/types";
+import { cloneDeep } from "lodash-es";
 
 interface LocalState {
   isLoading: boolean;
@@ -66,8 +67,15 @@ provideSchemaDesignerContext({
   baselineMetadata: baselineMetadata.value,
   engine: props.engine,
   metadata: metadata,
-  editableSchemas: editableSchemas,
   tabState: tabState,
+  originalSchemas: cloneDeep(editableSchemas.value),
+  editableSchemas: editableSchemas,
+});
+
+defineExpose({
+  metadata,
+  baselineMetadata,
+  editableSchemas,
 });
 </script>
 

@@ -1,6 +1,15 @@
 <template>
   <div class="w-full h-full px-2 relative overflow-y-hidden">
-    <div class="w-full sticky top-0 pt-2 h-12 bg-white z-10">
+    <div class="w-full flex flex-col sticky top-0 pt-2 h-20 bg-white z-10">
+      <p class="w-full flex flex-row justify-between items-center h-8 px-1">
+        <span class="text-sm">Table</span>
+        <button
+          class="text-gray-400 hover:text-gray-500"
+          @click="handleCreateTable"
+        >
+          <heroicons-outline:plus class="w-4 h-auto" />
+        </button>
+      </p>
       <NInput
         v-model:value="searchPattern"
         :placeholder="$t('schema-editor.search-database-and-table')"
@@ -46,7 +55,7 @@
 
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
-    :schema="state.tableNameModalContext.schema"
+    :schema-id="state.tableNameModalContext.schemaId"
     @close="state.tableNameModalContext = undefined"
   />
 </template>
@@ -101,20 +110,13 @@ interface LocalState {
     databaseId: string;
   };
   tableNameModalContext?: {
-    schema: string;
+    schemaId: string;
   };
 }
 
 const { t } = useI18n();
-const {
-  engine,
-  editableSchemas,
-  tabState,
-  addTab,
-  getCurrentTab,
-  dropSchema,
-  dropTable,
-} = useSchemaDesignerContext();
+const { engine, editableSchemas, tabState, addTab, getCurrentTab, dropTable } =
+  useSchemaDesignerContext();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
@@ -144,7 +146,7 @@ const contextMenuOptions = computed(() => {
     const options = [];
     if (engine === Engine.POSTGRES) {
       const schema = schemaList.value.find(
-        (schema) => schema.name === treeNode.schema
+        (schema) => schema.id === treeNode.schemaId
       );
       if (!schema) {
         return [];
@@ -162,13 +164,15 @@ const contextMenuOptions = computed(() => {
     return options;
   } else if (treeNode.type === "table") {
     const schema = schemaList.value.find(
-      (schema) => schema.name === treeNode.schema
+      (schema) => schema.id === treeNode.schemaId
     );
     if (!schema) {
       return [];
     }
 
-    const table = schema.tableList.find((table) => table.id === treeNode.table);
+    const table = schema.tableList.find(
+      (table) => table.id === treeNode.tableId
+    );
     if (!table) {
       return [];
     }
@@ -329,6 +333,15 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
   selectedKeysRef.value = [treeNode.key];
 };
 
+const handleCreateTable = () => {
+  if (engine === Engine.MYSQL) {
+    const schema = editableSchemas.value[0];
+    state.tableNameModalContext = {
+      schemaId: schema.id,
+    };
+  }
+};
+
 // Set event handler to tree nodes.
 const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
   return {
@@ -376,10 +389,8 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   if (treeNode.type === "schema") {
     if (key === "create-table") {
       state.tableNameModalContext = {
-        schema: treeNode.schemaId,
+        schemaId: treeNode.schemaId,
       };
-    } else if (key === "drop-schema") {
-      dropSchema(treeNode.schemaId);
     }
   } else if (treeNode.type === "table") {
     if (key === "drop") {

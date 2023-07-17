@@ -17,13 +17,19 @@ export const useSchemaDesignerContext = () => {
 export const provideSchemaDesignerContext = (
   context: Pick<
     SchemaDesignerContext,
-    "engine" | "baselineMetadata" | "metadata" | "editableSchemas" | "tabState"
+    | "engine"
+    | "baselineMetadata"
+    | "metadata"
+    | "tabState"
+    | "originalSchemas"
+    | "editableSchemas"
   >
 ) => {
   const { editableSchemas, tabState } = context;
 
   provide(KEY, {
     ...context,
+
     // Tab related functions.
     getCurrentTab: (): TabContext | undefined => {
       if (isUndefined(tabState.value.currentTabId)) {
@@ -62,24 +68,21 @@ export const provideSchemaDesignerContext = (
         tabState.value.currentTabId = tab.id;
       }
     },
-    // Schema related functions.
-    dropSchema: (schemaId: string) => {
-      const tabList = Array.from(tabState.value.tabMap.values());
-      for (const tab of tabList) {
-        if (tab.schemaId === schemaId) {
-          tabState.value.tabMap.delete(tab.id);
-          if (tabState.value.currentTabId === tab.id) {
-            tabState.value.currentTabId = undefined;
-          }
-        }
-      }
-
-      editableSchemas.value = editableSchemas.value.filter(
-        (item) => item.id !== schemaId
-      );
-    },
 
     // Table related functions.
+    getTable: (schemaId: string, tableId: string) => {
+      const schema = editableSchemas.value.find((item) => item.id === schemaId);
+      if (schema === undefined) {
+        throw new Error(`Schema ${schemaId} not found.`);
+      }
+
+      const tableItem = schema.tableList.find((item) => item.id === tableId);
+      if (tableItem === undefined) {
+        throw new Error(`Table ${tableId} not found.`);
+      }
+
+      return tableItem;
+    },
     dropTable: (schemaId: string, tableId: string) => {
       const tabList = Array.from(tabState.value.tabMap.values());
       for (const tab of tabList) {

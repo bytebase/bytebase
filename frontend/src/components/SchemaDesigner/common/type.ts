@@ -1,4 +1,4 @@
-import { Schema } from "@/types";
+import { Schema, Table } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { Ref } from "vue";
@@ -28,16 +28,16 @@ export interface SchemaDesignerContext {
   engine: Engine;
 
   metadata: Ref<DatabaseMetadata>;
-  editableSchemas: Ref<Schema[]>;
   tabState: Ref<SchemaDesignerTabState>;
+
+  originalSchemas: Schema[];
+  editableSchemas: Ref<Schema[]>;
 
   // Tab related functions.
   getCurrentTab: () => TabContext | undefined;
   addTab: (tab: TabContext, setAsCurrentTab?: boolean) => void;
 
-  // Schema related functions.
-  dropSchema: (schema: string) => void;
-
   // Table related functions.
-  dropTable: (schema: string, table: string) => void;
+  getTable: (schemaId: string, tableId: string) => Table;
+  dropTable: (schemaId: string, tableId: string) => void;
 }
