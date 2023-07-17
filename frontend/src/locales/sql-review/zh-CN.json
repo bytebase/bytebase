@@ -5,7 +5,8 @@
     "postgres": "PostgreSQL",
     "oracle": "Oracle",
     "oceanbase": "OceanBase",
-    "snowflake": "Snowflake"
+    "snowflake": "Snowflake",
+    "mssql": "SQL Server"
   },
   "category": {
     "engine": "引擎",

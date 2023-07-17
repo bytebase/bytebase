@@ -151,6 +151,8 @@ github.com/bytebase/tidb v0.0.0-20230329095902-fe196d3c77d0 h1:h0LzCFbiCKWy/TbnE
 github.com/bytebase/tidb v0.0.0-20230329095902-fe196d3c77d0/go.mod h1:xrVXE+0V54QRGgrD9o+tuZmBDDx8vJpQgrPtRQvodWo=
 github.com/bytebase/tidb/parser v0.0.0-20230329095902-fe196d3c77d0 h1:Xdq53fvcG9qeUKkxdNbR9B1JLbfeIjhW2N0xxFbaZNg=
 github.com/bytebase/tidb/parser v0.0.0-20230329095902-fe196d3c77d0/go.mod h1:wjvp+T3/T9XYt0nKqGX3Kc1AKuyUcfno6LTc6b2A6ew=
+github.com/bytebase/tsql-parser v0.0.0-20230717060948-f266bf0280e2 h1:o0jnYa8jLE9kgkDcCw89xIqGUrk+T4ZHjmmHwI8+8mM=
+github.com/bytebase/tsql-parser v0.0.0-20230717060948-f266bf0280e2/go.mod h1:RGdpxRQZHTqMjTKZUKGGZduIXu2lPyboIuWsqV7drX8=
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
 github.com/casbin/casbin/v2 v2.71.1 h1:LRHyqM0S1LzM/K59PmfUIN0ZJfLgcOjL4OhOQI/FNXU=
 github.com/casbin/casbin/v2 v2.71.1/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
