@@ -33,6 +33,7 @@ type TaskRunMessage struct {
 	UpdatedTs int64
 }
 
+// FindTaskRunMessage is the message for finding task runs.
 type FindTaskRunMessage struct {
 	UID         *int
 	TaskUID     *int
