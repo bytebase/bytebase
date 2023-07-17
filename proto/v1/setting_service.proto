@@ -225,6 +225,8 @@ message SchemaTemplateSetting {
 
     Engine engine = 2;
 
+    // TODO: support category
+
     ColumnMetadata payload = 3;
   }
 
