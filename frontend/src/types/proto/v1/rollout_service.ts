@@ -580,8 +580,8 @@ export interface PreviewRolloutRequest {
 export interface ListRolloutTaskRunsRequest {
   /**
    * The parent, which owns this collection of plans.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-   * Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-/taskRuns/-" to list all taskRuns from a rollout.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns
+   * Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-/taskRuns" to list all taskRuns from a rollout.
    */
   parent: string;
   /**
