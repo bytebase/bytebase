@@ -5948,7 +5948,6 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | visibility | [Visibility](#bytebase-v1-Visibility) |  |  |
 | tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
 | db_name_template | [string](#string) |  |  |
-| schema_version | [SchemaVersion](#bytebase-v1-SchemaVersion) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 

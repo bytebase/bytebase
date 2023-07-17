@@ -555,7 +555,6 @@ export interface Project {
   visibility: Visibility;
   tenantMode: TenantMode;
   dbNameTemplate: string;
-  schemaVersion: SchemaVersion;
   schemaChange: SchemaChange;
   webhooks: Webhook[];
 }
@@ -2598,7 +2597,6 @@ function createBaseProject(): Project {
     visibility: 0,
     tenantMode: 0,
     dbNameTemplate: "",
-    schemaVersion: 0,
     schemaChange: 0,
     webhooks: [],
   };
@@ -2633,14 +2631,11 @@ export const Project = {
     if (message.dbNameTemplate !== "") {
       writer.uint32(74).string(message.dbNameTemplate);
     }
-    if (message.schemaVersion !== 0) {
-      writer.uint32(80).int32(message.schemaVersion);
-    }
     if (message.schemaChange !== 0) {
-      writer.uint32(88).int32(message.schemaChange);
+      writer.uint32(80).int32(message.schemaChange);
     }
     for (const v of message.webhooks) {
-      Webhook.encode(v!, writer.uint32(98).fork()).ldelim();
+      Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -2720,17 +2715,10 @@ export const Project = {
             break;
           }
 
-          message.schemaVersion = reader.int32() as any;
-          continue;
-        case 11:
-          if (tag !== 88) {
-            break;
-          }
-
           message.schemaChange = reader.int32() as any;
           continue;
-        case 12:
-          if (tag !== 98) {
+        case 11:
+          if (tag !== 90) {
             break;
           }
 
@@ -2756,7 +2744,6 @@ export const Project = {
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : 0,
       dbNameTemplate: isSet(object.dbNameTemplate) ? String(object.dbNameTemplate) : "",
-      schemaVersion: isSet(object.schemaVersion) ? schemaVersionFromJSON(object.schemaVersion) : 0,
       schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       webhooks: Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
     };
@@ -2773,7 +2760,6 @@ export const Project = {
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
     message.tenantMode !== undefined && (obj.tenantMode = tenantModeToJSON(message.tenantMode));
     message.dbNameTemplate !== undefined && (obj.dbNameTemplate = message.dbNameTemplate);
-    message.schemaVersion !== undefined && (obj.schemaVersion = schemaVersionToJSON(message.schemaVersion));
     message.schemaChange !== undefined && (obj.schemaChange = schemaChangeToJSON(message.schemaChange));
     if (message.webhooks) {
       obj.webhooks = message.webhooks.map((e) => e ? Webhook.toJSON(e) : undefined);
@@ -2798,7 +2784,6 @@ export const Project = {
     message.visibility = object.visibility ?? 0;
     message.tenantMode = object.tenantMode ?? 0;
     message.dbNameTemplate = object.dbNameTemplate ?? "";
-    message.schemaVersion = object.schemaVersion ?? 0;
     message.schemaChange = object.schemaChange ?? 0;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     return message;
