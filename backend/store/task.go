@@ -570,8 +570,8 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 			taskRunStatusPatch.Status = api.TaskRunDone
 		case api.TaskFailed:
 			taskRunStatusPatch.Status = api.TaskRunFailed
-		case api.TaskPending:
-		case api.TaskPendingApproval:
+		case api.TaskPending, api.TaskPendingApproval:
+			// Do nothing.
 		case api.TaskCanceled:
 			taskRunStatusPatch.Status = api.TaskRunCanceled
 		}
