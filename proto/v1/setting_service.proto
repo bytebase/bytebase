@@ -7,6 +7,8 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
+import "v1/common.proto";
+import "v1/database_service.proto";
 import "v1/issue_service.proto";
 import "v1/subscription_service.proto";
 
@@ -101,6 +103,7 @@ message Value {
     WorkspaceApprovalSetting workspace_approval_setting_value = 6;
     WorkspaceTrialSetting workspace_trial_setting_value = 7;
     ExternalApprovalSetting external_approval_setting_value = 8;
+    SchemaTemplateSetting schema_template_setting_value = 9;
   }
 }
 
@@ -214,6 +217,22 @@ message ExternalApprovalSetting {
     string endpoint = 3;
   }
   repeated Node nodes = 1;
+}
+
+message SchemaTemplateSetting {
+  message FieldTemplate {
+    string id = 1;
+
+    Engine engine = 2;
+
+    // TODO: support category
+
+    ColumnMetadata payload = 3;
+  }
+
+  repeated FieldTemplate field_templates = 1;
+
+  // TODO: support table_templates
 }
 
 message WorkspaceTrialSetting {
