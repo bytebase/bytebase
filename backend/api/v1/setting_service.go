@@ -425,8 +425,8 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			}
 			engineType := parser.EngineType(template.Engine.String())
 			var defaultVal string
-			if template.Payload.Default != nil {
-				defaultVal = template.Payload.Default.Value
+			if template.Column.Default != nil {
+				defaultVal = template.Column.Default.Value
 			}
 			validateResultList, err := edit.ValidateDatabaseEdit(engineType, &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
@@ -436,11 +436,11 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 						Type: "BASE TABLE",
 						AddColumnList: []*api.AddColumnContext{
 							{
-								Name:     template.Payload.Name,
-								Type:     template.Payload.Type,
+								Name:     template.Column.Name,
+								Type:     template.Column.Type,
 								Default:  &defaultVal,
-								Nullable: template.Payload.Nullable,
-								Comment:  template.Payload.Comment,
+								Nullable: template.Column.Nullable,
+								Comment:  template.Column.Comment,
 							},
 						},
 					},
@@ -863,12 +863,12 @@ func convertToSchemaTemplateSetting(s *storepb.SchemaTemplateSetting) *v1pb.Sche
 		v1Templates = append(v1Templates, &v1pb.SchemaTemplateSetting_FieldTemplate{
 			Id:     template.Id,
 			Engine: v1pb.Engine(template.Engine),
-			Payload: &v1pb.ColumnMetadata{
-				Name:     template.Payload.Name,
-				Type:     template.Payload.Type,
-				Default:  template.Payload.Default,
-				Nullable: template.Payload.Nullable,
-				Comment:  template.Payload.Comment,
+			Column: &v1pb.ColumnMetadata{
+				Name:     template.Column.Name,
+				Type:     template.Column.Type,
+				Default:  template.Column.Default,
+				Nullable: template.Column.Nullable,
+				Comment:  template.Column.Comment,
 			},
 		})
 	}

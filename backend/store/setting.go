@@ -145,8 +145,6 @@ func (s *Store) GetSchemaTemplateSetting(ctx context.Context) (*storepb.SchemaTe
 		return &storepb.SchemaTemplateSetting{}, nil
 	}
 
-	fmt.Printf("schema template setting: %s\n", setting.Value)
-
 	payload := new(storepb.SchemaTemplateSetting)
 	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
 		return nil, err

@@ -183,7 +183,7 @@ export interface SchemaTemplateSetting {
 export interface SchemaTemplateSetting_FieldTemplate {
   id: string;
   engine: Engine;
-  payload?: ColumnMetadata | undefined;
+  column?: ColumnMetadata | undefined;
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -927,7 +927,7 @@ export const SchemaTemplateSetting = {
 };
 
 function createBaseSchemaTemplateSetting_FieldTemplate(): SchemaTemplateSetting_FieldTemplate {
-  return { id: "", engine: 0, payload: undefined };
+  return { id: "", engine: 0, column: undefined };
 }
 
 export const SchemaTemplateSetting_FieldTemplate = {
@@ -938,8 +938,8 @@ export const SchemaTemplateSetting_FieldTemplate = {
     if (message.engine !== 0) {
       writer.uint32(16).int32(message.engine);
     }
-    if (message.payload !== undefined) {
-      ColumnMetadata.encode(message.payload, writer.uint32(26).fork()).ldelim();
+    if (message.column !== undefined) {
+      ColumnMetadata.encode(message.column, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -970,7 +970,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
             break;
           }
 
-          message.payload = ColumnMetadata.decode(reader, reader.uint32());
+          message.column = ColumnMetadata.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -985,7 +985,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      payload: isSet(object.payload) ? ColumnMetadata.fromJSON(object.payload) : undefined,
+      column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
     };
   },
 
@@ -993,8 +993,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.payload !== undefined &&
-      (obj.payload = message.payload ? ColumnMetadata.toJSON(message.payload) : undefined);
+    message.column !== undefined && (obj.column = message.column ? ColumnMetadata.toJSON(message.column) : undefined);
     return obj;
   },
 
@@ -1006,8 +1005,8 @@ export const SchemaTemplateSetting_FieldTemplate = {
     const message = createBaseSchemaTemplateSetting_FieldTemplate();
     message.id = object.id ?? "";
     message.engine = object.engine ?? 0;
-    message.payload = (object.payload !== undefined && object.payload !== null)
-      ? ColumnMetadata.fromPartial(object.payload)
+    message.column = (object.column !== undefined && object.column !== null)
+      ? ColumnMetadata.fromPartial(object.column)
       : undefined;
     return message;
   },
