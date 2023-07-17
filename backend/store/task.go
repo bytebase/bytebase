@@ -559,7 +559,7 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 			return nil, errors.Errorf("task is already running: %v", task.Name)
 		}
 		taskRunStatusPatch := &TaskRunStatusPatch{
-			ID:        &taskRun.ID,
+			ID:        taskRun.ID,
 			UpdaterID: patch.UpdaterID,
 			Code:      patch.Code,
 			Result:    patch.Result,

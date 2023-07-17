@@ -55,13 +55,10 @@ type TaskRunFind struct {
 
 // TaskRunStatusPatch is the API message for patching a task run.
 type TaskRunStatusPatch struct {
-	ID *int
+	ID int
 
 	// Standard fields
 	UpdaterID int
-
-	// Related fields
-	TaskID *int
 
 	// Domain specific fields
 	Status api.TaskRunStatus
@@ -152,12 +149,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 
 	// Build WHERE clause.
 	where := []string{"TRUE"}
-	if v := patch.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.TaskID; v != nil {
-		where, args = append(where, fmt.Sprintf("task_id = $%d", len(args)+1)), append(args, *v)
-	}
+	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, patch.ID)
 
 	var taskRun TaskRunMessage
 	if err := tx.QueryRowContext(ctx, `
