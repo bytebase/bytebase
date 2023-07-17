@@ -1,0 +1,32 @@
+- statement: SELECT * FROM t
+  want:
+    - status: WARN
+      code: 203
+      title: statement.select.no-select-all
+      content: Avoid using SELECT *.
+      line: 1
+      details: ""
+- statement: SELECT a, b FROM t
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: SELECT a, b FROM (SELECT * from t1, t2) t
+  want:
+    - status: WARN
+      code: 203
+      title: statement.select.no-select-all
+      content: Avoid using SELECT *.
+      line: 1
+      details: ""
+- statement: INSERT INTO t SELECT * FROM t1
+  want:
+    - status: WARN
+      code: 203
+      title: statement.select.no-select-all
+      content: Avoid using SELECT *.
+      line: 1
+      details: ""
