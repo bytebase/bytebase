@@ -107,7 +107,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		return nil, err
 	}
 	if identityProvider.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "identity provider %q has been deleted", request.IdentityProvider.Name)
+		return nil, status.Errorf(codes.NotFound, "identity provider %q has been deleted", request.IdentityProvider.Name)
 	}
 
 	patch := &store.UpdateIdentityProviderMessage{
@@ -156,7 +156,7 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 		return nil, err
 	}
 	if identityProvider.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "identity provider %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "identity provider %q has been deleted", request.Name)
 	}
 
 	patch := &store.UpdateIdentityProviderMessage{
