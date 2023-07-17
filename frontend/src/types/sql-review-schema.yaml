@@ -41,6 +41,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - OCEANBASE
+      - SNOWFLAKE
     componentList:
       - key: format
         payload:
@@ -77,6 +78,7 @@ ruleList:
       - POSTGRES
       - ORACLE
       - OCEANBASE
+      - SNOWFLAKE
       - MSSQL
     componentList: []
   - type: statement.where.require
@@ -500,6 +502,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - OCEANBASE
+      - SNOWFLAKE
     componentList: []
   - type: database.drop-empty-database
     category: DATABASE
