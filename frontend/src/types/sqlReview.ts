@@ -14,7 +14,8 @@ export type SchemaRuleEngineType =
   | "TIDB"
   | "ORACLE"
   | "OCEANBASE"
-  | "SNOWFLKE";
+  | "SNOWFLKE"
+  | "MSSQL";
 
 // The category type for rule template
 export type CategoryType =
