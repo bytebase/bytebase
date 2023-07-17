@@ -577,6 +577,40 @@ export interface PreviewRolloutRequest {
   plan?: Plan | undefined;
 }
 
+export interface ListRolloutTaskRunsRequest {
+  /**
+   * The parent, which owns this collection of plans.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-/taskRuns/-" to list all taskRuns from a rollout.
+   */
+  parent: string;
+  /**
+   * The maximum number of taskRuns to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 taskRuns will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListRolloutTaskRuns` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListRolloutTaskRuns` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListRolloutTaskRunsResponse {
+  /** The taskRuns from the specified request. */
+  taskRuns: TaskRun[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface Rollout {
   /**
    * The resource name of the rollout.
@@ -2924,6 +2958,165 @@ export const PreviewRolloutRequest = {
   },
 };
 
+function createBaseListRolloutTaskRunsRequest(): ListRolloutTaskRunsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListRolloutTaskRunsRequest = {
+  encode(message: ListRolloutTaskRunsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListRolloutTaskRunsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListRolloutTaskRunsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListRolloutTaskRunsRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListRolloutTaskRunsRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListRolloutTaskRunsRequest>): ListRolloutTaskRunsRequest {
+    return ListRolloutTaskRunsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListRolloutTaskRunsRequest>): ListRolloutTaskRunsRequest {
+    const message = createBaseListRolloutTaskRunsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListRolloutTaskRunsResponse(): ListRolloutTaskRunsResponse {
+  return { taskRuns: [], nextPageToken: "" };
+}
+
+export const ListRolloutTaskRunsResponse = {
+  encode(message: ListRolloutTaskRunsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.taskRuns) {
+      TaskRun.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListRolloutTaskRunsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListRolloutTaskRunsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.taskRuns.push(TaskRun.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListRolloutTaskRunsResponse {
+    return {
+      taskRuns: Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => TaskRun.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListRolloutTaskRunsResponse): unknown {
+    const obj: any = {};
+    if (message.taskRuns) {
+      obj.taskRuns = message.taskRuns.map((e) => e ? TaskRun.toJSON(e) : undefined);
+    } else {
+      obj.taskRuns = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListRolloutTaskRunsResponse>): ListRolloutTaskRunsResponse {
+    return ListRolloutTaskRunsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListRolloutTaskRunsResponse>): ListRolloutTaskRunsResponse {
+    const message = createBaseListRolloutTaskRunsResponse();
+    message.taskRuns = object.taskRuns?.map((e) => TaskRun.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
 function createBaseRollout(): Rollout {
   return { name: "", uid: "", plan: "", title: "", stages: [] };
 }
@@ -4665,18 +4858,18 @@ export const RolloutServiceDefinition = {
     },
     listRolloutTaskRuns: {
       name: "ListRolloutTaskRuns",
-      requestType: ListPlansRequest,
+      requestType: ListRolloutTaskRunsRequest,
       requestStream: false,
-      responseType: ListPlansResponse,
+      responseType: ListRolloutTaskRunsResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              34,
+              62,
               18,
-              32,
+              60,
               47,
               118,
               49,
@@ -4699,7 +4892,6 @@ export const RolloutServiceDefinition = {
               115,
               47,
               42,
-              125,
               47,
               114,
               111,
@@ -4708,6 +4900,35 @@ export const RolloutServiceDefinition = {
               111,
               117,
               116,
+              115,
+              47,
+              42,
+              47,
+              115,
+              116,
+              97,
+              103,
+              101,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              115,
+              47,
+              42,
+              125,
+              47,
+              116,
+              97,
+              115,
+              107,
+              82,
+              117,
+              110,
               115,
             ]),
           ],
@@ -4790,9 +5011,9 @@ export interface RolloutServiceImplementation<CallContextExt = {}> {
   createRollout(request: CreateRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
   previewRollout(request: PreviewRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
   listRolloutTaskRuns(
-    request: ListPlansRequest,
+    request: ListRolloutTaskRunsRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListPlansResponse>>;
+  ): Promise<DeepPartial<ListRolloutTaskRunsResponse>>;
   listPlanCheckRuns(
     request: ListPlanCheckRunsRequest,
     context: CallContext & CallContextExt,
@@ -4808,9 +5029,9 @@ export interface RolloutServiceClient<CallOptionsExt = {}> {
   createRollout(request: DeepPartial<CreateRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
   previewRollout(request: DeepPartial<PreviewRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
   listRolloutTaskRuns(
-    request: DeepPartial<ListPlansRequest>,
+    request: DeepPartial<ListRolloutTaskRunsRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ListPlansResponse>;
+  ): Promise<ListRolloutTaskRunsResponse>;
   listPlanCheckRuns(
     request: DeepPartial<ListPlanCheckRunsRequest>,
     options?: CallOptions & CallOptionsExt,

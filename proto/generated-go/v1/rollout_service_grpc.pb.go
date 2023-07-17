@@ -41,7 +41,7 @@ type RolloutServiceClient interface {
 	GetRollout(ctx context.Context, in *GetRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
-	ListRolloutTaskRuns(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
+	ListRolloutTaskRuns(ctx context.Context, in *ListRolloutTaskRunsRequest, opts ...grpc.CallOption) (*ListRolloutTaskRunsResponse, error)
 	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
 }
 
@@ -116,8 +116,8 @@ func (c *rolloutServiceClient) PreviewRollout(ctx context.Context, in *PreviewRo
 	return out, nil
 }
 
-func (c *rolloutServiceClient) ListRolloutTaskRuns(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error) {
-	out := new(ListPlansResponse)
+func (c *rolloutServiceClient) ListRolloutTaskRuns(ctx context.Context, in *ListRolloutTaskRunsRequest, opts ...grpc.CallOption) (*ListRolloutTaskRunsResponse, error) {
+	out := new(ListRolloutTaskRunsResponse)
 	err := c.cc.Invoke(ctx, RolloutService_ListRolloutTaskRuns_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ type RolloutServiceServer interface {
 	GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error)
 	CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error)
 	PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error)
-	ListRolloutTaskRuns(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
+	ListRolloutTaskRuns(context.Context, *ListRolloutTaskRunsRequest) (*ListRolloutTaskRunsResponse, error)
 	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
 	mustEmbedUnimplementedRolloutServiceServer()
 }
@@ -175,7 +175,7 @@ func (UnimplementedRolloutServiceServer) CreateRollout(context.Context, *CreateR
 func (UnimplementedRolloutServiceServer) PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PreviewRollout not implemented")
 }
-func (UnimplementedRolloutServiceServer) ListRolloutTaskRuns(context.Context, *ListPlansRequest) (*ListPlansResponse, error) {
+func (UnimplementedRolloutServiceServer) ListRolloutTaskRuns(context.Context, *ListRolloutTaskRunsRequest) (*ListRolloutTaskRunsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRolloutTaskRuns not implemented")
 }
 func (UnimplementedRolloutServiceServer) ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error) {
@@ -321,7 +321,7 @@ func _RolloutService_PreviewRollout_Handler(srv interface{}, ctx context.Context
 }
 
 func _RolloutService_ListRolloutTaskRuns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPlansRequest)
+	in := new(ListRolloutTaskRunsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ func _RolloutService_ListRolloutTaskRuns_Handler(srv interface{}, ctx context.Co
 		FullMethod: RolloutService_ListRolloutTaskRuns_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RolloutServiceServer).ListRolloutTaskRuns(ctx, req.(*ListPlansRequest))
+		return srv.(RolloutServiceServer).ListRolloutTaskRuns(ctx, req.(*ListRolloutTaskRunsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
