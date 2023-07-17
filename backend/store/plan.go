@@ -29,7 +29,11 @@ type PlanMessage struct {
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
-	UID *int64
+	UID       *int64
+	ProjectID *string
+
+	Limit  *int
+	Offset *int
 }
 
 // UpdatePlanMessage is the message to update a plan.
@@ -118,6 +122,9 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
 	query := fmt.Sprintf(`
 		SELECT
 			plan.id,	
@@ -135,6 +142,13 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		WHERE %s
 		ORDER BY id ASC
 	`, strings.Join(where, " AND "))
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
