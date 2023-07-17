@@ -113,6 +113,7 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		return nil, status.Errorf(codes.Internal, "failed to list plans, error: %v", err)
 	}
 
+	// has more pages
 	if len(plans) == limitPlusOne {
 		nextPageToken, err := getPageToken(limit, offset+limit)
 		if err != nil {
@@ -124,6 +125,7 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		}, nil
 	}
 
+	// no subsequent pages
 	return &v1pb.ListPlansResponse{
 		Plans:         convertToPlans(plans),
 		NextPageToken: "",
