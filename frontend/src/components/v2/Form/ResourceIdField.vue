@@ -205,6 +205,7 @@ const escape = (str: string) => {
     .toLowerCase()
     .split("")
     .map((char) => {
+      if (char == " ") return "-";
       if (char.match(/\s/)) return "";
       if (characters.includes(char)) return char;
       return randomCharacter(char);
