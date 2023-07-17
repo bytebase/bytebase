@@ -204,7 +204,9 @@ const isRequiredInPlan = Array.isArray(
 );
 const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 
-const featureKey = props.feature.split(".").join("-");
+const featureKey = computed(() => {
+  return props.feature.split(".").join("-");
+});
 
 const trialSubscription = () => {
   const isUpgrade = subscriptionStore.canUpgradeTrial;
