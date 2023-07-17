@@ -103,13 +103,13 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive, watch } from "vue";
+import { PropType, reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 
 import { Instance } from "@/types/proto/v1/instance_service";
 import DroppableTextarea from "../misc/DroppableTextarea.vue";
-import { featureToRef } from "@/store";
+import { useSubscriptionV1Store } from "@/store";
 
 const SshTypes = ["NONE", "TUNNEL", "TUNNEL+PK"] as const;
 
@@ -160,10 +160,12 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const hasSSHConnectionFeature = featureToRef(
-  "bb.feature.instance-ssh-connection",
-  props.instance
-);
+const hasSSHConnectionFeature = computed(() => {
+  return useSubscriptionV1Store().hasInstanceFeature(
+    "bb.feature.instance-ssh-connection",
+    props.instance
+  );
+});
 
 const handleSelectType = (e: Event) => {
   const radio = e.target as HTMLInputElement;
