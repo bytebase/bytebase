@@ -2407,10 +2407,8 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Visibility:     visibility,
 		TenantMode:     tenantMode,
 		DbNameTemplate: projectMessage.DBNameTemplate,
-		// TODO(d): schema_version_type for project.
-		SchemaVersion: v1pb.SchemaVersion_SCHEMA_VERSION_UNSPECIFIED,
-		SchemaChange:  schemaChange,
-		Webhooks:      projectWebhooks,
+		SchemaChange:   schemaChange,
+		Webhooks:       projectWebhooks,
 	}
 }
 

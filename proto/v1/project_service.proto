@@ -396,11 +396,9 @@ message Project {
 
   string db_name_template = 9;
 
-  SchemaVersion schema_version = 10;
+  SchemaChange schema_change = 10;
 
-  SchemaChange schema_change = 11;
-
-  repeated Webhook webhooks = 12;
+  repeated Webhook webhooks = 11;
 }
 
 enum Workflow {
