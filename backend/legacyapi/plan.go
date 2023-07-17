@@ -113,6 +113,8 @@ const (
 	FeatureEncryptedSecrets FeatureType = "bb.feature.encrypted-secrets"
 	// FeatureDatabaseGrouping allows user to create database/schema groups.
 	FeatureDatabaseGrouping FeatureType = "bb.feature.database-grouping"
+	// FeatureSchemaTemplate allows user to create and use the schema template.
+	FeatureSchemaTemplate FeatureType = "bb.feature.schema-template"
 
 	// VCS Integration.
 
@@ -214,6 +216,8 @@ func (e FeatureType) Name() string {
 		return "Encrypted secrets"
 	case FeatureDatabaseGrouping:
 		return "Database grouping"
+	case FeatureSchemaTemplate:
+		return "Schema template"
 	// VCS Integration
 	case FeatureVCSSchemaWriteBack:
 		return "Schema write-back"
@@ -296,6 +300,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureTaskScheduleTime: {false, true, true},
 	FeatureEncryptedSecrets: {false, true, true},
 	FeatureDatabaseGrouping: {false, false, true},
+	FeatureSchemaTemplate:   {false, false, true},
 	// VCS Integration
 	FeatureVCSSchemaWriteBack:   {false, true, true},
 	FeatureVCSSheetSync:         {false, true, true},
