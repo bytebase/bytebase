@@ -790,9 +790,11 @@ const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
       ? instance.activation
       : subscriptionStore.currentPlan !== PlanType.FREE &&
         availableLicenseCount.value > 0,
-    options: instance?.options ?? {
-      schemaTenantMode: true, // default to true
-    },
+    options: instance?.options
+      ? cloneDeep(instance.options)
+      : {
+          schemaTenantMode: true, // default to true
+        },
   };
 };
 
