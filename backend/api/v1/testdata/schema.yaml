@@ -1,0 +1,54 @@
+- engine: 2
+  schema: create table t(a int); create table t2(b int);
+  metadata:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
