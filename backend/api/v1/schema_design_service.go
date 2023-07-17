@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"golang.org/x/exp/slices"
@@ -419,9 +420,14 @@ func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
 	for _, schema := range s.schemas {
 		schemas = append(schemas, schema.convertToSchemaMetadata())
 	}
+	sort.Slice(schemas, func(i, j int) bool {
+		return schemas[i].Name < schemas[j].Name
+	})
 	return &v1pb.DatabaseMetadata{
 		Name:    s.name,
 		Schemas: schemas,
+		// Unsupported, for tests only.
+		Extensions: []*v1pb.ExtensionMetadata{},
 	}
 }
 
@@ -441,9 +447,17 @@ func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
 	for _, table := range s.tables {
 		tables = append(tables, table.convertToTableMetadata())
 	}
+	sort.Slice(tables, func(i, j int) bool {
+		return tables[i].Name < tables[j].Name
+	})
 	return &v1pb.SchemaMetadata{
 		Name:   s.name,
 		Tables: tables,
+		// Unsupported, for tests only.
+		Views:     []*v1pb.ViewMetadata{},
+		Functions: []*v1pb.FunctionMetadata{},
+		Streams:   []*v1pb.StreamMetadata{},
+		Tasks:     []*v1pb.TaskMetadata{},
 	}
 }
 
@@ -452,8 +466,9 @@ type tableState struct {
 	columns map[string]*columnState
 }
 
-func newTableState() *tableState {
+func newTableState(name string) *tableState {
 	return &tableState{
+		name:    name,
 		columns: make(map[string]*columnState),
 	}
 }
@@ -463,9 +478,15 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	for _, column := range t.columns {
 		columns = append(columns, column.convertToColumnMetadata())
 	}
+	sort.Slice(columns, func(i, j int) bool {
+		return columns[i].Name < columns[j].Name
+	})
 	return &v1pb.TableMetadata{
 		Name:    t.name,
 		Columns: columns,
+		// Unsupported, for tests only.
+		Indexes:     []*v1pb.IndexMetadata{},
+		ForeignKeys: []*v1pb.ForeignKeyMetadata{},
 	}
 }
 
@@ -502,7 +523,7 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	schema.tables[tableName] = newTableState()
+	schema.tables[tableName] = newTableState(tableName)
 	t.currentTable = tableName
 }
 
