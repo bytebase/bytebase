@@ -514,7 +514,7 @@ var (
 )
 
 func request_RolloutService_ListRolloutTaskRuns_0(ctx context.Context, marshaler runtime.Marshaler, client RolloutServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListPlansRequest
+	var protoReq ListRolloutTaskRunsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -547,7 +547,7 @@ func request_RolloutService_ListRolloutTaskRuns_0(ctx context.Context, marshaler
 }
 
 func local_request_RolloutService_ListRolloutTaskRuns_0(ctx context.Context, marshaler runtime.Marshaler, server RolloutServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListPlansRequest
+	var protoReq ListRolloutTaskRunsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -838,7 +838,7 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/ListRolloutTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/rollouts"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/ListRolloutTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1081,7 +1081,7 @@ func RegisterRolloutServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/ListRolloutTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/rollouts"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/ListRolloutTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1137,7 +1137,7 @@ var (
 
 	pattern_RolloutService_PreviewRollout_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "previewRollout"))
 
-	pattern_RolloutService_ListRolloutTaskRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "rollouts"}, ""))
+	pattern_RolloutService_ListRolloutTaskRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 1, 0, 4, 8, 5, 5, 2, 6}, []string{"v1", "projects", "rollouts", "stages", "tasks", "parent", "taskRuns"}, ""))
 
 	pattern_RolloutService_ListPlanCheckRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "projects", "plans", "parent", "planCheckRuns"}, ""))
 )
