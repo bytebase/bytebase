@@ -435,6 +435,14 @@ const (
 
 	// SnowflakeMigrationCompatibility is an advisor type for Snowflake migration compatibility.
 	SnowflakeMigrationCompatibility Type = "bb.plugin.advisor.snowflake.migration-compatibility"
+
+	// MSSQL Advisor.
+
+	// MSSQLSyntax is an advisor type for MSSQL syntax.
+	MSSQLSyntax Type = "bb.plugin.advisor.mssql.syntax"
+
+	// MSSQLNoSelectAll is an advisor type for MSSQL no select all.
+	MSSQLNoSelectAll Type = "bb.plugin.advisor.mssql.select.no-select-all"
 )
 
 // Advice is the result of an advisor.
@@ -560,7 +568,7 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceL
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake:
+	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
 		return true
 	}
 	return false
@@ -569,7 +577,7 @@ func IsSyntaxCheckSupported(dbType db.Type) bool {
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake:
+	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
 		return true
 	}
 	return false
