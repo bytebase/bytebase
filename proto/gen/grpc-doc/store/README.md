@@ -106,15 +106,13 @@
     - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
-    - [SchemaTemplateSetting.SchemaTemplate](#bytebase-store-SchemaTemplateSetting-SchemaTemplate)
-    - [SchemaTemplateSetting.SchemaTemplate.FieldTemplatePayload](#bytebase-store-SchemaTemplateSetting-SchemaTemplate-FieldTemplatePayload)
+    - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
-    - [SchemaTemplateSetting.SchemaTemplate.Type](#bytebase-store-SchemaTemplateSetting-SchemaTemplate-Type)
   
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
@@ -1591,47 +1589,24 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| templates | [SchemaTemplateSetting.SchemaTemplate](#bytebase-store-SchemaTemplateSetting-SchemaTemplate) | repeated |  |
+| field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-store-SchemaTemplateSetting-SchemaTemplate"></a>
+<a name="bytebase-store-SchemaTemplateSetting-FieldTemplate"></a>
 
-### SchemaTemplateSetting.SchemaTemplate
+### SchemaTemplateSetting.FieldTemplate
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
-| type | [SchemaTemplateSetting.SchemaTemplate.Type](#bytebase-store-SchemaTemplateSetting-SchemaTemplate-Type) |  |  |
-| field_template_payload | [SchemaTemplateSetting.SchemaTemplate.FieldTemplatePayload](#bytebase-store-SchemaTemplateSetting-SchemaTemplate-FieldTemplatePayload) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaTemplateSetting-SchemaTemplate-FieldTemplatePayload"></a>
-
-### SchemaTemplateSetting.SchemaTemplate.FieldTemplatePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| type | [string](#string) |  |  |
-| primary | [bool](#bool) |  |  |
-| nullable | [bool](#bool) |  |  |
-| default | [string](#string) | optional |  |
-| comment | [string](#string) |  |  |
-| category | [string](#string) |  |  |
+| payload | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
 
 
 
@@ -1719,19 +1694,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ENCRYPTION_NONE | 1 |  |
 | ENCRYPTION_STARTTLS | 2 |  |
 | ENCRYPTION_SSL_TLS | 3 |  |
-
-
-
-<a name="bytebase-store-SchemaTemplateSetting-SchemaTemplate-Type"></a>
-
-### SchemaTemplateSetting.SchemaTemplate.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| TABLE | 1 |  |
-| FIELD | 2 |  |
 
 
  

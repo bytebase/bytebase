@@ -509,8 +509,7 @@
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
-    - [SchemaTemplateSetting.SchemaTemplate](#bytebase-v1-SchemaTemplateSetting-SchemaTemplate)
-    - [SchemaTemplateSetting.SchemaTemplate.FieldTemplatePayload](#bytebase-v1-SchemaTemplateSetting-SchemaTemplate-FieldTemplatePayload)
+    - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
@@ -522,7 +521,6 @@
     - [AppIMSetting.IMType](#bytebase-v1-AppIMSetting-IMType)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
-    - [SchemaTemplateSetting.SchemaTemplate.Type](#bytebase-v1-SchemaTemplateSetting-SchemaTemplate-Type)
   
     - [SettingService](#bytebase-v1-SettingService)
   
@@ -8079,47 +8077,24 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| templates | [SchemaTemplateSetting.SchemaTemplate](#bytebase-v1-SchemaTemplateSetting-SchemaTemplate) | repeated |  |
+| field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-v1-SchemaTemplateSetting-SchemaTemplate"></a>
+<a name="bytebase-v1-SchemaTemplateSetting-FieldTemplate"></a>
 
-### SchemaTemplateSetting.SchemaTemplate
+### SchemaTemplateSetting.FieldTemplate
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
-| type | [SchemaTemplateSetting.SchemaTemplate.Type](#bytebase-v1-SchemaTemplateSetting-SchemaTemplate-Type) |  |  |
-| field_template_payload | [SchemaTemplateSetting.SchemaTemplate.FieldTemplatePayload](#bytebase-v1-SchemaTemplateSetting-SchemaTemplate-FieldTemplatePayload) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting-SchemaTemplate-FieldTemplatePayload"></a>
-
-### SchemaTemplateSetting.SchemaTemplate.FieldTemplatePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| type | [string](#string) |  |  |
-| primary | [bool](#bool) |  |  |
-| nullable | [bool](#bool) |  |  |
-| default | [string](#string) | optional |  |
-| comment | [string](#string) |  |  |
-| category | [string](#string) |  |  |
+| payload | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
 
 
 
@@ -8295,19 +8270,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ENCRYPTION_NONE | 1 |  |
 | ENCRYPTION_STARTTLS | 2 |  |
 | ENCRYPTION_SSL_TLS | 3 |  |
-
-
-
-<a name="bytebase-v1-SchemaTemplateSetting-SchemaTemplate-Type"></a>
-
-### SchemaTemplateSetting.SchemaTemplate.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| TABLE | 1 |  |
-| FIELD | 2 |  |
 
 
  
