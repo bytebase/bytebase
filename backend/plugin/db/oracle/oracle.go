@@ -57,9 +57,9 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionC
 	if err != nil {
 		return nil, err
 	}
-	if config.SchemaTenantMode {
-		if _, err := db.ExecContext(ctx, "ALTER SESSION SET CURRENT_SCHEMA = :1", driver.databaseName); err != nil {
-			return nil, errors.Wrapf(err, "failed to set current schema to %q", driver.databaseName)
+	if config.SchemaTenantMode && config.Database != "" {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.Database)); err != nil {
+			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.Database)
 		}
 	}
 	driver.db = db
