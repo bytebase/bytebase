@@ -58,8 +58,8 @@ service RolloutService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc ListRolloutTaskRuns(ListPlansRequest) returns (ListPlansResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/rollouts"};
+  rpc ListRolloutTaskRuns(ListRolloutTaskRunsRequest) returns (ListRolloutTaskRunsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
     option (google.api.method_signature) = "parent";
   }
 
@@ -360,6 +360,35 @@ message PreviewRolloutRequest {
 
   // The plan used to preview rollout.
   Plan plan = 2;
+}
+
+message ListRolloutTaskRunsRequest {
+  // The parent, which owns this collection of plans.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  // Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of taskRuns to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 taskRuns will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListRolloutTaskRuns` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListRolloutTaskRuns` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListRolloutTaskRunsResponse {
+  // The taskRuns from the specified request.
+  repeated TaskRun task_runs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
 }
 
 message Rollout {

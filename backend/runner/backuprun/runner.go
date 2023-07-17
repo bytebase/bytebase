@@ -462,7 +462,8 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	}
 
 	pipeline, err := r.store.CreatePipelineV2(ctx, &store.PipelineMessage{
-		Name: fmt.Sprintf("backup-%s", backupName),
+		Name:      fmt.Sprintf("backup-%s", backupName),
+		ProjectID: database.ProjectID,
 	}, creatorID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create pipeline for backup %q", backupName)

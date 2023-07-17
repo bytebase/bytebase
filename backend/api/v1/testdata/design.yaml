@@ -1,0 +1,113 @@
+- engine: 2
+  baseline: |-
+    CREATE TABLE `t` (
+      `a` int
+    );
+    CREATE TABLE `t3` (
+      `a` int
+    );
+    CREATE TABLE `t4` (
+      `a` int,
+      `c` int,
+      `d` int
+    );
+  target:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+            - name: t4
+              columns:
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: varchar(10)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: b
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: char(10)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: c
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  result: |
+    CREATE TABLE `t` (
+      `a` int
+    );
+    CREATE TABLE `t4` (
+      `a` varchar(10),
+      `c` int,
+      `b` char(10)
+    );
+    CREATE TABLE `t2` (
+      `b` int
+    );

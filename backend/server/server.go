@@ -106,6 +106,9 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	// Register clickhouse driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+
 	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"
 	// Register mysql advisor.
@@ -116,8 +119,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 	// Register snowflake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
-	// Register clickhouse driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	// Register mssql advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 
 	// Register mysql differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"

@@ -153,7 +153,7 @@ import { useI18n } from "vue-i18n";
 import { CreateDatabaseContext, ComposedDatabase } from "@/types";
 import { usePITRLogic } from "@/plugins";
 import { issueSlug } from "@/utils";
-import { featureToRef } from "@/store";
+import { useSubscriptionV1Store } from "@/store";
 import { Drawer, DrawerContent } from "@/components/v2";
 import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
 import RestoreTargetForm from "../DatabaseBackup/RestoreTargetForm.vue";
@@ -207,10 +207,12 @@ const state = reactive<LocalState>({
 
 const createDatabaseForm = ref<InstanceType<typeof CreatePITRDatabaseForm>>();
 
-const hasPITRFeature = featureToRef(
-  "bb.feature.pitr",
-  props.database.instanceEntity
-);
+const hasPITRFeature = computed(() => {
+  return useSubscriptionV1Store().hasInstanceFeature(
+    "bb.feature.pitr",
+    props.database.instanceEntity
+  );
+});
 
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 
