@@ -624,6 +624,9 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
 		}
+		if pageToken.Limit < 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
+		}
 		limit = int(pageToken.Limit)
 		offset = int(pageToken.Offset)
 	}
