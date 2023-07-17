@@ -140,7 +140,6 @@ onMounted(() => {
 
 const handleBaselineSchemaChange = (baselineSchema: BaselineSchema) => {
   state.baselineSchema = baselineSchema;
-  console.log("state.baselineSchema", state.baselineSchema);
 };
 
 const cancel = () => {
@@ -149,23 +148,30 @@ const cancel = () => {
 
 const handleConfirm = () => {
   if (state.tab === "VIEW") {
-    if (schemaDesign.value && schemaDesign.value.name === "") {
+    if (!schemaDesign.value) {
+      return;
+    }
+
+    const schemaDesigner = schemaDesignerRef.value;
+    if (!schemaDesigner) {
+      // Should not happen.
+      throw new Error("schemaDesigner is undefined");
+    }
+
+    const isCreating = schemaDesign.value.name === "";
+    if (isCreating) {
       if (state.schemaDesignName === "") {
         console.log("schemaDesignName is empty");
         return;
       }
 
-      const schemaDesigner = schemaDesignerRef.value;
-      if (!schemaDesigner) {
-        console.log("schemaDesigner is empty");
-        return;
-      }
-
-      // TODO(steven): calculate design schema metadata with metadata and editableSchemas.
       schemaDesignStore.createSchemaDesign(
         state.baselineSchema.projectId || "",
         SchemaDesign.fromPartial({
           title: state.schemaDesignName,
+          // Keep schema empty in frontend. Backend will generate the design schema.
+          schema: "",
+          // TODO(steven): calculate design schema metadata with metadata and editableSchemas.
           schemaMetadata: schemaDesigner.metadata,
           baselineSchema: state.baselineSchema.changeHistory?.schema || "",
           baselineSchemaMetadata: schemaDesigner.baselineMetadata,
@@ -174,6 +180,8 @@ const handleConfirm = () => {
           schemaVersion: state.baselineSchema.changeHistory?.name || "",
         })
       );
+    } else {
+      // do patch schema design
     }
   }
 };

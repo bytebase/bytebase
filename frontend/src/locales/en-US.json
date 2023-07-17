@@ -92,6 +92,7 @@
     "id": "ID",
     "name": "Name",
     "creator": "Creator",
+    "updater": "Updater",
     "version": "Version",
     "issue": "Issue",
     "issues": "Issues",

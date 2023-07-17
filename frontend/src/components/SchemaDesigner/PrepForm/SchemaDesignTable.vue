@@ -57,7 +57,7 @@ const COLUMN_LIST = computed(() => {
       width: "1fr",
     },
     {
-      title: t("common.engine"),
+      title: t("database.engine"),
       width: "1fr",
     },
     { title: t("common.creator"), width: "minmax(auto, 10rem)" },
