@@ -152,7 +152,7 @@ import {
   SYSTEM_BOT_ID,
 } from "@/types";
 import { issueSlug, extractBackupResourceName } from "@/utils";
-import { featureToRef, useIssueStore } from "@/store";
+import { useSubscriptionV1Store, useIssueStore } from "@/store";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   CreateDatabasePrepForm,
@@ -219,10 +219,13 @@ const allowRestoreInPlace = computed((): boolean => {
   return props.database.instanceEntity.engine === Engine.POSTGRES;
 });
 
-const hasPITRFeature = featureToRef(
-  "bb.feature.pitr",
-  props.database.instanceEntity
-);
+const hasPITRFeature = computed(() => {
+  return useSubscriptionV1Store().hasInstanceFeature(
+    "bb.feature.pitr",
+    props.database.instanceEntity
+  );
+});
+
 const createDatabasePrepForm =
   ref<InstanceType<typeof CreateDatabasePrepForm>>();
 
