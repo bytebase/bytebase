@@ -452,8 +452,9 @@ type tableState struct {
 	columns map[string]*columnState
 }
 
-func newTableState() *tableState {
+func newTableState(name string) *tableState {
 	return &tableState{
+		name:    name,
 		columns: make(map[string]*columnState),
 	}
 }
@@ -502,7 +503,7 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	schema.tables[tableName] = newTableState()
+	schema.tables[tableName] = newTableState(tableName)
 	t.currentTable = tableName
 }
 
