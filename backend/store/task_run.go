@@ -33,6 +33,13 @@ type TaskRunMessage struct {
 	UpdatedTs int64
 }
 
+type FindTaskRunMessage struct {
+	UID         *int
+	TaskUID     *int
+	StageUID    *int
+	PipelineUID *int
+}
+
 // TaskRunCreate is the API message for creating a task run.
 type TaskRunCreate struct {
 	CreatorID int
@@ -84,6 +91,81 @@ func (taskRun *TaskRunMessage) toTaskRun() *api.TaskRun {
 		Result:    taskRun.Result,
 		Payload:   taskRun.Payload,
 	}
+}
+
+// ListTaskRuns lists task runs.
+func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("task_run.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.TaskUID; v != nil {
+		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.StageUID; v != nil {
+		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PipelineUID; v != nil {
+		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	rows, err := s.db.db.QueryContext(ctx, fmt.Sprintf(`
+		SELECT
+			task_run.id,
+			task_run.creator_id,
+			task_run.created_ts,
+			task_run.updater_id,
+			task_run.updated_ts,
+			task_run.task_id,
+			task_run.name,
+			task_run.status,
+			task_run.type,
+			task_run.code,
+			task_run.comment,
+			task_run.result,
+			task_run.payload,
+			task.pipeline_id,
+			task.stage_id
+		FROM task_run
+		JOIN task ON task.id = task_run.task_id
+		WHERE %s`, strings.Join(where, " AND ")),
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var taskRuns []*TaskRunMessage
+	for rows.Next() {
+		var taskRun TaskRunMessage
+		if err := rows.Scan(
+			&taskRun.ID,
+			&taskRun.CreatorID,
+			&taskRun.CreatedTs,
+			&taskRun.UpdaterID,
+			&taskRun.UpdatedTs,
+			&taskRun.TaskUID,
+			&taskRun.Name,
+			&taskRun.Status,
+			&taskRun.Type,
+			&taskRun.Code,
+			&taskRun.Comment,
+			&taskRun.Result,
+			&taskRun.Payload,
+			&taskRun.PipelineUID,
+			&taskRun.StageUID,
+		); err != nil {
+			return nil, err
+		}
+
+		taskRuns = append(taskRuns, &taskRun)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return taskRuns, nil
 }
 
 // createTaskRunImpl creates a new taskRun.
