@@ -3,6 +3,8 @@ import * as _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Expr } from "../google/type/expr";
 import { ApprovalTemplate } from "./approval";
+import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { ColumnMetadata } from "./database";
 
 export const protobufPackage = "bytebase.store";
 
@@ -172,6 +174,16 @@ export function sMTPMailDeliverySetting_AuthenticationToJSON(object: SMTPMailDel
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface SchemaTemplateSetting {
+  fieldTemplates: SchemaTemplateSetting_FieldTemplate[];
+}
+
+export interface SchemaTemplateSetting_FieldTemplate {
+  id: string;
+  engine: Engine;
+  payload?: ColumnMetadata | undefined;
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -843,6 +855,160 @@ export const SMTPMailDeliverySetting = {
     message.username = object.username ?? "";
     message.password = object.password ?? "";
     message.from = object.from ?? "";
+    return message;
+  },
+};
+
+function createBaseSchemaTemplateSetting(): SchemaTemplateSetting {
+  return { fieldTemplates: [] };
+}
+
+export const SchemaTemplateSetting = {
+  encode(message: SchemaTemplateSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.fieldTemplates) {
+      SchemaTemplateSetting_FieldTemplate.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fieldTemplates.push(SchemaTemplateSetting_FieldTemplate.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting {
+    return {
+      fieldTemplates: Array.isArray(object?.fieldTemplates)
+        ? object.fieldTemplates.map((e: any) => SchemaTemplateSetting_FieldTemplate.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting): unknown {
+    const obj: any = {};
+    if (message.fieldTemplates) {
+      obj.fieldTemplates = message.fieldTemplates.map((e) =>
+        e ? SchemaTemplateSetting_FieldTemplate.toJSON(e) : undefined
+      );
+    } else {
+      obj.fieldTemplates = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
+    return SchemaTemplateSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
+    const message = createBaseSchemaTemplateSetting();
+    message.fieldTemplates = object.fieldTemplates?.map((e) => SchemaTemplateSetting_FieldTemplate.fromPartial(e)) ||
+      [];
+    return message;
+  },
+};
+
+function createBaseSchemaTemplateSetting_FieldTemplate(): SchemaTemplateSetting_FieldTemplate {
+  return { id: "", engine: 0, payload: undefined };
+}
+
+export const SchemaTemplateSetting_FieldTemplate = {
+  encode(message: SchemaTemplateSetting_FieldTemplate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    if (message.payload !== undefined) {
+      ColumnMetadata.encode(message.payload, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting_FieldTemplate {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting_FieldTemplate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.payload = ColumnMetadata.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting_FieldTemplate {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      payload: isSet(object.payload) ? ColumnMetadata.fromJSON(object.payload) : undefined,
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting_FieldTemplate): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.payload !== undefined &&
+      (obj.payload = message.payload ? ColumnMetadata.toJSON(message.payload) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
+    return SchemaTemplateSetting_FieldTemplate.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
+    const message = createBaseSchemaTemplateSetting_FieldTemplate();
+    message.id = object.id ?? "";
+    message.engine = object.engine ?? 0;
+    message.payload = (object.payload !== undefined && object.payload !== null)
+      ? ColumnMetadata.fromPartial(object.payload)
+      : undefined;
     return message;
   },
 };
