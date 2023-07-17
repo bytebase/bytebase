@@ -418,6 +418,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting schema template setting")
 		}
 
+		// validate the changed template
 		for _, template := range schemaTemplateSetting.FieldTemplates {
 			oldTemplate, ok := oldTemplateMap[template.Id]
 			if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
