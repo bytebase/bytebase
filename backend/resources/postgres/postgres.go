@@ -197,6 +197,23 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 		return nil
 	}
 
+	// For pgDataDir and every intermediate to be created by MkdirAll, we need to prepare to chown
+	// it to the bytebase user. Otherwise, initdb will complain file permission error.
+	dirListToChown := []string{pgDataDir}
+	path := filepath.Dir(pgDataDir)
+	for path != "/" {
+		_, err := os.Stat(path)
+		if err == nil {
+			break
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return errors.Wrapf(err, "failed to check data directory path existence %q", path)
+		}
+		dirListToChown = append(dirListToChown, path)
+		path = filepath.Dir(path)
+	}
+	log.Debug("Data directory list to Chown", zap.Any("dirListToChown", dirListToChown))
+
 	if err := os.MkdirAll(pgDataDir, 0700); err != nil {
 		return errors.Wrapf(err, "failed to make postgres data directory %q", pgDataDir)
 	}
@@ -216,13 +233,16 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 		return err
 	}
 	if !sameUser {
-		log.Info(fmt.Sprintf("Change owner of data directory %q to bytebase", pgDataDir))
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
-		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
-			return errors.Wrapf(err, "failed to change owner of data directory %q to bytebase", pgDataDir)
+		log.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
+		for _, dir := range dirListToChown {
+			log.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
+			if err := os.Chown(dir, int(uid), int(gid)); err != nil {
+				return errors.Wrapf(err, "failed to change owner of %q to bytebase", dir)
+			}
 		}
 	}
 
