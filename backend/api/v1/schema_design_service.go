@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
@@ -18,7 +19,6 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/store"
@@ -170,7 +170,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
 	}
-	schema, err := getDesignSchema(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata, schemaDesign.BaselineSchema)
+	schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	}
 
 	schemaDesign := request.SchemaDesign
-	schema, err := getDesignSchema(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata, schemaDesign.BaselineSchema)
+	schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -415,6 +415,15 @@ func newDatabaseState() *databaseState {
 	}
 }
 
+func convertToDatabaseState(database *v1pb.DatabaseMetadata) *databaseState {
+	state := newDatabaseState()
+	state.name = database.Name
+	for _, schema := range database.Schemas {
+		state.schemas[schema.Name] = convertToSchemaState(schema)
+	}
+	return state
+}
+
 func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
 	schemas := []*v1pb.SchemaMetadata{}
 	for _, schema := range s.schemas {
@@ -442,6 +451,15 @@ func newSchemaState() *schemaState {
 	}
 }
 
+func convertToSchemaState(schema *v1pb.SchemaMetadata) *schemaState {
+	state := newSchemaState()
+	state.name = schema.Name
+	for _, table := range schema.Tables {
+		state.tables[table.Name] = convertToTableState(table)
+	}
+	return state
+}
+
 func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
 	tables := []*v1pb.TableMetadata{}
 	for _, table := range s.tables {
@@ -466,11 +484,46 @@ type tableState struct {
 	columns map[string]*columnState
 }
 
+func (t *tableState) toString(buf *strings.Builder) error {
+	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n", t.name)); err != nil {
+		return err
+	}
+	columns := []*columnState{}
+	for _, column := range t.columns {
+		columns = append(columns, column)
+	}
+	sort.Slice(columns, func(i, j int) bool {
+		return columns[i].name < columns[j].name
+	})
+	for i, column := range columns {
+		if i > 0 {
+			if _, err := buf.WriteString(",\n"); err != nil {
+				return err
+			}
+		}
+		if err := column.toString(buf); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n);\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
 func newTableState(name string) *tableState {
 	return &tableState{
 		name:    name,
 		columns: make(map[string]*columnState),
 	}
+}
+
+func convertToTableState(table *v1pb.TableMetadata) *tableState {
+	state := newTableState(table.Name)
+	for _, column := range table.Columns {
+		state.columns[column.Name] = convertToColumnState(column)
+	}
+	return state
 }
 
 func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
@@ -495,10 +548,24 @@ type columnState struct {
 	tp   string
 }
 
+func (c *columnState) toString(buf *strings.Builder) error {
+	if _, err := buf.WriteString(fmt.Sprintf("  `%s` %s", c.name, c.tp)); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *columnState) convertToColumnMetadata() *v1pb.ColumnMetadata {
 	return &v1pb.ColumnMetadata{
 		Name: c.name,
 		Type: c.tp,
+	}
+}
+
+func convertToColumnState(column *v1pb.ColumnMetadata) *columnState {
+	return &columnState{
+		name: column.Name,
+		tp:   column.Type,
 	}
 }
 
@@ -552,8 +619,92 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 	}
 }
 
-func getDesignSchema(from *v1pb.DatabaseMetadata, to *v1pb.DatabaseMetadata, baselineSchema string) (string, error) {
-	// TODO: implement this.
-	log.Info(fmt.Sprintf("from: %+v, to: %+v, baseline schema: %s", from, to, baselineSchema))
-	return "", nil
+func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
+	switch engine {
+	case v1pb.Engine_MYSQL:
+		return getMySQLDesignSchema(baselineSchema, to)
+	default:
+		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+	}
+}
+
+func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
+	toState := convertToDatabaseState(to)
+	list, err := parser.ParseMySQL(baselineSchema)
+	if err != nil {
+		return "", err
+	}
+
+	listener := &mysqlDesignSchemaGenerator{
+		to: toState,
+	}
+
+	for _, stmt := range list {
+		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
+	}
+	if listener.err != nil {
+		return "", listener.err
+	}
+
+	for _, schema := range to.Schemas {
+		schemaState, ok := toState.schemas[schema.Name]
+		if !ok {
+			continue
+		}
+		for _, table := range schema.Tables {
+			table, ok := schemaState.tables[table.Name]
+			if !ok {
+				continue
+			}
+			if err := table.toString(&listener.result); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	return listener.result.String(), nil
+}
+
+type mysqlDesignSchemaGenerator struct {
+	*mysql.BaseMySQLParserListener
+
+	to     *databaseState
+	result strings.Builder
+	err    error
+}
+
+func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if g.err != nil {
+		return
+	}
+	databaseName, tableName := parser.NormalizeMySQLTableName(ctx.TableName())
+	if databaseName != "" && g.to.name != "" && databaseName != g.to.name {
+		g.err = errors.New("multiple database names found: " + g.to.name + ", " + databaseName)
+		return
+	}
+
+	schema, ok := g.to.schemas[""]
+	if !ok || schema == nil {
+		return
+	}
+
+	if _, ok := schema.tables[tableName]; !ok {
+		return
+	}
+
+	// TODO: compare table
+	delete(schema.tables, tableName)
+	if _, err := g.result.WriteString("CREATE "); err != nil {
+		g.err = err
+		return
+	}
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+		g.err = err
+		return
+	}
+
+	if _, err := g.result.WriteString(";\n"); err != nil {
+		g.err = err
+		return
+	}
 }
