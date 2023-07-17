@@ -1511,11 +1511,16 @@ const testConnection = async (
     );
     instance.dataSources = [adminDataSourceCreate];
     try {
-      await instanceServiceClient.createInstance({
-        instance,
-        instanceId: extractInstanceResourceName(instance.name),
-        validateOnly: true,
-      });
+      await instanceServiceClient.createInstance(
+        {
+          instance,
+          instanceId: extractInstanceResourceName(instance.name),
+          validateOnly: true,
+        },
+        {
+          silent: true,
+        }
+      );
       return ok();
     } catch (err) {
       return fail(adminDataSourceCreate.host, err);
@@ -1528,11 +1533,16 @@ const testConnection = async (
       // When read-only data source is about to be created, use
       // AddDataSourceRequest.validateOnly = true
       try {
-        await instanceServiceClient.addDataSource({
-          instance: instance.name,
-          dataSource: ds,
-          validateOnly: true,
-        });
+        await instanceServiceClient.addDataSource(
+          {
+            instance: instance.name,
+            dataSource: ds,
+            validateOnly: true,
+          },
+          {
+            silent: true,
+          }
+        );
         return ok();
       } catch (err) {
         return fail(ds.host, err);
@@ -1549,12 +1559,17 @@ const testConnection = async (
           original,
           currentDataSource.value
         );
-        await instanceServiceClient.updateDataSource({
-          instance: instance.name,
-          dataSource: ds,
-          updateMask,
-          validateOnly: true,
-        });
+        await instanceServiceClient.updateDataSource(
+          {
+            instance: instance.name,
+            dataSource: ds,
+            updateMask,
+            validateOnly: true,
+          },
+          {
+            silent: true,
+          }
+        );
         return ok();
       } catch (err) {
         return fail(ds.host, err);
