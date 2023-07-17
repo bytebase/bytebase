@@ -227,7 +227,7 @@ message SchemaTemplateSetting {
 
     // TODO: support category
 
-    ColumnMetadata payload = 3;
+    ColumnMetadata column = 3;
   }
 
   repeated FieldTemplate field_templates = 1;
