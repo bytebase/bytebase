@@ -1,6 +1,5 @@
 <template>
   <div class="flex items-center gap-x-5">
-    <div>{{ engineList }}</div>
     <label
       v-for="stats in engineList"
       :key="stats.engine"
