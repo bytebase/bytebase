@@ -848,6 +848,19 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
+	// initial schema template setting
+	schemaTemplateSettingValue, err := protojson.Marshal(&storepb.SchemaTemplateSetting{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal initial schema template setting")
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingSchemaTemplate,
+		Value:       string(schemaTemplateSettingValue),
+		Description: "The schema template setting",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	// initial workspace approval setting
 	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
 	if err != nil {
