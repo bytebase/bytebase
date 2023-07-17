@@ -211,7 +211,6 @@ func (s *Store) ListTaskRun(ctx context.Context, find *TaskRunFind) ([]*TaskRunM
 }
 
 func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([]*TaskRunMessage, error) {
-	joinClause := ""
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.TaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
@@ -222,9 +221,6 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if find.StageID != nil || find.PipelineID != nil {
-		joinClause = "JOIN task ON task.id = task_run.task_id"
-	}
 
 	if v := find.StatusList; v != nil {
 		list := []string{}
@@ -232,7 +228,7 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("task_run.status in (%s)", strings.Join(list, ",")))
 	}
 
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
@@ -249,10 +245,12 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			task_run.code,
 			task_run.comment,
 			task_run.result,
-			task_run.payload
+			task_run.payload,
+			task.pipeline_id,
+			task.stage_id
 		FROM task_run
-		%s
-		WHERE %s`, joinClause, strings.Join(where, " AND ")),
+		JOIN task ON task.id = task_run.task_id
+		WHERE %s`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -277,6 +275,8 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			&taskRun.Comment,
 			&taskRun.Result,
 			&taskRun.Payload,
+			&taskRun.PipelineUID,
+			&taskRun.StageUID,
 		); err != nil {
 			return nil, err
 		}
