@@ -73,6 +73,65 @@ func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanReque
 	return convertToPlan(plan), nil
 }
 
+// ListPlans lists plans.
+func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequest) (*v1pb.ListPlansResponse, error) {
+	projectID, err := getProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	var limit, offset int
+	if request.PageToken != "" {
+		var pageToken storepb.PageToken
+		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+		if pageToken.Limit < 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
+		}
+		limit = int(pageToken.Limit)
+		offset = int(pageToken.Offset)
+	}
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	limitPlusOne := limit + 1
+
+	find := &store.FindPlanMessage{
+		Limit:  &limitPlusOne,
+		Offset: &offset,
+	}
+	if projectID != "-" {
+		find.ProjectID = &projectID
+	}
+
+	plans, err := s.store.ListPlans(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list plans, error: %v", err)
+	}
+
+	// has more pages
+	if len(plans) == limitPlusOne {
+		nextPageToken, err := getPageToken(limit, offset+limit)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+		}
+		return &v1pb.ListPlansResponse{
+			Plans:         convertToPlans(plans[:limit]),
+			NextPageToken: nextPageToken,
+		}, nil
+	}
+
+	// no subsequent pages
+	return &v1pb.ListPlansResponse{
+		Plans:         convertToPlans(plans),
+		NextPageToken: "",
+	}, nil
+}
+
 // CreatePlan creates a new plan.
 func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRequest) (*v1pb.Plan, error) {
 	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -1592,6 +1651,14 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		},
 	}
 	return taskCreates, taskIndexDAGs, nil
+}
+
+func convertToPlans(plans []*store.PlanMessage) []*v1pb.Plan {
+	v1Plans := make([]*v1pb.Plan, len(plans))
+	for i := range plans {
+		v1Plans[i] = convertToPlan(plans[i])
+	}
+	return v1Plans
 }
 
 func convertToPlan(plan *store.PlanMessage) *v1pb.Plan {
