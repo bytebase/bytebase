@@ -15,8 +15,9 @@
 <p align="center">
   <a href="https://demo.bytebase.com?source=github" target="_blank"><b>🔥 Live Demo</b></a> •
   <a href="https://bytebase.com/docs/get-started/install/overview" target="_blank"><b>⚙️ Install</b></a> •
-  <a href="https://bytebase.com/docs"><b>📚 Documentation</b></a> •
-  <a href="https://discord.gg/huyw7gRsyA"><b>🙋‍♀️ Get Instant Help</b></a>
+  <a href="https://bytebase.com/docs"><b>📚 Docs</b></a> •
+  <a href="https://discord.gg/huyw7gRsyA"><b>💬 Discord</b></a> •
+  <a href="https://www.bytebase.com/request-demo/"><b>🙋‍♀️ Book Demo</b></a>
 </p>
 
 <p align="center">
