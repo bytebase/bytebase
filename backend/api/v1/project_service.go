@@ -115,7 +115,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, err
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project.Name)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project.Name)
 	}
 	if project.ResourceID == api.DefaultProjectID {
 		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be updated")
@@ -160,7 +160,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		return nil, err
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Name)
 	}
 	if project.ResourceID == api.DefaultProjectID {
 		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be deleted")
@@ -323,7 +323,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
 	}
 
 	policy, err := s.convertToIAMPolicyMessage(ctx, request.Policy)
@@ -634,9 +634,6 @@ func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Name)
 	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Name)
-	}
 
 	deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
@@ -668,7 +665,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
 	}
 
 	storeDeploymentConfig, err := validateAndConvertToStoreDeploymentSchedule(request.Config)
@@ -707,7 +704,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
 	}
 
 	create, err := convertToStoreProjectWebhookMessage(request.Webhook)
@@ -749,7 +746,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
 	}
 
 	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
@@ -1280,7 +1277,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.Remove
 		return nil, status.Errorf(codes.NotFound, "project %q not found", webhookID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
 	}
 
 	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
@@ -1331,7 +1328,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
 	}
 
 	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
@@ -1384,7 +1381,7 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Parent)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Parent)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Parent)
 	}
 
 	if !isValidResourceID(request.DatabaseGroupId) {
@@ -1440,7 +1437,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
 	}
 	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
@@ -1500,7 +1497,7 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
 	}
 	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
@@ -1562,9 +1559,6 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
-	}
 	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
 	})
@@ -1594,9 +1588,6 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
@@ -1633,7 +1624,7 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Parent)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Parent)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Parent)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ResourceID: &databaseGroupResourceID,
@@ -1698,7 +1689,7 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
@@ -1768,7 +1759,7 @@ func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.De
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
@@ -1813,9 +1804,6 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
-	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
 		ResourceID: &databaseResourceID,
@@ -1856,9 +1844,6 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
