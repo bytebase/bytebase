@@ -106,7 +106,7 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 		return nil, err
 	}
 	if environment.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", request.Environment.Name)
+		return nil, status.Errorf(codes.NotFound, "environment %q has been deleted", request.Environment.Name)
 	}
 
 	patch := &store.UpdateEnvironmentMessage{}
@@ -142,7 +142,7 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 		return nil, err
 	}
 	if environment.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "environment %q has been deleted", request.Name)
 	}
 
 	// All instances in the environment must be deleted.
