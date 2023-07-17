@@ -434,6 +434,8 @@
     - [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse)
     - [ListPlansRequest](#bytebase-v1-ListPlansRequest)
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
+    - [ListRolloutTaskRunsRequest](#bytebase-v1-ListRolloutTaskRunsRequest)
+    - [ListRolloutTaskRunsResponse](#bytebase-v1-ListRolloutTaskRunsResponse)
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
     - [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail)
@@ -6924,6 +6926,41 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 
 
+<a name="bytebase-v1-ListRolloutTaskRunsRequest"></a>
+
+### ListRolloutTaskRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-/taskRuns/-&#34; to list all taskRuns from a rollout. |
+| page_size | [int32](#int32) |  | The maximum number of taskRuns to return. The service may return fewer than this value. If unspecified, at most 50 taskRuns will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRolloutTaskRuns` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRolloutTaskRuns` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRolloutTaskRunsResponse"></a>
+
+### ListRolloutTaskRunsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task_runs | [TaskRun](#bytebase-v1-TaskRun) | repeated | The taskRuns from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-Plan"></a>
 
 ### Plan
@@ -7532,7 +7569,7 @@ Type is the database change type.
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
-| ListRolloutTaskRuns | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
+| ListRolloutTaskRuns | [ListRolloutTaskRunsRequest](#bytebase-v1-ListRolloutTaskRunsRequest) | [ListRolloutTaskRunsResponse](#bytebase-v1-ListRolloutTaskRunsResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
 
  
