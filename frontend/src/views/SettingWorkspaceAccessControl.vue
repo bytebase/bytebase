@@ -318,6 +318,10 @@ const upsertPolicy = useDebounceFn(async () => {
 watch(
   () => state.environmentPolicyList,
   async () => {
+    if (state.isLoading) {
+      return;
+    }
+
     await upsertPolicy();
   },
   {
