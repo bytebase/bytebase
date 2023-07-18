@@ -70,7 +70,7 @@ service RolloutService {
 
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
-    post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun",
+      post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun",
       body: "*"
     };
     option (google.api.method_signature) = "parent";
@@ -79,14 +79,14 @@ service RolloutService {
   rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip",
-        body: "*"
-      };
-      option (google.api.method_signature) = "parent";
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
   }
 
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
     option (google.api.http) = {
-    post: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel",
+      post: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel",
       body: "*"
     };
     option (google.api.method_signature) = "parent";
