@@ -512,11 +512,11 @@ export const CommonLanguageSettings = {
 
   toJSON(message: CommonLanguageSettings): unknown {
     const obj: any = {};
-    if (message.referenceDocsUri !== "") {
-      obj.referenceDocsUri = message.referenceDocsUri;
-    }
-    if (message.destinations?.length) {
+    message.referenceDocsUri !== undefined && (obj.referenceDocsUri = message.referenceDocsUri);
+    if (message.destinations) {
       obj.destinations = message.destinations.map((e) => clientLibraryDestinationToJSON(e));
+    } else {
+      obj.destinations = [];
     }
     return obj;
   },
@@ -698,39 +698,25 @@ export const ClientLibrarySettings = {
 
   toJSON(message: ClientLibrarySettings): unknown {
     const obj: any = {};
-    if (message.version !== "") {
-      obj.version = message.version;
-    }
-    if (message.launchStage !== 0) {
-      obj.launchStage = launchStageToJSON(message.launchStage);
-    }
-    if (message.restNumericEnums === true) {
-      obj.restNumericEnums = message.restNumericEnums;
-    }
-    if (message.javaSettings !== undefined) {
-      obj.javaSettings = JavaSettings.toJSON(message.javaSettings);
-    }
-    if (message.cppSettings !== undefined) {
-      obj.cppSettings = CppSettings.toJSON(message.cppSettings);
-    }
-    if (message.phpSettings !== undefined) {
-      obj.phpSettings = PhpSettings.toJSON(message.phpSettings);
-    }
-    if (message.pythonSettings !== undefined) {
-      obj.pythonSettings = PythonSettings.toJSON(message.pythonSettings);
-    }
-    if (message.nodeSettings !== undefined) {
-      obj.nodeSettings = NodeSettings.toJSON(message.nodeSettings);
-    }
-    if (message.dotnetSettings !== undefined) {
-      obj.dotnetSettings = DotnetSettings.toJSON(message.dotnetSettings);
-    }
-    if (message.rubySettings !== undefined) {
-      obj.rubySettings = RubySettings.toJSON(message.rubySettings);
-    }
-    if (message.goSettings !== undefined) {
-      obj.goSettings = GoSettings.toJSON(message.goSettings);
-    }
+    message.version !== undefined && (obj.version = message.version);
+    message.launchStage !== undefined && (obj.launchStage = launchStageToJSON(message.launchStage));
+    message.restNumericEnums !== undefined && (obj.restNumericEnums = message.restNumericEnums);
+    message.javaSettings !== undefined &&
+      (obj.javaSettings = message.javaSettings ? JavaSettings.toJSON(message.javaSettings) : undefined);
+    message.cppSettings !== undefined &&
+      (obj.cppSettings = message.cppSettings ? CppSettings.toJSON(message.cppSettings) : undefined);
+    message.phpSettings !== undefined &&
+      (obj.phpSettings = message.phpSettings ? PhpSettings.toJSON(message.phpSettings) : undefined);
+    message.pythonSettings !== undefined &&
+      (obj.pythonSettings = message.pythonSettings ? PythonSettings.toJSON(message.pythonSettings) : undefined);
+    message.nodeSettings !== undefined &&
+      (obj.nodeSettings = message.nodeSettings ? NodeSettings.toJSON(message.nodeSettings) : undefined);
+    message.dotnetSettings !== undefined &&
+      (obj.dotnetSettings = message.dotnetSettings ? DotnetSettings.toJSON(message.dotnetSettings) : undefined);
+    message.rubySettings !== undefined &&
+      (obj.rubySettings = message.rubySettings ? RubySettings.toJSON(message.rubySettings) : undefined);
+    message.goSettings !== undefined &&
+      (obj.goSettings = message.goSettings ? GoSettings.toJSON(message.goSettings) : undefined);
     return obj;
   },
 
@@ -932,36 +918,29 @@ export const Publishing = {
 
   toJSON(message: Publishing): unknown {
     const obj: any = {};
-    if (message.methodSettings?.length) {
-      obj.methodSettings = message.methodSettings.map((e) => MethodSettings.toJSON(e));
+    if (message.methodSettings) {
+      obj.methodSettings = message.methodSettings.map((e) => e ? MethodSettings.toJSON(e) : undefined);
+    } else {
+      obj.methodSettings = [];
     }
-    if (message.newIssueUri !== "") {
-      obj.newIssueUri = message.newIssueUri;
+    message.newIssueUri !== undefined && (obj.newIssueUri = message.newIssueUri);
+    message.documentationUri !== undefined && (obj.documentationUri = message.documentationUri);
+    message.apiShortName !== undefined && (obj.apiShortName = message.apiShortName);
+    message.githubLabel !== undefined && (obj.githubLabel = message.githubLabel);
+    if (message.codeownerGithubTeams) {
+      obj.codeownerGithubTeams = message.codeownerGithubTeams.map((e) => e);
+    } else {
+      obj.codeownerGithubTeams = [];
     }
-    if (message.documentationUri !== "") {
-      obj.documentationUri = message.documentationUri;
+    message.docTagPrefix !== undefined && (obj.docTagPrefix = message.docTagPrefix);
+    message.organization !== undefined && (obj.organization = clientLibraryOrganizationToJSON(message.organization));
+    if (message.librarySettings) {
+      obj.librarySettings = message.librarySettings.map((e) => e ? ClientLibrarySettings.toJSON(e) : undefined);
+    } else {
+      obj.librarySettings = [];
     }
-    if (message.apiShortName !== "") {
-      obj.apiShortName = message.apiShortName;
-    }
-    if (message.githubLabel !== "") {
-      obj.githubLabel = message.githubLabel;
-    }
-    if (message.codeownerGithubTeams?.length) {
-      obj.codeownerGithubTeams = message.codeownerGithubTeams;
-    }
-    if (message.docTagPrefix !== "") {
-      obj.docTagPrefix = message.docTagPrefix;
-    }
-    if (message.organization !== 0) {
-      obj.organization = clientLibraryOrganizationToJSON(message.organization);
-    }
-    if (message.librarySettings?.length) {
-      obj.librarySettings = message.librarySettings.map((e) => ClientLibrarySettings.toJSON(e));
-    }
-    if (message.protoReferenceDocumentationUri !== "") {
-      obj.protoReferenceDocumentationUri = message.protoReferenceDocumentationUri;
-    }
+    message.protoReferenceDocumentationUri !== undefined &&
+      (obj.protoReferenceDocumentationUri = message.protoReferenceDocumentationUri);
     return obj;
   },
 
@@ -1058,21 +1037,15 @@ export const JavaSettings = {
 
   toJSON(message: JavaSettings): unknown {
     const obj: any = {};
-    if (message.libraryPackage !== "") {
-      obj.libraryPackage = message.libraryPackage;
-    }
+    message.libraryPackage !== undefined && (obj.libraryPackage = message.libraryPackage);
+    obj.serviceClassNames = {};
     if (message.serviceClassNames) {
-      const entries = Object.entries(message.serviceClassNames);
-      if (entries.length > 0) {
-        obj.serviceClassNames = {};
-        entries.forEach(([k, v]) => {
-          obj.serviceClassNames[k] = v;
-        });
-      }
+      Object.entries(message.serviceClassNames).forEach(([k, v]) => {
+        obj.serviceClassNames[k] = v;
+      });
     }
-    if (message.common !== undefined) {
-      obj.common = CommonLanguageSettings.toJSON(message.common);
-    }
+    message.common !== undefined &&
+      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
   },
 
@@ -1150,12 +1123,8 @@ export const JavaSettings_ServiceClassNamesEntry = {
 
   toJSON(message: JavaSettings_ServiceClassNamesEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -1212,9 +1181,8 @@ export const CppSettings = {
 
   toJSON(message: CppSettings): unknown {
     const obj: any = {};
-    if (message.common !== undefined) {
-      obj.common = CommonLanguageSettings.toJSON(message.common);
-    }
+    message.common !== undefined &&
+      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
   },
 
@@ -1272,9 +1240,8 @@ export const PhpSettings = {
 
   toJSON(message: PhpSettings): unknown {
     const obj: any = {};
-    if (message.common !== undefined) {
-      obj.common = CommonLanguageSettings.toJSON(message.common);
-    }
+    message.common !== undefined &&
+      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
   },
 
@@ -1332,9 +1299,8 @@ export const PythonSettings = {
 
   toJSON(message: PythonSettings): unknown {
     const obj: any = {};
-    if (message.common !== undefined) {
-      obj.common = CommonLanguageSettings.toJSON(message.common);
-    }
+    message.common !== undefined &&
+      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
   },
 
@@ -1392,9 +1358,8 @@ export const NodeSettings = {
 
   toJSON(message: NodeSettings): unknown {
     const obj: any = {};
-    if (message.common !== undefined) {
-      obj.common = CommonLanguageSettings.toJSON(message.common);
-    }
+    message.common !== undefined &&
+      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
   },
 
@@ -1538,35 +1503,34 @@ export const DotnetSettings = {
 
   toJSON(message: DotnetSettings): unknown {
     const obj: any = {};
-    if (message.common !== undefined) {
-      obj.common = CommonLanguageSettings.toJSON(message.common);
-    }
+    message.common !== undefined &&
+      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    obj.renamedServices = {};
     if (message.renamedServices) {
-      const entries = Object.entries(message.renamedServices);
-      if (entries.length > 0) {
-        obj.renamedServices = {};
-        entries.forEach(([k, v]) => {
-          obj.renamedServices[k] = v;
-        });
-      }
+      Object.entries(message.renamedServices).forEach(([k, v]) => {
+        obj.renamedServices[k] = v;
+      });
     }
+    obj.renamedResources = {};
     if (message.renamedResources) {
-      const entries = Object.entries(message.renamedResources);
-      if (entries.length > 0) {
-        obj.renamedResources = {};
-        entries.forEach(([k, v]) => {
-          obj.renamedResources[k] = v;
-        });
-      }
+      Object.entries(message.renamedResources).forEach(([k, v]) => {
+        obj.renamedResources[k] = v;
+      });
     }
-    if (message.ignoredResources?.length) {
-      obj.ignoredResources = message.ignoredResources;
+    if (message.ignoredResources) {
+      obj.ignoredResources = message.ignoredResources.map((e) => e);
+    } else {
+      obj.ignoredResources = [];
     }
-    if (message.forcedNamespaceAliases?.length) {
-      obj.forcedNamespaceAliases = message.forcedNamespaceAliases;
+    if (message.forcedNamespaceAliases) {
+      obj.forcedNamespaceAliases = message.forcedNamespaceAliases.map((e) => e);
+    } else {
+      obj.forcedNamespaceAliases = [];
     }
-    if (message.handwrittenSignatures?.length) {
-      obj.handwrittenSignatures = message.handwrittenSignatures;
+    if (message.handwrittenSignatures) {
+      obj.handwrittenSignatures = message.handwrittenSignatures.map((e) => e);
+    } else {
+      obj.handwrittenSignatures = [];
     }
     return obj;
   },
@@ -1656,12 +1620,8 @@ export const DotnetSettings_RenamedServicesEntry = {
 
   toJSON(message: DotnetSettings_RenamedServicesEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -1728,12 +1688,8 @@ export const DotnetSettings_RenamedResourcesEntry = {
 
   toJSON(message: DotnetSettings_RenamedResourcesEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -1790,9 +1746,8 @@ export const RubySettings = {
 
   toJSON(message: RubySettings): unknown {
     const obj: any = {};
-    if (message.common !== undefined) {
-      obj.common = CommonLanguageSettings.toJSON(message.common);
-    }
+    message.common !== undefined &&
+      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
   },
 
@@ -1850,9 +1805,8 @@ export const GoSettings = {
 
   toJSON(message: GoSettings): unknown {
     const obj: any = {};
-    if (message.common !== undefined) {
-      obj.common = CommonLanguageSettings.toJSON(message.common);
-    }
+    message.common !== undefined &&
+      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
     return obj;
   },
 
@@ -1923,12 +1877,9 @@ export const MethodSettings = {
 
   toJSON(message: MethodSettings): unknown {
     const obj: any = {};
-    if (message.selector !== "") {
-      obj.selector = message.selector;
-    }
-    if (message.longRunning !== undefined) {
-      obj.longRunning = MethodSettings_LongRunning.toJSON(message.longRunning);
-    }
+    message.selector !== undefined && (obj.selector = message.selector);
+    message.longRunning !== undefined &&
+      (obj.longRunning = message.longRunning ? MethodSettings_LongRunning.toJSON(message.longRunning) : undefined);
     return obj;
   },
 
@@ -2022,18 +1973,13 @@ export const MethodSettings_LongRunning = {
 
   toJSON(message: MethodSettings_LongRunning): unknown {
     const obj: any = {};
-    if (message.initialPollDelay !== undefined) {
-      obj.initialPollDelay = Duration.toJSON(message.initialPollDelay);
-    }
-    if (message.pollDelayMultiplier !== 0) {
-      obj.pollDelayMultiplier = message.pollDelayMultiplier;
-    }
-    if (message.maxPollDelay !== undefined) {
-      obj.maxPollDelay = Duration.toJSON(message.maxPollDelay);
-    }
-    if (message.totalPollTimeout !== undefined) {
-      obj.totalPollTimeout = Duration.toJSON(message.totalPollTimeout);
-    }
+    message.initialPollDelay !== undefined &&
+      (obj.initialPollDelay = message.initialPollDelay ? Duration.toJSON(message.initialPollDelay) : undefined);
+    message.pollDelayMultiplier !== undefined && (obj.pollDelayMultiplier = message.pollDelayMultiplier);
+    message.maxPollDelay !== undefined &&
+      (obj.maxPollDelay = message.maxPollDelay ? Duration.toJSON(message.maxPollDelay) : undefined);
+    message.totalPollTimeout !== undefined &&
+      (obj.totalPollTimeout = message.totalPollTimeout ? Duration.toJSON(message.totalPollTimeout) : undefined);
     return obj;
   },
 

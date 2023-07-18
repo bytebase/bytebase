@@ -1,9 +1,9 @@
 /* eslint-disable */
+import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
-import Long = require("long");
 
 export const protobufPackage = "bytebase.v1";
 
@@ -1109,9 +1109,7 @@ export const GetPlanRequest = {
 
   toJSON(message: GetPlanRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -1191,15 +1189,9 @@ export const ListPlansRequest = {
 
   toJSON(message: ListPlansRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
@@ -1270,12 +1262,12 @@ export const ListPlansResponse = {
 
   toJSON(message: ListPlansResponse): unknown {
     const obj: any = {};
-    if (message.plans?.length) {
-      obj.plans = message.plans.map((e) => Plan.toJSON(e));
+    if (message.plans) {
+      obj.plans = message.plans.map((e) => e ? Plan.toJSON(e) : undefined);
+    } else {
+      obj.plans = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -1345,12 +1337,8 @@ export const CreatePlanRequest = {
 
   toJSON(message: CreatePlanRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.plan !== undefined) {
-      obj.plan = Plan.toJSON(message.plan);
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.plan !== undefined && (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
     return obj;
   },
 
@@ -1420,12 +1408,8 @@ export const UpdatePlanRequest = {
 
   toJSON(message: UpdatePlanRequest): unknown {
     const obj: any = {};
-    if (message.plan !== undefined) {
-      obj.plan = Plan.toJSON(message.plan);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.plan !== undefined && (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
@@ -1539,23 +1523,15 @@ export const Plan = {
 
   toJSON(message: Plan): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.issue !== "") {
-      obj.issue = message.issue;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.steps?.length) {
-      obj.steps = message.steps.map((e) => Plan_Step.toJSON(e));
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.issue !== undefined && (obj.issue = message.issue);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    if (message.steps) {
+      obj.steps = message.steps.map((e) => e ? Plan_Step.toJSON(e) : undefined);
+    } else {
+      obj.steps = [];
     }
     return obj;
   },
@@ -1617,8 +1593,10 @@ export const Plan_Step = {
 
   toJSON(message: Plan_Step): unknown {
     const obj: any = {};
-    if (message.specs?.length) {
-      obj.specs = message.specs.map((e) => Plan_Spec.toJSON(e));
+    if (message.specs) {
+      obj.specs = message.specs.map((e) => e ? Plan_Spec.toJSON(e) : undefined);
+    } else {
+      obj.specs = [];
     }
     return obj;
   },
@@ -1735,21 +1713,17 @@ export const Plan_Spec = {
 
   toJSON(message: Plan_Spec): unknown {
     const obj: any = {};
-    if (message.earliestAllowedTime !== undefined) {
-      obj.earliestAllowedTime = message.earliestAllowedTime.toISOString();
-    }
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.changeDatabaseConfig !== undefined) {
-      obj.changeDatabaseConfig = Plan_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
-    }
-    if (message.restoreDatabaseConfig !== undefined) {
-      obj.restoreDatabaseConfig = Plan_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig);
-    }
+    message.earliestAllowedTime !== undefined && (obj.earliestAllowedTime = message.earliestAllowedTime.toISOString());
+    message.id !== undefined && (obj.id = message.id);
+    message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
+      ? Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
+      : undefined);
+    message.changeDatabaseConfig !== undefined && (obj.changeDatabaseConfig = message.changeDatabaseConfig
+      ? Plan_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig)
+      : undefined);
+    message.restoreDatabaseConfig !== undefined && (obj.restoreDatabaseConfig = message.restoreDatabaseConfig
+      ? Plan_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig)
+      : undefined);
     return obj;
   },
 
@@ -1924,38 +1898,19 @@ export const Plan_CreateDatabaseConfig = {
 
   toJSON(message: Plan_CreateDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
-    if (message.cluster !== "") {
-      obj.cluster = message.cluster;
-    }
-    if (message.owner !== "") {
-      obj.owner = message.owner;
-    }
-    if (message.backup !== "") {
-      obj.backup = message.backup;
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.database !== undefined && (obj.database = message.database);
+    message.table !== undefined && (obj.table = message.table);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
+    message.collation !== undefined && (obj.collation = message.collation);
+    message.cluster !== undefined && (obj.cluster = message.cluster);
+    message.owner !== undefined && (obj.owner = message.owner);
+    message.backup !== undefined && (obj.backup = message.backup);
+    obj.labels = {};
     if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
     }
     return obj;
   },
@@ -2035,12 +1990,8 @@ export const Plan_CreateDatabaseConfig_LabelsEntry = {
 
   toJSON(message: Plan_CreateDatabaseConfig_LabelsEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -2156,24 +2107,14 @@ export const Plan_ChangeDatabaseConfig = {
 
   toJSON(message: Plan_ChangeDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.type !== 0) {
-      obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type);
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    if (message.rollbackEnabled === true) {
-      obj.rollbackEnabled = message.rollbackEnabled;
-    }
-    if (message.rollbackDetail !== undefined) {
-      obj.rollbackDetail = Plan_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail);
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.type !== undefined && (obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type));
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
+    message.rollbackDetail !== undefined && (obj.rollbackDetail = message.rollbackDetail
+      ? Plan_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail)
+      : undefined);
     return obj;
   },
 
@@ -2249,12 +2190,8 @@ export const Plan_ChangeDatabaseConfig_RollbackDetail = {
 
   toJSON(message: Plan_ChangeDatabaseConfig_RollbackDetail): unknown {
     const obj: any = {};
-    if (message.rollbackFromTask !== "") {
-      obj.rollbackFromTask = message.rollbackFromTask;
-    }
-    if (message.rollbackFromIssue !== "") {
-      obj.rollbackFromIssue = message.rollbackFromIssue;
-    }
+    message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
+    message.rollbackFromIssue !== undefined && (obj.rollbackFromIssue = message.rollbackFromIssue);
     return obj;
   },
 
@@ -2348,18 +2285,12 @@ export const Plan_RestoreDatabaseConfig = {
 
   toJSON(message: Plan_RestoreDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.backup !== undefined) {
-      obj.backup = message.backup;
-    }
-    if (message.pointInTime !== undefined) {
-      obj.pointInTime = message.pointInTime.toISOString();
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
+      ? Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
+      : undefined);
+    message.backup !== undefined && (obj.backup = message.backup);
+    message.pointInTime !== undefined && (obj.pointInTime = message.pointInTime.toISOString());
     return obj;
   },
 
@@ -2444,15 +2375,9 @@ export const ListPlanCheckRunsRequest = {
 
   toJSON(message: ListPlanCheckRunsRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
@@ -2525,12 +2450,12 @@ export const ListPlanCheckRunsResponse = {
 
   toJSON(message: ListPlanCheckRunsResponse): unknown {
     const obj: any = {};
-    if (message.planCheckRuns?.length) {
-      obj.planCheckRuns = message.planCheckRuns.map((e) => PlanCheckRun.toJSON(e));
+    if (message.planCheckRuns) {
+      obj.planCheckRuns = message.planCheckRuns.map((e) => e ? PlanCheckRun.toJSON(e) : undefined);
+    } else {
+      obj.planCheckRuns = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -2666,29 +2591,17 @@ export const PlanCheckRun = {
 
   toJSON(message: PlanCheckRun): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.type !== 0) {
-      obj.type = planCheckRun_TypeToJSON(message.type);
-    }
-    if (message.status !== 0) {
-      obj.status = planCheckRun_StatusToJSON(message.status);
-    }
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    if (message.results?.length) {
-      obj.results = message.results.map((e) => PlanCheckRun_Result.toJSON(e));
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.type !== undefined && (obj.type = planCheckRun_TypeToJSON(message.type));
+    message.status !== undefined && (obj.status = planCheckRun_StatusToJSON(message.status));
+    message.target !== undefined && (obj.target = message.target);
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.detail !== undefined && (obj.detail = message.detail);
+    if (message.results) {
+      obj.results = message.results.map((e) => e ? PlanCheckRun_Result.toJSON(e) : undefined);
+    } else {
+      obj.results = [];
     }
     return obj;
   },
@@ -2820,27 +2733,13 @@ export const PlanCheckRun_Result = {
 
   toJSON(message: PlanCheckRun_Result): unknown {
     const obj: any = {};
-    if (message.namespace !== 0) {
-      obj.namespace = planCheckRun_Result_NamespaceToJSON(message.namespace);
-    }
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
-    if (message.status !== 0) {
-      obj.status = planCheckRun_Result_StatusToJSON(message.status);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.content !== "") {
-      obj.content = message.content;
-    }
-    if (message.line !== 0) {
-      obj.line = Math.round(message.line);
-    }
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
+    message.namespace !== undefined && (obj.namespace = planCheckRun_Result_NamespaceToJSON(message.namespace));
+    message.code !== undefined && (obj.code = Math.round(message.code));
+    message.status !== undefined && (obj.status = planCheckRun_Result_StatusToJSON(message.status));
+    message.title !== undefined && (obj.title = message.title);
+    message.content !== undefined && (obj.content = message.content);
+    message.line !== undefined && (obj.line = Math.round(message.line));
+    message.detail !== undefined && (obj.detail = message.detail);
     return obj;
   },
 
@@ -2902,9 +2801,7 @@ export const GetRolloutRequest = {
 
   toJSON(message: GetRolloutRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -2973,12 +2870,8 @@ export const CreateRolloutRequest = {
 
   toJSON(message: CreateRolloutRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.plan !== "") {
-      obj.plan = message.plan;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.plan !== undefined && (obj.plan = message.plan);
     return obj;
   },
 
@@ -3048,12 +2941,8 @@ export const PreviewRolloutRequest = {
 
   toJSON(message: PreviewRolloutRequest): unknown {
     const obj: any = {};
-    if (message.project !== "") {
-      obj.project = message.project;
-    }
-    if (message.plan !== undefined) {
-      obj.plan = Plan.toJSON(message.plan);
-    }
+    message.project !== undefined && (obj.project = message.project);
+    message.plan !== undefined && (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
     return obj;
   },
 
@@ -3134,15 +3023,9 @@ export const ListRolloutTaskRunsRequest = {
 
   toJSON(message: ListRolloutTaskRunsRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
@@ -3213,12 +3096,12 @@ export const ListRolloutTaskRunsResponse = {
 
   toJSON(message: ListRolloutTaskRunsResponse): unknown {
     const obj: any = {};
-    if (message.taskRuns?.length) {
-      obj.taskRuns = message.taskRuns.map((e) => TaskRun.toJSON(e));
+    if (message.taskRuns) {
+      obj.taskRuns = message.taskRuns.map((e) => e ? TaskRun.toJSON(e) : undefined);
+    } else {
+      obj.taskRuns = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -3321,20 +3204,14 @@ export const Rollout = {
 
   toJSON(message: Rollout): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.plan !== "") {
-      obj.plan = message.plan;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.stages?.length) {
-      obj.stages = message.stages.map((e) => Stage.toJSON(e));
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.plan !== undefined && (obj.plan = message.plan);
+    message.title !== undefined && (obj.title = message.title);
+    if (message.stages) {
+      obj.stages = message.stages.map((e) => e ? Stage.toJSON(e) : undefined);
+    } else {
+      obj.stages = [];
     }
     return obj;
   },
@@ -3441,20 +3318,14 @@ export const Stage = {
 
   toJSON(message: Stage): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.environment !== "") {
-      obj.environment = message.environment;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.tasks?.length) {
-      obj.tasks = message.tasks.map((e) => Task.toJSON(e));
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.environment !== undefined && (obj.environment = message.environment);
+    message.title !== undefined && (obj.title = message.title);
+    if (message.tasks) {
+      obj.tasks = message.tasks.map((e) => e ? Task.toJSON(e) : undefined);
+    } else {
+      obj.tasks = [];
     }
     return obj;
   },
@@ -3683,48 +3554,34 @@ export const Task = {
 
   toJSON(message: Task): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.title !== undefined && (obj.title = message.title);
+    message.specId !== undefined && (obj.specId = message.specId);
+    message.status !== undefined && (obj.status = task_StatusToJSON(message.status));
+    message.type !== undefined && (obj.type = task_TypeToJSON(message.type));
+    if (message.blockedByTasks) {
+      obj.blockedByTasks = message.blockedByTasks.map((e) => e);
+    } else {
+      obj.blockedByTasks = [];
     }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.specId !== "") {
-      obj.specId = message.specId;
-    }
-    if (message.status !== 0) {
-      obj.status = task_StatusToJSON(message.status);
-    }
-    if (message.type !== 0) {
-      obj.type = task_TypeToJSON(message.type);
-    }
-    if (message.blockedByTasks?.length) {
-      obj.blockedByTasks = message.blockedByTasks;
-    }
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.databaseCreate !== undefined) {
-      obj.databaseCreate = Task_DatabaseCreate.toJSON(message.databaseCreate);
-    }
-    if (message.databaseSchemaBaseline !== undefined) {
-      obj.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline);
-    }
-    if (message.databaseSchemaUpdate !== undefined) {
-      obj.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.toJSON(message.databaseSchemaUpdate);
-    }
-    if (message.databaseDataUpdate !== undefined) {
-      obj.databaseDataUpdate = Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate);
-    }
-    if (message.databaseBackup !== undefined) {
-      obj.databaseBackup = Task_DatabaseBackup.toJSON(message.databaseBackup);
-    }
-    if (message.databaseRestoreRestore !== undefined) {
-      obj.databaseRestoreRestore = Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore);
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.databaseCreate !== undefined &&
+      (obj.databaseCreate = message.databaseCreate ? Task_DatabaseCreate.toJSON(message.databaseCreate) : undefined);
+    message.databaseSchemaBaseline !== undefined && (obj.databaseSchemaBaseline = message.databaseSchemaBaseline
+      ? Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline)
+      : undefined);
+    message.databaseSchemaUpdate !== undefined && (obj.databaseSchemaUpdate = message.databaseSchemaUpdate
+      ? Task_DatabaseSchemaUpdate.toJSON(message.databaseSchemaUpdate)
+      : undefined);
+    message.databaseDataUpdate !== undefined && (obj.databaseDataUpdate = message.databaseDataUpdate
+      ? Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate)
+      : undefined);
+    message.databaseBackup !== undefined &&
+      (obj.databaseBackup = message.databaseBackup ? Task_DatabaseBackup.toJSON(message.databaseBackup) : undefined);
+    message.databaseRestoreRestore !== undefined && (obj.databaseRestoreRestore = message.databaseRestoreRestore
+      ? Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore)
+      : undefined);
     return obj;
   },
 
@@ -3883,32 +3740,17 @@ export const Task_DatabaseCreate = {
 
   toJSON(message: Task_DatabaseCreate): unknown {
     const obj: any = {};
-    if (message.project !== "") {
-      obj.project = message.project;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
+    message.project !== undefined && (obj.project = message.project);
+    message.database !== undefined && (obj.database = message.database);
+    message.table !== undefined && (obj.table = message.table);
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
+    message.collation !== undefined && (obj.collation = message.collation);
+    obj.labels = {};
     if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
     }
     return obj;
   },
@@ -3986,12 +3828,8 @@ export const Task_DatabaseCreate_LabelsEntry = {
 
   toJSON(message: Task_DatabaseCreate_LabelsEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -4048,9 +3886,7 @@ export const Task_DatabaseSchemaBaseline = {
 
   toJSON(message: Task_DatabaseSchemaBaseline): unknown {
     const obj: any = {};
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     return obj;
   },
 
@@ -4119,12 +3955,8 @@ export const Task_DatabaseSchemaUpdate = {
 
   toJSON(message: Task_DatabaseSchemaUpdate): unknown {
     const obj: any = {};
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     return obj;
   },
 
@@ -4271,30 +4103,15 @@ export const Task_DatabaseDataUpdate = {
 
   toJSON(message: Task_DatabaseDataUpdate): unknown {
     const obj: any = {};
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    if (message.rollbackEnabled === true) {
-      obj.rollbackEnabled = message.rollbackEnabled;
-    }
-    if (message.rollbackSqlStatus !== 0) {
-      obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus);
-    }
-    if (message.rollbackError !== "") {
-      obj.rollbackError = message.rollbackError;
-    }
-    if (message.rollbackSheet !== "") {
-      obj.rollbackSheet = message.rollbackSheet;
-    }
-    if (message.rollbackFromIssue !== "") {
-      obj.rollbackFromIssue = message.rollbackFromIssue;
-    }
-    if (message.rollbackFromTask !== "") {
-      obj.rollbackFromTask = message.rollbackFromTask;
-    }
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
+    message.rollbackSqlStatus !== undefined &&
+      (obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus));
+    message.rollbackError !== undefined && (obj.rollbackError = message.rollbackError);
+    message.rollbackSheet !== undefined && (obj.rollbackSheet = message.rollbackSheet);
+    message.rollbackFromIssue !== undefined && (obj.rollbackFromIssue = message.rollbackFromIssue);
+    message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
     return obj;
   },
 
@@ -4357,9 +4174,7 @@ export const Task_DatabaseBackup = {
 
   toJSON(message: Task_DatabaseBackup): unknown {
     const obj: any = {};
-    if (message.backup !== "") {
-      obj.backup = message.backup;
-    }
+    message.backup !== undefined && (obj.backup = message.backup);
     return obj;
   },
 
@@ -4439,15 +4254,9 @@ export const Task_DatabaseRestoreRestore = {
 
   toJSON(message: Task_DatabaseRestoreRestore): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.backup !== undefined) {
-      obj.backup = message.backup;
-    }
-    if (message.pointInTime !== undefined) {
-      obj.pointInTime = message.pointInTime.toISOString();
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.backup !== undefined && (obj.backup = message.backup);
+    message.pointInTime !== undefined && (obj.pointInTime = message.pointInTime.toISOString());
     return obj;
   },
 
@@ -4629,39 +4438,17 @@ export const TaskRun = {
 
   toJSON(message: TaskRun): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.status !== 0) {
-      obj.status = taskRun_StatusToJSON(message.status);
-    }
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    if (message.changeHistory !== "") {
-      obj.changeHistory = message.changeHistory;
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.updater !== undefined && (obj.updater = message.updater);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.title !== undefined && (obj.title = message.title);
+    message.status !== undefined && (obj.status = taskRun_StatusToJSON(message.status));
+    message.detail !== undefined && (obj.detail = message.detail);
+    message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     return obj;
   },
 
@@ -5306,6 +5093,8 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

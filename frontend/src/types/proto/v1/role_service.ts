@@ -118,12 +118,8 @@ export const ListRolesRequest = {
 
   toJSON(message: ListRolesRequest): unknown {
     const obj: any = {};
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
@@ -193,12 +189,12 @@ export const ListRolesResponse = {
 
   toJSON(message: ListRolesResponse): unknown {
     const obj: any = {};
-    if (message.roles?.length) {
-      obj.roles = message.roles.map((e) => Role.toJSON(e));
+    if (message.roles) {
+      obj.roles = message.roles.map((e) => e ? Role.toJSON(e) : undefined);
+    } else {
+      obj.roles = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -268,12 +264,8 @@ export const CreateRoleRequest = {
 
   toJSON(message: CreateRoleRequest): unknown {
     const obj: any = {};
-    if (message.role !== undefined) {
-      obj.role = Role.toJSON(message.role);
-    }
-    if (message.roleId !== "") {
-      obj.roleId = message.roleId;
-    }
+    message.role !== undefined && (obj.role = message.role ? Role.toJSON(message.role) : undefined);
+    message.roleId !== undefined && (obj.roleId = message.roleId);
     return obj;
   },
 
@@ -343,12 +335,8 @@ export const UpdateRoleRequest = {
 
   toJSON(message: UpdateRoleRequest): unknown {
     const obj: any = {};
-    if (message.role !== undefined) {
-      obj.role = Role.toJSON(message.role);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.role !== undefined && (obj.role = message.role ? Role.toJSON(message.role) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
@@ -405,9 +393,7 @@ export const DeleteRoleRequest = {
 
   toJSON(message: DeleteRoleRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -487,15 +473,9 @@ export const Role = {
 
   toJSON(message: Role): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 

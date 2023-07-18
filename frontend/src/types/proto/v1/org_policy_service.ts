@@ -575,15 +575,9 @@ export const CreatePolicyRequest = {
 
   toJSON(message: CreatePolicyRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.policy !== undefined) {
-      obj.policy = Policy.toJSON(message.policy);
-    }
-    if (message.type !== 0) {
-      obj.type = policyTypeToJSON(message.type);
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
+    message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
     return obj;
   },
 
@@ -667,15 +661,9 @@ export const UpdatePolicyRequest = {
 
   toJSON(message: UpdatePolicyRequest): unknown {
     const obj: any = {};
-    if (message.policy !== undefined) {
-      obj.policy = Policy.toJSON(message.policy);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
-    if (message.allowMissing === true) {
-      obj.allowMissing = message.allowMissing;
-    }
+    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.allowMissing !== undefined && (obj.allowMissing = message.allowMissing);
     return obj;
   },
 
@@ -735,9 +723,7 @@ export const DeletePolicyRequest = {
 
   toJSON(message: DeletePolicyRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -793,9 +779,7 @@ export const GetPolicyRequest = {
 
   toJSON(message: GetPolicyRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -897,21 +881,12 @@ export const ListPoliciesRequest = {
 
   toJSON(message: ListPoliciesRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.policyType !== undefined) {
-      obj.policyType = policyTypeToJSON(message.policyType);
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    if (message.showDeleted === true) {
-      obj.showDeleted = message.showDeleted;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.policyType !== undefined &&
+      (obj.policyType = message.policyType !== undefined ? policyTypeToJSON(message.policyType) : undefined);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -984,12 +959,12 @@ export const ListPoliciesResponse = {
 
   toJSON(message: ListPoliciesResponse): unknown {
     const obj: any = {};
-    if (message.policies?.length) {
-      obj.policies = message.policies.map((e) => Policy.toJSON(e));
+    if (message.policies) {
+      obj.policies = message.policies.map((e) => e ? Policy.toJSON(e) : undefined);
+    } else {
+      obj.policies = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -1212,48 +1187,30 @@ export const Policy = {
 
   toJSON(message: Policy): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.inheritFromParent === true) {
-      obj.inheritFromParent = message.inheritFromParent;
-    }
-    if (message.type !== 0) {
-      obj.type = policyTypeToJSON(message.type);
-    }
-    if (message.workspaceIamPolicy !== undefined) {
-      obj.workspaceIamPolicy = IamPolicy.toJSON(message.workspaceIamPolicy);
-    }
-    if (message.deploymentApprovalPolicy !== undefined) {
-      obj.deploymentApprovalPolicy = DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy);
-    }
-    if (message.backupPlanPolicy !== undefined) {
-      obj.backupPlanPolicy = BackupPlanPolicy.toJSON(message.backupPlanPolicy);
-    }
-    if (message.sensitiveDataPolicy !== undefined) {
-      obj.sensitiveDataPolicy = SensitiveDataPolicy.toJSON(message.sensitiveDataPolicy);
-    }
-    if (message.sqlReviewPolicy !== undefined) {
-      obj.sqlReviewPolicy = SQLReviewPolicy.toJSON(message.sqlReviewPolicy);
-    }
-    if (message.slowQueryPolicy !== undefined) {
-      obj.slowQueryPolicy = SlowQueryPolicy.toJSON(message.slowQueryPolicy);
-    }
-    if (message.disableCopyDataPolicy !== undefined) {
-      obj.disableCopyDataPolicy = DisableCopyDataPolicy.toJSON(message.disableCopyDataPolicy);
-    }
-    if (message.enforce === true) {
-      obj.enforce = message.enforce;
-    }
-    if (message.resourceType !== 0) {
-      obj.resourceType = policyResourceTypeToJSON(message.resourceType);
-    }
-    if (message.resourceUid !== "") {
-      obj.resourceUid = message.resourceUid;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.inheritFromParent !== undefined && (obj.inheritFromParent = message.inheritFromParent);
+    message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
+    message.workspaceIamPolicy !== undefined &&
+      (obj.workspaceIamPolicy = message.workspaceIamPolicy ? IamPolicy.toJSON(message.workspaceIamPolicy) : undefined);
+    message.deploymentApprovalPolicy !== undefined && (obj.deploymentApprovalPolicy = message.deploymentApprovalPolicy
+      ? DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy)
+      : undefined);
+    message.backupPlanPolicy !== undefined &&
+      (obj.backupPlanPolicy = message.backupPlanPolicy ? BackupPlanPolicy.toJSON(message.backupPlanPolicy) : undefined);
+    message.sensitiveDataPolicy !== undefined && (obj.sensitiveDataPolicy = message.sensitiveDataPolicy
+      ? SensitiveDataPolicy.toJSON(message.sensitiveDataPolicy)
+      : undefined);
+    message.sqlReviewPolicy !== undefined &&
+      (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
+    message.slowQueryPolicy !== undefined &&
+      (obj.slowQueryPolicy = message.slowQueryPolicy ? SlowQueryPolicy.toJSON(message.slowQueryPolicy) : undefined);
+    message.disableCopyDataPolicy !== undefined && (obj.disableCopyDataPolicy = message.disableCopyDataPolicy
+      ? DisableCopyDataPolicy.toJSON(message.disableCopyDataPolicy)
+      : undefined);
+    message.enforce !== undefined && (obj.enforce = message.enforce);
+    message.resourceType !== undefined && (obj.resourceType = policyResourceTypeToJSON(message.resourceType));
+    message.resourceUid !== undefined && (obj.resourceUid = message.resourceUid);
     return obj;
   },
 
@@ -1353,13 +1310,13 @@ export const DeploymentApprovalPolicy = {
 
   toJSON(message: DeploymentApprovalPolicy): unknown {
     const obj: any = {};
-    if (message.defaultStrategy !== 0) {
-      obj.defaultStrategy = approvalStrategyToJSON(message.defaultStrategy);
-    }
-    if (message.deploymentApprovalStrategies?.length) {
+    message.defaultStrategy !== undefined && (obj.defaultStrategy = approvalStrategyToJSON(message.defaultStrategy));
+    if (message.deploymentApprovalStrategies) {
       obj.deploymentApprovalStrategies = message.deploymentApprovalStrategies.map((e) =>
-        DeploymentApprovalStrategy.toJSON(e)
+        e ? DeploymentApprovalStrategy.toJSON(e) : undefined
       );
+    } else {
+      obj.deploymentApprovalStrategies = [];
     }
     return obj;
   },
@@ -1442,15 +1399,9 @@ export const DeploymentApprovalStrategy = {
 
   toJSON(message: DeploymentApprovalStrategy): unknown {
     const obj: any = {};
-    if (message.deploymentType !== 0) {
-      obj.deploymentType = deploymentTypeToJSON(message.deploymentType);
-    }
-    if (message.approvalGroup !== 0) {
-      obj.approvalGroup = approvalGroupToJSON(message.approvalGroup);
-    }
-    if (message.approvalStrategy !== 0) {
-      obj.approvalStrategy = approvalStrategyToJSON(message.approvalStrategy);
-    }
+    message.deploymentType !== undefined && (obj.deploymentType = deploymentTypeToJSON(message.deploymentType));
+    message.approvalGroup !== undefined && (obj.approvalGroup = approvalGroupToJSON(message.approvalGroup));
+    message.approvalStrategy !== undefined && (obj.approvalStrategy = approvalStrategyToJSON(message.approvalStrategy));
     return obj;
   },
 
@@ -1521,12 +1472,9 @@ export const BackupPlanPolicy = {
 
   toJSON(message: BackupPlanPolicy): unknown {
     const obj: any = {};
-    if (message.schedule !== 0) {
-      obj.schedule = backupPlanScheduleToJSON(message.schedule);
-    }
-    if (message.retentionDuration !== undefined) {
-      obj.retentionDuration = Duration.toJSON(message.retentionDuration);
-    }
+    message.schedule !== undefined && (obj.schedule = backupPlanScheduleToJSON(message.schedule));
+    message.retentionDuration !== undefined &&
+      (obj.retentionDuration = message.retentionDuration ? Duration.toJSON(message.retentionDuration) : undefined);
     return obj;
   },
 
@@ -1585,9 +1533,7 @@ export const SlowQueryPolicy = {
 
   toJSON(message: SlowQueryPolicy): unknown {
     const obj: any = {};
-    if (message.active === true) {
-      obj.active = message.active;
-    }
+    message.active !== undefined && (obj.active = message.active);
     return obj;
   },
 
@@ -1643,9 +1589,7 @@ export const DisableCopyDataPolicy = {
 
   toJSON(message: DisableCopyDataPolicy): unknown {
     const obj: any = {};
-    if (message.active === true) {
-      obj.active = message.active;
-    }
+    message.active !== undefined && (obj.active = message.active);
     return obj;
   },
 
@@ -1705,8 +1649,10 @@ export const SensitiveDataPolicy = {
 
   toJSON(message: SensitiveDataPolicy): unknown {
     const obj: any = {};
-    if (message.sensitiveData?.length) {
-      obj.sensitiveData = message.sensitiveData.map((e) => SensitiveData.toJSON(e));
+    if (message.sensitiveData) {
+      obj.sensitiveData = message.sensitiveData.map((e) => e ? SensitiveData.toJSON(e) : undefined);
+    } else {
+      obj.sensitiveData = [];
     }
     return obj;
   },
@@ -1798,18 +1744,10 @@ export const SensitiveData = {
 
   toJSON(message: SensitiveData): unknown {
     const obj: any = {};
-    if (message.schema !== "") {
-      obj.schema = message.schema;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    if (message.column !== "") {
-      obj.column = message.column;
-    }
-    if (message.maskType !== 0) {
-      obj.maskType = sensitiveDataMaskTypeToJSON(message.maskType);
-    }
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.table !== undefined && (obj.table = message.table);
+    message.column !== undefined && (obj.column = message.column);
+    message.maskType !== undefined && (obj.maskType = sensitiveDataMaskTypeToJSON(message.maskType));
     return obj;
   },
 
@@ -1881,11 +1819,11 @@ export const SQLReviewPolicy = {
 
   toJSON(message: SQLReviewPolicy): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.rules?.length) {
-      obj.rules = message.rules.map((e) => SQLReviewRule.toJSON(e));
+    message.name !== undefined && (obj.name = message.name);
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
+    } else {
+      obj.rules = [];
     }
     return obj;
   },
@@ -1989,21 +1927,11 @@ export const SQLReviewRule = {
 
   toJSON(message: SQLReviewRule): unknown {
     const obj: any = {};
-    if (message.type !== "") {
-      obj.type = message.type;
-    }
-    if (message.level !== 0) {
-      obj.level = sQLReviewRuleLevelToJSON(message.level);
-    }
-    if (message.payload !== "") {
-      obj.payload = message.payload;
-    }
-    if (message.engine !== 0) {
-      obj.engine = engineToJSON(message.engine);
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
+    message.type !== undefined && (obj.type = message.type);
+    message.level !== undefined && (obj.level = sQLReviewRuleLevelToJSON(message.level));
+    message.payload !== undefined && (obj.payload = message.payload);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 

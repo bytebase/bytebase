@@ -1,10 +1,10 @@
 /* eslint-disable */
+import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
-import Long = require("long");
 
 export const protobufPackage = "bytebase.v1";
 
@@ -385,12 +385,8 @@ export const CreateSheetRequest = {
 
   toJSON(message: CreateSheetRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.sheet !== undefined) {
-      obj.sheet = Sheet.toJSON(message.sheet);
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.sheet !== undefined && (obj.sheet = message.sheet ? Sheet.toJSON(message.sheet) : undefined);
     return obj;
   },
 
@@ -460,12 +456,8 @@ export const GetSheetRequest = {
 
   toJSON(message: GetSheetRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.raw === true) {
-      obj.raw = message.raw;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.raw !== undefined && (obj.raw = message.raw);
     return obj;
   },
 
@@ -535,12 +527,8 @@ export const UpdateSheetRequest = {
 
   toJSON(message: UpdateSheetRequest): unknown {
     const obj: any = {};
-    if (message.sheet !== undefined) {
-      obj.sheet = Sheet.toJSON(message.sheet);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.sheet !== undefined && (obj.sheet = message.sheet ? Sheet.toJSON(message.sheet) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
@@ -610,12 +598,9 @@ export const UpdateSheetOrganizerRequest = {
 
   toJSON(message: UpdateSheetOrganizerRequest): unknown {
     const obj: any = {};
-    if (message.organizer !== undefined) {
-      obj.organizer = SheetOrganizer.toJSON(message.organizer);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.organizer !== undefined &&
+      (obj.organizer = message.organizer ? SheetOrganizer.toJSON(message.organizer) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
@@ -698,15 +683,9 @@ export const SheetOrganizer = {
 
   toJSON(message: SheetOrganizer): unknown {
     const obj: any = {};
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.starred === true) {
-      obj.starred = message.starred;
-    }
-    if (message.pinned === true) {
-      obj.pinned = message.pinned;
-    }
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.starred !== undefined && (obj.starred = message.starred);
+    message.pinned !== undefined && (obj.pinned = message.pinned);
     return obj;
   },
 
@@ -764,9 +743,7 @@ export const DeleteSheetRequest = {
 
   toJSON(message: DeleteSheetRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -857,18 +834,10 @@ export const SearchSheetsRequest = {
 
   toJSON(message: SearchSheetsRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.filter !== "") {
-      obj.filter = message.filter;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.filter !== undefined && (obj.filter = message.filter);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
@@ -940,12 +909,12 @@ export const SearchSheetsResponse = {
 
   toJSON(message: SearchSheetsResponse): unknown {
     const obj: any = {};
-    if (message.sheets?.length) {
-      obj.sheets = message.sheets.map((e) => Sheet.toJSON(e));
+    if (message.sheets) {
+      obj.sheets = message.sheets.map((e) => e ? Sheet.toJSON(e) : undefined);
+    } else {
+      obj.sheets = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -1002,9 +971,7 @@ export const SyncSheetsRequest = {
 
   toJSON(message: SyncSheetsRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
     return obj;
   },
 
@@ -1208,45 +1175,20 @@ export const Sheet = {
 
   toJSON(message: Sheet): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
-    }
-    if (message.content.length !== 0) {
-      obj.content = base64FromBytes(message.content);
-    }
-    if (message.contentSize !== 0) {
-      obj.contentSize = Math.round(message.contentSize);
-    }
-    if (message.visibility !== 0) {
-      obj.visibility = sheet_VisibilityToJSON(message.visibility);
-    }
-    if (message.source !== 0) {
-      obj.source = sheet_SourceToJSON(message.source);
-    }
-    if (message.type !== 0) {
-      obj.type = sheet_TypeToJSON(message.type);
-    }
-    if (message.starred === true) {
-      obj.starred = message.starred;
-    }
-    if (message.payload !== "") {
-      obj.payload = message.payload;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.database !== undefined && (obj.database = message.database);
+    message.title !== undefined && (obj.title = message.title);
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.content !== undefined &&
+      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
+    message.contentSize !== undefined && (obj.contentSize = Math.round(message.contentSize));
+    message.visibility !== undefined && (obj.visibility = sheet_VisibilityToJSON(message.visibility));
+    message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
+    message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
+    message.starred !== undefined && (obj.starred = message.starred);
+    message.payload !== undefined && (obj.payload = message.payload);
     return obj;
   },
 
@@ -1824,6 +1766,8 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

@@ -73,8 +73,10 @@ export const IamPolicy = {
 
   toJSON(message: IamPolicy): unknown {
     const obj: any = {};
-    if (message.bindings?.length) {
-      obj.bindings = message.bindings.map((e) => Binding.toJSON(e));
+    if (message.bindings) {
+      obj.bindings = message.bindings.map((e) => e ? Binding.toJSON(e) : undefined);
+    } else {
+      obj.bindings = [];
     }
     return obj;
   },
@@ -155,15 +157,13 @@ export const Binding = {
 
   toJSON(message: Binding): unknown {
     const obj: any = {};
-    if (message.role !== "") {
-      obj.role = message.role;
+    message.role !== undefined && (obj.role = message.role);
+    if (message.members) {
+      obj.members = message.members.map((e) => e);
+    } else {
+      obj.members = [];
     }
-    if (message.members?.length) {
-      obj.members = message.members;
-    }
-    if (message.condition !== undefined) {
-      obj.condition = Expr.toJSON(message.condition);
-    }
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     return obj;
   },
 

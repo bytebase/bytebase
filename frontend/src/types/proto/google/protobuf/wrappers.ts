@@ -1,6 +1,6 @@
 /* eslint-disable */
+import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
-import Long = require("long");
 
 export const protobufPackage = "google.protobuf";
 
@@ -135,9 +135,7 @@ export const DoubleValue = {
 
   toJSON(message: DoubleValue): unknown {
     const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = message.value;
-    }
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -193,9 +191,7 @@ export const FloatValue = {
 
   toJSON(message: FloatValue): unknown {
     const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = message.value;
-    }
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -251,9 +247,7 @@ export const Int64Value = {
 
   toJSON(message: Int64Value): unknown {
     const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = Math.round(message.value);
-    }
+    message.value !== undefined && (obj.value = Math.round(message.value));
     return obj;
   },
 
@@ -309,9 +303,7 @@ export const UInt64Value = {
 
   toJSON(message: UInt64Value): unknown {
     const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = Math.round(message.value);
-    }
+    message.value !== undefined && (obj.value = Math.round(message.value));
     return obj;
   },
 
@@ -367,9 +359,7 @@ export const Int32Value = {
 
   toJSON(message: Int32Value): unknown {
     const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = Math.round(message.value);
-    }
+    message.value !== undefined && (obj.value = Math.round(message.value));
     return obj;
   },
 
@@ -425,9 +415,7 @@ export const UInt32Value = {
 
   toJSON(message: UInt32Value): unknown {
     const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = Math.round(message.value);
-    }
+    message.value !== undefined && (obj.value = Math.round(message.value));
     return obj;
   },
 
@@ -483,9 +471,7 @@ export const BoolValue = {
 
   toJSON(message: BoolValue): unknown {
     const obj: any = {};
-    if (message.value === true) {
-      obj.value = message.value;
-    }
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -541,9 +527,7 @@ export const StringValue = {
 
   toJSON(message: StringValue): unknown {
     const obj: any = {};
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -599,9 +583,8 @@ export const BytesValue = {
 
   toJSON(message: BytesValue): unknown {
     const obj: any = {};
-    if (message.value.length !== 0) {
-      obj.value = base64FromBytes(message.value);
-    }
+    message.value !== undefined &&
+      (obj.value = base64FromBytes(message.value !== undefined ? message.value : new Uint8Array(0)));
     return obj;
   },
 
@@ -674,6 +657,8 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
