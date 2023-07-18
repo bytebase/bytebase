@@ -51,10 +51,5 @@ builds:
     goarch:
       - amd64
       - arm64
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      amd64: x86_64
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
