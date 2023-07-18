@@ -377,8 +377,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	return nil, nil
 }
 
-// ListRolloutTaskRuns lists rollout task runs.
-func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.ListRolloutTaskRunsRequest) (*v1pb.ListRolloutTaskRunsResponse, error) {
+// ListTaskRuns lists rollout task runs.
+func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
 	projectID, rolloutID, maybeStageID, maybeTaskID, err := getProjectIDRolloutIDStageIDTaskID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -403,7 +403,7 @@ func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
 	}
 
-	return &v1pb.ListRolloutTaskRunsResponse{
+	return &v1pb.ListTaskRunsResponse{
 		TaskRuns:      convertToTaskRuns(taskRuns),
 		NextPageToken: "",
 	}, nil
