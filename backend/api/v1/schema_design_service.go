@@ -173,9 +173,11 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			BaselineSheetId: int64(*changeHistory.SheetID),
-			Engine:          storepb.Engine(schemaDesign.Engine),
+			Engine: storepb.Engine(schemaDesign.Engine),
 		},
+	}
+	if changeHistory.SheetID != nil {
+		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = int64(*changeHistory.SheetID)
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {
