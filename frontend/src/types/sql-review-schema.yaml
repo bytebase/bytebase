@@ -200,6 +200,7 @@ ruleList:
       - ORACLE
       - OCEANBASE
       - SNOWFLAKE
+      - MSSQL
     componentList:
       - key: format
         payload:

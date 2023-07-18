@@ -397,6 +397,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType db.Type) (s
 		maxLength := 64
 		if dbType == db.Snowflake {
 			format = "^[A-Z]+(_[A-Z]+)*$"
+		} else if dbType == db.MSSQL {
+			format = "^[A-Z]([_A-Za-z])*$"
 		}
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    format,
