@@ -415,14 +415,24 @@ func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
 	return taskRunsV1
 }
 
-func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
-	return &v1pb.TaskRun{
-		Name:   fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", projectNamePrefix, taskRun.ProjectID, rolloutPrefix, taskRun.PipelineUID, stagePrefix, taskRun.StageUID, taskPrefix, taskRun.TaskUID, taskRunPrefix, taskRun.ID),
-		Uid:    fmt.Sprintf("%d", taskRun.ID),
-		Title:  taskRun.Name,
-		Status: convertToTaskRunStatus(taskRun.Status),
-		Detail: taskRun.Detail,
+func convertToTaskRun(taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
+	var payload api.TaskRunResultPayload
+	if err := json.Unmarshal([]byte(taskRun.Result), &payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task run result payload, task run id: %v", taskRun.ID)
 	}
+	return &v1pb.TaskRun{
+		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", projectNamePrefix, taskRun.ProjectID, rolloutPrefix, taskRun.PipelineUID, stagePrefix, taskRun.StageUID, taskPrefix, taskRun.TaskUID, taskRunPrefix, taskRun.ID),
+		Uid:           fmt.Sprintf("%d", taskRun.ID),
+		Creator:       fmt.Sprintf("user:%s", taskRun.Creator.Email),
+		Updater:       fmt.Sprintf("user:%s", taskRun.Updater.Email),
+		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
+		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
+		Title:         taskRun.Name,
+		Status:        convertToTaskRunStatus(taskRun.Status),
+		Detail:        payload.Detail,
+		ChangeHistory: payload.MigrationID,
+		SchemaVersion: payload.Version,
+	}, nil
 }
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
