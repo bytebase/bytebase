@@ -103,7 +103,7 @@ func (l *columnNoNullChecker) EnterFull_col_decl(ctx *parser.Full_col_declContex
 	if l.currentOriginalTableName == "" {
 		return
 	}
-	normalizedOriginalColumnID := snowsqlparser.NormalizeObjectNamePart(ctx.Col_decl().Column_name().Id_())
+	normalizedOriginalColumnID := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Col_decl().Column_name().Id_())
 	l.columnNullable[normalizedOriginalColumnID] = ctx.GetStart().GetLine()
 	for _, nullNotNull := range ctx.AllNull_not_null() {
 		if nullNotNull.NOT() != nil {
@@ -127,7 +127,7 @@ func (l *columnNoNullChecker) EnterOut_of_line_constraint(ctx *parser.Out_of_lin
 	if ctx.PRIMARY() != nil {
 		for _, columnListInParentheses := range ctx.AllColumn_list_in_parentheses() {
 			for _, column := range columnListInParentheses.Column_list().AllColumn_name() {
-				normalizedOriginalColumnID := snowsqlparser.NormalizeObjectNamePart(column.Id_())
+				normalizedOriginalColumnID := snowsqlparser.NormalizeSnowSQLObjectNamePart(column.Id_())
 				delete(l.columnNullable, normalizedOriginalColumnID)
 			}
 		}
@@ -160,7 +160,7 @@ func (l *columnNoNullChecker) EnterTable_column_action(ctx *parser.Table_column_
 		return
 	}
 	if ctx.ADD() != nil {
-		normalizedNewColumnName := snowsqlparser.NormalizeObjectNamePart(ctx.Column_name(0).Id_())
+		normalizedNewColumnName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Column_name(0).Id_())
 		inlineConstraintHasPK := ctx.Inline_constraint() != nil && ctx.Inline_constraint().PRIMARY() != nil
 		inlineConstraintHasNotNull := ctx.Inline_constraint() != nil && (ctx.Inline_constraint().Null_not_null() != nil && ctx.Inline_constraint().Null_not_null().NOT() != nil)
 		hasNotNull := ctx.Null_not_null() != nil && ctx.Null_not_null().NOT() != nil
@@ -171,7 +171,7 @@ func (l *columnNoNullChecker) EnterTable_column_action(ctx *parser.Table_column_
 		return
 	}
 	if ctx.Alter_modify() != nil {
-		normalizedOriginalColumnName := snowsqlparser.NormalizeObjectNamePart(ctx.Column_name(0).Id_())
+		normalizedOriginalColumnName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Column_name(0).Id_())
 		if len(ctx.AllDROP()) == 1 && ctx.NOT() != nil && ctx.NULL_() != nil {
 			l.columnNullable[normalizedOriginalColumnName] = ctx.GetStart().GetLine()
 		}
@@ -204,7 +204,7 @@ func (l *columnNoNullChecker) EnterAlter_column_decl(ctx *parser.Alter_column_de
 	if l.currentOriginalTableName == "" {
 		return
 	}
-	normalizedNewColumnName := snowsqlparser.NormalizeObjectNamePart(ctx.Column_name().Id_())
+	normalizedNewColumnName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Column_name().Id_())
 	if ctx.Alter_column_opts().DROP() != nil && ctx.Alter_column_opts().NOT() != nil && ctx.Alter_column_opts().NULL_() != nil {
 		l.columnNullable[normalizedNewColumnName] = ctx.GetStart().GetLine()
 	}

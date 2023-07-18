@@ -107,7 +107,7 @@ func (l *columnRequireChecker) EnterColumn_decl_item_list(ctx *parser.Column_dec
 	allColumnDeclItems := ctx.AllColumn_decl_item()
 	for _, columnDeclItem := range allColumnDeclItems {
 		if fullColDecl := columnDeclItem.Full_col_decl(); fullColDecl != nil {
-			normalizedColumnName := snowsqlparser.NormalizeObjectNamePart(fullColDecl.Col_decl().Column_name().Id_())
+			normalizedColumnName := snowsqlparser.NormalizeSnowSQLObjectNamePart(fullColDecl.Col_decl().Column_name().Id_())
 			delete(l.currentMissingColumn, normalizedColumnName)
 		}
 	}
@@ -152,7 +152,7 @@ func (l *columnRequireChecker) EnterTable_column_action(ctx *parser.Table_column
 
 	for _, columnName := range ctx.Column_list().AllColumn_name() {
 		originalColumName := columnName.GetText()
-		normalizedColumnName := snowsqlparser.ExtractOrdinaryIdentifier(originalColumName)
+		normalizedColumnName := snowsqlparser.ExtractSnowSQLOrdinaryIdentifier(originalColumName)
 		if _, ok := l.requireColumns[normalizedColumnName]; ok {
 			l.currentMissingColumn[normalizedColumnName] = true
 		}
