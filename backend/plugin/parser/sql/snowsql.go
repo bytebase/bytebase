@@ -241,8 +241,8 @@ func extractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedD
 	return result, nil
 }
 
-// NormalizeSnowSqlObjectName normalizes the given object name.
-func NormalizeSnowSqlObjectName(objectName parser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) string {
+// NormalizeSnowSQLObjectName normalizes the given object name.
+func NormalizeSnowSQLObjectName(objectName parser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) string {
 	var parts []string
 
 	database := fallbackDatabaseName

@@ -87,13 +87,13 @@ func (l *migrationCompatibilityChecker) generateAdvice() ([]advisor.Advice, erro
 
 // EnterCreate_Table is called when production create_Table is entered.
 func (l *migrationCompatibilityChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
-	normalizedFullTableName := bbparser.NormalizeSnowSqlObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
+	normalizedFullTableName := bbparser.NormalizeSnowSQLObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
 	l.normalizedNewCreateTableNameMap[normalizedFullTableName] = ctx.If_not_exists() == nil
 }
 
 // EnterCreate_table_as_select is called when production create_table_as_select is entered.
 func (l *migrationCompatibilityChecker) EnterCreate_table_as_select(ctx *parser.Create_table_as_selectContext) {
-	normalizedFullTableName := bbparser.NormalizeSnowSqlObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
+	normalizedFullTableName := bbparser.NormalizeSnowSQLObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
 	l.normalizedNewCreateTableNameMap[normalizedFullTableName] = ctx.If_not_exists() == nil
 }
 
@@ -111,7 +111,7 @@ func (l *migrationCompatibilityChecker) EnterCreate_database(ctx *parser.Create_
 
 // EnterDrop_table is called when production drop_table is entered.
 func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	normalizedFullDropTableName := bbparser.NormalizeSnowSqlObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
+	normalizedFullDropTableName := bbparser.NormalizeSnowSQLObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
 	mustNewCreate, ok := l.normalizedNewCreateTableNameMap[normalizedFullDropTableName]
 	if ok && mustNewCreate {
 		return
