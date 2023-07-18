@@ -28,18 +28,22 @@
         @update:value="handleUpdateEarliestAllowedTime"
       />
 
-      <div v-else class="tooltip-wrapper">
-        <span class="tooltip w-48 textlabel">{{
-          $t("task.earliest-allowed-time-no-modify")
-        }}</span>
-        <span class="textfield col-span-2 text-sm font-medium text-main">
-          {{
-            earliestAllowedTime === 0
-              ? $t("task.earliest-allowed-time-unset")
-              : dayjs(earliestAllowedTime * 1000).format("LLL")
-          }}
-        </span>
-      </div>
+      <NTooltip v-else>
+        <template #trigger>
+          <span class="textfield text-sm font-medium text-main">
+            {{
+              earliestAllowedTime === 0
+                ? $t("task.earliest-allowed-time-unset")
+                : dayjs(earliestAllowedTime * 1000).format("LLL")
+            }}
+          </span>
+        </template>
+        <template #default>
+          <div class="w-48">
+            {{ $t("task.earliest-allowed-time-no-modify") }}
+          </div>
+        </template>
+      </NTooltip>
     </div>
   </div>
 </template>
@@ -47,7 +51,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useNow } from "@vueuse/core";
-import { NDatePicker } from "naive-ui";
+import { NDatePicker, NTooltip } from "naive-ui";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
