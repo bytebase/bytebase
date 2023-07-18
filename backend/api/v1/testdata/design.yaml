@@ -9,7 +9,8 @@
     CREATE TABLE `t4` (
       `a` int,
       `c` int,
-      `d` int
+      `d` int,
+      `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment'
     );
   target:
     name: ""
@@ -40,12 +41,13 @@
               columns:
                 - name: a
                   position: 0
-                  default: null
+                  default:
+                    value: '''default value'''
                   nullable: false
                   type: varchar(10)
                   characterset: ""
                   collation: ""
-                  comment: ""
+                  comment: this is comment, aha
                 - name: b
                   position: 0
                   default: null
@@ -58,6 +60,14 @@
                   position: 0
                   default: null
                   nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: e
+                  position: 0
+                  default: null
+                  nullable: true
                   type: int
                   characterset: ""
                   collation: ""
@@ -77,7 +87,7 @@
                 - name: b
                   position: 0
                   default: null
-                  nullable: false
+                  nullable: true
                   type: int
                   characterset: ""
                   collation: ""
@@ -101,13 +111,14 @@
     extensions: []
   result: |
     CREATE TABLE `t` (
-      `a` int
+      `a` int NOT NULL
     );
     CREATE TABLE `t4` (
-      `a` varchar(10),
-      `c` int,
-      `b` char(10)
+      `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
+      `c` int NOT NULL,
+      `e` int  NULL,
+      `b` NOT NULL DEFAULT NULL
     );
     CREATE TABLE `t2` (
-      `b` int
+      `b` NULL DEFAULT NULL
     );
