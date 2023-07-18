@@ -11,7 +11,11 @@ import {
 } from "@/utils";
 import { useCurrentUserV1, experimentalFetchIssueByName } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import {
+  databaseForTask,
+  specForTask,
+  useIssueContext,
+} from "@/components/IssueV1/logic";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
@@ -143,6 +147,13 @@ export const useRollbackContext = () => {
       const config = task.value.databaseDataUpdate;
       if (config) {
         config.rollbackEnabled = on;
+      }
+      const spec = specForTask(issue.value, task.value);
+      if (spec) {
+        const config = spec.changeDatabaseConfig;
+        if (config) {
+          config.rollbackEnabled = on;
+        }
       }
 
       // if (isTenantMode.value) {
