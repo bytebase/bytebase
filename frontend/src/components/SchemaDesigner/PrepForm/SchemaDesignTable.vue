@@ -42,6 +42,10 @@ import { useProjectV1Store, useUserStore } from "@/store";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { engineNameV1, projectV1Name } from "@/utils";
 
+const emit = defineEmits<{
+  (event: "click", schemaDesign: SchemaDesign): void;
+}>();
+
 defineProps<{
   schemaDesigns: SchemaDesign[];
 }>();
@@ -89,6 +93,6 @@ const getFormatedValue = (schemaDesign: SchemaDesign) => {
 };
 
 const clickSchemaDesign = (schemaDesign: SchemaDesign) => {
-  // TODO
+  emit("click", schemaDesign);
 };
 </script>

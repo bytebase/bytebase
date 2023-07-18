@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
-import { computed, onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { Engine } from "@/types/proto/v1/common";
@@ -47,13 +47,8 @@ const baselineMetadata = ref<DatabaseMetadata>(
 const tabState = ref<SchemaDesignerTabState>({
   tabMap: new Map(),
 });
-const isCreating = computed(() => !props.schemaDesign.name);
 
 onMounted(async () => {
-  if (!isCreating.value) {
-    return;
-  }
-
   baselineMetadata.value =
     cloneDeep(props.schemaDesign?.baselineSchemaMetadata) ||
     DatabaseMetadata.fromPartial({});
