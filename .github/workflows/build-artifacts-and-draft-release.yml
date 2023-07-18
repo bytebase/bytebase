@@ -72,7 +72,7 @@ jobs:
           path: dist/bytebase*
   draft-release:
     needs: [build-linux-binary, build-darwin-binary]
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2.2.4
