@@ -21,6 +21,7 @@
     <div class="w-[12rem]">
       <NDatePicker
         v-if="allowEditEarliestAllowedTime"
+        :value="earliestAllowedTime"
         :is-date-disabled="isDayPassed"
         :placeholder="$t('task.earliest-allowed-time-unset')"
         type="datetime"
@@ -32,9 +33,9 @@
         <template #trigger>
           <span class="textfield text-sm font-medium text-main">
             {{
-              earliestAllowedTime === 0
-                ? $t("task.earliest-allowed-time-unset")
-                : dayjs(earliestAllowedTime * 1000).format("LLL")
+              earliestAllowedTime
+                ? dayjs(earliestAllowedTime).format("LLL")
+                : $t("task.earliest-allowed-time-unset")
             }}
           </span>
         </template>
@@ -57,7 +58,7 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
 import { useCurrentUserV1 } from "@/store";
 import { extractUserResourceName } from "@/utils";
-import { useIssueContext } from "@/components/IssueV1";
+import { specForTask, useIssueContext } from "@/components/IssueV1";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 
@@ -66,8 +67,10 @@ dayjs.extend(isSameOrAfter);
 const currentUser = useCurrentUserV1();
 const { isCreating, issue, isTenantMode, selectedTask } = useIssueContext();
 
+// `null` to "Unset"
 const earliestAllowedTime = computed(() => {
-  return 0;
+  const spec = specForTask(issue.value, selectedTask.value);
+  return spec?.earliestAllowedTime ? spec.earliestAllowedTime.getTime() : null;
 });
 
 const allowEditEarliestAllowedTime = computed(() => {
@@ -94,8 +97,19 @@ const allowEditEarliestAllowedTime = computed(() => {
   );
 });
 
-const handleUpdateEarliestAllowedTime = () => {
-  //
+const handleUpdateEarliestAllowedTime = (timestampMS: number | null) => {
+  if (isCreating.value) {
+    const spec = specForTask(issue.value, selectedTask.value);
+    if (!spec) return;
+    if (!timestampMS) {
+      spec.earliestAllowedTime = undefined;
+    } else {
+      spec.earliestAllowedTime = new Date();
+      spec.earliestAllowedTime.setTime(timestampMS);
+    }
+  } else {
+    // TODO
+  }
 };
 
 const now = useNow();

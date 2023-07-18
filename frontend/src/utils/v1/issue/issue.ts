@@ -1,7 +1,7 @@
 import slug from "slug";
 
 import { ComposedIssue, EMPTY_ROLLOUT_NAME } from "@/types";
-import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
+import { Plan, Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
 
 export const issueV1Slug = (issue: ComposedIssue) => {
   return [slug(issue.title), issue.uid].join("-");
@@ -20,6 +20,10 @@ export const isGrantRequestIssue = (issue: ComposedIssue): boolean => {
 
 export const flattenTaskV1List = (rollout: Rollout) => {
   return rollout.stages.flatMap((stage) => stage.tasks);
+};
+
+export const flattenSpecList = (plan: Plan) => {
+  return plan.steps.flatMap((step) => step.specs);
 };
 
 export const isDatabaseRelatedIssue = (issue: ComposedIssue): boolean => {
