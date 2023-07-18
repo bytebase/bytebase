@@ -235,6 +235,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	return schemaDesign, nil
 }
 
+// ParseSchemaString parses a schema string to database metadata.
 func (s *SchemaDesignService) ParseSchemaString(ctx context.Context, request *v1pb.ParseSchemaStringRequest) (*v1pb.ParseSchemaStringResponse, error) {
 	if request.SchemaString == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "schema_string is required")
