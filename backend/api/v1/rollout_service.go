@@ -402,27 +402,19 @@ func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
 	}
-	convertedTaskRuns, err := convertToTaskRuns(taskRuns)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert task runs, error: %v", err)
-	}
 
 	return &v1pb.ListRolloutTaskRunsResponse{
-		TaskRuns:      convertedTaskRuns,
+		TaskRuns:      convertToTaskRuns(taskRuns),
 		NextPageToken: "",
 	}, nil
 }
 
-func convertToTaskRuns(taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
+func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
 	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
-		converted, err := convertToTaskRun(taskRun)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert taskRun")
-		}
-		taskRunsV1 = append(taskRunsV1, converted)
+		taskRunsV1 = append(taskRunsV1, convertToTaskRun(taskRun))
 	}
-	return taskRunsV1, nil
+	return taskRunsV1
 }
 
 func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
@@ -442,25 +434,20 @@ func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
 	}
 }
 
-func convertToTaskRun(taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
-	var payload api.TaskRunResultPayload
-	if err := json.Unmarshal([]byte(taskRun.Result), &payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task run result payload, task run id: %v", taskRun.ID)
-	}
+func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	return &v1pb.TaskRun{
-		Name:       fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", projectNamePrefix, taskRun.ProjectID, rolloutPrefix, taskRun.PipelineUID, stagePrefix, taskRun.StageUID, taskPrefix, taskRun.TaskUID, taskRunPrefix, taskRun.ID),
-		Uid:        fmt.Sprintf("%d", taskRun.ID),
-		Creator:    fmt.Sprintf("user:%s", taskRun.Creator.Email),
-		Updater:    fmt.Sprintf("user:%s", taskRun.Updater.Email),
-		CreateTime: timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
-		UpdateTime: timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
-		Title:      taskRun.Name,
-		Status:     convertToTaskRunStatus(taskRun.Status),
-		Detail:     payload.Detail,
-		// TODO(p0ny): change history resource name
-		ChangeHistory: "",
-		SchemaVersion: payload.Version,
-	}, nil
+		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", projectNamePrefix, taskRun.ProjectID, rolloutPrefix, taskRun.PipelineUID, stagePrefix, taskRun.StageUID, taskPrefix, taskRun.TaskUID, taskRunPrefix, taskRun.ID),
+		Uid:           fmt.Sprintf("%d", taskRun.ID),
+		Creator:       fmt.Sprintf("user:%s", taskRun.Creator.Email),
+		Updater:       fmt.Sprintf("user:%s", taskRun.Updater.Email),
+		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
+		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
+		Title:         taskRun.Name,
+		Status:        convertToTaskRunStatus(taskRun.Status),
+		Detail:        taskRun.ResultProto.Detail,
+		ChangeHistory: taskRun.ResultProto.ChangeHistory,
+		SchemaVersion: taskRun.ResultProto.Version,
+	}
 }
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
