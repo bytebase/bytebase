@@ -746,7 +746,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	var email string
 	if fieldMapping.Identifier == fieldMapping.Email {
 		email = strings.ToLower(userInfo.Email)
-	} else {
+	} else if idp.Domain != "" {
 		domain := extractDomain(idp.Domain)
 		email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
 	}
