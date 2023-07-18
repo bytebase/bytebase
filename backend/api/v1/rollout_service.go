@@ -377,6 +377,54 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	return nil, nil
 }
 
+func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.ListRolloutTaskRunsRequest) (*v1pb.ListRolloutTaskRunsResponse, error) {
+	projectID, rolloutID, maybeStageID, maybeTaskID, err := getProjectIDRolloutIDStageIDTaskID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
+		PipelineUID: &rolloutID,
+		StageUID:    maybeStageID,
+		TaskUID:     maybeTaskID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+	}
+	return &v1pb.ListRolloutTaskRunsResponse{
+		TaskRuns:      convertToTaskRuns(taskRuns),
+		NextPageToken: "",
+	}, nil
+}
+
+func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
+	taskRunsV1 := make([]*v1pb.TaskRun, 0, len(taskRuns))
+	for _, taskRun := range taskRuns {
+		taskRunsV1 = append(taskRunsV1, convertToTaskRun(taskRun))
+	}
+	return taskRunsV1
+}
+
+func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
+	return &v1pb.TaskRun{
+		Name:   fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", projectNamePrefix, taskRun.ProjectID, rolloutPrefix, taskRun.PipelineUID, stagePrefix, taskRun.StageUID, taskPrefix, taskRun.TaskUID, taskRunPrefix, taskRun.ID),
+		Uid:    fmt.Sprintf("%d", taskRun.ID),
+		Title:  taskRun.Name,
+		Status: convertToTaskRunStatus(taskRun.Status),
+		Detail: taskRun.Detail,
+	}
+}
+
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
 	rolloutV1 := &v1pb.Rollout{
 		Name:   fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, rollout.ID),
