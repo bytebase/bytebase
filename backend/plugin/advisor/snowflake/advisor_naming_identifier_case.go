@@ -109,7 +109,7 @@ func (l *namingIdentifierCaseChecker) EnterColumn_decl_item_list(ctx *parser.Col
 	for _, item := range allItems {
 		if fullColDecl := item.Full_col_decl(); fullColDecl != nil {
 			originalID := fullColDecl.Col_decl().Column_name().Id_()
-			originalColName := snowsqlparser.NormalizeObjectNamePart(originalID)
+			originalColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(originalID)
 			if strings.ToUpper(originalColName) != originalColName {
 				l.adviceList = append(l.adviceList, advisor.Advice{
 					Status:  l.level,
@@ -130,7 +130,7 @@ func (l *namingIdentifierCaseChecker) EnterAlter_table(ctx *parser.Alter_tableCo
 	}
 	l.currentOriginalTableName = ctx.Object_name(0).GetText()
 	renameToID := ctx.Table_column_action().Column_name(1).Id_()
-	renameToColName := snowsqlparser.NormalizeObjectNamePart(renameToID)
+	renameToColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(renameToID)
 	if strings.ToUpper(renameToColName) != renameToColName {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

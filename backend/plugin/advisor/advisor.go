@@ -443,6 +443,9 @@ const (
 
 	// MSSQLNoSelectAll is an advisor type for MSSQL no select all.
 	MSSQLNoSelectAll Type = "bb.plugin.advisor.mssql.select.no-select-all"
+
+	// MSSQLNamingTableConvention is an advisor type for MSSQL table naming convention.
+	MSSQLNamingTableConvention Type = "bb.plugin.advisor.mssql.naming.table"
 )
 
 // Advice is the result of an advisor.
