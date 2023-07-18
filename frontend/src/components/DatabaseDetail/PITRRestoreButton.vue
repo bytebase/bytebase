@@ -363,7 +363,7 @@ const onConfirm = async () => {
     }
 
     const issueNameParts: string[] = [
-      `Restore database [${props.database.name}]`,
+      `Restore database [${props.database.databaseName}]`,
     ];
     if (state.mode === "CUSTOM") {
       const datetime = dayjs(state.pitrTimestampMS).format(
