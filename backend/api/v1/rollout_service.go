@@ -377,6 +377,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	return nil, nil
 }
 
+// ListRolloutTaskRuns lists rollout task runs.
 func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.ListRolloutTaskRunsRequest) (*v1pb.ListRolloutTaskRunsResponse, error) {
 	projectID, rolloutID, maybeStageID, maybeTaskID, err := getProjectIDRolloutIDStageIDTaskID(request.Parent)
 	if err != nil {
@@ -401,18 +402,44 @@ func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
 	}
+	convertedTaskRuns, err := convertToTaskRuns(taskRuns)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert task runs, error: %v", err)
+	}
+
 	return &v1pb.ListRolloutTaskRunsResponse{
-		TaskRuns:      convertToTaskRuns(taskRuns),
+		TaskRuns:      convertedTaskRuns,
 		NextPageToken: "",
 	}, nil
 }
 
-func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
+func convertToTaskRuns(taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
 	taskRunsV1 := make([]*v1pb.TaskRun, 0, len(taskRuns))
 	for _, taskRun := range taskRuns {
-		taskRunsV1 = append(taskRunsV1, convertToTaskRun(taskRun))
+		converted, err := convertToTaskRun(taskRun)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert taskRun")
+		}
+		taskRunsV1 = append(taskRunsV1, converted)
 	}
-	return taskRunsV1
+	return taskRunsV1, nil
+}
+
+func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
+	switch status {
+	case api.TaskRunUnknown:
+		return v1pb.TaskRun_STATUS_UNSPECIFIED
+	case api.TaskRunRunning:
+		return v1pb.TaskRun_RUNNING
+	case api.TaskRunDone:
+		return v1pb.TaskRun_DONE
+	case api.TaskRunFailed:
+		return v1pb.TaskRun_FAILED
+	case api.TaskRunCanceled:
+		return v1pb.TaskRun_CANCELED
+	default:
+		return v1pb.TaskRun_STATUS_UNSPECIFIED
+	}
 }
 
 func convertToTaskRun(taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
