@@ -72,10 +72,10 @@
 <script lang="ts" setup>
 import { uniqueId } from "lodash-es";
 import { NRadioGroup, NRadio } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import {
   useSchemaDesignList,
   useSchemaDesignStore,
@@ -107,7 +107,6 @@ const emit = defineEmits(["dismiss"]);
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
 
 const databaseStore = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const { schemaDesignList, ready } = useSchemaDesignList();
 const state = reactive<LocalState>({
@@ -115,24 +114,33 @@ const state = reactive<LocalState>({
   schemaDesignName: "",
   baselineSchema: {},
 });
+const schemaDesign = ref<SchemaDesign>();
 
-const schemaDesign = computed(() => {
+const prepareSchemaDesign = async () => {
   const changeHistory = state.baselineSchema.changeHistory;
   if (changeHistory && state.baselineSchema.databaseId) {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
-    const metadata = dbSchemaStore.getDatabaseMetadata(database.name);
+    const baselineMetadata = await schemaDesignStore.parseSchemaString(
+      changeHistory.schema,
+      database.instanceEntity.engine
+    );
     return SchemaDesign.fromPartial({
       engine: database.instanceEntity.engine,
       baselineSchema: changeHistory.schema,
-      // TODO: parse schema to metadata.
-      baselineSchemaMetadata: metadata,
+      baselineSchemaMetadata: baselineMetadata,
       schema: changeHistory.schema,
-      schemaMetadata: metadata,
+      schemaMetadata: baselineMetadata,
     });
   }
   return undefined;
+};
+
+watchEffect(async () => {
+  if (state.tab === "VIEW") {
+    schemaDesign.value = await prepareSchemaDesign();
+  }
 });
 
 const schemaDesignId = computed(() => {
@@ -161,8 +169,8 @@ const handleConfirm = () => {
       return;
     }
 
-    const schemaDesigner = schemaDesignerRef.value;
-    if (!schemaDesigner) {
+    const schemaDesignerState = schemaDesignerRef.value;
+    if (!schemaDesignerState) {
       // Should not happen.
       throw new Error("schemaDesigner is undefined");
     }
@@ -181,9 +189,9 @@ const handleConfirm = () => {
           // Keep schema empty in frontend. Backend will generate the design schema.
           schema: "",
           // TODO(steven): calculate design schema metadata with metadata and editableSchemas.
-          schemaMetadata: schemaDesigner.metadata,
-          baselineSchema: state.baselineSchema.changeHistory?.schema || "",
-          baselineSchemaMetadata: schemaDesigner.baselineMetadata,
+          schemaMetadata: schemaDesignerState.metadata,
+          baselineSchema: schemaDesign.value.baselineSchema,
+          baselineSchemaMetadata: schemaDesign.value.baselineSchemaMetadata,
           engine: schemaDesign.value.engine,
           baselineDatabase: state.baselineSchema.databaseId || "",
           schemaVersion: state.baselineSchema.changeHistory?.name || "",

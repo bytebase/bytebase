@@ -55,10 +55,11 @@ onMounted(async () => {
   }
 
   baselineMetadata.value =
-    props.schemaDesign?.baselineSchemaMetadata ||
+    cloneDeep(props.schemaDesign?.baselineSchemaMetadata) ||
     DatabaseMetadata.fromPartial({});
   metadata.value =
-    props.schemaDesign?.schemaMetadata || DatabaseMetadata.fromPartial({});
+    cloneDeep(props.schemaDesign?.schemaMetadata) ||
+    DatabaseMetadata.fromPartial({});
   editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
   state.isLoading = false;
 });
