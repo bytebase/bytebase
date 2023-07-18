@@ -414,7 +414,7 @@ func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.
 }
 
 func convertToTaskRuns(taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
-	taskRunsV1 := make([]*v1pb.TaskRun, 0, len(taskRuns))
+	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
 		converted, err := convertToTaskRun(taskRun)
 		if err != nil {
