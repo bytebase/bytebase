@@ -171,7 +171,8 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		}
 
 		var resultProto storepb.TaskRunResult
-		if err := protojson.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal task run result: %s", taskRun.Result)
 		}
 		taskRun.ResultProto = &resultProto
