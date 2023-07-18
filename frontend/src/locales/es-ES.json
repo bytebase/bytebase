@@ -1904,7 +1904,7 @@
       "subscription-page": "página de suscripción",
       "subscription": "Visite la {page} para conocer estas funciones y nuestros planes."
     },
-    "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de equipo/empresa.",
+    "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "upload-license": "Subir licencia",
     "upgrade-trial-button": "Actualizar prueba",
     "start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
