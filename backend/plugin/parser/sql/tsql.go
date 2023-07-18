@@ -3,6 +3,7 @@ package parser
 
 import (
 	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	tsqlparser "github.com/bytebase/tsql-parser"
@@ -38,4 +39,25 @@ func ParseTSQL(statement string) (antlr.Tree, error) {
 	}
 
 	return tree, nil
+}
+
+// NormalizedTSqlTableNamePart returns the normalized table name part.
+// https://learn.microsoft.com/zh-cn/sql/relational-databases/databases/database-identifiers?view=sql-server-ver15
+// TODO(zp): currently, we returns the lower case of the part, we may need to get the CI/CS from the server/database.
+func NormalizedTSqlTableNamePart(part tsqlparser.IId_Context) string {
+	if part == nil {
+		return ""
+	}
+	text := part.GetText()
+	if text == "" {
+		return ""
+	}
+	if text[0] == '[' && text[len(text)-1] == ']' {
+		text = text[1 : len(text)-1]
+	}
+	var sb strings.Builder
+	for _, r := range text {
+		sb.WriteRune(unicode.ToLower(r))
+	}
+	return sb.String()
 }

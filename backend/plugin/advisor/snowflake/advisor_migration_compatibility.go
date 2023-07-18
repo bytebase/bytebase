@@ -87,31 +87,31 @@ func (l *migrationCompatibilityChecker) generateAdvice() ([]advisor.Advice, erro
 
 // EnterCreate_Table is called when production create_Table is entered.
 func (l *migrationCompatibilityChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
-	normalizedFullTableName := bbparser.NormalizeObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
+	normalizedFullTableName := bbparser.NormalizeSnowSqlObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
 	l.normalizedNewCreateTableNameMap[normalizedFullTableName] = ctx.If_not_exists() == nil
 }
 
 // EnterCreate_table_as_select is called when production create_table_as_select is entered.
 func (l *migrationCompatibilityChecker) EnterCreate_table_as_select(ctx *parser.Create_table_as_selectContext) {
-	normalizedFullTableName := bbparser.NormalizeObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
+	normalizedFullTableName := bbparser.NormalizeSnowSqlObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
 	l.normalizedNewCreateTableNameMap[normalizedFullTableName] = ctx.If_not_exists() == nil
 }
 
 // EnterCreate_schema is called when production create_schema is entered.
 func (l *migrationCompatibilityChecker) EnterCreate_schema(ctx *parser.Create_schemaContext) {
-	normalizedFullSchemaName := bbparser.NormalizeSchemaName(ctx.Schema_name(), l.currentDatabase)
+	normalizedFullSchemaName := bbparser.NormalizeSnowsqlSchemaName(ctx.Schema_name(), l.currentDatabase)
 	l.normalizedNewCreateSchemaNameMap[normalizedFullSchemaName] = ctx.If_not_exists() == nil
 }
 
 // EnterCreate_database is called when production create_database is entered.
 func (l *migrationCompatibilityChecker) EnterCreate_database(ctx *parser.Create_databaseContext) {
-	normalizedFullDatabaseName := bbparser.NormalizeObjectNamePart(ctx.Id_())
+	normalizedFullDatabaseName := bbparser.NormalizeSnowSqlObjectNamePart(ctx.Id_())
 	l.normalizedNewCreateDatabaseNameMap[normalizedFullDatabaseName] = ctx.If_not_exists() == nil
 }
 
 // EnterDrop_table is called when production drop_table is entered.
 func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	normalizedFullDropTableName := bbparser.NormalizeObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
+	normalizedFullDropTableName := bbparser.NormalizeSnowSqlObjectName(ctx.Object_name(), l.currentDatabase, "PUBLIC")
 	mustNewCreate, ok := l.normalizedNewCreateTableNameMap[normalizedFullDropTableName]
 	if ok && mustNewCreate {
 		return
@@ -131,7 +131,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableCo
 
 // EnterDrop_schema is called when production drop_schema is entered.
 func (l *migrationCompatibilityChecker) EnterDrop_schema(ctx *parser.Drop_schemaContext) {
-	normalizedFullDropSchemaName := bbparser.NormalizeSchemaName(ctx.Schema_name(), l.currentDatabase)
+	normalizedFullDropSchemaName := bbparser.NormalizeSnowsqlSchemaName(ctx.Schema_name(), l.currentDatabase)
 	mustNewCreate, ok := l.normalizedNewCreateSchemaNameMap[normalizedFullDropSchemaName]
 	if ok && mustNewCreate {
 		return
@@ -151,7 +151,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_schema(ctx *parser.Drop_schema
 
 // EnterDrop_database is called when production drop_database is entered.
 func (l *migrationCompatibilityChecker) EnterDrop_database(ctx *parser.Drop_databaseContext) {
-	normalizedFullDropDatabaseName := bbparser.NormalizeObjectNamePart(ctx.Id_())
+	normalizedFullDropDatabaseName := bbparser.NormalizeSnowSqlObjectNamePart(ctx.Id_())
 	mustNewCreate, ok := l.normalizedNewCreateDatabaseNameMap[normalizedFullDropDatabaseName]
 	if ok && mustNewCreate {
 		return
@@ -182,7 +182,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 	allColumnName := tableColumnAction.Column_list().AllColumn_name()
 	normalizedAllColumnNames := make([]string, 0, len(allColumnName))
 	for _, columnName := range allColumnName {
-		normalizedAllColumnNames = append(normalizedAllColumnNames, fmt.Sprintf("%q", bbparser.NormalizeObjectNamePart(columnName.Id_())))
+		normalizedAllColumnNames = append(normalizedAllColumnNames, fmt.Sprintf("%q", bbparser.NormalizeSnowSqlObjectNamePart(columnName.Id_())))
 	}
 	l.adviceList = append(l.adviceList, advisor.Advice{
 		Status:  l.level,

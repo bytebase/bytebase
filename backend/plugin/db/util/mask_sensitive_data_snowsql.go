@@ -63,7 +63,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 		for _, commandTableExpression := range allCommandTableExpression {
 			var result []fieldInfo
 			var err error
-			normalizedCTEName := parser.NormalizeObjectNamePart(commandTableExpression.Id_())
+			normalizedCTEName := parser.NormalizeSnowSqlObjectNamePart(commandTableExpression.Id_())
 
 			if commandTableExpression.RECURSIVE() != nil || commandTableExpression.UNION() != nil {
 				// TODO(zp): refactor code
@@ -120,7 +120,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 					return nil, errors.Wrapf(err, "the length of the column list in cte is %d, but body returns %d fields", len(commandTableExpression.Column_list().AllColumn_name()), len(result))
 				}
 				for i, columnName := range commandTableExpression.Column_list().AllColumn_name() {
-					normalizedColumnName := parser.NormalizeObjectNamePart(columnName.Id_())
+					normalizedColumnName := parser.NormalizeSnowSqlObjectNamePart(columnName.Id_())
 					result[i].name = normalizedColumnName
 				}
 			}
@@ -200,7 +200,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
 			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string
 			if v := columnElem.Alias(); v != nil {
-				normalizedTableName = parser.NormalizeObjectNamePart(v.Id_())
+				normalizedTableName = parser.NormalizeSnowSqlObjectNamePart(v.Id_())
 			} else if v := columnElem.Object_name(); v != nil {
 				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(v, "", "")
 			}
@@ -211,7 +211,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 				}
 				result = append(result, left...)
 			} else if columnElem.Column_name() != nil {
-				normalizedColumnName = parser.NormalizeObjectNamePart(columnElem.Column_name().Id_())
+				normalizedColumnName = parser.NormalizeSnowSqlObjectNamePart(columnElem.Column_name().Id_())
 				left, err := extractor.snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, columnElem.Column_name().GetStart().GetLine())
@@ -235,7 +235,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 				result = append(result, left[columnPosition-1])
 			}
 			if asAlias := columnElem.As_alias(); asAlias != nil {
-				result[len(result)-1].name = parser.NormalizeObjectNamePart(asAlias.Alias().Id_())
+				result[len(result)-1].name = parser.NormalizeSnowSqlObjectNamePart(asAlias.Alias().Id_())
 			}
 		} else if expressionElem := iSelectListElem.Expression_elem(); expressionElem != nil {
 			if v := expressionElem.Expr(); v != nil {
@@ -259,7 +259,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 			}
 
 			if asAlias := expressionElem.As_alias(); asAlias != nil {
-				result[len(result)-1].name = parser.NormalizeObjectNamePart(asAlias.Alias().Id_())
+				result[len(result)-1].name = parser.NormalizeSnowSqlObjectNamePart(asAlias.Alias().Id_())
 			}
 		}
 	}
@@ -701,7 +701,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 		return ctx.GetText(), false, nil
 	case *snowparser.Id_Context:
-		normalizedColumnName := parser.NormalizeObjectNamePart(ctx)
+		normalizedColumnName := parser.NormalizeSnowSqlObjectNamePart(ctx)
 		fieldInfo, err := extractor.snowflakeIsFieldSensitive("", "", "", normalizedColumnName)
 		if err != nil {
 			return "", false, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
@@ -866,7 +866,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 	if ctx.Pivot_unpivot() != nil {
 		if v := ctx.Pivot_unpivot(); v.PIVOT() != nil {
 			pivotColumnName := v.AllId_()[1]
-			normalizedPivotColumnName := parser.NormalizeObjectNamePart(pivotColumnName)
+			normalizedPivotColumnName := parser.NormalizeSnowSqlObjectNamePart(pivotColumnName)
 			pivotColumnIndex := -1
 			for i, field := range result {
 				if field.name == normalizedPivotColumnName {
@@ -881,7 +881,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			result = append(result[:pivotColumnIndex], result[pivotColumnIndex+1:]...)
 
 			valueColumnName := v.AllId_()[2]
-			normalizedValueColumnName := parser.NormalizeObjectNamePart(valueColumnName)
+			normalizedValueColumnName := parser.NormalizeSnowSqlObjectNamePart(valueColumnName)
 			valueColumnIndex := -1
 			for i, field := range result {
 				if field.name == normalizedValueColumnName {
@@ -904,7 +904,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			var strippedColumnIndices []int
 			var strippedColumnInOriginalResult []fieldInfo
 			for idx, columnName := range v.Column_list().AllColumn_name() {
-				normalizedColumnName := parser.NormalizeObjectNamePart(columnName.Id_())
+				normalizedColumnName := parser.NormalizeSnowSqlObjectNamePart(columnName.Id_())
 				for i, field := range result {
 					if field.name == normalizedColumnName {
 						strippedColumnIndices = append(strippedColumnIndices, i)
@@ -927,10 +927,10 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			}
 
 			valueColumnName := v.Id_(0)
-			normalizedValueColumnName := parser.NormalizeObjectNamePart(valueColumnName)
+			normalizedValueColumnName := parser.NormalizeSnowSqlObjectNamePart(valueColumnName)
 
 			nameColumnName := v.Column_name().Id_()
-			normalizedNameColumnName := parser.NormalizeObjectNamePart(nameColumnName)
+			normalizedNameColumnName := parser.NormalizeSnowSqlObjectNamePart(nameColumnName)
 
 			result = append(result, fieldInfo{
 				name:      normalizedNameColumnName,
@@ -945,7 +945,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 	// If the as alias is not nil, we should use the alias name to replace the original table name.
 	if ctx.As_alias() != nil {
 		id := ctx.As_alias().Alias().Id_()
-		aliasName := parser.NormalizeObjectNamePart(id)
+		aliasName := parser.NormalizeSnowSqlObjectNamePart(id)
 		for i := 0; i < len(result); i++ {
 			result[i].table = aliasName
 			// We can safely set the database and schema to empty string because the
@@ -1102,16 +1102,16 @@ func (extractor *sensitiveFieldExtractor) snowflakeIsFieldSensitive(normalizedDa
 
 func normalizedFullColumnName(ctx snowparser.IFull_column_nameContext) (normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) {
 	if ctx.GetDb_name() != nil {
-		normalizedDatabaseName = parser.NormalizeObjectNamePart(ctx.GetDb_name())
+		normalizedDatabaseName = parser.NormalizeSnowSqlObjectNamePart(ctx.GetDb_name())
 	}
 	if ctx.GetSchema() != nil {
-		normalizedSchemaName = parser.NormalizeObjectNamePart(ctx.GetSchema())
+		normalizedSchemaName = parser.NormalizeSnowSqlObjectNamePart(ctx.GetSchema())
 	}
 	if ctx.GetTab_name() != nil {
-		normalizedTableName = parser.NormalizeObjectNamePart(ctx.GetTab_name())
+		normalizedTableName = parser.NormalizeSnowSqlObjectNamePart(ctx.GetTab_name())
 	}
 	if ctx.GetCol_name() != nil {
-		normalizedColumnName = parser.NormalizeObjectNamePart(ctx.GetCol_name())
+		normalizedColumnName = parser.NormalizeSnowSqlObjectNamePart(ctx.GetCol_name())
 	}
 	return normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName
 }
@@ -1124,7 +1124,7 @@ func normalizedObjectName(objectName snowparser.IObject_nameContext, normalizedF
 	}
 	database := normalizedFallbackDatabaseName
 	if d := objectName.GetD(); d != nil {
-		normalizedD := parser.NormalizeObjectNamePart(d)
+		normalizedD := parser.NormalizeSnowSqlObjectNamePart(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -1133,14 +1133,14 @@ func normalizedObjectName(objectName snowparser.IObject_nameContext, normalizedF
 
 	schema := normalizedFallbackSchemaName
 	if s := objectName.GetS(); s != nil {
-		normalizedS := parser.NormalizeObjectNamePart(s)
+		normalizedS := parser.NormalizeSnowSqlObjectNamePart(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
 	}
 	parts = append(parts, schema)
 
-	normalizedO := parser.NormalizeObjectNamePart(objectName.GetO())
+	normalizedO := parser.NormalizeSnowSqlObjectNamePart(objectName.GetO())
 	parts = append(parts, normalizedO)
 
 	return parts[0], parts[1], parts[2]

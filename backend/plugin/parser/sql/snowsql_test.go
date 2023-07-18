@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestExtractOrdinaryIdentifier(t *testing.T) {
+func TestSnowSqlExtractOrdinaryIdentifier(t *testing.T) {
 	testCases := []struct {
 		description string
 		name        string
@@ -35,7 +35,7 @@ func TestExtractOrdinaryIdentifier(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ExtractOrdinaryIdentifier(tc.name)
+			got := ExtractSnowSqlOrdinaryIdentifier(tc.name)
 			require.Equal(t, tc.want, got, tc.description)
 		})
 	}

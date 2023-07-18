@@ -106,7 +106,7 @@ func (l *tableRequirePkChecker) generateAdvice() ([]advisor.Advice, error) {
 // EnterCreate_table is called when production create_table is entered.
 func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	originalTableName := ctx.Object_name()
-	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName, "", "PUBLIC")
+	normalizedTableName := snowsqlparser.NormalizeSnowSqlObjectName(originalTableName, "", "PUBLIC")
 
 	l.tableHasPrimaryKey[normalizedTableName] = false
 	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()
@@ -118,7 +118,7 @@ func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContex
 // EnterDrop_table is called when production drop_table is entered.
 func (l *tableRequirePkChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
 	originalTableName := ctx.Object_name()
-	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName, "", "PUBLIC")
+	normalizedTableName := snowsqlparser.NormalizeSnowSqlObjectName(originalTableName, "", "PUBLIC")
 
 	delete(l.tableHasPrimaryKey, normalizedTableName)
 	delete(l.tableOriginalName, normalizedTableName)
@@ -176,7 +176,7 @@ func (l *tableRequirePkChecker) EnterAlter_table(ctx *parser.Alter_tableContext)
 		return
 	}
 	originalTableName := ctx.Object_name(0)
-	normalizedTableName := snowsqlparser.NormalizeObjectName(originalTableName, "", "PUBLIC")
+	normalizedTableName := snowsqlparser.NormalizeSnowSqlObjectName(originalTableName, "", "PUBLIC")
 
 	l.currentNormalizedTableName = normalizedTableName
 	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()
