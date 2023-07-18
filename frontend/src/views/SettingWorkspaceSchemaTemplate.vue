@@ -24,27 +24,27 @@
       class="flex items-center gap-x-5 my-5 pb-5 border-b border-control-border"
     >
       <label
-        v-for="engine in engineList"
-        :key="engine"
+        v-for="item in engineList"
+        :key="item"
         class="flex items-center gap-x-1 text-sm text-gray-600"
       >
         <input
           type="checkbox"
-          :value="engine"
-          :checked="state.selectedEngine.has(engine)"
+          :value="item"
+          :checked="state.selectedEngine.has(item)"
           class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-          @input="toggleEngineCheck(engine)"
+          @input="toggleEngineCheck(item)"
         />
-        <EngineIcon :engine="engine" custom-class="ml-0 mr-1" />
+        <EngineIcon :engine="item" custom-class="ml-0 mr-1" />
         <span
           class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
         >
-          {{ countTemplateByEngine(engine) }}
+          {{ countTemplateByEngine(item) }}
         </span>
       </label>
       <BBTableSearch
-        class="ml-auto"
         ref="searchField"
+        class="ml-auto"
         :placeholder="$t('schema-template.search-by-name-or-comment')"
         @change-text="(val: string) => state.searchText = val"
       />
@@ -62,7 +62,6 @@
       v-else
       :engine="engine"
       :readonly="!hasPermission"
-      :rowClickable="!!rowClickable"
       :template-list="filteredTemplateList"
       @view="editSchemaTemplate"
       @apply="(template: SchemaTemplateSetting_FieldTemplate) => $emit('apply', template)"
@@ -103,7 +102,6 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  rowClickable?: boolean;
   engine?: Engine;
 }>();
 

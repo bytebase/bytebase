@@ -2,9 +2,9 @@
   <BBGrid
     :column-list="columnList"
     :data-source="templateList"
+    :is-row-clickable="isRowClickable"
     class="border"
     @click-row="clickRow"
-    :isRowClickable="isRowClickable"
   >
     <template #item="{ item }: { item: SchemaTemplateSetting_FieldTemplate }">
       <div class="bb-grid-cell flex justify-start items-center">
@@ -53,7 +53,6 @@ import { getDefaultValue } from "./utils";
 const props = defineProps<{
   engine?: Engine;
   readonly: boolean;
-  rowClickable: boolean;
   templateList: SchemaTemplateSetting_FieldTemplate[];
 }>();
 

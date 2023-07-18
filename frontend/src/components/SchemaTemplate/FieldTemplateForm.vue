@@ -46,12 +46,12 @@
               <span class="text-red-600 mr-2">*</span>
             </label>
             <input
+              v-model="state.column!.name"
               required
               name="column-name"
               type="text"
               placeholder="column name"
               class="textfield mt-1 w-full"
-              v-model="state.column!.name"
               :disabled="!allowEdit"
             />
           </div>
@@ -66,12 +66,12 @@
               class="relative flex flex-row justify-between items-center mt-1"
             >
               <input
+                v-model="state.column!.type"
                 required
                 name="column-type"
                 type="text"
                 placeholder="column type"
                 class="textfield w-full"
-                v-model="state.column!.type"
                 :disabled="!allowEdit"
               />
               <NDropdown
@@ -95,11 +95,11 @@
               {{ $t("schema-template.form.default-value") }}
             </label>
             <input
+              v-model="state.column!.default"
               required
               name="default-value"
               type="text"
               class="textfield mt-1 w-full"
-              v-model="state.column!.default"
               :placeholder="getDefaultValue(state.column)"
               :disabled="!allowEdit"
             />
@@ -125,9 +125,9 @@
               {{ $t("schema-template.form.comment") }}
             </label>
             <textarea
+              v-model="state.column!.comment"
               rows="3"
               class="textfield block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
-              v-model="state.column!.comment"
               :disabled="!allowEdit"
             />
           </div>
@@ -177,6 +177,7 @@ const props = defineProps<{
 
 const emit = defineEmits(["dismiss"]);
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState extends SchemaTemplateSetting_FieldTemplate {}
 
 const state = reactive<LocalState>({

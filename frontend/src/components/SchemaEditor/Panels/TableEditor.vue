@@ -283,7 +283,6 @@
   >
     <DrawerContent :title="$t('schema-template.field-template')">
       <SettingWorkspaceSchemaTemplate
-        :row-clickable="true"
         :engine="databaseEngine"
         @apply="handleApplyColumnTemplate"
       />
