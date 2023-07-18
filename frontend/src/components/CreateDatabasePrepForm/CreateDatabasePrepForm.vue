@@ -245,6 +245,7 @@ import {
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import {
+  extractBackupResourceName,
   extractDatabaseResourceName,
   extractEnvironmentResourceName,
   hasWorkspacePermissionV1,
@@ -530,10 +531,11 @@ const create = async () => {
       backupId: Number(props.backup.uid),
       createDatabaseContext,
     };
+    const backupTitle = extractBackupResourceName(props.backup.name);
     newIssue = {
-      name: `Create database '${databaseName}' from backup '${props.backup.name}'`,
+      name: `Create database '${databaseName}' from backup '${backupTitle}'`,
       type: "bb.issue.database.restore.pitr",
-      description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
+      description: `Creating database '${databaseName}' from backup '${backupTitle}'`,
       assigneeId: parseInt(state.assigneeId!, 10),
       projectId: parseInt(state.projectId!, 10),
       pipeline: {
