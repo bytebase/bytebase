@@ -1,5 +1,11 @@
 - engine: 2
-  schema: create table t(a int); create table t2(b int);
+  schema: |
+    create table t
+      (
+        a int default 1 comment 'abcdefg',
+        b varchar(20) default 'NULL' comment ''
+      );
+    create table t2(b int NOT NULL default NULL);
   metadata:
     name: ""
     schemas:
@@ -9,9 +15,19 @@
               columns:
                 - name: a
                   position: 0
-                  default: null
-                  nullable: false
+                  default:
+                    value: "1"
+                  nullable: true
                   type: int
+                  characterset: ""
+                  collation: ""
+                  comment: abcdefg
+                - name: b
+                  position: 0
+                  default:
+                    value: '''NULL'''
+                  nullable: true
+                  type: varchar(20)
                   characterset: ""
                   collation: ""
                   comment: ""
@@ -29,7 +45,8 @@
               columns:
                 - name: b
                   position: 0
-                  default: null
+                  default:
+                    value: "NULL"
                   nullable: false
                   type: int
                   characterset: ""
