@@ -261,7 +261,7 @@ func start() {
 	if s.SchemaVersion != nil {
 		schemaVersion = fmt.Sprintf("(schema version %v) ", s.SchemaVersion)
 	}
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s %shas started on port %d", profile.Version, schemaVersion, flags.port))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s %shas started on port %d 🚀", profile.Version, schemaVersion, flags.port))
 
 	// Execute program.
 	if err := s.Run(ctx, flags.port); err != nil {
