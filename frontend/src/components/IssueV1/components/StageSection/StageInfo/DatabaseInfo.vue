@@ -1,10 +1,24 @@
 <template>
-  <div class="flex items-center flex-wrap gap-2">
-    <div class="textlabel">
-      {{ $t("common.database") }}
-    </div>
+  <div class="flex items-center flex-wrap gap-1">
+    <EnvironmentV1Name
+      :environment="environment"
+      :plain="true"
+      :tooltip="true"
+      class="hover:underline"
+    />
+
+    <heroicons-outline:chevron-right class="text-control-light" />
+
+    <InstanceV1Name
+      :instance="coreDatabaseInfo.instanceEntity"
+      :plain="true"
+      class="hover:underline"
+    />
+
+    <heroicons-outline:chevron-right class="text-control-light" />
+
     <div class="flex items-center gap-x-1">
-      <SQLEditorButtonV1 v-if="database" :database="database" />
+      <heroicons-outline:database />
 
       <DatabaseV1Name
         v-if="database"
@@ -26,13 +40,9 @@
             : $t("task.database-create.pending")
         }}
       </span>
-    </div>
 
-    <InstanceV1Name
-      :instance="coreDatabaseInfo.instanceEntity"
-      :plain="true"
-      class="hover:underline"
-    />
+      <SQLEditorButtonV1 v-if="database" :database="database" />
+    </div>
   </div>
 </template>
 
@@ -49,7 +59,6 @@ import { databaseForTask, useIssueContext } from "../../../logic";
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
 
 const { issue, selectedTask } = useIssueContext();
-
 const coreDatabaseInfo = computed(() => {
   return databaseForTask(issue.value, selectedTask.value);
 });
@@ -95,6 +104,10 @@ const databaseCreationStatus = computed((): DatabaseCreationStatus => {
     return "PENDING_CREATE";
   }
   return "EXISTED";
+});
+
+const environment = computed(() => {
+  return coreDatabaseInfo.value.instanceEntity.environmentEntity;
 });
 
 const database = computed(() => {

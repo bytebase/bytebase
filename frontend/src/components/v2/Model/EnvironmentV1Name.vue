@@ -9,6 +9,7 @@
     <ProductionEnvironmentV1Icon
       :environment="environment"
       :class="iconClass ?? '!text-current'"
+      :tooltip="tooltip"
     />
   </component>
 </template>
@@ -27,12 +28,14 @@ const props = withDefaults(
     link?: boolean;
     plain?: boolean;
     iconClass?: VueClass;
+    tooltip?: boolean;
   }>(),
   {
     tag: "span",
     link: true,
     plain: false,
     iconClass: undefined,
+    tooltip: false,
   }
 );
 

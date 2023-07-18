@@ -4,12 +4,10 @@
   >
     <StageSelect />
     <DatabaseInfo />
-    <EnvironmentInfo />
   </div>
 </template>
 
 <script setup lang="ts">
 import StageSelect from "./StageSelect.vue";
 import DatabaseInfo from "./DatabaseInfo.vue";
-import EnvironmentInfo from "./EnvironmentInfo.vue";
 </script>
