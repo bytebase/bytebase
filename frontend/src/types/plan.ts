@@ -30,6 +30,7 @@ export type FeatureType =
   | "bb.feature.task-schedule-time"
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
+  | "bb.feature.schema-template"
   // VCS Integration
   | "bb.feature.vcs-schema-write-back"
   | "bb.feature.vcs-sheet-sync"
