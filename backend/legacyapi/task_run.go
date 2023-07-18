@@ -22,9 +22,10 @@ const (
 
 // TaskRunResultPayload is the result payload for a task run.
 type TaskRunResultPayload struct {
-	Detail      string `json:"detail,omitempty"`
-	MigrationID string `json:"migrationId,omitempty"`
-	Version     string `json:"version,omitempty"`
+	Detail        string `json:"detail,omitempty"`
+	MigrationID   string `json:"migrationId,omitempty"`
+	ChangeHistory string `json:"changeHistory,omitempty"`
+	Version       string `json:"version,omitempty"`
 }
 
 // TaskRun is the API message for a task run.
