@@ -1903,7 +1903,7 @@
       "subscription-page": "subscription page",
       "subscription": "Go to the {page} to learn these features and our plans."
     },
-    "description": "You can upload your Bytebase license to unlock team/enterprise features.",
+    "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
     "start-n-days-trial": "Start {days} days trial (no credit card required)",
