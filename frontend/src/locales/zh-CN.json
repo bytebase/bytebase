@@ -1899,7 +1899,7 @@
       "subscription-page": "订阅页面",
       "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
     },
-    "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
+    "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
     "start-n-days-trial": "开启 {days} 天试用 (无需信用卡)",
