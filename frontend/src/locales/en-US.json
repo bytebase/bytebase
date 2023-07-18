@@ -1805,6 +1805,7 @@
       "drop-table": "Drop table",
       "restore": "Restore",
       "add-column": "Add column",
+      "add-from-template": "Add from template",
       "drop-column": "Drop column",
       "sql-preview": "SQL Preview",
       "reset": "Reset",
@@ -2091,6 +2092,10 @@
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
         "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
+      },
+      "bb-feature-schema-template": {
+        "title": "Schema Template",
+        "desc": "Pre-define the field template, then apply the template during the schema change."
       }
     }
   },
@@ -2588,6 +2593,20 @@
     "no-log-placeholder": {
       "admin": "Click the \"Configure\" button to fetch slow queries from the database instances or click the \"Sync Now\" button to sync slow query logs immediately",
       "developer": "Click the \"Sync Now\" button to sync slow query logs immediately or contact Bytebase owners/DBAs to configure slow queries"
+    }
+  },
+  "schema-template": {
+    "self": "Schema template",
+    "field-template": "Field Template",
+    "add-field": "Add field template",
+    "description": "You can pre-define the field template, then apply the template during the schema change.",
+    "search-by-name-or-comment": "Search by name or comment",
+    "form": {
+      "column-name": "Column name",
+      "column-type": "Column Type",
+      "default-value": "Default value",
+      "comment": "Comment",
+      "nullable": "Nullable"
     }
   },
   "principal": {

@@ -2,6 +2,7 @@
   <NModal
     :show="true"
     :auto-focus="false"
+    :trap-focus="trapFocus"
     :close-on-esc="escClosable"
     :mask-closeable="maskClosable"
     @esc="escClosable && tryClose()"
@@ -97,6 +98,10 @@ export default defineComponent({
     },
     beforeClose: {
       type: Function as PropType<() => Promise<boolean>>,
+      default: undefined,
+    },
+    trapFocus: {
+      type: Boolean,
       default: undefined,
     },
   },

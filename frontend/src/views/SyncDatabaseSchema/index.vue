@@ -416,7 +416,9 @@ const tryFinishSetup = async () => {
   };
   query.databaseList = databaseIdList.join(",");
   query.sqlList = JSON.stringify(statementList);
-  query.name = generateIssueName(targetDatabaseList.map((db) => db.name));
+  query.name = generateIssueName(
+    targetDatabaseList.map((db) => db.databaseName)
+  );
 
   const routeInfo = {
     name: "workspace.issue.detail",

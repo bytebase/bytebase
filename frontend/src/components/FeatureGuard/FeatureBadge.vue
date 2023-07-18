@@ -26,7 +26,7 @@
     </span>
   </template>
   <InstanceAssignment
-    v-if="!hasFeature"
+    v-if="instanceMissingLicense"
     :show="state.showInstanceAssignmentDrawer"
     @dismiss="state.showInstanceAssignmentDrawer = false"
   />

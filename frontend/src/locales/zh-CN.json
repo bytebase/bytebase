@@ -1801,6 +1801,7 @@
       "drop": "删除",
       "restore": "恢复",
       "add-column": "添加列",
+      "add-from-template": "从模板添加",
       "drop-column": "删除列",
       "sql-preview": "预览 SQL",
       "reset": "重置",
@@ -2086,6 +2087,10 @@
       "bb-feature-disallow-signup": {
         "title": "禁用自助注册",
         "desc": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
+      },
+      "bb-feature-schema-template": {
+        "title": "Schema 模板",
+        "desc": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
       }
     },
     "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
@@ -2581,6 +2586,20 @@
     "no-log-placeholder": {
       "admin": "点击「配置」按钮从数据库实例上抓取慢查询日志或点击「立即同步」按钮立即同步慢查询日志",
       "developer": "点击「立即同步」按钮立即同步慢查询日志或联系工作空间所有者或 DBA 配置慢查询功能"
+    }
+  },
+  "schema-template": {
+    "self": "Schema 模板",
+    "field-template": "字段模板",
+    "add-field": "新增字段模板",
+    "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。",
+    "search-by-name-or-comment": "根据名称或备注搜索",
+    "form": {
+      "column-name": "字段名",
+      "column-type": "字段类型",
+      "default-value": "默认值",
+      "comment": "备注",
+      "nullable": "可为空"
     }
   },
   "principal": {

@@ -12,7 +12,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -22,9 +24,12 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
 )
 
 // SettingService implements the setting service.
@@ -66,6 +71,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingWorkspaceProfile,
 	api.SettingWorkspaceExternalApproval,
 	api.SettingEnterpriseTrial,
+	api.SettingSchemaTemplate,
 }
 
 var (
@@ -397,6 +403,67 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		storeSettingValue = string(bytes)
 	case api.SettingEnterpriseTrial:
 		return nil, status.Errorf(codes.InvalidArgument, "cannot set setting %s", settingName)
+	case api.SettingSchemaTemplate:
+		oldSetting, err := s.store.GetSchemaTemplateSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get schema template setting: %v", err)
+		}
+		oldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
+		for _, template := range convertToSchemaTemplateSetting(oldSetting).FieldTemplates {
+			oldTemplateMap[template.Id] = template
+		}
+
+		schemaTemplateSetting := request.Setting.Value.GetSchemaTemplateSettingValue()
+		if schemaTemplateSetting == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting schema template setting")
+		}
+
+		// validate the changed template
+		for _, template := range schemaTemplateSetting.FieldTemplates {
+			oldTemplate, ok := oldTemplateMap[template.Id]
+			if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
+				continue
+			}
+			engineType := parser.EngineType(template.Engine.String())
+			var defaultVal string
+			if template.Column.Default != nil {
+				defaultVal = template.Column.Default.Value
+			}
+			validateResultList, err := edit.ValidateDatabaseEdit(engineType, &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				CreateTableList: []*api.CreateTableContext{
+					{
+						Name: "validation",
+						Type: "BASE TABLE",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     template.Column.Name,
+								Type:     template.Column.Type,
+								Default:  &defaultVal,
+								Nullable: template.Column.Nullable,
+								Comment:  template.Column.Comment,
+							},
+						},
+					},
+				},
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to validate template, error: %v", err)
+			}
+			if len(validateResultList) != 0 {
+				return nil, status.Errorf(codes.InvalidArgument, validateResultList[0].Message)
+			}
+		}
+
+		payload := new(storepb.SchemaTemplateSetting)
+		if err := convertV1PbToStorePb(schemaTemplateSetting, payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		bytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
+		}
+		storeSettingValue = string(bytes)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -543,6 +610,20 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_ExternalApprovalSettingValue{
 					ExternalApprovalSettingValue: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingSchemaTemplate:
+		storeValue := new(storepb.SchemaTemplateSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting values for %s with error: %v", setting.Name, err)
+		}
+		v1Value := convertToSchemaTemplateSetting(storeValue)
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_SchemaTemplateSettingValue{
+					SchemaTemplateSettingValue: v1Value,
 				},
 			},
 		}, nil
@@ -774,6 +855,27 @@ func convertToExternalApprovalSettingNode(o *storepb.ExternalApprovalSetting_Nod
 		Id:       o.Id,
 		Title:    o.Title,
 		Endpoint: o.Endpoint,
+	}
+}
+
+func convertToSchemaTemplateSetting(s *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
+	v1Templates := []*v1pb.SchemaTemplateSetting_FieldTemplate{}
+	for _, template := range s.FieldTemplates {
+		v1Templates = append(v1Templates, &v1pb.SchemaTemplateSetting_FieldTemplate{
+			Id:     template.Id,
+			Engine: v1pb.Engine(template.Engine),
+			Column: &v1pb.ColumnMetadata{
+				Name:     template.Column.Name,
+				Type:     template.Column.Type,
+				Default:  template.Column.Default,
+				Nullable: template.Column.Nullable,
+				Comment:  template.Column.Comment,
+			},
+		})
+	}
+
+	return &v1pb.SchemaTemplateSetting{
+		FieldTemplates: v1Templates,
 	}
 }
 

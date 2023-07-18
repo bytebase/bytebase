@@ -13,7 +13,7 @@
         class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
         @input="e => emit('toggle-checked-engine', stats.engine, (e.target as HTMLInputElement).checked)"
       />
-      <RuleEngineIcon :engine="stats.engine" class="ml-1" />
+      <EngineIcon :engine="engineFromJSON(stats.engine)" custom-class="ml-1" />
       <span
         class="items-center text-xs px-1 py-0.5 rounded-full bg-gray-200 text-gray-800"
       >
@@ -48,8 +48,8 @@ import {
   RuleTemplate,
   SchemaRuleEngineType,
 } from "@/types";
-import RuleEngineIcon from "./RuleEngineIcon.vue";
 import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
+import { engineFromJSON } from "@/types/proto/v1/common";
 
 type EngineTypeStats = {
   engine: SchemaRuleEngineType;

@@ -127,6 +127,9 @@
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
     - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
   
+- [store/task_run.proto](#store_task_run-proto)
+    - [TaskRunResult](#bytebase-store-TaskRunResult)
+  
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
   
@@ -1606,7 +1609,7 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
-| payload | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
+| column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
 
 
 
@@ -1862,6 +1865,39 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | total_rows_examined | [int64](#int64) |  | The total rows examined of the slow query log. |
 | maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_task_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/task_run.proto
+
+
+
+<a name="bytebase-store-TaskRunResult"></a>
+
+### TaskRunResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| detail | [string](#string) |  |  |
+| change_history | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| version | [string](#string) |  |  |
 
 
 

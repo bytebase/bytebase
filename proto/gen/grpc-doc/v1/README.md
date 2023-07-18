@@ -478,6 +478,8 @@
     - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
     - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
     - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
+    - [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest)
+    - [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse)
     - [SchemaDesign](#bytebase-v1-SchemaDesign)
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
@@ -5948,7 +5950,6 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | visibility | [Visibility](#bytebase-v1-Visibility) |  |  |
 | tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
 | db_name_template | [string](#string) |  |  |
-| schema_version | [SchemaVersion](#bytebase-v1-SchemaVersion) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 
@@ -6936,7 +6937,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-/taskRuns/-&#34; to list all taskRuns from a rollout. |
+| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
 | page_size | [int32](#int32) |  | The maximum number of taskRuns to return. The service may return fewer than this value. If unspecified, at most 50 taskRuns will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListRolloutTaskRuns` call. Provide this to retrieve the subsequent page.
 
@@ -7667,6 +7668,37 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 
 
+<a name="bytebase-v1-ParseSchemaStringRequest"></a>
+
+### ParseSchemaStringRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_string | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseSchemaStringResponse"></a>
+
+### ParseSchemaStringResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the parsed schema. |
+
+
+
+
+
+
 <a name="bytebase-v1-SchemaDesign"></a>
 
 ### SchemaDesign
@@ -7729,6 +7761,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | ListSchemaDesigns | [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest) | [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse) |  |
 | CreateSchemaDesign | [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | UpdateSchemaDesign | [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
@@ -8131,7 +8164,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
-| payload | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
+| column | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
 
 
 

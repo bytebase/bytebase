@@ -1,6 +1,6 @@
 import axios from "axios";
 import { defineStore } from "pinia";
-import { cloneDeep, isUndefined, uniqueId } from "lodash-es";
+import { cloneDeep, isUndefined, uniqueId, pullAt } from "lodash-es";
 import {
   ComposedDatabase,
   TabContext,
@@ -17,8 +17,12 @@ import {
   Table,
 } from "@/types/schemaEditor/atomType";
 import { SchemaMetadata } from "@/types/proto/store/database";
-import { useDatabaseV1Store, useDBSchemaV1Store } from ".";
+import { useDatabaseV1Store, useDBSchemaV1Store, useSettingV1Store } from ".";
 import { Engine } from "@/types/proto/v1/common";
+import {
+  SchemaTemplateSetting,
+  SchemaTemplateSetting_FieldTemplate,
+} from "@/types/proto/v1/setting_service";
 
 export const generateUniqueTabId = () => {
   return uniqueId();
@@ -60,6 +64,13 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
       return Array.from(this.databaseSchemaById.values()).map(
         (databaseSchema) => databaseSchema.database
       );
+    },
+    schemaTemplateList(): SchemaTemplateSetting_FieldTemplate[] {
+      const settingStore = useSettingV1Store();
+      const setting = settingStore.getSettingByName(
+        "bb.workspace.schema-template"
+      );
+      return setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
     },
   },
   actions: {
@@ -295,6 +306,56 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
       ).data;
       const databaseEditResult = convertDatabaseEditResult(resData.data);
       return databaseEditResult;
+    },
+    async upsertSchemaTemplate(template: SchemaTemplateSetting_FieldTemplate) {
+      const settingStore = useSettingV1Store();
+      const setting = await settingStore.fetchSettingByName(
+        "bb.workspace.schema-template"
+      );
+
+      const settingValue = SchemaTemplateSetting.fromJSON({});
+      if (setting?.value?.schemaTemplateSettingValue) {
+        Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
+      }
+
+      const index = settingValue.fieldTemplates.findIndex(
+        (t) => t.id === template.id
+      );
+      if (index >= 0) {
+        settingValue.fieldTemplates[index] = template;
+      } else {
+        settingValue.fieldTemplates.push(template);
+      }
+
+      await settingStore.upsertSetting({
+        name: "bb.workspace.schema-template",
+        value: {
+          schemaTemplateSettingValue: settingValue,
+        },
+      });
+    },
+    async deleteSchemaTemplate(id: string) {
+      const settingStore = useSettingV1Store();
+      const setting = await settingStore.fetchSettingByName(
+        "bb.workspace.schema-template"
+      );
+
+      const settingValue = SchemaTemplateSetting.fromJSON({});
+      if (setting?.value?.schemaTemplateSettingValue) {
+        Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
+      }
+
+      const index = settingValue.fieldTemplates.findIndex((t) => t.id === id);
+      if (index >= 0) {
+        pullAt(settingValue.fieldTemplates, index);
+
+        await settingStore.upsertSetting({
+          name: "bb.workspace.schema-template",
+          value: {
+            schemaTemplateSettingValue: settingValue,
+          },
+        });
+      }
     },
   },
 });

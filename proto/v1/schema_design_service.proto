@@ -40,6 +40,13 @@ service SchemaDesignService {
     option (google.api.method_signature) = "schemaDesign,update_mask";
   }
 
+  rpc ParseSchemaString(ParseSchemaStringRequest) returns (ParseSchemaStringResponse) {
+    option (google.api.http) = {
+      post: "/v1/schemaDesign:parseSchemaString"
+      body: "*"
+    };
+  }
+
   rpc DeleteSchemaDesign(DeleteSchemaDesignRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/schemaDesigns/*}"};
     option (google.api.method_signature) = "name";
@@ -151,6 +158,17 @@ message UpdateSchemaDesignRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+}
+
+message ParseSchemaStringRequest {
+  string schema_string = 1 [(google.api.field_behavior) = REQUIRED];
+
+  Engine engine = 2;
+}
+
+message ParseSchemaStringResponse {
+  // The metadata of the parsed schema.
+  DatabaseMetadata schema_metadata = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message DeleteSchemaDesignRequest {
