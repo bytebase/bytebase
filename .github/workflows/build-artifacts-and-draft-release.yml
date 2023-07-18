@@ -6,8 +6,8 @@ on:
       - "*.*.*"
 
 jobs:
-  draft-release:
-    runs-on: ubuntu-latest
+  build-linux-binary:
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2.2.4
@@ -27,6 +27,92 @@ jobs:
           go-version: 1.20.1
           check-latest: true
           cache: true
+      - name: Build
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          args: release --skip-publish --config scripts/.goreleaser-for-linux.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: bytebase-linux
+          path: dist/bytebase*
+  build-darwin-binary:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 8.6.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm release
+        working-directory: frontend
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.20.1
+          check-latest: true
+          cache: true
+      - name: Build
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          args: release --skip-publish --config scripts/.goreleaser-for-darwin.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: bytebase-darwin
+          path: dist/bytebase*
+  draft-release:
+    needs: [build-linux-binary, build-darwin-binary]
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 8.6.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm release
+        working-directory: frontend
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.20.1
+          check-latest: true
+          cache: true
+      - name: Make directories
+        run: |
+          mkdir -p ./bytebase-build/linux
+          mkdir -p ./bytebase-build/darwin
+      - name: Download linux binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: bytebase-linux
+          path: ./bytebase-build/linux
+      - name: Download darwin binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: bytebase-darwin
+          path: ./bytebase-build/darwin
+      - name: Merge checksum file
+        run: |
+          cd ./bytebase-build
+          cat ./darwin/bytebase*checksums.txt >> checksums.txt
+          cat ./linux/bytebase*checksums.txt >> checksums.txt
+          rm ./darwin/bytebase*checksums.txt
+          rm ./linux/bytebase*checksums.txt
       - name: Release
         uses: goreleaser/goreleaser-action@v4
         with:
