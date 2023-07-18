@@ -531,6 +531,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "port":
 			patch.Port = &request.DataSource.Port
 			dataSource.Port = request.DataSource.Port
+		case "database":
+			patch.Database = &request.DataSource.Database
+			dataSource.Database = request.DataSource.Database
 		case "srv":
 			patch.SRV = &request.DataSource.Srv
 			dataSource.SRV = request.DataSource.Srv
