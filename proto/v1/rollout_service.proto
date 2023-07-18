@@ -304,7 +304,7 @@ message ListPlanCheckRunsResponse {
 message BatchRunTasksRequest {
   // The name of the rollout.
   // Format: projects/{project}/rollouts/{rollout}
-  string name = 1;
+  string parent = 1;
   // The tasks to run.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
@@ -315,7 +315,7 @@ message BatchRunTasksResponse {}
 message BatchSkipTasksRequest {
   // The name of the rollout.
   // Format: projects/{project}/rollouts/{rollout}
-  string name = 1;
+  string parent = 1;
   // The tasks to skip.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
@@ -326,7 +326,7 @@ message BatchSkipTasksResponse {}
 message BatchCancelTaskRunsRequest {
   // The name of the rollout.
   // Format: projects/{project}/rollouts/{rollout}
-  string name = 1;
+  string parent = 1;
   // The tasks to cancel.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
