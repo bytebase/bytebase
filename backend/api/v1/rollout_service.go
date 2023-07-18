@@ -394,7 +394,7 @@ func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
 	}
 
-	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
+	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
 		PipelineUID: &rolloutID,
 		StageUID:    maybeStageID,
 		TaskUID:     maybeTaskID,
