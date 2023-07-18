@@ -198,7 +198,9 @@ export const GetEnvironmentRequest = {
 
   toJSON(message: GetEnvironmentRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -278,9 +280,15 @@ export const ListEnvironmentsRequest = {
 
   toJSON(message: ListEnvironmentsRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.showDeleted === true) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
@@ -353,12 +361,12 @@ export const ListEnvironmentsResponse = {
 
   toJSON(message: ListEnvironmentsResponse): unknown {
     const obj: any = {};
-    if (message.environments) {
-      obj.environments = message.environments.map((e) => e ? Environment.toJSON(e) : undefined);
-    } else {
-      obj.environments = [];
+    if (message.environments?.length) {
+      obj.environments = message.environments.map((e) => Environment.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -428,9 +436,12 @@ export const CreateEnvironmentRequest = {
 
   toJSON(message: CreateEnvironmentRequest): unknown {
     const obj: any = {};
-    message.environment !== undefined &&
-      (obj.environment = message.environment ? Environment.toJSON(message.environment) : undefined);
-    message.environmentId !== undefined && (obj.environmentId = message.environmentId);
+    if (message.environment !== undefined) {
+      obj.environment = Environment.toJSON(message.environment);
+    }
+    if (message.environmentId !== "") {
+      obj.environmentId = message.environmentId;
+    }
     return obj;
   },
 
@@ -502,9 +513,12 @@ export const UpdateEnvironmentRequest = {
 
   toJSON(message: UpdateEnvironmentRequest): unknown {
     const obj: any = {};
-    message.environment !== undefined &&
-      (obj.environment = message.environment ? Environment.toJSON(message.environment) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.environment !== undefined) {
+      obj.environment = Environment.toJSON(message.environment);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -563,7 +577,9 @@ export const DeleteEnvironmentRequest = {
 
   toJSON(message: DeleteEnvironmentRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -619,7 +635,9 @@ export const UndeleteEnvironmentRequest = {
 
   toJSON(message: UndeleteEnvironmentRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -732,12 +750,24 @@ export const Environment = {
 
   toJSON(message: Environment): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.title !== undefined && (obj.title = message.title);
-    message.order !== undefined && (obj.order = Math.round(message.order));
-    message.tier !== undefined && (obj.tier = environmentTierToJSON(message.tier));
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.uid !== "") {
+      obj.uid = message.uid;
+    }
+    if (message.state !== 0) {
+      obj.state = stateToJSON(message.state);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.order !== 0) {
+      obj.order = Math.round(message.order);
+    }
+    if (message.tier !== 0) {
+      obj.tier = environmentTierToJSON(message.tier);
+    }
     return obj;
   },
 
@@ -798,8 +828,9 @@ export const UpdateEnvironmentBackupSettingRequest = {
 
   toJSON(message: UpdateEnvironmentBackupSettingRequest): unknown {
     const obj: any = {};
-    message.setting !== undefined &&
-      (obj.setting = message.setting ? EnvironmentBackupSetting.toJSON(message.setting) : undefined);
+    if (message.setting !== undefined) {
+      obj.setting = EnvironmentBackupSetting.toJSON(message.setting);
+    }
     return obj;
   },
 
@@ -870,8 +901,12 @@ export const EnvironmentBackupSetting = {
 
   toJSON(message: EnvironmentBackupSetting): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.enabled !== undefined && (obj.enabled = message.enabled);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
     return obj;
   },
 

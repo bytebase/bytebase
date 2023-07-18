@@ -429,13 +429,12 @@ export const Http = {
 
   toJSON(message: Http): unknown {
     const obj: any = {};
-    if (message.rules) {
-      obj.rules = message.rules.map((e) => e ? HttpRule.toJSON(e) : undefined);
-    } else {
-      obj.rules = [];
+    if (message.rules?.length) {
+      obj.rules = message.rules.map((e) => HttpRule.toJSON(e));
     }
-    message.fullyDecodeReservedExpansion !== undefined &&
-      (obj.fullyDecodeReservedExpansion = message.fullyDecodeReservedExpansion);
+    if (message.fullyDecodeReservedExpansion === true) {
+      obj.fullyDecodeReservedExpansion = message.fullyDecodeReservedExpansion;
+    }
     return obj;
   },
 
@@ -606,20 +605,35 @@ export const HttpRule = {
 
   toJSON(message: HttpRule): unknown {
     const obj: any = {};
-    message.selector !== undefined && (obj.selector = message.selector);
-    message.get !== undefined && (obj.get = message.get);
-    message.put !== undefined && (obj.put = message.put);
-    message.post !== undefined && (obj.post = message.post);
-    message.delete !== undefined && (obj.delete = message.delete);
-    message.patch !== undefined && (obj.patch = message.patch);
-    message.custom !== undefined &&
-      (obj.custom = message.custom ? CustomHttpPattern.toJSON(message.custom) : undefined);
-    message.body !== undefined && (obj.body = message.body);
-    message.responseBody !== undefined && (obj.responseBody = message.responseBody);
-    if (message.additionalBindings) {
-      obj.additionalBindings = message.additionalBindings.map((e) => e ? HttpRule.toJSON(e) : undefined);
-    } else {
-      obj.additionalBindings = [];
+    if (message.selector !== "") {
+      obj.selector = message.selector;
+    }
+    if (message.get !== undefined) {
+      obj.get = message.get;
+    }
+    if (message.put !== undefined) {
+      obj.put = message.put;
+    }
+    if (message.post !== undefined) {
+      obj.post = message.post;
+    }
+    if (message.delete !== undefined) {
+      obj.delete = message.delete;
+    }
+    if (message.patch !== undefined) {
+      obj.patch = message.patch;
+    }
+    if (message.custom !== undefined) {
+      obj.custom = CustomHttpPattern.toJSON(message.custom);
+    }
+    if (message.body !== "") {
+      obj.body = message.body;
+    }
+    if (message.responseBody !== "") {
+      obj.responseBody = message.responseBody;
+    }
+    if (message.additionalBindings?.length) {
+      obj.additionalBindings = message.additionalBindings.map((e) => HttpRule.toJSON(e));
     }
     return obj;
   },
@@ -697,8 +711,12 @@ export const CustomHttpPattern = {
 
   toJSON(message: CustomHttpPattern): unknown {
     const obj: any = {};
-    message.kind !== undefined && (obj.kind = message.kind);
-    message.path !== undefined && (obj.path = message.path);
+    if (message.kind !== "") {
+      obj.kind = message.kind;
+    }
+    if (message.path !== "") {
+      obj.path = message.path;
+    }
     return obj;
   },
 

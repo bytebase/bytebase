@@ -331,22 +331,45 @@ export const SchemaDesign = {
 
   toJSON(message: SchemaDesign): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.schemaMetadata !== undefined &&
-      (obj.schemaMetadata = message.schemaMetadata ? DatabaseMetadata.toJSON(message.schemaMetadata) : undefined);
-    message.baselineSchema !== undefined && (obj.baselineSchema = message.baselineSchema);
-    message.baselineSchemaMetadata !== undefined && (obj.baselineSchemaMetadata = message.baselineSchemaMetadata
-      ? DatabaseMetadata.toJSON(message.baselineSchemaMetadata)
-      : undefined);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.baselineDatabase !== undefined && (obj.baselineDatabase = message.baselineDatabase);
-    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.updater !== undefined && (obj.updater = message.updater);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.schemaMetadata !== undefined) {
+      obj.schemaMetadata = DatabaseMetadata.toJSON(message.schemaMetadata);
+    }
+    if (message.baselineSchema !== "") {
+      obj.baselineSchema = message.baselineSchema;
+    }
+    if (message.baselineSchemaMetadata !== undefined) {
+      obj.baselineSchemaMetadata = DatabaseMetadata.toJSON(message.baselineSchemaMetadata);
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.baselineDatabase !== "") {
+      obj.baselineDatabase = message.baselineDatabase;
+    }
+    if (message.schemaVersion !== "") {
+      obj.schemaVersion = message.schemaVersion;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
     return obj;
   },
 
@@ -419,7 +442,9 @@ export const GetSchemaDesignRequest = {
 
   toJSON(message: GetSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -510,10 +535,18 @@ export const ListSchemaDesignsRequest = {
 
   toJSON(message: ListSchemaDesignsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -587,12 +620,12 @@ export const ListSchemaDesignsResponse = {
 
   toJSON(message: ListSchemaDesignsResponse): unknown {
     const obj: any = {};
-    if (message.schemaDesigns) {
-      obj.schemaDesigns = message.schemaDesigns.map((e) => e ? SchemaDesign.toJSON(e) : undefined);
-    } else {
-      obj.schemaDesigns = [];
+    if (message.schemaDesigns?.length) {
+      obj.schemaDesigns = message.schemaDesigns.map((e) => SchemaDesign.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -662,9 +695,12 @@ export const CreateSchemaDesignRequest = {
 
   toJSON(message: CreateSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.schemaDesign !== undefined) {
+      obj.schemaDesign = SchemaDesign.toJSON(message.schemaDesign);
+    }
     return obj;
   },
 
@@ -736,9 +772,12 @@ export const UpdateSchemaDesignRequest = {
 
   toJSON(message: UpdateSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.schemaDesign !== undefined) {
+      obj.schemaDesign = SchemaDesign.toJSON(message.schemaDesign);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -797,7 +836,9 @@ export const DeleteSchemaDesignRequest = {
 
   toJSON(message: DeleteSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 

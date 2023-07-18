@@ -229,7 +229,9 @@ export const UpdateSubscriptionRequest = {
 
   toJSON(message: UpdateSubscriptionRequest): unknown {
     const obj: any = {};
-    message.patch !== undefined && (obj.patch = message.patch ? PatchSubscription.toJSON(message.patch) : undefined);
+    if (message.patch !== undefined) {
+      obj.patch = PatchSubscription.toJSON(message.patch);
+    }
     return obj;
   },
 
@@ -287,7 +289,9 @@ export const TrialSubscriptionRequest = {
 
   toJSON(message: TrialSubscriptionRequest): unknown {
     const obj: any = {};
-    message.trial !== undefined && (obj.trial = message.trial ? TrialSubscription.toJSON(message.trial) : undefined);
+    if (message.trial !== undefined) {
+      obj.trial = TrialSubscription.toJSON(message.trial);
+    }
     return obj;
   },
 
@@ -345,7 +349,9 @@ export const PatchSubscription = {
 
   toJSON(message: PatchSubscription): unknown {
     const obj: any = {};
-    message.license !== undefined && (obj.license = message.license);
+    if (message.license !== "") {
+      obj.license = message.license;
+    }
     return obj;
   },
 
@@ -425,9 +431,15 @@ export const TrialSubscription = {
 
   toJSON(message: TrialSubscription): unknown {
     const obj: any = {};
-    message.plan !== undefined && (obj.plan = planTypeToJSON(message.plan));
-    message.days !== undefined && (obj.days = Math.round(message.days));
-    message.instanceCount !== undefined && (obj.instanceCount = Math.round(message.instanceCount));
+    if (message.plan !== 0) {
+      obj.plan = planTypeToJSON(message.plan);
+    }
+    if (message.days !== 0) {
+      obj.days = Math.round(message.days);
+    }
+    if (message.instanceCount !== 0) {
+      obj.instanceCount = Math.round(message.instanceCount);
+    }
     return obj;
   },
 
@@ -561,13 +573,27 @@ export const Subscription = {
 
   toJSON(message: Subscription): unknown {
     const obj: any = {};
-    message.instanceCount !== undefined && (obj.instanceCount = Math.round(message.instanceCount));
-    message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
-    message.startedTime !== undefined && (obj.startedTime = message.startedTime.toISOString());
-    message.plan !== undefined && (obj.plan = planTypeToJSON(message.plan));
-    message.trialing !== undefined && (obj.trialing = message.trialing);
-    message.orgId !== undefined && (obj.orgId = message.orgId);
-    message.orgName !== undefined && (obj.orgName = message.orgName);
+    if (message.instanceCount !== 0) {
+      obj.instanceCount = Math.round(message.instanceCount);
+    }
+    if (message.expiresTime !== undefined) {
+      obj.expiresTime = message.expiresTime.toISOString();
+    }
+    if (message.startedTime !== undefined) {
+      obj.startedTime = message.startedTime.toISOString();
+    }
+    if (message.plan !== 0) {
+      obj.plan = planTypeToJSON(message.plan);
+    }
+    if (message.trialing === true) {
+      obj.trialing = message.trialing;
+    }
+    if (message.orgId !== "") {
+      obj.orgId = message.orgId;
+    }
+    if (message.orgName !== "") {
+      obj.orgName = message.orgName;
+    }
     return obj;
   },
 
@@ -629,10 +655,8 @@ export const FeatureMatrix = {
 
   toJSON(message: FeatureMatrix): unknown {
     const obj: any = {};
-    if (message.features) {
-      obj.features = message.features.map((e) => e ? Feature.toJSON(e) : undefined);
-    } else {
-      obj.features = [];
+    if (message.features?.length) {
+      obj.features = message.features.map((e) => Feature.toJSON(e));
     }
     return obj;
   },
@@ -710,12 +734,17 @@ export const Feature = {
 
   toJSON(message: Feature): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    obj.matrix = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     if (message.matrix) {
-      Object.entries(message.matrix).forEach(([k, v]) => {
-        obj.matrix[k] = v;
-      });
+      const entries = Object.entries(message.matrix);
+      if (entries.length > 0) {
+        obj.matrix = {};
+        entries.forEach(([k, v]) => {
+          obj.matrix[k] = v;
+        });
+      }
     }
     return obj;
   },
@@ -791,8 +820,12 @@ export const Feature_MatrixEntry = {
 
   toJSON(message: Feature_MatrixEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value === true) {
+      obj.value = message.value;
+    }
     return obj;
   },
 

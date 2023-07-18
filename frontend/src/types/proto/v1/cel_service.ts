@@ -62,7 +62,9 @@ export const ParseRequest = {
 
   toJSON(message: ParseRequest): unknown {
     const obj: any = {};
-    message.expression !== undefined && (obj.expression = message.expression);
+    if (message.expression !== "") {
+      obj.expression = message.expression;
+    }
     return obj;
   },
 
@@ -118,8 +120,9 @@ export const ParseResponse = {
 
   toJSON(message: ParseResponse): unknown {
     const obj: any = {};
-    message.expression !== undefined &&
-      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
+    if (message.expression !== undefined) {
+      obj.expression = ParsedExpr.toJSON(message.expression);
+    }
     return obj;
   },
 
@@ -177,8 +180,9 @@ export const DeparseRequest = {
 
   toJSON(message: DeparseRequest): unknown {
     const obj: any = {};
-    message.expression !== undefined &&
-      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
+    if (message.expression !== undefined) {
+      obj.expression = ParsedExpr.toJSON(message.expression);
+    }
     return obj;
   },
 
@@ -236,7 +240,9 @@ export const DeparseResponse = {
 
   toJSON(message: DeparseResponse): unknown {
     const obj: any = {};
-    message.expression !== undefined && (obj.expression = message.expression);
+    if (message.expression !== "") {
+      obj.expression = message.expression;
+    }
     return obj;
   },
 

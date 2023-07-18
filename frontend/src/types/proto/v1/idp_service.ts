@@ -241,7 +241,9 @@ export const GetIdentityProviderRequest = {
 
   toJSON(message: GetIdentityProviderRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -321,9 +323,15 @@ export const ListIdentityProvidersRequest = {
 
   toJSON(message: ListIdentityProvidersRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.showDeleted === true) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
@@ -396,12 +404,12 @@ export const ListIdentityProvidersResponse = {
 
   toJSON(message: ListIdentityProvidersResponse): unknown {
     const obj: any = {};
-    if (message.identityProviders) {
-      obj.identityProviders = message.identityProviders.map((e) => e ? IdentityProvider.toJSON(e) : undefined);
-    } else {
-      obj.identityProviders = [];
+    if (message.identityProviders?.length) {
+      obj.identityProviders = message.identityProviders.map((e) => IdentityProvider.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -471,9 +479,12 @@ export const CreateIdentityProviderRequest = {
 
   toJSON(message: CreateIdentityProviderRequest): unknown {
     const obj: any = {};
-    message.identityProvider !== undefined &&
-      (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
-    message.identityProviderId !== undefined && (obj.identityProviderId = message.identityProviderId);
+    if (message.identityProvider !== undefined) {
+      obj.identityProvider = IdentityProvider.toJSON(message.identityProvider);
+    }
+    if (message.identityProviderId !== "") {
+      obj.identityProviderId = message.identityProviderId;
+    }
     return obj;
   },
 
@@ -545,9 +556,12 @@ export const UpdateIdentityProviderRequest = {
 
   toJSON(message: UpdateIdentityProviderRequest): unknown {
     const obj: any = {};
-    message.identityProvider !== undefined &&
-      (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.identityProvider !== undefined) {
+      obj.identityProvider = IdentityProvider.toJSON(message.identityProvider);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -606,7 +620,9 @@ export const DeleteIdentityProviderRequest = {
 
   toJSON(message: DeleteIdentityProviderRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -662,7 +678,9 @@ export const UndeleteIdentityProviderRequest = {
 
   toJSON(message: UndeleteIdentityProviderRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -733,11 +751,12 @@ export const TestIdentityProviderRequest = {
 
   toJSON(message: TestIdentityProviderRequest): unknown {
     const obj: any = {};
-    message.identityProvider !== undefined &&
-      (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
-    message.oauth2Context !== undefined && (obj.oauth2Context = message.oauth2Context
-      ? OAuth2IdentityProviderTestRequestContext.toJSON(message.oauth2Context)
-      : undefined);
+    if (message.identityProvider !== undefined) {
+      obj.identityProvider = IdentityProvider.toJSON(message.identityProvider);
+    }
+    if (message.oauth2Context !== undefined) {
+      obj.oauth2Context = OAuth2IdentityProviderTestRequestContext.toJSON(message.oauth2Context);
+    }
     return obj;
   },
 
@@ -798,7 +817,9 @@ export const OAuth2IdentityProviderTestRequestContext = {
 
   toJSON(message: OAuth2IdentityProviderTestRequestContext): unknown {
     const obj: any = {};
-    message.code !== undefined && (obj.code = message.code);
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
     return obj;
   },
 
@@ -966,14 +987,27 @@ export const IdentityProvider = {
 
   toJSON(message: IdentityProvider): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.title !== undefined && (obj.title = message.title);
-    message.domain !== undefined && (obj.domain = message.domain);
-    message.type !== undefined && (obj.type = identityProviderTypeToJSON(message.type));
-    message.config !== undefined &&
-      (obj.config = message.config ? IdentityProviderConfig.toJSON(message.config) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.uid !== "") {
+      obj.uid = message.uid;
+    }
+    if (message.state !== 0) {
+      obj.state = stateToJSON(message.state);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.domain !== "") {
+      obj.domain = message.domain;
+    }
+    if (message.type !== 0) {
+      obj.type = identityProviderTypeToJSON(message.type);
+    }
+    if (message.config !== undefined) {
+      obj.config = IdentityProviderConfig.toJSON(message.config);
+    }
     return obj;
   },
 
@@ -1050,10 +1084,12 @@ export const IdentityProviderConfig = {
 
   toJSON(message: IdentityProviderConfig): unknown {
     const obj: any = {};
-    message.oauth2Config !== undefined &&
-      (obj.oauth2Config = message.oauth2Config ? OAuth2IdentityProviderConfig.toJSON(message.oauth2Config) : undefined);
-    message.oidcConfig !== undefined &&
-      (obj.oidcConfig = message.oidcConfig ? OIDCIdentityProviderConfig.toJSON(message.oidcConfig) : undefined);
+    if (message.oauth2Config !== undefined) {
+      obj.oauth2Config = OAuth2IdentityProviderConfig.toJSON(message.oauth2Config);
+    }
+    if (message.oidcConfig !== undefined) {
+      obj.oidcConfig = OIDCIdentityProviderConfig.toJSON(message.oidcConfig);
+    }
     return obj;
   },
 
@@ -1202,19 +1238,30 @@ export const OAuth2IdentityProviderConfig = {
 
   toJSON(message: OAuth2IdentityProviderConfig): unknown {
     const obj: any = {};
-    message.authUrl !== undefined && (obj.authUrl = message.authUrl);
-    message.tokenUrl !== undefined && (obj.tokenUrl = message.tokenUrl);
-    message.userInfoUrl !== undefined && (obj.userInfoUrl = message.userInfoUrl);
-    message.clientId !== undefined && (obj.clientId = message.clientId);
-    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
-    if (message.scopes) {
-      obj.scopes = message.scopes.map((e) => e);
-    } else {
-      obj.scopes = [];
+    if (message.authUrl !== "") {
+      obj.authUrl = message.authUrl;
     }
-    message.fieldMapping !== undefined &&
-      (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
-    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
+    if (message.tokenUrl !== "") {
+      obj.tokenUrl = message.tokenUrl;
+    }
+    if (message.userInfoUrl !== "") {
+      obj.userInfoUrl = message.userInfoUrl;
+    }
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
+    if (message.scopes?.length) {
+      obj.scopes = message.scopes;
+    }
+    if (message.fieldMapping !== undefined) {
+      obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
+    }
+    if (message.skipTlsVerify === true) {
+      obj.skipTlsVerify = message.skipTlsVerify;
+    }
     return obj;
   },
 
@@ -1336,17 +1383,24 @@ export const OIDCIdentityProviderConfig = {
 
   toJSON(message: OIDCIdentityProviderConfig): unknown {
     const obj: any = {};
-    message.issuer !== undefined && (obj.issuer = message.issuer);
-    message.clientId !== undefined && (obj.clientId = message.clientId);
-    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
-    if (message.scopes) {
-      obj.scopes = message.scopes.map((e) => e);
-    } else {
-      obj.scopes = [];
+    if (message.issuer !== "") {
+      obj.issuer = message.issuer;
     }
-    message.fieldMapping !== undefined &&
-      (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
-    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
+    if (message.scopes?.length) {
+      obj.scopes = message.scopes;
+    }
+    if (message.fieldMapping !== undefined) {
+      obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
+    }
+    if (message.skipTlsVerify === true) {
+      obj.skipTlsVerify = message.skipTlsVerify;
+    }
     return obj;
   },
 
@@ -1433,9 +1487,15 @@ export const FieldMapping = {
 
   toJSON(message: FieldMapping): unknown {
     const obj: any = {};
-    message.identifier !== undefined && (obj.identifier = message.identifier);
-    message.displayName !== undefined && (obj.displayName = message.displayName);
-    message.email !== undefined && (obj.email = message.email);
+    if (message.identifier !== "") {
+      obj.identifier = message.identifier;
+    }
+    if (message.displayName !== "") {
+      obj.displayName = message.displayName;
+    }
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
     return obj;
   },
 

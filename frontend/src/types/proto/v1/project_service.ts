@@ -1208,7 +1208,9 @@ export const GetProjectRequest = {
 
   toJSON(message: GetProjectRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -1288,9 +1290,15 @@ export const ListProjectsRequest = {
 
   toJSON(message: ListProjectsRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.showDeleted === true) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
@@ -1361,12 +1369,12 @@ export const ListProjectsResponse = {
 
   toJSON(message: ListProjectsResponse): unknown {
     const obj: any = {};
-    if (message.projects) {
-      obj.projects = message.projects.map((e) => e ? Project.toJSON(e) : undefined);
-    } else {
-      obj.projects = [];
+    if (message.projects?.length) {
+      obj.projects = message.projects.map((e) => Project.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -1447,9 +1455,15 @@ export const SearchProjectsRequest = {
 
   toJSON(message: SearchProjectsRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.filter !== undefined && (obj.filter = message.filter);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
@@ -1520,12 +1534,12 @@ export const SearchProjectsResponse = {
 
   toJSON(message: SearchProjectsResponse): unknown {
     const obj: any = {};
-    if (message.projects) {
-      obj.projects = message.projects.map((e) => e ? Project.toJSON(e) : undefined);
-    } else {
-      obj.projects = [];
+    if (message.projects?.length) {
+      obj.projects = message.projects.map((e) => Project.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -1595,8 +1609,12 @@ export const CreateProjectRequest = {
 
   toJSON(message: CreateProjectRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project ? Project.toJSON(message.project) : undefined);
-    message.projectId !== undefined && (obj.projectId = message.projectId);
+    if (message.project !== undefined) {
+      obj.project = Project.toJSON(message.project);
+    }
+    if (message.projectId !== "") {
+      obj.projectId = message.projectId;
+    }
     return obj;
   },
 
@@ -1668,8 +1686,12 @@ export const UpdateProjectRequest = {
 
   toJSON(message: UpdateProjectRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project ? Project.toJSON(message.project) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.project !== undefined) {
+      obj.project = Project.toJSON(message.project);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -1741,8 +1763,12 @@ export const DeleteProjectRequest = {
 
   toJSON(message: DeleteProjectRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.force !== undefined && (obj.force = message.force);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.force === true) {
+      obj.force = message.force;
+    }
     return obj;
   },
 
@@ -1799,7 +1825,9 @@ export const UndeleteProjectRequest = {
 
   toJSON(message: UndeleteProjectRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -1855,7 +1883,9 @@ export const GetIamPolicyRequest = {
 
   toJSON(message: GetIamPolicyRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
+    if (message.project !== "") {
+      obj.project = message.project;
+    }
     return obj;
   },
 
@@ -1924,11 +1954,11 @@ export const BatchGetIamPolicyRequest = {
 
   toJSON(message: BatchGetIamPolicyRequest): unknown {
     const obj: any = {};
-    message.scope !== undefined && (obj.scope = message.scope);
-    if (message.names) {
-      obj.names = message.names.map((e) => e);
-    } else {
-      obj.names = [];
+    if (message.scope !== "") {
+      obj.scope = message.scope;
+    }
+    if (message.names?.length) {
+      obj.names = message.names;
     }
     return obj;
   },
@@ -1990,12 +2020,8 @@ export const BatchGetIamPolicyResponse = {
 
   toJSON(message: BatchGetIamPolicyResponse): unknown {
     const obj: any = {};
-    if (message.policyResults) {
-      obj.policyResults = message.policyResults.map((e) =>
-        e ? BatchGetIamPolicyResponse_PolicyResult.toJSON(e) : undefined
-      );
-    } else {
-      obj.policyResults = [];
+    if (message.policyResults?.length) {
+      obj.policyResults = message.policyResults.map((e) => BatchGetIamPolicyResponse_PolicyResult.toJSON(e));
     }
     return obj;
   },
@@ -2066,8 +2092,12 @@ export const BatchGetIamPolicyResponse_PolicyResult = {
 
   toJSON(message: BatchGetIamPolicyResponse_PolicyResult): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
-    message.policy !== undefined && (obj.policy = message.policy ? IamPolicy.toJSON(message.policy) : undefined);
+    if (message.project !== "") {
+      obj.project = message.project;
+    }
+    if (message.policy !== undefined) {
+      obj.policy = IamPolicy.toJSON(message.policy);
+    }
     return obj;
   },
 
@@ -2139,8 +2169,12 @@ export const SetIamPolicyRequest = {
 
   toJSON(message: SetIamPolicyRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
-    message.policy !== undefined && (obj.policy = message.policy ? IamPolicy.toJSON(message.policy) : undefined);
+    if (message.project !== "") {
+      obj.project = message.project;
+    }
+    if (message.policy !== undefined) {
+      obj.policy = IamPolicy.toJSON(message.policy);
+    }
     return obj;
   },
 
@@ -2199,7 +2233,9 @@ export const GetDeploymentConfigRequest = {
 
   toJSON(message: GetDeploymentConfigRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -2255,7 +2291,9 @@ export const UpdateDeploymentConfigRequest = {
 
   toJSON(message: UpdateDeploymentConfigRequest): unknown {
     const obj: any = {};
-    message.config !== undefined && (obj.config = message.config ? DeploymentConfig.toJSON(message.config) : undefined);
+    if (message.config !== undefined) {
+      obj.config = DeploymentConfig.toJSON(message.config);
+    }
     return obj;
   },
 
@@ -2339,11 +2377,15 @@ export const UpdateProjectGitOpsInfoRequest = {
 
   toJSON(message: UpdateProjectGitOpsInfoRequest): unknown {
     const obj: any = {};
-    message.projectGitopsInfo !== undefined && (obj.projectGitopsInfo = message.projectGitopsInfo
-      ? ProjectGitOpsInfo.toJSON(message.projectGitopsInfo)
-      : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
-    message.allowMissing !== undefined && (obj.allowMissing = message.allowMissing);
+    if (message.projectGitopsInfo !== undefined) {
+      obj.projectGitopsInfo = ProjectGitOpsInfo.toJSON(message.projectGitopsInfo);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
+    if (message.allowMissing === true) {
+      obj.allowMissing = message.allowMissing;
+    }
     return obj;
   },
 
@@ -2403,7 +2445,9 @@ export const UnsetProjectGitOpsInfoRequest = {
 
   toJSON(message: UnsetProjectGitOpsInfoRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -2459,7 +2503,9 @@ export const GetProjectGitOpsInfoRequest = {
 
   toJSON(message: GetProjectGitOpsInfoRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -2515,7 +2561,9 @@ export const SetupSQLReviewCIRequest = {
 
   toJSON(message: SetupSQLReviewCIRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -2571,7 +2619,9 @@ export const SetupSQLReviewCIResponse = {
 
   toJSON(message: SetupSQLReviewCIResponse): unknown {
     const obj: any = {};
-    message.pullRequestUrl !== undefined && (obj.pullRequestUrl = message.pullRequestUrl);
+    if (message.pullRequestUrl !== "") {
+      obj.pullRequestUrl = message.pullRequestUrl;
+    }
     return obj;
   },
 
@@ -2751,20 +2801,38 @@ export const Project = {
 
   toJSON(message: Project): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.title !== undefined && (obj.title = message.title);
-    message.key !== undefined && (obj.key = message.key);
-    message.workflow !== undefined && (obj.workflow = workflowToJSON(message.workflow));
-    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
-    message.tenantMode !== undefined && (obj.tenantMode = tenantModeToJSON(message.tenantMode));
-    message.dbNameTemplate !== undefined && (obj.dbNameTemplate = message.dbNameTemplate);
-    message.schemaChange !== undefined && (obj.schemaChange = schemaChangeToJSON(message.schemaChange));
-    if (message.webhooks) {
-      obj.webhooks = message.webhooks.map((e) => e ? Webhook.toJSON(e) : undefined);
-    } else {
-      obj.webhooks = [];
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.uid !== "") {
+      obj.uid = message.uid;
+    }
+    if (message.state !== 0) {
+      obj.state = stateToJSON(message.state);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.workflow !== 0) {
+      obj.workflow = workflowToJSON(message.workflow);
+    }
+    if (message.visibility !== 0) {
+      obj.visibility = visibilityToJSON(message.visibility);
+    }
+    if (message.tenantMode !== 0) {
+      obj.tenantMode = tenantModeToJSON(message.tenantMode);
+    }
+    if (message.dbNameTemplate !== "") {
+      obj.dbNameTemplate = message.dbNameTemplate;
+    }
+    if (message.schemaChange !== 0) {
+      obj.schemaChange = schemaChangeToJSON(message.schemaChange);
+    }
+    if (message.webhooks?.length) {
+      obj.webhooks = message.webhooks.map((e) => Webhook.toJSON(e));
     }
     return obj;
   },
@@ -2844,8 +2912,12 @@ export const AddWebhookRequest = {
 
   toJSON(message: AddWebhookRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
-    message.webhook !== undefined && (obj.webhook = message.webhook ? Webhook.toJSON(message.webhook) : undefined);
+    if (message.project !== "") {
+      obj.project = message.project;
+    }
+    if (message.webhook !== undefined) {
+      obj.webhook = Webhook.toJSON(message.webhook);
+    }
     return obj;
   },
 
@@ -2917,8 +2989,12 @@ export const UpdateWebhookRequest = {
 
   toJSON(message: UpdateWebhookRequest): unknown {
     const obj: any = {};
-    message.webhook !== undefined && (obj.webhook = message.webhook ? Webhook.toJSON(message.webhook) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.webhook !== undefined) {
+      obj.webhook = Webhook.toJSON(message.webhook);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -2977,7 +3053,9 @@ export const RemoveWebhookRequest = {
 
   toJSON(message: RemoveWebhookRequest): unknown {
     const obj: any = {};
-    message.webhook !== undefined && (obj.webhook = message.webhook ? Webhook.toJSON(message.webhook) : undefined);
+    if (message.webhook !== undefined) {
+      obj.webhook = Webhook.toJSON(message.webhook);
+    }
     return obj;
   },
 
@@ -3048,8 +3126,12 @@ export const TestWebhookRequest = {
 
   toJSON(message: TestWebhookRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
-    message.webhook !== undefined && (obj.webhook = message.webhook ? Webhook.toJSON(message.webhook) : undefined);
+    if (message.project !== "") {
+      obj.project = message.project;
+    }
+    if (message.webhook !== undefined) {
+      obj.webhook = Webhook.toJSON(message.webhook);
+    }
     return obj;
   },
 
@@ -3108,7 +3190,9 @@ export const TestWebhookResponse = {
 
   toJSON(message: TestWebhookResponse): unknown {
     const obj: any = {};
-    message.error !== undefined && (obj.error = message.error);
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
     return obj;
   },
 
@@ -3224,14 +3308,20 @@ export const Webhook = {
 
   toJSON(message: Webhook): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.type !== undefined && (obj.type = webhook_TypeToJSON(message.type));
-    message.title !== undefined && (obj.title = message.title);
-    message.url !== undefined && (obj.url = message.url);
-    if (message.notificationTypes) {
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.type !== 0) {
+      obj.type = webhook_TypeToJSON(message.type);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.notificationTypes?.length) {
       obj.notificationTypes = message.notificationTypes.map((e) => activity_TypeToJSON(e));
-    } else {
-      obj.notificationTypes = [];
     }
     return obj;
   },
@@ -3316,9 +3406,15 @@ export const DeploymentConfig = {
 
   toJSON(message: DeploymentConfig): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.schedule !== undefined && (obj.schedule = message.schedule ? Schedule.toJSON(message.schedule) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.schedule !== undefined) {
+      obj.schedule = Schedule.toJSON(message.schedule);
+    }
     return obj;
   },
 
@@ -3382,10 +3478,8 @@ export const Schedule = {
 
   toJSON(message: Schedule): unknown {
     const obj: any = {};
-    if (message.deployments) {
-      obj.deployments = message.deployments.map((e) => e ? ScheduleDeployment.toJSON(e) : undefined);
-    } else {
-      obj.deployments = [];
+    if (message.deployments?.length) {
+      obj.deployments = message.deployments.map((e) => ScheduleDeployment.toJSON(e));
     }
     return obj;
   },
@@ -3455,8 +3549,12 @@ export const ScheduleDeployment = {
 
   toJSON(message: ScheduleDeployment): unknown {
     const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
-    message.spec !== undefined && (obj.spec = message.spec ? DeploymentSpec.toJSON(message.spec) : undefined);
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.spec !== undefined) {
+      obj.spec = DeploymentSpec.toJSON(message.spec);
+    }
     return obj;
   },
 
@@ -3515,8 +3613,9 @@ export const DeploymentSpec = {
 
   toJSON(message: DeploymentSpec): unknown {
     const obj: any = {};
-    message.labelSelector !== undefined &&
-      (obj.labelSelector = message.labelSelector ? LabelSelector.toJSON(message.labelSelector) : undefined);
+    if (message.labelSelector !== undefined) {
+      obj.labelSelector = LabelSelector.toJSON(message.labelSelector);
+    }
     return obj;
   },
 
@@ -3578,10 +3677,8 @@ export const LabelSelector = {
 
   toJSON(message: LabelSelector): unknown {
     const obj: any = {};
-    if (message.matchExpressions) {
-      obj.matchExpressions = message.matchExpressions.map((e) => e ? LabelSelectorRequirement.toJSON(e) : undefined);
-    } else {
-      obj.matchExpressions = [];
+    if (message.matchExpressions?.length) {
+      obj.matchExpressions = message.matchExpressions.map((e) => LabelSelectorRequirement.toJSON(e));
     }
     return obj;
   },
@@ -3662,12 +3759,14 @@ export const LabelSelectorRequirement = {
 
   toJSON(message: LabelSelectorRequirement): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.operator !== undefined && (obj.operator = operatorTypeToJSON(message.operator));
-    if (message.values) {
-      obj.values = message.values.map((e) => e);
-    } else {
-      obj.values = [];
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.operator !== 0) {
+      obj.operator = operatorTypeToJSON(message.operator);
+    }
+    if (message.values?.length) {
+      obj.values = message.values;
     }
     return obj;
   },
@@ -3794,9 +3893,15 @@ export const ListDatabaseGroupsRequest = {
 
   toJSON(message: ListDatabaseGroupsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -3869,12 +3974,12 @@ export const ListDatabaseGroupsResponse = {
 
   toJSON(message: ListDatabaseGroupsResponse): unknown {
     const obj: any = {};
-    if (message.databaseGroups) {
-      obj.databaseGroups = message.databaseGroups.map((e) => e ? DatabaseGroup.toJSON(e) : undefined);
-    } else {
-      obj.databaseGroups = [];
+    if (message.databaseGroups?.length) {
+      obj.databaseGroups = message.databaseGroups.map((e) => DatabaseGroup.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -3944,8 +4049,12 @@ export const GetDatabaseGroupRequest = {
 
   toJSON(message: GetDatabaseGroupRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.view !== undefined && (obj.view = databaseGroupViewToJSON(message.view));
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.view !== 0) {
+      obj.view = databaseGroupViewToJSON(message.view);
+    }
     return obj;
   },
 
@@ -4037,11 +4146,18 @@ export const CreateDatabaseGroupRequest = {
 
   toJSON(message: CreateDatabaseGroupRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.databaseGroup !== undefined &&
-      (obj.databaseGroup = message.databaseGroup ? DatabaseGroup.toJSON(message.databaseGroup) : undefined);
-    message.databaseGroupId !== undefined && (obj.databaseGroupId = message.databaseGroupId);
-    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.databaseGroup !== undefined) {
+      obj.databaseGroup = DatabaseGroup.toJSON(message.databaseGroup);
+    }
+    if (message.databaseGroupId !== "") {
+      obj.databaseGroupId = message.databaseGroupId;
+    }
+    if (message.validateOnly === true) {
+      obj.validateOnly = message.validateOnly;
+    }
     return obj;
   },
 
@@ -4115,9 +4231,12 @@ export const UpdateDatabaseGroupRequest = {
 
   toJSON(message: UpdateDatabaseGroupRequest): unknown {
     const obj: any = {};
-    message.databaseGroup !== undefined &&
-      (obj.databaseGroup = message.databaseGroup ? DatabaseGroup.toJSON(message.databaseGroup) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.databaseGroup !== undefined) {
+      obj.databaseGroup = DatabaseGroup.toJSON(message.databaseGroup);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -4176,7 +4295,9 @@ export const DeleteDatabaseGroupRequest = {
 
   toJSON(message: DeleteDatabaseGroupRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -4282,19 +4403,20 @@ export const DatabaseGroup = {
 
   toJSON(message: DatabaseGroup): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.databasePlaceholder !== undefined && (obj.databasePlaceholder = message.databasePlaceholder);
-    message.databaseExpr !== undefined &&
-      (obj.databaseExpr = message.databaseExpr ? Expr.toJSON(message.databaseExpr) : undefined);
-    if (message.matchedDatabases) {
-      obj.matchedDatabases = message.matchedDatabases.map((e) => e ? DatabaseGroup_Database.toJSON(e) : undefined);
-    } else {
-      obj.matchedDatabases = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    if (message.unmatchedDatabases) {
-      obj.unmatchedDatabases = message.unmatchedDatabases.map((e) => e ? DatabaseGroup_Database.toJSON(e) : undefined);
-    } else {
-      obj.unmatchedDatabases = [];
+    if (message.databasePlaceholder !== "") {
+      obj.databasePlaceholder = message.databasePlaceholder;
+    }
+    if (message.databaseExpr !== undefined) {
+      obj.databaseExpr = Expr.toJSON(message.databaseExpr);
+    }
+    if (message.matchedDatabases?.length) {
+      obj.matchedDatabases = message.matchedDatabases.map((e) => DatabaseGroup_Database.toJSON(e));
+    }
+    if (message.unmatchedDatabases?.length) {
+      obj.unmatchedDatabases = message.unmatchedDatabases.map((e) => DatabaseGroup_Database.toJSON(e));
     }
     return obj;
   },
@@ -4357,7 +4479,9 @@ export const DatabaseGroup_Database = {
 
   toJSON(message: DatabaseGroup_Database): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -4448,11 +4572,18 @@ export const CreateSchemaGroupRequest = {
 
   toJSON(message: CreateSchemaGroupRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.schemaGroup !== undefined &&
-      (obj.schemaGroup = message.schemaGroup ? SchemaGroup.toJSON(message.schemaGroup) : undefined);
-    message.schemaGroupId !== undefined && (obj.schemaGroupId = message.schemaGroupId);
-    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.schemaGroup !== undefined) {
+      obj.schemaGroup = SchemaGroup.toJSON(message.schemaGroup);
+    }
+    if (message.schemaGroupId !== "") {
+      obj.schemaGroupId = message.schemaGroupId;
+    }
+    if (message.validateOnly === true) {
+      obj.validateOnly = message.validateOnly;
+    }
     return obj;
   },
 
@@ -4526,9 +4657,12 @@ export const UpdateSchemaGroupRequest = {
 
   toJSON(message: UpdateSchemaGroupRequest): unknown {
     const obj: any = {};
-    message.schemaGroup !== undefined &&
-      (obj.schemaGroup = message.schemaGroup ? SchemaGroup.toJSON(message.schemaGroup) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.schemaGroup !== undefined) {
+      obj.schemaGroup = SchemaGroup.toJSON(message.schemaGroup);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -4587,7 +4721,9 @@ export const DeleteSchemaGroupRequest = {
 
   toJSON(message: DeleteSchemaGroupRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -4667,9 +4803,15 @@ export const ListSchemaGroupsRequest = {
 
   toJSON(message: ListSchemaGroupsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -4742,12 +4884,12 @@ export const ListSchemaGroupsResponse = {
 
   toJSON(message: ListSchemaGroupsResponse): unknown {
     const obj: any = {};
-    if (message.schemaGroups) {
-      obj.schemaGroups = message.schemaGroups.map((e) => e ? SchemaGroup.toJSON(e) : undefined);
-    } else {
-      obj.schemaGroups = [];
+    if (message.schemaGroups?.length) {
+      obj.schemaGroups = message.schemaGroups.map((e) => SchemaGroup.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -4817,8 +4959,12 @@ export const GetSchemaGroupRequest = {
 
   toJSON(message: GetSchemaGroupRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.view !== undefined && (obj.view = schemaGroupViewToJSON(message.view));
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.view !== 0) {
+      obj.view = schemaGroupViewToJSON(message.view);
+    }
     return obj;
   },
 
@@ -4925,18 +5071,20 @@ export const SchemaGroup = {
 
   toJSON(message: SchemaGroup): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.tableExpr !== undefined && (obj.tableExpr = message.tableExpr ? Expr.toJSON(message.tableExpr) : undefined);
-    message.tablePlaceholder !== undefined && (obj.tablePlaceholder = message.tablePlaceholder);
-    if (message.matchedTables) {
-      obj.matchedTables = message.matchedTables.map((e) => e ? SchemaGroup_Table.toJSON(e) : undefined);
-    } else {
-      obj.matchedTables = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    if (message.unmatchedTables) {
-      obj.unmatchedTables = message.unmatchedTables.map((e) => e ? SchemaGroup_Table.toJSON(e) : undefined);
-    } else {
-      obj.unmatchedTables = [];
+    if (message.tableExpr !== undefined) {
+      obj.tableExpr = Expr.toJSON(message.tableExpr);
+    }
+    if (message.tablePlaceholder !== "") {
+      obj.tablePlaceholder = message.tablePlaceholder;
+    }
+    if (message.matchedTables?.length) {
+      obj.matchedTables = message.matchedTables.map((e) => SchemaGroup_Table.toJSON(e));
+    }
+    if (message.unmatchedTables?.length) {
+      obj.unmatchedTables = message.unmatchedTables.map((e) => SchemaGroup_Table.toJSON(e));
     }
     return obj;
   },
@@ -5023,9 +5171,15 @@ export const SchemaGroup_Table = {
 
   toJSON(message: SchemaGroup_Table): unknown {
     const obj: any = {};
-    message.database !== undefined && (obj.database = message.database);
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.table !== undefined && (obj.table = message.table);
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
     return obj;
   },
 

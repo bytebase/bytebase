@@ -1,7 +1,7 @@
 /* eslint-disable */
-import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
 import { StringValue } from "../google/protobuf/wrappers";
+import Long = require("long");
 
 export const protobufPackage = "bytebase.store";
 
@@ -479,21 +479,27 @@ export const DatabaseMetadata = {
 
   toJSON(message: DatabaseMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.schemas) {
-      obj.schemas = message.schemas.map((e) => e ? SchemaMetadata.toJSON(e) : undefined);
-    } else {
-      obj.schemas = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
-    message.collation !== undefined && (obj.collation = message.collation);
-    if (message.extensions) {
-      obj.extensions = message.extensions.map((e) => e ? ExtensionMetadata.toJSON(e) : undefined);
-    } else {
-      obj.extensions = [];
+    if (message.schemas?.length) {
+      obj.schemas = message.schemas.map((e) => SchemaMetadata.toJSON(e));
     }
-    message.datashare !== undefined && (obj.datashare = message.datashare);
-    message.serviceName !== undefined && (obj.serviceName = message.serviceName);
+    if (message.characterSet !== "") {
+      obj.characterSet = message.characterSet;
+    }
+    if (message.collation !== "") {
+      obj.collation = message.collation;
+    }
+    if (message.extensions?.length) {
+      obj.extensions = message.extensions.map((e) => ExtensionMetadata.toJSON(e));
+    }
+    if (message.datashare === true) {
+      obj.datashare = message.datashare;
+    }
+    if (message.serviceName !== "") {
+      obj.serviceName = message.serviceName;
+    }
     return obj;
   },
 
@@ -612,31 +618,23 @@ export const SchemaMetadata = {
 
   toJSON(message: SchemaMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.tables) {
-      obj.tables = message.tables.map((e) => e ? TableMetadata.toJSON(e) : undefined);
-    } else {
-      obj.tables = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    if (message.views) {
-      obj.views = message.views.map((e) => e ? ViewMetadata.toJSON(e) : undefined);
-    } else {
-      obj.views = [];
+    if (message.tables?.length) {
+      obj.tables = message.tables.map((e) => TableMetadata.toJSON(e));
     }
-    if (message.functions) {
-      obj.functions = message.functions.map((e) => e ? FunctionMetadata.toJSON(e) : undefined);
-    } else {
-      obj.functions = [];
+    if (message.views?.length) {
+      obj.views = message.views.map((e) => ViewMetadata.toJSON(e));
     }
-    if (message.streams) {
-      obj.streams = message.streams.map((e) => e ? StreamMetadata.toJSON(e) : undefined);
-    } else {
-      obj.streams = [];
+    if (message.functions?.length) {
+      obj.functions = message.functions.map((e) => FunctionMetadata.toJSON(e));
     }
-    if (message.tasks) {
-      obj.tasks = message.tasks.map((e) => e ? TaskMetadata.toJSON(e) : undefined);
-    } else {
-      obj.tasks = [];
+    if (message.streams?.length) {
+      obj.streams = message.streams.map((e) => StreamMetadata.toJSON(e));
+    }
+    if (message.tasks?.length) {
+      obj.tasks = message.tasks.map((e) => TaskMetadata.toJSON(e));
     }
     return obj;
   },
@@ -810,20 +808,36 @@ export const TaskMetadata = {
 
   toJSON(message: TaskMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.id !== undefined && (obj.id = message.id);
-    message.owner !== undefined && (obj.owner = message.owner);
-    message.comment !== undefined && (obj.comment = message.comment);
-    message.warehouse !== undefined && (obj.warehouse = message.warehouse);
-    message.schedule !== undefined && (obj.schedule = message.schedule);
-    if (message.predecessors) {
-      obj.predecessors = message.predecessors.map((e) => e);
-    } else {
-      obj.predecessors = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    message.state !== undefined && (obj.state = taskMetadata_StateToJSON(message.state));
-    message.condition !== undefined && (obj.condition = message.condition);
-    message.definition !== undefined && (obj.definition = message.definition);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
+    if (message.warehouse !== "") {
+      obj.warehouse = message.warehouse;
+    }
+    if (message.schedule !== "") {
+      obj.schedule = message.schedule;
+    }
+    if (message.predecessors?.length) {
+      obj.predecessors = message.predecessors;
+    }
+    if (message.state !== 0) {
+      obj.state = taskMetadata_StateToJSON(message.state);
+    }
+    if (message.condition !== "") {
+      obj.condition = message.condition;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
     return obj;
   },
 
@@ -967,14 +981,30 @@ export const StreamMetadata = {
 
   toJSON(message: StreamMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.tableName !== undefined && (obj.tableName = message.tableName);
-    message.owner !== undefined && (obj.owner = message.owner);
-    message.comment !== undefined && (obj.comment = message.comment);
-    message.type !== undefined && (obj.type = streamMetadata_TypeToJSON(message.type));
-    message.stale !== undefined && (obj.stale = message.stale);
-    message.mode !== undefined && (obj.mode = streamMetadata_ModeToJSON(message.mode));
-    message.definition !== undefined && (obj.definition = message.definition);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.tableName !== "") {
+      obj.tableName = message.tableName;
+    }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
+    if (message.type !== 0) {
+      obj.type = streamMetadata_TypeToJSON(message.type);
+    }
+    if (message.stale === true) {
+      obj.stale = message.stale;
+    }
+    if (message.mode !== 0) {
+      obj.mode = streamMetadata_ModeToJSON(message.mode);
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
     return obj;
   },
 
@@ -1175,29 +1205,41 @@ export const TableMetadata = {
 
   toJSON(message: TableMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.columns) {
-      obj.columns = message.columns.map((e) => e ? ColumnMetadata.toJSON(e) : undefined);
-    } else {
-      obj.columns = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    if (message.indexes) {
-      obj.indexes = message.indexes.map((e) => e ? IndexMetadata.toJSON(e) : undefined);
-    } else {
-      obj.indexes = [];
+    if (message.columns?.length) {
+      obj.columns = message.columns.map((e) => ColumnMetadata.toJSON(e));
     }
-    message.engine !== undefined && (obj.engine = message.engine);
-    message.collation !== undefined && (obj.collation = message.collation);
-    message.rowCount !== undefined && (obj.rowCount = Math.round(message.rowCount));
-    message.dataSize !== undefined && (obj.dataSize = Math.round(message.dataSize));
-    message.indexSize !== undefined && (obj.indexSize = Math.round(message.indexSize));
-    message.dataFree !== undefined && (obj.dataFree = Math.round(message.dataFree));
-    message.createOptions !== undefined && (obj.createOptions = message.createOptions);
-    message.comment !== undefined && (obj.comment = message.comment);
-    if (message.foreignKeys) {
-      obj.foreignKeys = message.foreignKeys.map((e) => e ? ForeignKeyMetadata.toJSON(e) : undefined);
-    } else {
-      obj.foreignKeys = [];
+    if (message.indexes?.length) {
+      obj.indexes = message.indexes.map((e) => IndexMetadata.toJSON(e));
+    }
+    if (message.engine !== "") {
+      obj.engine = message.engine;
+    }
+    if (message.collation !== "") {
+      obj.collation = message.collation;
+    }
+    if (message.rowCount !== 0) {
+      obj.rowCount = Math.round(message.rowCount);
+    }
+    if (message.dataSize !== 0) {
+      obj.dataSize = Math.round(message.dataSize);
+    }
+    if (message.indexSize !== 0) {
+      obj.indexSize = Math.round(message.indexSize);
+    }
+    if (message.dataFree !== 0) {
+      obj.dataFree = Math.round(message.dataFree);
+    }
+    if (message.createOptions !== "") {
+      obj.createOptions = message.createOptions;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
+    if (message.foreignKeys?.length) {
+      obj.foreignKeys = message.foreignKeys.map((e) => ForeignKeyMetadata.toJSON(e));
     }
     return obj;
   },
@@ -1353,14 +1395,30 @@ export const ColumnMetadata = {
 
   toJSON(message: ColumnMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.position !== undefined && (obj.position = Math.round(message.position));
-    message.default !== undefined && (obj.default = message.default);
-    message.nullable !== undefined && (obj.nullable = message.nullable);
-    message.type !== undefined && (obj.type = message.type);
-    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
-    message.collation !== undefined && (obj.collation = message.collation);
-    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.position !== 0) {
+      obj.position = Math.round(message.position);
+    }
+    if (message.default !== undefined) {
+      obj.default = message.default;
+    }
+    if (message.nullable === true) {
+      obj.nullable = message.nullable;
+    }
+    if (message.type !== "") {
+      obj.type = message.type;
+    }
+    if (message.characterSet !== "") {
+      obj.characterSet = message.characterSet;
+    }
+    if (message.collation !== "") {
+      obj.collation = message.collation;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -1460,13 +1518,17 @@ export const ViewMetadata = {
 
   toJSON(message: ViewMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.definition !== undefined && (obj.definition = message.definition);
-    message.comment !== undefined && (obj.comment = message.comment);
-    if (message.dependentColumns) {
-      obj.dependentColumns = message.dependentColumns.map((e) => e ? DependentColumn.toJSON(e) : undefined);
-    } else {
-      obj.dependentColumns = [];
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
+    if (message.dependentColumns?.length) {
+      obj.dependentColumns = message.dependentColumns.map((e) => DependentColumn.toJSON(e));
     }
     return obj;
   },
@@ -1550,9 +1612,15 @@ export const DependentColumn = {
 
   toJSON(message: DependentColumn): unknown {
     const obj: any = {};
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.table !== undefined && (obj.table = message.table);
-    message.column !== undefined && (obj.column = message.column);
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    if (message.column !== "") {
+      obj.column = message.column;
+    }
     return obj;
   },
 
@@ -1623,8 +1691,12 @@ export const FunctionMetadata = {
 
   toJSON(message: FunctionMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.definition !== undefined && (obj.definition = message.definition);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
     return obj;
   },
 
@@ -1749,17 +1821,27 @@ export const IndexMetadata = {
 
   toJSON(message: IndexMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.expressions) {
-      obj.expressions = message.expressions.map((e) => e);
-    } else {
-      obj.expressions = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    message.type !== undefined && (obj.type = message.type);
-    message.unique !== undefined && (obj.unique = message.unique);
-    message.primary !== undefined && (obj.primary = message.primary);
-    message.visible !== undefined && (obj.visible = message.visible);
-    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.expressions?.length) {
+      obj.expressions = message.expressions;
+    }
+    if (message.type !== "") {
+      obj.type = message.type;
+    }
+    if (message.unique === true) {
+      obj.unique = message.unique;
+    }
+    if (message.primary === true) {
+      obj.primary = message.primary;
+    }
+    if (message.visible === true) {
+      obj.visible = message.visible;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -1856,10 +1938,18 @@ export const ExtensionMetadata = {
 
   toJSON(message: ExtensionMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.version !== undefined && (obj.version = message.version);
-    message.description !== undefined && (obj.description = message.description);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
     return obj;
   },
 
@@ -2008,22 +2098,30 @@ export const ForeignKeyMetadata = {
 
   toJSON(message: ForeignKeyMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.columns) {
-      obj.columns = message.columns.map((e) => e);
-    } else {
-      obj.columns = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    message.referencedSchema !== undefined && (obj.referencedSchema = message.referencedSchema);
-    message.referencedTable !== undefined && (obj.referencedTable = message.referencedTable);
-    if (message.referencedColumns) {
-      obj.referencedColumns = message.referencedColumns.map((e) => e);
-    } else {
-      obj.referencedColumns = [];
+    if (message.columns?.length) {
+      obj.columns = message.columns;
     }
-    message.onDelete !== undefined && (obj.onDelete = message.onDelete);
-    message.onUpdate !== undefined && (obj.onUpdate = message.onUpdate);
-    message.matchType !== undefined && (obj.matchType = message.matchType);
+    if (message.referencedSchema !== "") {
+      obj.referencedSchema = message.referencedSchema;
+    }
+    if (message.referencedTable !== "") {
+      obj.referencedTable = message.referencedTable;
+    }
+    if (message.referencedColumns?.length) {
+      obj.referencedColumns = message.referencedColumns;
+    }
+    if (message.onDelete !== "") {
+      obj.onDelete = message.onDelete;
+    }
+    if (message.onUpdate !== "") {
+      obj.onUpdate = message.onUpdate;
+    }
+    if (message.matchType !== "") {
+      obj.matchType = message.matchType;
+    }
     return obj;
   },
 
@@ -2099,8 +2197,12 @@ export const InstanceRoleMetadata = {
 
   toJSON(message: InstanceRoleMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.grant !== undefined && (obj.grant = message.grant);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.grant !== "") {
+      obj.grant = message.grant;
+    }
     return obj;
   },
 
@@ -2157,10 +2259,8 @@ export const Secrets = {
 
   toJSON(message: Secrets): unknown {
     const obj: any = {};
-    if (message.items) {
-      obj.items = message.items.map((e) => e ? SecretItem.toJSON(e) : undefined);
-    } else {
-      obj.items = [];
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => SecretItem.toJSON(e));
     }
     return obj;
   },
@@ -2241,9 +2341,15 @@ export const SecretItem = {
 
   toJSON(message: SecretItem): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.value !== undefined && (obj.value = message.value);
-    message.description !== undefined && (obj.description = message.description);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
     return obj;
   },
 
@@ -2293,8 +2399,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

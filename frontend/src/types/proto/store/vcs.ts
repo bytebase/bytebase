@@ -1,6 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
+import Long = require("long");
 
 export const protobufPackage = "bytebase.store";
 
@@ -251,22 +251,39 @@ export const PushEvent = {
 
   toJSON(message: PushEvent): unknown {
     const obj: any = {};
-    message.vcsType !== undefined && (obj.vcsType = vcsTypeToJSON(message.vcsType));
-    message.baseDir !== undefined && (obj.baseDir = message.baseDir);
-    message.ref !== undefined && (obj.ref = message.ref);
-    message.before !== undefined && (obj.before = message.before);
-    message.after !== undefined && (obj.after = message.after);
-    message.repositoryId !== undefined && (obj.repositoryId = message.repositoryId);
-    message.repositoryUrl !== undefined && (obj.repositoryUrl = message.repositoryUrl);
-    message.repositoryFullPath !== undefined && (obj.repositoryFullPath = message.repositoryFullPath);
-    message.authorName !== undefined && (obj.authorName = message.authorName);
-    if (message.commits) {
-      obj.commits = message.commits.map((e) => e ? Commit.toJSON(e) : undefined);
-    } else {
-      obj.commits = [];
+    if (message.vcsType !== 0) {
+      obj.vcsType = vcsTypeToJSON(message.vcsType);
     }
-    message.fileCommit !== undefined &&
-      (obj.fileCommit = message.fileCommit ? FileCommit.toJSON(message.fileCommit) : undefined);
+    if (message.baseDir !== "") {
+      obj.baseDir = message.baseDir;
+    }
+    if (message.ref !== "") {
+      obj.ref = message.ref;
+    }
+    if (message.before !== "") {
+      obj.before = message.before;
+    }
+    if (message.after !== "") {
+      obj.after = message.after;
+    }
+    if (message.repositoryId !== "") {
+      obj.repositoryId = message.repositoryId;
+    }
+    if (message.repositoryUrl !== "") {
+      obj.repositoryUrl = message.repositoryUrl;
+    }
+    if (message.repositoryFullPath !== "") {
+      obj.repositoryFullPath = message.repositoryFullPath;
+    }
+    if (message.authorName !== "") {
+      obj.authorName = message.authorName;
+    }
+    if (message.commits?.length) {
+      obj.commits = message.commits.map((e) => Commit.toJSON(e));
+    }
+    if (message.fileCommit !== undefined) {
+      obj.fileCommit = FileCommit.toJSON(message.fileCommit);
+    }
     return obj;
   },
 
@@ -434,22 +451,32 @@ export const Commit = {
 
   toJSON(message: Commit): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.message !== undefined && (obj.message = message.message);
-    message.createdTs !== undefined && (obj.createdTs = Math.round(message.createdTs));
-    message.url !== undefined && (obj.url = message.url);
-    message.authorName !== undefined && (obj.authorName = message.authorName);
-    message.authorEmail !== undefined && (obj.authorEmail = message.authorEmail);
-    if (message.addedList) {
-      obj.addedList = message.addedList.map((e) => e);
-    } else {
-      obj.addedList = [];
+    if (message.id !== "") {
+      obj.id = message.id;
     }
-    if (message.modifiedList) {
-      obj.modifiedList = message.modifiedList.map((e) => e);
-    } else {
-      obj.modifiedList = [];
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.createdTs !== 0) {
+      obj.createdTs = Math.round(message.createdTs);
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.authorName !== "") {
+      obj.authorName = message.authorName;
+    }
+    if (message.authorEmail !== "") {
+      obj.authorEmail = message.authorEmail;
+    }
+    if (message.addedList?.length) {
+      obj.addedList = message.addedList;
+    }
+    if (message.modifiedList?.length) {
+      obj.modifiedList = message.modifiedList;
     }
     return obj;
   },
@@ -593,14 +620,30 @@ export const FileCommit = {
 
   toJSON(message: FileCommit): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.message !== undefined && (obj.message = message.message);
-    message.createdTs !== undefined && (obj.createdTs = Math.round(message.createdTs));
-    message.url !== undefined && (obj.url = message.url);
-    message.authorName !== undefined && (obj.authorName = message.authorName);
-    message.authorEmail !== undefined && (obj.authorEmail = message.authorEmail);
-    message.added !== undefined && (obj.added = message.added);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.createdTs !== 0) {
+      obj.createdTs = Math.round(message.createdTs);
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.authorName !== "") {
+      obj.authorName = message.authorName;
+    }
+    if (message.authorEmail !== "") {
+      obj.authorEmail = message.authorEmail;
+    }
+    if (message.added !== "") {
+      obj.added = message.added;
+    }
     return obj;
   },
 
@@ -655,8 +698,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
