@@ -7,6 +7,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	tsqlparser "github.com/bytebase/tsql-parser"
+	"github.com/pkg/errors"
 )
 
 // ParseTSQL parses the given SQL statement by using antlr4. Returns the AST and token stream if no error.
@@ -44,20 +45,22 @@ func ParseTSQL(statement string) (antlr.Tree, error) {
 // NormalizedTSqlTableNamePart returns the normalized table name part.
 // https://learn.microsoft.com/zh-cn/sql/relational-databases/databases/database-identifiers?view=sql-server-ver15
 // TODO(zp): currently, we returns the lower case of the part, we may need to get the CI/CS from the server/database.
-func NormalizedTSqlTableNamePart(part tsqlparser.IId_Context) string {
+func NormalizedTSqlTableNamePart(part tsqlparser.IId_Context) (string, error) {
 	if part == nil {
-		return ""
+		return "", nil
 	}
 	text := part.GetText()
 	if text == "" {
-		return ""
+		return "", nil
 	}
 	if text[0] == '[' && text[len(text)-1] == ']' {
 		text = text[1 : len(text)-1]
 	}
 	var sb strings.Builder
 	for _, r := range text {
-		sb.WriteRune(unicode.ToLower(r))
+		if _, err := sb.WriteRune(unicode.ToLower(r)); err != nil {
+			return "", errors.Wrapf(err, "failed to write rune: %q", r)
+		}
 	}
-	return sb.String()
+	return sb.String(), nil
 }

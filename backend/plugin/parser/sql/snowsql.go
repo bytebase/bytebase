@@ -182,7 +182,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 	var parts []string
 	database := l.currentDatabase
 	if d := objectName.GetD(); d != nil {
-		normalizedD := NormalizeSnowSqlObjectNamePart(d)
+		normalizedD := NormalizeSnowSQLObjectNamePart(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -191,7 +191,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 
 	schema := l.currentSchema
 	if s := objectName.GetS(); s != nil {
-		normalizedS := NormalizeSnowSqlObjectNamePart(s)
+		normalizedS := NormalizeSnowSQLObjectNamePart(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -200,7 +200,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 
 	var table string
 	if o := objectName.GetO(); o != nil {
-		normalizedO := NormalizeSnowSqlObjectNamePart(o)
+		normalizedO := NormalizeSnowSQLObjectNamePart(o)
 		if normalizedO != "" {
 			table = normalizedO
 		}
@@ -247,7 +247,7 @@ func NormalizeSnowSqlObjectName(objectName parser.IObject_nameContext, fallbackD
 
 	database := fallbackDatabaseName
 	if d := objectName.GetD(); d != nil {
-		normalizedD := NormalizeSnowSqlObjectNamePart(d)
+		normalizedD := NormalizeSnowSQLObjectNamePart(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -256,7 +256,7 @@ func NormalizeSnowSqlObjectName(objectName parser.IObject_nameContext, fallbackD
 
 	schema := fallbackSchemaName
 	if s := objectName.GetS(); s != nil {
-		normalizedS := NormalizeSnowSqlObjectNamePart(s)
+		normalizedS := NormalizeSnowSQLObjectNamePart(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -264,7 +264,7 @@ func NormalizeSnowSqlObjectName(objectName parser.IObject_nameContext, fallbackD
 	parts = append(parts, schema)
 
 	if o := objectName.GetO(); o != nil {
-		normalizedO := NormalizeSnowSqlObjectNamePart(o)
+		normalizedO := NormalizeSnowSQLObjectNamePart(o)
 		if normalizedO != "" {
 			parts = append(parts, normalizedO)
 		}
@@ -272,14 +272,14 @@ func NormalizeSnowSqlObjectName(objectName parser.IObject_nameContext, fallbackD
 	return strings.Join(parts, ".")
 }
 
-// NormalizeSnowsqlSchemaName normalizes the given schema name.
-func NormalizeSnowsqlSchemaName(schemaName parser.ISchema_nameContext, fallbackDatabaseName string) string {
+// NormalizeSnowSQLSchemaName normalizes the given schema name.
+func NormalizeSnowSQLSchemaName(schemaName parser.ISchema_nameContext, fallbackDatabaseName string) string {
 	ids := schemaName.AllId_()
 
 	var parts []string
 	database := fallbackDatabaseName
 	if len(ids) == 2 {
-		normalizedD := NormalizeSnowSqlObjectNamePart(ids[0])
+		normalizedD := NormalizeSnowSQLObjectNamePart(ids[0])
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -288,12 +288,12 @@ func NormalizeSnowsqlSchemaName(schemaName parser.ISchema_nameContext, fallbackD
 
 	var schema string
 	if len(ids) == 2 {
-		normalizedS := NormalizeSnowSqlObjectNamePart(ids[1])
+		normalizedS := NormalizeSnowSQLObjectNamePart(ids[1])
 		if normalizedS != "" {
 			schema = normalizedS
 		}
 	} else {
-		normalizedS := NormalizeSnowSqlObjectNamePart(ids[0])
+		normalizedS := NormalizeSnowSQLObjectNamePart(ids[0])
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -302,22 +302,22 @@ func NormalizeSnowsqlSchemaName(schemaName parser.ISchema_nameContext, fallbackD
 	return strings.Join(parts, ".")
 }
 
-// NormalizeSnowSqlObjectNamePart normalizes the object name part.
-func NormalizeSnowSqlObjectNamePart(part parser.IId_Context) string {
+// NormalizeSnowSQLObjectNamePart normalizes the object name part.
+func NormalizeSnowSQLObjectNamePart(part parser.IId_Context) string {
 	if part == nil {
 		return ""
 	}
-	return ExtractSnowSqlOrdinaryIdentifier(part.GetText())
+	return ExtractSnowSQLOrdinaryIdentifier(part.GetText())
 }
 
-// ExtractSnowSqlOrdinaryIdentifier extracts the ordinary object name from a string. It follows the following rules:
+// ExtractSnowSQLOrdinaryIdentifier extracts the ordinary object name from a string. It follows the following rules:
 //
 // 1. If there are no double quotes on either side, it will be converted to uppercase.
 //
 // 2. If there are double quotes on both sides, the case will not change, the double quotes on both sides will be removed, and `""` in content will be converted to `"`.
 //
 // Caller MUST ensure the identifier is VALID.
-func ExtractSnowSqlOrdinaryIdentifier(identifier string) string {
+func ExtractSnowSQLOrdinaryIdentifier(identifier string) string {
 	quoted := strings.HasPrefix(identifier, `"`) && strings.HasSuffix(identifier, `"`)
 	if quoted {
 		identifier = identifier[1 : len(identifier)-1]

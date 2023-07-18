@@ -79,7 +79,7 @@ func (l *tableDropNamingConventionChecker) generateAdvice() ([]advisor.Advice, e
 }
 
 func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	normalizedObjectName := bbparser.NormalizeSnowSqlObjectNamePart(ctx.Object_name().GetO())
+	normalizedObjectName := bbparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name().GetO())
 	if !l.format.MatchString(normalizedObjectName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

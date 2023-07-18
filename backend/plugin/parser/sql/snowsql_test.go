@@ -35,7 +35,7 @@ func TestSnowSqlExtractOrdinaryIdentifier(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ExtractSnowSqlOrdinaryIdentifier(tc.name)
+			got := ExtractSnowSQLOrdinaryIdentifier(tc.name)
 			require.Equal(t, tc.want, got, tc.description)
 		})
 	}
