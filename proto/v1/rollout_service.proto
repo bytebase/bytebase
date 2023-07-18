@@ -364,8 +364,8 @@ message PreviewRolloutRequest {
 
 message ListRolloutTaskRunsRequest {
   // The parent, which owns this collection of plans.
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  // Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-/taskRuns/-" to list all taskRuns from a rollout.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  // Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of taskRuns to return. The service may return fewer than

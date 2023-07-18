@@ -5948,7 +5948,6 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | visibility | [Visibility](#bytebase-v1-Visibility) |  |  |
 | tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
 | db_name_template | [string](#string) |  |  |
-| schema_version | [SchemaVersion](#bytebase-v1-SchemaVersion) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 
@@ -6936,7 +6935,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-/taskRuns/-&#34; to list all taskRuns from a rollout. |
+| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
 | page_size | [int32](#int32) |  | The maximum number of taskRuns to return. The service may return fewer than this value. If unspecified, at most 50 taskRuns will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListRolloutTaskRuns` call. Provide this to retrieve the subsequent page.
 
@@ -8131,7 +8130,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
-| payload | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
+| column | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
 
 
 

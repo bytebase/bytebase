@@ -38,6 +38,8 @@ const (
 	SettingPluginAgent SettingName = "bb.plugin.agent"
 	// SettingWorkspaceMailDelivery is the setting name for workspace mail delivery.
 	SettingWorkspaceMailDelivery SettingName = "bb.workspace.mail-delivery"
+	// SettingSchemaTemplate is the setting name for schema template.
+	SettingSchemaTemplate SettingName = "bb.workspace.schema-template"
 )
 
 // IMType is the type of IM.

@@ -106,7 +106,7 @@ message SchemaTemplateSetting {
 
     Engine engine = 2;
 
-    ColumnMetadata payload = 3;
+    ColumnMetadata column = 3;
   }
 
   repeated FieldTemplate field_templates = 1;

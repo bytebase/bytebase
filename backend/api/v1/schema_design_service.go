@@ -485,7 +485,7 @@ type tableState struct {
 }
 
 func (t *tableState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n", t.name)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
 	columns := []*columnState{}
@@ -497,7 +497,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	})
 	for i, column := range columns {
 		if i > 0 {
-			if _, err := buf.WriteString(",\n"); err != nil {
+			if _, err := buf.WriteString(",\n  "); err != nil {
 				return err
 			}
 		}
@@ -549,7 +549,7 @@ type columnState struct {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("  `%s` %s", c.name, c.tp)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
 		return err
 	}
 	return nil
@@ -668,11 +668,14 @@ func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (str
 type mysqlDesignSchemaGenerator struct {
 	*mysql.BaseMySQLParserListener
 
-	to     *databaseState
-	result strings.Builder
-	err    error
+	to                  *databaseState
+	result              strings.Builder
+	currentTable        *tableState
+	firstElementInTable bool
+	err                 error
 }
 
+// EnterCreateTable is called when production createTable is entered.
 func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if g.err != nil {
 		return
@@ -688,22 +691,141 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 		return
 	}
 
-	if _, ok := schema.tables[tableName]; !ok {
+	table, ok := schema.tables[tableName]
+	if !ok {
 		return
 	}
 
-	// TODO: compare table
+	g.currentTable = table
+	g.firstElementInTable = true
+
 	delete(schema.tables, tableName)
 	if _, err := g.result.WriteString("CREATE "); err != nil {
 		g.err = err
 		return
 	}
-	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.GetStart().GetTokenIndex(),
+		Stop:  ctx.TableElementList().GetStart().GetTokenIndex() - 1,
+	})); err != nil {
+		g.err = err
+		return
+	}
+}
+
+// ExitCreateTable is called when production createTable is exited.
+func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	var columnList []*columnState
+	for _, column := range g.currentTable.columns {
+		columnList = append(columnList, column)
+	}
+	sort.Slice(columnList, func(i, j int) bool {
+		return columnList[i].name < columnList[j].name
+	})
+	for _, column := range columnList {
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.result.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if err := column.toString(&g.result); err != nil {
+			g.err = err
+			return
+		}
+	}
+
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.TableElementList().GetStop().GetTokenIndex() + 1,
+		Stop:  ctx.GetStop().GetTokenIndex(),
+	})); err != nil {
 		g.err = err
 		return
 	}
 
 	if _, err := g.result.WriteString(";\n"); err != nil {
+		g.err = err
+		return
+	}
+
+	g.currentTable = nil
+	g.firstElementInTable = false
+}
+
+// EnterColumnDefinition is called when production columnDefinition is entered.
+func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefinitionContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	_, _, columnName := parser.NormalizeMySQLColumnName(ctx.ColumnName())
+	column, ok := g.currentTable.columns[columnName]
+	if !ok {
+		return
+	}
+
+	delete(g.currentTable.columns, columnName)
+
+	if g.firstElementInTable {
+		g.firstElementInTable = false
+	} else {
+		if _, err := g.result.WriteString(",\n  "); err != nil {
+			g.err = err
+			return
+		}
+	}
+
+	typeCtx := ctx.FieldDefinition().DataType()
+	columnType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(typeCtx)
+	if columnType != column.tp {
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.GetStart().GetTokenIndex(),
+			Stop:  typeCtx.GetStart().GetTokenIndex() - 1,
+		})); err != nil {
+			g.err = err
+			return
+		}
+		if _, err := g.result.WriteString(column.tp); err != nil {
+			g.err = err
+			return
+		}
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: typeCtx.GetStop().GetTokenIndex() + 1,
+			Stop:  ctx.GetStop().GetTokenIndex(),
+		})); err != nil {
+			g.err = err
+			return
+		}
+	} else {
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+			g.err = err
+			return
+		}
+	}
+}
+
+// EnterTableConstraintDef is called when production tableConstraintDef is entered.
+func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableConstraintDefContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	if g.firstElementInTable {
+		g.firstElementInTable = false
+	} else {
+		if _, err := g.result.WriteString(",\n  "); err != nil {
+			g.err = err
+			return
+		}
+	}
+
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
 		g.err = err
 		return
 	}
