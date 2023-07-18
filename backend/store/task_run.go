@@ -28,9 +28,12 @@ type TaskRunMessage struct {
 	// Output only.
 	ID        int
 	CreatorID int
+	Creator   *UserMessage
 	CreatedTs int64
 	UpdaterID int
+	Updater   *UserMessage
 	UpdatedTs int64
+	ProjectID string
 }
 
 // FindTaskRunMessage is the message for finding task runs.
@@ -126,9 +129,12 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			task_run.result,
 			task_run.payload,
 			task.pipeline_id,
-			task.stage_id
+			task.stage_id,
+			project.resource_id
 		FROM task_run
-		JOIN task ON task.id = task_run.task_id
+		LEFT JOIN task ON task.id = task_run.task_id
+		LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
+		LEFT JOIN project ON project.id = pipeline.project_id
 		WHERE %s`, strings.Join(where, " AND ")),
 		args...,
 	)
@@ -156,6 +162,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			&taskRun.Payload,
 			&taskRun.PipelineUID,
 			&taskRun.StageUID,
+			&taskRun.ProjectID,
 		); err != nil {
 			return nil, err
 		}
@@ -164,6 +171,19 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	for _, taskRun := range taskRuns {
+		creator, err := s.GetUserByID(ctx, taskRun.CreatorID)
+		if err != nil {
+			return nil, err
+		}
+		taskRun.Creator = creator
+		updater, err := s.GetUserByID(ctx, taskRun.UpdaterID)
+		if err != nil {
+			return nil, err
+		}
+		taskRun.Updater = updater
 	}
 
 	return taskRuns, nil
