@@ -294,17 +294,23 @@ message ListPlanCheckRunsResponse {
 }
 
 message RunRolloutTasksRequest {
+  // The name of the rollout.
+  // Format: projects/{project}/rollouts/{rollout}
+  string name = 1;
   // The tasks to run.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-  repeated string tasks = 1;
+  repeated string tasks = 2;
 }
 
 message RunRolloutTasksResponse {}
 
 message CancelRolloutTasksRequest {
+  // The name of the rollout.
+  // Format: projects/{project}/rollouts/{rollout}
+  string name = 1;
   // The tasks to cancel.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-  repeated string tasks = 1;
+  repeated string tasks = 2;
 }
 
 message CancelRolloutTasksResponse {}
