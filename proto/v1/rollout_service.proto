@@ -67,6 +67,22 @@ service RolloutService {
     option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
     option (google.api.method_signature) = "parent";
   }
+
+  rpc RunRolloutTasks(RunRolloutTasksRequest) returns (RunRolloutTasksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/rollouts/*}:runRolloutTasks",
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc CancelRolloutTasks(CancelRolloutTasksRequest) returns (CancelRolloutTasksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/rollouts/*}:cancelRolloutTasks",
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
 }
 
 message GetPlanRequest {
@@ -276,6 +292,22 @@ message ListPlanCheckRunsResponse {
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
+
+message RunRolloutTasksRequest {
+  // The tasks to run.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string tasks = 1;
+}
+
+message RunRolloutTasksResponse {}
+
+message CancelRolloutTasksRequest {
+  // The tasks to cancel.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string tasks = 1;
+}
+
+message CancelRolloutTasksResponse {}
 
 message PlanCheckRun {
   // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
