@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message TaskRunResult {
+  string detail = 1;
+  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string change_history = 2;
+  string version = 3;
+}
