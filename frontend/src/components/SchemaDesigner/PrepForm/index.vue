@@ -28,8 +28,14 @@
       </template>
       <template v-else>
         <div class="w-full flex flex-row justify-start items-center">
-          <span class="flex w-40 items-center">Name</span>
-          <BBTextField class="w-60 !py-1.5" :value="state.schemaDesignName" />
+          <span class="flex w-40 items-center">{{ $t("common.name") }}</span>
+          <BBTextField
+            class="w-60 !py-1.5"
+            :value="state.schemaDesignName"
+            @input="
+              state.schemaDesignName = ($event.target as HTMLInputElement).value
+            "
+          />
         </div>
         <BaselineSchemaSelector
           :baseline-schema="state.baselineSchema"
