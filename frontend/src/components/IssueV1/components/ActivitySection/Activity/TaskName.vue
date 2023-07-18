@@ -35,20 +35,20 @@ const schemaVersion = computed(() => {
 
 const link = computed(() => {
   const { issue, task } = props;
+
   const query: Record<string, any> = {
     task: task.uid,
   };
 
-  const stageIndex =
-    issue.rolloutEntity.stages.findIndex((stage) => {
-      return stage.tasks.findIndex((t) => t.uid === task.uid) >= 0;
-    }) ?? -1;
-  if (stageIndex >= 0) {
-    query.stage = stageIndex + 1;
+  const stage = issue.rolloutEntity.stages.find((stage) => {
+    return stage.tasks.findIndex((t) => t.uid === task.uid) >= 0;
+  });
+  if (stage) {
+    query.stage = stage.uid;
   }
 
   return {
-    path: `/issue/${issue.uid}`,
+    path: `/issue-v1/${issue.uid}`,
     query,
   };
 });
