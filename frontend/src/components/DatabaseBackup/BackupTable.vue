@@ -333,9 +333,12 @@ const doRestoreInPlace = async () => {
   try {
     const { backup } = restoreBackupContext;
     const { database } = props;
+
     const issueNameParts: string[] = [
-      `Restore database [${database.name}]`,
-      `to backup snapshot [${restoreBackupContext.backup.name}]`,
+      `Restore database [${database.databaseName}]`,
+      `to backup snapshot [${extractBackupResourceName(
+        restoreBackupContext.backup.name
+      )}]`,
     ];
 
     const issueStore = useIssueStore();
