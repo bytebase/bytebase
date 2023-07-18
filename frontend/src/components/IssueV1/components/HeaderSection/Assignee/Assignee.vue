@@ -1,16 +1,19 @@
 <template>
-  <div class="flex items-center justify-end gap-2">
-    <div class="flex items-center gap-x-1">
-      <span class="textlabel">{{ $t("common.assignee") }}</span>
+  <div class="flex items-center justify-end gap-3">
+    <div class="flex items-center justify-end gap-1">
       <NTooltip>
         <template #trigger>
-          <heroicons-outline:question-mark-circle class="w-4 h-4" />
+          <div class="flex items-center gap-x-1 textlabel">
+            <span>{{ $t("common.assignee") }}</span>
+            <span v-if="isCreating" class="text-red-600">*</span>
+          </div>
         </template>
-        <div class="max-w-[12rem]">
-          {{ $t("issue.assignee-tooltip") }}
-        </div>
+        <template #default>
+          <div class="max-w-[12rem]">
+            {{ $t("issue.assignee-tooltip") }}
+          </div>
+        </template>
       </NTooltip>
-      <span v-if="isCreating" class="text-red-600">*</span>
 
       <AssigneeAttentionButton />
     </div>

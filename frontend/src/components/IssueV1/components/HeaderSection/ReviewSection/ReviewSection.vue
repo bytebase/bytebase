@@ -1,18 +1,19 @@
 <template>
-  <div class="flex items-center gap-x-2">
-    <div class="textlabel flex items-center gap-x-1">
-      <span>{{ $t("issue.approval-flow.self") }}</span>
-      <NTooltip v-if="showApprovalTooltip">
+  <div class="flex items-center gap-x-3">
+    <NTooltip :disabled="!showApprovalTooltip">
+      <template #trigger>
+        <div class="textlabel flex items-center gap-x-1">
+          {{ $t("issue.approval-flow.self") }}
+        </div>
+      </template>
+      <template #default>
         <div class="max-w-[22rem]">
           {{ $t("issue.approval-flow.tooltip") }}
         </div>
-        <template #trigger>
-          <heroicons-outline:question-mark-circle />
-        </template>
-      </NTooltip>
-    </div>
+      </template>
+    </NTooltip>
 
-    <div class="">
+    <div class="flex-1 min-w-[12rem]">
       <div
         v-if="!ready"
         class="flex items-center gap-x-2 text-sm text-control-placeholder"
@@ -65,6 +66,7 @@ import {
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1";
 import Timeline from "./Timeline.vue";
+import { NTooltip } from "naive-ui";
 
 const { issue, reviewContext, selectedTask } = useIssueContext();
 const { ready, error } = reviewContext;
