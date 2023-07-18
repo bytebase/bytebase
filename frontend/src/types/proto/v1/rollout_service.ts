@@ -302,12 +302,12 @@ export interface ListPlanCheckRunsResponse {
   nextPageToken: string;
 }
 
-export interface RunRolloutTasksRequest {
+export interface BatchRunTasksRequest {
   /**
    * The name of the rollout.
    * Format: projects/{project}/rollouts/{rollout}
    */
-  name: string;
+  parent: string;
   /**
    * The tasks to run.
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
@@ -315,15 +315,31 @@ export interface RunRolloutTasksRequest {
   tasks: string[];
 }
 
-export interface RunRolloutTasksResponse {
+export interface BatchRunTasksResponse {
 }
 
-export interface CancelRolloutTasksRequest {
+export interface BatchSkipTasksRequest {
   /**
    * The name of the rollout.
    * Format: projects/{project}/rollouts/{rollout}
    */
-  name: string;
+  parent: string;
+  /**
+   * The tasks to skip.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   */
+  tasks: string[];
+}
+
+export interface BatchSkipTasksResponse {
+}
+
+export interface BatchCancelTaskRunsRequest {
+  /**
+   * The name of the rollout.
+   * Format: projects/{project}/rollouts/{rollout}
+   */
+  parent: string;
   /**
    * The tasks to cancel.
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
@@ -331,7 +347,7 @@ export interface CancelRolloutTasksRequest {
   tasks: string[];
 }
 
-export interface CancelRolloutTasksResponse {
+export interface BatchCancelTaskRunsResponse {
 }
 
 export interface PlanCheckRun {
@@ -609,7 +625,7 @@ export interface PreviewRolloutRequest {
   plan?: Plan | undefined;
 }
 
-export interface ListRolloutTaskRunsRequest {
+export interface ListTaskRunsRequest {
   /**
    * The parent, which owns this collection of plans.
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
@@ -633,7 +649,7 @@ export interface ListRolloutTaskRunsRequest {
   pageToken: string;
 }
 
-export interface ListRolloutTaskRunsResponse {
+export interface ListTaskRunsResponse {
   /** The taskRuns from the specified request. */
   taskRuns: TaskRun[];
   /**
@@ -2503,14 +2519,14 @@ export const ListPlanCheckRunsResponse = {
   },
 };
 
-function createBaseRunRolloutTasksRequest(): RunRolloutTasksRequest {
-  return { name: "", tasks: [] };
+function createBaseBatchRunTasksRequest(): BatchRunTasksRequest {
+  return { parent: "", tasks: [] };
 }
 
-export const RunRolloutTasksRequest = {
-  encode(message: RunRolloutTasksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+export const BatchRunTasksRequest = {
+  encode(message: BatchRunTasksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
     }
     for (const v of message.tasks) {
       writer.uint32(18).string(v!);
@@ -2518,10 +2534,10 @@ export const RunRolloutTasksRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): RunRolloutTasksRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchRunTasksRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRunRolloutTasksRequest();
+    const message = createBaseBatchRunTasksRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2530,7 +2546,7 @@ export const RunRolloutTasksRequest = {
             break;
           }
 
-          message.name = reader.string();
+          message.parent = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -2548,16 +2564,16 @@ export const RunRolloutTasksRequest = {
     return message;
   },
 
-  fromJSON(object: any): RunRolloutTasksRequest {
+  fromJSON(object: any): BatchRunTasksRequest {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
+      parent: isSet(object.parent) ? String(object.parent) : "",
       tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
     };
   },
 
-  toJSON(message: RunRolloutTasksRequest): unknown {
+  toJSON(message: BatchRunTasksRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    message.parent !== undefined && (obj.parent = message.parent);
     if (message.tasks) {
       obj.tasks = message.tasks.map((e) => e);
     } else {
@@ -2566,31 +2582,31 @@ export const RunRolloutTasksRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<RunRolloutTasksRequest>): RunRolloutTasksRequest {
-    return RunRolloutTasksRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchRunTasksRequest>): BatchRunTasksRequest {
+    return BatchRunTasksRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<RunRolloutTasksRequest>): RunRolloutTasksRequest {
-    const message = createBaseRunRolloutTasksRequest();
-    message.name = object.name ?? "";
+  fromPartial(object: DeepPartial<BatchRunTasksRequest>): BatchRunTasksRequest {
+    const message = createBaseBatchRunTasksRequest();
+    message.parent = object.parent ?? "";
     message.tasks = object.tasks?.map((e) => e) || [];
     return message;
   },
 };
 
-function createBaseRunRolloutTasksResponse(): RunRolloutTasksResponse {
+function createBaseBatchRunTasksResponse(): BatchRunTasksResponse {
   return {};
 }
 
-export const RunRolloutTasksResponse = {
-  encode(_: RunRolloutTasksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const BatchRunTasksResponse = {
+  encode(_: BatchRunTasksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): RunRolloutTasksResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchRunTasksResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRunRolloutTasksResponse();
+    const message = createBaseBatchRunTasksResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2603,33 +2619,33 @@ export const RunRolloutTasksResponse = {
     return message;
   },
 
-  fromJSON(_: any): RunRolloutTasksResponse {
+  fromJSON(_: any): BatchRunTasksResponse {
     return {};
   },
 
-  toJSON(_: RunRolloutTasksResponse): unknown {
+  toJSON(_: BatchRunTasksResponse): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create(base?: DeepPartial<RunRolloutTasksResponse>): RunRolloutTasksResponse {
-    return RunRolloutTasksResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchRunTasksResponse>): BatchRunTasksResponse {
+    return BatchRunTasksResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(_: DeepPartial<RunRolloutTasksResponse>): RunRolloutTasksResponse {
-    const message = createBaseRunRolloutTasksResponse();
+  fromPartial(_: DeepPartial<BatchRunTasksResponse>): BatchRunTasksResponse {
+    const message = createBaseBatchRunTasksResponse();
     return message;
   },
 };
 
-function createBaseCancelRolloutTasksRequest(): CancelRolloutTasksRequest {
-  return { name: "", tasks: [] };
+function createBaseBatchSkipTasksRequest(): BatchSkipTasksRequest {
+  return { parent: "", tasks: [] };
 }
 
-export const CancelRolloutTasksRequest = {
-  encode(message: CancelRolloutTasksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+export const BatchSkipTasksRequest = {
+  encode(message: BatchSkipTasksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
     }
     for (const v of message.tasks) {
       writer.uint32(18).string(v!);
@@ -2637,10 +2653,10 @@ export const CancelRolloutTasksRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): CancelRolloutTasksRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchSkipTasksRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCancelRolloutTasksRequest();
+    const message = createBaseBatchSkipTasksRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2649,7 +2665,7 @@ export const CancelRolloutTasksRequest = {
             break;
           }
 
-          message.name = reader.string();
+          message.parent = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -2667,16 +2683,16 @@ export const CancelRolloutTasksRequest = {
     return message;
   },
 
-  fromJSON(object: any): CancelRolloutTasksRequest {
+  fromJSON(object: any): BatchSkipTasksRequest {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
+      parent: isSet(object.parent) ? String(object.parent) : "",
       tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
     };
   },
 
-  toJSON(message: CancelRolloutTasksRequest): unknown {
+  toJSON(message: BatchSkipTasksRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    message.parent !== undefined && (obj.parent = message.parent);
     if (message.tasks) {
       obj.tasks = message.tasks.map((e) => e);
     } else {
@@ -2685,31 +2701,31 @@ export const CancelRolloutTasksRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<CancelRolloutTasksRequest>): CancelRolloutTasksRequest {
-    return CancelRolloutTasksRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchSkipTasksRequest>): BatchSkipTasksRequest {
+    return BatchSkipTasksRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<CancelRolloutTasksRequest>): CancelRolloutTasksRequest {
-    const message = createBaseCancelRolloutTasksRequest();
-    message.name = object.name ?? "";
+  fromPartial(object: DeepPartial<BatchSkipTasksRequest>): BatchSkipTasksRequest {
+    const message = createBaseBatchSkipTasksRequest();
+    message.parent = object.parent ?? "";
     message.tasks = object.tasks?.map((e) => e) || [];
     return message;
   },
 };
 
-function createBaseCancelRolloutTasksResponse(): CancelRolloutTasksResponse {
+function createBaseBatchSkipTasksResponse(): BatchSkipTasksResponse {
   return {};
 }
 
-export const CancelRolloutTasksResponse = {
-  encode(_: CancelRolloutTasksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const BatchSkipTasksResponse = {
+  encode(_: BatchSkipTasksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): CancelRolloutTasksResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchSkipTasksResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCancelRolloutTasksResponse();
+    const message = createBaseBatchSkipTasksResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2722,21 +2738,140 @@ export const CancelRolloutTasksResponse = {
     return message;
   },
 
-  fromJSON(_: any): CancelRolloutTasksResponse {
+  fromJSON(_: any): BatchSkipTasksResponse {
     return {};
   },
 
-  toJSON(_: CancelRolloutTasksResponse): unknown {
+  toJSON(_: BatchSkipTasksResponse): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create(base?: DeepPartial<CancelRolloutTasksResponse>): CancelRolloutTasksResponse {
-    return CancelRolloutTasksResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchSkipTasksResponse>): BatchSkipTasksResponse {
+    return BatchSkipTasksResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(_: DeepPartial<CancelRolloutTasksResponse>): CancelRolloutTasksResponse {
-    const message = createBaseCancelRolloutTasksResponse();
+  fromPartial(_: DeepPartial<BatchSkipTasksResponse>): BatchSkipTasksResponse {
+    const message = createBaseBatchSkipTasksResponse();
+    return message;
+  },
+};
+
+function createBaseBatchCancelTaskRunsRequest(): BatchCancelTaskRunsRequest {
+  return { parent: "", tasks: [] };
+}
+
+export const BatchCancelTaskRunsRequest = {
+  encode(message: BatchCancelTaskRunsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    for (const v of message.tasks) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchCancelTaskRunsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchCancelTaskRunsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tasks.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchCancelTaskRunsRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: BatchCancelTaskRunsRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    if (message.tasks) {
+      obj.tasks = message.tasks.map((e) => e);
+    } else {
+      obj.tasks = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchCancelTaskRunsRequest>): BatchCancelTaskRunsRequest {
+    return BatchCancelTaskRunsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<BatchCancelTaskRunsRequest>): BatchCancelTaskRunsRequest {
+    const message = createBaseBatchCancelTaskRunsRequest();
+    message.parent = object.parent ?? "";
+    message.tasks = object.tasks?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseBatchCancelTaskRunsResponse(): BatchCancelTaskRunsResponse {
+  return {};
+}
+
+export const BatchCancelTaskRunsResponse = {
+  encode(_: BatchCancelTaskRunsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchCancelTaskRunsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchCancelTaskRunsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): BatchCancelTaskRunsResponse {
+    return {};
+  },
+
+  toJSON(_: BatchCancelTaskRunsResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchCancelTaskRunsResponse>): BatchCancelTaskRunsResponse {
+    return BatchCancelTaskRunsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<BatchCancelTaskRunsResponse>): BatchCancelTaskRunsResponse {
+    const message = createBaseBatchCancelTaskRunsResponse();
     return message;
   },
 };
@@ -3228,12 +3363,12 @@ export const PreviewRolloutRequest = {
   },
 };
 
-function createBaseListRolloutTaskRunsRequest(): ListRolloutTaskRunsRequest {
+function createBaseListTaskRunsRequest(): ListTaskRunsRequest {
   return { parent: "", pageSize: 0, pageToken: "" };
 }
 
-export const ListRolloutTaskRunsRequest = {
-  encode(message: ListRolloutTaskRunsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListTaskRunsRequest = {
+  encode(message: ListTaskRunsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
@@ -3246,10 +3381,10 @@ export const ListRolloutTaskRunsRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListRolloutTaskRunsRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListTaskRunsRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListRolloutTaskRunsRequest();
+    const message = createBaseListTaskRunsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3283,7 +3418,7 @@ export const ListRolloutTaskRunsRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListRolloutTaskRunsRequest {
+  fromJSON(object: any): ListTaskRunsRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
@@ -3291,7 +3426,7 @@ export const ListRolloutTaskRunsRequest = {
     };
   },
 
-  toJSON(message: ListRolloutTaskRunsRequest): unknown {
+  toJSON(message: ListTaskRunsRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
@@ -3299,12 +3434,12 @@ export const ListRolloutTaskRunsRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListRolloutTaskRunsRequest>): ListRolloutTaskRunsRequest {
-    return ListRolloutTaskRunsRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListTaskRunsRequest>): ListTaskRunsRequest {
+    return ListTaskRunsRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListRolloutTaskRunsRequest>): ListRolloutTaskRunsRequest {
-    const message = createBaseListRolloutTaskRunsRequest();
+  fromPartial(object: DeepPartial<ListTaskRunsRequest>): ListTaskRunsRequest {
+    const message = createBaseListTaskRunsRequest();
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
@@ -3312,12 +3447,12 @@ export const ListRolloutTaskRunsRequest = {
   },
 };
 
-function createBaseListRolloutTaskRunsResponse(): ListRolloutTaskRunsResponse {
+function createBaseListTaskRunsResponse(): ListTaskRunsResponse {
   return { taskRuns: [], nextPageToken: "" };
 }
 
-export const ListRolloutTaskRunsResponse = {
-  encode(message: ListRolloutTaskRunsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListTaskRunsResponse = {
+  encode(message: ListTaskRunsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.taskRuns) {
       TaskRun.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -3327,10 +3462,10 @@ export const ListRolloutTaskRunsResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListRolloutTaskRunsResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListTaskRunsResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListRolloutTaskRunsResponse();
+    const message = createBaseListTaskRunsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3357,14 +3492,14 @@ export const ListRolloutTaskRunsResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListRolloutTaskRunsResponse {
+  fromJSON(object: any): ListTaskRunsResponse {
     return {
       taskRuns: Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => TaskRun.fromJSON(e)) : [],
       nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
     };
   },
 
-  toJSON(message: ListRolloutTaskRunsResponse): unknown {
+  toJSON(message: ListTaskRunsResponse): unknown {
     const obj: any = {};
     if (message.taskRuns) {
       obj.taskRuns = message.taskRuns.map((e) => e ? TaskRun.toJSON(e) : undefined);
@@ -3375,12 +3510,12 @@ export const ListRolloutTaskRunsResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListRolloutTaskRunsResponse>): ListRolloutTaskRunsResponse {
-    return ListRolloutTaskRunsResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListTaskRunsResponse>): ListTaskRunsResponse {
+    return ListTaskRunsResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListRolloutTaskRunsResponse>): ListRolloutTaskRunsResponse {
-    const message = createBaseListRolloutTaskRunsResponse();
+  fromPartial(object: DeepPartial<ListTaskRunsResponse>): ListTaskRunsResponse {
+    const message = createBaseListTaskRunsResponse();
     message.taskRuns = object.taskRuns?.map((e) => TaskRun.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
@@ -5126,11 +5261,11 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    listRolloutTaskRuns: {
-      name: "ListRolloutTaskRuns",
-      requestType: ListRolloutTaskRunsRequest,
+    listTaskRuns: {
+      name: "ListTaskRuns",
+      requestType: ListTaskRunsRequest,
       requestStream: false,
-      responseType: ListRolloutTaskRunsResponse,
+      responseType: ListTaskRunsResponse,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -5269,32 +5404,34 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    runRolloutTasks: {
-      name: "RunRolloutTasks",
-      requestType: RunRolloutTasksRequest,
+    batchRunTasks: {
+      name: "BatchRunTasks",
+      requestType: BatchRunTasksRequest,
       requestStream: false,
-      responseType: RunRolloutTasksResponse,
+      responseType: BatchRunTasksResponse,
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              53,
+              63,
               58,
               1,
               42,
               34,
-              48,
+              58,
               47,
               118,
               49,
               47,
               123,
-              110,
+              112,
               97,
-              109,
+              114,
               101,
+              110,
+              116,
               61,
               112,
               114,
@@ -5317,54 +5454,64 @@ export const RolloutServiceDefinition = {
               115,
               47,
               42,
-              125,
-              58,
-              114,
-              117,
-              110,
-              82,
-              111,
-              108,
-              108,
-              111,
-              117,
+              47,
+              115,
               116,
-              84,
+              97,
+              103,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              116,
               97,
               115,
               107,
               115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              82,
+              117,
+              110,
             ]),
           ],
         },
       },
     },
-    cancelRolloutTasks: {
-      name: "CancelRolloutTasks",
-      requestType: CancelRolloutTasksRequest,
+    batchSkipTasks: {
+      name: "BatchSkipTasks",
+      requestType: BatchSkipTasksRequest,
       requestStream: false,
-      responseType: CancelRolloutTasksResponse,
+      responseType: BatchSkipTasksResponse,
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              56,
+              64,
               58,
               1,
               42,
               34,
-              51,
+              59,
               47,
               118,
               49,
               47,
               123,
-              110,
+              112,
               97,
-              109,
+              114,
               101,
+              110,
+              116,
               61,
               112,
               114,
@@ -5387,26 +5534,126 @@ export const RolloutServiceDefinition = {
               115,
               47,
               42,
-              125,
-              58,
-              99,
+              47,
+              115,
+              116,
               97,
-              110,
-              99,
+              103,
               101,
-              108,
-              82,
+              115,
+              47,
+              42,
+              125,
+              47,
+              116,
+              97,
+              115,
+              107,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              83,
+              107,
+              105,
+              112,
+            ]),
+          ],
+        },
+      },
+    },
+    batchCancelTaskRuns: {
+      name: "BatchCancelTaskRuns",
+      requestType: BatchCancelTaskRunsRequest,
+      requestStream: false,
+      responseType: BatchCancelTaskRunsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              77,
+              58,
+              1,
+              42,
+              34,
+              72,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
               111,
               108,
               108,
               111,
               117,
               116,
-              84,
+              115,
+              47,
+              42,
+              47,
+              115,
+              116,
+              97,
+              103,
+              101,
+              115,
+              47,
+              42,
+              47,
+              116,
               97,
               115,
               107,
               115,
+              47,
+              42,
+              125,
+              47,
+              116,
+              97,
+              115,
+              107,
+              82,
+              117,
+              110,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              67,
+              97,
+              110,
+              99,
+              101,
+              108,
             ]),
           ],
         },
@@ -5423,22 +5670,26 @@ export interface RolloutServiceImplementation<CallContextExt = {}> {
   getRollout(request: GetRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
   createRollout(request: CreateRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
   previewRollout(request: PreviewRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
-  listRolloutTaskRuns(
-    request: ListRolloutTaskRunsRequest,
+  listTaskRuns(
+    request: ListTaskRunsRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListRolloutTaskRunsResponse>>;
+  ): Promise<DeepPartial<ListTaskRunsResponse>>;
   listPlanCheckRuns(
     request: ListPlanCheckRunsRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListPlanCheckRunsResponse>>;
-  runRolloutTasks(
-    request: RunRolloutTasksRequest,
+  batchRunTasks(
+    request: BatchRunTasksRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<RunRolloutTasksResponse>>;
-  cancelRolloutTasks(
-    request: CancelRolloutTasksRequest,
+  ): Promise<DeepPartial<BatchRunTasksResponse>>;
+  batchSkipTasks(
+    request: BatchSkipTasksRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<CancelRolloutTasksResponse>>;
+  ): Promise<DeepPartial<BatchSkipTasksResponse>>;
+  batchCancelTaskRuns(
+    request: BatchCancelTaskRunsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<BatchCancelTaskRunsResponse>>;
 }
 
 export interface RolloutServiceClient<CallOptionsExt = {}> {
@@ -5449,22 +5700,26 @@ export interface RolloutServiceClient<CallOptionsExt = {}> {
   getRollout(request: DeepPartial<GetRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
   createRollout(request: DeepPartial<CreateRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
   previewRollout(request: DeepPartial<PreviewRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
-  listRolloutTaskRuns(
-    request: DeepPartial<ListRolloutTaskRunsRequest>,
+  listTaskRuns(
+    request: DeepPartial<ListTaskRunsRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ListRolloutTaskRunsResponse>;
+  ): Promise<ListTaskRunsResponse>;
   listPlanCheckRuns(
     request: DeepPartial<ListPlanCheckRunsRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListPlanCheckRunsResponse>;
-  runRolloutTasks(
-    request: DeepPartial<RunRolloutTasksRequest>,
+  batchRunTasks(
+    request: DeepPartial<BatchRunTasksRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<RunRolloutTasksResponse>;
-  cancelRolloutTasks(
-    request: DeepPartial<CancelRolloutTasksRequest>,
+  ): Promise<BatchRunTasksResponse>;
+  batchSkipTasks(
+    request: DeepPartial<BatchSkipTasksRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<CancelRolloutTasksResponse>;
+  ): Promise<BatchSkipTasksResponse>;
+  batchCancelTaskRuns(
+    request: DeepPartial<BatchCancelTaskRunsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<BatchCancelTaskRunsResponse>;
 }
 
 declare const self: any | undefined;

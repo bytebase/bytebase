@@ -510,11 +510,11 @@ func local_request_RolloutService_PreviewRollout_0(ctx context.Context, marshale
 }
 
 var (
-	filter_RolloutService_ListRolloutTaskRuns_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_RolloutService_ListTaskRuns_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
 )
 
-func request_RolloutService_ListRolloutTaskRuns_0(ctx context.Context, marshaler runtime.Marshaler, client RolloutServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListRolloutTaskRunsRequest
+func request_RolloutService_ListTaskRuns_0(ctx context.Context, marshaler runtime.Marshaler, client RolloutServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListTaskRunsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -537,17 +537,17 @@ func request_RolloutService_ListRolloutTaskRuns_0(ctx context.Context, marshaler
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RolloutService_ListRolloutTaskRuns_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RolloutService_ListTaskRuns_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ListRolloutTaskRuns(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListTaskRuns(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_RolloutService_ListRolloutTaskRuns_0(ctx context.Context, marshaler runtime.Marshaler, server RolloutServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListRolloutTaskRunsRequest
+func local_request_RolloutService_ListTaskRuns_0(ctx context.Context, marshaler runtime.Marshaler, server RolloutServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListTaskRunsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -570,11 +570,11 @@ func local_request_RolloutService_ListRolloutTaskRuns_0(ctx context.Context, mar
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RolloutService_ListRolloutTaskRuns_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RolloutService_ListTaskRuns_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.ListRolloutTaskRuns(ctx, &protoReq)
+	msg, err := server.ListTaskRuns(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -649,8 +649,8 @@ func local_request_RolloutService_ListPlanCheckRuns_0(ctx context.Context, marsh
 
 }
 
-func request_RolloutService_RunRolloutTasks_0(ctx context.Context, marshaler runtime.Marshaler, client RolloutServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RunRolloutTasksRequest
+func request_RolloutService_BatchRunTasks_0(ctx context.Context, marshaler runtime.Marshaler, client RolloutServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BatchRunTasksRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -668,23 +668,23 @@ func request_RolloutService_RunRolloutTasks_0(ctx context.Context, marshaler run
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["parent"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
-	msg, err := client.RunRolloutTasks(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.BatchRunTasks(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_RolloutService_RunRolloutTasks_0(ctx context.Context, marshaler runtime.Marshaler, server RolloutServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RunRolloutTasksRequest
+func local_request_RolloutService_BatchRunTasks_0(ctx context.Context, marshaler runtime.Marshaler, server RolloutServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BatchRunTasksRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -702,23 +702,23 @@ func local_request_RolloutService_RunRolloutTasks_0(ctx context.Context, marshal
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["parent"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
-	msg, err := server.RunRolloutTasks(ctx, &protoReq)
+	msg, err := server.BatchRunTasks(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_RolloutService_CancelRolloutTasks_0(ctx context.Context, marshaler runtime.Marshaler, client RolloutServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CancelRolloutTasksRequest
+func request_RolloutService_BatchSkipTasks_0(ctx context.Context, marshaler runtime.Marshaler, client RolloutServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BatchSkipTasksRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -736,23 +736,23 @@ func request_RolloutService_CancelRolloutTasks_0(ctx context.Context, marshaler 
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["parent"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
-	msg, err := client.CancelRolloutTasks(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.BatchSkipTasks(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_RolloutService_CancelRolloutTasks_0(ctx context.Context, marshaler runtime.Marshaler, server RolloutServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CancelRolloutTasksRequest
+func local_request_RolloutService_BatchSkipTasks_0(ctx context.Context, marshaler runtime.Marshaler, server RolloutServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BatchSkipTasksRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -770,17 +770,85 @@ func local_request_RolloutService_CancelRolloutTasks_0(ctx context.Context, mars
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["parent"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
-	msg, err := server.CancelRolloutTasks(ctx, &protoReq)
+	msg, err := server.BatchSkipTasks(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_RolloutService_BatchCancelTaskRuns_0(ctx context.Context, marshaler runtime.Marshaler, client RolloutServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BatchCancelTaskRunsRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
+
+	msg, err := client.BatchCancelTaskRuns(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_RolloutService_BatchCancelTaskRuns_0(ctx context.Context, marshaler runtime.Marshaler, server RolloutServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BatchCancelTaskRunsRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
+
+	msg, err := server.BatchCancelTaskRuns(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -966,7 +1034,7 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("GET", pattern_RolloutService_ListRolloutTaskRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_RolloutService_ListTaskRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -974,12 +1042,12 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/ListRolloutTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/ListTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_RolloutService_ListRolloutTaskRuns_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_RolloutService_ListTaskRuns_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -987,7 +1055,7 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 			return
 		}
 
-		forward_RolloutService_ListRolloutTaskRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RolloutService_ListTaskRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1016,7 +1084,7 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("POST", pattern_RolloutService_RunRolloutTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RolloutService_BatchRunTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -1024,12 +1092,12 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/RunRolloutTasks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/rollouts/*}:runRolloutTasks"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/BatchRunTasks", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_RolloutService_RunRolloutTasks_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_RolloutService_BatchRunTasks_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -1037,11 +1105,11 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 			return
 		}
 
-		forward_RolloutService_RunRolloutTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RolloutService_BatchRunTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_RolloutService_CancelRolloutTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RolloutService_BatchSkipTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -1049,12 +1117,12 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/CancelRolloutTasks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/rollouts/*}:cancelRolloutTasks"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/BatchSkipTasks", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_RolloutService_CancelRolloutTasks_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_RolloutService_BatchSkipTasks_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -1062,7 +1130,32 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 			return
 		}
 
-		forward_RolloutService_CancelRolloutTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RolloutService_BatchSkipTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_RolloutService_BatchCancelTaskRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/BatchCancelTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_RolloutService_BatchCancelTaskRuns_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_RolloutService_BatchCancelTaskRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1261,25 +1354,25 @@ func RegisterRolloutServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("GET", pattern_RolloutService_ListRolloutTaskRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_RolloutService_ListTaskRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/ListRolloutTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/ListTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_RolloutService_ListRolloutTaskRuns_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_RolloutService_ListTaskRuns_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_RolloutService_ListRolloutTaskRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RolloutService_ListTaskRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1305,47 +1398,69 @@ func RegisterRolloutServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("POST", pattern_RolloutService_RunRolloutTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RolloutService_BatchRunTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/RunRolloutTasks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/rollouts/*}:runRolloutTasks"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/BatchRunTasks", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_RolloutService_RunRolloutTasks_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_RolloutService_BatchRunTasks_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_RolloutService_RunRolloutTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RolloutService_BatchRunTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_RolloutService_CancelRolloutTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RolloutService_BatchSkipTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/CancelRolloutTasks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/rollouts/*}:cancelRolloutTasks"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/BatchSkipTasks", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_RolloutService_CancelRolloutTasks_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_RolloutService_BatchSkipTasks_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_RolloutService_CancelRolloutTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RolloutService_BatchSkipTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_RolloutService_BatchCancelTaskRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/BatchCancelTaskRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_RolloutService_BatchCancelTaskRuns_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_RolloutService_BatchCancelTaskRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1367,13 +1482,15 @@ var (
 
 	pattern_RolloutService_PreviewRollout_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "previewRollout"))
 
-	pattern_RolloutService_ListRolloutTaskRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 1, 0, 4, 8, 5, 5, 2, 6}, []string{"v1", "projects", "rollouts", "stages", "tasks", "parent", "taskRuns"}, ""))
+	pattern_RolloutService_ListTaskRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 1, 0, 4, 8, 5, 5, 2, 6}, []string{"v1", "projects", "rollouts", "stages", "tasks", "parent", "taskRuns"}, ""))
 
 	pattern_RolloutService_ListPlanCheckRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "projects", "plans", "parent", "planCheckRuns"}, ""))
 
-	pattern_RolloutService_RunRolloutTasks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "rollouts", "name"}, "runRolloutTasks"))
+	pattern_RolloutService_BatchRunTasks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "projects", "rollouts", "stages", "parent", "tasks"}, "batchRun"))
 
-	pattern_RolloutService_CancelRolloutTasks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "rollouts", "name"}, "cancelRolloutTasks"))
+	pattern_RolloutService_BatchSkipTasks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "projects", "rollouts", "stages", "parent", "tasks"}, "batchSkip"))
+
+	pattern_RolloutService_BatchCancelTaskRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 1, 0, 4, 8, 5, 5, 2, 6}, []string{"v1", "projects", "rollouts", "stages", "tasks", "parent", "taskRuns"}, "batchCancel"))
 )
 
 var (
@@ -1391,11 +1508,13 @@ var (
 
 	forward_RolloutService_PreviewRollout_0 = runtime.ForwardResponseMessage
 
-	forward_RolloutService_ListRolloutTaskRuns_0 = runtime.ForwardResponseMessage
+	forward_RolloutService_ListTaskRuns_0 = runtime.ForwardResponseMessage
 
 	forward_RolloutService_ListPlanCheckRuns_0 = runtime.ForwardResponseMessage
 
-	forward_RolloutService_RunRolloutTasks_0 = runtime.ForwardResponseMessage
+	forward_RolloutService_BatchRunTasks_0 = runtime.ForwardResponseMessage
 
-	forward_RolloutService_CancelRolloutTasks_0 = runtime.ForwardResponseMessage
+	forward_RolloutService_BatchSkipTasks_0 = runtime.ForwardResponseMessage
+
+	forward_RolloutService_BatchCancelTaskRuns_0 = runtime.ForwardResponseMessage
 )
