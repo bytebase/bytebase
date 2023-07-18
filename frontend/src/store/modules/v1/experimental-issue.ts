@@ -56,6 +56,11 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
     issue.rolloutEntity = await rolloutServiceClient.getRollout({
       name: rollout,
     });
+    const { taskRuns } = await rolloutServiceClient.listRolloutTaskRuns({
+      parent: `${rollout}/stages/-/tasks/-`,
+      pageSize: 1000, // MAX
+    });
+    issue.rolloutTaskRunList = taskRuns;
   }
   // const plan = await rolloutServiceClient.getPlan({
   //   name: issue.plan,
