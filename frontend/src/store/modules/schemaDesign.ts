@@ -32,7 +32,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   ) => {
     const createdSchemaDesign =
       await schemaDesignServiceClient.createSchemaDesign({
-        parent: `projects/${projectResourceId}`,
+        parent: projectResourceId,
         schemaDesign,
       });
     schemaDesignMapByName.set(createdSchemaDesign.name, createdSchemaDesign);

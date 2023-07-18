@@ -75,7 +75,7 @@ import { NRadioGroup, NRadio } from "naive-ui";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useProjectV1ByUID } from "@/store";
 import {
   useSchemaDesignList,
   useSchemaDesignStore,
@@ -83,9 +83,12 @@ import {
 import SchemaDesignTable from "./SchemaDesignTable.vue";
 import BaselineSchemaSelector from "../BaselineSchemaSelector.vue";
 import SchemaDesigner from "../index.vue";
+import { databaseNamePrefix } from "@/store/modules/v1/common";
 
 interface BaselineSchema {
+  // The uid of project.
   projectId?: string;
+  // The uid of database.
   databaseId?: string;
   changeHistory?: ChangeHistory;
 }
@@ -163,14 +166,14 @@ const cancel = () => {
   emit("dismiss");
 };
 
-const handleConfirm = () => {
+const handleConfirm = async () => {
   if (state.tab === "VIEW") {
     if (!schemaDesign.value) {
       return;
     }
 
-    const schemaDesignerState = schemaDesignerRef.value;
-    if (!schemaDesignerState) {
+    const designerState = schemaDesignerRef.value;
+    if (!designerState) {
       // Should not happen.
       throw new Error("schemaDesigner is undefined");
     }
@@ -178,22 +181,29 @@ const handleConfirm = () => {
     const isCreating = schemaDesign.value.name === "";
     if (isCreating) {
       if (state.schemaDesignName === "") {
-        console.log("schemaDesignName is empty");
         return;
       }
 
-      schemaDesignStore.createSchemaDesign(
-        state.baselineSchema.projectId || "",
+      const { project } = useProjectV1ByUID(
+        state.baselineSchema.projectId || ""
+      );
+      const database = useDatabaseV1Store().getDatabaseByUID(
+        state.baselineSchema.databaseId || ""
+      );
+      const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
+
+      await schemaDesignStore.createSchemaDesign(
+        project.value.name,
         SchemaDesign.fromPartial({
           title: state.schemaDesignName,
           // Keep schema empty in frontend. Backend will generate the design schema.
           schema: "",
           // TODO(steven): calculate design schema metadata with metadata and editableSchemas.
-          schemaMetadata: schemaDesignerState.metadata,
+          schemaMetadata: designerState.metadata,
           baselineSchema: schemaDesign.value.baselineSchema,
           baselineSchemaMetadata: schemaDesign.value.baselineSchemaMetadata,
           engine: schemaDesign.value.engine,
-          baselineDatabase: state.baselineSchema.databaseId || "",
+          baselineDatabase: baselineDatabase,
           schemaVersion: state.baselineSchema.changeHistory?.name || "",
         })
       );

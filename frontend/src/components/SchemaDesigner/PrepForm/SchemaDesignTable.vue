@@ -13,7 +13,7 @@
           {{ getFormatedValue(schemaDesign).project }}
         </div>
         <div class="bb-grid-cell">
-          {{ getFormatedValue(schemaDesign).engine }}
+          {{ engineNameV1(getFormatedValue(schemaDesign).engine) }}
         </div>
         <div class="bb-grid-cell">
           {{ getFormatedValue(schemaDesign).creator }}
@@ -25,7 +25,7 @@
           <HumanizeTs
             :ts="(schemaDesign.updateTime?.getTime() ?? 0) / 1000"
             class="ml-1"
-          />)
+          />
         </div>
       </template>
     </BBGrid>
@@ -40,7 +40,7 @@ import { BBGridColumn } from "@/bbkit";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { useProjectV1Store, useUserStore } from "@/store";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { projectV1Name } from "@/utils";
+import { engineNameV1, projectV1Name } from "@/utils";
 
 defineProps<{
   schemaDesigns: SchemaDesign[];

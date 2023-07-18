@@ -146,18 +146,29 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	schemaVersionUID, err := strconv.ParseInt(schemaDesign.SchemaVersion, 10, 64)
-	if err != nil || schemaVersionUID <= 0 {
+	instanceID, _, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(schemaDesign.SchemaVersion)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	schemaVersionID, err := strconv.ParseInt(changeHistoryIDStr, 10, 64)
+	if err != nil || schemaVersionID <= 0 {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema version %s, must be positive integer", schemaDesign.SchemaVersion))
 	}
 	changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		ID: &schemaVersionUID,
+		ID:         &schemaVersionID,
+		InstanceID: &instance.UID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if changeHistory == nil {
-		return nil, status.Errorf(codes.NotFound, "schema version %d not found", schemaVersionUID)
+		return nil, status.Errorf(codes.NotFound, "schema version %d not found", schemaVersionID)
 	}
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
