@@ -478,6 +478,8 @@
     - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
     - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
     - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
+    - [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest)
+    - [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse)
     - [SchemaDesign](#bytebase-v1-SchemaDesign)
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
@@ -7666,6 +7668,37 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 
 
+<a name="bytebase-v1-ParseSchemaStringRequest"></a>
+
+### ParseSchemaStringRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_string | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseSchemaStringResponse"></a>
+
+### ParseSchemaStringResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the parsed schema. |
+
+
+
+
+
+
 <a name="bytebase-v1-SchemaDesign"></a>
 
 ### SchemaDesign
@@ -7728,6 +7761,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | ListSchemaDesigns | [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest) | [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse) |  |
 | CreateSchemaDesign | [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | UpdateSchemaDesign | [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
