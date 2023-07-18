@@ -91,15 +91,11 @@ export const IssuePayload = {
 
   toJSON(message: IssuePayload): unknown {
     const obj: any = {};
-    if (message.approval !== undefined) {
-      obj.approval = IssuePayloadApproval.toJSON(message.approval);
-    }
-    if (message.grantRequest !== undefined) {
-      obj.grantRequest = GrantRequest.toJSON(message.grantRequest);
-    }
-    if (message.grouping !== undefined) {
-      obj.grouping = Grouping.toJSON(message.grouping);
-    }
+    message.approval !== undefined &&
+      (obj.approval = message.approval ? IssuePayloadApproval.toJSON(message.approval) : undefined);
+    message.grantRequest !== undefined &&
+      (obj.grantRequest = message.grantRequest ? GrantRequest.toJSON(message.grantRequest) : undefined);
+    message.grouping !== undefined && (obj.grouping = message.grouping ? Grouping.toJSON(message.grouping) : undefined);
     return obj;
   },
 
@@ -163,9 +159,7 @@ export const Grouping = {
 
   toJSON(message: Grouping): unknown {
     const obj: any = {};
-    if (message.databaseGroupName !== "") {
-      obj.databaseGroupName = message.databaseGroupName;
-    }
+    message.databaseGroupName !== undefined && (obj.databaseGroupName = message.databaseGroupName);
     return obj;
   },
 
@@ -256,18 +250,11 @@ export const GrantRequest = {
 
   toJSON(message: GrantRequest): unknown {
     const obj: any = {};
-    if (message.role !== "") {
-      obj.role = message.role;
-    }
-    if (message.user !== "") {
-      obj.user = message.user;
-    }
-    if (message.condition !== undefined) {
-      obj.condition = Expr.toJSON(message.condition);
-    }
-    if (message.expiration !== undefined) {
-      obj.expiration = Duration.toJSON(message.expiration);
-    }
+    message.role !== undefined && (obj.role = message.role);
+    message.user !== undefined && (obj.user = message.user);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    message.expiration !== undefined &&
+      (obj.expiration = message.expiration ? Duration.toJSON(message.expiration) : undefined);
     return obj;
   },
 

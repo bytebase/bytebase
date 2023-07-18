@@ -297,9 +297,7 @@ export const GetUserRequest = {
 
   toJSON(message: GetUserRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -379,15 +377,9 @@ export const ListUsersRequest = {
 
   toJSON(message: ListUsersRequest): unknown {
     const obj: any = {};
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    if (message.showDeleted === true) {
-      obj.showDeleted = message.showDeleted;
-    }
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -458,12 +450,12 @@ export const ListUsersResponse = {
 
   toJSON(message: ListUsersResponse): unknown {
     const obj: any = {};
-    if (message.users?.length) {
-      obj.users = message.users.map((e) => User.toJSON(e));
+    if (message.users) {
+      obj.users = message.users.map((e) => e ? User.toJSON(e) : undefined);
+    } else {
+      obj.users = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -520,9 +512,7 @@ export const CreateUserRequest = {
 
   toJSON(message: CreateUserRequest): unknown {
     const obj: any = {};
-    if (message.user !== undefined) {
-      obj.user = User.toJSON(message.user);
-    }
+    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
     return obj;
   },
 
@@ -630,21 +620,11 @@ export const UpdateUserRequest = {
 
   toJSON(message: UpdateUserRequest): unknown {
     const obj: any = {};
-    if (message.user !== undefined) {
-      obj.user = User.toJSON(message.user);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
-    if (message.otpCode !== undefined) {
-      obj.otpCode = message.otpCode;
-    }
-    if (message.regenerateTempMfaSecret === true) {
-      obj.regenerateTempMfaSecret = message.regenerateTempMfaSecret;
-    }
-    if (message.regenerateRecoveryCodes === true) {
-      obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes;
-    }
+    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.otpCode !== undefined && (obj.otpCode = message.otpCode);
+    message.regenerateTempMfaSecret !== undefined && (obj.regenerateTempMfaSecret = message.regenerateTempMfaSecret);
+    message.regenerateRecoveryCodes !== undefined && (obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes);
     return obj;
   },
 
@@ -704,9 +684,7 @@ export const DeleteUserRequest = {
 
   toJSON(message: DeleteUserRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -762,9 +740,7 @@ export const UndeleteUserRequest = {
 
   toJSON(message: UndeleteUserRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -908,30 +884,15 @@ export const LoginRequest = {
 
   toJSON(message: LoginRequest): unknown {
     const obj: any = {};
-    if (message.email !== "") {
-      obj.email = message.email;
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    if (message.web === true) {
-      obj.web = message.web;
-    }
-    if (message.idpName !== "") {
-      obj.idpName = message.idpName;
-    }
-    if (message.idpContext !== undefined) {
-      obj.idpContext = IdentityProviderContext.toJSON(message.idpContext);
-    }
-    if (message.otpCode !== undefined) {
-      obj.otpCode = message.otpCode;
-    }
-    if (message.recoveryCode !== undefined) {
-      obj.recoveryCode = message.recoveryCode;
-    }
-    if (message.mfaTempToken !== undefined) {
-      obj.mfaTempToken = message.mfaTempToken;
-    }
+    message.email !== undefined && (obj.email = message.email);
+    message.password !== undefined && (obj.password = message.password);
+    message.web !== undefined && (obj.web = message.web);
+    message.idpName !== undefined && (obj.idpName = message.idpName);
+    message.idpContext !== undefined &&
+      (obj.idpContext = message.idpContext ? IdentityProviderContext.toJSON(message.idpContext) : undefined);
+    message.otpCode !== undefined && (obj.otpCode = message.otpCode);
+    message.recoveryCode !== undefined && (obj.recoveryCode = message.recoveryCode);
+    message.mfaTempToken !== undefined && (obj.mfaTempToken = message.mfaTempToken);
     return obj;
   },
 
@@ -1011,12 +972,11 @@ export const IdentityProviderContext = {
 
   toJSON(message: IdentityProviderContext): unknown {
     const obj: any = {};
-    if (message.oauth2Context !== undefined) {
-      obj.oauth2Context = OAuth2IdentityProviderContext.toJSON(message.oauth2Context);
-    }
-    if (message.oidcContext !== undefined) {
-      obj.oidcContext = OIDCIdentityProviderContext.toJSON(message.oidcContext);
-    }
+    message.oauth2Context !== undefined && (obj.oauth2Context = message.oauth2Context
+      ? OAuth2IdentityProviderContext.toJSON(message.oauth2Context)
+      : undefined);
+    message.oidcContext !== undefined &&
+      (obj.oidcContext = message.oidcContext ? OIDCIdentityProviderContext.toJSON(message.oidcContext) : undefined);
     return obj;
   },
 
@@ -1077,9 +1037,7 @@ export const OAuth2IdentityProviderContext = {
 
   toJSON(message: OAuth2IdentityProviderContext): unknown {
     const obj: any = {};
-    if (message.code !== "") {
-      obj.code = message.code;
-    }
+    message.code !== undefined && (obj.code = message.code);
     return obj;
   },
 
@@ -1192,12 +1150,8 @@ export const LoginResponse = {
 
   toJSON(message: LoginResponse): unknown {
     const obj: any = {};
-    if (message.token !== "") {
-      obj.token = message.token;
-    }
-    if (message.mfaTempToken !== undefined) {
-      obj.mfaTempToken = message.mfaTempToken;
-    }
+    message.token !== undefined && (obj.token = message.token);
+    message.mfaTempToken !== undefined && (obj.mfaTempToken = message.mfaTempToken);
     return obj;
   },
 
@@ -1434,42 +1388,22 @@ export const User = {
 
   toJSON(message: User): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    message.name !== undefined && (obj.name = message.name);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
+    message.email !== undefined && (obj.email = message.email);
+    message.title !== undefined && (obj.title = message.title);
+    message.userType !== undefined && (obj.userType = userTypeToJSON(message.userType));
+    message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
+    message.password !== undefined && (obj.password = message.password);
+    message.serviceKey !== undefined && (obj.serviceKey = message.serviceKey);
+    message.mfaEnabled !== undefined && (obj.mfaEnabled = message.mfaEnabled);
+    message.mfaSecret !== undefined && (obj.mfaSecret = message.mfaSecret);
+    if (message.recoveryCodes) {
+      obj.recoveryCodes = message.recoveryCodes.map((e) => e);
+    } else {
+      obj.recoveryCodes = [];
     }
-    if (message.state !== 0) {
-      obj.state = stateToJSON(message.state);
-    }
-    if (message.email !== "") {
-      obj.email = message.email;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.userType !== 0) {
-      obj.userType = userTypeToJSON(message.userType);
-    }
-    if (message.userRole !== 0) {
-      obj.userRole = userRoleToJSON(message.userRole);
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    if (message.serviceKey !== "") {
-      obj.serviceKey = message.serviceKey;
-    }
-    if (message.mfaEnabled === true) {
-      obj.mfaEnabled = message.mfaEnabled;
-    }
-    if (message.mfaSecret !== "") {
-      obj.mfaSecret = message.mfaSecret;
-    }
-    if (message.recoveryCodes?.length) {
-      obj.recoveryCodes = message.recoveryCodes;
-    }
-    if (message.phone !== "") {
-      obj.phone = message.phone;
-    }
+    message.phone !== undefined && (obj.phone = message.phone);
     return obj;
   },
 

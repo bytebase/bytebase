@@ -136,18 +136,10 @@ export const Expr = {
 
   toJSON(message: Expr): unknown {
     const obj: any = {};
-    if (message.expression !== "") {
-      obj.expression = message.expression;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.location !== "") {
-      obj.location = message.location;
-    }
+    message.expression !== undefined && (obj.expression = message.expression);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.location !== undefined && (obj.location = message.location);
     return obj;
   },
 

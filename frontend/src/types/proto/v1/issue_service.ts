@@ -560,12 +560,8 @@ export const GetIssueRequest = {
 
   toJSON(message: GetIssueRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.force === true) {
-      obj.force = message.force;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.force !== undefined && (obj.force = message.force);
     return obj;
   },
 
@@ -635,12 +631,8 @@ export const CreateIssueRequest = {
 
   toJSON(message: CreateIssueRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.issue !== undefined) {
-      obj.issue = Issue.toJSON(message.issue);
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.issue !== undefined && (obj.issue = message.issue ? Issue.toJSON(message.issue) : undefined);
     return obj;
   },
 
@@ -721,15 +713,9 @@ export const ListIssuesRequest = {
 
   toJSON(message: ListIssuesRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
@@ -800,12 +786,12 @@ export const ListIssuesResponse = {
 
   toJSON(message: ListIssuesResponse): unknown {
     const obj: any = {};
-    if (message.issues?.length) {
-      obj.issues = message.issues.map((e) => Issue.toJSON(e));
+    if (message.issues) {
+      obj.issues = message.issues.map((e) => e ? Issue.toJSON(e) : undefined);
+    } else {
+      obj.issues = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -875,12 +861,8 @@ export const UpdateIssueRequest = {
 
   toJSON(message: UpdateIssueRequest): unknown {
     const obj: any = {};
-    if (message.issue !== undefined) {
-      obj.issue = Issue.toJSON(message.issue);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.issue !== undefined && (obj.issue = message.issue ? Issue.toJSON(message.issue) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
@@ -950,11 +932,11 @@ export const BatchUpdateIssuesRequest = {
 
   toJSON(message: BatchUpdateIssuesRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.requests?.length) {
-      obj.requests = message.requests.map((e) => UpdateIssueRequest.toJSON(e));
+    message.parent !== undefined && (obj.parent = message.parent);
+    if (message.requests) {
+      obj.requests = message.requests.map((e) => e ? UpdateIssueRequest.toJSON(e) : undefined);
+    } else {
+      obj.requests = [];
     }
     return obj;
   },
@@ -1012,8 +994,10 @@ export const BatchUpdateIssuesResponse = {
 
   toJSON(message: BatchUpdateIssuesResponse): unknown {
     const obj: any = {};
-    if (message.issues?.length) {
-      obj.issues = message.issues.map((e) => Issue.toJSON(e));
+    if (message.issues) {
+      obj.issues = message.issues.map((e) => e ? Issue.toJSON(e) : undefined);
+    } else {
+      obj.issues = [];
     }
     return obj;
   },
@@ -1083,12 +1067,8 @@ export const ApproveIssueRequest = {
 
   toJSON(message: ApproveIssueRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
@@ -1158,12 +1138,8 @@ export const RejectIssueRequest = {
 
   toJSON(message: RejectIssueRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
@@ -1233,12 +1209,8 @@ export const RequestIssueRequest = {
 
   toJSON(message: RequestIssueRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
@@ -1505,60 +1477,36 @@ export const Issue = {
 
   toJSON(message: Issue): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.type !== undefined && (obj.type = issue_TypeToJSON(message.type));
+    message.status !== undefined && (obj.status = issueStatusToJSON(message.status));
+    message.assignee !== undefined && (obj.assignee = message.assignee);
+    message.assigneeAttention !== undefined && (obj.assigneeAttention = message.assigneeAttention);
+    if (message.approvers) {
+      obj.approvers = message.approvers.map((e) => e ? Issue_Approver.toJSON(e) : undefined);
+    } else {
+      obj.approvers = [];
     }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
+    if (message.approvalTemplates) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
+    } else {
+      obj.approvalTemplates = [];
     }
-    if (message.title !== "") {
-      obj.title = message.title;
+    message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
+    message.approvalFindingError !== undefined && (obj.approvalFindingError = message.approvalFindingError);
+    if (message.subscribers) {
+      obj.subscribers = message.subscribers.map((e) => e);
+    } else {
+      obj.subscribers = [];
     }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.type !== 0) {
-      obj.type = issue_TypeToJSON(message.type);
-    }
-    if (message.status !== 0) {
-      obj.status = issueStatusToJSON(message.status);
-    }
-    if (message.assignee !== "") {
-      obj.assignee = message.assignee;
-    }
-    if (message.assigneeAttention === true) {
-      obj.assigneeAttention = message.assigneeAttention;
-    }
-    if (message.approvers?.length) {
-      obj.approvers = message.approvers.map((e) => Issue_Approver.toJSON(e));
-    }
-    if (message.approvalTemplates?.length) {
-      obj.approvalTemplates = message.approvalTemplates.map((e) => ApprovalTemplate.toJSON(e));
-    }
-    if (message.approvalFindingDone === true) {
-      obj.approvalFindingDone = message.approvalFindingDone;
-    }
-    if (message.approvalFindingError !== "") {
-      obj.approvalFindingError = message.approvalFindingError;
-    }
-    if (message.subscribers?.length) {
-      obj.subscribers = message.subscribers;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
-    }
-    if (message.plan !== "") {
-      obj.plan = message.plan;
-    }
-    if (message.rollout !== "") {
-      obj.rollout = message.rollout;
-    }
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.plan !== undefined && (obj.plan = message.plan);
+    message.rollout !== undefined && (obj.rollout = message.rollout);
     return obj;
   },
 
@@ -1644,12 +1592,8 @@ export const Issue_Approver = {
 
   toJSON(message: Issue_Approver): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
-      obj.status = issue_Approver_StatusToJSON(message.status);
-    }
-    if (message.principal !== "") {
-      obj.principal = message.principal;
-    }
+    message.status !== undefined && (obj.status = issue_Approver_StatusToJSON(message.status));
+    message.principal !== undefined && (obj.principal = message.principal);
     return obj;
   },
 
@@ -1741,18 +1685,10 @@ export const ApprovalTemplate = {
 
   toJSON(message: ApprovalTemplate): unknown {
     const obj: any = {};
-    if (message.flow !== undefined) {
-      obj.flow = ApprovalFlow.toJSON(message.flow);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
+    message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.creator !== undefined && (obj.creator = message.creator);
     return obj;
   },
 
@@ -1813,8 +1749,10 @@ export const ApprovalFlow = {
 
   toJSON(message: ApprovalFlow): unknown {
     const obj: any = {};
-    if (message.steps?.length) {
-      obj.steps = message.steps.map((e) => ApprovalStep.toJSON(e));
+    if (message.steps) {
+      obj.steps = message.steps.map((e) => e ? ApprovalStep.toJSON(e) : undefined);
+    } else {
+      obj.steps = [];
     }
     return obj;
   },
@@ -1884,11 +1822,11 @@ export const ApprovalStep = {
 
   toJSON(message: ApprovalStep): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
-      obj.type = approvalStep_TypeToJSON(message.type);
-    }
-    if (message.nodes?.length) {
-      obj.nodes = message.nodes.map((e) => ApprovalNode.toJSON(e));
+    message.type !== undefined && (obj.type = approvalStep_TypeToJSON(message.type));
+    if (message.nodes) {
+      obj.nodes = message.nodes.map((e) => e ? ApprovalNode.toJSON(e) : undefined);
+    } else {
+      obj.nodes = [];
     }
     return obj;
   },
@@ -1981,18 +1919,13 @@ export const ApprovalNode = {
 
   toJSON(message: ApprovalNode): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
-      obj.type = approvalNode_TypeToJSON(message.type);
-    }
-    if (message.groupValue !== undefined) {
-      obj.groupValue = approvalNode_GroupValueToJSON(message.groupValue);
-    }
-    if (message.role !== undefined) {
-      obj.role = message.role;
-    }
-    if (message.externalNodeId !== undefined) {
-      obj.externalNodeId = message.externalNodeId;
-    }
+    message.type !== undefined && (obj.type = approvalNode_TypeToJSON(message.type));
+    message.groupValue !== undefined &&
+      (obj.groupValue = message.groupValue !== undefined
+        ? approvalNode_GroupValueToJSON(message.groupValue)
+        : undefined);
+    message.role !== undefined && (obj.role = message.role);
+    message.externalNodeId !== undefined && (obj.externalNodeId = message.externalNodeId);
     return obj;
   },
 
@@ -2064,12 +1997,9 @@ export const CreateIssueCommentRequest = {
 
   toJSON(message: CreateIssueCommentRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.issueComment !== undefined) {
-      obj.issueComment = IssueComment.toJSON(message.issueComment);
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.issueComment !== undefined &&
+      (obj.issueComment = message.issueComment ? IssueComment.toJSON(message.issueComment) : undefined);
     return obj;
   },
 
@@ -2152,15 +2082,10 @@ export const UpdateIssueCommentRequest = {
 
   toJSON(message: UpdateIssueCommentRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.issueComment !== undefined) {
-      obj.issueComment = IssueComment.toJSON(message.issueComment);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.issueComment !== undefined &&
+      (obj.issueComment = message.issueComment ? IssueComment.toJSON(message.issueComment) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
@@ -2266,21 +2191,11 @@ export const IssueComment = {
 
   toJSON(message: IssueComment): unknown {
     const obj: any = {};
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
-    if (message.payload !== "") {
-      obj.payload = message.payload;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
-    }
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.comment !== undefined && (obj.comment = message.comment);
+    message.payload !== undefined && (obj.payload = message.payload);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     return obj;
   },
 

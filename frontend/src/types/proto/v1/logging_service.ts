@@ -426,18 +426,10 @@ export const ListLogsRequest = {
 
   toJSON(message: ListLogsRequest): unknown {
     const obj: any = {};
-    if (message.filter !== "") {
-      obj.filter = message.filter;
-    }
-    if (message.orderBy !== "") {
-      obj.orderBy = message.orderBy;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.filter !== undefined && (obj.filter = message.filter);
+    message.orderBy !== undefined && (obj.orderBy = message.orderBy);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
@@ -509,12 +501,12 @@ export const ListLogsResponse = {
 
   toJSON(message: ListLogsResponse): unknown {
     const obj: any = {};
-    if (message.logEntities?.length) {
-      obj.logEntities = message.logEntities.map((e) => LogEntity.toJSON(e));
+    if (message.logEntities) {
+      obj.logEntities = message.logEntities.map((e) => e ? LogEntity.toJSON(e) : undefined);
+    } else {
+      obj.logEntities = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -571,9 +563,7 @@ export const GetLogRequest = {
 
   toJSON(message: GetLogRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -729,33 +719,15 @@ export const LogEntity = {
 
   toJSON(message: LogEntity): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
-    }
-    if (message.action !== 0) {
-      obj.action = logEntity_ActionToJSON(message.action);
-    }
-    if (message.level !== 0) {
-      obj.level = logEntity_LevelToJSON(message.level);
-    }
-    if (message.resource !== "") {
-      obj.resource = message.resource;
-    }
-    if (message.payload !== "") {
-      obj.payload = message.payload;
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.action !== undefined && (obj.action = logEntity_ActionToJSON(message.action));
+    message.level !== undefined && (obj.level = logEntity_LevelToJSON(message.level));
+    message.resource !== undefined && (obj.resource = message.resource);
+    message.payload !== undefined && (obj.payload = message.payload);
+    message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 

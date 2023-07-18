@@ -49,9 +49,8 @@ export const InstanceChangeHistoryPayload = {
 
   toJSON(message: InstanceChangeHistoryPayload): unknown {
     const obj: any = {};
-    if (message.pushEvent !== undefined) {
-      obj.pushEvent = PushEvent.toJSON(message.pushEvent);
-    }
+    message.pushEvent !== undefined &&
+      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
   },
 

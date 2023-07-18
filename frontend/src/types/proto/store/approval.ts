@@ -317,18 +317,18 @@ export const IssuePayloadApproval = {
 
   toJSON(message: IssuePayloadApproval): unknown {
     const obj: any = {};
-    if (message.approvalTemplates?.length) {
-      obj.approvalTemplates = message.approvalTemplates.map((e) => ApprovalTemplate.toJSON(e));
+    if (message.approvalTemplates) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
+    } else {
+      obj.approvalTemplates = [];
     }
-    if (message.approvers?.length) {
-      obj.approvers = message.approvers.map((e) => IssuePayloadApproval_Approver.toJSON(e));
+    if (message.approvers) {
+      obj.approvers = message.approvers.map((e) => e ? IssuePayloadApproval_Approver.toJSON(e) : undefined);
+    } else {
+      obj.approvers = [];
     }
-    if (message.approvalFindingDone === true) {
-      obj.approvalFindingDone = message.approvalFindingDone;
-    }
-    if (message.approvalFindingError !== "") {
-      obj.approvalFindingError = message.approvalFindingError;
-    }
+    message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
+    message.approvalFindingError !== undefined && (obj.approvalFindingError = message.approvalFindingError);
     return obj;
   },
 
@@ -400,12 +400,8 @@ export const IssuePayloadApproval_Approver = {
 
   toJSON(message: IssuePayloadApproval_Approver): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
-      obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status);
-    }
-    if (message.principalId !== 0) {
-      obj.principalId = Math.round(message.principalId);
-    }
+    message.status !== undefined && (obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status));
+    message.principalId !== undefined && (obj.principalId = Math.round(message.principalId));
     return obj;
   },
 
@@ -497,18 +493,10 @@ export const ApprovalTemplate = {
 
   toJSON(message: ApprovalTemplate): unknown {
     const obj: any = {};
-    if (message.flow !== undefined) {
-      obj.flow = ApprovalFlow.toJSON(message.flow);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.creatorId !== 0) {
-      obj.creatorId = Math.round(message.creatorId);
-    }
+    message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
     return obj;
   },
 
@@ -569,8 +557,10 @@ export const ApprovalFlow = {
 
   toJSON(message: ApprovalFlow): unknown {
     const obj: any = {};
-    if (message.steps?.length) {
-      obj.steps = message.steps.map((e) => ApprovalStep.toJSON(e));
+    if (message.steps) {
+      obj.steps = message.steps.map((e) => e ? ApprovalStep.toJSON(e) : undefined);
+    } else {
+      obj.steps = [];
     }
     return obj;
   },
@@ -640,11 +630,11 @@ export const ApprovalStep = {
 
   toJSON(message: ApprovalStep): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
-      obj.type = approvalStep_TypeToJSON(message.type);
-    }
-    if (message.nodes?.length) {
-      obj.nodes = message.nodes.map((e) => ApprovalNode.toJSON(e));
+    message.type !== undefined && (obj.type = approvalStep_TypeToJSON(message.type));
+    if (message.nodes) {
+      obj.nodes = message.nodes.map((e) => e ? ApprovalNode.toJSON(e) : undefined);
+    } else {
+      obj.nodes = [];
     }
     return obj;
   },
@@ -737,18 +727,13 @@ export const ApprovalNode = {
 
   toJSON(message: ApprovalNode): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
-      obj.type = approvalNode_TypeToJSON(message.type);
-    }
-    if (message.groupValue !== undefined) {
-      obj.groupValue = approvalNode_GroupValueToJSON(message.groupValue);
-    }
-    if (message.role !== undefined) {
-      obj.role = message.role;
-    }
-    if (message.externalNodeId !== undefined) {
-      obj.externalNodeId = message.externalNodeId;
-    }
+    message.type !== undefined && (obj.type = approvalNode_TypeToJSON(message.type));
+    message.groupValue !== undefined &&
+      (obj.groupValue = message.groupValue !== undefined
+        ? approvalNode_GroupValueToJSON(message.groupValue)
+        : undefined);
+    message.role !== undefined && (obj.role = message.role);
+    message.externalNodeId !== undefined && (obj.externalNodeId = message.externalNodeId);
     return obj;
   },
 

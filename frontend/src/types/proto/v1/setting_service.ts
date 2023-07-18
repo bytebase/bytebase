@@ -386,12 +386,8 @@ export const ListSettingsRequest = {
 
   toJSON(message: ListSettingsRequest): unknown {
     const obj: any = {};
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
@@ -461,12 +457,12 @@ export const ListSettingsResponse = {
 
   toJSON(message: ListSettingsResponse): unknown {
     const obj: any = {};
-    if (message.settings?.length) {
-      obj.settings = message.settings.map((e) => Setting.toJSON(e));
+    if (message.settings) {
+      obj.settings = message.settings.map((e) => e ? Setting.toJSON(e) : undefined);
+    } else {
+      obj.settings = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -523,9 +519,7 @@ export const GetSettingRequest = {
 
   toJSON(message: GetSettingRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -581,9 +575,7 @@ export const GetSettingResponse = {
 
   toJSON(message: GetSettingResponse): unknown {
     const obj: any = {};
-    if (message.setting !== undefined) {
-      obj.setting = Setting.toJSON(message.setting);
-    }
+    message.setting !== undefined && (obj.setting = message.setting ? Setting.toJSON(message.setting) : undefined);
     return obj;
   },
 
@@ -654,12 +646,8 @@ export const SetSettingRequest = {
 
   toJSON(message: SetSettingRequest): unknown {
     const obj: any = {};
-    if (message.setting !== undefined) {
-      obj.setting = Setting.toJSON(message.setting);
-    }
-    if (message.validateOnly === true) {
-      obj.validateOnly = message.validateOnly;
-    }
+    message.setting !== undefined && (obj.setting = message.setting ? Setting.toJSON(message.setting) : undefined);
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
@@ -731,12 +719,8 @@ export const Setting = {
 
   toJSON(message: Setting): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.value !== undefined) {
-      obj.value = Value.toJSON(message.value);
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.value !== undefined && (obj.value = message.value ? Value.toJSON(message.value) : undefined);
     return obj;
   },
 
@@ -907,33 +891,36 @@ export const Value = {
 
   toJSON(message: Value): unknown {
     const obj: any = {};
-    if (message.stringValue !== undefined) {
-      obj.stringValue = message.stringValue;
-    }
-    if (message.smtpMailDeliverySettingValue !== undefined) {
-      obj.smtpMailDeliverySettingValue = SMTPMailDeliverySettingValue.toJSON(message.smtpMailDeliverySettingValue);
-    }
-    if (message.appImSettingValue !== undefined) {
-      obj.appImSettingValue = AppIMSetting.toJSON(message.appImSettingValue);
-    }
-    if (message.agentPluginSettingValue !== undefined) {
-      obj.agentPluginSettingValue = AgentPluginSetting.toJSON(message.agentPluginSettingValue);
-    }
-    if (message.workspaceProfileSettingValue !== undefined) {
-      obj.workspaceProfileSettingValue = WorkspaceProfileSetting.toJSON(message.workspaceProfileSettingValue);
-    }
-    if (message.workspaceApprovalSettingValue !== undefined) {
-      obj.workspaceApprovalSettingValue = WorkspaceApprovalSetting.toJSON(message.workspaceApprovalSettingValue);
-    }
-    if (message.workspaceTrialSettingValue !== undefined) {
-      obj.workspaceTrialSettingValue = WorkspaceTrialSetting.toJSON(message.workspaceTrialSettingValue);
-    }
-    if (message.externalApprovalSettingValue !== undefined) {
-      obj.externalApprovalSettingValue = ExternalApprovalSetting.toJSON(message.externalApprovalSettingValue);
-    }
-    if (message.schemaTemplateSettingValue !== undefined) {
-      obj.schemaTemplateSettingValue = SchemaTemplateSetting.toJSON(message.schemaTemplateSettingValue);
-    }
+    message.stringValue !== undefined && (obj.stringValue = message.stringValue);
+    message.smtpMailDeliverySettingValue !== undefined &&
+      (obj.smtpMailDeliverySettingValue = message.smtpMailDeliverySettingValue
+        ? SMTPMailDeliverySettingValue.toJSON(message.smtpMailDeliverySettingValue)
+        : undefined);
+    message.appImSettingValue !== undefined &&
+      (obj.appImSettingValue = message.appImSettingValue ? AppIMSetting.toJSON(message.appImSettingValue) : undefined);
+    message.agentPluginSettingValue !== undefined && (obj.agentPluginSettingValue = message.agentPluginSettingValue
+      ? AgentPluginSetting.toJSON(message.agentPluginSettingValue)
+      : undefined);
+    message.workspaceProfileSettingValue !== undefined &&
+      (obj.workspaceProfileSettingValue = message.workspaceProfileSettingValue
+        ? WorkspaceProfileSetting.toJSON(message.workspaceProfileSettingValue)
+        : undefined);
+    message.workspaceApprovalSettingValue !== undefined &&
+      (obj.workspaceApprovalSettingValue = message.workspaceApprovalSettingValue
+        ? WorkspaceApprovalSetting.toJSON(message.workspaceApprovalSettingValue)
+        : undefined);
+    message.workspaceTrialSettingValue !== undefined &&
+      (obj.workspaceTrialSettingValue = message.workspaceTrialSettingValue
+        ? WorkspaceTrialSetting.toJSON(message.workspaceTrialSettingValue)
+        : undefined);
+    message.externalApprovalSettingValue !== undefined &&
+      (obj.externalApprovalSettingValue = message.externalApprovalSettingValue
+        ? ExternalApprovalSetting.toJSON(message.externalApprovalSettingValue)
+        : undefined);
+    message.schemaTemplateSettingValue !== undefined &&
+      (obj.schemaTemplateSettingValue = message.schemaTemplateSettingValue
+        ? SchemaTemplateSetting.toJSON(message.schemaTemplateSettingValue)
+        : undefined);
     return obj;
   },
 
@@ -1146,39 +1133,19 @@ export const SMTPMailDeliverySettingValue = {
 
   toJSON(message: SMTPMailDeliverySettingValue): unknown {
     const obj: any = {};
-    if (message.server !== "") {
-      obj.server = message.server;
-    }
-    if (message.port !== 0) {
-      obj.port = Math.round(message.port);
-    }
-    if (message.encryption !== 0) {
-      obj.encryption = sMTPMailDeliverySettingValue_EncryptionToJSON(message.encryption);
-    }
-    if (message.ca !== undefined) {
-      obj.ca = message.ca;
-    }
-    if (message.key !== undefined) {
-      obj.key = message.key;
-    }
-    if (message.cert !== undefined) {
-      obj.cert = message.cert;
-    }
-    if (message.authentication !== 0) {
-      obj.authentication = sMTPMailDeliverySettingValue_AuthenticationToJSON(message.authentication);
-    }
-    if (message.username !== "") {
-      obj.username = message.username;
-    }
-    if (message.password !== undefined) {
-      obj.password = message.password;
-    }
-    if (message.from !== "") {
-      obj.from = message.from;
-    }
-    if (message.to !== "") {
-      obj.to = message.to;
-    }
+    message.server !== undefined && (obj.server = message.server);
+    message.port !== undefined && (obj.port = Math.round(message.port));
+    message.encryption !== undefined &&
+      (obj.encryption = sMTPMailDeliverySettingValue_EncryptionToJSON(message.encryption));
+    message.ca !== undefined && (obj.ca = message.ca);
+    message.key !== undefined && (obj.key = message.key);
+    message.cert !== undefined && (obj.cert = message.cert);
+    message.authentication !== undefined &&
+      (obj.authentication = sMTPMailDeliverySettingValue_AuthenticationToJSON(message.authentication));
+    message.username !== undefined && (obj.username = message.username);
+    message.password !== undefined && (obj.password = message.password);
+    message.from !== undefined && (obj.from = message.from);
+    message.to !== undefined && (obj.to = message.to);
     return obj;
   },
 
@@ -1281,18 +1248,12 @@ export const AppIMSetting = {
 
   toJSON(message: AppIMSetting): unknown {
     const obj: any = {};
-    if (message.imType !== 0) {
-      obj.imType = appIMSetting_IMTypeToJSON(message.imType);
-    }
-    if (message.appId !== "") {
-      obj.appId = message.appId;
-    }
-    if (message.appSecret !== "") {
-      obj.appSecret = message.appSecret;
-    }
-    if (message.externalApproval !== undefined) {
-      obj.externalApproval = AppIMSetting_ExternalApproval.toJSON(message.externalApproval);
-    }
+    message.imType !== undefined && (obj.imType = appIMSetting_IMTypeToJSON(message.imType));
+    message.appId !== undefined && (obj.appId = message.appId);
+    message.appSecret !== undefined && (obj.appSecret = message.appSecret);
+    message.externalApproval !== undefined && (obj.externalApproval = message.externalApproval
+      ? AppIMSetting_ExternalApproval.toJSON(message.externalApproval)
+      : undefined);
     return obj;
   },
 
@@ -1366,12 +1327,8 @@ export const AppIMSetting_ExternalApproval = {
 
   toJSON(message: AppIMSetting_ExternalApproval): unknown {
     const obj: any = {};
-    if (message.enabled === true) {
-      obj.enabled = message.enabled;
-    }
-    if (message.approvalDefinitionId !== "") {
-      obj.approvalDefinitionId = message.approvalDefinitionId;
-    }
+    message.enabled !== undefined && (obj.enabled = message.enabled);
+    message.approvalDefinitionId !== undefined && (obj.approvalDefinitionId = message.approvalDefinitionId);
     return obj;
   },
 
@@ -1438,12 +1395,8 @@ export const AgentPluginSetting = {
 
   toJSON(message: AgentPluginSetting): unknown {
     const obj: any = {};
-    if (message.url !== "") {
-      obj.url = message.url;
-    }
-    if (message.token !== "") {
-      obj.token = message.token;
-    }
+    message.url !== undefined && (obj.url = message.url);
+    message.token !== undefined && (obj.token = message.token);
     return obj;
   },
 
@@ -1546,21 +1499,15 @@ export const WorkspaceProfileSetting = {
 
   toJSON(message: WorkspaceProfileSetting): unknown {
     const obj: any = {};
-    if (message.externalUrl !== "") {
-      obj.externalUrl = message.externalUrl;
+    message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
+    message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
+    message.require2fa !== undefined && (obj.require2fa = message.require2fa);
+    if (message.outboundIpList) {
+      obj.outboundIpList = message.outboundIpList.map((e) => e);
+    } else {
+      obj.outboundIpList = [];
     }
-    if (message.disallowSignup === true) {
-      obj.disallowSignup = message.disallowSignup;
-    }
-    if (message.require2fa === true) {
-      obj.require2fa = message.require2fa;
-    }
-    if (message.outboundIpList?.length) {
-      obj.outboundIpList = message.outboundIpList;
-    }
-    if (message.gitopsWebhookUrl !== "") {
-      obj.gitopsWebhookUrl = message.gitopsWebhookUrl;
-    }
+    message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
     return obj;
   },
 
@@ -1624,8 +1571,10 @@ export const WorkspaceApprovalSetting = {
 
   toJSON(message: WorkspaceApprovalSetting): unknown {
     const obj: any = {};
-    if (message.rules?.length) {
-      obj.rules = message.rules.map((e) => WorkspaceApprovalSetting_Rule.toJSON(e));
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? WorkspaceApprovalSetting_Rule.toJSON(e) : undefined);
+    } else {
+      obj.rules = [];
     }
     return obj;
   },
@@ -1695,12 +1644,9 @@ export const WorkspaceApprovalSetting_Rule = {
 
   toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
     const obj: any = {};
-    if (message.template !== undefined) {
-      obj.template = ApprovalTemplate.toJSON(message.template);
-    }
-    if (message.condition !== undefined) {
-      obj.condition = Expr.toJSON(message.condition);
-    }
+    message.template !== undefined &&
+      (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     return obj;
   },
 
@@ -1763,8 +1709,10 @@ export const ExternalApprovalSetting = {
 
   toJSON(message: ExternalApprovalSetting): unknown {
     const obj: any = {};
-    if (message.nodes?.length) {
-      obj.nodes = message.nodes.map((e) => ExternalApprovalSetting_Node.toJSON(e));
+    if (message.nodes) {
+      obj.nodes = message.nodes.map((e) => e ? ExternalApprovalSetting_Node.toJSON(e) : undefined);
+    } else {
+      obj.nodes = [];
     }
     return obj;
   },
@@ -1845,15 +1793,9 @@ export const ExternalApprovalSetting_Node = {
 
   toJSON(message: ExternalApprovalSetting_Node): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.endpoint !== "") {
-      obj.endpoint = message.endpoint;
-    }
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.endpoint !== undefined && (obj.endpoint = message.endpoint);
     return obj;
   },
 
@@ -1915,8 +1857,12 @@ export const SchemaTemplateSetting = {
 
   toJSON(message: SchemaTemplateSetting): unknown {
     const obj: any = {};
-    if (message.fieldTemplates?.length) {
-      obj.fieldTemplates = message.fieldTemplates.map((e) => SchemaTemplateSetting_FieldTemplate.toJSON(e));
+    if (message.fieldTemplates) {
+      obj.fieldTemplates = message.fieldTemplates.map((e) =>
+        e ? SchemaTemplateSetting_FieldTemplate.toJSON(e) : undefined
+      );
+    } else {
+      obj.fieldTemplates = [];
     }
     return obj;
   },
@@ -1998,15 +1944,9 @@ export const SchemaTemplateSetting_FieldTemplate = {
 
   toJSON(message: SchemaTemplateSetting_FieldTemplate): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.engine !== 0) {
-      obj.engine = engineToJSON(message.engine);
-    }
-    if (message.column !== undefined) {
-      obj.column = ColumnMetadata.toJSON(message.column);
-    }
+    message.id !== undefined && (obj.id = message.id);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.column !== undefined && (obj.column = message.column ? ColumnMetadata.toJSON(message.column) : undefined);
     return obj;
   },
 
@@ -2123,24 +2063,12 @@ export const WorkspaceTrialSetting = {
 
   toJSON(message: WorkspaceTrialSetting): unknown {
     const obj: any = {};
-    if (message.instanceCount !== 0) {
-      obj.instanceCount = Math.round(message.instanceCount);
-    }
-    if (message.expireTime !== undefined) {
-      obj.expireTime = message.expireTime.toISOString();
-    }
-    if (message.issuedTime !== undefined) {
-      obj.issuedTime = message.issuedTime.toISOString();
-    }
-    if (message.subject !== "") {
-      obj.subject = message.subject;
-    }
-    if (message.orgName !== "") {
-      obj.orgName = message.orgName;
-    }
-    if (message.plan !== 0) {
-      obj.plan = planTypeToJSON(message.plan);
-    }
+    message.instanceCount !== undefined && (obj.instanceCount = Math.round(message.instanceCount));
+    message.expireTime !== undefined && (obj.expireTime = message.expireTime.toISOString());
+    message.issuedTime !== undefined && (obj.issuedTime = message.issuedTime.toISOString());
+    message.subject !== undefined && (obj.subject = message.subject);
+    message.orgName !== undefined && (obj.orgName = message.orgName);
+    message.plan !== undefined && (obj.plan = planTypeToJSON(message.plan));
     return obj;
   },
 

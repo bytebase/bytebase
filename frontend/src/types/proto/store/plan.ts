@@ -227,8 +227,10 @@ export const PlanConfig = {
 
   toJSON(message: PlanConfig): unknown {
     const obj: any = {};
-    if (message.steps?.length) {
-      obj.steps = message.steps.map((e) => PlanConfig_Step.toJSON(e));
+    if (message.steps) {
+      obj.steps = message.steps.map((e) => e ? PlanConfig_Step.toJSON(e) : undefined);
+    } else {
+      obj.steps = [];
     }
     return obj;
   },
@@ -285,8 +287,10 @@ export const PlanConfig_Step = {
 
   toJSON(message: PlanConfig_Step): unknown {
     const obj: any = {};
-    if (message.specs?.length) {
-      obj.specs = message.specs.map((e) => PlanConfig_Spec.toJSON(e));
+    if (message.specs) {
+      obj.specs = message.specs.map((e) => e ? PlanConfig_Spec.toJSON(e) : undefined);
+    } else {
+      obj.specs = [];
     }
     return obj;
   },
@@ -403,21 +407,17 @@ export const PlanConfig_Spec = {
 
   toJSON(message: PlanConfig_Spec): unknown {
     const obj: any = {};
-    if (message.earliestAllowedTime !== undefined) {
-      obj.earliestAllowedTime = message.earliestAllowedTime.toISOString();
-    }
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.changeDatabaseConfig !== undefined) {
-      obj.changeDatabaseConfig = PlanConfig_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
-    }
-    if (message.restoreDatabaseConfig !== undefined) {
-      obj.restoreDatabaseConfig = PlanConfig_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig);
-    }
+    message.earliestAllowedTime !== undefined && (obj.earliestAllowedTime = message.earliestAllowedTime.toISOString());
+    message.id !== undefined && (obj.id = message.id);
+    message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
+      ? PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
+      : undefined);
+    message.changeDatabaseConfig !== undefined && (obj.changeDatabaseConfig = message.changeDatabaseConfig
+      ? PlanConfig_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig)
+      : undefined);
+    message.restoreDatabaseConfig !== undefined && (obj.restoreDatabaseConfig = message.restoreDatabaseConfig
+      ? PlanConfig_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig)
+      : undefined);
     return obj;
   },
 
@@ -592,38 +592,19 @@ export const PlanConfig_CreateDatabaseConfig = {
 
   toJSON(message: PlanConfig_CreateDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
-    if (message.cluster !== "") {
-      obj.cluster = message.cluster;
-    }
-    if (message.owner !== "") {
-      obj.owner = message.owner;
-    }
-    if (message.backup !== "") {
-      obj.backup = message.backup;
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.database !== undefined && (obj.database = message.database);
+    message.table !== undefined && (obj.table = message.table);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
+    message.collation !== undefined && (obj.collation = message.collation);
+    message.cluster !== undefined && (obj.cluster = message.cluster);
+    message.owner !== undefined && (obj.owner = message.owner);
+    message.backup !== undefined && (obj.backup = message.backup);
+    obj.labels = {};
     if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
     }
     return obj;
   },
@@ -703,12 +684,8 @@ export const PlanConfig_CreateDatabaseConfig_LabelsEntry = {
 
   toJSON(message: PlanConfig_CreateDatabaseConfig_LabelsEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
@@ -826,24 +803,14 @@ export const PlanConfig_ChangeDatabaseConfig = {
 
   toJSON(message: PlanConfig_ChangeDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.type !== 0) {
-      obj.type = planConfig_ChangeDatabaseConfig_TypeToJSON(message.type);
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    if (message.rollbackEnabled === true) {
-      obj.rollbackEnabled = message.rollbackEnabled;
-    }
-    if (message.rollbackDetail !== undefined) {
-      obj.rollbackDetail = PlanConfig_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail);
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.type !== undefined && (obj.type = planConfig_ChangeDatabaseConfig_TypeToJSON(message.type));
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
+    message.rollbackDetail !== undefined && (obj.rollbackDetail = message.rollbackDetail
+      ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail)
+      : undefined);
     return obj;
   },
 
@@ -922,12 +889,8 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
 
   toJSON(message: PlanConfig_ChangeDatabaseConfig_RollbackDetail): unknown {
     const obj: any = {};
-    if (message.rollbackFromTask !== "") {
-      obj.rollbackFromTask = message.rollbackFromTask;
-    }
-    if (message.rollbackFromIssue !== "") {
-      obj.rollbackFromIssue = message.rollbackFromIssue;
-    }
+    message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
+    message.rollbackFromIssue !== undefined && (obj.rollbackFromIssue = message.rollbackFromIssue);
     return obj;
   },
 
@@ -1025,18 +988,12 @@ export const PlanConfig_RestoreDatabaseConfig = {
 
   toJSON(message: PlanConfig_RestoreDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.backup !== undefined) {
-      obj.backup = message.backup;
-    }
-    if (message.pointInTime !== undefined) {
-      obj.pointInTime = message.pointInTime.toISOString();
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
+      ? PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
+      : undefined);
+    message.backup !== undefined && (obj.backup = message.backup);
+    message.pointInTime !== undefined && (obj.pointInTime = message.pointInTime.toISOString());
     return obj;
   },
 

@@ -161,9 +161,7 @@ export const GetInstanceRoleRequest = {
 
   toJSON(message: GetInstanceRoleRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -254,18 +252,10 @@ export const ListInstanceRolesRequest = {
 
   toJSON(message: ListInstanceRolesRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    if (message.refresh === true) {
-      obj.refresh = message.refresh;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.refresh !== undefined && (obj.refresh = message.refresh);
     return obj;
   },
 
@@ -337,12 +327,12 @@ export const ListInstanceRolesResponse = {
 
   toJSON(message: ListInstanceRolesResponse): unknown {
     const obj: any = {};
-    if (message.roles?.length) {
-      obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
+    if (message.roles) {
+      obj.roles = message.roles.map((e) => e ? InstanceRole.toJSON(e) : undefined);
+    } else {
+      obj.roles = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
@@ -412,12 +402,8 @@ export const CreateInstanceRoleRequest = {
 
   toJSON(message: CreateInstanceRoleRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.role !== undefined) {
-      obj.role = InstanceRole.toJSON(message.role);
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.role !== undefined && (obj.role = message.role ? InstanceRole.toJSON(message.role) : undefined);
     return obj;
   },
 
@@ -489,12 +475,8 @@ export const UpdateInstanceRoleRequest = {
 
   toJSON(message: UpdateInstanceRoleRequest): unknown {
     const obj: any = {};
-    if (message.role !== undefined) {
-      obj.role = InstanceRole.toJSON(message.role);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.role !== undefined && (obj.role = message.role ? InstanceRole.toJSON(message.role) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
@@ -553,9 +535,7 @@ export const DeleteInstanceRoleRequest = {
 
   toJSON(message: DeleteInstanceRoleRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -611,9 +591,7 @@ export const UndeleteInstanceRoleRequest = {
 
   toJSON(message: UndeleteInstanceRoleRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -733,24 +711,12 @@ export const InstanceRole = {
 
   toJSON(message: InstanceRole): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.roleName !== "") {
-      obj.roleName = message.roleName;
-    }
-    if (message.password !== undefined) {
-      obj.password = message.password;
-    }
-    if (message.connectionLimit !== undefined) {
-      obj.connectionLimit = Math.round(message.connectionLimit);
-    }
-    if (message.validUntil !== undefined) {
-      obj.validUntil = message.validUntil;
-    }
-    if (message.attribute !== undefined) {
-      obj.attribute = message.attribute;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.roleName !== undefined && (obj.roleName = message.roleName);
+    message.password !== undefined && (obj.password = message.password);
+    message.connectionLimit !== undefined && (obj.connectionLimit = Math.round(message.connectionLimit));
+    message.validUntil !== undefined && (obj.validUntil = message.validUntil);
+    message.attribute !== undefined && (obj.attribute = message.attribute);
     return obj;
   },
 

@@ -53,9 +53,7 @@ export const InstanceOptions = {
 
   toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
-    if (message.schemaTenantMode === true) {
-      obj.schemaTenantMode = message.schemaTenantMode;
-    }
+    message.schemaTenantMode !== undefined && (obj.schemaTenantMode = message.schemaTenantMode);
     return obj;
   },
 
