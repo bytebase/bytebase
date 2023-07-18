@@ -38,8 +38,9 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       tokenUrl: "https://github.com/login/oauth/access_token",
       userInfoUrl: "https://api.github.com/user",
       scopes: ["user"],
+      skipTlsVerify: false,
       fieldMapping: {
-        identifier: "login",
+        identifier: "email",
         displayName: "name",
         email: "email",
       },
@@ -57,8 +58,9 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       tokenUrl: "https://gitlab.com/oauth/token",
       userInfoUrl: "https://gitlab.com/api/v4/user",
       scopes: ["read_user"],
+      skipTlsVerify: false,
       fieldMapping: {
-        identifier: "username",
+        identifier: "email",
         displayName: "name",
         email: "email",
       },
@@ -79,6 +81,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile",
       ],
+      skipTlsVerify: false,
       fieldMapping: {
         identifier: "email",
         displayName: "name",
@@ -98,6 +101,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       tokenUrl: "",
       userInfoUrl: "",
       scopes: [],
+      skipTlsVerify: false,
       fieldMapping: {
         identifier: "",
         displayName: "",

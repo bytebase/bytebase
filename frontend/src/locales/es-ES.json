@@ -1810,6 +1810,7 @@
       "drop-table": "Eliminar tabla",
       "restore": "Restaurar",
       "add-column": "Agregar columna",
+      "add-from-template": "Añadir desde plantilla",
       "drop-column": "Eliminar columna",
       "sql-preview": "Vista previa SQL",
       "reset": "Restablecer",
@@ -2096,6 +2097,10 @@
       "bb-feature-instance-ssh-connection": {
         "title": "Instancia de Conexión SSH",
         "desc": "Conéctese a una instancia a través de SSH."
+      },
+      "bb-feature-schema-template": {
+        "title": "Plantilla de esquema",
+        "desc": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
       }
     }
   },
@@ -2594,6 +2599,20 @@
     "no-log-placeholder": {
       "admin": "Haga clic en el botón \"Configurar\" para obtener consultas lentas de las instancias de la base de datos o haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas de inmediato",
       "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los propietarios/DBA de Bytebase para configurar consultas lentas"
+    }
+  },
+  "schema-template": {
+    "self": "Plantilla de esquema",
+    "field-template": "Plantilla de campo",
+    "add-field": "Agregar plantilla de campo",
+    "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema.",
+    "search-by-name-or-comment": "Buscar por nombre o comentario",
+    "form": {
+      "column-name": "Nombre de la columna",
+      "column-type": "Tipo de columna",
+      "default-value": "Valor por defecto",
+      "comment": "Comentario",
+      "nullable": "Anulable"
     }
   },
   "principal": {

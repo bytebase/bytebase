@@ -463,6 +463,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "schema-template",
+                name: "setting.workspace.schema-template",
+                meta: { title: () => startCase(t("schema-template.self")) },
+                component: () =>
+                  import("../views/SettingWorkspaceSchemaTemplate.vue"),
+                props: true,
+              },
+              {
                 path: "gitops",
                 name: "setting.workspace.gitops",
                 meta: { title: () => t("settings.sidebar.gitops") },

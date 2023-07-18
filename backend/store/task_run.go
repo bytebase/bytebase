@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // TaskRunMessage is message for task run.
@@ -23,6 +25,7 @@ type TaskRunMessage struct {
 	Code        common.Code
 	Comment     string
 	Result      string
+	ResultProto *storepb.TaskRunResult
 	Payload     string
 
 	// Output only.
@@ -97,8 +100,8 @@ func (taskRun *TaskRunMessage) toTaskRun() *api.TaskRun {
 	}
 }
 
-// ListTaskRuns lists task runs.
-func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
+// ListTaskRunsV2 lists task runs.
+func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.id = $%d", len(args)+1)), append(args, *v)
@@ -166,6 +169,13 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		); err != nil {
 			return nil, err
 		}
+
+		var resultProto storepb.TaskRunResult
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal task run result: %s", taskRun.Result)
+		}
+		taskRun.ResultProto = &resultProto
 
 		taskRuns = append(taskRuns, &taskRun)
 	}
