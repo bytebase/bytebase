@@ -307,12 +307,9 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 		return err
 	}
 
-	minorVersions, messages, err := getMinorMigrationVersions(names, curVer)
+	minorVersions, err := getMinorMigrationVersions(names, curVer)
 	if err != nil {
 		return err
-	}
-	for _, message := range messages {
-		log.Info(message)
 	}
 
 	for _, minorVersion := range minorVersions {
@@ -544,27 +541,26 @@ func getPatchVersions(minorVersion semver.Version, currentVersion semver.Version
 }
 
 // getMinorMigrationVersions gets all the prod minor versions since currentVersion (included).
-func getMinorMigrationVersions(names []string, currentVersion semver.Version) ([]semver.Version, []string, error) {
+func getMinorMigrationVersions(names []string, currentVersion semver.Version) ([]semver.Version, error) {
 	versions, err := getMinorVersions(names)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// We should still include the version with the same minor version with currentVersion in case we have missed some patches.
 	currentVersion.Patch = 0
 
 	var migrateVersions []semver.Version
-	var messages []string
 	for _, version := range versions {
 		// If the migration version is less than to the current version, we will skip the migration since it's already applied.
 		// We should still double check the current version in case there's any patch needed.
 		if version.LT(currentVersion) {
-			messages = append(messages, fmt.Sprintf("Skip migration %s; the current schema version %s is higher.", version, currentVersion))
+			log.Debug(fmt.Sprintf("Skip migration %s; the current schema version %s is higher.", version, currentVersion))
 			continue
 		}
 		migrateVersions = append(migrateVersions, version)
 	}
-	return migrateVersions, messages, nil
+	return migrateVersions, nil
 }
 
 // getMinorVersions returns the minor versions based on file names in the prod directory.
