@@ -132,6 +132,16 @@ export interface UpdateSchemaDesignRequest {
   updateMask?: string[] | undefined;
 }
 
+export interface ParseSchemaStringRequest {
+  schemaString: string;
+  engine: Engine;
+}
+
+export interface ParseSchemaStringResponse {
+  /** The metadata of the parsed schema. */
+  schemaMetadata?: DatabaseMetadata | undefined;
+}
+
 export interface DeleteSchemaDesignRequest {
   /**
    * The name of the schema design to delete.
@@ -331,22 +341,45 @@ export const SchemaDesign = {
 
   toJSON(message: SchemaDesign): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.schemaMetadata !== undefined &&
-      (obj.schemaMetadata = message.schemaMetadata ? DatabaseMetadata.toJSON(message.schemaMetadata) : undefined);
-    message.baselineSchema !== undefined && (obj.baselineSchema = message.baselineSchema);
-    message.baselineSchemaMetadata !== undefined && (obj.baselineSchemaMetadata = message.baselineSchemaMetadata
-      ? DatabaseMetadata.toJSON(message.baselineSchemaMetadata)
-      : undefined);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.baselineDatabase !== undefined && (obj.baselineDatabase = message.baselineDatabase);
-    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.updater !== undefined && (obj.updater = message.updater);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.schemaMetadata !== undefined) {
+      obj.schemaMetadata = DatabaseMetadata.toJSON(message.schemaMetadata);
+    }
+    if (message.baselineSchema !== "") {
+      obj.baselineSchema = message.baselineSchema;
+    }
+    if (message.baselineSchemaMetadata !== undefined) {
+      obj.baselineSchemaMetadata = DatabaseMetadata.toJSON(message.baselineSchemaMetadata);
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.baselineDatabase !== "") {
+      obj.baselineDatabase = message.baselineDatabase;
+    }
+    if (message.schemaVersion !== "") {
+      obj.schemaVersion = message.schemaVersion;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
     return obj;
   },
 
@@ -419,7 +452,9 @@ export const GetSchemaDesignRequest = {
 
   toJSON(message: GetSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -510,10 +545,18 @@ export const ListSchemaDesignsRequest = {
 
   toJSON(message: ListSchemaDesignsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -587,12 +630,12 @@ export const ListSchemaDesignsResponse = {
 
   toJSON(message: ListSchemaDesignsResponse): unknown {
     const obj: any = {};
-    if (message.schemaDesigns) {
-      obj.schemaDesigns = message.schemaDesigns.map((e) => e ? SchemaDesign.toJSON(e) : undefined);
-    } else {
-      obj.schemaDesigns = [];
+    if (message.schemaDesigns?.length) {
+      obj.schemaDesigns = message.schemaDesigns.map((e) => SchemaDesign.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -662,9 +705,12 @@ export const CreateSchemaDesignRequest = {
 
   toJSON(message: CreateSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.schemaDesign !== undefined) {
+      obj.schemaDesign = SchemaDesign.toJSON(message.schemaDesign);
+    }
     return obj;
   },
 
@@ -736,9 +782,12 @@ export const UpdateSchemaDesignRequest = {
 
   toJSON(message: UpdateSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.schemaDesign !== undefined) {
+      obj.schemaDesign = SchemaDesign.toJSON(message.schemaDesign);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -752,6 +801,143 @@ export const UpdateSchemaDesignRequest = {
       ? SchemaDesign.fromPartial(object.schemaDesign)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseParseSchemaStringRequest(): ParseSchemaStringRequest {
+  return { schemaString: "", engine: 0 };
+}
+
+export const ParseSchemaStringRequest = {
+  encode(message: ParseSchemaStringRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schemaString !== "") {
+      writer.uint32(10).string(message.schemaString);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ParseSchemaStringRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParseSchemaStringRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schemaString = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParseSchemaStringRequest {
+    return {
+      schemaString: isSet(object.schemaString) ? String(object.schemaString) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+    };
+  },
+
+  toJSON(message: ParseSchemaStringRequest): unknown {
+    const obj: any = {};
+    if (message.schemaString !== "") {
+      obj.schemaString = message.schemaString;
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParseSchemaStringRequest>): ParseSchemaStringRequest {
+    return ParseSchemaStringRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ParseSchemaStringRequest>): ParseSchemaStringRequest {
+    const message = createBaseParseSchemaStringRequest();
+    message.schemaString = object.schemaString ?? "";
+    message.engine = object.engine ?? 0;
+    return message;
+  },
+};
+
+function createBaseParseSchemaStringResponse(): ParseSchemaStringResponse {
+  return { schemaMetadata: undefined };
+}
+
+export const ParseSchemaStringResponse = {
+  encode(message: ParseSchemaStringResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schemaMetadata !== undefined) {
+      DatabaseMetadata.encode(message.schemaMetadata, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ParseSchemaStringResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParseSchemaStringResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schemaMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParseSchemaStringResponse {
+    return {
+      schemaMetadata: isSet(object.schemaMetadata) ? DatabaseMetadata.fromJSON(object.schemaMetadata) : undefined,
+    };
+  },
+
+  toJSON(message: ParseSchemaStringResponse): unknown {
+    const obj: any = {};
+    if (message.schemaMetadata !== undefined) {
+      obj.schemaMetadata = DatabaseMetadata.toJSON(message.schemaMetadata);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParseSchemaStringResponse>): ParseSchemaStringResponse {
+    return ParseSchemaStringResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ParseSchemaStringResponse>): ParseSchemaStringResponse {
+    const message = createBaseParseSchemaStringResponse();
+    message.schemaMetadata = (object.schemaMetadata !== undefined && object.schemaMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.schemaMetadata)
+      : undefined;
     return message;
   },
 };
@@ -797,7 +983,9 @@ export const DeleteSchemaDesignRequest = {
 
   toJSON(message: DeleteSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -1135,6 +1323,61 @@ export const SchemaDesignServiceDefinition = {
         },
       },
     },
+    parseSchemaString: {
+      name: "ParseSchemaString",
+      requestType: ParseSchemaStringRequest,
+      requestStream: false,
+      responseType: ParseSchemaStringResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              58,
+              1,
+              42,
+              34,
+              34,
+              47,
+              118,
+              49,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              68,
+              101,
+              115,
+              105,
+              103,
+              110,
+              58,
+              112,
+              97,
+              114,
+              115,
+              101,
+              83,
+              99,
+              104,
+              101,
+              109,
+              97,
+              83,
+              116,
+              114,
+              105,
+              110,
+              103,
+            ]),
+          ],
+        },
+      },
+    },
     deleteSchemaDesign: {
       name: "DeleteSchemaDesign",
       requestType: DeleteSchemaDesignRequest,
@@ -1211,6 +1454,10 @@ export interface SchemaDesignServiceImplementation<CallContextExt = {}> {
     request: UpdateSchemaDesignRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<SchemaDesign>>;
+  parseSchemaString(
+    request: ParseSchemaStringRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ParseSchemaStringResponse>>;
   deleteSchemaDesign(
     request: DeleteSchemaDesignRequest,
     context: CallContext & CallContextExt,
@@ -1234,6 +1481,10 @@ export interface SchemaDesignServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UpdateSchemaDesignRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<SchemaDesign>;
+  parseSchemaString(
+    request: DeepPartial<ParseSchemaStringRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ParseSchemaStringResponse>;
   deleteSchemaDesign(
     request: DeepPartial<DeleteSchemaDesignRequest>,
     options?: CallOptions & CallOptionsExt,

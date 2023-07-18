@@ -313,9 +313,15 @@ export const SearchAnomaliesRequest = {
 
   toJSON(message: SearchAnomaliesRequest): unknown {
     const obj: any = {};
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -386,12 +392,12 @@ export const SearchAnomaliesResponse = {
 
   toJSON(message: SearchAnomaliesResponse): unknown {
     const obj: any = {};
-    if (message.anomalies) {
-      obj.anomalies = message.anomalies.map((e) => e ? Anomaly.toJSON(e) : undefined);
-    } else {
-      obj.anomalies = [];
+    if (message.anomalies?.length) {
+      obj.anomalies = message.anomalies.map((e) => Anomaly.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -577,29 +583,38 @@ export const Anomaly = {
 
   toJSON(message: Anomaly): unknown {
     const obj: any = {};
-    message.resource !== undefined && (obj.resource = message.resource);
-    message.type !== undefined && (obj.type = anomaly_AnomalyTypeToJSON(message.type));
-    message.severity !== undefined && (obj.severity = anomaly_AnomalySeverityToJSON(message.severity));
-    message.instanceConnectionDetail !== undefined && (obj.instanceConnectionDetail = message.instanceConnectionDetail
-      ? Anomaly_InstanceConnectionDetail.toJSON(message.instanceConnectionDetail)
-      : undefined);
-    message.databaseConnectionDetail !== undefined && (obj.databaseConnectionDetail = message.databaseConnectionDetail
-      ? Anomaly_DatabaseConnectionDetail.toJSON(message.databaseConnectionDetail)
-      : undefined);
-    message.databaseBackupPolicyViolationDetail !== undefined &&
-      (obj.databaseBackupPolicyViolationDetail = message.databaseBackupPolicyViolationDetail
-        ? Anomaly_DatabaseBackupPolicyViolationDetail.toJSON(message.databaseBackupPolicyViolationDetail)
-        : undefined);
-    message.databaseBackupMissingDetail !== undefined &&
-      (obj.databaseBackupMissingDetail = message.databaseBackupMissingDetail
-        ? Anomaly_DatabaseBackupMissingDetail.toJSON(message.databaseBackupMissingDetail)
-        : undefined);
-    message.databaseSchemaDriftDetail !== undefined &&
-      (obj.databaseSchemaDriftDetail = message.databaseSchemaDriftDetail
-        ? Anomaly_DatabaseSchemaDriftDetail.toJSON(message.databaseSchemaDriftDetail)
-        : undefined);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    if (message.resource !== "") {
+      obj.resource = message.resource;
+    }
+    if (message.type !== 0) {
+      obj.type = anomaly_AnomalyTypeToJSON(message.type);
+    }
+    if (message.severity !== 0) {
+      obj.severity = anomaly_AnomalySeverityToJSON(message.severity);
+    }
+    if (message.instanceConnectionDetail !== undefined) {
+      obj.instanceConnectionDetail = Anomaly_InstanceConnectionDetail.toJSON(message.instanceConnectionDetail);
+    }
+    if (message.databaseConnectionDetail !== undefined) {
+      obj.databaseConnectionDetail = Anomaly_DatabaseConnectionDetail.toJSON(message.databaseConnectionDetail);
+    }
+    if (message.databaseBackupPolicyViolationDetail !== undefined) {
+      obj.databaseBackupPolicyViolationDetail = Anomaly_DatabaseBackupPolicyViolationDetail.toJSON(
+        message.databaseBackupPolicyViolationDetail,
+      );
+    }
+    if (message.databaseBackupMissingDetail !== undefined) {
+      obj.databaseBackupMissingDetail = Anomaly_DatabaseBackupMissingDetail.toJSON(message.databaseBackupMissingDetail);
+    }
+    if (message.databaseSchemaDriftDetail !== undefined) {
+      obj.databaseSchemaDriftDetail = Anomaly_DatabaseSchemaDriftDetail.toJSON(message.databaseSchemaDriftDetail);
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
     return obj;
   },
 
@@ -679,7 +694,9 @@ export const Anomaly_InstanceConnectionDetail = {
 
   toJSON(message: Anomaly_InstanceConnectionDetail): unknown {
     const obj: any = {};
-    message.detail !== undefined && (obj.detail = message.detail);
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
     return obj;
   },
 
@@ -735,7 +752,9 @@ export const Anomaly_DatabaseConnectionDetail = {
 
   toJSON(message: Anomaly_DatabaseConnectionDetail): unknown {
     const obj: any = {};
-    message.detail !== undefined && (obj.detail = message.detail);
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
     return obj;
   },
 
@@ -815,10 +834,15 @@ export const Anomaly_DatabaseBackupPolicyViolationDetail = {
 
   toJSON(message: Anomaly_DatabaseBackupPolicyViolationDetail): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.expectedSchedule !== undefined &&
-      (obj.expectedSchedule = backupPlanScheduleToJSON(message.expectedSchedule));
-    message.actualSchedule !== undefined && (obj.actualSchedule = backupPlanScheduleToJSON(message.actualSchedule));
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.expectedSchedule !== 0) {
+      obj.expectedSchedule = backupPlanScheduleToJSON(message.expectedSchedule);
+    }
+    if (message.actualSchedule !== 0) {
+      obj.actualSchedule = backupPlanScheduleToJSON(message.actualSchedule);
+    }
     return obj;
   },
 
@@ -891,9 +915,12 @@ export const Anomaly_DatabaseBackupMissingDetail = {
 
   toJSON(message: Anomaly_DatabaseBackupMissingDetail): unknown {
     const obj: any = {};
-    message.expectedSchedule !== undefined &&
-      (obj.expectedSchedule = backupPlanScheduleToJSON(message.expectedSchedule));
-    message.latestBackupTime !== undefined && (obj.latestBackupTime = message.latestBackupTime.toISOString());
+    if (message.expectedSchedule !== 0) {
+      obj.expectedSchedule = backupPlanScheduleToJSON(message.expectedSchedule);
+    }
+    if (message.latestBackupTime !== undefined) {
+      obj.latestBackupTime = message.latestBackupTime.toISOString();
+    }
     return obj;
   },
 
@@ -974,9 +1001,15 @@ export const Anomaly_DatabaseSchemaDriftDetail = {
 
   toJSON(message: Anomaly_DatabaseSchemaDriftDetail): unknown {
     const obj: any = {};
-    message.recordVersion !== undefined && (obj.recordVersion = message.recordVersion);
-    message.expectedSchema !== undefined && (obj.expectedSchema = message.expectedSchema);
-    message.actualSchema !== undefined && (obj.actualSchema = message.actualSchema);
+    if (message.recordVersion !== "") {
+      obj.recordVersion = message.recordVersion;
+    }
+    if (message.expectedSchema !== "") {
+      obj.expectedSchema = message.expectedSchema;
+    }
+    if (message.actualSchema !== "") {
+      obj.actualSchema = message.actualSchema;
+    }
     return obj;
   },
 

@@ -1,8 +1,8 @@
 /* eslint-disable */
-import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
+import Long = require("long");
 
 export const protobufPackage = "bytebase.store";
 
@@ -107,10 +107,8 @@ export const SlowQueryStatistics = {
 
   toJSON(message: SlowQueryStatistics): unknown {
     const obj: any = {};
-    if (message.items) {
-      obj.items = message.items.map((e) => e ? SlowQueryStatisticsItem.toJSON(e) : undefined);
-    } else {
-      obj.items = [];
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => SlowQueryStatisticsItem.toJSON(e));
     }
     return obj;
   },
@@ -279,21 +277,35 @@ export const SlowQueryStatisticsItem = {
 
   toJSON(message: SlowQueryStatisticsItem): unknown {
     const obj: any = {};
-    message.sqlFingerprint !== undefined && (obj.sqlFingerprint = message.sqlFingerprint);
-    message.count !== undefined && (obj.count = Math.round(message.count));
-    message.latestLogTime !== undefined && (obj.latestLogTime = message.latestLogTime.toISOString());
-    message.totalQueryTime !== undefined &&
-      (obj.totalQueryTime = message.totalQueryTime ? Duration.toJSON(message.totalQueryTime) : undefined);
-    message.maximumQueryTime !== undefined &&
-      (obj.maximumQueryTime = message.maximumQueryTime ? Duration.toJSON(message.maximumQueryTime) : undefined);
-    message.totalRowsSent !== undefined && (obj.totalRowsSent = Math.round(message.totalRowsSent));
-    message.maximumRowsSent !== undefined && (obj.maximumRowsSent = Math.round(message.maximumRowsSent));
-    message.totalRowsExamined !== undefined && (obj.totalRowsExamined = Math.round(message.totalRowsExamined));
-    message.maximumRowsExamined !== undefined && (obj.maximumRowsExamined = Math.round(message.maximumRowsExamined));
-    if (message.samples) {
-      obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
-    } else {
-      obj.samples = [];
+    if (message.sqlFingerprint !== "") {
+      obj.sqlFingerprint = message.sqlFingerprint;
+    }
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    if (message.latestLogTime !== undefined) {
+      obj.latestLogTime = message.latestLogTime.toISOString();
+    }
+    if (message.totalQueryTime !== undefined) {
+      obj.totalQueryTime = Duration.toJSON(message.totalQueryTime);
+    }
+    if (message.maximumQueryTime !== undefined) {
+      obj.maximumQueryTime = Duration.toJSON(message.maximumQueryTime);
+    }
+    if (message.totalRowsSent !== 0) {
+      obj.totalRowsSent = Math.round(message.totalRowsSent);
+    }
+    if (message.maximumRowsSent !== 0) {
+      obj.maximumRowsSent = Math.round(message.maximumRowsSent);
+    }
+    if (message.totalRowsExamined !== 0) {
+      obj.totalRowsExamined = Math.round(message.totalRowsExamined);
+    }
+    if (message.maximumRowsExamined !== 0) {
+      obj.maximumRowsExamined = Math.round(message.maximumRowsExamined);
+    }
+    if (message.samples?.length) {
+      obj.samples = message.samples.map((e) => SlowQueryDetails.toJSON(e));
     }
     return obj;
   },
@@ -420,13 +432,24 @@ export const SlowQueryDetails = {
 
   toJSON(message: SlowQueryDetails): unknown {
     const obj: any = {};
-    message.startTime !== undefined && (obj.startTime = message.startTime.toISOString());
-    message.queryTime !== undefined &&
-      (obj.queryTime = message.queryTime ? Duration.toJSON(message.queryTime) : undefined);
-    message.lockTime !== undefined && (obj.lockTime = message.lockTime ? Duration.toJSON(message.lockTime) : undefined);
-    message.rowsSent !== undefined && (obj.rowsSent = Math.round(message.rowsSent));
-    message.rowsExamined !== undefined && (obj.rowsExamined = Math.round(message.rowsExamined));
-    message.sqlText !== undefined && (obj.sqlText = message.sqlText);
+    if (message.startTime !== undefined) {
+      obj.startTime = message.startTime.toISOString();
+    }
+    if (message.queryTime !== undefined) {
+      obj.queryTime = Duration.toJSON(message.queryTime);
+    }
+    if (message.lockTime !== undefined) {
+      obj.lockTime = Duration.toJSON(message.lockTime);
+    }
+    if (message.rowsSent !== 0) {
+      obj.rowsSent = Math.round(message.rowsSent);
+    }
+    if (message.rowsExamined !== 0) {
+      obj.rowsExamined = Math.round(message.rowsExamined);
+    }
+    if (message.sqlText !== "") {
+      obj.sqlText = message.sqlText;
+    }
     return obj;
   },
 
@@ -505,8 +528,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

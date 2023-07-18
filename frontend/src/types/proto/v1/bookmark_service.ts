@@ -104,7 +104,9 @@ export const CreateBookmarkRequest = {
 
   toJSON(message: CreateBookmarkRequest): unknown {
     const obj: any = {};
-    message.bookmark !== undefined && (obj.bookmark = message.bookmark ? Bookmark.toJSON(message.bookmark) : undefined);
+    if (message.bookmark !== undefined) {
+      obj.bookmark = Bookmark.toJSON(message.bookmark);
+    }
     return obj;
   },
 
@@ -162,7 +164,9 @@ export const DeleteBookmarkRequest = {
 
   toJSON(message: DeleteBookmarkRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -231,8 +235,12 @@ export const ListBookmarksRequest = {
 
   toJSON(message: ListBookmarksRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -302,12 +310,12 @@ export const ListBookmarksResponse = {
 
   toJSON(message: ListBookmarksResponse): unknown {
     const obj: any = {};
-    if (message.bookmarks) {
-      obj.bookmarks = message.bookmarks.map((e) => e ? Bookmark.toJSON(e) : undefined);
-    } else {
-      obj.bookmarks = [];
+    if (message.bookmarks?.length) {
+      obj.bookmarks = message.bookmarks.map((e) => Bookmark.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -388,9 +396,15 @@ export const Bookmark = {
 
   toJSON(message: Bookmark): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.link !== undefined && (obj.link = message.link);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.link !== "") {
+      obj.link = message.link;
+    }
     return obj;
   },
 

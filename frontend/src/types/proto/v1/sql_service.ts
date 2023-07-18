@@ -1,10 +1,10 @@
 /* eslint-disable */
-import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
+import Long = require("long");
 
 export const protobufPackage = "bytebase.v1";
 
@@ -353,11 +353,21 @@ export const AdminExecuteRequest = {
 
   toJSON(message: AdminExecuteRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
-    message.statement !== undefined && (obj.statement = message.statement);
-    message.limit !== undefined && (obj.limit = Math.round(message.limit));
-    message.timeout !== undefined && (obj.timeout = message.timeout ? Duration.toJSON(message.timeout) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.connectionDatabase !== "") {
+      obj.connectionDatabase = message.connectionDatabase;
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (message.limit !== 0) {
+      obj.limit = Math.round(message.limit);
+    }
+    if (message.timeout !== undefined) {
+      obj.timeout = Duration.toJSON(message.timeout);
+    }
     return obj;
   },
 
@@ -419,10 +429,8 @@ export const AdminExecuteResponse = {
 
   toJSON(message: AdminExecuteResponse): unknown {
     const obj: any = {};
-    if (message.results) {
-      obj.results = message.results.map((e) => e ? QueryResult.toJSON(e) : undefined);
-    } else {
-      obj.results = [];
+    if (message.results?.length) {
+      obj.results = message.results.map((e) => QueryResult.toJSON(e));
     }
     return obj;
   },
@@ -536,12 +544,24 @@ export const ExportRequest = {
 
   toJSON(message: ExportRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
-    message.statement !== undefined && (obj.statement = message.statement);
-    message.limit !== undefined && (obj.limit = Math.round(message.limit));
-    message.format !== undefined && (obj.format = exportRequest_FormatToJSON(message.format));
-    message.admin !== undefined && (obj.admin = message.admin);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.connectionDatabase !== "") {
+      obj.connectionDatabase = message.connectionDatabase;
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (message.limit !== 0) {
+      obj.limit = Math.round(message.limit);
+    }
+    if (message.format !== 0) {
+      obj.format = exportRequest_FormatToJSON(message.format);
+    }
+    if (message.admin === true) {
+      obj.admin = message.admin;
+    }
     return obj;
   },
 
@@ -602,8 +622,9 @@ export const ExportResponse = {
 
   toJSON(message: ExportResponse): unknown {
     const obj: any = {};
-    message.content !== undefined &&
-      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
+    if (message.content.length !== 0) {
+      obj.content = base64FromBytes(message.content);
+    }
     return obj;
   },
 
@@ -705,11 +726,21 @@ export const QueryRequest = {
 
   toJSON(message: QueryRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
-    message.statement !== undefined && (obj.statement = message.statement);
-    message.limit !== undefined && (obj.limit = Math.round(message.limit));
-    message.timeout !== undefined && (obj.timeout = message.timeout ? Duration.toJSON(message.timeout) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.connectionDatabase !== "") {
+      obj.connectionDatabase = message.connectionDatabase;
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (message.limit !== 0) {
+      obj.limit = Math.round(message.limit);
+    }
+    if (message.timeout !== undefined) {
+      obj.timeout = Duration.toJSON(message.timeout);
+    }
     return obj;
   },
 
@@ -784,15 +815,11 @@ export const QueryResponse = {
 
   toJSON(message: QueryResponse): unknown {
     const obj: any = {};
-    if (message.results) {
-      obj.results = message.results.map((e) => e ? QueryResult.toJSON(e) : undefined);
-    } else {
-      obj.results = [];
+    if (message.results?.length) {
+      obj.results = message.results.map((e) => QueryResult.toJSON(e));
     }
-    if (message.advices) {
-      obj.advices = message.advices.map((e) => e ? Advice.toJSON(e) : undefined);
-    } else {
-      obj.advices = [];
+    if (message.advices?.length) {
+      obj.advices = message.advices.map((e) => Advice.toJSON(e));
     }
     return obj;
   },
@@ -962,34 +989,30 @@ export const QueryResult = {
 
   toJSON(message: QueryResult): unknown {
     const obj: any = {};
-    if (message.columnNames) {
-      obj.columnNames = message.columnNames.map((e) => e);
-    } else {
-      obj.columnNames = [];
+    if (message.columnNames?.length) {
+      obj.columnNames = message.columnNames;
     }
-    if (message.columnTypeNames) {
-      obj.columnTypeNames = message.columnTypeNames.map((e) => e);
-    } else {
-      obj.columnTypeNames = [];
+    if (message.columnTypeNames?.length) {
+      obj.columnTypeNames = message.columnTypeNames;
     }
-    if (message.rows) {
-      obj.rows = message.rows.map((e) => e ? QueryRow.toJSON(e) : undefined);
-    } else {
-      obj.rows = [];
+    if (message.rows?.length) {
+      obj.rows = message.rows.map((e) => QueryRow.toJSON(e));
     }
-    if (message.masked) {
-      obj.masked = message.masked.map((e) => e);
-    } else {
-      obj.masked = [];
+    if (message.masked?.length) {
+      obj.masked = message.masked;
     }
-    if (message.sensitive) {
-      obj.sensitive = message.sensitive.map((e) => e);
-    } else {
-      obj.sensitive = [];
+    if (message.sensitive?.length) {
+      obj.sensitive = message.sensitive;
     }
-    message.error !== undefined && (obj.error = message.error);
-    message.latency !== undefined && (obj.latency = message.latency ? Duration.toJSON(message.latency) : undefined);
-    message.statement !== undefined && (obj.statement = message.statement);
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    if (message.latency !== undefined) {
+      obj.latency = Duration.toJSON(message.latency);
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
     return obj;
   },
 
@@ -1054,10 +1077,8 @@ export const QueryRow = {
 
   toJSON(message: QueryRow): unknown {
     const obj: any = {};
-    if (message.values) {
-      obj.values = message.values.map((e) => e ? RowValue.toJSON(e) : undefined);
-    } else {
-      obj.values = [];
+    if (message.values?.length) {
+      obj.values = message.values.map((e) => RowValue.toJSON(e));
     }
     return obj;
   },
@@ -1238,19 +1259,39 @@ export const RowValue = {
 
   toJSON(message: RowValue): unknown {
     const obj: any = {};
-    message.nullValue !== undefined &&
-      (obj.nullValue = message.nullValue !== undefined ? nullValueToJSON(message.nullValue) : undefined);
-    message.boolValue !== undefined && (obj.boolValue = message.boolValue);
-    message.bytesValue !== undefined &&
-      (obj.bytesValue = message.bytesValue !== undefined ? base64FromBytes(message.bytesValue) : undefined);
-    message.doubleValue !== undefined && (obj.doubleValue = message.doubleValue);
-    message.floatValue !== undefined && (obj.floatValue = message.floatValue);
-    message.int32Value !== undefined && (obj.int32Value = Math.round(message.int32Value));
-    message.int64Value !== undefined && (obj.int64Value = Math.round(message.int64Value));
-    message.stringValue !== undefined && (obj.stringValue = message.stringValue);
-    message.uint32Value !== undefined && (obj.uint32Value = Math.round(message.uint32Value));
-    message.uint64Value !== undefined && (obj.uint64Value = Math.round(message.uint64Value));
-    message.valueValue !== undefined && (obj.valueValue = message.valueValue);
+    if (message.nullValue !== undefined) {
+      obj.nullValue = nullValueToJSON(message.nullValue);
+    }
+    if (message.boolValue !== undefined) {
+      obj.boolValue = message.boolValue;
+    }
+    if (message.bytesValue !== undefined) {
+      obj.bytesValue = base64FromBytes(message.bytesValue);
+    }
+    if (message.doubleValue !== undefined) {
+      obj.doubleValue = message.doubleValue;
+    }
+    if (message.floatValue !== undefined) {
+      obj.floatValue = message.floatValue;
+    }
+    if (message.int32Value !== undefined) {
+      obj.int32Value = Math.round(message.int32Value);
+    }
+    if (message.int64Value !== undefined) {
+      obj.int64Value = Math.round(message.int64Value);
+    }
+    if (message.stringValue !== undefined) {
+      obj.stringValue = message.stringValue;
+    }
+    if (message.uint32Value !== undefined) {
+      obj.uint32Value = Math.round(message.uint32Value);
+    }
+    if (message.uint64Value !== undefined) {
+      obj.uint64Value = Math.round(message.uint64Value);
+    }
+    if (message.valueValue !== undefined) {
+      obj.valueValue = message.valueValue;
+    }
     return obj;
   },
 
@@ -1373,12 +1414,24 @@ export const Advice = {
 
   toJSON(message: Advice): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = advice_StatusToJSON(message.status));
-    message.code !== undefined && (obj.code = Math.round(message.code));
-    message.title !== undefined && (obj.title = message.title);
-    message.content !== undefined && (obj.content = message.content);
-    message.line !== undefined && (obj.line = Math.round(message.line));
-    message.detail !== undefined && (obj.detail = message.detail);
+    if (message.status !== 0) {
+      obj.status = advice_StatusToJSON(message.status);
+    }
+    if (message.code !== 0) {
+      obj.code = Math.round(message.code);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.content !== "") {
+      obj.content = message.content;
+    }
+    if (message.line !== 0) {
+      obj.line = Math.round(message.line);
+    }
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
     return obj;
   },
 
@@ -1463,9 +1516,15 @@ export const PrettyRequest = {
 
   toJSON(message: PrettyRequest): unknown {
     const obj: any = {};
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.currentSchema !== undefined && (obj.currentSchema = message.currentSchema);
-    message.expectedSchema !== undefined && (obj.expectedSchema = message.expectedSchema);
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.currentSchema !== "") {
+      obj.currentSchema = message.currentSchema;
+    }
+    if (message.expectedSchema !== "") {
+      obj.expectedSchema = message.expectedSchema;
+    }
     return obj;
   },
 
@@ -1536,8 +1595,12 @@ export const PrettyResponse = {
 
   toJSON(message: PrettyResponse): unknown {
     const obj: any = {};
-    message.currentSchema !== undefined && (obj.currentSchema = message.currentSchema);
-    message.expectedSchema !== undefined && (obj.expectedSchema = message.expectedSchema);
+    if (message.currentSchema !== "") {
+      obj.currentSchema = message.currentSchema;
+    }
+    if (message.expectedSchema !== "") {
+      obj.expectedSchema = message.expectedSchema;
+    }
     return obj;
   },
 
@@ -1766,8 +1829,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

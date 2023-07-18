@@ -283,9 +283,9 @@ export const CreateExternalVersionControlRequest = {
 
   toJSON(message: CreateExternalVersionControlRequest): unknown {
     const obj: any = {};
-    message.externalVersionControl !== undefined && (obj.externalVersionControl = message.externalVersionControl
-      ? ExternalVersionControl.toJSON(message.externalVersionControl)
-      : undefined);
+    if (message.externalVersionControl !== undefined) {
+      obj.externalVersionControl = ExternalVersionControl.toJSON(message.externalVersionControl);
+    }
     return obj;
   },
 
@@ -344,7 +344,9 @@ export const GetExternalVersionControlRequest = {
 
   toJSON(message: GetExternalVersionControlRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -413,8 +415,12 @@ export const ListExternalVersionControlsRequest = {
 
   toJSON(message: ListExternalVersionControlsRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -486,14 +492,12 @@ export const ListExternalVersionControlsResponse = {
 
   toJSON(message: ListExternalVersionControlsResponse): unknown {
     const obj: any = {};
-    if (message.externalVersionControls) {
-      obj.externalVersionControls = message.externalVersionControls.map((e) =>
-        e ? ExternalVersionControl.toJSON(e) : undefined
-      );
-    } else {
-      obj.externalVersionControls = [];
+    if (message.externalVersionControls?.length) {
+      obj.externalVersionControls = message.externalVersionControls.map((e) => ExternalVersionControl.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -566,10 +570,12 @@ export const UpdateExternalVersionControlRequest = {
 
   toJSON(message: UpdateExternalVersionControlRequest): unknown {
     const obj: any = {};
-    message.externalVersionControl !== undefined && (obj.externalVersionControl = message.externalVersionControl
-      ? ExternalVersionControl.toJSON(message.externalVersionControl)
-      : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.externalVersionControl !== undefined) {
+      obj.externalVersionControl = ExternalVersionControl.toJSON(message.externalVersionControl);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -629,7 +635,9 @@ export const DeleteExternalVersionControlRequest = {
 
   toJSON(message: DeleteExternalVersionControlRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -709,9 +717,15 @@ export const SearchExternalVersionControlProjectsRequest = {
 
   toJSON(message: SearchExternalVersionControlProjectsRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.accessToken !== "") {
+      obj.accessToken = message.accessToken;
+    }
+    if (message.refreshToken !== "") {
+      obj.refreshToken = message.refreshToken;
+    }
     return obj;
   },
 
@@ -775,12 +789,8 @@ export const SearchExternalVersionControlProjectsResponse = {
 
   toJSON(message: SearchExternalVersionControlProjectsResponse): unknown {
     const obj: any = {};
-    if (message.projects) {
-      obj.projects = message.projects.map((e) =>
-        e ? SearchExternalVersionControlProjectsResponse_Project.toJSON(e) : undefined
-      );
-    } else {
-      obj.projects = [];
+    if (message.projects?.length) {
+      obj.projects = message.projects.map((e) => SearchExternalVersionControlProjectsResponse_Project.toJSON(e));
     }
     return obj;
   },
@@ -880,10 +890,18 @@ export const SearchExternalVersionControlProjectsResponse_Project = {
 
   toJSON(message: SearchExternalVersionControlProjectsResponse_Project): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.fullpath !== undefined && (obj.fullpath = message.fullpath);
-    message.webUrl !== undefined && (obj.webUrl = message.webUrl);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.fullpath !== "") {
+      obj.fullpath = message.fullpath;
+    }
+    if (message.webUrl !== "") {
+      obj.webUrl = message.webUrl;
+    }
     return obj;
   },
 
@@ -946,7 +964,9 @@ export const ListProjectGitOpsInfoRequest = {
 
   toJSON(message: ListProjectGitOpsInfoRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
@@ -1006,10 +1026,8 @@ export const ListProjectGitOpsInfoResponse = {
 
   toJSON(message: ListProjectGitOpsInfoResponse): unknown {
     const obj: any = {};
-    if (message.projectGitopsInfo) {
-      obj.projectGitopsInfo = message.projectGitopsInfo.map((e) => e ? ProjectGitOpsInfo.toJSON(e) : undefined);
-    } else {
-      obj.projectGitopsInfo = [];
+    if (message.projectGitopsInfo?.length) {
+      obj.projectGitopsInfo = message.projectGitopsInfo.map((e) => ProjectGitOpsInfo.toJSON(e));
     }
     return obj;
   },
@@ -1134,13 +1152,27 @@ export const ExternalVersionControl = {
 
   toJSON(message: ExternalVersionControl): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.type !== undefined && (obj.type = externalVersionControl_TypeToJSON(message.type));
-    message.url !== undefined && (obj.url = message.url);
-    message.apiUrl !== undefined && (obj.apiUrl = message.apiUrl);
-    message.applicationId !== undefined && (obj.applicationId = message.applicationId);
-    message.secret !== undefined && (obj.secret = message.secret);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.type !== 0) {
+      obj.type = externalVersionControl_TypeToJSON(message.type);
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.apiUrl !== "") {
+      obj.apiUrl = message.apiUrl;
+    }
+    if (message.applicationId !== "") {
+      obj.applicationId = message.applicationId;
+    }
+    if (message.secret !== "") {
+      obj.secret = message.secret;
+    }
     return obj;
   },
 
@@ -1386,22 +1418,54 @@ export const ProjectGitOpsInfo = {
 
   toJSON(message: ProjectGitOpsInfo): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.vcsUid !== undefined && (obj.vcsUid = message.vcsUid);
-    message.title !== undefined && (obj.title = message.title);
-    message.fullPath !== undefined && (obj.fullPath = message.fullPath);
-    message.webUrl !== undefined && (obj.webUrl = message.webUrl);
-    message.branchFilter !== undefined && (obj.branchFilter = message.branchFilter);
-    message.baseDirectory !== undefined && (obj.baseDirectory = message.baseDirectory);
-    message.filePathTemplate !== undefined && (obj.filePathTemplate = message.filePathTemplate);
-    message.schemaPathTemplate !== undefined && (obj.schemaPathTemplate = message.schemaPathTemplate);
-    message.sheetPathTemplate !== undefined && (obj.sheetPathTemplate = message.sheetPathTemplate);
-    message.externalId !== undefined && (obj.externalId = message.externalId);
-    message.enableSqlReviewCi !== undefined && (obj.enableSqlReviewCi = message.enableSqlReviewCi);
-    message.webhookEndpointId !== undefined && (obj.webhookEndpointId = message.webhookEndpointId);
-    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
-    message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.vcsUid !== "") {
+      obj.vcsUid = message.vcsUid;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.fullPath !== "") {
+      obj.fullPath = message.fullPath;
+    }
+    if (message.webUrl !== "") {
+      obj.webUrl = message.webUrl;
+    }
+    if (message.branchFilter !== "") {
+      obj.branchFilter = message.branchFilter;
+    }
+    if (message.baseDirectory !== "") {
+      obj.baseDirectory = message.baseDirectory;
+    }
+    if (message.filePathTemplate !== "") {
+      obj.filePathTemplate = message.filePathTemplate;
+    }
+    if (message.schemaPathTemplate !== "") {
+      obj.schemaPathTemplate = message.schemaPathTemplate;
+    }
+    if (message.sheetPathTemplate !== "") {
+      obj.sheetPathTemplate = message.sheetPathTemplate;
+    }
+    if (message.externalId !== "") {
+      obj.externalId = message.externalId;
+    }
+    if (message.enableSqlReviewCi === true) {
+      obj.enableSqlReviewCi = message.enableSqlReviewCi;
+    }
+    if (message.webhookEndpointId !== "") {
+      obj.webhookEndpointId = message.webhookEndpointId;
+    }
+    if (message.accessToken !== "") {
+      obj.accessToken = message.accessToken;
+    }
+    if (message.expiresTime !== undefined) {
+      obj.expiresTime = message.expiresTime.toISOString();
+    }
+    if (message.refreshToken !== "") {
+      obj.refreshToken = message.refreshToken;
+    }
     return obj;
   },
 
@@ -1472,8 +1536,9 @@ export const ExchangeTokenRequest = {
 
   toJSON(message: ExchangeTokenRequest): unknown {
     const obj: any = {};
-    message.exchangeToken !== undefined &&
-      (obj.exchangeToken = message.exchangeToken ? ExchangeToken.toJSON(message.exchangeToken) : undefined);
+    if (message.exchangeToken !== undefined) {
+      obj.exchangeToken = ExchangeToken.toJSON(message.exchangeToken);
+    }
     return obj;
   },
 
@@ -1588,12 +1653,24 @@ export const ExchangeToken = {
 
   toJSON(message: ExchangeToken): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.code !== undefined && (obj.code = message.code);
-    message.type !== undefined && (obj.type = externalVersionControl_TypeToJSON(message.type));
-    message.instanceUrl !== undefined && (obj.instanceUrl = message.instanceUrl);
-    message.clientId !== undefined && (obj.clientId = message.clientId);
-    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    if (message.type !== 0) {
+      obj.type = externalVersionControl_TypeToJSON(message.type);
+    }
+    if (message.instanceUrl !== "") {
+      obj.instanceUrl = message.instanceUrl;
+    }
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
     return obj;
   },
 
@@ -1678,9 +1755,15 @@ export const OAuthToken = {
 
   toJSON(message: OAuthToken): unknown {
     const obj: any = {};
-    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
-    message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
+    if (message.accessToken !== "") {
+      obj.accessToken = message.accessToken;
+    }
+    if (message.refreshToken !== "") {
+      obj.refreshToken = message.refreshToken;
+    }
+    if (message.expiresTime !== undefined) {
+      obj.expiresTime = message.expiresTime.toISOString();
+    }
     return obj;
   },
 

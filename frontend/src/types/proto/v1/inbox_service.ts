@@ -169,9 +169,15 @@ export const ListInboxRequest = {
 
   toJSON(message: ListInboxRequest): unknown {
     const obj: any = {};
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -244,12 +250,12 @@ export const ListInboxResponse = {
 
   toJSON(message: ListInboxResponse): unknown {
     const obj: any = {};
-    if (message.inboxMessages) {
-      obj.inboxMessages = message.inboxMessages.map((e) => e ? InboxMessage.toJSON(e) : undefined);
-    } else {
-      obj.inboxMessages = [];
+    if (message.inboxMessages?.length) {
+      obj.inboxMessages = message.inboxMessages.map((e) => InboxMessage.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
@@ -363,9 +369,12 @@ export const UpdateInboxRequest = {
 
   toJSON(message: UpdateInboxRequest): unknown {
     const obj: any = {};
-    message.inboxMessage !== undefined &&
-      (obj.inboxMessage = message.inboxMessage ? InboxMessage.toJSON(message.inboxMessage) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.inboxMessage !== undefined) {
+      obj.inboxMessage = InboxMessage.toJSON(message.inboxMessage);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -459,11 +468,18 @@ export const InboxMessage = {
 
   toJSON(message: InboxMessage): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.activityUid !== undefined && (obj.activityUid = message.activityUid);
-    message.status !== undefined && (obj.status = inboxMessage_StatusToJSON(message.status));
-    message.activity !== undefined &&
-      (obj.activity = message.activity ? LogEntity.toJSON(message.activity) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.activityUid !== "") {
+      obj.activityUid = message.activityUid;
+    }
+    if (message.status !== 0) {
+      obj.status = inboxMessage_StatusToJSON(message.status);
+    }
+    if (message.activity !== undefined) {
+      obj.activity = LogEntity.toJSON(message.activity);
+    }
     return obj;
   },
 
@@ -537,8 +553,12 @@ export const InboxSummary = {
 
   toJSON(message: InboxSummary): unknown {
     const obj: any = {};
-    message.unread !== undefined && (obj.unread = Math.round(message.unread));
-    message.unreadError !== undefined && (obj.unreadError = Math.round(message.unreadError));
+    if (message.unread !== 0) {
+      obj.unread = Math.round(message.unread);
+    }
+    if (message.unreadError !== 0) {
+      obj.unreadError = Math.round(message.unreadError);
+    }
     return obj;
   },
 

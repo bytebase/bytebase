@@ -1,7 +1,7 @@
 /* eslint-disable */
-import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
 import { ApprovalStep } from "./approval";
+import Long = require("long");
 
 export const protobufPackage = "bytebase.store";
 
@@ -224,7 +224,9 @@ export const ActivityIssueCreatePayload = {
 
   toJSON(message: ActivityIssueCreatePayload): unknown {
     const obj: any = {};
-    message.issueName !== undefined && (obj.issueName = message.issueName);
+    if (message.issueName !== "") {
+      obj.issueName = message.issueName;
+    }
     return obj;
   },
 
@@ -328,16 +330,20 @@ export const ActivityIssueCommentCreatePayload = {
 
   toJSON(message: ActivityIssueCommentCreatePayload): unknown {
     const obj: any = {};
-    message.externalApprovalEvent !== undefined && (obj.externalApprovalEvent = message.externalApprovalEvent
-      ? ActivityIssueCommentCreatePayload_ExternalApprovalEvent.toJSON(message.externalApprovalEvent)
-      : undefined);
-    message.taskRollbackBy !== undefined && (obj.taskRollbackBy = message.taskRollbackBy
-      ? ActivityIssueCommentCreatePayload_TaskRollbackBy.toJSON(message.taskRollbackBy)
-      : undefined);
-    message.approvalEvent !== undefined && (obj.approvalEvent = message.approvalEvent
-      ? ActivityIssueCommentCreatePayload_ApprovalEvent.toJSON(message.approvalEvent)
-      : undefined);
-    message.issueName !== undefined && (obj.issueName = message.issueName);
+    if (message.externalApprovalEvent !== undefined) {
+      obj.externalApprovalEvent = ActivityIssueCommentCreatePayload_ExternalApprovalEvent.toJSON(
+        message.externalApprovalEvent,
+      );
+    }
+    if (message.taskRollbackBy !== undefined) {
+      obj.taskRollbackBy = ActivityIssueCommentCreatePayload_TaskRollbackBy.toJSON(message.taskRollbackBy);
+    }
+    if (message.approvalEvent !== undefined) {
+      obj.approvalEvent = ActivityIssueCommentCreatePayload_ApprovalEvent.toJSON(message.approvalEvent);
+    }
+    if (message.issueName !== "") {
+      obj.issueName = message.issueName;
+    }
     return obj;
   },
 
@@ -441,10 +447,18 @@ export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
 
   toJSON(message: ActivityIssueCommentCreatePayload_TaskRollbackBy): unknown {
     const obj: any = {};
-    message.issueId !== undefined && (obj.issueId = Math.round(message.issueId));
-    message.taskId !== undefined && (obj.taskId = Math.round(message.taskId));
-    message.rollbackByIssueId !== undefined && (obj.rollbackByIssueId = Math.round(message.rollbackByIssueId));
-    message.rollbackByTaskId !== undefined && (obj.rollbackByTaskId = Math.round(message.rollbackByTaskId));
+    if (message.issueId !== 0) {
+      obj.issueId = Math.round(message.issueId);
+    }
+    if (message.taskId !== 0) {
+      obj.taskId = Math.round(message.taskId);
+    }
+    if (message.rollbackByIssueId !== 0) {
+      obj.rollbackByIssueId = Math.round(message.rollbackByIssueId);
+    }
+    if (message.rollbackByTaskId !== 0) {
+      obj.rollbackByTaskId = Math.round(message.rollbackByTaskId);
+    }
     return obj;
   },
 
@@ -536,11 +550,15 @@ export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
 
   toJSON(message: ActivityIssueCommentCreatePayload_ExternalApprovalEvent): unknown {
     const obj: any = {};
-    message.type !== undefined &&
-      (obj.type = activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeToJSON(message.type));
-    message.action !== undefined &&
-      (obj.action = activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionToJSON(message.action));
-    message.stageName !== undefined && (obj.stageName = message.stageName);
+    if (message.type !== 0) {
+      obj.type = activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeToJSON(message.type);
+    }
+    if (message.action !== 0) {
+      obj.action = activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionToJSON(message.action);
+    }
+    if (message.stageName !== "") {
+      obj.stageName = message.stageName;
+    }
     return obj;
   },
 
@@ -607,8 +625,9 @@ export const ActivityIssueCommentCreatePayload_ApprovalEvent = {
 
   toJSON(message: ActivityIssueCommentCreatePayload_ApprovalEvent): unknown {
     const obj: any = {};
-    message.status !== undefined &&
-      (obj.status = activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(message.status));
+    if (message.status !== 0) {
+      obj.status = activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(message.status);
+    }
     return obj;
   },
 
@@ -668,8 +687,9 @@ export const ActivityIssueApprovalNotifyPayload = {
 
   toJSON(message: ActivityIssueApprovalNotifyPayload): unknown {
     const obj: any = {};
-    message.approvalStep !== undefined &&
-      (obj.approvalStep = message.approvalStep ? ApprovalStep.toJSON(message.approvalStep) : undefined);
+    if (message.approvalStep !== undefined) {
+      obj.approvalStep = ApprovalStep.toJSON(message.approvalStep);
+    }
     return obj;
   },
 
@@ -719,8 +739,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

@@ -273,15 +273,21 @@ export const WorkspaceProfileSetting = {
 
   toJSON(message: WorkspaceProfileSetting): unknown {
     const obj: any = {};
-    message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
-    message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
-    message.require2fa !== undefined && (obj.require2fa = message.require2fa);
-    if (message.outboundIpList) {
-      obj.outboundIpList = message.outboundIpList.map((e) => e);
-    } else {
-      obj.outboundIpList = [];
+    if (message.externalUrl !== "") {
+      obj.externalUrl = message.externalUrl;
     }
-    message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
+    if (message.disallowSignup === true) {
+      obj.disallowSignup = message.disallowSignup;
+    }
+    if (message.require2fa === true) {
+      obj.require2fa = message.require2fa;
+    }
+    if (message.outboundIpList?.length) {
+      obj.outboundIpList = message.outboundIpList;
+    }
+    if (message.gitopsWebhookUrl !== "") {
+      obj.gitopsWebhookUrl = message.gitopsWebhookUrl;
+    }
     return obj;
   },
 
@@ -351,8 +357,12 @@ export const AgentPluginSetting = {
 
   toJSON(message: AgentPluginSetting): unknown {
     const obj: any = {};
-    message.url !== undefined && (obj.url = message.url);
-    message.token !== undefined && (obj.token = message.token);
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
     return obj;
   },
 
@@ -413,10 +423,8 @@ export const WorkspaceApprovalSetting = {
 
   toJSON(message: WorkspaceApprovalSetting): unknown {
     const obj: any = {};
-    if (message.rules) {
-      obj.rules = message.rules.map((e) => e ? WorkspaceApprovalSetting_Rule.toJSON(e) : undefined);
-    } else {
-      obj.rules = [];
+    if (message.rules?.length) {
+      obj.rules = message.rules.map((e) => WorkspaceApprovalSetting_Rule.toJSON(e));
     }
     return obj;
   },
@@ -497,11 +505,15 @@ export const WorkspaceApprovalSetting_Rule = {
 
   toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
     const obj: any = {};
-    message.expression !== undefined &&
-      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
-    message.template !== undefined &&
-      (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    if (message.expression !== undefined) {
+      obj.expression = ParsedExpr.toJSON(message.expression);
+    }
+    if (message.template !== undefined) {
+      obj.template = ApprovalTemplate.toJSON(message.template);
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
     return obj;
   },
 
@@ -567,10 +579,8 @@ export const ExternalApprovalSetting = {
 
   toJSON(message: ExternalApprovalSetting): unknown {
     const obj: any = {};
-    if (message.nodes) {
-      obj.nodes = message.nodes.map((e) => e ? ExternalApprovalSetting_Node.toJSON(e) : undefined);
-    } else {
-      obj.nodes = [];
+    if (message.nodes?.length) {
+      obj.nodes = message.nodes.map((e) => ExternalApprovalSetting_Node.toJSON(e));
     }
     return obj;
   },
@@ -651,9 +661,15 @@ export const ExternalApprovalSetting_Node = {
 
   toJSON(message: ExternalApprovalSetting_Node): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.endpoint !== undefined && (obj.endpoint = message.endpoint);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.endpoint !== "") {
+      obj.endpoint = message.endpoint;
+    }
     return obj;
   },
 
@@ -825,17 +841,36 @@ export const SMTPMailDeliverySetting = {
 
   toJSON(message: SMTPMailDeliverySetting): unknown {
     const obj: any = {};
-    message.server !== undefined && (obj.server = message.server);
-    message.port !== undefined && (obj.port = Math.round(message.port));
-    message.encryption !== undefined && (obj.encryption = sMTPMailDeliverySetting_EncryptionToJSON(message.encryption));
-    message.ca !== undefined && (obj.ca = message.ca);
-    message.key !== undefined && (obj.key = message.key);
-    message.cert !== undefined && (obj.cert = message.cert);
-    message.authentication !== undefined &&
-      (obj.authentication = sMTPMailDeliverySetting_AuthenticationToJSON(message.authentication));
-    message.username !== undefined && (obj.username = message.username);
-    message.password !== undefined && (obj.password = message.password);
-    message.from !== undefined && (obj.from = message.from);
+    if (message.server !== "") {
+      obj.server = message.server;
+    }
+    if (message.port !== 0) {
+      obj.port = Math.round(message.port);
+    }
+    if (message.encryption !== 0) {
+      obj.encryption = sMTPMailDeliverySetting_EncryptionToJSON(message.encryption);
+    }
+    if (message.ca !== "") {
+      obj.ca = message.ca;
+    }
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.cert !== "") {
+      obj.cert = message.cert;
+    }
+    if (message.authentication !== 0) {
+      obj.authentication = sMTPMailDeliverySetting_AuthenticationToJSON(message.authentication);
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.from !== "") {
+      obj.from = message.from;
+    }
     return obj;
   },
 
@@ -904,12 +939,8 @@ export const SchemaTemplateSetting = {
 
   toJSON(message: SchemaTemplateSetting): unknown {
     const obj: any = {};
-    if (message.fieldTemplates) {
-      obj.fieldTemplates = message.fieldTemplates.map((e) =>
-        e ? SchemaTemplateSetting_FieldTemplate.toJSON(e) : undefined
-      );
-    } else {
-      obj.fieldTemplates = [];
+    if (message.fieldTemplates?.length) {
+      obj.fieldTemplates = message.fieldTemplates.map((e) => SchemaTemplateSetting_FieldTemplate.toJSON(e));
     }
     return obj;
   },
@@ -991,9 +1022,15 @@ export const SchemaTemplateSetting_FieldTemplate = {
 
   toJSON(message: SchemaTemplateSetting_FieldTemplate): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.column !== undefined && (obj.column = message.column ? ColumnMetadata.toJSON(message.column) : undefined);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.column !== undefined) {
+      obj.column = ColumnMetadata.toJSON(message.column);
+    }
     return obj;
   },
 
