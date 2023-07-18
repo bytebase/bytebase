@@ -302,6 +302,38 @@ export interface ListPlanCheckRunsResponse {
   nextPageToken: string;
 }
 
+export interface RunRolloutTasksRequest {
+  /**
+   * The name of the rollout.
+   * Format: projects/{project}/rollouts/{rollout}
+   */
+  name: string;
+  /**
+   * The tasks to run.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   */
+  tasks: string[];
+}
+
+export interface RunRolloutTasksResponse {
+}
+
+export interface CancelRolloutTasksRequest {
+  /**
+   * The name of the rollout.
+   * Format: projects/{project}/rollouts/{rollout}
+   */
+  name: string;
+  /**
+   * The tasks to cancel.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   */
+  tasks: string[];
+}
+
+export interface CancelRolloutTasksResponse {
+}
+
 export interface PlanCheckRun {
   /** Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} */
   name: string;
@@ -2467,6 +2499,244 @@ export const ListPlanCheckRunsResponse = {
     const message = createBaseListPlanCheckRunsResponse();
     message.planCheckRuns = object.planCheckRuns?.map((e) => PlanCheckRun.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseRunRolloutTasksRequest(): RunRolloutTasksRequest {
+  return { name: "", tasks: [] };
+}
+
+export const RunRolloutTasksRequest = {
+  encode(message: RunRolloutTasksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.tasks) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RunRolloutTasksRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunRolloutTasksRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tasks.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunRolloutTasksRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: RunRolloutTasksRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.tasks) {
+      obj.tasks = message.tasks.map((e) => e);
+    } else {
+      obj.tasks = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunRolloutTasksRequest>): RunRolloutTasksRequest {
+    return RunRolloutTasksRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<RunRolloutTasksRequest>): RunRolloutTasksRequest {
+    const message = createBaseRunRolloutTasksRequest();
+    message.name = object.name ?? "";
+    message.tasks = object.tasks?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseRunRolloutTasksResponse(): RunRolloutTasksResponse {
+  return {};
+}
+
+export const RunRolloutTasksResponse = {
+  encode(_: RunRolloutTasksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RunRolloutTasksResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunRolloutTasksResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): RunRolloutTasksResponse {
+    return {};
+  },
+
+  toJSON(_: RunRolloutTasksResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunRolloutTasksResponse>): RunRolloutTasksResponse {
+    return RunRolloutTasksResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<RunRolloutTasksResponse>): RunRolloutTasksResponse {
+    const message = createBaseRunRolloutTasksResponse();
+    return message;
+  },
+};
+
+function createBaseCancelRolloutTasksRequest(): CancelRolloutTasksRequest {
+  return { name: "", tasks: [] };
+}
+
+export const CancelRolloutTasksRequest = {
+  encode(message: CancelRolloutTasksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.tasks) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CancelRolloutTasksRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelRolloutTasksRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tasks.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CancelRolloutTasksRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: CancelRolloutTasksRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.tasks) {
+      obj.tasks = message.tasks.map((e) => e);
+    } else {
+      obj.tasks = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CancelRolloutTasksRequest>): CancelRolloutTasksRequest {
+    return CancelRolloutTasksRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<CancelRolloutTasksRequest>): CancelRolloutTasksRequest {
+    const message = createBaseCancelRolloutTasksRequest();
+    message.name = object.name ?? "";
+    message.tasks = object.tasks?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseCancelRolloutTasksResponse(): CancelRolloutTasksResponse {
+  return {};
+}
+
+export const CancelRolloutTasksResponse = {
+  encode(_: CancelRolloutTasksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CancelRolloutTasksResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelRolloutTasksResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): CancelRolloutTasksResponse {
+    return {};
+  },
+
+  toJSON(_: CancelRolloutTasksResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<CancelRolloutTasksResponse>): CancelRolloutTasksResponse {
+    return CancelRolloutTasksResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<CancelRolloutTasksResponse>): CancelRolloutTasksResponse {
+    const message = createBaseCancelRolloutTasksResponse();
     return message;
   },
 };
@@ -4999,6 +5269,149 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    runRolloutTasks: {
+      name: "RunRolloutTasks",
+      requestType: RunRolloutTasksRequest,
+      requestStream: false,
+      responseType: RunRolloutTasksResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              53,
+              58,
+              1,
+              42,
+              34,
+              48,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              115,
+              47,
+              42,
+              125,
+              58,
+              114,
+              117,
+              110,
+              82,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              84,
+              97,
+              115,
+              107,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    cancelRolloutTasks: {
+      name: "CancelRolloutTasks",
+      requestType: CancelRolloutTasksRequest,
+      requestStream: false,
+      responseType: CancelRolloutTasksResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              56,
+              58,
+              1,
+              42,
+              34,
+              51,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              115,
+              47,
+              42,
+              125,
+              58,
+              99,
+              97,
+              110,
+              99,
+              101,
+              108,
+              82,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              84,
+              97,
+              115,
+              107,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -5018,6 +5431,14 @@ export interface RolloutServiceImplementation<CallContextExt = {}> {
     request: ListPlanCheckRunsRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListPlanCheckRunsResponse>>;
+  runRolloutTasks(
+    request: RunRolloutTasksRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<RunRolloutTasksResponse>>;
+  cancelRolloutTasks(
+    request: CancelRolloutTasksRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<CancelRolloutTasksResponse>>;
 }
 
 export interface RolloutServiceClient<CallOptionsExt = {}> {
@@ -5036,6 +5457,14 @@ export interface RolloutServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListPlanCheckRunsRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListPlanCheckRunsResponse>;
+  runRolloutTasks(
+    request: DeepPartial<RunRolloutTasksRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<RunRolloutTasksResponse>;
+  cancelRolloutTasks(
+    request: DeepPartial<CancelRolloutTasksRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<CancelRolloutTasksResponse>;
 }
 
 declare const self: any | undefined;

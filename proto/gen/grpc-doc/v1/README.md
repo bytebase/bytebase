@@ -426,6 +426,8 @@
     - [RoleService](#bytebase-v1-RoleService)
   
 - [v1/rollout_service.proto](#v1_rollout_service-proto)
+    - [CancelRolloutTasksRequest](#bytebase-v1-CancelRolloutTasksRequest)
+    - [CancelRolloutTasksResponse](#bytebase-v1-CancelRolloutTasksResponse)
     - [CreatePlanRequest](#bytebase-v1-CreatePlanRequest)
     - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
     - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
@@ -448,6 +450,8 @@
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
     - [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest)
     - [Rollout](#bytebase-v1-Rollout)
+    - [RunRolloutTasksRequest](#bytebase-v1-RunRolloutTasksRequest)
+    - [RunRolloutTasksResponse](#bytebase-v1-RunRolloutTasksResponse)
     - [Stage](#bytebase-v1-Stage)
     - [Task](#bytebase-v1-Task)
     - [Task.DatabaseBackup](#bytebase-v1-Task-DatabaseBackup)
@@ -6797,6 +6801,32 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
+<a name="bytebase-v1-CancelRolloutTasksRequest"></a>
+
+### CancelRolloutTasksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the rollout. Format: projects/{project}/rollouts/{rollout} |
+| tasks | [string](#string) | repeated | The tasks to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+
+
+
+
+
+
+<a name="bytebase-v1-CancelRolloutTasksResponse"></a>
+
+### CancelRolloutTasksResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-CreatePlanRequest"></a>
 
 ### CreatePlanRequest
@@ -7189,6 +7219,32 @@ FIXME(d/xz): support spec with deployment config
 
 
 
+<a name="bytebase-v1-RunRolloutTasksRequest"></a>
+
+### RunRolloutTasksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the rollout. Format: projects/{project}/rollouts/{rollout} |
+| tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+
+
+
+
+
+
+<a name="bytebase-v1-RunRolloutTasksResponse"></a>
+
+### RunRolloutTasksResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-Stage"></a>
 
 ### Stage
@@ -7574,6 +7630,8 @@ Type is the database change type.
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListRolloutTaskRuns | [ListRolloutTaskRunsRequest](#bytebase-v1-ListRolloutTaskRunsRequest) | [ListRolloutTaskRunsResponse](#bytebase-v1-ListRolloutTaskRunsResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
+| RunRolloutTasks | [RunRolloutTasksRequest](#bytebase-v1-RunRolloutTasksRequest) | [RunRolloutTasksResponse](#bytebase-v1-RunRolloutTasksResponse) |  |
+| CancelRolloutTasks | [CancelRolloutTasksRequest](#bytebase-v1-CancelRolloutTasksRequest) | [CancelRolloutTasksResponse](#bytebase-v1-CancelRolloutTasksResponse) |  |
 
  
 

@@ -28,6 +28,8 @@ const (
 	RolloutService_PreviewRollout_FullMethodName      = "/bytebase.v1.RolloutService/PreviewRollout"
 	RolloutService_ListRolloutTaskRuns_FullMethodName = "/bytebase.v1.RolloutService/ListRolloutTaskRuns"
 	RolloutService_ListPlanCheckRuns_FullMethodName   = "/bytebase.v1.RolloutService/ListPlanCheckRuns"
+	RolloutService_RunRolloutTasks_FullMethodName     = "/bytebase.v1.RolloutService/RunRolloutTasks"
+	RolloutService_CancelRolloutTasks_FullMethodName  = "/bytebase.v1.RolloutService/CancelRolloutTasks"
 )
 
 // RolloutServiceClient is the client API for RolloutService service.
@@ -43,6 +45,8 @@ type RolloutServiceClient interface {
 	PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	ListRolloutTaskRuns(ctx context.Context, in *ListRolloutTaskRunsRequest, opts ...grpc.CallOption) (*ListRolloutTaskRunsResponse, error)
 	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
+	RunRolloutTasks(ctx context.Context, in *RunRolloutTasksRequest, opts ...grpc.CallOption) (*RunRolloutTasksResponse, error)
+	CancelRolloutTasks(ctx context.Context, in *CancelRolloutTasksRequest, opts ...grpc.CallOption) (*CancelRolloutTasksResponse, error)
 }
 
 type rolloutServiceClient struct {
@@ -134,6 +138,24 @@ func (c *rolloutServiceClient) ListPlanCheckRuns(ctx context.Context, in *ListPl
 	return out, nil
 }
 
+func (c *rolloutServiceClient) RunRolloutTasks(ctx context.Context, in *RunRolloutTasksRequest, opts ...grpc.CallOption) (*RunRolloutTasksResponse, error) {
+	out := new(RunRolloutTasksResponse)
+	err := c.cc.Invoke(ctx, RolloutService_RunRolloutTasks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rolloutServiceClient) CancelRolloutTasks(ctx context.Context, in *CancelRolloutTasksRequest, opts ...grpc.CallOption) (*CancelRolloutTasksResponse, error) {
+	out := new(CancelRolloutTasksResponse)
+	err := c.cc.Invoke(ctx, RolloutService_CancelRolloutTasks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RolloutServiceServer is the server API for RolloutService service.
 // All implementations must embed UnimplementedRolloutServiceServer
 // for forward compatibility
@@ -147,6 +169,8 @@ type RolloutServiceServer interface {
 	PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error)
 	ListRolloutTaskRuns(context.Context, *ListRolloutTaskRunsRequest) (*ListRolloutTaskRunsResponse, error)
 	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
+	RunRolloutTasks(context.Context, *RunRolloutTasksRequest) (*RunRolloutTasksResponse, error)
+	CancelRolloutTasks(context.Context, *CancelRolloutTasksRequest) (*CancelRolloutTasksResponse, error)
 	mustEmbedUnimplementedRolloutServiceServer()
 }
 
@@ -180,6 +204,12 @@ func (UnimplementedRolloutServiceServer) ListRolloutTaskRuns(context.Context, *L
 }
 func (UnimplementedRolloutServiceServer) ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPlanCheckRuns not implemented")
+}
+func (UnimplementedRolloutServiceServer) RunRolloutTasks(context.Context, *RunRolloutTasksRequest) (*RunRolloutTasksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RunRolloutTasks not implemented")
+}
+func (UnimplementedRolloutServiceServer) CancelRolloutTasks(context.Context, *CancelRolloutTasksRequest) (*CancelRolloutTasksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelRolloutTasks not implemented")
 }
 func (UnimplementedRolloutServiceServer) mustEmbedUnimplementedRolloutServiceServer() {}
 
@@ -356,6 +386,42 @@ func _RolloutService_ListPlanCheckRuns_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RolloutService_RunRolloutTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RunRolloutTasksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).RunRolloutTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_RunRolloutTasks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).RunRolloutTasks(ctx, req.(*RunRolloutTasksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RolloutService_CancelRolloutTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelRolloutTasksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).CancelRolloutTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_CancelRolloutTasks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).CancelRolloutTasks(ctx, req.(*CancelRolloutTasksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RolloutService_ServiceDesc is the grpc.ServiceDesc for RolloutService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -398,6 +464,14 @@ var RolloutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPlanCheckRuns",
 			Handler:    _RolloutService_ListPlanCheckRuns_Handler,
+		},
+		{
+			MethodName: "RunRolloutTasks",
+			Handler:    _RolloutService_RunRolloutTasks_Handler,
+		},
+		{
+			MethodName: "CancelRolloutTasks",
+			Handler:    _RolloutService_CancelRolloutTasks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
