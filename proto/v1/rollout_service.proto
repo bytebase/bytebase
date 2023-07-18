@@ -58,13 +58,37 @@ service RolloutService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc ListRolloutTaskRuns(ListRolloutTaskRunsRequest) returns (ListRolloutTaskRunsResponse) {
+  rpc ListTaskRuns(ListTaskRunsRequest) returns (ListTaskRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (ListPlanCheckRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun",
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip",
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel",
+      body: "*"
+    };
     option (google.api.method_signature) = "parent";
   }
 }
@@ -277,6 +301,39 @@ message ListPlanCheckRunsResponse {
   string next_page_token = 2;
 }
 
+message BatchRunTasksRequest {
+  // The name of the rollout.
+  // Format: projects/{project}/rollouts/{rollout}
+  string parent = 1;
+  // The tasks to run.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string tasks = 2;
+}
+
+message BatchRunTasksResponse {}
+
+message BatchSkipTasksRequest {
+  // The name of the rollout.
+  // Format: projects/{project}/rollouts/{rollout}
+  string parent = 1;
+  // The tasks to skip.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string tasks = 2;
+}
+
+message BatchSkipTasksResponse {}
+
+message BatchCancelTaskRunsRequest {
+  // The name of the rollout.
+  // Format: projects/{project}/rollouts/{rollout}
+  string parent = 1;
+  // The tasks to cancel.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string tasks = 2;
+}
+
+message BatchCancelTaskRunsResponse {}
+
 message PlanCheckRun {
   // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
   string name = 1;
@@ -362,7 +419,7 @@ message PreviewRolloutRequest {
   Plan plan = 2;
 }
 
-message ListRolloutTaskRunsRequest {
+message ListTaskRunsRequest {
   // The parent, which owns this collection of plans.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   // Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
@@ -382,7 +439,7 @@ message ListRolloutTaskRunsRequest {
   string page_token = 3;
 }
 
-message ListRolloutTaskRunsResponse {
+message ListTaskRunsResponse {
   // The taskRuns from the specified request.
   repeated TaskRun task_runs = 1;
 
