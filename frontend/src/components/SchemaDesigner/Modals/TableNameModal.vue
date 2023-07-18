@@ -99,7 +99,9 @@ const handleConfirmButtonClick = async () => {
   }
   column.comment = "ID";
   table.columns.push(column);
-  schema.tableList.push(convertTableMetadataToTable(table));
+  const tableEdit = convertTableMetadataToTable(table);
+  tableEdit.status = "created";
+  schema.tableList.push(tableEdit);
 
   dismissModal();
 };

@@ -210,8 +210,9 @@ const handleConfirm = async () => {
         DatabaseMetadata.fromPartial({})
     );
 
-    await schemaDesignStore.createSchemaDesign(
+    console.log(
       project.value.name,
+      designerState.editableSchemas,
       SchemaDesign.fromPartial({
         title: state.schemaDesignName,
         // Keep schema empty in frontend. Backend will generate the design schema.
@@ -225,6 +226,22 @@ const handleConfirm = async () => {
         schemaVersion: state.baselineSchema.changeHistory?.name || "",
       })
     );
+
+    // await schemaDesignStore.createSchemaDesign(
+    //   project.value.name,
+    //   SchemaDesign.fromPartial({
+    //     title: state.schemaDesignName,
+    //     // Keep schema empty in frontend. Backend will generate the design schema.
+    //     schema: "",
+    //     schemaMetadata: metadata,
+    //     baselineSchema: state.selectedSchemaDesign.baselineSchema,
+    //     baselineSchemaMetadata:
+    //       state.selectedSchemaDesign.baselineSchemaMetadata,
+    //     engine: state.selectedSchemaDesign.engine,
+    //     baselineDatabase: baselineDatabase,
+    //     schemaVersion: state.baselineSchema.changeHistory?.name || "",
+    //   })
+    // );
   } else {
     // do patch schema design
   }
