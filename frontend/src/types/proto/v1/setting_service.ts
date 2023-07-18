@@ -3,6 +3,8 @@ import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
+import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { ColumnMetadata } from "./database_service";
 import { ApprovalTemplate } from "./issue_service";
 import { PlanType, planTypeFromJSON, planTypeToJSON } from "./subscription_service";
 
@@ -84,6 +86,7 @@ export interface Value {
   workspaceApprovalSettingValue?: WorkspaceApprovalSetting | undefined;
   workspaceTrialSettingValue?: WorkspaceTrialSetting | undefined;
   externalApprovalSettingValue?: ExternalApprovalSetting | undefined;
+  schemaTemplateSettingValue?: SchemaTemplateSetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -308,6 +311,16 @@ export interface ExternalApprovalSetting_Node {
   title: string;
   /** The external endpoint for the relay service, e.g. "http://hello:1234". */
   endpoint: string;
+}
+
+export interface SchemaTemplateSetting {
+  fieldTemplates: SchemaTemplateSetting_FieldTemplate[];
+}
+
+export interface SchemaTemplateSetting_FieldTemplate {
+  id: string;
+  engine: Engine;
+  column?: ColumnMetadata | undefined;
 }
 
 export interface WorkspaceTrialSetting {
@@ -733,6 +746,7 @@ function createBaseValue(): Value {
     workspaceApprovalSettingValue: undefined,
     workspaceTrialSettingValue: undefined,
     externalApprovalSettingValue: undefined,
+    schemaTemplateSettingValue: undefined,
   };
 }
 
@@ -761,6 +775,9 @@ export const Value = {
     }
     if (message.externalApprovalSettingValue !== undefined) {
       ExternalApprovalSetting.encode(message.externalApprovalSettingValue, writer.uint32(66).fork()).ldelim();
+    }
+    if (message.schemaTemplateSettingValue !== undefined) {
+      SchemaTemplateSetting.encode(message.schemaTemplateSettingValue, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -828,6 +845,13 @@ export const Value = {
 
           message.externalApprovalSettingValue = ExternalApprovalSetting.decode(reader, reader.uint32());
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.schemaTemplateSettingValue = SchemaTemplateSetting.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -859,6 +883,9 @@ export const Value = {
       externalApprovalSettingValue: isSet(object.externalApprovalSettingValue)
         ? ExternalApprovalSetting.fromJSON(object.externalApprovalSettingValue)
         : undefined,
+      schemaTemplateSettingValue: isSet(object.schemaTemplateSettingValue)
+        ? SchemaTemplateSetting.fromJSON(object.schemaTemplateSettingValue)
+        : undefined,
     };
   },
 
@@ -889,6 +916,10 @@ export const Value = {
     message.externalApprovalSettingValue !== undefined &&
       (obj.externalApprovalSettingValue = message.externalApprovalSettingValue
         ? ExternalApprovalSetting.toJSON(message.externalApprovalSettingValue)
+        : undefined);
+    message.schemaTemplateSettingValue !== undefined &&
+      (obj.schemaTemplateSettingValue = message.schemaTemplateSettingValue
+        ? SchemaTemplateSetting.toJSON(message.schemaTemplateSettingValue)
         : undefined);
     return obj;
   },
@@ -926,6 +957,10 @@ export const Value = {
     message.externalApprovalSettingValue =
       (object.externalApprovalSettingValue !== undefined && object.externalApprovalSettingValue !== null)
         ? ExternalApprovalSetting.fromPartial(object.externalApprovalSettingValue)
+        : undefined;
+    message.schemaTemplateSettingValue =
+      (object.schemaTemplateSettingValue !== undefined && object.schemaTemplateSettingValue !== null)
+        ? SchemaTemplateSetting.fromPartial(object.schemaTemplateSettingValue)
         : undefined;
     return message;
   },
@@ -1773,6 +1808,159 @@ export const ExternalApprovalSetting_Node = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.endpoint = object.endpoint ?? "";
+    return message;
+  },
+};
+
+function createBaseSchemaTemplateSetting(): SchemaTemplateSetting {
+  return { fieldTemplates: [] };
+}
+
+export const SchemaTemplateSetting = {
+  encode(message: SchemaTemplateSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.fieldTemplates) {
+      SchemaTemplateSetting_FieldTemplate.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fieldTemplates.push(SchemaTemplateSetting_FieldTemplate.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting {
+    return {
+      fieldTemplates: Array.isArray(object?.fieldTemplates)
+        ? object.fieldTemplates.map((e: any) => SchemaTemplateSetting_FieldTemplate.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting): unknown {
+    const obj: any = {};
+    if (message.fieldTemplates) {
+      obj.fieldTemplates = message.fieldTemplates.map((e) =>
+        e ? SchemaTemplateSetting_FieldTemplate.toJSON(e) : undefined
+      );
+    } else {
+      obj.fieldTemplates = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
+    return SchemaTemplateSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
+    const message = createBaseSchemaTemplateSetting();
+    message.fieldTemplates = object.fieldTemplates?.map((e) => SchemaTemplateSetting_FieldTemplate.fromPartial(e)) ||
+      [];
+    return message;
+  },
+};
+
+function createBaseSchemaTemplateSetting_FieldTemplate(): SchemaTemplateSetting_FieldTemplate {
+  return { id: "", engine: 0, column: undefined };
+}
+
+export const SchemaTemplateSetting_FieldTemplate = {
+  encode(message: SchemaTemplateSetting_FieldTemplate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    if (message.column !== undefined) {
+      ColumnMetadata.encode(message.column, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting_FieldTemplate {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting_FieldTemplate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.column = ColumnMetadata.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting_FieldTemplate {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting_FieldTemplate): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.column !== undefined && (obj.column = message.column ? ColumnMetadata.toJSON(message.column) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
+    return SchemaTemplateSetting_FieldTemplate.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
+    const message = createBaseSchemaTemplateSetting_FieldTemplate();
+    message.id = object.id ?? "";
+    message.engine = object.engine ?? 0;
+    message.column = (object.column !== undefined && object.column !== null)
+      ? ColumnMetadata.fromPartial(object.column)
+      : undefined;
     return message;
   },
 };

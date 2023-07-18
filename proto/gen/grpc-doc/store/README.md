@@ -105,6 +105,8 @@
     - [ExternalApprovalSetting](#bytebase-store-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
+    - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
+    - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -1573,6 +1575,38 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | username | [string](#string) |  |  |
 | password | [string](#string) |  |  |
 | from | [string](#string) |  | The sender email address. |
+
+
+
+
+
+
+<a name="bytebase-store-SchemaTemplateSetting"></a>
+
+### SchemaTemplateSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SchemaTemplateSetting-FieldTemplate"></a>
+
+### SchemaTemplateSetting.FieldTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| engine | [Engine](#bytebase-store-Engine) |  |  |
+| column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
 
 
 

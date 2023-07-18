@@ -618,19 +618,18 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	var pageToken storepb.PageToken
+	var limit, offset int
 	if request.PageToken != "" {
+		var pageToken storepb.PageToken
 		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
 		}
-		if pageToken.Limit != request.PageSize {
-			return nil, status.Errorf(codes.InvalidArgument, "request page size does not match the page token")
+		if pageToken.Limit < 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
 		}
-	} else {
-		pageToken.Limit = request.PageSize
+		limit = int(pageToken.Limit)
+		offset = int(pageToken.Offset)
 	}
-
-	limit := int(pageToken.Limit)
 	if limit <= 0 {
 		limit = 10
 	}
@@ -638,7 +637,6 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		limit = 1000
 	}
 	limitPlusOne := limit + 1
-	offset := int(pageToken.Offset)
 
 	find := &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instance.UID,
@@ -655,12 +653,9 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	}
 
 	if len(changeHistories) == limitPlusOne {
-		nextPageToken, err := marshalPageToken(&storepb.PageToken{
-			Limit:  int32(limit),
-			Offset: int32(limit + offset),
-		})
+		nextPageToken, err := getPageToken(limit, offset+limit)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		converted, err := convertToChangeHistories(changeHistories[:limit])
 		if err != nil {

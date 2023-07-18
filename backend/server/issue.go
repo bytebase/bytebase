@@ -383,11 +383,19 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return s.createGrantRequestIssue(ctx, issueCreate, creatorID)
 	}
 
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %d not found", issueCreate.ProjectID))
+	}
+
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
 	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
 	// quite unlikely so we will live with it for now.
-	pipelineCreate, err := s.getPipelineCreate(ctx, issueCreate, creatorID)
+	pipelineCreate, err := s.getPipelineCreate(ctx, project, issueCreate, creatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -415,13 +423,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %d not found", issueCreate.ProjectID))
-	}
 	assignee, err := s.store.GetUserByID(ctx, issueCreate.AssigneeID)
 	if err != nil {
 		return nil, err
@@ -667,7 +668,10 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 }
 
 func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCreate *store.PipelineMessage) (*store.PipelineMessage, error) {
-	pipelineCreated, err := s.store.CreatePipelineV2(ctx, &store.PipelineMessage{Name: pipelineCreate.Name}, creatorID)
+	pipelineCreated, err := s.store.CreatePipelineV2(ctx, &store.PipelineMessage{
+		Name:      pipelineCreate.Name,
+		ProjectID: pipelineCreate.ProjectID,
+	}, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
@@ -718,20 +722,20 @@ func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCrea
 	return pipelineCreated, nil
 }
 
-func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*store.PipelineMessage, error) {
+func (s *Server) getPipelineCreate(ctx context.Context, project *store.ProjectMessage, issueCreate *api.IssueCreate, creatorID int) (*store.PipelineMessage, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
-		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate)
+		return s.getPipelineCreateForDatabaseCreate(ctx, project, issueCreate)
 	case api.IssueDatabaseRestorePITR:
-		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate)
+		return s.getPipelineCreateForDatabasePITR(ctx, project, issueCreate)
 	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate, api.IssueDatabaseSchemaUpdateGhost:
-		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate, creatorID)
+		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, project, issueCreate, creatorID)
 	default:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
 }
 
-func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*store.PipelineMessage, error) {
+func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, project *store.ProjectMessage, issueCreate *api.IssueCreate) (*store.PipelineMessage, error) {
 	c := api.CreateDatabaseContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -760,15 +764,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 
 	if instance.Engine == db.MongoDB && c.TableName == "" {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collection name missing for MongoDB")
-	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
-	}
-	if project == nil {
-		err := errors.Errorf("project ID not found %v", issueCreate.ProjectID)
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, instance, project)
@@ -805,7 +800,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		})
 
 		return &store.PipelineMessage{
-			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
+			Name:      fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
+			ProjectID: project.ResourceID,
 			Stages: []*store.StageMessage{
 				{
 					Name:          environment.Title,
@@ -824,7 +820,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}
 
 	return &store.PipelineMessage{
-		Name: fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
+		Name:      fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
+		ProjectID: project.ResourceID,
 		Stages: []*store.StageMessage{
 			{
 				Name:          environment.Title,
@@ -835,17 +832,10 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}, nil
 }
 
-func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCreate *api.IssueCreate) (*store.PipelineMessage, error) {
+func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, project *store.ProjectMessage, issueCreate *api.IssueCreate) (*store.PipelineMessage, error) {
 	c := api.PITRContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("project %d not found", issueCreate.ProjectID))
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &c.DatabaseID})
 	if err != nil {
@@ -883,7 +873,8 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}
 
 	return &store.PipelineMessage{
-		Name: "Database Point-in-time Recovery pipeline",
+		Name:      "Database Point-in-time Recovery pipeline",
+		ProjectID: project.ResourceID,
 		Stages: []*store.StageMessage{
 			{
 				Name:             environment.Title,
@@ -895,7 +886,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}, nil
 }
 
-func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*store.PipelineMessage, error) {
+func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Context, project *store.ProjectMessage, issueCreate *api.IssueCreate, creatorID int) (*store.PipelineMessage, error) {
 	c := api.MigrationContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -908,10 +899,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
-	}
 	deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", project.UID)).SetInternal(err)
@@ -1082,7 +1069,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 
 	if issueCreate.Type == api.IssueDatabaseSchemaUpdateGhost {
 		create := &store.PipelineMessage{
-			Name: "Update database schema (gh-ost) pipeline",
+			ProjectID: project.ResourceID,
+			Name:      "Update database schema (gh-ost) pipeline",
 		}
 		for i, databaseList := range aggregatedMatrix {
 			// Skip the stage if the stage includes no database.
@@ -1132,7 +1120,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		return create, nil
 	}
 	create := &store.PipelineMessage{
-		Name: "Change database pipeline",
+		Name:      "Change database pipeline",
+		ProjectID: project.ResourceID,
 	}
 
 	for i, databaseList := range aggregatedMatrix {

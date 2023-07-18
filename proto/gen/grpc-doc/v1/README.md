@@ -434,6 +434,8 @@
     - [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse)
     - [ListPlansRequest](#bytebase-v1-ListPlansRequest)
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
+    - [ListRolloutTaskRunsRequest](#bytebase-v1-ListRolloutTaskRunsRequest)
+    - [ListRolloutTaskRunsResponse](#bytebase-v1-ListRolloutTaskRunsResponse)
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
     - [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail)
@@ -508,6 +510,8 @@
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
+    - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
+    - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
@@ -5944,7 +5948,6 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | visibility | [Visibility](#bytebase-v1-Visibility) |  |  |
 | tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
 | db_name_template | [string](#string) |  |  |
-| schema_version | [SchemaVersion](#bytebase-v1-SchemaVersion) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 
@@ -6924,6 +6927,41 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 
 
+<a name="bytebase-v1-ListRolloutTaskRunsRequest"></a>
+
+### ListRolloutTaskRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
+| page_size | [int32](#int32) |  | The maximum number of taskRuns to return. The service may return fewer than this value. If unspecified, at most 50 taskRuns will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRolloutTaskRuns` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRolloutTaskRuns` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRolloutTaskRunsResponse"></a>
+
+### ListRolloutTaskRunsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task_runs | [TaskRun](#bytebase-v1-TaskRun) | repeated | The taskRuns from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-Plan"></a>
 
 ### Plan
@@ -7532,7 +7570,7 @@ Type is the database change type.
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
-| ListRolloutTaskRuns | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
+| ListRolloutTaskRuns | [ListRolloutTaskRunsRequest](#bytebase-v1-ListRolloutTaskRunsRequest) | [ListRolloutTaskRunsResponse](#bytebase-v1-ListRolloutTaskRunsResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
 
  
@@ -8067,6 +8105,38 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
+<a name="bytebase-v1-SchemaTemplateSetting"></a>
+
+### SchemaTemplateSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaTemplateSetting-FieldTemplate"></a>
+
+### SchemaTemplateSetting.FieldTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| column | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-SetSettingRequest"></a>
 
 ### SetSettingRequest
@@ -8117,6 +8187,7 @@ The data in setting value.
 | workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
 | workspace_trial_setting_value | [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting) |  |  |
 | external_approval_setting_value | [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting) |  |  |
+| schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 
 
 

@@ -130,7 +130,7 @@ type TaskCheckRun struct {
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
-	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB || dbType == db.Oracle || dbType == db.OceanBase || dbType == db.Snowflake {
+	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB || dbType == db.Oracle || dbType == db.OceanBase || dbType == db.Snowflake || dbType == db.MSSQL {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false

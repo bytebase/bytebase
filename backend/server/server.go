@@ -106,6 +106,9 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	// Register clickhouse driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+
 	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"
 	// Register mysql advisor.
@@ -116,8 +119,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 	// Register snowflake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
-	// Register clickhouse driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	// Register mssql advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 
 	// Register mysql differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"
@@ -841,6 +844,19 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		Name:        api.SettingWorkspaceExternalApproval,
 		Value:       string(externalApprovalSettingValue),
 		Description: "The external approval setting",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
+	// initial schema template setting
+	schemaTemplateSettingValue, err := protojson.Marshal(&storepb.SchemaTemplateSetting{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal initial schema template setting")
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingSchemaTemplate,
+		Value:       string(schemaTemplateSettingValue),
+		Description: "The schema template setting",
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
