@@ -108,13 +108,17 @@ import {
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 import { isNull, isUndefined } from "lodash-es";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
 
-const props = defineProps<{
+interface BaselineSchema {
   projectId?: string;
-  environmentId?: string;
   databaseId?: string;
+  changeHistory?: ChangeHistory;
+}
+
+const props = defineProps<{
+  baselineSchema?: BaselineSchema;
 }>();
 
 const emit = defineEmits<{
@@ -128,9 +132,7 @@ interface LocalState {
   changeHistory?: ChangeHistory;
 }
 
-const state = reactive<LocalState>({
-  ...props,
-});
+const state = reactive<LocalState>({});
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
@@ -153,6 +155,22 @@ const prepareChangeHistoryList = async () => {
     parent: database.value.name,
   });
 };
+
+onMounted(async () => {
+  if (props.baselineSchema?.databaseId) {
+    try {
+      const database = await databaseStore.getOrFetchDatabaseByUID(
+        props.baselineSchema.databaseId || ""
+      );
+      state.projectId = props.baselineSchema.projectId;
+      state.databaseId = database.uid;
+      state.environmentId = database.instanceEntity.environmentEntity.uid;
+      state.changeHistory = props.baselineSchema.changeHistory;
+    } catch (error) {
+      // do nothing.
+    }
+  }
+});
 
 watch(() => state.databaseId, prepareChangeHistoryList);
 
@@ -243,6 +261,6 @@ watch(
       ...state,
     });
   },
-  { immediate: true, deep: true }
+  { deep: true }
 );
 </script>

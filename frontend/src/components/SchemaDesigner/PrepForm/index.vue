@@ -31,7 +31,10 @@
           <span class="flex w-40 items-center">Name</span>
           <BBTextField class="w-60 !py-1.5" :value="state.schemaDesignName" />
         </div>
-        <BaselineSchemaSelector @update="handleBaselineSchemaChange" />
+        <BaselineSchemaSelector
+          :baseline-schema="state.baselineSchema"
+          @update="handleBaselineSchemaChange"
+        />
         <template v-if="schemaDesign">
           <SchemaDesigner
             ref="schemaDesignerRef"
