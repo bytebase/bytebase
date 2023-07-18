@@ -68,7 +68,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		}
 
 		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
-			Name:  user.UserName,
+			Name:  user.ID,
 			Grant: string(bs),
 		})
 	}
