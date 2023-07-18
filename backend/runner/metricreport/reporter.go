@@ -26,6 +26,10 @@ const (
 	identifyTraitForPlan = "plan"
 	// identifyTraitForTrial is the trait key for trialing.
 	identifyTraitForTrial = "trial"
+	// identifyTraitForSubscriptionStartDate is the trait key for subscription start date.
+	identifyTraitForSubscriptionStartDate = "subscription_start"
+	// identifyTraitForSubscriptionEndDate is the trait key for subscription end date.
+	identifyTraitForSubscriptionEndDate = "subscription_end"
 	// identifyTraitForOrgID is the trait key for organization id.
 	identifyTraitForOrgID = "org_id"
 	// identifyTraitForOrgName is the trait key for organization name.
@@ -159,6 +163,13 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 		trial = "Y"
 	}
 
+	subscriptionStartDate := ""
+	subscriptionEndDate := ""
+	if subscription.Plan != api.FREE {
+		subscriptionStartDate = time.Unix(subscription.StartedTs, 0).Format(time.RFC822)
+		subscriptionEndDate = time.Unix(subscription.ExpiresTs, 0).Format(time.RFC822)
+	}
+
 	user, err := m.store.GetUserByID(ctx, api.PrincipalIDForFirstUser)
 	if err != nil {
 		log.Debug("unable to get the first principal user", zap.Int("id", api.PrincipalIDForFirstUser), zap.Error(err))
@@ -180,13 +191,15 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 		Email: email,
 		Name:  name,
 		Labels: map[string]string{
-			identifyTraitForPlan:           plan,
-			identifyTraitForTrial:          trial,
-			identifyTraitForVersion:        m.profile.Version,
-			identifyTraitForOrgID:          orgID,
-			identifyTraitForOrgName:        orgName,
-			identifyTraitForMode:           mode,
-			identifyTraitForLastActiveTime: time.Unix(m.profile.LastActiveTs, 0).String(),
+			identifyTraitForPlan:                  plan,
+			identifyTraitForTrial:                 trial,
+			identifyTraitForVersion:               m.profile.Version,
+			identifyTraitForOrgID:                 orgID,
+			identifyTraitForOrgName:               orgName,
+			identifyTraitForMode:                  mode,
+			identifyTraitForLastActiveTime:        time.Unix(m.profile.LastActiveTs, 0).String(),
+			identifyTraitForSubscriptionStartDate: subscriptionStartDate,
+			identifyTraitForSubscriptionEndDate:   subscriptionEndDate,
 		},
 	}); err != nil {
 		return workspaceID, err
