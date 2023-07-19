@@ -43,6 +43,7 @@
 </template>
 
 <script lang="ts" setup>
+import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
@@ -96,6 +97,13 @@ const handleSelectTab = (tab: TabContext) => {
 };
 
 const handleCloseTab = (tab: TabContext) => {
-  tabState.value.currentTabId = undefined;
+  tabState.value.tabMap.delete(tab.id);
+  if (tab.id === currentTab.value?.id) {
+    tabState.value.currentTabId = undefined;
+  } else {
+    tabState.value.currentTabId = head(
+      Array.from(tabState.value.tabMap.values())
+    )?.id;
+  }
 };
 </script>

@@ -24,6 +24,7 @@ export interface SchemaDesignerTabState {
 }
 
 export interface SchemaDesignerContext {
+  readonly: boolean;
   baselineMetadata: DatabaseMetadata;
   engine: Engine;
 

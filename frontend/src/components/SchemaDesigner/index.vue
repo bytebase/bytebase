@@ -31,6 +31,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
+  readonly: boolean;
   engine: Engine;
   schemaDesign: SchemaDesign;
 }>();
@@ -60,6 +61,7 @@ onMounted(async () => {
 });
 
 provideSchemaDesignerContext({
+  readonly: props.readonly,
   baselineMetadata: baselineMetadata.value,
   engine: props.engine,
   metadata: metadata,

@@ -5,6 +5,7 @@
         <span class="text-sm">{{ $t("schema-designer.tables") }}</span>
         <button
           class="text-gray-400 hover:text-gray-500"
+          :disabled="readonly"
           @click="handleCreateTable"
         >
           <heroicons-outline:plus class="w-4 h-auto" />
@@ -115,8 +116,15 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const { engine, editableSchemas, tabState, addTab, getCurrentTab, dropTable } =
-  useSchemaDesignerContext();
+const {
+  readonly,
+  engine,
+  editableSchemas,
+  tabState,
+  addTab,
+  getCurrentTab,
+  dropTable,
+} = useSchemaDesignerContext();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
@@ -155,10 +163,12 @@ const contextMenuOptions = computed(() => {
       options.push({
         key: "create-table",
         label: t("schema-editor.actions.create-table"),
+        disabled: readonly,
       });
       options.push({
         key: "drop-schema",
         label: t("schema-editor.actions.drop-schema"),
+        disabled: readonly,
       });
     }
     return options;
@@ -181,6 +191,7 @@ const contextMenuOptions = computed(() => {
     options.push({
       key: "drop",
       label: t("schema-editor.actions.drop-table"),
+      disabled: readonly,
     });
     return options;
   }
@@ -288,6 +299,22 @@ const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
 // Render label text.
 const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
   const additionalClassList: string[] = ["select-none"];
+
+  if (treeNode.type === "schema") {
+    // do nothing
+  } else if (treeNode.type === "table") {
+    const table = tableList.value.find(
+      (table) => table.id === treeNode.tableId
+    );
+
+    if (table) {
+      if (table.status === "created") {
+        additionalClassList.push("text-green-700");
+      } else if (table.status === "dropped") {
+        additionalClassList.push("text-red-700 line-through");
+      }
+    }
+  }
 
   return h(
     NEllipsis,

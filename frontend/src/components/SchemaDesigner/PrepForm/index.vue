@@ -2,15 +2,17 @@
   <DrawerContent>
     <template #header>
       <div class="flex flex-col gap-y-1">
-        <span>{{ $t("schema-designer.self") }}</span>
+        <span>{{ $t("schema-designer.quick-action") }}</span>
       </div>
     </template>
 
     <div
       class="space-y-3 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
-      <div>
-        <NRadioGroup v-model:value="state.tab">
+      <div
+        class="w-full border-b pb-2 mb-2 flex flex-row justify-between items-center"
+      >
+        <NRadioGroup v-model:value="state.tab" class="space-x-4">
           <NRadio
             :value="'LIST'"
             :label="$t('schema-designer.existing-schema-design')"
@@ -22,7 +24,7 @@
         </NRadioGroup>
       </div>
 
-      <template v-if="!isCreating && !isEditing">
+      <template v-if="!isCreating && !isViewing && !isEditing">
         <SchemaDesignTable
           v-if="ready"
           :schema-designs="schemaDesignList"
@@ -33,12 +35,50 @@
         </div>
       </template>
       <template v-else>
+        <div
+          v-if="!isCreating"
+          class="w-full flex flex-row justify-between items-center"
+        >
+          <div>
+            <NButton
+              v-if="isViewing"
+              class="w-full flex flex-row justify-start items-center"
+              @click="state.selectedSchemaDesign = undefined"
+            >
+              <heroicons-outline:chevron-left
+                class="mr-1 w-4 h-auto text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
+              />
+              {{ $t("common.back") }}
+            </NButton>
+          </div>
+          <div class="flex flex-row justify-end items-center space-x-2">
+            <template v-if="isViewing">
+              <NButton @click="state.isEditing = true">{{
+                $t("common.edit")
+              }}</NButton>
+              <NButton
+                type="primary"
+                @click="state.showSelectTargetDatabasePanel = true"
+                >{{ $t("schema-designer.apply-to-database") }}</NButton
+              >
+            </template>
+            <template v-else>
+              <NButton @click="handleCancelEdit">{{
+                $t("common.cancel")
+              }}</NButton>
+              <NButton type="primary" @click="handleUpdateSchemaDesign">{{
+                $t("common.update")
+              }}</NButton>
+            </template>
+          </div>
+        </div>
         <div class="w-full flex flex-row justify-start items-center">
           <span class="flex w-40 items-center text-sm">{{
             $t("common.name")
           }}</span>
           <BBTextField
             class="w-60 !py-1.5"
+            :disabled="isViewing"
             :value="state.schemaDesignName"
             @input="
               state.schemaDesignName = ($event.target as HTMLInputElement).value
@@ -50,7 +90,7 @@
           :baseline-schema="state.baselineSchema"
           @update="handleBaselineSchemaChange"
         />
-        <div v-if="isEditing" class="w-full">
+        <div v-else class="w-full">
           <div class="flex flex-row justify-start items-center">
             <span class="text-sm w-40">{{
               $t("schema-designer.baseline-database")
@@ -76,6 +116,7 @@
           <SchemaDesigner
             ref="schemaDesignerRef"
             :key="schemaDesignId"
+            :readonly="isViewing"
             :engine="state.selectedSchemaDesign.engine"
             :schema-design="state.selectedSchemaDesign"
           />
@@ -83,7 +124,7 @@
       </template>
     </div>
 
-    <template #footer>
+    <template v-if="isCreating" #footer>
       <div class="flex-1 flex items-center justify-between">
         <div></div>
 
@@ -102,11 +143,18 @@
       </div>
     </template>
   </DrawerContent>
+
+  <TargetDatabaseSelectPanel
+    v-if="state.selectedSchemaDesign && state.showSelectTargetDatabasePanel"
+    :project-id="state.baselineSchema.projectId || ''"
+    :engine="state.selectedSchemaDesign.engine"
+    @close="state.showSelectTargetDatabasePanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { isEqual, uniqueId } from "lodash-es";
-import { NRadioGroup, NRadio } from "naive-ui";
+import { NRadioGroup, NRadio, NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -131,6 +179,7 @@ import { databaseNamePrefix } from "@/store/modules/v1/common";
 import { watch } from "vue";
 import { mergeSchemaEditToMetadata } from "../common/util";
 import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import TargetDatabaseSelectPanel from "./TargetDatabaseSelectPanel.vue";
 
 interface BaselineSchema {
   // The uid of project.
@@ -144,6 +193,8 @@ interface LocalState {
   tab: "LIST" | "CREATE";
   schemaDesignName: string;
   baselineSchema: BaselineSchema;
+  isEditing: boolean;
+  showSelectTargetDatabasePanel: boolean;
   selectedSchemaDesign?: SchemaDesign;
 }
 
@@ -164,15 +215,24 @@ const state = reactive<LocalState>({
   tab: "LIST",
   schemaDesignName: "",
   baselineSchema: {},
+  isEditing: false,
+  showSelectTargetDatabasePanel: false,
 });
 const isCreating = computed(() => state.tab === "CREATE");
+const isViewing = computed(
+  () => state.tab === "LIST" && !!state.selectedSchemaDesign && !state.isEditing
+);
 const isEditing = computed(
-  () => state.tab === "LIST" && !!state.selectedSchemaDesign
+  () => state.tab === "LIST" && !!state.selectedSchemaDesign && state.isEditing
 );
 
 watch(
   () => state.tab,
   () => {
+    if (state.tab === "CREATE") {
+      state.schemaDesignName = "";
+      state.baselineSchema = {};
+    }
     state.selectedSchemaDesign = undefined;
   }
 );
@@ -202,7 +262,8 @@ const schemaDesignId = computed(() => {
   if (!state.selectedSchemaDesign || !state.selectedSchemaDesign.name) {
     return uniqueId();
   } else {
-    return state.selectedSchemaDesign.name;
+    // Force remount component.
+    return state.selectedSchemaDesign.name + isViewing.value;
   }
 });
 
@@ -262,6 +323,13 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
 
   if (isCreating.value) {
     state.selectedSchemaDesign = await prepareSchemaDesign();
+  }
+};
+
+const handleCancelEdit = () => {
+  state.isEditing = false;
+  if (state.selectedSchemaDesign) {
+    handleSchemaDesignItemClick(state.selectedSchemaDesign);
   }
 };
 
@@ -351,5 +419,48 @@ const handleConfirm = async () => {
       title: t("schema-designer.message.updated-succeed"),
     });
   }
+};
+
+const handleUpdateSchemaDesign = async () => {
+  if (!state.selectedSchemaDesign) {
+    return;
+  }
+
+  const designerState = schemaDesignerRef.value;
+  if (!designerState) {
+    throw new Error("schema designer is undefined");
+  }
+  if (state.schemaDesignName === "") {
+    return;
+  }
+
+  const updateMarks = [];
+  if (state.selectedSchemaDesign.title !== state.schemaDesignName) {
+    updateMarks.push("title");
+  }
+  const metadata = mergeSchemaEditToMetadata(
+    designerState.editableSchemas,
+    state.selectedSchemaDesign.schemaMetadata ||
+      DatabaseMetadata.fromPartial({})
+  );
+  if (isEqual(metadata, state.selectedSchemaDesign.schemaMetadata)) {
+    updateMarks.push("schema");
+  }
+  state.selectedSchemaDesign = await schemaDesignStore.updateSchemaDesign(
+    SchemaDesign.fromPartial({
+      name: state.selectedSchemaDesign.name,
+      title: state.schemaDesignName,
+      engine: state.selectedSchemaDesign.engine,
+      baselineSchema: state.selectedSchemaDesign.baselineSchema,
+      schemaMetadata: metadata,
+    }),
+    updateMarks
+  );
+  state.isEditing = false;
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("schema-designer.message.updated-succeed"),
+  });
 };
 </script>

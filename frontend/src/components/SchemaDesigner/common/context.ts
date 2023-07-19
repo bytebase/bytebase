@@ -1,10 +1,10 @@
+import { head, isUndefined } from "lodash-es";
 import { inject, InjectionKey, provide } from "vue";
 import {
   SchemaDesignerContext,
   SchemaDesignerTabType,
   TabContext,
 } from "./type";
-import { isUndefined } from "lodash-es";
 
 export const KEY = Symbol(
   "bb.schema-designer"
@@ -17,6 +17,7 @@ export const useSchemaDesignerContext = () => {
 export const provideSchemaDesignerContext = (
   context: Pick<
     SchemaDesignerContext,
+    | "readonly"
     | "engine"
     | "baselineMetadata"
     | "metadata"
@@ -93,7 +94,9 @@ export const provideSchemaDesignerContext = (
         ) {
           tabState.value.tabMap.delete(tab.id);
           if (tabState.value.currentTabId === tab.id) {
-            tabState.value.currentTabId = undefined;
+            tabState.value.currentTabId = head(
+              Array.from(tabState.value.tabMap.values())
+            )?.id;
           }
         }
       }
@@ -104,10 +107,17 @@ export const provideSchemaDesignerContext = (
       if (schemaItem === undefined) {
         return;
       }
-
-      schemaItem.tableList = schemaItem.tableList.filter(
-        (item) => item.id !== tableId
-      );
+      const table = schemaItem.tableList.find((item) => item.id === tableId);
+      if (table === undefined) {
+        return;
+      }
+      if (table.status === "created") {
+        schemaItem.tableList = schemaItem.tableList.filter(
+          (item) => item.id !== tableId
+        );
+      } else {
+        table.status = "dropped";
+      }
     },
   });
 };

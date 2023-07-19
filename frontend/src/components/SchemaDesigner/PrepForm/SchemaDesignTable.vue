@@ -1,6 +1,7 @@
 <template>
   <div ref="wrapper" rule="database-table" v-bind="$attrs">
     <BBGrid
+      class="border"
       :column-list="COLUMN_LIST"
       :data-source="schemaDesigns"
       @click-row="clickSchemaDesign"

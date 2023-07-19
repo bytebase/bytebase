@@ -1837,7 +1837,8 @@
       "default": "Default",
       "comment": "Comment",
       "not-null": "Not Null",
-      "primary": "Primary"
+      "primary": "Primary",
+      "foreign-key": "Foreign Key"
     },
     "nothing-changed": "Nothing changed",
     "message": {
@@ -2666,6 +2667,7 @@
     "baseline-database": "Baseline database",
     "schema-version": "Schema version",
     "tables": "Tables",
+    "apply-to-database": "Apply to database",
     "message": {
       "created-succeed": "Schema design created successfully",
       "updated-succeed": "Schema design updated successfully"

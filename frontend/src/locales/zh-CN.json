@@ -1831,7 +1831,8 @@
       "default": "默认值",
       "comment": "注释",
       "not-null": "不可为空",
-      "primary": "主键"
+      "primary": "主键",
+      "foreign-key": "外键"
     },
     "nothing-changed": "无任何改动",
     "message": {
@@ -2657,6 +2658,7 @@
     "baseline-database": "基准数据库",
     "schema-version": "Schema 版本",
     "tables": "表",
+    "apply-to-database": "应用 Schema 设计",
     "message": {
       "created-succeed": "Schema 设计创建成功",
       "updated-succeed": "Schema 设计更新成功"

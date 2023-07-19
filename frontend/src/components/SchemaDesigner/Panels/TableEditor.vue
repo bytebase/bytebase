@@ -294,7 +294,7 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const { engine, editableSchemas, getCurrentTab, addTab } =
+const { readonly, engine, editableSchemas, getCurrentTab, addTab } =
   useSchemaDesignerContext();
 const currentTab = computed(() => getCurrentTab() as TableTabContext);
 const state = reactive<LocalState>({
@@ -367,7 +367,7 @@ const columnHeaderList = computed(() => {
     },
     {
       key: "foreign_key",
-      label: "Foreign Key",
+      label: t("schema-editor.column.foreign-key"),
     },
   ];
 });
@@ -451,12 +451,15 @@ const isDroppedColumn = (column: Column): boolean => {
 };
 
 const disableChangeTable = computed(() => {
-  return isDroppedSchema.value || isDroppedTable.value;
+  return readonly || isDroppedSchema.value || isDroppedTable.value;
 });
 
 const disableAlterColumn = (column: Column): boolean => {
   return (
-    isDroppedSchema.value || isDroppedTable.value || isDroppedColumn(column)
+    readonly ||
+    isDroppedSchema.value ||
+    isDroppedTable.value ||
+    isDroppedColumn(column)
   );
 };
 

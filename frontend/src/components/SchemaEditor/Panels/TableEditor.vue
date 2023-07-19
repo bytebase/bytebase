@@ -395,7 +395,7 @@ const columnHeaderList = computed(() => {
     },
     {
       key: "foreign_key",
-      label: "Foreign Key",
+      label: t("schema-editor.column.foreign-key"),
     },
   ];
 });
