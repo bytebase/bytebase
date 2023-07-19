@@ -32,6 +32,10 @@ import { useNotificationStore } from "@/store";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
 import { useSchemaDesignerContext } from "../common";
+import {
+  convertColumnMetadataToColumn,
+  convertTableMetadataToTable,
+} from "@/types";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -40,9 +44,13 @@ interface LocalState {
 }
 
 const props = defineProps({
-  schema: {
+  schemaId: {
     type: String,
     default: "",
+  },
+  tableId: {
+    type: String,
+    default: undefined,
   },
 });
 
@@ -51,7 +59,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { engine, metadata } = useSchemaDesignerContext();
+const { engine, editableSchemas } = useSchemaDesignerContext();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   tableName: "",
@@ -71,8 +79,8 @@ const handleConfirmButtonClick = async () => {
     return;
   }
 
-  const schema = metadata.value.schemas.find(
-    (schema) => schema.name === props.schema
+  const schema = editableSchemas.value.find(
+    (schema) => schema.id === props.schemaId
   );
   if (!schema) {
     notificationStore.pushNotification({
@@ -93,8 +101,12 @@ const handleConfirmButtonClick = async () => {
     column.type = "INT";
   }
   column.comment = "ID";
-  table.columns.push(column);
-  schema.tables.push(table);
+  const columnEdit = convertColumnMetadataToColumn(column);
+  const tableEdit = convertTableMetadataToTable(table);
+  tableEdit.status = "created";
+  tableEdit.columnList.push(columnEdit);
+  tableEdit.primaryKey.columnIdList.push(columnEdit.id);
+  schema.tableList.push(tableEdit);
 
   dismissModal();
 };
