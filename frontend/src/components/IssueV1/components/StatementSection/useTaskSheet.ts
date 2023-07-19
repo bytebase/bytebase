@@ -32,6 +32,7 @@ export const useTaskSheet = () => {
       const uid = extractSheetUID(sheetName);
       if (!uid) return;
       if (uid.startsWith("-")) {
+        // The sheet is not created yet (uid starts with "-")
         sheetReady.value = true;
       } else {
         sheetReady.value = false;
