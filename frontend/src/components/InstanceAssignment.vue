@@ -43,7 +43,7 @@
               class="pl-2 first:pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
               :class="[column.center && 'text-center pr-2']"
             >
-              <template v-if="index === 0">
+              <template v-if="index === 0 && canManageSubscription">
                 <input
                   v-if="instanceList.length > 0"
                   type="checkbox"
@@ -68,6 +68,7 @@
             #body="{ rowData: instance }: { rowData: ComposedInstance }"
           >
             <BBTableCell
+              v-if="canManageSubscription"
               class="w-[1%]"
               @click.stop="
                 toggleSelectInstance(instance, !isInstanceSelected(instance))
@@ -118,6 +119,7 @@
             </NButton>
             <NButton
               :disabled="
+                !canManageSubscription ||
                 !assignmentChanged ||
                 state.processing ||
                 state.selectedInstance.size > instanceLicenseCount
@@ -147,10 +149,12 @@ import {
   useInstanceV1List,
   useSubscriptionV1Store,
   useDatabaseV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { ComposedInstance } from "@/types";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 defineProps({
   show: {
@@ -159,21 +163,26 @@ defineProps({
   },
 });
 
-const columnList: BBTableColumn[] = [
-  {
-    // This column is for selection input.
-    title: "",
-  },
-  {
-    title: "common.name",
-  },
-  {
-    title: "common.environment",
-  },
-  {
-    title: "common.Address",
-  },
-];
+const columnList = computed(() => {
+  const resp: BBTableColumn[] = [
+    {
+      title: "common.name",
+    },
+    {
+      title: "common.environment",
+    },
+    {
+      title: "common.Address",
+    },
+  ];
+  if (canManageSubscription.value) {
+    resp.unshift({
+      // This column is for selection input.
+      title: "",
+    });
+  }
+  return resp;
+});
 
 interface LocalState {
   selectedInstance: Set<string>;
@@ -190,9 +199,17 @@ const instanceV1Store = useInstanceV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
+const currentUserV1 = useCurrentUserV1();
 
 const { instanceList } = useInstanceV1List(false /* !showDeleted */);
 const { instanceLicenseCount } = storeToRefs(subscriptionStore);
+
+const canManageSubscription = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-subscription",
+    currentUserV1.value.userRole
+  );
+});
 
 watchEffect(() => {
   for (const instance of instanceList.value) {
