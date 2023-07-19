@@ -12,6 +12,11 @@
       </div>
     </div>
 
+    <div class="issue-debug">
+      <div>SDLView</div>
+      <pre>sdlState: {{ sdlState }}</pre>
+    </div>
+
     <div class="w-full">
       <div
         v-if="sdlState.loading"

@@ -56,7 +56,7 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
     issue.rolloutEntity = await rolloutServiceClient.getRollout({
       name: rollout,
     });
-    const { taskRuns } = await rolloutServiceClient.listRolloutTaskRuns({
+    const { taskRuns } = await rolloutServiceClient.listTaskRuns({
       parent: `${rollout}/stages/-/tasks/-`,
       pageSize: 1000, // MAX
     });
@@ -66,7 +66,7 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
   //   name: issue.plan,
   // });
   // console.log("plan", plan);
-  // const { plans: taskRunList } = await rolloutServiceClient.listRolloutTaskRuns(
+  // const { plans: taskRunList } = await rolloutServiceClient.listTaskRuns(
   //   {
   //     parent: rollout.name,
   //   }
@@ -121,7 +121,7 @@ export const experimentalFetchIssueByName = async (name: string) => {
   //   name: issue.plan,
   // });
   // console.log("plan", plan);
-  // const { plans: taskRunList } = await rolloutServiceClient.listRolloutTaskRuns(
+  // const { plans: taskRunList } = await rolloutServiceClient.listTaskRuns(
   //   {
   //     parent: rollout.name,
   //   }

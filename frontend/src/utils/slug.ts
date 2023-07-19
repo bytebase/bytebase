@@ -34,6 +34,11 @@ export function idFromSlug(slug: string): IdType {
   return parseInt(parts[parts.length - 1]);
 }
 
+export const uidFromSlug = (slug: string): string => {
+  const parts = slug.split("-");
+  return parts[parts.length - 1];
+};
+
 export function sheetNameFromSlug(slug: string): string {
   const parts = slug.split("-");
   return `${projectNamePrefix}${parts

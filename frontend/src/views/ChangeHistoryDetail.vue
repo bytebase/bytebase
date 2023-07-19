@@ -245,9 +245,9 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
 import {
   changeHistoryLink,
-  extractChangeHistoryUID,
   extractIssueUID,
   extractUserResourceName,
+  uidFromSlug,
 } from "@/utils";
 import {
   pushNotification,
@@ -281,7 +281,7 @@ const changeHistoryParent = computed(() => {
   return `instances/${props.instance}/databases/${props.database}`;
 });
 const changeHistoryUID = computed(() => {
-  return extractChangeHistoryUID(props.changeHistorySlug);
+  return uidFromSlug(props.changeHistorySlug);
 });
 const changeHistoryName = computed(() => {
   return `${changeHistoryParent.value}/changeHistories/${changeHistoryUID.value}`;

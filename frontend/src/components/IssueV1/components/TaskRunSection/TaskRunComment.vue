@@ -1,5 +1,5 @@
 <template>
-  {{ comment }}
+  {{ taskRun.detail }}
 
   <template v-if="commentLink.link">
     <router-link
@@ -21,7 +21,12 @@ import {
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import { unknownTask } from "@/types";
-import { extractTaskUID, flattenTaskV1List } from "@/utils";
+import {
+  changeHistorySlug,
+  extractChangeHistoryUID,
+  extractTaskUID,
+  flattenTaskV1List,
+} from "@/utils";
 import { databaseForTask, useIssueContext } from "../../logic";
 
 export type CommentLink = {
@@ -35,17 +40,6 @@ const props = defineProps<{
 
 const { issue } = useIssueContext();
 const { t } = useI18n();
-
-const comment = computed(() => {
-  const { taskRun } = props;
-  if (taskRun.status === TaskRun_Status.FAILED) {
-    // return taskRun.
-    // TBD
-    return "TBD: taskRun.result.detail";
-  }
-  // Returns result detail if we get the result, otherwise, returns the comment.
-  return taskRun.detail;
-});
 
 const commentLink = computed((): CommentLink => {
   const { taskRun } = props;
@@ -62,11 +56,10 @@ const commentLink = computed((): CommentLink => {
       case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
       case Task_Type.DATABASE_DATA_UPDATE: {
         const db = databaseForTask(issue.value, task);
-        // const link = `/${db.name}/changeHistories/${changeHistorySlug(
-        //   taskRun.result.migrationId!,
-        //   taskRun.result.version!
-        // )}`;
-        const link = `TBD: make change history link for db ${db.databaseName}`;
+        const link = `/${db.name}/changeHistories/${changeHistorySlug(
+          extractChangeHistoryUID(taskRun.changeHistory),
+          taskRun.schemaVersion
+        )}`;
         return {
           title: t("task.view-change"),
           link,
