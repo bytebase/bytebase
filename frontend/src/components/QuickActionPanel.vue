@@ -90,9 +90,8 @@
             <heroicons-outline:table-cells class="w-5 h-5" />
           </button>
           <h3
-            class="relative flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
-            <BBBetaBadge class="absolute right-0 -top-5" />
             {{ $t("schema-designer.quick-action") }}
           </h3>
         </div>
@@ -340,7 +339,6 @@ import {
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
 } from "@/store";
-import { BBBetaBadge } from "@/bbkit";
 import { Drawer } from "@/components/v2";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import InstanceForm from "@/components/InstanceForm/";

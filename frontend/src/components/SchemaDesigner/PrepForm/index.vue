@@ -7,7 +7,7 @@
     </template>
 
     <div
-      class="space-y-3 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+      class="space-y-3 w-[calc(100vw-8rem)] sm:w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
       <div
         class="w-full border-b pb-2 mb-2 flex flex-row justify-between items-center"
