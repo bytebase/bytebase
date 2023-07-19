@@ -1127,6 +1127,28 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		}
 	}
 
+	var fks []*foreignKeyState
+	for _, fk := range g.currentTable.foreignKeys {
+		fks = append(fks, fk)
+	}
+	sort.Slice(fks, func(i, j int) bool {
+		return fks[i].name < fks[j].name
+	})
+	for _, fk := range fks {
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if err := fk.toString(&g.tableConstraints); err != nil {
+			g.err = err
+			return
+		}
+	}
+
 	if _, err := g.result.WriteString(g.columnDefine.String()); err != nil {
 		g.err = err
 		return
@@ -1281,6 +1303,41 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 				}
 			}
 			delete(g.currentTable.indexes, "PRIMARY")
+		}
+	case "FOREIGN":
+		var name string
+		if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
+			name = parser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
+		} else if ctx.IndexName() != nil {
+			name = parser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+		}
+		if g.currentTable.foreignKeys[name] != nil {
+			if g.firstElementInTable {
+				g.firstElementInTable = false
+			} else {
+				if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+					g.err = err
+					return
+				}
+			}
+
+			fk := g.currentTable.foreignKeys[name]
+
+			columns := extractKeyList(ctx.KeyList())
+			referencedTable, referencedColumns := extractReference(ctx.References())
+			equal := equalKeys(columns, fk.columns) && referencedTable == fk.referencedTable && equalKeys(referencedColumns, fk.referencedColumns)
+			if equal {
+				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if err := fk.toString(&g.tableConstraints); err != nil {
+					g.err = err
+					return
+				}
+			}
+			delete(g.currentTable.foreignKeys, name)
 		}
 	default:
 		if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {

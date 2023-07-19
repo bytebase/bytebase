@@ -2,7 +2,8 @@
   baseline: |-
     CREATE TABLE `t` (
       `a` int,
-      PRIMARY KEY (`a`)
+      PRIMARY KEY (`a`),
+      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
     );
     CREATE TABLE `t3` (
       `a` int
@@ -12,7 +13,8 @@
       `c` int,
       `d` int,
       `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment',
-      PRIMARY KEY (`a`, `c`, `d`)
+      PRIMARY KEY (`a`, `c`, `d`),
+      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
     );
   target:
     name: ""
@@ -93,7 +95,17 @@
               datafree: 0
               createoptions: ""
               comment: ""
-              foreignkeys: []
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - b
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
             - name: t2
               columns:
                 - name: b
@@ -104,7 +116,15 @@
                   characterset: ""
                   collation: ""
                   comment: ""
-              indexes: []
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
               engine: ""
               collation: ""
               rowcount: 0
@@ -113,7 +133,17 @@
               datafree: 0
               createoptions: ""
               comment: ""
-              foreignkeys: []
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - b
+                  referencedschema: ""
+                  referencedtable: t4
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
           views: []
           functions: []
           streams: []
@@ -130,8 +160,11 @@
       `c` int NOT NULL,
       `e` int  NULL,
       `b` NOT NULL DEFAULT NULL,
-      PRIMARY KEY (`a`, `b`, `c`)
+      PRIMARY KEY (`a`, `b`, `c`),
+      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
     );
     CREATE TABLE `t2` (
-      `b` NULL DEFAULT NULL
+      `b` NULL DEFAULT NULL,
+      PRIMARY KEY (`b`),
+      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );
