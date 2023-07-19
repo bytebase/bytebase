@@ -514,6 +514,7 @@ func normalizeMySQLQualifiedIdentifier(qualifiedIdentifier parser.IQualifiedIden
 	return list[0], list[1]
 }
 
+// NormalizeMySQLIdentifier normalizes the given identifier.
 func NormalizeMySQLIdentifier(identifier parser.IIdentifierContext) string {
 	if identifier.PureIdentifier() != nil {
 		if identifier.PureIdentifier().IDENTIFIER() != nil {

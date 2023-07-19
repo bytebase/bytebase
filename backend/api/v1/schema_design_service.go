@@ -1086,7 +1086,6 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 	switch strings.ToUpper(ctx.GetType_().GetText()) {
 	case "PRIMARY":
 		if g.currentTable.indexes["PRIMARY"] != nil {
-
 			if g.firstElementInTable {
 				g.firstElementInTable = false
 			} else {
