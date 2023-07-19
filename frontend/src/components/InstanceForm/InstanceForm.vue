@@ -82,7 +82,7 @@
                 !allowEdit ||
                 (!basicInfo.activation && availableLicenseCount === 0)
               "
-              @toggle="(on: boolean) => basicInfo.activation = on"
+              @toggle="changeInstanceActivation"
             />
           </div>
 
@@ -1705,5 +1705,16 @@ const checkRODataSourceFeature = (instance: Instance) => {
     }
   }
   return true;
+};
+
+const changeInstanceActivation = async (on: boolean) => {
+  basicInfo.value.activation = on;
+  if (props.instance) {
+    const instancePatch = {
+      ...props.instance,
+      activation: on,
+    };
+    await instanceV1Store.updateInstance(instancePatch, ["activation"]);
+  }
 };
 </script>
