@@ -252,7 +252,7 @@ message WorkspaceTrialSetting {
 message DataCategorySetting {
   // Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+
   message DataCategoryConfig {
-    string uid = 1;
+    string id = 1;
     string title = 2;
     // Maps category to level.
     map<string, string> category_level = 3;
