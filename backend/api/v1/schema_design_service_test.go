@@ -95,3 +95,52 @@ func TestGetDesignSchema(t *testing.T) {
 		a.NoError(err)
 	}
 }
+
+type checkTest struct {
+	Engine   v1pb.Engine
+	Metadata *v1pb.DatabaseMetadata
+	Err      string
+}
+
+func TestCheckDatabaseMetadata(t *testing.T) {
+	const (
+		record = false
+	)
+	var (
+		filepath = "testdata/check.yaml"
+	)
+
+	a := require.New(t)
+	yamlFile, err := os.Open(filepath)
+	a.NoError(err)
+
+	tests := []checkTest{}
+	byteValue, err := io.ReadAll(yamlFile)
+	a.NoError(yamlFile.Close())
+	a.NoError(err)
+	a.NoError(yaml.Unmarshal(byteValue, &tests))
+
+	for i, t := range tests {
+		err := checkDatabaseMetadata(t.Engine, t.Metadata)
+		if record {
+			if err != nil {
+				tests[i].Err = err.Error()
+			} else {
+				tests[i].Err = ""
+			}
+		} else {
+			if t.Err == "" {
+				a.NoError(err)
+			} else {
+				a.Equal(t.Err, err.Error())
+			}
+		}
+	}
+
+	if record {
+		byteValue, err := yaml.Marshal(tests)
+		a.NoError(err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		a.NoError(err)
+	}
+}
