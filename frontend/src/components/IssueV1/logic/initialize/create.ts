@@ -85,51 +85,63 @@ export const buildPlan = async (params: CreateIssueParams) => {
     uid: nextUID(),
   });
   plan.name = `${project.name}/plans/${plan.uid}`;
-  if (route.query.mode === "tenant" && databaseUIDList.length === 0) {
+  if (route.query.mode === "tenant") {
     // build tenant plan
-    const spec = await buildSpecForTenant(params);
-    plan.steps = [
-      {
-        specs: [spec],
-      },
-    ];
-    return plan;
+    if (databaseUIDList.length === 0) {
+      // TODO: evaluate DeploymentConfig and generate steps/specs
+      alert("not supported yet");
+    } else {
+      plan.steps = await buildSteps(databaseUIDList, params, nextUID());
+    }
   } else {
     // build standard plan
-    const databaseList = databaseUIDList.map((uid) =>
-      useDatabaseV1Store().getDatabaseByUID(uid)
+    plan.steps = await buildSteps(
+      databaseUIDList,
+      params,
+      undefined // each spec should has a unique sheet
     );
-
-    const databaseListGroupByEnvironment = groupBy(
-      databaseList,
-      (db) => db.instanceEntity.environment
-    );
-    const stageList = orderBy(
-      Object.keys(databaseListGroupByEnvironment).map((env) => {
-        const environment = useEnvironmentV1Store().getEnvironmentByName(env);
-        const databases = databaseListGroupByEnvironment[env];
-        return {
-          environment,
-          databases,
-        };
-      }),
-      [(stage) => stage.environment?.order],
-      ["asc"]
-    );
-
-    for (let i = 0; i < stageList.length; i++) {
-      const step = Plan_Step.fromJSON({});
-      const { databases } = stageList[i];
-      for (let j = 0; j < databases.length; j++) {
-        const db = databases[j];
-        const spec = await buildSpecForTarget(db.name, params);
-        step.specs.push(spec);
-      }
-      plan.steps.push(step);
-    }
-
-    return plan;
   }
+  return plan;
+};
+
+export const buildSteps = async (
+  databaseUIDList: string[],
+  params: CreateIssueParams,
+  sheetUID?: string // if specified, all tasks will share the same sheet
+) => {
+  const databaseList = databaseUIDList.map((uid) =>
+    useDatabaseV1Store().getDatabaseByUID(uid)
+  );
+
+  const databaseListGroupByEnvironment = groupBy(
+    databaseList,
+    (db) => db.instanceEntity.environment
+  );
+  const stageList = orderBy(
+    Object.keys(databaseListGroupByEnvironment).map((env) => {
+      const environment = useEnvironmentV1Store().getEnvironmentByName(env);
+      const databases = databaseListGroupByEnvironment[env];
+      return {
+        environment,
+        databases,
+      };
+    }),
+    [(stage) => stage.environment?.order],
+    ["asc"]
+  );
+
+  const steps: Plan_Step[] = [];
+  for (let i = 0; i < stageList.length; i++) {
+    const step = Plan_Step.fromJSON({});
+    const { databases } = stageList[i];
+    for (let j = 0; j < databases.length; j++) {
+      const db = databases[j];
+      const spec = await buildSpecForTarget(db.name, params, sheetUID);
+      step.specs.push(spec);
+    }
+    steps.push(step);
+  }
+  return steps;
 };
 
 export const buildSpecForTenant = async (params: CreateIssueParams) => {
@@ -140,8 +152,10 @@ export const buildSpecForTenant = async (params: CreateIssueParams) => {
 
 export const buildSpecForTarget = async (
   target: string,
-  { project, route }: CreateIssueParams
+  { project, route }: CreateIssueParams,
+  sheetUID?: string
 ) => {
+  const sheet = `${project.name}/sheets/${sheetUID ?? nextUID()}`;
   const template = route.query.template as TemplateType;
   const spec = Plan_Spec.fromJSON({
     id: uuidv4(),
@@ -160,7 +174,7 @@ export const buildSpecForTarget = async (
       }
     }
     if (!spec.changeDatabaseConfig.sheet) {
-      spec.changeDatabaseConfig.sheet = `${project.name}/sheets/${nextUID()}`;
+      spec.changeDatabaseConfig.sheet = sheet;
     }
   }
   if (template === "bb.issue.database.schema.update") {
@@ -171,7 +185,7 @@ export const buildSpecForTarget = async (
     spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
       target,
       type,
-      sheet: `${project.name}/sheets/${nextUID()}`,
+      sheet,
     });
   }
   if (template === "bb.issue.database.schema.baseline") {
