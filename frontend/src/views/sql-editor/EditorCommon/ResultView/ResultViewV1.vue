@@ -72,8 +72,14 @@ import { provideSQLResultViewContext } from "./context";
 import ErrorView from "./ErrorView.vue";
 import RequestQueryButton from "./RequestQueryButton.vue";
 import { QueryResult } from "@/types/proto/v1/sql_service";
-import { useInstanceV1Store, usePolicyV1Store, useTabStore } from "@/store";
+import {
+  useCurrentUserV1,
+  useInstanceV1Store,
+  usePolicyV1Store,
+  useTabStore,
+} from "@/store";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
@@ -101,6 +107,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
 const connection = computed(() => useTabStore().currentTab.connection);
 
 const viewMode = computed((): ViewMode => {
@@ -140,6 +147,15 @@ const tabName = (result: QueryResult, index: number) => {
 };
 
 const disallowCopyingData = computed(() => {
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.admin-sql-editor",
+      currentUser.value.userRole
+    )
+  ) {
+    // `disableCopyDataPolicy` is only applicable to workspace developers.
+    return false;
+  }
   const instance = useInstanceV1Store().getInstanceByUID(
     connection.value.instanceId
   );
