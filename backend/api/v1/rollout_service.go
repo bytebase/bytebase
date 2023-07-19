@@ -377,8 +377,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	return nil, nil
 }
 
-// ListRolloutTaskRuns lists rollout task runs.
-func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.ListRolloutTaskRunsRequest) (*v1pb.ListRolloutTaskRunsResponse, error) {
+// ListTaskRuns lists rollout task runs.
+func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
 	projectID, rolloutID, maybeStageID, maybeTaskID, err := getProjectIDRolloutIDStageIDTaskID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -403,7 +403,7 @@ func (s *RolloutService) ListRolloutTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
 	}
 
-	return &v1pb.ListRolloutTaskRunsResponse{
+	return &v1pb.ListTaskRunsResponse{
 		TaskRuns:      convertToTaskRuns(taskRuns),
 		NextPageToken: "",
 	}, nil
@@ -1414,6 +1414,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
+			SpecID:        spec.Id,
 			SheetID:       sheetID,
 			SchemaVersion: c.SchemaVersion,
 			VCSPushEvent:  nil,
@@ -1500,6 +1501,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
 		payload := api.TaskDatabaseDataUpdatePayload{
+			SpecID:            spec.Id,
 			SheetID:           sheetID,
 			SchemaVersion:     c.SchemaVersion,
 			VCSPushEvent:      nil,
@@ -1575,6 +1577,7 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 
 	if c.CreateDatabaseConfig != nil {
 		restorePayload := api.TaskDatabasePITRRestorePayload{
+			SpecID:    spec.Id,
 			ProjectID: project.UID,
 		}
 		// restore to a new database
@@ -1651,6 +1654,7 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 
 		// task 1: restore
 		restorePayload := api.TaskDatabasePITRRestorePayload{
+			SpecID:    spec.Id,
 			ProjectID: project.UID,
 		}
 		switch source := c.Source.(type) {
@@ -1701,7 +1705,9 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		taskCreates = append(taskCreates, restoreTaskCreate)
 
 		// task 2: cutover
-		cutoverPayload := api.TaskDatabasePITRCutoverPayload{}
+		cutoverPayload := api.TaskDatabasePITRCutoverPayload{
+			SpecID: spec.Id,
+		}
 		cutoverPayloadBytes, err := json.Marshal(cutoverPayload)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to create PITR cutover task, unable to marshal payload")

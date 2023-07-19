@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
@@ -558,29 +559,67 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 }
 
 type columnState struct {
-	name string
-	tp   string
+	name         string
+	tp           string
+	defaultValue *string
+	comment      string
+	nullable     bool
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("`%s`", c.name)); err != nil {
 		return err
+	}
+	if c.nullable {
+		if _, err := buf.WriteString(" NULL"); err != nil {
+			return err
+		}
+	} else {
+		if _, err := buf.WriteString(" NOT NULL"); err != nil {
+			return err
+		}
+	}
+	if c.defaultValue != nil {
+		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", *c.defaultValue)); err != nil {
+			return err
+		}
+	} else {
+		if _, err := buf.WriteString(" DEFAULT NULL"); err != nil {
+			return err
+		}
+	}
+	if c.comment != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", c.comment)); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (c *columnState) convertToColumnMetadata() *v1pb.ColumnMetadata {
-	return &v1pb.ColumnMetadata{
-		Name: c.name,
-		Type: c.tp,
+	result := &v1pb.ColumnMetadata{
+		Name:     c.name,
+		Type:     c.tp,
+		Nullable: c.nullable,
+		Comment:  c.comment,
 	}
+	if c.defaultValue != nil {
+		result.Default = &wrapperspb.StringValue{Value: *c.defaultValue}
+	}
+	return result
 }
 
 func convertToColumnState(column *v1pb.ColumnMetadata) *columnState {
-	return &columnState{
-		name: column.Name,
-		tp:   column.Type,
+	result := &columnState{
+		name:     column.Name,
+		tp:       column.Type,
+		nullable: column.Nullable,
+		comment:  column.Comment,
 	}
+	if column.Default != nil {
+		result.defaultValue = &column.Default.Value
+	}
+	return result
 }
 
 // EnterCreateTable is called when production createTable is entered.
@@ -626,11 +665,38 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		t.err = errors.New("multiple column names found: " + columnName + " in table " + t.currentTable)
 		return
 	}
-
-	table.columns[columnName] = &columnState{
-		name: columnName,
-		tp:   dataType,
+	columnState := &columnState{
+		name:         columnName,
+		tp:           dataType,
+		defaultValue: nil,
+		comment:      "",
+		nullable:     true,
 	}
+
+	for _, attribute := range ctx.FieldDefinition().AllColumnAttribute() {
+		switch {
+		case attribute.NullLiteral() != nil && attribute.NOT_SYMBOL() != nil:
+			columnState.nullable = false
+		case attribute.DEFAULT_SYMBOL() != nil && attribute.SERIAL_SYMBOL() == nil:
+			defaultValueStart := nextDefaultChannelTokenIndex(ctx.GetParser().GetTokenStream(), attribute.DEFAULT_SYMBOL().GetSymbol().GetTokenIndex())
+			defaultValue := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: defaultValueStart,
+				Stop:  attribute.GetStop().GetTokenIndex(),
+			})
+			columnState.defaultValue = &defaultValue
+		case attribute.COMMENT_SYMBOL() != nil:
+			commentStart := nextDefaultChannelTokenIndex(ctx.GetParser().GetTokenStream(), attribute.COMMENT_SYMBOL().GetSymbol().GetTokenIndex())
+			comment := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: commentStart,
+				Stop:  attribute.GetStop().GetTokenIndex(),
+			})
+			if comment != `''` && len(comment) > 2 {
+				columnState.comment = comment[1 : len(comment)-1]
+			}
+		}
+	}
+
+	table.columns[columnName] = columnState
 }
 
 func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
@@ -772,6 +838,94 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 	g.firstElementInTable = false
 }
 
+type columnAttr struct {
+	text  string
+	order int
+}
+
+var columnAttrOrder = map[string]int{
+	"NULL":           1,
+	"DEFAULT":        2,
+	"VISIBLE":        3,
+	"AUTO_INCREMENT": 4,
+	"UNIQUE":         5,
+	"KEY":            6,
+	"COMMENT":        7,
+	"COLLATE":        8,
+	"COLUMN_FORMAT":  9,
+	"SECONDARY":      10,
+	"STORAGE":        11,
+	"SERIAL":         12,
+	"SRID":           13,
+	"ON":             14,
+	"CHECK":          15,
+	"ENFORCED":       16,
+}
+
+func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext) []columnAttr {
+	var result []columnAttr
+	nullExists := false
+	defaultExists := false
+	commentExists := false
+	for _, attr := range attrs {
+		if attr.GetValue() != nil {
+			switch strings.ToUpper(attr.GetValue().GetText()) {
+			case "DEFAULT":
+				defaultExists = true
+			case "COMMENT":
+				defaultExists = true
+			}
+		} else if attr.NullLiteral() != nil {
+			nullExists = true
+		}
+	}
+
+	if !nullExists && !column.nullable {
+		result = append(result, columnAttr{
+			text:  "NOT NULL",
+			order: columnAttrOrder["NULL"],
+		})
+	}
+	if !defaultExists && column.defaultValue != nil {
+		result = append(result, columnAttr{
+			text:  "DEFAULT " + *column.defaultValue,
+			order: columnAttrOrder["DEFAULT"],
+		})
+	}
+	if !commentExists && column.comment != "" {
+		result = append(result, columnAttr{
+			text:  "COMMENT '" + column.comment + "'",
+			order: columnAttrOrder["COMMENT"],
+		})
+	}
+	return result
+}
+
+func getAttrOrder(attr mysql.IColumnAttributeContext) int {
+	if attr.GetValue() != nil {
+		switch strings.ToUpper(attr.GetValue().GetText()) {
+		case "DEFAULT", "ON", "AUTO_INCREMENT", "SERIAL", "KEY", "UNIQUE", "COMMENT", "COLUMN_FORMAT", "STORAGE", "SRID":
+			return columnAttrOrder[attr.GetValue().GetText()]
+		}
+	}
+	if attr.NullLiteral() != nil {
+		return columnAttrOrder["NULL"]
+	}
+	if attr.SECONDARY_SYMBOL() != nil {
+		return columnAttrOrder["SECONDARY"]
+	}
+	if attr.Collate() != nil {
+		return columnAttrOrder["COLLATE"]
+	}
+	if attr.CheckConstraint() != nil {
+		return columnAttrOrder["CHECK"]
+	}
+	if attr.ConstraintEnforcement() != nil {
+		return columnAttrOrder["ENFORCED"]
+	}
+	return len(columnAttrOrder) + 1
+}
+
 // EnterColumnDefinition is called when production columnDefinition is entered.
 func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefinitionContext) {
 	if g.err != nil || g.currentTable == nil {
@@ -795,6 +949,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 		}
 	}
 
+	// compare column type
 	typeCtx := ctx.FieldDefinition().DataType()
 	columnType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(typeCtx)
 	if columnType != column.tp {
@@ -809,19 +964,149 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 			g.err = err
 			return
 		}
+	} else {
 		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: typeCtx.GetStop().GetTokenIndex() + 1,
-			Stop:  ctx.GetStop().GetTokenIndex(),
+			Start: ctx.GetStart().GetTokenIndex(),
+			Stop:  typeCtx.GetStop().GetTokenIndex(),
 		})); err != nil {
 			g.err = err
 			return
 		}
-	} else {
-		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+	}
+	startPos := typeCtx.GetStop().GetTokenIndex() + 1
+
+	newAttr := extractNewAttrs(column, ctx.FieldDefinition().AllColumnAttribute())
+
+	for _, attribute := range ctx.FieldDefinition().AllColumnAttribute() {
+		attrOrder := getAttrOrder(attribute)
+		for ; len(newAttr) > 0 && newAttr[0].order < attrOrder; newAttr = newAttr[1:] {
+			if _, err := g.result.WriteString(" " + newAttr[0].text); err != nil {
+				g.err = err
+				return
+			}
+		}
+		switch {
+		// nullable
+		case attribute.NullLiteral() != nil:
+			sameNullable := attribute.NOT_SYMBOL() == nil && column.nullable
+			sameNullable = sameNullable || (attribute.NOT_SYMBOL() != nil && !column.nullable)
+			if sameNullable {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: startPos,
+					Stop:  attribute.GetStop().GetTokenIndex(),
+				})); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: startPos,
+					Stop:  attribute.GetStart().GetTokenIndex() - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+				if column.nullable {
+					if _, err := g.result.WriteString(" NULL"); err != nil {
+						g.err = err
+						return
+					}
+				} else {
+					if _, err := g.result.WriteString(" NOT NULL"); err != nil {
+						g.err = err
+						return
+					}
+				}
+			}
+		case attribute.DEFAULT_SYMBOL() != nil && attribute.SERIAL_SYMBOL() == nil:
+			defaultValueStart := nextDefaultChannelTokenIndex(attribute.GetParser().GetTokenStream(), attribute.DEFAULT_SYMBOL().GetSymbol().GetTokenIndex())
+			defaultValue := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: defaultValueStart,
+				Stop:  attribute.GetStop().GetTokenIndex(),
+			})
+			if column.defaultValue != nil && *column.defaultValue == defaultValue {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: startPos,
+					Stop:  attribute.GetStop().GetTokenIndex(),
+				})); err != nil {
+					g.err = err
+					return
+				}
+			} else if column.defaultValue != nil {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: startPos,
+					Stop:  defaultValueStart - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.result.WriteString(*column.defaultValue); err != nil {
+					g.err = err
+					return
+				}
+			}
+		case attribute.COMMENT_SYMBOL() != nil:
+			commentStart := nextDefaultChannelTokenIndex(attribute.GetParser().GetTokenStream(), attribute.COMMENT_SYMBOL().GetSymbol().GetTokenIndex())
+			commentValue := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: commentStart,
+				Stop:  attribute.GetStop().GetTokenIndex(),
+			})
+			if commentValue != `''` && len(commentValue) > 2 && column.comment == commentValue[1:len(commentValue)-1] {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: startPos,
+					Stop:  attribute.GetStop().GetTokenIndex(),
+				})); err != nil {
+					g.err = err
+					return
+				}
+			} else if column.comment != "" {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: startPos,
+					Stop:  commentStart - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.result.WriteString(fmt.Sprintf("'%s'", column.comment)); err != nil {
+					g.err = err
+					return
+				}
+			}
+		default:
+			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: startPos,
+				Stop:  attribute.GetStop().GetTokenIndex(),
+			})); err != nil {
+				g.err = err
+				return
+			}
+		}
+		startPos = attribute.GetStop().GetTokenIndex() + 1
+	}
+
+	for _, attr := range newAttr {
+		if _, err := g.result.WriteString(" " + attr.text); err != nil {
 			g.err = err
 			return
 		}
 	}
+
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: startPos,
+		Stop:  ctx.GetStop().GetTokenIndex(),
+	})); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func nextDefaultChannelTokenIndex(tokens antlr.TokenStream, currentIndex int) int {
+	for i := currentIndex + 1; i < tokens.Size(); i++ {
+		if tokens.Get(i).GetChannel() == antlr.TokenDefaultChannel {
+			return i
+		}
+	}
+	return 0
 }
 
 // EnterTableConstraintDef is called when production tableConstraintDef is entered.

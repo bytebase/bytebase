@@ -50,7 +50,7 @@ func TestGetMinorMigrationVersions(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		migrateVersions, _, _ := getMinorMigrationVersions(test.names, test.currentVersion)
+		migrateVersions, _ := getMinorMigrationVersions(test.names, test.currentVersion)
 		require.Equal(t, test.want, migrateVersions)
 	}
 }
