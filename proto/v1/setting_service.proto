@@ -248,3 +248,15 @@ message WorkspaceTrialSetting {
 
   PlanType plan = 6;
 }
+
+message DataCategorySetting {
+  // Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+
+  message DataCategoryConfig {
+    string id = 1;
+    string title = 2;
+    // Maps category to level.
+    map<string, string> category_level = 3;
+    // TODO(ed): store the actual config.
+  }
+  repeated DataCategoryConfig configs = 1;
+}

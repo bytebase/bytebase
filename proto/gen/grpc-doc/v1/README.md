@@ -511,6 +511,9 @@
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
+    - [DataCategorySetting](#bytebase-v1-DataCategorySetting)
+    - [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig)
+    - [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry)
     - [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
@@ -5958,6 +5961,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | db_name_template | [string](#string) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
+| data_category_config_id | [string](#string) |  |  |
 
 
 
@@ -8099,6 +8103,56 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | ----- | ---- | ----- | ----------- |
 | enabled | [bool](#bool) |  |  |
 | approval_definition_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataCategorySetting"></a>
+
+### DataCategorySetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| configs | [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataCategorySetting-DataCategoryConfig"></a>
+
+### DataCategorySetting.DataCategoryConfig
+Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| category_level | [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry) | repeated | Maps category to level.
+
+TODO(ed): store the actual config. |
+
+
+
+
+
+
+<a name="bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry"></a>
+
+### DataCategorySetting.DataCategoryConfig.CategoryLevelEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
