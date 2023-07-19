@@ -982,9 +982,14 @@
     "force-archive-description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted.",
     "sync-mode": {
       "self": "Sync Mode",
-      "sync-self": "Sync self",
-      "sync-all": "Sync self and all containing databases (CDB + PDB)",
-      "description": "Bytebase will sync the connecting database as well as its all containing databases. Only applicable to Oracle 12c+."
+      "database": {
+        "self": "Manage based on database",
+        "description": "The entire database is treated as a managed object, with CDB and PDB being regarded as distinct databases. (Supports CDB and non-CDB mode)"
+      },
+      "schema": {
+        "self": "Manage based on schema",
+        "description": "Each schema is treated as a managed object. (Only supports non-CDB mode)"
+      }
     }
   },
   "environment": {
@@ -2607,6 +2612,9 @@
     "description": "You can pre-define the field template, then apply the template during the schema change.",
     "search-by-name-or-comment": "Search by name or comment",
     "form": {
+      "category": "Category",
+      "category-desc": "Select an existed category or create a new one",
+      "unclassified": "Unclassified",
       "column-name": "Column name",
       "column-type": "Column Type",
       "default-value": "Default value",

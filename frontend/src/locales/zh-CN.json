@@ -979,9 +979,14 @@
     "force-archive-description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。",
     "sync-mode": {
       "self": "同步模式",
-      "sync-self": "同步自身",
-      "sync-all": "同步自身和所有包含的数据库（CDB + PDB）",
-      "description": "Bytebase 会同步连接数据库及其所有包含的数据库。仅适用于Oracle 12c。"
+      "database": {
+        "self": "按数据库管理",
+        "description": "将整个数据库作为单一管理对象，CDB 与 PDB 将被视作不同的数据库。（支持 CDB 与非 CDB 模式）"
+      },
+      "schema": {
+        "self": "按 Schema 管理",
+        "description": "将每个 Schema 作为管理对象。（仅支持非 CDB 模式）"
+      }
     }
   },
   "environment": {
@@ -2600,6 +2605,9 @@
     "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。",
     "search-by-name-or-comment": "根据名称或备注搜索",
     "form": {
+      "category": "分类",
+      "category-desc": "选择一个已有分类，或者创建新分类",
+      "unclassified": "未分类",
       "column-name": "字段名",
       "column-type": "字段类型",
       "default-value": "默认值",
