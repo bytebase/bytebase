@@ -75,7 +75,7 @@ func (l *namingTableNoKeywordChecker) generateAdvice() ([]advisor.Advice, error)
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	tableName := ctx.Table_name().GetTable()
-	normalizedTableName, err := bbparser.NormalizedTSqlTableNamePart(tableName)
+	normalizedTableName, err := bbparser.NormalizeTSQLTableNamePart(tableName)
 	if err != nil {
 		log.Error("failed to normalize table name", zap.Error(err))
 	}
@@ -85,6 +85,7 @@ func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_table
 			Code:    advisor.NameIsKeywordIdentifier,
 			Title:   l.title,
 			Content: fmt.Sprintf("Table name [%s] is a reserved keyword and should be avoided.", normalizedTableName),
+			Line:    tableName.GetStart().GetLine(),
 		})
 	}
 }

@@ -539,10 +539,10 @@ func ParseTSQL(statement string) (antlr.Tree, error) {
 	return tree, nil
 }
 
-// NormalizedTSqlTableNamePart returns the normalized table name part.
+// NormalizeTSQLTableNamePart returns the normalized table name part.
 // https://learn.microsoft.com/zh-cn/sql/relational-databases/databases/database-identifiers?view=sql-server-ver15
 // TODO(zp): currently, we returns the lower case of the part, we may need to get the CI/CS from the server/database.
-func NormalizedTSqlTableNamePart(part tsqlparser.IId_Context) (string, error) {
+func NormalizeTSQLTableNamePart(part tsqlparser.IId_Context) (string, error) {
 	if part == nil {
 		return "", nil
 	}

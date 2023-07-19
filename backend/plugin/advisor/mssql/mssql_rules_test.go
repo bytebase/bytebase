@@ -13,6 +13,7 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementNoSelectAll,
 		advisor.SchemaRuleTableNaming,
 		advisor.SchemaRuleTableNameNoKeyword,
+		advisor.SchemaRuleIdentifierNoKeyword,
 	}
 
 	for _, rule := range snowflakeRules {

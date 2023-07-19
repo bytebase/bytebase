@@ -449,6 +449,9 @@ const (
 
 	// MSSQLTableNamingNoKeyword is an advisor type for MSSQL table naming convention without keyword.
 	MSSQLTableNamingNoKeyword Type = "bb.plugin.advisor.mssql.naming.table-no-keyword"
+
+	// MSSQLIdentifierNamingNoKeyword is an advisor type for MSSQL identifier naming convention without keyword.
+	MSSQLIdentifierNamingNoKeyword Type = "bb.plugin.advisor.mssql.naming.identifier-no-keyword"
 )
 
 // Advice is the result of an advisor.
