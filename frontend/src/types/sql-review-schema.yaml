@@ -90,6 +90,7 @@ ruleList:
       - ORACLE
       - OCEANBASE
       - SNOWFLAKE
+      - MSSQL
     componentList: []
   - type: statement.where.no-leading-wildcard-like
     category: STATEMENT
