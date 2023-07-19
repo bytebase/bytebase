@@ -225,7 +225,13 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	// TODO(d): sync instance databases.
+	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+		log.Warn("Failed to sync instance",
+			zap.String("instance", instance.ResourceID),
+			zap.Error(err))
+	}
+	// Sync all databases in the instance asynchronously.
+	s.stateCfg.InstanceDatabaseSyncChan <- instance
 
 	return convertToInstance(ins), nil
 }
