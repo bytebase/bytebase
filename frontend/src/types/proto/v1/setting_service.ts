@@ -340,8 +340,14 @@ export interface DataCategorySetting {
 /** Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+ */
 export interface DataCategorySetting_DataCategoryConfig {
   uid: string;
-  /** TODO(ed): store the actual config. */
   title: string;
+  /** Maps category to level. */
+  categoryLevel: { [key: string]: string };
+}
+
+export interface DataCategorySetting_DataCategoryConfig_CategoryLevelEntry {
+  key: string;
+  value: string;
 }
 
 function createBaseListSettingsRequest(): ListSettingsRequest {
@@ -2178,7 +2184,7 @@ export const DataCategorySetting = {
 };
 
 function createBaseDataCategorySetting_DataCategoryConfig(): DataCategorySetting_DataCategoryConfig {
-  return { uid: "", title: "" };
+  return { uid: "", title: "", categoryLevel: {} };
 }
 
 export const DataCategorySetting_DataCategoryConfig = {
@@ -2189,6 +2195,12 @@ export const DataCategorySetting_DataCategoryConfig = {
     if (message.title !== "") {
       writer.uint32(18).string(message.title);
     }
+    Object.entries(message.categoryLevel).forEach(([key, value]) => {
+      DataCategorySetting_DataCategoryConfig_CategoryLevelEntry.encode(
+        { key: key as any, value },
+        writer.uint32(26).fork(),
+      ).ldelim();
+    });
     return writer;
   },
 
@@ -2213,6 +2225,16 @@ export const DataCategorySetting_DataCategoryConfig = {
 
           message.title = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = DataCategorySetting_DataCategoryConfig_CategoryLevelEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.categoryLevel[entry3.key] = entry3.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2223,13 +2245,28 @@ export const DataCategorySetting_DataCategoryConfig = {
   },
 
   fromJSON(object: any): DataCategorySetting_DataCategoryConfig {
-    return { uid: isSet(object.uid) ? String(object.uid) : "", title: isSet(object.title) ? String(object.title) : "" };
+    return {
+      uid: isSet(object.uid) ? String(object.uid) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      categoryLevel: isObject(object.categoryLevel)
+        ? Object.entries(object.categoryLevel).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
   },
 
   toJSON(message: DataCategorySetting_DataCategoryConfig): unknown {
     const obj: any = {};
     message.uid !== undefined && (obj.uid = message.uid);
     message.title !== undefined && (obj.title = message.title);
+    obj.categoryLevel = {};
+    if (message.categoryLevel) {
+      Object.entries(message.categoryLevel).forEach(([k, v]) => {
+        obj.categoryLevel[k] = v;
+      });
+    }
     return obj;
   },
 
@@ -2241,6 +2278,90 @@ export const DataCategorySetting_DataCategoryConfig = {
     const message = createBaseDataCategorySetting_DataCategoryConfig();
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
+    message.categoryLevel = Object.entries(object.categoryLevel ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseDataCategorySetting_DataCategoryConfig_CategoryLevelEntry(): DataCategorySetting_DataCategoryConfig_CategoryLevelEntry {
+  return { key: "", value: "" };
+}
+
+export const DataCategorySetting_DataCategoryConfig_CategoryLevelEntry = {
+  encode(
+    message: DataCategorySetting_DataCategoryConfig_CategoryLevelEntry,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataCategorySetting_DataCategoryConfig_CategoryLevelEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataCategorySetting_DataCategoryConfig_CategoryLevelEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataCategorySetting_DataCategoryConfig_CategoryLevelEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: DataCategorySetting_DataCategoryConfig_CategoryLevelEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<DataCategorySetting_DataCategoryConfig_CategoryLevelEntry>,
+  ): DataCategorySetting_DataCategoryConfig_CategoryLevelEntry {
+    return DataCategorySetting_DataCategoryConfig_CategoryLevelEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(
+    object: DeepPartial<DataCategorySetting_DataCategoryConfig_CategoryLevelEntry>,
+  ): DataCategorySetting_DataCategoryConfig_CategoryLevelEntry {
+    const message = createBaseDataCategorySetting_DataCategoryConfig_CategoryLevelEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -2407,6 +2528,10 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

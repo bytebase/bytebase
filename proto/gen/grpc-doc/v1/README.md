@@ -513,6 +513,7 @@
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
     - [DataCategorySetting](#bytebase-v1-DataCategorySetting)
     - [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig)
+    - [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry)
     - [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
@@ -8132,7 +8133,26 @@ Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | uid | [string](#string) |  |  |
-| title | [string](#string) |  | TODO(ed): store the actual config. |
+| title | [string](#string) |  |  |
+| category_level | [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry) | repeated | Maps category to level.
+
+TODO(ed): store the actual config. |
+
+
+
+
+
+
+<a name="bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry"></a>
+
+### DataCategorySetting.DataCategoryConfig.CategoryLevelEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
