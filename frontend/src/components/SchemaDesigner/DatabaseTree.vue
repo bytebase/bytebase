@@ -2,7 +2,7 @@
   <div class="w-full h-full px-2 relative overflow-y-hidden">
     <div class="w-full flex flex-col sticky top-0 pt-2 h-20 bg-white z-10">
       <p class="w-full flex flex-row justify-between items-center h-8 px-1">
-        <span class="text-sm">Table</span>
+        <span class="text-sm">{{ $t("schema-designer.tables") }}</span>
         <button
           class="text-gray-400 hover:text-gray-500"
           @click="handleCreateTable"

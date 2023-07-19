@@ -81,16 +81,19 @@
         </div>
 
         <div
-          v-if="quickAction === 'quickaction.bb.database.schema.design'"
+          v-if="
+            isDev() && quickAction === 'quickaction.bb.database.schema.design'
+          "
           class="flex flex-col items-center w-24"
         >
           <button class="btn-icon-primary p-3" @click.prevent="designSchema">
             <heroicons-outline:table-cells class="w-5 h-5" />
           </button>
           <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+            class="relative flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
-            {{ $t("database.design-schema") }}
+            <BBBetaBadge class="absolute right-0 -top-5" />
+            {{ $t("schema-designer.quick-action") }}
           </h3>
         </div>
       </template>
@@ -337,6 +340,7 @@ import {
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
 } from "@/store";
+import { BBBetaBadge } from "@/bbkit";
 import { Drawer } from "@/components/v2";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import InstanceForm from "@/components/InstanceForm/";

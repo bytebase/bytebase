@@ -2,7 +2,7 @@
   <DrawerContent>
     <template #header>
       <div class="flex flex-col gap-y-1">
-        <span>{{ $t("database.design-schema") }}</span>
+        <span>{{ $t("schema-designer.self") }}</span>
       </div>
     </template>
 
@@ -11,12 +11,18 @@
     >
       <div>
         <NRadioGroup v-model:value="state.tab">
-          <NRadio :value="'LIST'" :label="'Existing Schema Design'" />
-          <NRadio :value="'CREATE'" :label="'New Schema Design'" />
+          <NRadio
+            :value="'LIST'"
+            :label="$t('schema-designer.existing-schema-design')"
+          />
+          <NRadio
+            :value="'CREATE'"
+            :label="$t('schema-designer.new-schema-design')"
+          />
         </NRadioGroup>
       </div>
 
-      <template v-if="state.tab === 'LIST' && !state.selectedSchemaDesign">
+      <template v-if="!isCreating && !isEditing">
         <SchemaDesignTable
           v-if="ready"
           :schema-designs="schemaDesignList"
@@ -28,7 +34,9 @@
       </template>
       <template v-else>
         <div class="w-full flex flex-row justify-start items-center">
-          <span class="flex w-40 items-center">{{ $t("common.name") }}</span>
+          <span class="flex w-40 items-center text-sm">{{
+            $t("common.name")
+          }}</span>
           <BBTextField
             class="w-60 !py-1.5"
             :value="state.schemaDesignName"
@@ -42,6 +50,28 @@
           :baseline-schema="state.baselineSchema"
           @update="handleBaselineSchemaChange"
         />
+        <div v-if="isEditing" class="w-full">
+          <div class="flex flex-row justify-start items-center">
+            <span class="text-sm w-40">{{
+              $t("schema-designer.baseline-database")
+            }}</span>
+            <InstanceV1EngineIcon
+              class="mr-1"
+              :instance="
+                databaseStore.getDatabaseByUID(
+                  state.baselineSchema.databaseId || ''
+                ).instanceEntity
+              "
+            />
+            <DatabaseV1Name
+              :database="
+                databaseStore.getDatabaseByUID(
+                  state.baselineSchema.databaseId || ''
+                )
+              "
+            />
+          </div>
+        </div>
         <template v-if="state.selectedSchemaDesign">
           <SchemaDesigner
             ref="schemaDesignerRef"
@@ -59,10 +89,14 @@
 
         <div class="flex items-center justify-end gap-x-3">
           <NButton @click.prevent="cancel">
-            {{ $t("common.cancel") }}
+            {{ cancelText }}
           </NButton>
-          <NButton type="primary" @click.prevent="handleConfirm">
-            {{ $t("common.next") }}
+          <NButton
+            type="primary"
+            :disabled="!allowConfirm"
+            @click.prevent="handleConfirm"
+          >
+            {{ confirmText }}
           </NButton>
         </div>
       </div>
@@ -74,12 +108,14 @@
 import { isEqual, uniqueId } from "lodash-es";
 import { NRadioGroup, NRadio } from "naive-ui";
 import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   ChangeHistory,
   DatabaseMetadata,
 } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import {
+  pushNotification,
   useChangeHistoryStore,
   useDatabaseV1Store,
   useProjectV1ByUID,
@@ -94,6 +130,7 @@ import SchemaDesigner from "../index.vue";
 import { databaseNamePrefix } from "@/store/modules/v1/common";
 import { watch } from "vue";
 import { mergeSchemaEditToMetadata } from "../common/util";
+import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
 
 interface BaselineSchema {
   // The uid of project.
@@ -116,10 +153,10 @@ defineProps({
     default: undefined,
   },
 });
-
 const emit = defineEmits(["dismiss"]);
-const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
 
+const { t } = useI18n();
+const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const { schemaDesignList, ready } = useSchemaDesignList();
@@ -129,6 +166,9 @@ const state = reactive<LocalState>({
   baselineSchema: {},
 });
 const isCreating = computed(() => state.tab === "CREATE");
+const isEditing = computed(
+  () => state.tab === "LIST" && !!state.selectedSchemaDesign
+);
 
 watch(
   () => state.tab,
@@ -166,6 +206,37 @@ const schemaDesignId = computed(() => {
   }
 });
 
+const allowConfirm = computed(() => {
+  if (isCreating.value) {
+    return (
+      state.schemaDesignName &&
+      state.baselineSchema.projectId &&
+      state.baselineSchema.databaseId
+    );
+  } else if (isEditing.value) {
+    return state.schemaDesignName;
+  }
+  return false;
+});
+
+const cancelText = computed(() => {
+  if (isCreating.value) {
+    return t("common.cancel");
+  } else if (isEditing.value) {
+    return t("common.back");
+  }
+  return t("common.cancel");
+});
+
+const confirmText = computed(() => {
+  if (isCreating.value) {
+    return t("common.create");
+  } else if (isEditing.value) {
+    return t("common.update");
+  }
+  return t("common.next");
+});
+
 const handleSchemaDesignItemClick = async (schemaDesign: SchemaDesign) => {
   state.schemaDesignName = schemaDesign.title;
   state.selectedSchemaDesign = schemaDesign;
@@ -195,7 +266,12 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
 };
 
 const cancel = () => {
-  emit("dismiss");
+  if (isEditing.value) {
+    state.tab = "LIST";
+    state.selectedSchemaDesign = undefined;
+  } else {
+    emit("dismiss");
+  }
 };
 
 const handleConfirm = async () => {
@@ -239,6 +315,13 @@ const handleConfirm = async () => {
         schemaVersion: state.baselineSchema.changeHistory?.name || "",
       })
     );
+    state.tab = "LIST";
+    state.selectedSchemaDesign = undefined;
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("schema-designer.message.created-succeed"),
+    });
   } else {
     const updateMarks = [];
     if (state.selectedSchemaDesign.title !== state.schemaDesignName) {
@@ -262,6 +345,11 @@ const handleConfirm = async () => {
       }),
       updateMarks
     );
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("schema-designer.message.updated-succeed"),
+    });
   }
 };
 </script>

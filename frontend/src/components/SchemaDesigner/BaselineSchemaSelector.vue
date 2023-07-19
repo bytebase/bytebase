@@ -3,7 +3,7 @@
     class="w-full mx-auto flex flex-col justify-start items-start space-y-3 mb-6"
   >
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center">
+      <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.project") }}
       </span>
       <ProjectSelect
@@ -13,7 +13,7 @@
       />
     </div>
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0">
+      <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.database") }}
       </span>
       <EnvironmentSelect
@@ -46,8 +46,8 @@
       </DatabaseSelect>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0">
-        {{ $t("database.sync-schema.schema-version.self") }}
+      <span class="flex w-40 items-center shrink-0 text-sm">
+        {{ $t("schema-designer.schema-version") }}
       </span>
       <div
         class="w-192 flex flex-row justify-start items-center relative"

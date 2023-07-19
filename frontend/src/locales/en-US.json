@@ -2657,5 +2657,18 @@
   },
   "export-center": {
     "self": "Export Center"
+  },
+  "schema-designer": {
+    "self": "Schema Designer",
+    "quick-action": "Design Schema",
+    "existing-schema-design": "Existing Schema Design",
+    "new-schema-design": "New Schema Design",
+    "baseline-database": "Baseline database",
+    "schema-version": "Schema version",
+    "tables": "Tables",
+    "message": {
+      "created-succeed": "Schema design created successfully",
+      "updated-succeed": "Schema design updated successfully"
+    }
   }
 }
