@@ -80,7 +80,9 @@ const { t } = useI18n();
 const { isCreating, issue, activeTask, selectedTask, events } =
   useIssueContext();
 const project = computed(() => issue.value.projectEntity);
-const active = computed(() => props.task === activeTask.value);
+const active = computed(
+  () => !isCreating.value && props.task === activeTask.value
+);
 const selected = computed(() => props.task === selectedTask.value);
 
 const secondaryViewMode = computed((): SecondaryViewMode => {
