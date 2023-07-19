@@ -92,7 +92,6 @@ export interface Plan {
   steps: Plan_Step[];
 }
 
-/** FIXME(d/xz): support spec with deployment config */
 export interface Plan_Step {
   specs: Plan_Spec[];
 }
@@ -148,7 +147,6 @@ export interface Plan_ChangeDatabaseConfig {
   /**
    * The resource name of the target.
    * Format: instances/{instance-id}/databases/{database-name}.
-   * Format: projects/{project}/deploymentConfig.
    */
   target: string;
   /**
