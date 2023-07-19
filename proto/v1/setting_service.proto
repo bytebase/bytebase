@@ -254,6 +254,8 @@ message DataCategorySetting {
   message DataCategoryConfig {
     string uid = 1;
     string title = 2;
+    // Maps category to level.
+    map<string, string> category_level = 3;
     // TODO(ed): store the actual config.
   }
   repeated DataCategoryConfig configs = 1;
