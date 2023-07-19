@@ -183,6 +183,7 @@ export interface SchemaTemplateSetting {
 export interface SchemaTemplateSetting_FieldTemplate {
   id: string;
   engine: Engine;
+  category: string;
   column?: ColumnMetadata | undefined;
 }
 
@@ -927,7 +928,7 @@ export const SchemaTemplateSetting = {
 };
 
 function createBaseSchemaTemplateSetting_FieldTemplate(): SchemaTemplateSetting_FieldTemplate {
-  return { id: "", engine: 0, column: undefined };
+  return { id: "", engine: 0, category: "", column: undefined };
 }
 
 export const SchemaTemplateSetting_FieldTemplate = {
@@ -938,8 +939,11 @@ export const SchemaTemplateSetting_FieldTemplate = {
     if (message.engine !== 0) {
       writer.uint32(16).int32(message.engine);
     }
+    if (message.category !== "") {
+      writer.uint32(26).string(message.category);
+    }
     if (message.column !== undefined) {
-      ColumnMetadata.encode(message.column, writer.uint32(26).fork()).ldelim();
+      ColumnMetadata.encode(message.column, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -970,6 +974,13 @@ export const SchemaTemplateSetting_FieldTemplate = {
             break;
           }
 
+          message.category = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.column = ColumnMetadata.decode(reader, reader.uint32());
           continue;
       }
@@ -985,6 +996,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      category: isSet(object.category) ? String(object.category) : "",
       column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
     };
   },
@@ -993,6 +1005,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.category !== undefined && (obj.category = message.category);
     message.column !== undefined && (obj.column = message.column ? ColumnMetadata.toJSON(message.column) : undefined);
     return obj;
   },
@@ -1005,6 +1018,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
     const message = createBaseSchemaTemplateSetting_FieldTemplate();
     message.id = object.id ?? "";
     message.engine = object.engine ?? 0;
+    message.category = object.category ?? "";
     message.column = (object.column !== undefined && object.column !== null)
       ? ColumnMetadata.fromPartial(object.column)
       : undefined;

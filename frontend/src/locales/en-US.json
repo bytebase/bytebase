@@ -2602,6 +2602,9 @@
     "description": "You can pre-define the field template, then apply the template during the schema change.",
     "search-by-name-or-comment": "Search by name or comment",
     "form": {
+      "category": "Category",
+      "category-desc": "Select an existed category or create a new one",
+      "unclassified": "Unclassified",
       "column-name": "Column name",
       "column-type": "Column Type",
       "default-value": "Default value",

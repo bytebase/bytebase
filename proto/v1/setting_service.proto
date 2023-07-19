@@ -225,9 +225,9 @@ message SchemaTemplateSetting {
 
     Engine engine = 2;
 
-    // TODO: support category
+    string category = 3;
 
-    ColumnMetadata column = 3;
+    ColumnMetadata column = 4;
   }
 
   repeated FieldTemplate field_templates = 1;
