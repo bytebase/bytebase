@@ -163,6 +163,9 @@ message TableMetadata {
   // The comment is the comment of a table.
   string comment = 11;
 
+  // The category is the category of a table from the comment.
+  string category = 13;
+
   // The foreign_keys is the list of foreign keys in a table.
   repeated ForeignKeyMetadata foreign_keys = 12;
 }
@@ -192,6 +195,9 @@ message ColumnMetadata {
 
   // The comment is the comment of a column.
   string comment = 8;
+
+  // The category is the category of a table from the comment.
+  string category = 9;
 }
 
 // ViewMetadata is the metadata for views.

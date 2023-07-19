@@ -248,3 +248,8 @@ message WorkspaceTrialSetting {
 
   PlanType plan = 6;
 }
+
+message DataCategorySetting {
+  // Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+
+  // TBD: store the csv file and the processed structured data.
+}
