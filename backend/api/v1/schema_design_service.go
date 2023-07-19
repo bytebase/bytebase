@@ -867,6 +867,8 @@ type mysqlDesignSchemaGenerator struct {
 	result              strings.Builder
 	currentTable        *tableState
 	firstElementInTable bool
+	columnDefine        strings.Builder
+	tableConstraints    strings.Builder
 	err                 error
 }
 
@@ -893,6 +895,8 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 
 	g.currentTable = table
 	g.firstElementInTable = true
+	g.columnDefine.Reset()
+	g.tableConstraints.Reset()
 
 	delete(schema.tables, tableName)
 	if _, err := g.result.WriteString("CREATE "); err != nil {
@@ -925,15 +929,39 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		if g.firstElementInTable {
 			g.firstElementInTable = false
 		} else {
-			if _, err := g.result.WriteString(",\n  "); err != nil {
+			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
 				g.err = err
 				return
 			}
 		}
-		if err := column.toString(&g.result); err != nil {
+		if err := column.toString(&g.columnDefine); err != nil {
 			g.err = err
 			return
 		}
+	}
+
+	if g.currentTable.indexes["PRIMARY"] != nil {
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if err := g.currentTable.indexes["PRIMARY"].toString(&g.tableConstraints); err != nil {
+			return
+		}
+	}
+
+	if _, err := g.result.WriteString(g.columnDefine.String()); err != nil {
+		g.err = err
+		return
+	}
+
+	if _, err := g.result.WriteString(g.tableConstraints.String()); err != nil {
+		g.err = err
+		return
 	}
 
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
@@ -1041,6 +1069,67 @@ func getAttrOrder(attr mysql.IColumnAttributeContext) int {
 	return len(columnAttrOrder) + 1
 }
 
+// EnterTableConstraintDef is called when production tableConstraintDef is entered.
+func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableConstraintDefContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	if ctx.GetType_() == nil {
+		if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+			g.err = err
+			return
+		}
+		return
+	}
+
+	switch strings.ToUpper(ctx.GetType_().GetText()) {
+	case "PRIMARY":
+		if g.currentTable.indexes["PRIMARY"] != nil {
+
+			if g.firstElementInTable {
+				g.firstElementInTable = false
+			} else {
+				if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+					g.err = err
+					return
+				}
+			}
+
+			keys := extractKeyListVariants(ctx.KeyListVariants())
+			if equalKeys(keys, g.currentTable.indexes["PRIMARY"].keys) {
+				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if err := g.currentTable.indexes["PRIMARY"].toString(&g.tableConstraints); err != nil {
+					g.err = err
+					return
+				}
+			}
+			delete(g.currentTable.indexes, "PRIMARY")
+		}
+	default:
+		if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+			g.err = err
+			return
+		}
+	}
+}
+
+func equalKeys(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, key := range a {
+		if key != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // EnterColumnDefinition is called when production columnDefinition is entered.
 func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefinitionContext) {
 	if g.err != nil || g.currentTable == nil {
@@ -1058,7 +1147,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	if g.firstElementInTable {
 		g.firstElementInTable = false
 	} else {
-		if _, err := g.result.WriteString(",\n  "); err != nil {
+		if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
 			g.err = err
 			return
 		}
@@ -1068,19 +1157,19 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	typeCtx := ctx.FieldDefinition().DataType()
 	columnType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(typeCtx)
 	if columnType != column.tp {
-		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 			Start: ctx.GetStart().GetTokenIndex(),
 			Stop:  typeCtx.GetStart().GetTokenIndex() - 1,
 		})); err != nil {
 			g.err = err
 			return
 		}
-		if _, err := g.result.WriteString(column.tp); err != nil {
+		if _, err := g.columnDefine.WriteString(column.tp); err != nil {
 			g.err = err
 			return
 		}
 	} else {
-		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 			Start: ctx.GetStart().GetTokenIndex(),
 			Stop:  typeCtx.GetStop().GetTokenIndex(),
 		})); err != nil {
@@ -1095,7 +1184,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	for _, attribute := range ctx.FieldDefinition().AllColumnAttribute() {
 		attrOrder := getAttrOrder(attribute)
 		for ; len(newAttr) > 0 && newAttr[0].order < attrOrder; newAttr = newAttr[1:] {
-			if _, err := g.result.WriteString(" " + newAttr[0].text); err != nil {
+			if _, err := g.columnDefine.WriteString(" " + newAttr[0].text); err != nil {
 				g.err = err
 				return
 			}
@@ -1106,7 +1195,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 			sameNullable := attribute.NOT_SYMBOL() == nil && column.nullable
 			sameNullable = sameNullable || (attribute.NOT_SYMBOL() != nil && !column.nullable)
 			if sameNullable {
-				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  attribute.GetStop().GetTokenIndex(),
 				})); err != nil {
@@ -1114,7 +1203,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 			} else {
-				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  attribute.GetStart().GetTokenIndex() - 1,
 				})); err != nil {
@@ -1122,12 +1211,12 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 				if column.nullable {
-					if _, err := g.result.WriteString(" NULL"); err != nil {
+					if _, err := g.columnDefine.WriteString(" NULL"); err != nil {
 						g.err = err
 						return
 					}
 				} else {
-					if _, err := g.result.WriteString(" NOT NULL"); err != nil {
+					if _, err := g.columnDefine.WriteString(" NOT NULL"); err != nil {
 						g.err = err
 						return
 					}
@@ -1140,7 +1229,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 				Stop:  attribute.GetStop().GetTokenIndex(),
 			})
 			if column.defaultValue != nil && *column.defaultValue == defaultValue {
-				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  attribute.GetStop().GetTokenIndex(),
 				})); err != nil {
@@ -1148,14 +1237,14 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 			} else if column.defaultValue != nil {
-				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  defaultValueStart - 1,
 				})); err != nil {
 					g.err = err
 					return
 				}
-				if _, err := g.result.WriteString(*column.defaultValue); err != nil {
+				if _, err := g.columnDefine.WriteString(*column.defaultValue); err != nil {
 					g.err = err
 					return
 				}
@@ -1167,7 +1256,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 				Stop:  attribute.GetStop().GetTokenIndex(),
 			})
 			if commentValue != `''` && len(commentValue) > 2 && column.comment == commentValue[1:len(commentValue)-1] {
-				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  attribute.GetStop().GetTokenIndex(),
 				})); err != nil {
@@ -1175,20 +1264,20 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 			} else if column.comment != "" {
-				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  commentStart - 1,
 				})); err != nil {
 					g.err = err
 					return
 				}
-				if _, err := g.result.WriteString(fmt.Sprintf("'%s'", column.comment)); err != nil {
+				if _, err := g.columnDefine.WriteString(fmt.Sprintf("'%s'", column.comment)); err != nil {
 					g.err = err
 					return
 				}
 			}
 		default:
-			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 				Start: startPos,
 				Stop:  attribute.GetStop().GetTokenIndex(),
 			})); err != nil {
@@ -1200,13 +1289,13 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	}
 
 	for _, attr := range newAttr {
-		if _, err := g.result.WriteString(" " + attr.text); err != nil {
+		if _, err := g.columnDefine.WriteString(" " + attr.text); err != nil {
 			g.err = err
 			return
 		}
 	}
 
-	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+	if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: startPos,
 		Stop:  ctx.GetStop().GetTokenIndex(),
 	})); err != nil {
@@ -1222,25 +1311,4 @@ func nextDefaultChannelTokenIndex(tokens antlr.TokenStream, currentIndex int) in
 		}
 	}
 	return 0
-}
-
-// EnterTableConstraintDef is called when production tableConstraintDef is entered.
-func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableConstraintDefContext) {
-	if g.err != nil || g.currentTable == nil {
-		return
-	}
-
-	if g.firstElementInTable {
-		g.firstElementInTable = false
-	} else {
-		if _, err := g.result.WriteString(",\n  "); err != nil {
-			g.err = err
-			return
-		}
-	}
-
-	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
-		g.err = err
-		return
-	}
 }
