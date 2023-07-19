@@ -333,6 +333,13 @@ export interface WorkspaceTrialSetting {
   plan: PlanType;
 }
 
+/**
+ * Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+
+ * TBD: store the csv file and the processed structured data.
+ */
+export interface DataCategorySetting {
+}
+
 function createBaseListSettingsRequest(): ListSettingsRequest {
   return { pageSize: 0, pageToken: "" };
 }
@@ -2098,6 +2105,50 @@ export const WorkspaceTrialSetting = {
     message.subject = object.subject ?? "";
     message.orgName = object.orgName ?? "";
     message.plan = object.plan ?? 0;
+    return message;
+  },
+};
+
+function createBaseDataCategorySetting(): DataCategorySetting {
+  return {};
+}
+
+export const DataCategorySetting = {
+  encode(_: DataCategorySetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataCategorySetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataCategorySetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DataCategorySetting {
+    return {};
+  },
+
+  toJSON(_: DataCategorySetting): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataCategorySetting>): DataCategorySetting {
+    return DataCategorySetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<DataCategorySetting>): DataCategorySetting {
+    const message = createBaseDataCategorySetting();
     return message;
   },
 };

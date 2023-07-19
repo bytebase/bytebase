@@ -511,6 +511,7 @@
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
+    - [DataCategorySetting](#bytebase-v1-DataCategorySetting)
     - [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
@@ -8099,6 +8100,17 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | ----- | ---- | ----- | ----------- |
 | enabled | [bool](#bool) |  |  |
 | approval_definition_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataCategorySetting"></a>
+
+### DataCategorySetting
+Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
+TBD: store the csv file and the processed structured data.
 
 
 

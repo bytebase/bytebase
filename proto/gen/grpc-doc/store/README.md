@@ -595,6 +595,7 @@ ColumnMetadata is the metadata for columns.
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
 | collation | [string](#string) |  | The collation is the collation of a column. |
 | comment | [string](#string) |  | The comment is the comment of a column. |
+| category | [string](#string) |  | The category is the category of a table from the comment. |
 
 
 
@@ -826,6 +827,7 @@ TableMetadata is the metadata for tables.
 | data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
 | create_options | [string](#string) |  | The create_options is the create option of a table. |
 | comment | [string](#string) |  | The comment is the comment of a table. |
+| category | [string](#string) |  | The category is the category of a table from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 
 

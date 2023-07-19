@@ -1279,6 +1279,44 @@ func (x *WorkspaceTrialSetting) GetPlan() PlanType {
 	return PlanType_PLAN_TYPE_UNSPECIFIED
 }
 
+type DataCategorySetting struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *DataCategorySetting) Reset() {
+	*x = DataCategorySetting{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_setting_service_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DataCategorySetting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataCategorySetting) ProtoMessage() {}
+
+func (x *DataCategorySetting) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_setting_service_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataCategorySetting.ProtoReflect.Descriptor instead.
+func (*DataCategorySetting) Descriptor() ([]byte, []int) {
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{15}
+}
+
 type AppIMSetting_ExternalApproval struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1291,7 +1329,7 @@ type AppIMSetting_ExternalApproval struct {
 func (x *AppIMSetting_ExternalApproval) Reset() {
 	*x = AppIMSetting_ExternalApproval{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_setting_service_proto_msgTypes[15]
+		mi := &file_v1_setting_service_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1304,7 +1342,7 @@ func (x *AppIMSetting_ExternalApproval) String() string {
 func (*AppIMSetting_ExternalApproval) ProtoMessage() {}
 
 func (x *AppIMSetting_ExternalApproval) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[15]
+	mi := &file_v1_setting_service_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1346,7 +1384,7 @@ type WorkspaceApprovalSetting_Rule struct {
 func (x *WorkspaceApprovalSetting_Rule) Reset() {
 	*x = WorkspaceApprovalSetting_Rule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_setting_service_proto_msgTypes[16]
+		mi := &file_v1_setting_service_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1359,7 +1397,7 @@ func (x *WorkspaceApprovalSetting_Rule) String() string {
 func (*WorkspaceApprovalSetting_Rule) ProtoMessage() {}
 
 func (x *WorkspaceApprovalSetting_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[16]
+	mi := &file_v1_setting_service_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1406,7 +1444,7 @@ type ExternalApprovalSetting_Node struct {
 func (x *ExternalApprovalSetting_Node) Reset() {
 	*x = ExternalApprovalSetting_Node{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_setting_service_proto_msgTypes[17]
+		mi := &file_v1_setting_service_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1419,7 +1457,7 @@ func (x *ExternalApprovalSetting_Node) String() string {
 func (*ExternalApprovalSetting_Node) ProtoMessage() {}
 
 func (x *ExternalApprovalSetting_Node) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[17]
+	mi := &file_v1_setting_service_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1470,7 +1508,7 @@ type SchemaTemplateSetting_FieldTemplate struct {
 func (x *SchemaTemplateSetting_FieldTemplate) Reset() {
 	*x = SchemaTemplateSetting_FieldTemplate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_setting_service_proto_msgTypes[18]
+		mi := &file_v1_setting_service_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1483,7 +1521,7 @@ func (x *SchemaTemplateSetting_FieldTemplate) String() string {
 func (*SchemaTemplateSetting_FieldTemplate) ProtoMessage() {}
 
 func (x *SchemaTemplateSetting_FieldTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[18]
+	mi := &file_v1_setting_service_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1779,31 +1817,32 @@ var file_v1_setting_service_proto_rawDesc = []byte{
 	0x61, 0x6d, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6f, 0x72, 0x67, 0x4e, 0x61,
 	0x6d, 0x65, 0x12, 0x29, 0x0a, 0x04, 0x70, 0x6c, 0x61, 0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0e,
 	0x32, 0x15, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50,
-	0x6c, 0x61, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x70, 0x6c, 0x61, 0x6e, 0x32, 0xdc, 0x02,
-	0x0a, 0x0e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
-	0x12, 0x6c, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73,
-	0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
-	0x69, 0x73, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
-	0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0xda, 0x41, 0x00, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0e,
-	0x12, 0x0c, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x68,
-	0x0a, 0x0a, 0x47, 0x65, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x1e, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x65,
-	0x74, 0x74, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x74, 0x69,
-	0x6e, 0x67, 0x22, 0x24, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x17, 0x12, 0x15, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x73, 0x65, 0x74,
-	0x74, 0x69, 0x6e, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x72, 0x0a, 0x0a, 0x53, 0x65, 0x74, 0x53,
-	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x22, 0x2e, 0x82, 0xd3,
-	0xe4, 0x93, 0x02, 0x28, 0x3a, 0x07, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x32, 0x1d, 0x2f,
-	0x76, 0x31, 0x2f, 0x7b, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x6e, 0x61, 0x6d, 0x65,
-	0x3d, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x42, 0x11, 0x5a, 0x0f,
-	0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6c, 0x61, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x70, 0x6c, 0x61, 0x6e, 0x22, 0x15, 0x0a,
+	0x13, 0x44, 0x61, 0x74, 0x61, 0x43, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x79, 0x53, 0x65, 0x74,
+	0x74, 0x69, 0x6e, 0x67, 0x32, 0xdc, 0x02, 0x0a, 0x0e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67,
+	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x6c, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x53,
+	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e,
+	0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x74, 0x74,
+	0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0xda, 0x41,
+	0x00, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0e, 0x12, 0x0c, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x65, 0x74,
+	0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x68, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x53, 0x65, 0x74, 0x74,
+	0x69, 0x6e, 0x67, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x22, 0x24, 0xda, 0x41, 0x04, 0x6e, 0x61,
+	0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e,
+	0x61, 0x6d, 0x65, 0x3d, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x12,
+	0x72, 0x0a, 0x0a, 0x53, 0x65, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x1e, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x53,
+	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x74,
+	0x69, 0x6e, 0x67, 0x22, 0x2e, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x28, 0x3a, 0x07, 0x73, 0x65, 0x74,
+	0x74, 0x69, 0x6e, 0x67, 0x32, 0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x73, 0x65, 0x74, 0x74, 0x69,
+	0x6e, 0x67, 0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73,
+	0x2f, 0x2a, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64,
+	0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1819,7 +1858,7 @@ func file_v1_setting_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_setting_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_v1_setting_service_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_v1_setting_service_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_v1_setting_service_proto_goTypes = []interface{}{
 	(SMTPMailDeliverySettingValue_Encryption)(0),     // 0: bytebase.v1.SMTPMailDeliverySettingValue.Encryption
 	(SMTPMailDeliverySettingValue_Authentication)(0), // 1: bytebase.v1.SMTPMailDeliverySettingValue.Authentication
@@ -1839,16 +1878,17 @@ var file_v1_setting_service_proto_goTypes = []interface{}{
 	(*ExternalApprovalSetting)(nil),                  // 15: bytebase.v1.ExternalApprovalSetting
 	(*SchemaTemplateSetting)(nil),                    // 16: bytebase.v1.SchemaTemplateSetting
 	(*WorkspaceTrialSetting)(nil),                    // 17: bytebase.v1.WorkspaceTrialSetting
-	(*AppIMSetting_ExternalApproval)(nil),            // 18: bytebase.v1.AppIMSetting.ExternalApproval
-	(*WorkspaceApprovalSetting_Rule)(nil),            // 19: bytebase.v1.WorkspaceApprovalSetting.Rule
-	(*ExternalApprovalSetting_Node)(nil),             // 20: bytebase.v1.ExternalApprovalSetting.Node
-	(*SchemaTemplateSetting_FieldTemplate)(nil),      // 21: bytebase.v1.SchemaTemplateSetting.FieldTemplate
-	(*timestamppb.Timestamp)(nil),                    // 22: google.protobuf.Timestamp
-	(PlanType)(0),                                    // 23: bytebase.v1.PlanType
-	(*ApprovalTemplate)(nil),                         // 24: bytebase.v1.ApprovalTemplate
-	(*expr.Expr)(nil),                                // 25: google.type.Expr
-	(Engine)(0),                                      // 26: bytebase.v1.Engine
-	(*ColumnMetadata)(nil),                           // 27: bytebase.v1.ColumnMetadata
+	(*DataCategorySetting)(nil),                      // 18: bytebase.v1.DataCategorySetting
+	(*AppIMSetting_ExternalApproval)(nil),            // 19: bytebase.v1.AppIMSetting.ExternalApproval
+	(*WorkspaceApprovalSetting_Rule)(nil),            // 20: bytebase.v1.WorkspaceApprovalSetting.Rule
+	(*ExternalApprovalSetting_Node)(nil),             // 21: bytebase.v1.ExternalApprovalSetting.Node
+	(*SchemaTemplateSetting_FieldTemplate)(nil),      // 22: bytebase.v1.SchemaTemplateSetting.FieldTemplate
+	(*timestamppb.Timestamp)(nil),                    // 23: google.protobuf.Timestamp
+	(PlanType)(0),                                    // 24: bytebase.v1.PlanType
+	(*ApprovalTemplate)(nil),                         // 25: bytebase.v1.ApprovalTemplate
+	(*expr.Expr)(nil),                                // 26: google.type.Expr
+	(Engine)(0),                                      // 27: bytebase.v1.Engine
+	(*ColumnMetadata)(nil),                           // 28: bytebase.v1.ColumnMetadata
 }
 var file_v1_setting_service_proto_depIdxs = []int32{
 	8,  // 0: bytebase.v1.ListSettingsResponse.settings:type_name -> bytebase.v1.Setting
@@ -1866,17 +1906,17 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	0,  // 12: bytebase.v1.SMTPMailDeliverySettingValue.encryption:type_name -> bytebase.v1.SMTPMailDeliverySettingValue.Encryption
 	1,  // 13: bytebase.v1.SMTPMailDeliverySettingValue.authentication:type_name -> bytebase.v1.SMTPMailDeliverySettingValue.Authentication
 	2,  // 14: bytebase.v1.AppIMSetting.im_type:type_name -> bytebase.v1.AppIMSetting.IMType
-	18, // 15: bytebase.v1.AppIMSetting.external_approval:type_name -> bytebase.v1.AppIMSetting.ExternalApproval
-	19, // 16: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
-	20, // 17: bytebase.v1.ExternalApprovalSetting.nodes:type_name -> bytebase.v1.ExternalApprovalSetting.Node
-	21, // 18: bytebase.v1.SchemaTemplateSetting.field_templates:type_name -> bytebase.v1.SchemaTemplateSetting.FieldTemplate
-	22, // 19: bytebase.v1.WorkspaceTrialSetting.expire_time:type_name -> google.protobuf.Timestamp
-	22, // 20: bytebase.v1.WorkspaceTrialSetting.issued_time:type_name -> google.protobuf.Timestamp
-	23, // 21: bytebase.v1.WorkspaceTrialSetting.plan:type_name -> bytebase.v1.PlanType
-	24, // 22: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
-	25, // 23: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	26, // 24: bytebase.v1.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.v1.Engine
-	27, // 25: bytebase.v1.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.v1.ColumnMetadata
+	19, // 15: bytebase.v1.AppIMSetting.external_approval:type_name -> bytebase.v1.AppIMSetting.ExternalApproval
+	20, // 16: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
+	21, // 17: bytebase.v1.ExternalApprovalSetting.nodes:type_name -> bytebase.v1.ExternalApprovalSetting.Node
+	22, // 18: bytebase.v1.SchemaTemplateSetting.field_templates:type_name -> bytebase.v1.SchemaTemplateSetting.FieldTemplate
+	23, // 19: bytebase.v1.WorkspaceTrialSetting.expire_time:type_name -> google.protobuf.Timestamp
+	23, // 20: bytebase.v1.WorkspaceTrialSetting.issued_time:type_name -> google.protobuf.Timestamp
+	24, // 21: bytebase.v1.WorkspaceTrialSetting.plan:type_name -> bytebase.v1.PlanType
+	25, // 22: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
+	26, // 23: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	27, // 24: bytebase.v1.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.v1.Engine
+	28, // 25: bytebase.v1.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.v1.ColumnMetadata
 	3,  // 26: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
 	5,  // 27: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
 	7,  // 28: bytebase.v1.SettingService.SetSetting:input_type -> bytebase.v1.SetSettingRequest
@@ -2081,7 +2121,7 @@ func file_v1_setting_service_proto_init() {
 			}
 		}
 		file_v1_setting_service_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AppIMSetting_ExternalApproval); i {
+			switch v := v.(*DataCategorySetting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2093,7 +2133,7 @@ func file_v1_setting_service_proto_init() {
 			}
 		}
 		file_v1_setting_service_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WorkspaceApprovalSetting_Rule); i {
+			switch v := v.(*AppIMSetting_ExternalApproval); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2105,7 +2145,7 @@ func file_v1_setting_service_proto_init() {
 			}
 		}
 		file_v1_setting_service_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ExternalApprovalSetting_Node); i {
+			switch v := v.(*WorkspaceApprovalSetting_Rule); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2117,6 +2157,18 @@ func file_v1_setting_service_proto_init() {
 			}
 		}
 		file_v1_setting_service_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExternalApprovalSetting_Node); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_setting_service_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SchemaTemplateSetting_FieldTemplate); i {
 			case 0:
 				return &v.state
@@ -2147,7 +2199,7 @@ func file_v1_setting_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_setting_service_proto_rawDesc,
 			NumEnums:      3,
-			NumMessages:   19,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

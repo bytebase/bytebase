@@ -230,6 +230,8 @@ export interface TableMetadata {
   createOptions: string;
   /** The comment is the comment of a table. */
   comment: string;
+  /** The category is the category of a table from the comment. */
+  category: string;
   /** The foreign_keys is the list of foreign keys in a table. */
   foreignKeys: ForeignKeyMetadata[];
 }
@@ -254,6 +256,8 @@ export interface ColumnMetadata {
   collation: string;
   /** The comment is the comment of a column. */
   comment: string;
+  /** The category is the category of a table from the comment. */
+  category: string;
 }
 
 /** ViewMetadata is the metadata for views. */
@@ -1009,6 +1013,7 @@ function createBaseTableMetadata(): TableMetadata {
     dataFree: 0,
     createOptions: "",
     comment: "",
+    category: "",
     foreignKeys: [],
   };
 }
@@ -1047,6 +1052,9 @@ export const TableMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
+    }
+    if (message.category !== "") {
+      writer.uint32(106).string(message.category);
     }
     for (const v of message.foreignKeys) {
       ForeignKeyMetadata.encode(v!, writer.uint32(98).fork()).ldelim();
@@ -1138,6 +1146,13 @@ export const TableMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
         case 12:
           if (tag !== 98) {
             break;
@@ -1167,6 +1182,7 @@ export const TableMetadata = {
       dataFree: isSet(object.dataFree) ? Number(object.dataFree) : 0,
       createOptions: isSet(object.createOptions) ? String(object.createOptions) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      category: isSet(object.category) ? String(object.category) : "",
       foreignKeys: Array.isArray(object?.foreignKeys)
         ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
         : [],
@@ -1194,6 +1210,7 @@ export const TableMetadata = {
     message.dataFree !== undefined && (obj.dataFree = Math.round(message.dataFree));
     message.createOptions !== undefined && (obj.createOptions = message.createOptions);
     message.comment !== undefined && (obj.comment = message.comment);
+    message.category !== undefined && (obj.category = message.category);
     if (message.foreignKeys) {
       obj.foreignKeys = message.foreignKeys.map((e) => e ? ForeignKeyMetadata.toJSON(e) : undefined);
     } else {
@@ -1219,6 +1236,7 @@ export const TableMetadata = {
     message.dataFree = object.dataFree ?? 0;
     message.createOptions = object.createOptions ?? "";
     message.comment = object.comment ?? "";
+    message.category = object.category ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     return message;
   },
@@ -1234,6 +1252,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     characterSet: "",
     collation: "",
     comment: "",
+    category: "",
   };
 }
 
@@ -1262,6 +1281,9 @@ export const ColumnMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(66).string(message.comment);
+    }
+    if (message.category !== "") {
+      writer.uint32(74).string(message.category);
     }
     return writer;
   },
@@ -1329,6 +1351,13 @@ export const ColumnMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1348,6 +1377,7 @@ export const ColumnMetadata = {
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
       collation: isSet(object.collation) ? String(object.collation) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      category: isSet(object.category) ? String(object.category) : "",
     };
   },
 
@@ -1361,6 +1391,7 @@ export const ColumnMetadata = {
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
     message.collation !== undefined && (obj.collation = message.collation);
     message.comment !== undefined && (obj.comment = message.comment);
+    message.category !== undefined && (obj.category = message.category);
     return obj;
   },
 
@@ -1378,6 +1409,7 @@ export const ColumnMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";
+    message.category = object.category ?? "";
     return message;
   },
 };
