@@ -148,6 +148,7 @@
     v-if="state.selectedSchemaDesign && state.showSelectTargetDatabasePanel"
     :project-id="state.baselineSchema.projectId || ''"
     :engine="state.selectedSchemaDesign.engine"
+    :schema="state.selectedSchemaDesign.schema"
     @close="state.showSelectTargetDatabasePanel = false"
   />
 </template>

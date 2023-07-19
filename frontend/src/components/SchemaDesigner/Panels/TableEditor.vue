@@ -28,6 +28,7 @@
           </template>
         </NInput>
         <div
+          v-if="false"
           class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded"
         >
           <button

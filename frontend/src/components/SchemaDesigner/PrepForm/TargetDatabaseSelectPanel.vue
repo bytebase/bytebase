@@ -95,7 +95,11 @@
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" @click="handleConfirm">
+          <NButton
+            type="primary"
+            :loading="state.isLoading"
+            @click="handleConfirm"
+          >
             {{ $t("common.confirm") }}
           </NButton>
         </div>
@@ -105,6 +109,7 @@
 </template>
 
 <script setup lang="ts">
+import { head } from "lodash-es";
 import { computed, reactive } from "vue";
 import {
   NCollapse,
@@ -121,26 +126,33 @@ import {
 import { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
-import { Engine, State } from "@/types/proto/v1/common";
+import { Engine, State, engineToJSON } from "@/types/proto/v1/common";
+import axios from "axios";
+import dayjs from "dayjs";
+import { useRouter } from "vue-router";
 
 type LocalState = {
   searchText: string;
+  isLoading: boolean;
   selectedDatabaseList: ComposedDatabase[];
 };
 
 const props = defineProps<{
   projectId: string;
   engine: Engine;
+  schema: string;
 }>();
 
 defineEmits<{
   (event: "close"): void;
 }>();
 
+const router = useRouter();
 const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   searchText: "",
+  isLoading: false,
   selectedDatabaseList: [],
 });
 
@@ -201,8 +213,69 @@ const getSelectionStateSummaryForEnvironment = (
 };
 
 const handleConfirm = async () => {
-  const databaseIdList = state.selectedDatabaseList
-    .filter((db) => db.databaseName.includes(state.searchText))
-    .map((db) => db.uid);
+  if (state.selectedDatabaseList.length === 0) {
+    return;
+  }
+  if (state.isLoading) {
+    return false;
+  }
+  state.isLoading = true;
+  const database = head(state.selectedDatabaseList) as ComposedDatabase;
+  const targetDatabaseSchema = await databaseStore.fetchDatabaseSchema(
+    `${database.name}/schema`,
+    true
+  );
+
+  const diff = await getSchemaDiff(
+    props.engine,
+    targetDatabaseSchema.schema,
+    props.schema
+  );
+
+  const query: Record<string, any> = {
+    template: "bb.issue.database.schema.update",
+    project: props.projectId,
+    mode: "normal",
+    ghost: undefined,
+  };
+  query.databaseList = `${database.uid}`;
+  query.sqlList = JSON.stringify([diff]);
+  query.name = generateIssueName([database.databaseName]);
+
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  };
+  router.push(routeInfo);
+};
+
+const generateIssueName = (databaseNameList: string[]) => {
+  const issueNameParts: string[] = [];
+  if (databaseNameList.length === 1) {
+    issueNameParts.push(`[${databaseNameList[0]}]`);
+  } else {
+    issueNameParts.push(`[${databaseNameList.length} databases]`);
+  }
+  issueNameParts.push(`Alter schema`);
+  const datetime = dayjs().format("@MM-DD HH:mm");
+  const tz = "UTC" + dayjs().format("ZZ");
+  issueNameParts.push(`${datetime} ${tz}`);
+  return issueNameParts.join(" ");
+};
+
+const getSchemaDiff = async (
+  engine: Engine,
+  sourceSchema: string,
+  targetSchema: string
+) => {
+  const { data } = await axios.post("/v1/sql/schema/diff", {
+    engineType: engineToJSON(engine),
+    sourceSchema,
+    targetSchema,
+  });
+  return data as string;
 };
 </script>
