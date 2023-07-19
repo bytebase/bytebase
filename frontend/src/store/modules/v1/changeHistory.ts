@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-
 import { databaseServiceClient } from "@/grpcweb";
 import {
   ChangeHistory,
@@ -49,6 +48,11 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     await upsertChangeHistoryMap([changeHistory]);
     return changeHistory;
   };
+  const getOrFetchChangeHistoryByName = async (name: string) => {
+    const changeHistory = changeHistoryMapByName.get(name);
+    if (changeHistory) return changeHistory;
+    return await fetchChangeHistory({ name });
+  };
   const getChangeHistoryByName = (name: string) => {
     return changeHistoryMapByName.get(name);
   };
@@ -57,6 +61,7 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     fetchChangeHistoryList,
     changeHistoryListByDatabase,
     fetchChangeHistory,
+    getOrFetchChangeHistoryByName,
     getChangeHistoryByName,
   };
 });

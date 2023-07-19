@@ -32,7 +32,10 @@ import { useNotificationStore } from "@/store";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
 import { useSchemaDesignerContext } from "../common";
-import { convertTableMetadataToTable } from "@/types";
+import {
+  convertColumnMetadataToColumn,
+  convertTableMetadataToTable,
+} from "@/types";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -98,9 +101,11 @@ const handleConfirmButtonClick = async () => {
     column.type = "INT";
   }
   column.comment = "ID";
-  table.columns.push(column);
+  const columnEdit = convertColumnMetadataToColumn(column);
   const tableEdit = convertTableMetadataToTable(table);
   tableEdit.status = "created";
+  tableEdit.columnList.push(columnEdit);
+  tableEdit.primaryKey.columnIdList.push(columnEdit.id);
   schema.tableList.push(tableEdit);
 
   dismissModal();

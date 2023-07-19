@@ -12,72 +12,64 @@ export const mergeSchemaEditToMetadata = (
   schemaEdits: Schema[],
   metadata: DatabaseMetadata
 ): DatabaseMetadata => {
-  for (const schema of metadata.schemas) {
-    const schemaEdit = schemaEdits.find(
-      (schemaEdit) => schemaEdit.name === schema.name
-    );
-    if (!schemaEdit) {
-      continue;
-    }
-    if (schemaEdit.status === "dropped") {
-      metadata.schemas = metadata.schemas.filter(
-        (item) => item.name !== schema.name
-      );
-      continue;
-    }
+  for (const schemaEdit of schemaEdits) {
     if (schemaEdit.status === "created") {
       metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
       continue;
-    }
-
-    for (const table of schema.tables) {
-      const tableEdit = schemaEdit.tableList.find(
-        (tableEdit) => tableEdit.name === table.name
+    } else if (schemaEdit.status === "dropped") {
+      metadata.schemas = metadata.schemas.filter(
+        (item) => item.name !== schemaEdit.name
       );
-      if (!tableEdit) {
+      continue;
+    } else {
+      const schema = metadata.schemas.find(
+        (item) => item.name === schemaEdit.name
+      );
+      if (!schema) {
         continue;
       }
-      if (tableEdit.status === "dropped") {
-        schema.tables = schema.tables.filter(
-          (item) => item.name !== table.name
-        );
-        continue;
-      }
-      if (tableEdit.status === "created") {
-        schema.tables.push(transformTableEditToMetadata(tableEdit));
-        continue;
-      }
-
-      for (const column of table.columns) {
-        const columnEdit = tableEdit.columnList.find(
-          (columnEdit) => columnEdit.name === column.name
-        );
-        if (!columnEdit) {
+      for (const tableEdit of schemaEdit.tableList) {
+        if (tableEdit.status === "created") {
+          schema.tables.push(transformTableEditToMetadata(tableEdit));
           continue;
-        }
-        if (columnEdit.status === "dropped") {
-          table.columns = table.columns.filter(
-            (item) => item.name !== column.name
+        } else if (tableEdit.status === "dropped") {
+          schema.tables = schema.tables.filter(
+            (item) => item.name !== tableEdit.name
           );
           continue;
+        } else {
+          const table = schema.tables.find(
+            (item) => item.name === tableEdit.name
+          );
+          if (!table) {
+            continue;
+          }
+          for (const columnEdit of tableEdit.columnList) {
+            if (columnEdit.status === "created") {
+              table.columns.push(transformColumnEditToMetadata(columnEdit));
+              continue;
+            } else if (columnEdit.status === "dropped") {
+              table.columns = table.columns.filter(
+                (item) => item.name !== columnEdit.name
+              );
+              continue;
+            } else {
+              const column = table.columns.find(
+                (item) => item.name === columnEdit.name
+              );
+              if (!column) {
+                continue;
+              }
+              column.type = columnEdit.type;
+              column.nullable = columnEdit.nullable;
+              column.comment = columnEdit.comment;
+              column.default = columnEdit.default;
+            }
+          }
         }
-        if (columnEdit.status === "created") {
-          table.columns.push(transformColumnEditToMetadata(columnEdit));
-          continue;
-        }
-
-        const columnIndex = table.columns.findIndex(
-          (item) => item.name === column.name
-        );
-        if (columnIndex === -1) {
-          continue;
-        }
-        table.columns[columnIndex] = transformColumnEditToMetadata(columnEdit);
       }
     }
-  }
 
-  for (const schemaEdit of schemaEdits) {
     for (const foreignKey of schemaEdit.foreignKeyList) {
       const schema = metadata.schemas.find(
         (schema) => schema.name === schemaEdit.name

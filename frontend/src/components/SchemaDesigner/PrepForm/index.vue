@@ -20,7 +20,7 @@
         <SchemaDesignTable
           v-if="ready"
           :schema-designs="schemaDesignList"
-          @click="handleSchemaDesignClick"
+          @click="handleSchemaDesignItemClick"
         />
         <div v-else class="w-full h-[20rem] flex items-center justify-center">
           <BBSpin />
@@ -71,15 +71,19 @@
 </template>
 
 <script lang="ts" setup>
-import { uniqueId } from "lodash-es";
+import { isEqual, uniqueId } from "lodash-es";
 import { NRadioGroup, NRadio } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import {
   ChangeHistory,
   DatabaseMetadata,
 } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { useDatabaseV1Store, useProjectV1ByUID } from "@/store";
+import {
+  useChangeHistoryStore,
+  useDatabaseV1Store,
+  useProjectV1ByUID,
+} from "@/store";
 import {
   useSchemaDesignList,
   useSchemaDesignStore,
@@ -162,13 +166,24 @@ const schemaDesignId = computed(() => {
   }
 });
 
-onMounted(() => {
-  console.log("mounted", schemaDesignList.value);
-});
-
-const handleSchemaDesignClick = (schemaDesign: SchemaDesign) => {
+const handleSchemaDesignItemClick = async (schemaDesign: SchemaDesign) => {
   state.schemaDesignName = schemaDesign.title;
   state.selectedSchemaDesign = schemaDesign;
+  const database = await databaseStore.getOrFetchDatabaseByName(
+    schemaDesign.baselineDatabase
+  );
+  const baselineSchema: BaselineSchema = {
+    projectId: database.projectEntity.uid,
+    databaseId: database.uid,
+  };
+  if (schemaDesign.schemaVersion) {
+    const changeHistory =
+      await useChangeHistoryStore().getOrFetchChangeHistoryByName(
+        schemaDesign.schemaVersion
+      );
+    baselineSchema.changeHistory = changeHistory;
+  }
+  state.baselineSchema = baselineSchema;
 };
 
 const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
@@ -193,26 +208,24 @@ const handleConfirm = async () => {
     // Should not happen.
     throw new Error("schema designer is undefined");
   }
+  if (state.schemaDesignName === "") {
+    return;
+  }
+
+  const { project } = useProjectV1ByUID(state.baselineSchema.projectId || "");
+  const database = useDatabaseV1Store().getDatabaseByUID(
+    state.baselineSchema.databaseId || ""
+  );
 
   if (isCreating.value) {
-    if (state.schemaDesignName === "") {
-      return;
-    }
-
-    const { project } = useProjectV1ByUID(state.baselineSchema.projectId || "");
-    const database = useDatabaseV1Store().getDatabaseByUID(
-      state.baselineSchema.databaseId || ""
-    );
-    const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
     const metadata = mergeSchemaEditToMetadata(
       designerState.editableSchemas,
       state.selectedSchemaDesign.baselineSchemaMetadata ||
         DatabaseMetadata.fromPartial({})
     );
-
-    console.log(
+    const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
+    await schemaDesignStore.createSchemaDesign(
       project.value.name,
-      designerState.editableSchemas,
       SchemaDesign.fromPartial({
         title: state.schemaDesignName,
         // Keep schema empty in frontend. Backend will generate the design schema.
@@ -226,24 +239,29 @@ const handleConfirm = async () => {
         schemaVersion: state.baselineSchema.changeHistory?.name || "",
       })
     );
-
-    // await schemaDesignStore.createSchemaDesign(
-    //   project.value.name,
-    //   SchemaDesign.fromPartial({
-    //     title: state.schemaDesignName,
-    //     // Keep schema empty in frontend. Backend will generate the design schema.
-    //     schema: "",
-    //     schemaMetadata: metadata,
-    //     baselineSchema: state.selectedSchemaDesign.baselineSchema,
-    //     baselineSchemaMetadata:
-    //       state.selectedSchemaDesign.baselineSchemaMetadata,
-    //     engine: state.selectedSchemaDesign.engine,
-    //     baselineDatabase: baselineDatabase,
-    //     schemaVersion: state.baselineSchema.changeHistory?.name || "",
-    //   })
-    // );
   } else {
-    // do patch schema design
+    const updateMarks = [];
+    if (state.selectedSchemaDesign.title !== state.schemaDesignName) {
+      updateMarks.push("title");
+    }
+    const metadata = mergeSchemaEditToMetadata(
+      designerState.editableSchemas,
+      state.selectedSchemaDesign.schemaMetadata ||
+        DatabaseMetadata.fromPartial({})
+    );
+    if (isEqual(metadata, state.selectedSchemaDesign.schemaMetadata)) {
+      updateMarks.push("schema");
+    }
+    await schemaDesignStore.updateSchemaDesign(
+      SchemaDesign.fromPartial({
+        name: state.selectedSchemaDesign.name,
+        title: state.schemaDesignName,
+        engine: state.selectedSchemaDesign.engine,
+        baselineSchema: state.selectedSchemaDesign.baselineSchema,
+        schemaMetadata: metadata,
+      }),
+      updateMarks
+    );
   }
 };
 </script>
