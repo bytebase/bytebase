@@ -86,19 +86,21 @@ export const buildPlan = async (params: CreateIssueParams) => {
   });
   plan.name = `${project.name}/plans/${plan.uid}`;
   if (route.query.mode === "tenant") {
+    // in tenant mode, all specs share a unique sheet
+    const sheetUID = nextUID();
     // build tenant plan
     if (databaseUIDList.length === 0) {
       // TODO: evaluate DeploymentConfig and generate steps/specs
       alert("not supported yet");
     } else {
-      plan.steps = await buildSteps(databaseUIDList, params, nextUID());
+      plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
     }
   } else {
     // build standard plan
     plan.steps = await buildSteps(
       databaseUIDList,
       params,
-      undefined // each spec should has a unique sheet
+      undefined // each spec should has an independent sheet
     );
   }
   return plan;
