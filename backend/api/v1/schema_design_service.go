@@ -495,9 +495,10 @@ func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
 }
 
 type tableState struct {
-	name    string
-	columns map[string]*columnState
-	indexes map[string]*indexState
+	name        string
+	columns     map[string]*columnState
+	indexes     map[string]*indexState
+	foreignKeys map[string]*foreignKeyState
 }
 
 func (t *tableState) toString(buf *strings.Builder) error {
@@ -521,6 +522,45 @@ func (t *tableState) toString(buf *strings.Builder) error {
 			return err
 		}
 	}
+
+	indexes := []*indexState{}
+	for _, index := range t.indexes {
+		indexes = append(indexes, index)
+	}
+	sort.Slice(indexes, func(i, j int) bool {
+		return indexes[i].name < indexes[j].name
+	})
+
+	for i, index := range indexes {
+		if i+len(columns) > 0 {
+			if _, err := buf.WriteString(",\n  "); err != nil {
+				return err
+			}
+		}
+		if err := index.toString(buf); err != nil {
+			return err
+		}
+	}
+
+	foreignKeys := []*foreignKeyState{}
+	for _, fk := range t.foreignKeys {
+		foreignKeys = append(foreignKeys, fk)
+	}
+	sort.Slice(foreignKeys, func(i, j int) bool {
+		return foreignKeys[i].name < foreignKeys[j].name
+	})
+
+	for i, fk := range foreignKeys {
+		if i+len(columns)+len(indexes) > 0 {
+			if _, err := buf.WriteString(",\n  "); err != nil {
+				return err
+			}
+		}
+		if err := fk.toString(buf); err != nil {
+			return err
+		}
+	}
+
 	if _, err := buf.WriteString("\n);\n"); err != nil {
 		return err
 	}
@@ -529,9 +569,10 @@ func (t *tableState) toString(buf *strings.Builder) error {
 
 func newTableState(name string) *tableState {
 	return &tableState{
-		name:    name,
-		columns: make(map[string]*columnState),
-		indexes: make(map[string]*indexState),
+		name:        name,
+		columns:     make(map[string]*columnState),
+		indexes:     make(map[string]*indexState),
+		foreignKeys: make(map[string]*foreignKeyState),
 	}
 }
 
@@ -542,6 +583,9 @@ func convertToTableState(table *v1pb.TableMetadata) *tableState {
 	}
 	for _, index := range table.Indexes {
 		state.indexes[index.Name] = convertToIndexState(index)
+	}
+	for _, fk := range table.ForeignKeys {
+		state.foreignKeys[fk.Name] = convertToForeignKeyState(fk)
 	}
 	return state
 }
@@ -562,13 +606,103 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	sort.Slice(indexes, func(i, j int) bool {
 		return indexes[i].Name < indexes[j].Name
 	})
-	return &v1pb.TableMetadata{
-		Name:    t.name,
-		Columns: columns,
-		Indexes: indexes,
-		// Unsupported, for tests only.
-		ForeignKeys: []*v1pb.ForeignKeyMetadata{},
+
+	fks := []*v1pb.ForeignKeyMetadata{}
+	for _, fk := range t.foreignKeys {
+		fks = append(fks, fk.convertToForeignKeyMetadata())
 	}
+	sort.Slice(fks, func(i, j int) bool {
+		return fks[i].Name < fks[j].Name
+	})
+
+	return &v1pb.TableMetadata{
+		Name:        t.name,
+		Columns:     columns,
+		Indexes:     indexes,
+		ForeignKeys: fks,
+	}
+}
+
+type foreignKeyState struct {
+	name              string
+	columns           []string
+	referencedTable   string
+	referencedColumns []string
+}
+
+func (f *foreignKeyState) convertToForeignKeyMetadata() *v1pb.ForeignKeyMetadata {
+	return &v1pb.ForeignKeyMetadata{
+		Name:              f.name,
+		Columns:           f.columns,
+		ReferencedTable:   f.referencedTable,
+		ReferencedColumns: f.referencedColumns,
+	}
+}
+
+func convertToForeignKeyState(foreignKey *v1pb.ForeignKeyMetadata) *foreignKeyState {
+	return &foreignKeyState{
+		name:              foreignKey.Name,
+		columns:           foreignKey.Columns,
+		referencedTable:   foreignKey.ReferencedTable,
+		referencedColumns: foreignKey.ReferencedColumns,
+	}
+}
+
+func (f *foreignKeyState) toString(buf *strings.Builder) error {
+	if _, err := buf.WriteString("CONSTRAINT `"); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(f.name); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("` FOREIGN KEY ("); err != nil {
+		return err
+	}
+	for i, column := range f.columns {
+		if i > 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString("`"); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(column); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("`"); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString(") REFERENCES `"); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(f.referencedTable); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("` ("); err != nil {
+		return err
+	}
+	for i, column := range f.referencedColumns {
+		if i > 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString("`"); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(column); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("`"); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString(")"); err != nil {
+		return err
+	}
+	return nil
 }
 
 type indexState struct {
@@ -722,7 +856,8 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 	}
 
 	if ctx.GetType_() != nil {
-		if strings.ToUpper(ctx.GetType_().GetText()) == "PRIMARY" {
+		switch strings.ToUpper(ctx.GetType_().GetText()) {
+		case "PRIMARY":
 			list := extractKeyListVariants(ctx.KeyListVariants())
 			t.state.schemas[""].tables[t.currentTable].indexes["PRIMARY"] = &indexState{
 				name:    "PRIMARY",
@@ -730,8 +865,46 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 				primary: true,
 				unique:  true,
 			}
+		case "FOREIGN":
+			var name string
+			if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
+				name = parser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
+			} else if ctx.IndexName() != nil {
+				name = parser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+			}
+			keys := extractKeyList(ctx.KeyList())
+			table := t.state.schemas[""].tables[t.currentTable]
+			if table.foreignKeys[name] != nil {
+				t.err = errors.New("multiple foreign keys found: " + name)
+				return
+			}
+			referencedTable, referencedColumns := extractReference(ctx.References())
+			fk := &foreignKeyState{
+				name:              name,
+				columns:           keys,
+				referencedTable:   referencedTable,
+				referencedColumns: referencedColumns,
+			}
+			table.foreignKeys[name] = fk
 		}
 	}
+}
+
+func extractReference(ctx mysql.IReferencesContext) (string, []string) {
+	_, table := parser.NormalizeMySQLTableRef(ctx.TableRef())
+	if ctx.IdentifierListWithParentheses() != nil {
+		columns := extractIdentifierList(ctx.IdentifierListWithParentheses().IdentifierList())
+		return table, columns
+	}
+	return table, nil
+}
+
+func extractIdentifierList(ctx mysql.IIdentifierListContext) []string {
+	var result []string
+	for _, identifier := range ctx.AllIdentifier() {
+		result = append(result, parser.NormalizeMySQLIdentifier(identifier))
+	}
+	return result
 }
 
 func extractKeyListVariants(ctx mysql.IKeyListVariantsContext) []string {
@@ -954,6 +1127,28 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		}
 	}
 
+	var fks []*foreignKeyState
+	for _, fk := range g.currentTable.foreignKeys {
+		fks = append(fks, fk)
+	}
+	sort.Slice(fks, func(i, j int) bool {
+		return fks[i].name < fks[j].name
+	})
+	for _, fk := range fks {
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if err := fk.toString(&g.tableConstraints); err != nil {
+			g.err = err
+			return
+		}
+	}
+
 	if _, err := g.result.WriteString(g.columnDefine.String()); err != nil {
 		g.err = err
 		return
@@ -1108,6 +1303,41 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 				}
 			}
 			delete(g.currentTable.indexes, "PRIMARY")
+		}
+	case "FOREIGN":
+		var name string
+		if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
+			name = parser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
+		} else if ctx.IndexName() != nil {
+			name = parser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+		}
+		if g.currentTable.foreignKeys[name] != nil {
+			if g.firstElementInTable {
+				g.firstElementInTable = false
+			} else {
+				if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+					g.err = err
+					return
+				}
+			}
+
+			fk := g.currentTable.foreignKeys[name]
+
+			columns := extractKeyList(ctx.KeyList())
+			referencedTable, referencedColumns := extractReference(ctx.References())
+			equal := equalKeys(columns, fk.columns) && referencedTable == fk.referencedTable && equalKeys(referencedColumns, fk.referencedColumns)
+			if equal {
+				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if err := fk.toString(&g.tableConstraints); err != nil {
+					g.err = err
+					return
+				}
+			}
+			delete(g.currentTable.foreignKeys, name)
 		}
 	default:
 		if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
