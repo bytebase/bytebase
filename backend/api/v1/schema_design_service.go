@@ -213,6 +213,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 
 // UpdateSchemaDesign updates an existing schema design.
 func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	_, sheetID, err := getProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -224,18 +225,24 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
-	if !slices.Contains(request.UpdateMask.Paths, "schema") {
-		return nil, status.Errorf(codes.InvalidArgument, "schema is required")
+	if len(request.UpdateMask.Paths) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
 
-	schemaDesign := request.SchemaDesign
-	schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
-	if err != nil {
-		return nil, err
-	}
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       sheetUID,
-		Statement: &schema,
+		UpdaterID: currentPrincipalID,
+	}
+	schemaDesign := request.SchemaDesign
+	if slices.Contains(request.UpdateMask.Paths, "title") {
+		sheetUpdate.Name = &schemaDesign.Title
+	}
+	if slices.Contains(request.UpdateMask.Paths, "schema") {
+		schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
+		if err != nil {
+			return nil, err
+		}
+		sheetUpdate.Statement = &schema
 	}
 	sheet, err := s.store.PatchSheet(ctx, sheetUpdate)
 	if err != nil {
