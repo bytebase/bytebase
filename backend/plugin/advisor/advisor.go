@@ -452,6 +452,9 @@ const (
 
 	// MSSQLIdentifierNamingNoKeyword is an advisor type for MSSQL identifier naming convention without keyword.
 	MSSQLIdentifierNamingNoKeyword Type = "bb.plugin.advisor.mssql.naming.identifier-no-keyword"
+
+	// MSSQLWhereRequirement is an advisor type for MSSQL WHERE clause requirement.
+	MSSQLWhereRequirement Type = "bb.plugin.advisor.mssql.where.require"
 )
 
 // Advice is the result of an advisor.
