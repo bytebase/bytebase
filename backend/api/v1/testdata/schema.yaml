@@ -40,7 +40,7 @@
                   type: ""
                   unique: true
                   primary: true
-                  visible: false
+                  visible: true
                   comment: ""
               engine: ""
               collation: ""
@@ -69,7 +69,7 @@
                   type: ""
                   unique: true
                   primary: true
-                  visible: false
+                  visible: true
                   comment: ""
               engine: ""
               collation: ""
