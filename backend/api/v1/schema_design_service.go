@@ -497,6 +497,7 @@ func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
 type tableState struct {
 	name    string
 	columns map[string]*columnState
+	indexes map[string]*indexState
 }
 
 func (t *tableState) toString(buf *strings.Builder) error {
@@ -530,6 +531,7 @@ func newTableState(name string) *tableState {
 	return &tableState{
 		name:    name,
 		columns: make(map[string]*columnState),
+		indexes: make(map[string]*indexState),
 	}
 }
 
@@ -537,6 +539,9 @@ func convertToTableState(table *v1pb.TableMetadata) *tableState {
 	state := newTableState(table.Name)
 	for _, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(column)
+	}
+	for _, index := range table.Indexes {
+		state.indexes[index.Name] = convertToIndexState(index)
 	}
 	return state
 }
@@ -549,13 +554,71 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	sort.Slice(columns, func(i, j int) bool {
 		return columns[i].Name < columns[j].Name
 	})
+
+	indexes := []*v1pb.IndexMetadata{}
+	for _, index := range t.indexes {
+		indexes = append(indexes, index.convertToIndexMetadata())
+	}
+	sort.Slice(indexes, func(i, j int) bool {
+		return indexes[i].Name < indexes[j].Name
+	})
 	return &v1pb.TableMetadata{
 		Name:    t.name,
 		Columns: columns,
+		Indexes: indexes,
 		// Unsupported, for tests only.
-		Indexes:     []*v1pb.IndexMetadata{},
 		ForeignKeys: []*v1pb.ForeignKeyMetadata{},
 	}
+}
+
+type indexState struct {
+	name    string
+	keys    []string
+	primary bool
+	unique  bool
+}
+
+func (i *indexState) convertToIndexMetadata() *v1pb.IndexMetadata {
+	return &v1pb.IndexMetadata{
+		Name:        i.name,
+		Expressions: i.keys,
+		Primary:     i.primary,
+		Unique:      i.unique,
+		// Unsupported, for tests only.
+		Visible: true,
+	}
+}
+
+func convertToIndexState(index *v1pb.IndexMetadata) *indexState {
+	return &indexState{
+		name:    index.Name,
+		keys:    index.Expressions,
+		primary: index.Primary,
+		unique:  index.Unique,
+	}
+}
+
+func (i *indexState) toString(buf *strings.Builder) error {
+	if i.primary {
+		if _, err := buf.WriteString("PRIMARY KEY ("); err != nil {
+			return err
+		}
+		for i, key := range i.keys {
+			if i > 0 {
+				if _, err := buf.WriteString(", "); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+	}
+	// TODO: support other type indexes.
+	return nil
 }
 
 type columnState struct {
@@ -650,6 +713,58 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
 // ExitCreateTable is called when production createTable is exited.
 func (t *mysqlTransformer) ExitCreateTable(_ *mysql.CreateTableContext) {
 	t.currentTable = ""
+}
+
+// EnterTableConstraintDef is called when production tableConstraintDef is entered.
+func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDefContext) {
+	if t.err != nil || t.currentTable == "" {
+		return
+	}
+
+	if ctx.GetType_() != nil {
+		if strings.ToUpper(ctx.GetType_().GetText()) == "PRIMARY" {
+			list := extractKeyListVariants(ctx.KeyListVariants())
+			t.state.schemas[""].tables[t.currentTable].indexes["PRIMARY"] = &indexState{
+				name:    "PRIMARY",
+				keys:    list,
+				primary: true,
+				unique:  true,
+			}
+		}
+	}
+}
+
+func extractKeyListVariants(ctx mysql.IKeyListVariantsContext) []string {
+	if ctx.KeyList() != nil {
+		return extractKeyList(ctx.KeyList())
+	}
+	if ctx.KeyListWithExpression() != nil {
+		return extractKeyListWithExpression(ctx.KeyListWithExpression())
+	}
+	return nil
+}
+
+func extractKeyListWithExpression(ctx mysql.IKeyListWithExpressionContext) []string {
+	var result []string
+	for _, key := range ctx.AllKeyPartOrExpression() {
+		if key.KeyPart() != nil {
+			keyText := parser.NormalizeMySQLIdentifier(key.KeyPart().Identifier())
+			result = append(result, keyText)
+		} else if key.ExprWithParentheses() != nil {
+			keyText := key.GetParser().GetTokenStream().GetTextFromRuleContext(key.ExprWithParentheses())
+			result = append(result, keyText)
+		}
+	}
+	return result
+}
+
+func extractKeyList(ctx mysql.IKeyListContext) []string {
+	var result []string
+	for _, key := range ctx.AllKeyPart() {
+		keyText := parser.NormalizeMySQLIdentifier(key.Identifier())
+		result = append(result, keyText)
+	}
+	return result
 }
 
 // EnterColumnDefinition is called when production columnDefinition is entered.

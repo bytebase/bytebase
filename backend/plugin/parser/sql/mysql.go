@@ -454,7 +454,7 @@ type mysqlResourceExtractListener struct {
 func (l *mysqlResourceExtractListener) EnterTableRef(ctx *parser.TableRefContext) {
 	resource := SchemaResource{Database: l.currentDatabase}
 	if ctx.DotIdentifier() != nil {
-		resource.Table = normalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+		resource.Table = NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
 	}
 	db, table := normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
 	if db != "" {
@@ -470,7 +470,7 @@ func NormalizeMySQLTableName(ctx parser.ITableNameContext) (string, string) {
 		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
 	}
 	if ctx.DotIdentifier() != nil {
-		return "", normalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+		return "", NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
 	}
 	return "", ""
 }
@@ -478,7 +478,7 @@ func NormalizeMySQLTableName(ctx parser.ITableNameContext) (string, string) {
 // NormalizeMySQLColumnName normalizes the given column name.
 func NormalizeMySQLColumnName(ctx parser.IColumnNameContext) (string, string, string) {
 	if ctx.Identifier() != nil {
-		return "", "", normalizeMySQLIdentifier(ctx.Identifier())
+		return "", "", NormalizeMySQLIdentifier(ctx.Identifier())
 	}
 	return normalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
 }
@@ -491,7 +491,7 @@ func normalizeMySQLFieldIdentifier(ctx parser.IFieldIdentifierContext) (string, 
 	}
 
 	if ctx.DotIdentifier() != nil {
-		list = append(list, normalizeMySQLIdentifier(ctx.DotIdentifier().Identifier()))
+		list = append(list, NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier()))
 	}
 
 	for len(list) < 3 {
@@ -502,9 +502,9 @@ func normalizeMySQLFieldIdentifier(ctx parser.IFieldIdentifierContext) (string, 
 }
 
 func normalizeMySQLQualifiedIdentifier(qualifiedIdentifier parser.IQualifiedIdentifierContext) (string, string) {
-	list := []string{normalizeMySQLIdentifier(qualifiedIdentifier.Identifier())}
+	list := []string{NormalizeMySQLIdentifier(qualifiedIdentifier.Identifier())}
 	if qualifiedIdentifier.DotIdentifier() != nil {
-		list = append(list, normalizeMySQLIdentifier(qualifiedIdentifier.DotIdentifier().Identifier()))
+		list = append(list, NormalizeMySQLIdentifier(qualifiedIdentifier.DotIdentifier().Identifier()))
 	}
 
 	if len(list) == 1 {
@@ -514,7 +514,7 @@ func normalizeMySQLQualifiedIdentifier(qualifiedIdentifier parser.IQualifiedIden
 	return list[0], list[1]
 }
 
-func normalizeMySQLIdentifier(identifier parser.IIdentifierContext) string {
+func NormalizeMySQLIdentifier(identifier parser.IIdentifierContext) string {
 	if identifier.PureIdentifier() != nil {
 		if identifier.PureIdentifier().IDENTIFIER() != nil {
 			return identifier.PureIdentifier().IDENTIFIER().GetText()
