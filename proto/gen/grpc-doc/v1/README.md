@@ -426,6 +426,12 @@
     - [RoleService](#bytebase-v1-RoleService)
   
 - [v1/rollout_service.proto](#v1_rollout_service-proto)
+    - [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest)
+    - [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse)
+    - [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest)
+    - [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse)
+    - [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest)
+    - [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse)
     - [CreatePlanRequest](#bytebase-v1-CreatePlanRequest)
     - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
     - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
@@ -434,8 +440,8 @@
     - [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse)
     - [ListPlansRequest](#bytebase-v1-ListPlansRequest)
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
-    - [ListRolloutTaskRunsRequest](#bytebase-v1-ListRolloutTaskRunsRequest)
-    - [ListRolloutTaskRunsResponse](#bytebase-v1-ListRolloutTaskRunsResponse)
+    - [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest)
+    - [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse)
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
     - [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail)
@@ -6797,6 +6803,84 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
+<a name="bytebase-v1-BatchCancelTaskRunsRequest"></a>
+
+### BatchCancelTaskRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The name of the rollout. Format: projects/{project}/rollouts/{rollout} |
+| tasks | [string](#string) | repeated | The tasks to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchCancelTaskRunsResponse"></a>
+
+### BatchCancelTaskRunsResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-BatchRunTasksRequest"></a>
+
+### BatchRunTasksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The name of the rollout. Format: projects/{project}/rollouts/{rollout} |
+| tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchRunTasksResponse"></a>
+
+### BatchRunTasksResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSkipTasksRequest"></a>
+
+### BatchSkipTasksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The name of the rollout. Format: projects/{project}/rollouts/{rollout} |
+| tasks | [string](#string) | repeated | The tasks to skip. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSkipTasksResponse"></a>
+
+### BatchSkipTasksResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-CreatePlanRequest"></a>
 
 ### CreatePlanRequest
@@ -6929,9 +7013,9 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 
 
-<a name="bytebase-v1-ListRolloutTaskRunsRequest"></a>
+<a name="bytebase-v1-ListTaskRunsRequest"></a>
 
-### ListRolloutTaskRunsRequest
+### ListTaskRunsRequest
 
 
 
@@ -6948,9 +7032,9 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
-<a name="bytebase-v1-ListRolloutTaskRunsResponse"></a>
+<a name="bytebase-v1-ListTaskRunsResponse"></a>
 
-### ListRolloutTaskRunsResponse
+### ListTaskRunsResponse
 
 
 
@@ -7572,8 +7656,11 @@ Type is the database change type.
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
-| ListRolloutTaskRuns | [ListRolloutTaskRunsRequest](#bytebase-v1-ListRolloutTaskRunsRequest) | [ListRolloutTaskRunsResponse](#bytebase-v1-ListRolloutTaskRunsResponse) |  |
+| ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
+| BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) |  |
+| BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) |  |
+| BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) |  |
 
  
 
