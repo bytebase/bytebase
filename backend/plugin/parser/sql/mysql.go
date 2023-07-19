@@ -475,6 +475,17 @@ func NormalizeMySQLTableName(ctx parser.ITableNameContext) (string, string) {
 	return "", ""
 }
 
+// NormalizeMySQLTableRef normalizes the given table reference.
+func NormalizeMySQLTableRef(ctx parser.ITableRefContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	if ctx.DotIdentifier() != nil {
+		return "", NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+	}
+	return "", ""
+}
+
 // NormalizeMySQLColumnName normalizes the given column name.
 func NormalizeMySQLColumnName(ctx parser.IColumnNameContext) (string, string, string) {
 	if ctx.Identifier() != nil {

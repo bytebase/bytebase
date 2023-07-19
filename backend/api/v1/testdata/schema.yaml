@@ -4,7 +4,8 @@
       (
         a int default 1 comment 'abcdefg',
         b varchar(20) default 'NULL' comment '',
-        primary key (a, b)
+        primary key (a, b),
+        constraint fk1 foreign key (a) references t2 (b)
       );
     create table t2(b int NOT NULL default NULL, primary key (b));
   metadata:
@@ -50,7 +51,17 @@
               datafree: 0
               createoptions: ""
               comment: ""
-              foreignkeys: []
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - a
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
             - name: t2
               columns:
                 - name: b
