@@ -123,7 +123,7 @@ func (l *namingTableListener) EnterExecute_body(ctx *parser.Execute_bodyContext)
 	}
 
 	v := ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetProcedure()
-	normalizedProcedureName, err := bbparser.NormalizedTSqlTableNamePart(v)
+	normalizedProcedureName, err := bbparser.NormalizeTSQLTableNamePart(v)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to normalize procedure name").Error())
 		return

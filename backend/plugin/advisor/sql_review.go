@@ -1143,6 +1143,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleTableNamingNoKeyword, nil
 		case db.Snowflake:
 			return SnowflakeTableNamingNoKeyword, nil
+		case db.MSSQL:
+			return MSSQLTableNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierNoKeyword:
 		switch engine {
@@ -1150,6 +1152,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleIdentifierNamingNoKeyword, nil
 		case db.Snowflake:
 			return SnowflakeIdentifierNamingNoKeyword, nil
+		case db.MSSQL:
+			return MSSQLIdentifierNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierCase:
 		switch engine {
