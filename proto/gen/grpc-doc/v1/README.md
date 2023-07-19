@@ -5961,7 +5961,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | db_name_template | [string](#string) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
-| data_category_config_uid | [string](#string) |  |  |
+| data_category_config_id | [string](#string) |  |  |
 
 
 
@@ -8132,7 +8132,7 @@ Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| uid | [string](#string) |  |  |
+| id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | category_level | [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry) | repeated | Maps category to level.
 

@@ -339,7 +339,7 @@ export interface DataCategorySetting {
 
 /** Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+ */
 export interface DataCategorySetting_DataCategoryConfig {
-  uid: string;
+  id: string;
   title: string;
   /** Maps category to level. */
   categoryLevel: { [key: string]: string };
@@ -2184,13 +2184,13 @@ export const DataCategorySetting = {
 };
 
 function createBaseDataCategorySetting_DataCategoryConfig(): DataCategorySetting_DataCategoryConfig {
-  return { uid: "", title: "", categoryLevel: {} };
+  return { id: "", title: "", categoryLevel: {} };
 }
 
 export const DataCategorySetting_DataCategoryConfig = {
   encode(message: DataCategorySetting_DataCategoryConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.uid !== "") {
-      writer.uint32(10).string(message.uid);
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
     }
     if (message.title !== "") {
       writer.uint32(18).string(message.title);
@@ -2216,7 +2216,7 @@ export const DataCategorySetting_DataCategoryConfig = {
             break;
           }
 
-          message.uid = reader.string();
+          message.id = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -2246,7 +2246,7 @@ export const DataCategorySetting_DataCategoryConfig = {
 
   fromJSON(object: any): DataCategorySetting_DataCategoryConfig {
     return {
-      uid: isSet(object.uid) ? String(object.uid) : "",
+      id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
       categoryLevel: isObject(object.categoryLevel)
         ? Object.entries(object.categoryLevel).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -2259,7 +2259,7 @@ export const DataCategorySetting_DataCategoryConfig = {
 
   toJSON(message: DataCategorySetting_DataCategoryConfig): unknown {
     const obj: any = {};
-    message.uid !== undefined && (obj.uid = message.uid);
+    message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
     obj.categoryLevel = {};
     if (message.categoryLevel) {
@@ -2276,7 +2276,7 @@ export const DataCategorySetting_DataCategoryConfig = {
 
   fromPartial(object: DeepPartial<DataCategorySetting_DataCategoryConfig>): DataCategorySetting_DataCategoryConfig {
     const message = createBaseDataCategorySetting_DataCategoryConfig();
-    message.uid = object.uid ?? "";
+    message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.categoryLevel = Object.entries(object.categoryLevel ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
