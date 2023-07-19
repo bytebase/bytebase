@@ -2317,7 +2317,6 @@ func (x *TaskRun) GetSchemaVersion() string {
 	return ""
 }
 
-// FIXME(d/xz): support spec with deployment config
 type Plan_Step struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2608,7 +2607,6 @@ type Plan_ChangeDatabaseConfig struct {
 
 	// The resource name of the target.
 	// Format: instances/{instance-id}/databases/{database-name}.
-	// Format: projects/{project}/deploymentConfig.
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
