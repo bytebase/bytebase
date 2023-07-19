@@ -2595,6 +2595,9 @@
     "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。",
     "search-by-name-or-comment": "根据名称或备注搜索",
     "form": {
+      "category": "分类",
+      "category-desc": "选择一个已有分类，或者创建新分类",
+      "unclassified": "未分类",
       "column-name": "字段名",
       "column-type": "字段类型",
       "default-value": "默认值",

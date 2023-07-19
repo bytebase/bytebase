@@ -20,9 +20,7 @@
         </div>
       </div>
     </div>
-    <div
-      class="flex items-center gap-x-5 my-5 pb-5 border-b border-control-border"
-    >
+    <div class="flex items-center gap-x-5 my-5 pb-5 border-b">
       <label
         v-for="item in engineList"
         :key="item"
@@ -49,17 +47,7 @@
         @change-text="(val: string) => state.searchText = val"
       />
     </div>
-    <div v-if="filteredTemplateList.length === 0" class="bg-white rounded-lg">
-      <div
-        class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
-      >
-        <div class="text-center flex flex-col justify-center items-center">
-          <img src="../assets/illustration/no-data.webp" class="w-52" />
-        </div>
-      </div>
-    </div>
-    <FieldTemplateTable
-      v-else
+    <FieldTemplateView
       :engine="engine"
       :readonly="!hasPermission"
       :template-list="filteredTemplateList"
@@ -109,26 +97,25 @@ defineEmits<{
   (event: "apply", item: SchemaTemplateSetting_FieldTemplate): void;
 }>();
 
-const initialTemplate = computed(
-  (): SchemaTemplateSetting_FieldTemplate => ({
-    id: uuidv1(),
-    engine: props.engine ?? Engine.MYSQL,
-    column: {
-      name: "",
-      type: "",
-      nullable: false,
-      comment: "",
-      position: 0,
-      characterSet: "",
-      collation: "",
-    },
-  })
-);
+const initialTemplate = () => ({
+  id: uuidv1(),
+  engine: props.engine ?? Engine.MYSQL,
+  category: "",
+  column: {
+    name: "",
+    type: "",
+    nullable: false,
+    comment: "",
+    position: 0,
+    characterSet: "",
+    collation: "",
+  },
+});
 
 const state = reactive<LocalState>({
   showDrawer: false,
   showFeatureModal: false,
-  template: initialTemplate.value,
+  template: initialTemplate(),
   searchText: "",
   selectedEngine: new Set<Engine>(),
 });
@@ -150,7 +137,7 @@ const createSchemaTemplate = () => {
     state.showFeatureModal = true;
     return;
   }
-  state.template = initialTemplate.value;
+  state.template = initialTemplate();
   state.showDrawer = true;
 };
 

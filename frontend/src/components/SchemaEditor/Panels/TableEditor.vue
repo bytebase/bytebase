@@ -282,10 +282,12 @@
     @close="state.showSchemaTemplateDrawer = false"
   >
     <DrawerContent :title="$t('schema-template.field-template')">
-      <SettingWorkspaceSchemaTemplate
-        :engine="databaseEngine"
-        @apply="handleApplyColumnTemplate"
-      />
+      <div class="w-[46rem]">
+        <SettingWorkspaceSchemaTemplate
+          :engine="databaseEngine"
+          @apply="handleApplyColumnTemplate"
+        />
+      </div>
     </DrawerContent>
   </Drawer>
   <FeatureModal

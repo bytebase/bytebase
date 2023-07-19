@@ -2603,6 +2603,9 @@
     "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema.",
     "search-by-name-or-comment": "Buscar por nombre o comentario",
     "form": {
+      "category": "Categoría",
+      "category-desc": "Seleccione una categoría existente o cree una nueva",
+      "unclassified": "Desclasificada",
       "column-name": "Nombre de la columna",
       "column-type": "Tipo de columna",
       "default-value": "Valor por defecto",

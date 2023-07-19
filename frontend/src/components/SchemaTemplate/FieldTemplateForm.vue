@@ -2,6 +2,39 @@
   <DrawerContent :title="$t('schema-template.field-template')">
     <div class="space-y-6 divide-y divide-block-border">
       <div class="space-y-6">
+        <!-- category -->
+        <div class="sm:col-span-2 sm:col-start-1">
+          <label for="category" class="textlabel">
+            {{ $t("schema-template.form.category") }}
+          </label>
+          <p class="text-sm text-gray-500 mb-2">
+            {{ $t("schema-template.form.category-desc") }}
+          </p>
+          <div class="relative flex flex-row justify-between items-center mt-1">
+            <input
+              v-model="state.category"
+              required
+              name="category"
+              type="text"
+              :placeholder="$t('schema-template.form.unclassified')"
+              class="textfield w-full"
+              :disabled="!allowEdit"
+            />
+            <NDropdown
+              trigger="click"
+              :options="categoryOptions"
+              :disabled="!allowEdit"
+              @select="(category: string) => (state.category = category)"
+            >
+              <button class="absolute right-5">
+                <heroicons-solid:chevron-up-down
+                  class="w-4 h-auto text-gray-400"
+                />
+              </button>
+            </NDropdown>
+          </div>
+        </div>
+
         <div class="w-full mb-6 space-y-1">
           <label for="engine" class="textlabel">
             {{ $t("database.engine") }}
@@ -183,6 +216,7 @@ interface LocalState extends SchemaTemplateSetting_FieldTemplate {}
 const state = reactive<LocalState>({
   id: props.template.id,
   engine: props.template.engine,
+  category: props.template.category,
   column: Object.assign({}, props.template.column),
 });
 const store = useSchemaEditorStore();
@@ -200,6 +234,22 @@ const dataTypeOptions = computed(() => {
       key: dataType,
     };
   });
+});
+
+const categoryOptions = computed(() => {
+  const options = [];
+  for (const category of new Set(
+    store.schemaTemplateList.map((template) => template.category)
+  ).values()) {
+    if (!category) {
+      continue;
+    }
+    options.push({
+      label: category,
+      key: category,
+    });
+  }
+  return options;
 });
 
 const changeEngine = (engine: Engine) => {
