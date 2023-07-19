@@ -862,8 +862,9 @@ func convertToSchemaTemplateSetting(s *storepb.SchemaTemplateSetting) *v1pb.Sche
 	v1Templates := []*v1pb.SchemaTemplateSetting_FieldTemplate{}
 	for _, template := range s.FieldTemplates {
 		v1Templates = append(v1Templates, &v1pb.SchemaTemplateSetting_FieldTemplate{
-			Id:     template.Id,
-			Engine: v1pb.Engine(template.Engine),
+			Id:       template.Id,
+			Engine:   v1pb.Engine(template.Engine),
+			Category: template.Category,
 			Column: &v1pb.ColumnMetadata{
 				Name:     template.Column.Name,
 				Type:     template.Column.Type,
