@@ -465,7 +465,9 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 		}
 		nodeList, _, err := parser.New().Parse(stmt.Text, "", "")
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to parse schema %q", schema)
+			// If the TiDB parser cannot parse the statement, we just skip it.
+			result = append(result, stmt.Text+"\n\n")
+			continue
 		}
 		if len(nodeList) != 1 {
 			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
