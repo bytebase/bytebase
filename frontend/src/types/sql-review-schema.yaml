@@ -460,6 +460,7 @@ ruleList:
     engineList:
       - ORACLE
       - SNOWFLAKE
+      - MSSQL
     componentList:
       - key: number
         payload:
