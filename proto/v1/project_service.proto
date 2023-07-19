@@ -399,6 +399,8 @@ message Project {
   SchemaChange schema_change = 10;
 
   repeated Webhook webhooks = 11;
+
+  string data_category_config_id = 12;
 }
 
 enum Workflow {
