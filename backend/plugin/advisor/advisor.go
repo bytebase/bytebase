@@ -455,6 +455,9 @@ const (
 
 	// MSSQLWhereRequirement is an advisor type for MSSQL WHERE clause requirement.
 	MSSQLWhereRequirement Type = "bb.plugin.advisor.mssql.where.require"
+
+	// MSSQLColumnMaximumVarcharLength is an advisor type for MSSQL maximum varchar length.
+	MSSQLColumnMaximumVarcharLength Type = "bb.plugin.advisor.mssql.column.maximum-varchar-length"
 )
 
 // Advice is the result of an advisor.
