@@ -1902,6 +1902,10 @@ func (s *SQLService) checkQueryRights(
 		databaseMap[resource.Database] = true
 	}
 
+	if databaseName != "" {
+		databaseMap[databaseName] = true
+	}
+
 	var project *store.ProjectMessage
 
 	databaseMessageMap := make(map[string]*store.DatabaseMessage)
