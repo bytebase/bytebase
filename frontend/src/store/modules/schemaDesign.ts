@@ -1,7 +1,9 @@
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watchEffect } from "vue";
 import { defineStore } from "pinia";
 import { schemaDesignServiceClient } from "@/grpcweb";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Engine } from "@/types/proto/v1/common";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 
 export const useSchemaDesignStore = defineStore("schema_design", () => {
   const schemaDesignMapByName = reactive(new Map<string, SchemaDesign>());
@@ -15,7 +17,9 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   // Actions
   const fetchSchemaDesignList = async () => {
     const { schemaDesigns } = await schemaDesignServiceClient.listSchemaDesigns(
-      {}
+      {
+        parent: "projects/-",
+      }
     );
     for (const schemaDesign of schemaDesigns) {
       schemaDesignMapByName.set(schemaDesign.name, schemaDesign);
@@ -28,7 +32,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   ) => {
     const createdSchemaDesign =
       await schemaDesignServiceClient.createSchemaDesign({
-        parent: `projects/${projectResourceId}`,
+        parent: projectResourceId,
         schemaDesign,
       });
     schemaDesignMapByName.set(createdSchemaDesign.name, createdSchemaDesign);
@@ -70,6 +74,28 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     return getSchemaDesignByName(name);
   };
 
+  // Util functions
+  const parseSchemaString = async (
+    schema: string,
+    engine: Engine
+  ): Promise<DatabaseMetadata> => {
+    try {
+      const { schemaMetadata } =
+        await schemaDesignServiceClient.parseSchemaString(
+          {
+            schemaString: schema,
+            engine,
+          },
+          {
+            silent: true,
+          }
+        );
+      return schemaMetadata || DatabaseMetadata.fromPartial({});
+    } catch (error) {
+      return DatabaseMetadata.fromPartial({});
+    }
+  };
+
   return {
     schemaDesignList,
     fetchSchemaDesignList,
@@ -78,22 +104,21 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     fetchSchemaDesignByName,
     getOrFetchSchemaDesignByName,
     getSchemaDesignByName,
+    parseSchemaString,
   };
 });
 
 export const useSchemaDesignList = () => {
   const store = useSchemaDesignStore();
   const ready = ref(false);
-  watch(
-    [],
-    () => {
-      ready.value = false;
-      store.fetchSchemaDesignList().then(() => {
-        ready.value = true;
-      });
-    },
-    { immediate: true }
-  );
+
+  watchEffect(() => {
+    ready.value = false;
+    store.fetchSchemaDesignList().then(() => {
+      ready.value = true;
+    });
+  });
+
   const schemaDesignList = computed(() => {
     return store.schemaDesignList;
   });
