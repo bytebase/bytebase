@@ -1,0 +1,24 @@
+- statement: CREATE TABLE [fillfactor] (id INT);
+  want:
+    - status: WARN
+      code: 308
+      title: naming.table.no-keyword
+      content: Table name [fillfactor] is a reserved keyword and should be avoided.
+      line: 1
+      details: ""
+- statement: CREATE TABLE MyDB.MySchema.[fillfactor] (id INT);
+  want:
+    - status: WARN
+      code: 308
+      title: naming.table.no-keyword
+      content: Table name [fillfactor] is a reserved keyword and should be avoided.
+      line: 1
+      details: ""
+- statement: CREATE TABLE Person(id INT);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
