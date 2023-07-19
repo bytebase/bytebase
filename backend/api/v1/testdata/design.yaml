@@ -1,7 +1,8 @@
 - engine: 2
   baseline: |-
     CREATE TABLE `t` (
-      `a` int
+      `a` int,
+      PRIMARY KEY (`a`)
     );
     CREATE TABLE `t3` (
       `a` int
@@ -10,7 +11,8 @@
       `a` int,
       `c` int,
       `d` int,
-      `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment'
+      `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment',
+      PRIMARY KEY (`a`, `c`, `d`)
     );
   target:
     name: ""
@@ -72,7 +74,17 @@
                   characterset: ""
                   collation: ""
                   comment: ""
-              indexes: []
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                    - b
+                    - c
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
               engine: ""
               collation: ""
               rowcount: 0
@@ -117,7 +129,8 @@
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
       `c` int NOT NULL,
       `e` int  NULL,
-      `b` NOT NULL DEFAULT NULL
+      `b` NOT NULL DEFAULT NULL,
+      PRIMARY KEY (`a`, `b`, `c`)
     );
     CREATE TABLE `t2` (
       `b` NULL DEFAULT NULL
