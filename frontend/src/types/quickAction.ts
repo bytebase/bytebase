@@ -11,6 +11,8 @@ export type DatabaseQuickActionType =
   | "quickaction.bb.database.create" // Used by DBA and Owner
   | "quickaction.bb.database.request" // Used by Developer (not yet)
   | "quickaction.bb.database.schema.update"
+  // Schema designer quick action. (Maybe will be removed after changelist is implemented)
+  | "quickaction.bb.database.schema.design"
   | "quickaction.bb.database.data.update"
   | "quickaction.bb.database.troubleshoot";
 export type IssueQuickActionType =

@@ -92,6 +92,7 @@
     "id": "ID",
     "name": "Name",
     "creator": "Creator",
+    "updater": "Updater",
     "version": "Version",
     "issue": "Issue",
     "issues": "Issues",
@@ -1131,6 +1132,7 @@
     "alter-schema-in-vcs": "Alter Schema in VCS",
     "change-data": "Change Data",
     "change-data-in-vcs": "Change Data in VCS",
+    "design-schema": "Design Schema",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
     "create-backup": "Create backup",
@@ -1841,7 +1843,8 @@
       "default": "Default",
       "comment": "Comment",
       "not-null": "Not Null",
-      "primary": "Primary"
+      "primary": "Primary",
+      "foreign-key": "Foreign Key"
     },
     "nothing-changed": "Nothing changed",
     "message": {
@@ -2682,5 +2685,19 @@
   },
   "export-center": {
     "self": "Export Center"
+  },
+  "schema-designer": {
+    "self": "Schema Designer",
+    "quick-action": "Design Schema",
+    "existing-schema-design": "Existing Schema Design",
+    "new-schema-design": "New Schema Design",
+    "baseline-database": "Baseline database",
+    "schema-version": "Schema version",
+    "tables": "Tables",
+    "apply-to-database": "Apply to database",
+    "message": {
+      "created-succeed": "Schema design created successfully",
+      "updated-succeed": "Schema design updated successfully"
+    }
   }
 }

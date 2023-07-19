@@ -1,10 +1,10 @@
+import { head, isUndefined } from "lodash-es";
 import { inject, InjectionKey, provide } from "vue";
 import {
   SchemaDesignerContext,
   SchemaDesignerTabType,
   TabContext,
 } from "./type";
-import { isUndefined } from "lodash-es";
 
 export const KEY = Symbol(
   "bb.schema-designer"
@@ -17,13 +17,20 @@ export const useSchemaDesignerContext = () => {
 export const provideSchemaDesignerContext = (
   context: Pick<
     SchemaDesignerContext,
-    "engine" | "baselineMetadata" | "metadata" | "tabState"
+    | "readonly"
+    | "engine"
+    | "baselineMetadata"
+    | "metadata"
+    | "tabState"
+    | "originalSchemas"
+    | "editableSchemas"
   >
 ) => {
-  const { metadata, tabState } = context;
+  const { editableSchemas, tabState } = context;
 
   provide(KEY, {
     ...context,
+
     // Tab related functions.
     getCurrentTab: (): TabContext | undefined => {
       if (isUndefined(tabState.value.currentTabId)) {
@@ -40,8 +47,8 @@ export const provideSchemaDesignerContext = (
 
           if (
             item.type === SchemaDesignerTabType.TabForTable &&
-            item.schema === tab.schema &&
-            item.table === tab.table
+            item.schemaId === tab.schemaId &&
+            item.tableId === tab.tableId
           ) {
             return true;
           }
@@ -62,49 +69,55 @@ export const provideSchemaDesignerContext = (
         tabState.value.currentTabId = tab.id;
       }
     },
-    // Schema related functions.
-    dropSchema: (schema: string) => {
-      const tabList = Array.from(tabState.value.tabMap.values());
-      for (const tab of tabList) {
-        if (tab.schema === schema) {
-          tabState.value.tabMap.delete(tab.id);
-          if (tabState.value.currentTabId === tab.id) {
-            tabState.value.currentTabId = undefined;
-          }
-        }
-      }
-
-      metadata.value.schemas = metadata.value.schemas.filter(
-        (item) => item.name !== schema
-      );
-    },
 
     // Table related functions.
-    dropTable: (schema: string, table: string) => {
+    getTable: (schemaId: string, tableId: string) => {
+      const schema = editableSchemas.value.find((item) => item.id === schemaId);
+      if (schema === undefined) {
+        throw new Error(`Schema ${schemaId} not found.`);
+      }
+
+      const tableItem = schema.tableList.find((item) => item.id === tableId);
+      if (tableItem === undefined) {
+        throw new Error(`Table ${tableId} not found.`);
+      }
+
+      return tableItem;
+    },
+    dropTable: (schemaId: string, tableId: string) => {
       const tabList = Array.from(tabState.value.tabMap.values());
       for (const tab of tabList) {
         if (
           tab.type === SchemaDesignerTabType.TabForTable &&
-          tab.schema === schema &&
-          tab.table === table
+          tab.schemaId === schemaId &&
+          tab.tableId === tableId
         ) {
           tabState.value.tabMap.delete(tab.id);
           if (tabState.value.currentTabId === tab.id) {
-            tabState.value.currentTabId = undefined;
+            tabState.value.currentTabId = head(
+              Array.from(tabState.value.tabMap.values())
+            )?.id;
           }
         }
       }
 
-      const schemaItem = metadata.value.schemas.find(
-        (item) => item.name === schema
+      const schemaItem = editableSchemas.value.find(
+        (item) => item.id === schemaId
       );
       if (schemaItem === undefined) {
         return;
       }
-
-      schemaItem.tables = schemaItem.tables.filter(
-        (item) => item.name !== table
-      );
+      const table = schemaItem.tableList.find((item) => item.id === tableId);
+      if (table === undefined) {
+        return;
+      }
+      if (table.status === "created") {
+        schemaItem.tableList = schemaItem.tableList.filter(
+          (item) => item.id !== tableId
+        );
+      } else {
+        table.status = "dropped";
+      }
     },
   });
 };

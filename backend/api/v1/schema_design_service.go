@@ -147,25 +147,38 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	schemaVersionUID, err := strconv.ParseInt(schemaDesign.SchemaVersion, 10, 64)
-	if err != nil || schemaVersionUID <= 0 {
+	instanceID, _, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(schemaDesign.SchemaVersion)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	schemaVersionID, err := strconv.ParseInt(changeHistoryIDStr, 10, 64)
+	if err != nil || schemaVersionID <= 0 {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema version %s, must be positive integer", schemaDesign.SchemaVersion))
 	}
 	changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		ID: &schemaVersionUID,
+		ID:         &schemaVersionID,
+		InstanceID: &instance.UID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if changeHistory == nil {
-		return nil, status.Errorf(codes.NotFound, "schema version %d not found", schemaVersionUID)
+		return nil, status.Errorf(codes.NotFound, "schema version %d not found", schemaVersionID)
 	}
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			BaselineSheetId: int64(*changeHistory.SheetID),
-			Engine:          storepb.Engine(schemaDesign.Engine),
+			Engine: storepb.Engine(schemaDesign.Engine),
 		},
+	}
+	if changeHistory.SheetID != nil {
+		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = int64(*changeHistory.SheetID)
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {
@@ -201,6 +214,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 
 // UpdateSchemaDesign updates an existing schema design.
 func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	_, sheetID, err := getProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -212,18 +226,24 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
-	if !slices.Contains(request.UpdateMask.Paths, "schema") {
-		return nil, status.Errorf(codes.InvalidArgument, "schema is required")
+	if len(request.UpdateMask.Paths) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
 
-	schemaDesign := request.SchemaDesign
-	schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
-	if err != nil {
-		return nil, err
-	}
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       sheetUID,
-		Statement: &schema,
+		UpdaterID: currentPrincipalID,
+	}
+	schemaDesign := request.SchemaDesign
+	if slices.Contains(request.UpdateMask.Paths, "title") {
+		sheetUpdate.Name = &schemaDesign.Title
+	}
+	if slices.Contains(request.UpdateMask.Paths, "schema") {
+		schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
+		if err != nil {
+			return nil, err
+		}
+		sheetUpdate.Statement = &schema
 	}
 	sheet, err := s.store.PatchSheet(ctx, sheetUpdate)
 	if err != nil {
