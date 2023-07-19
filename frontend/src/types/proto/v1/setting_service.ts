@@ -333,11 +333,15 @@ export interface WorkspaceTrialSetting {
   plan: PlanType;
 }
 
-/**
- * Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+
- * TBD: store the csv file and the processed structured data.
- */
 export interface DataCategorySetting {
+  configs: DataCategorySetting_DataCategoryConfig[];
+}
+
+/** Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+ */
+export interface DataCategorySetting_DataCategoryConfig {
+  uid: string;
+  /** TODO(ed): store the actual config. */
+  title: string;
 }
 
 function createBaseListSettingsRequest(): ListSettingsRequest {
@@ -2110,11 +2114,14 @@ export const WorkspaceTrialSetting = {
 };
 
 function createBaseDataCategorySetting(): DataCategorySetting {
-  return {};
+  return { configs: [] };
 }
 
 export const DataCategorySetting = {
-  encode(_: DataCategorySetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: DataCategorySetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.configs) {
+      DataCategorySetting_DataCategoryConfig.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -2125,6 +2132,13 @@ export const DataCategorySetting = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.configs.push(DataCategorySetting_DataCategoryConfig.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2134,12 +2148,21 @@ export const DataCategorySetting = {
     return message;
   },
 
-  fromJSON(_: any): DataCategorySetting {
-    return {};
+  fromJSON(object: any): DataCategorySetting {
+    return {
+      configs: Array.isArray(object?.configs)
+        ? object.configs.map((e: any) => DataCategorySetting_DataCategoryConfig.fromJSON(e))
+        : [],
+    };
   },
 
-  toJSON(_: DataCategorySetting): unknown {
+  toJSON(message: DataCategorySetting): unknown {
     const obj: any = {};
+    if (message.configs) {
+      obj.configs = message.configs.map((e) => e ? DataCategorySetting_DataCategoryConfig.toJSON(e) : undefined);
+    } else {
+      obj.configs = [];
+    }
     return obj;
   },
 
@@ -2147,8 +2170,77 @@ export const DataCategorySetting = {
     return DataCategorySetting.fromPartial(base ?? {});
   },
 
-  fromPartial(_: DeepPartial<DataCategorySetting>): DataCategorySetting {
+  fromPartial(object: DeepPartial<DataCategorySetting>): DataCategorySetting {
     const message = createBaseDataCategorySetting();
+    message.configs = object.configs?.map((e) => DataCategorySetting_DataCategoryConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDataCategorySetting_DataCategoryConfig(): DataCategorySetting_DataCategoryConfig {
+  return { uid: "", title: "" };
+}
+
+export const DataCategorySetting_DataCategoryConfig = {
+  encode(message: DataCategorySetting_DataCategoryConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.uid !== "") {
+      writer.uint32(10).string(message.uid);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataCategorySetting_DataCategoryConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataCategorySetting_DataCategoryConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.uid = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataCategorySetting_DataCategoryConfig {
+    return { uid: isSet(object.uid) ? String(object.uid) : "", title: isSet(object.title) ? String(object.title) : "" };
+  },
+
+  toJSON(message: DataCategorySetting_DataCategoryConfig): unknown {
+    const obj: any = {};
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.title !== undefined && (obj.title = message.title);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataCategorySetting_DataCategoryConfig>): DataCategorySetting_DataCategoryConfig {
+    return DataCategorySetting_DataCategoryConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DataCategorySetting_DataCategoryConfig>): DataCategorySetting_DataCategoryConfig {
+    const message = createBaseDataCategorySetting_DataCategoryConfig();
+    message.uid = object.uid ?? "";
+    message.title = object.title ?? "";
     return message;
   },
 };

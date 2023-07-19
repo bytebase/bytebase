@@ -512,6 +512,7 @@
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
     - [DataCategorySetting](#bytebase-v1-DataCategorySetting)
+    - [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig)
     - [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
@@ -5959,6 +5960,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | db_name_template | [string](#string) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
+| data_category_config_uid | [string](#string) |  |  |
 
 
 
@@ -8109,8 +8111,28 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 <a name="bytebase-v1-DataCategorySetting"></a>
 
 ### DataCategorySetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| configs | [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataCategorySetting-DataCategoryConfig"></a>
+
+### DataCategorySetting.DataCategoryConfig
 Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
-TBD: store the csv file and the processed structured data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| uid | [string](#string) |  |  |
+| title | [string](#string) |  | TODO(ed): store the actual config. |
 
 
 
