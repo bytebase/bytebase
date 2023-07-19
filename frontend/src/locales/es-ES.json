@@ -977,9 +977,14 @@
     "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán.",
     "sync-mode": {
       "self": "Modo de sincronización",
-      "sync-self": "Sincronizarse",
-      "sync-all": "Sincronización propia y de todas las bases de datos (CDB + PDB)",
-      "description": "Bytebase sincronizará la base de datos de conexión, así como todas las bases de datos que la contienen. Solo aplicable a Oracle 12c."
+      "database": {
+        "self": "Administrar basado en base de datos",
+        "description": "Toda la base de datos se trata como un objeto administrado, y CDB y PDB se consideran bases de datos distintas. (Admite modo CDB y no CDB)"
+      },
+      "schema": {
+        "self": "Administrar según el esquema",
+        "description": "Cada esquema se trata como un objeto administrado. (Solo es compatible con el modo no CDB)"
+      }
     }
   },
   "environment": {
