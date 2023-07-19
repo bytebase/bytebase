@@ -794,7 +794,8 @@ const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     options: instance?.options
       ? cloneDeep(instance.options)
       : {
-          schemaTenantMode: true, // default to true
+          // default to false (Manage based on database, aka CDB + non-CDB)
+          schemaTenantMode: false,
         },
   };
 };
