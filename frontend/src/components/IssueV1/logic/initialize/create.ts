@@ -5,6 +5,7 @@ import { reactive } from "vue";
 
 import {
   useDatabaseV1Store,
+  useDeploymentConfigV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
   useSheetV1Store,
@@ -27,7 +28,12 @@ import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { rolloutServiceClient } from "@/grpcweb";
 import { TemplateType } from "@/plugins";
 import { nextUID } from "../base";
-import { getSheetStatement, sheetNameOfTaskV1 } from "@/utils";
+import {
+  getPipelineFromDeploymentScheduleV1,
+  getSheetStatement,
+  instanceV1HasAlterSchema,
+  sheetNameOfTaskV1,
+} from "@/utils";
 import { getLocalSheetByName } from "../sheet";
 import { trySetDefaultAssignee } from "./assignee";
 
@@ -90,8 +96,12 @@ export const buildPlan = async (params: CreateIssueParams) => {
     const sheetUID = nextUID();
     // build tenant plan
     if (databaseUIDList.length === 0) {
-      // TODO: evaluate DeploymentConfig and generate steps/specs
-      alert("not supported yet");
+      // evaluate DeploymentConfig and generate steps/specs
+      if (route.query.databaseGroupName) {
+        alert("databaseGroup not implemented yet");
+      } else {
+        plan.steps = await buildStepsViaDeploymentConfig(params, sheetUID);
+      }
     } else {
       plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
     }
@@ -136,6 +146,44 @@ export const buildSteps = async (
   for (let i = 0; i < stageList.length; i++) {
     const step = Plan_Step.fromJSON({});
     const { databases } = stageList[i];
+    for (let j = 0; j < databases.length; j++) {
+      const db = databases[j];
+      const spec = await buildSpecForTarget(db.name, params, sheetUID);
+      step.specs.push(spec);
+    }
+    steps.push(step);
+  }
+  return steps;
+};
+
+export const buildStepsViaDeploymentConfig = async (
+  params: CreateIssueParams,
+  sheetUID: string
+) => {
+  const { route, project } = params;
+  const deploymentConfig =
+    await useDeploymentConfigV1Store().fetchDeploymentConfigByProjectName(
+      project.name
+    );
+  let databaseList = useDatabaseV1Store().databaseListByProject(project.name);
+  const template = route.query.template as TemplateType;
+
+  if (
+    template === "bb.issue.database.schema.update" ||
+    template === "bb.issue.database.schema.update.ghost"
+  ) {
+    databaseList = databaseList.filter((db) =>
+      instanceV1HasAlterSchema(db.instanceEntity)
+    );
+  }
+  const stages = getPipelineFromDeploymentScheduleV1(
+    databaseList,
+    deploymentConfig?.schedule
+  ).filter((stage) => stage.length > 0);
+  const steps: Plan_Step[] = [];
+  for (let i = 0; i < stages.length; i++) {
+    const step = Plan_Step.fromJSON({});
+    const databases = stages[i];
     for (let j = 0; j < databases.length; j++) {
       const db = databases[j];
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
