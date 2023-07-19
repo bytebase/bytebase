@@ -129,5 +129,4 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 			Line:    line,
 		})
 	}
-
 }
