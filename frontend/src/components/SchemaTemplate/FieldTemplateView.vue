@@ -10,11 +10,11 @@
   </div>
   <div v-else class="flex">
     <div
-      class="hidden sm:flex w-1/5 max-w-xs flex-col space-y-3 border-r mr-10 pr-10"
+      class="hidden sm:flex w-1/5 max-w-xs flex-col space-y-3 border-r mr-5 pr-5"
     >
-      <h class="text-lg">
+      <p class="text-lg">
         {{ $t("schema-template.form.category") }}
-      </h>
+      </p>
       <div class="space-y-2">
         <label
           v-for="item in categoryList"
@@ -28,7 +28,9 @@
             class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
             @input="toggleCategoryCheck(item.id)"
           />
-          {{ item.text }}
+          <span class="text-ellipsis whitespace-nowrap overflow-hidden">
+            {{ item.text }}
+          </span>
           <span
             class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
           >
