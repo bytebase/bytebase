@@ -2686,6 +2686,8 @@
     "baseline-database": "基准数据库",
     "schema-version": "Schema 版本",
     "tables": "表",
+    "search-tables": "搜索表",
+    "use-tips": "选择需要设计的表",
     "apply-to-database": "应用 Schema 设计",
     "message": {
       "created-succeed": "Schema 设计创建成功",

@@ -2695,6 +2695,8 @@
     "baseline-database": "Baseline database",
     "schema-version": "Schema version",
     "tables": "Tables",
+    "search-tables": "Search tables",
+    "use-tips": "Click a table to start.",
     "apply-to-database": "Apply to database",
     "message": {
       "created-succeed": "Schema design created successfully",
