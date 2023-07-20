@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message PlanCheckRunConfig {
+  int32 sheet_id = 1;
+  int32 database_id = 2;
+}
+
+message PlanCheckRunResult {
+  repeated Result results = 1;
+
+  message Result {
+    enum Namespace {
+      NAMESPACE_UNSPECIFIED = 0;
+      BYTEBASE = 1;
+      ADVISOR = 2;
+    }
+    Namespace namespace = 1;
+    int64 code = 2;
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      ERROR = 1;
+      WARNING = 2;
+      SUCCESS = 3;
+    }
+    Status status = 3;
+    string title = 4;
+    string content = 5;
+    int64 line = 6;
+    string detail = 7;
+  }
+}
