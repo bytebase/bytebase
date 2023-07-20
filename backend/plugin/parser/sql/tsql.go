@@ -540,7 +540,7 @@ func ParseTSQL(statement string) (antlr.Tree, error) {
 }
 
 // NormalizeTSQLTableName returns the normalized table name.
-func NormalizeTSQLTableName(ctx tsqlparser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string, caseSensitive bool) string {
+func NormalizeTSQLTableName(ctx tsqlparser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string, _ bool) string {
 	database := fallbackDatabaseName
 	schema := fallbackSchemaName
 	table := ""
