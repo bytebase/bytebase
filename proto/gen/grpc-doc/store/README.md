@@ -96,6 +96,14 @@
   
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
+- [store/plan_check_run.proto](#store_plan_check_run-proto)
+    - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
+    - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
+    - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
+  
+    - [PlanCheckRunResult.Result.Namespace](#bytebase-store-PlanCheckRunResult-Result-Namespace)
+    - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
+  
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [IamPolicy](#bytebase-store-IamPolicy)
@@ -1447,6 +1455,101 @@ Type is the database change type.
 | MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
 | BRANCH | 5 | Used when restoring from a backup (the restored database branched from the original backup). |
 | DATA | 6 | Used for DML change. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_plan_check_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/plan_check_run.proto
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig"></a>
+
+### PlanCheckRunConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet_id | [int32](#int32) |  |  |
+| database_id | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult"></a>
+
+### PlanCheckRunResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result"></a>
+
+### PlanCheckRunResult.Result
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| namespace | [PlanCheckRunResult.Result.Namespace](#bytebase-store-PlanCheckRunResult-Result-Namespace) |  |  |
+| code | [int64](#int64) |  |  |
+| status | [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status) |  |  |
+| title | [string](#string) |  |  |
+| content | [string](#string) |  |  |
+| line | [int64](#int64) |  |  |
+| detail | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result-Namespace"></a>
+
+### PlanCheckRunResult.Result.Namespace
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NAMESPACE_UNSPECIFIED | 0 |  |
+| BYTEBASE | 1 |  |
+| ADVISOR | 2 |  |
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result-Status"></a>
+
+### PlanCheckRunResult.Result.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| SUCCESS | 3 |  |
 
 
  
