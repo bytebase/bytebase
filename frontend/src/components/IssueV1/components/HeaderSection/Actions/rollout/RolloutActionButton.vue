@@ -17,10 +17,14 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
+import { useCurrentUserV1 } from "@/store";
 import {
   StageRolloutAction,
   TaskRolloutAction,
+  allPlanChecksPassedForTask,
+  isUserAllowedToApplyTaskRolloutAction,
   taskRolloutActionDisplayName,
+  useIssueContext,
 } from "@/components/IssueV1/logic";
 import { RolloutButtonAction } from "./RolloutActionButtonGroup.vue";
 import { ErrorList } from "../common";
@@ -31,10 +35,24 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
+const { issue, activeTask } = useIssueContext();
 
 const errors = computed(() => {
   const errors: string[] = [];
-  errors.push("任性拒绝");
+  if (!allPlanChecksPassedForTask(issue.value, activeTask.value)) {
+    errors.push("Some checks failed.");
+  }
+  if (
+    !isUserAllowedToApplyTaskRolloutAction(
+      issue.value,
+      activeTask.value,
+      props.action,
+      currentUser.value
+    )
+  ) {
+    errors.push("You are not assignee of this issue.");
+  }
   return errors;
 });
 

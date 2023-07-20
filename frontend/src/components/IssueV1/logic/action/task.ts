@@ -1,5 +1,6 @@
 import { t } from "@/plugins/i18n";
 import { ComposedIssue } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task, Task_Status } from "@/types/proto/v1/rollout_service";
 
@@ -58,4 +59,13 @@ export const taskRolloutActionDisplayName = (action: TaskRolloutAction) => {
     case "SKIP":
       return t("common.skip");
   }
+};
+
+export const isUserAllowedToApplyTaskRolloutAction = (
+  issue: ComposedIssue,
+  task: Task,
+  action: TaskRolloutAction,
+  user: User
+) => {
+  return false; // TODO
 };
