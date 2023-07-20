@@ -2689,7 +2689,7 @@
   "schema-designer": {
     "self": "Schema Designer",
     "quick-action": "Design Schema",
-    "existing-schema-design": "Existing Schema Design",
+    "schema-design-list": "Schema Design List",
     "new-schema-design": "New Schema Design",
     "baseline-database": "Baseline database",
     "schema-version": "Schema version",
