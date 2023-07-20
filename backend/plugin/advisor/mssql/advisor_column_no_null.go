@@ -92,7 +92,7 @@ func (l *columnNoNullChecker) EnterCreate_table(ctx *parser.Create_tableContext)
 }
 
 // ExitCreate_table is called when production create_table is exited.
-func (l *columnNoNullChecker) ExitCreate_table(ctx *parser.Create_tableContext) {
+func (l *columnNoNullChecker) ExitCreate_table(_ *parser.Create_tableContext) {
 	l.currentNormalizedTableName = ""
 	for columnName, isNullable := range l.isCurrentTableColumnNullable {
 		if !isNullable {
@@ -165,11 +165,10 @@ func (l *columnNoNullChecker) EnterAlter_table(ctx *parser.Alter_tableContext) {
 		normalizedTableName := bbparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
 		l.currentNormalizedTableName = normalizedTableName
 	}
-
 }
 
 // ExitAlter_table is called when production alter_table is exited.
-func (l *columnNoNullChecker) ExitAlter_table(ctx *parser.Alter_tableContext) {
+func (l *columnNoNullChecker) ExitAlter_table(_ *parser.Alter_tableContext) {
 	l.currentNormalizedTableName = ""
 	for columnName, isNullable := range l.isCurrentTableColumnNullable {
 		if !isNullable {
