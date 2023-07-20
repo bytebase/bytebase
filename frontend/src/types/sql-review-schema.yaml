@@ -42,6 +42,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - SNOWFLAKE
+      - MSSQL
     componentList:
       - key: format
         payload:
