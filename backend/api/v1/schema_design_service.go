@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -1554,53 +1554,53 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 	}
 	fkMap := make(map[string][]*fkMetadata)
 	if engine != v1pb.Engine_MYSQL {
-		return errors.New("only mysql is supported")
+		return errors.Errorf("only mysql is supported")
 	}
 	for _, schema := range metadata.Schemas {
 		if schema.Name != "" {
-			return errors.New("schema name should be empty for MySQL")
+			return errors.Errorf("schema name should be empty for MySQL")
 		}
 		tableNameMap := make(map[string]bool)
 		for _, table := range schema.Tables {
 			if table.Name == "" {
-				return errors.New("table name should not be empty")
+				return errors.Errorf("table name should not be empty")
 			}
 			if _, ok := tableNameMap[table.Name]; ok {
-				return fmt.Errorf("duplicate table name %s", table.Name)
+				return errors.Errorf("duplicate table name %s", table.Name)
 			}
 			tableNameMap[table.Name] = true
 			columnNameMap := make(map[string]bool)
 			for _, column := range table.Columns {
 				if column.Name == "" {
-					return errors.New("column name should not be empty in table " + table.Name)
+					return errors.Errorf("column name should not be empty in table %s", table.Name)
 				}
 				if _, ok := columnNameMap[column.Name]; ok {
-					return errors.New(fmt.Sprintf("duplicate column name %s in table %s", column.Name, table.Name))
+					return errors.Errorf("duplicate column name %s in table %s", column.Name, table.Name)
 				}
 
 				columnNameMap[column.Name] = true
 				if column.Type == "" {
-					return errors.New(fmt.Sprintf("column %s type should not be empty in table %s", column.Name, table.Name))
+					return errors.Errorf("column %s type should not be empty in table %s", column.Name, table.Name)
 				}
 
 				if !checkMySQLColumnType(column.Type) {
-					return errors.New(fmt.Sprintf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name))
+					return errors.Errorf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name)
 				}
 			}
 
 			indexNameMap := make(map[string]bool)
 			for _, index := range table.Indexes {
 				if index.Name == "" {
-					return errors.New("index name should not be empty in table " + table.Name)
+					return errors.Errorf("index name should not be empty in table %s", table.Name)
 				}
 				if _, ok := indexNameMap[index.Name]; ok {
-					return errors.New(fmt.Sprintf("duplicate index name %s in table %s", index.Name, table.Name))
+					return errors.Errorf("duplicate index name %s in table %s", index.Name, table.Name)
 				}
 				indexNameMap[index.Name] = true
 				if index.Primary {
 					for _, key := range index.Expressions {
 						if _, ok := columnNameMap[key]; !ok {
-							return errors.New(fmt.Sprintf("primary key column %s not found in table %s", key, table.Name))
+							return errors.Errorf("primary key column %s not found in table %s", key, table.Name)
 						}
 					}
 				}
@@ -1608,15 +1608,15 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 
 			for _, fk := range table.ForeignKeys {
 				if fk.Name == "" {
-					return errors.New("foreign key name should not be empty in table " + table.Name)
+					return errors.Errorf("foreign key name should not be empty in table %s", table.Name)
 				}
 				if _, ok := indexNameMap[fk.Name]; ok {
-					return errors.New(fmt.Sprintf("duplicate foreign key name %s in table %s", fk.Name, table.Name))
+					return errors.Errorf("duplicate foreign key name %s in table %s", fk.Name, table.Name)
 				}
 				indexNameMap[fk.Name] = true
 				for _, key := range fk.Columns {
 					if _, ok := columnNameMap[key]; !ok {
-						return errors.New(fmt.Sprintf("foreign key column %s not found in table %s", key, table.Name))
+						return errors.Errorf("foreign key column %s not found in table %s", key, table.Name)
 					}
 				}
 				fks, ok := fkMap[fk.ReferencedTable]
@@ -1648,7 +1648,7 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 			for _, fk := range fks {
 				for _, key := range fk.referencedColumns {
 					if _, ok := columnNameMap[key]; !ok {
-						return errors.New(fmt.Sprintf("foreign key %s in table %s references column %s in table %s but not found", fk.name, fk.tableName, key, fk.referencedTableName))
+						return errors.Errorf("foreign key %s in table %s references column %s in table %s but not found", fk.name, fk.tableName, key, fk.referencedTableName)
 					}
 				}
 				hasIndex := false
@@ -1666,7 +1666,7 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 					}
 				}
 				if !hasIndex {
-					return errors.New(fmt.Sprintf("missing index for foreign key %s for table %s in the referenced table '%s'", fk.name, fk.tableName, fk.referencedTableName))
+					return errors.Errorf("missing index for foreign key %s for table %s in the referenced table '%s'", fk.name, fk.tableName, fk.referencedTableName)
 				}
 			}
 			delete(fkMap, table.Name)
@@ -1676,7 +1676,7 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 			if len(fks) == 0 {
 				continue
 			}
-			return errors.New(fmt.Sprintf("foreign key %s in table %s references table %s but not found", fks[0].name, fks[0].tableName, fks[0].referencedTableName))
+			return errors.Errorf("foreign key %s in table %s references table %s but not found", fks[0].name, fks[0].tableName, fks[0].referencedTableName)
 		}
 	}
 	return nil
