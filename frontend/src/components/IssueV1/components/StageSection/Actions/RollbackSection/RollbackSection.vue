@@ -1,8 +1,4 @@
 <template>
-  <div class="issue-debug">
-    <div>rollbackUIType: {{ rollbackUIType }}</div>
-  </div>
-
   <div v-if="rollbackUIType !== 'NONE'" class="flex items-center gap-x-3">
     <NTooltip>
       <template #trigger>

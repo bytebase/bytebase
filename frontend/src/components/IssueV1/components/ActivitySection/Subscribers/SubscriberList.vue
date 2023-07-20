@@ -10,7 +10,13 @@
     @update:show="onUpdateShow"
     @update:value="onUpdateSubscribers"
   >
-    <NButton quaternary style="--n-padding: 0 4px 0 12px">
+    <NButton
+      quaternary
+      :style="{
+        '--n-padding':
+          subscriberList.length === 0 ? '0 8px 0 8px' : '0 8px 0 12px',
+      }"
+    >
       <div class="flex items-center gap-x-1">
         <UserAvatar
           v-for="user in subscriberList"
