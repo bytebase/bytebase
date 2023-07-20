@@ -313,7 +313,7 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
     const database = await databaseStore.getOrFetchDatabaseByName(
       String(singleBinding.databaseResource.databaseName)
     );
-    role = `${role} - ${database.name}`;
+    role = `${role} - ${database.databaseName}`;
   }
   const title = t("project.members.revoke-role-from-user", {
     role: role,
