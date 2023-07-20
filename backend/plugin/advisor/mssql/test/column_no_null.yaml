@@ -1,0 +1,75 @@
+- statement: |-
+    CREATE TABLE MyTable (
+      Id INT PRIMARY KEY,
+      Name VARCHAR(100) NOT NULL,
+      Age INT,
+      Address VARCHAR(200)
+    );
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column [age] is nullable, which is not allowed.
+      line: 4
+      details: ""
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column [address] is nullable, which is not allowed.
+      line: 5
+      details: ""
+- statement: |-
+    CREATE TABLE MyTable (
+      Id INT,
+      Name VARCHAR(100) NOT NULL,
+      Age INT,
+      Address VARCHAR(200),
+      PRIMARY KEY (Id, Age)
+    );
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column [address] is nullable, which is not allowed.
+      line: 5
+      details: ""
+- statement: ALTER TABLE MyTable ALTER COLUMN Name VARCHAR(100) NULL;
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column [name] is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: ALTER TABLE MyTable ALTER COLUMN Name VARCHAR(100) NOT NULL;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE MyTable ADD Age INT;
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column [age] is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: ALTER TABLE MyTable ADD Age INT NULL;
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column [age] is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: ALTER TABLE MyTable ADD Age INT NOT NULL;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

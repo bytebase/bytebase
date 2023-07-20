@@ -464,6 +464,9 @@ const (
 
 	// MSSQLTableRequirePK is an advisor type for MSSQL table require primary key.
 	MSSQLTableRequirePK Type = "bb.plugin.advisor.mssql.table.require-pk"
+
+	// MSSQLColumnNoNull is an advisor type for MSSQL column no NULL value.
+	MSSQLColumnNoNull Type = "bb.plugin.advisor.mssql.column.no-null"
 )
 
 // Advice is the result of an advisor.
