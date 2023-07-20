@@ -301,7 +301,27 @@ func getProjectIDRolloutID(name string) (string, int, error) {
 	return tokens[0], rolloutID, nil
 }
 
-func getProjectIDRolloutIDStageIDTaskID(name string) (string, int, *int, *int, error) {
+func getProjectIDRolloutIDMaybeStageID(name string) (string, int, *int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	rolloutID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, nil, errors.Errorf("invalid rollout ID %q", tokens[1])
+	}
+	var maybeStageID *int
+	if tokens[2] != "-" {
+		stageID, err := strconv.Atoi(tokens[2])
+		if err != nil {
+			return "", 0, nil, errors.Errorf("invalid stage ID %q", tokens[2])
+		}
+		maybeStageID = &stageID
+	}
+	return tokens[0], rolloutID, maybeStageID, nil
+}
+
+func getProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int, *int, *int, error) {
 	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix, taskPrefix)
 	if err != nil {
 		return "", 0, nil, nil, err
@@ -326,6 +346,27 @@ func getProjectIDRolloutIDStageIDTaskID(name string) (string, int, *int, *int, e
 		maybeTaskID = &taskID
 	}
 	return tokens[0], rolloutID, maybeStageID, maybeTaskID, nil
+}
+
+func getProjectIDRolloutIDStageIDTaskID(name string) (string, int, int, int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix, taskPrefix)
+	if err != nil {
+		return "", 0, 0, 0, err
+	}
+	rolloutID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, 0, 0, errors.Errorf("invalid rollout ID %q", tokens[1])
+	}
+	stageID, err := strconv.Atoi(tokens[2])
+	if err != nil {
+		return "", 0, 0, 0, errors.Errorf("invalid stage ID %q", tokens[2])
+	}
+
+	taskID, err := strconv.Atoi(tokens[3])
+	if err != nil {
+		return "", 0, 0, 0, errors.Errorf("invalid task ID %q", tokens[3])
+	}
+	return tokens[0], rolloutID, stageID, taskID, nil
 }
 
 func getRoleID(name string) (string, error) {
