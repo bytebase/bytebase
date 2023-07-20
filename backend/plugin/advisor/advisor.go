@@ -458,6 +458,9 @@ const (
 
 	// MSSQLColumnMaximumVarcharLength is an advisor type for MSSQL maximum varchar length.
 	MSSQLColumnMaximumVarcharLength Type = "bb.plugin.advisor.mssql.column.maximum-varchar-length"
+
+	// MSSQLTableDropNamingConvention is an advisor type for MSSQL table drop with naming convention.
+	MSSQLTableDropNamingConvention Type = "bb.plugin.advisor.mssql.table.drop-naming-convention"
 )
 
 // Advice is the result of an advisor.

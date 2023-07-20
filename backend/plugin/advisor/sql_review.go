@@ -1308,6 +1308,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLTableDropNamingConvention, nil
 		case db.Snowflake:
 			return SnowflakeTableDropNamingConvention, nil
+		case db.MSSQL:
+			return MSSQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {
