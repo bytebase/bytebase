@@ -1743,7 +1743,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| baseline_sheet_id | [int64](#int64) |  |  |
+| baseline_change_history_id | [string](#string) |  | The baseline instance change history id of the schema design. |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 
 
