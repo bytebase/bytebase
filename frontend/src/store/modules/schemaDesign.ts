@@ -36,7 +36,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
         schemaDesign,
       });
     schemaDesignMapByName.set(createdSchemaDesign.name, createdSchemaDesign);
-    return schemaDesignMapByName;
+    return createdSchemaDesign;
   };
   const updateSchemaDesign = async (
     schemaDesign: SchemaDesign,

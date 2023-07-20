@@ -1,4 +1,4 @@
-import { TableMetadata } from "@/types/proto/store/database";
+import { TableMetadata } from "@/types/proto/v1/database_service";
 
 export function isGhostTable(table: TableMetadata): boolean {
   const { name } = table;
