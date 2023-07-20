@@ -2,6 +2,7 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 
@@ -536,6 +537,29 @@ func ParseTSQL(statement string) (antlr.Tree, error) {
 	}
 
 	return tree, nil
+}
+
+// NormalizeTSQLTableName returns the normalized table name.
+func NormalizeTSQLTableName(ctx tsqlparser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string, caseSensitive bool) string {
+	database := fallbackDatabaseName
+	schema := fallbackSchemaName
+	table := ""
+	if d := ctx.GetDatabase(); d != nil {
+		if id := NormalizeTSQLIdentifier(d); id != "" {
+			database = id
+		}
+	}
+	if s := ctx.GetSchema(); s != nil {
+		if id := NormalizeTSQLIdentifier(s); id != "" {
+			schema = id
+		}
+	}
+	if t := ctx.GetTable(); t != nil {
+		if id := NormalizeTSQLIdentifier(t); id != "" {
+			table = id
+		}
+	}
+	return fmt.Sprintf("%s.%s.%s", database, schema, table)
 }
 
 // NormalizeTSQLIdentifier returns the normalized identifier.
