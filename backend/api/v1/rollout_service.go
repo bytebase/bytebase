@@ -415,7 +415,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	if len(request.Tasks) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "The tasks in request cannot be empty")
 	}
-	projectID, rolloutID, err := getProjectIDRolloutID(request.Parent)
+	projectID, rolloutID, _, err := getProjectIDRolloutIDMaybeStageID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}

@@ -301,6 +301,26 @@ func getProjectIDRolloutID(name string) (string, int, error) {
 	return tokens[0], rolloutID, nil
 }
 
+func getProjectIDRolloutIDMaybeStageID(name string) (string, int, *int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix, taskPrefix)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	rolloutID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, nil, errors.Errorf("invalid rollout ID %q", tokens[1])
+	}
+	var maybeStageID *int
+	if tokens[2] != "-" {
+		stageID, err := strconv.Atoi(tokens[2])
+		if err != nil {
+			return "", 0, nil, errors.Errorf("invalid stage ID %q", tokens[2])
+		}
+		maybeStageID = &stageID
+	}
+	return tokens[0], rolloutID, maybeStageID, nil
+}
+
 func getProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int, *int, *int, error) {
 	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix, taskPrefix)
 	if err != nil {
