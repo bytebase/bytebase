@@ -2680,7 +2680,7 @@
   "schema-designer": {
     "self": "Schema 设计器",
     "quick-action": "设计 Schema",
-    "existing-schema-design": "现有的 Schema 设计",
+    "schema-design-list": "Schema 设计列表",
     "new-schema-design": "创建 Schema 设计",
     "baseline-database": "基准数据库",
     "schema-version": "Schema 版本",
