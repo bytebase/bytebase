@@ -64,7 +64,8 @@ export interface SheetPayload_UsedByIssue {
 }
 
 export interface SheetPayload_SchemaDesign {
-  baselineSheetId: number;
+  /** The baseline instance change history id of the schema design. */
+  baselineChangeHistoryId: string;
   engine: Engine;
 }
 
@@ -372,13 +373,13 @@ export const SheetPayload_UsedByIssue = {
 };
 
 function createBaseSheetPayload_SchemaDesign(): SheetPayload_SchemaDesign {
-  return { baselineSheetId: 0, engine: 0 };
+  return { baselineChangeHistoryId: "", engine: 0 };
 }
 
 export const SheetPayload_SchemaDesign = {
   encode(message: SheetPayload_SchemaDesign, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.baselineSheetId !== 0) {
-      writer.uint32(8).int64(message.baselineSheetId);
+    if (message.baselineChangeHistoryId !== "") {
+      writer.uint32(10).string(message.baselineChangeHistoryId);
     }
     if (message.engine !== 0) {
       writer.uint32(16).int32(message.engine);
@@ -394,11 +395,11 @@ export const SheetPayload_SchemaDesign = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.baselineSheetId = longToNumber(reader.int64() as Long);
+          message.baselineChangeHistoryId = reader.string();
           continue;
         case 2:
           if (tag !== 16) {
@@ -418,14 +419,14 @@ export const SheetPayload_SchemaDesign = {
 
   fromJSON(object: any): SheetPayload_SchemaDesign {
     return {
-      baselineSheetId: isSet(object.baselineSheetId) ? Number(object.baselineSheetId) : 0,
+      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId) ? String(object.baselineChangeHistoryId) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
     };
   },
 
   toJSON(message: SheetPayload_SchemaDesign): unknown {
     const obj: any = {};
-    message.baselineSheetId !== undefined && (obj.baselineSheetId = Math.round(message.baselineSheetId));
+    message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     return obj;
   },
@@ -436,7 +437,7 @@ export const SheetPayload_SchemaDesign = {
 
   fromPartial(object: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
     const message = createBaseSheetPayload_SchemaDesign();
-    message.baselineSheetId = object.baselineSheetId ?? 0;
+    message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? "";
     message.engine = object.engine ?? 0;
     return message;
   },
