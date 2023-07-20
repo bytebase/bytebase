@@ -1,5 +1,4 @@
 <template>
-  <div class="issue-debug">rollbackDetail: {{ rollbackDetail }}</div>
   <div
     v-if="shouldShowTips"
     class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
