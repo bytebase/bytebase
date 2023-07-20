@@ -684,10 +684,6 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	changeHistoryID, err := strconv.ParseInt(changeHistoryIDStr, 10, 64)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot parse change history id %q", changeHistoryIDStr)
-	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
@@ -710,7 +706,7 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	find := &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instance.UID,
 		DatabaseID: &database.UID,
-		ID:         &changeHistoryID,
+		ID:         &changeHistoryIDStr,
 	}
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true

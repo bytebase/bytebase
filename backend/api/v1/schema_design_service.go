@@ -160,28 +160,22 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	schemaVersionID, err := strconv.ParseInt(changeHistoryIDStr, 10, 64)
-	if err != nil || schemaVersionID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema version %s, must be positive integer", schemaDesign.SchemaVersion))
-	}
 	changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		ID:         &schemaVersionID,
+		ID:         &changeHistoryIDStr,
 		InstanceID: &instance.UID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if changeHistory == nil {
-		return nil, status.Errorf(codes.NotFound, "schema version %d not found", schemaVersionID)
+		return nil, status.Errorf(codes.NotFound, "schema version %s not found", changeHistoryIDStr)
 	}
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			Engine: storepb.Engine(schemaDesign.Engine),
+			BaselineChangeHistoryId: changeHistory.UID,
+			Engine:                  storepb.Engine(schemaDesign.Engine),
 		},
-	}
-	if changeHistory.SheetID != nil {
-		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = int64(*changeHistory.SheetID)
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {
@@ -364,24 +358,17 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	baselineSheetID := int(sheetPayload.SchemaDesign.BaselineSheetId)
-	baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-		UID: &baselineSheetID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find sheet: %v", err))
-	}
 	baselineSchema := ""
 	schemaVersion := ""
-	if baselineSheet != nil {
-		baselineSchema = baselineSheet.Statement
+	if sheetPayload.SchemaDesign.BaselineChangeHistoryId != "" {
 		changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-			SheetID: &baselineSheet.UID,
+			ID: &sheetPayload.SchemaDesign.BaselineChangeHistoryId,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find change history: %v", err))
 		}
 		if changeHistory != nil {
+			baselineSchema = changeHistory.Schema
 			schemaVersion = changeHistory.UID
 		}
 	}
