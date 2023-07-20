@@ -790,10 +790,6 @@ func (c *columnState) toString(buf *strings.Builder) error {
 		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", *c.defaultValue)); err != nil {
 			return err
 		}
-	} else {
-		if _, err := buf.WriteString(" DEFAULT NULL"); err != nil {
-			return err
-		}
 	}
 	if c.comment != "" {
 		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", c.comment)); err != nil {
