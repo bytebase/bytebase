@@ -30,7 +30,7 @@ export interface ComposedIssue extends Issue {
 }
 
 export const ESTABLISH_BASELINE_SQL =
-  "/* Establish baseline using current schema */";
+  "/* Establish baseline using current schema. This SQL won't be applied to the database. */";
 
 export const EMPTY_ISSUE_NAME = `projects/${EMPTY_ID}/issues/${EMPTY_ID}`;
 export const UNKNOWN_ISSUE_NAME = `projects/${UNKNOWN_ID}/issues/${UNKNOWN_ID}`;
