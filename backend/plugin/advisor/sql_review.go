@@ -984,7 +984,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 	case catalog.ErrorTypeInvalidColumnTypeForDefaultValue:
 		res = append(res, Advice{
 			Status:  Error,
-			Code:    InvalidateColumnDefault,
+			Code:    InvalidColumnDefault,
 			Title:   "Invalid column default value",
 			Content: walkThroughError.Content,
 			Line:    walkThroughError.Line,
