@@ -81,6 +81,7 @@ const (
 	NoDefault                                  Code = 420
 	ColumnIsReferencedByView                   Code = 421
 	VarcharLengthExceedsLimit                  Code = 422
+	InvalidateColumnDefault                    Code = 423
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
