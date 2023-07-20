@@ -7,9 +7,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -93,11 +91,7 @@ func (l *namingIdentifierNoKeywordChecker) EnterId_(ctx *parser.Id_Context) {
 		return
 	}
 
-	normalizedID, err := bbparser.NormalizeTSQLTableNamePart(ctx)
-	if err != nil {
-		log.Error("failed to normalize identifier", zap.Error(err))
-		return
-	}
+	normalizedID := bbparser.NormalizeTSQLIdentifier(ctx)
 	if bbparser.IsTSQLKeyword(normalizedID, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
