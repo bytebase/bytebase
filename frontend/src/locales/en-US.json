@@ -1507,7 +1507,7 @@
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
       "cannot-remove-last-owner": "Cannot remove the last owner of a project",
-      "revoke-role-from-user": "Revocar el '{role}' del usuario '{user}'",
+      "revoke-role-from-user": "Revoke '{role}' from '{user}'",
       "inactive-members": "Inactive members",
       "show-inactive": "Show inactive members",
       "select-users": "Select users",
