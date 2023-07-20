@@ -1846,7 +1846,8 @@
       "default": "Valor predeterminado",
       "comment": "Comentario",
       "not-null": "No nulo",
-      "primary": "Primaria"
+      "primary": "Primaria",
+      "foreign-key": "Clave foránea"
     },
     "nothing-changed": "Nada ha cambiado",
     "message": {
@@ -2688,5 +2689,19 @@
   },
   "export-center": {
     "self": "centro de exportacion"
+  },
+  "schema-designer": {
+    "self": "Diseñador de esquemas",
+    "quick-action": "Diseñar esquema",
+    "existing-schema-design": "Diseño de esquema existente",
+    "new-schema-design": "Nuevo diseño de esquema",
+    "baseline-database": "Base de datos de referencia",
+    "schema-version": "Versión del esquema",
+    "tables": "Tablas",
+    "apply-to-database": "Aplicar a la base de datos",
+    "message": {
+      "created-succeed": "Diseño de esquema creado con éxito",
+      "updated-succeed": "Diseño de esquema actualizado con éxito"
+    }
   }
 }

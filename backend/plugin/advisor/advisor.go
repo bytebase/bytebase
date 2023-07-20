@@ -446,6 +446,18 @@ const (
 
 	// MSSQLNamingTableConvention is an advisor type for MSSQL table naming convention.
 	MSSQLNamingTableConvention Type = "bb.plugin.advisor.mssql.naming.table"
+
+	// MSSQLTableNamingNoKeyword is an advisor type for MSSQL table naming convention without keyword.
+	MSSQLTableNamingNoKeyword Type = "bb.plugin.advisor.mssql.naming.table-no-keyword"
+
+	// MSSQLIdentifierNamingNoKeyword is an advisor type for MSSQL identifier naming convention without keyword.
+	MSSQLIdentifierNamingNoKeyword Type = "bb.plugin.advisor.mssql.naming.identifier-no-keyword"
+
+	// MSSQLWhereRequirement is an advisor type for MSSQL WHERE clause requirement.
+	MSSQLWhereRequirement Type = "bb.plugin.advisor.mssql.where.require"
+
+	// MSSQLColumnMaximumVarcharLength is an advisor type for MSSQL maximum varchar length.
+	MSSQLColumnMaximumVarcharLength Type = "bb.plugin.advisor.mssql.column.maximum-varchar-length"
 )
 
 // Advice is the result of an advisor.

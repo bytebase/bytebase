@@ -90,6 +90,7 @@ ruleList:
       - ORACLE
       - OCEANBASE
       - SNOWFLAKE
+      - MSSQL
     componentList: []
   - type: statement.where.no-leading-wildcard-like
     category: STATEMENT
@@ -321,12 +322,14 @@ ruleList:
     engineList:
       - ORACLE
       - SNOWFLAKE
+      - MSSQL
     componentList: []
   - type: naming.identifier.no-keyword
     category: NAMING
     engineList:
       - ORACLE
       - SNOWFLAKE
+      - MSSQL
     componentList: []
   - type: naming.identifier.case
     category: NAMING
@@ -457,6 +460,7 @@ ruleList:
     engineList:
       - ORACLE
       - SNOWFLAKE
+      - MSSQL
     componentList:
       - key: number
         payload:

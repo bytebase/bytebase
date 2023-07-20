@@ -1,26 +1,13 @@
 <template>
-  <div v-if="!state.isLoading" class="w-full h-full">
+  <div v-if="!state.isLoading" class="w-full h-[32rem] border rounded-lg">
     <Splitpanes
       class="default-theme w-full h-full flex flex-row overflow-hidden"
     >
-      <Pane size="20">
+      <Pane size="25">
         <AsidePanel />
       </Pane>
-      <Pane min-size="60" size="80">
-        <main class="pl-2 pt-2 w-full h-full flex flex-col overflow-y-auto">
-          <template v-if="currentTab">
-            <TabsContainer />
-            <div
-              :key="currentTab.id"
-              class="w-full h-full relative overflow-y-auto"
-            >
-              <TableEditor
-                v-if="currentTab.type === SchemaDesignerTabType.TabForTable"
-              />
-            </div>
-          </template>
-          <EmptyTips v-else />
-        </main>
+      <Pane min-size="60" size="75">
+        <Designer />
       </Pane>
     </Splitpanes>
   </div>
@@ -28,40 +15,33 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
-import { computed, onMounted, reactive, ref } from "vue";
-import { useDBSchemaV1Store } from "@/store";
-import AsidePanel from "./AsidePanel.vue";
-import EmptyTips from "./EmptyTips.vue";
-import TabsContainer from "./TabsContainer.vue";
-import TableEditor from "./Panels/TableEditor.vue";
-import {
-  provideSchemaDesignerContext,
-  useSchemaDesignerContext,
-} from "./common";
+import { onMounted, reactive, ref } from "vue";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { Engine } from "@/types/proto/v1/common";
-import { SchemaDesignerTabState, SchemaDesignerTabType } from "./common/type";
+import { provideSchemaDesignerContext } from "./common";
+import { SchemaDesignerTabState } from "./common/type";
+import AsidePanel from "./AsidePanel.vue";
+import Designer from "./Designer.vue";
+import { Schema, convertSchemaMetadataList } from "@/types";
+import { cloneDeep } from "lodash-es";
 
 interface LocalState {
   isLoading: boolean;
 }
 
-const props = defineProps({
-  database: {
-    type: String,
-    required: true,
-  },
-});
+const props = defineProps<{
+  readonly: boolean;
+  engine: Engine;
+  schemaDesign: SchemaDesign;
+}>();
+
 const state = reactive<LocalState>({
   isLoading: true,
 });
 
-const { getCurrentTab } = useSchemaDesignerContext();
-const dbSchemaStore = useDBSchemaV1Store();
-const currentTab = computed(() => {
-  return getCurrentTab();
-});
 const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
+const editableSchemas = ref<Schema[]>([]);
 const baselineMetadata = ref<DatabaseMetadata>(
   DatabaseMetadata.fromPartial({})
 );
@@ -69,20 +49,31 @@ const tabState = ref<SchemaDesignerTabState>({
   tabMap: new Map(),
 });
 
-provideSchemaDesignerContext({
-  metadata,
-  baselineMetadata: baselineMetadata.value,
-  engine: Engine.MYSQL,
-  tabState: tabState,
+onMounted(async () => {
+  baselineMetadata.value =
+    cloneDeep(props.schemaDesign?.baselineSchemaMetadata) ||
+    DatabaseMetadata.fromPartial({});
+  metadata.value =
+    cloneDeep(props.schemaDesign?.schemaMetadata) ||
+    DatabaseMetadata.fromPartial({});
+  editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
+  state.isLoading = false;
 });
 
-onMounted(async () => {
-  const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata(
-    props.database
-  );
-  baselineMetadata.value = databaseMetadata;
-  metadata.value = databaseMetadata;
-  state.isLoading = false;
+provideSchemaDesignerContext({
+  readonly: props.readonly,
+  baselineMetadata: baselineMetadata.value,
+  engine: props.engine,
+  metadata: metadata,
+  tabState: tabState,
+  originalSchemas: cloneDeep(editableSchemas.value),
+  editableSchemas: editableSchemas,
+});
+
+defineExpose({
+  metadata,
+  baselineMetadata,
+  editableSchemas,
 });
 </script>
 

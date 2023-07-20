@@ -8,6 +8,7 @@
         >
           <button
             class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="disableChangeTable"
             @click="handleAddColumn"
           >
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
@@ -27,6 +28,7 @@
           </template>
         </NInput>
         <div
+          v-if="false"
           class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded"
         >
           <button
@@ -78,13 +80,17 @@
         <div class="w-full">
           <div
             v-for="(column, index) in shownColumnList"
-            :key="`${column.name}-${index}`"
+            :key="`${index}-${column.id}`"
             class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
-            :class="[getColumnComputedClassList(column)]"
+            :class="[
+              `column-${column.id}`,
+              getColumnItemComputedClassList(column),
+            ]"
           >
             <div class="table-body-item-container">
               <input
                 v-model="column.name"
+                :disabled="disableAlterColumn(column)"
                 placeholder="column name"
                 class="column-field-input column-name-input"
                 type="text"
@@ -95,12 +101,14 @@
             >
               <input
                 v-model="column.type"
+                :disabled="disableAlterColumn(column)"
                 placeholder="column type"
                 class="column-field-input column-type-input !pr-8"
                 type="text"
               />
               <NDropdown
                 trigger="click"
+                :disabled="disableAlterColumn(column)"
                 :options="dataTypeOptions"
                 @select="(dataType: string) => (column.type = dataType)"
               >
@@ -116,12 +124,14 @@
             >
               <input
                 v-model="column.default"
+                :disabled="disableAlterColumn(column)"
                 :placeholder="column.default === undefined ? 'NULL' : 'EMPTY'"
                 class="column-field-input !pr-8"
                 type="text"
               />
               <NDropdown
                 trigger="click"
+                :disabled="disableAlterColumn(column)"
                 :options="dataDefaultOptions"
                 @select="(defaultString:string)=>handleColumnDefaultFieldChange(column, defaultString)"
               >
@@ -135,6 +145,7 @@
             <div class="table-body-item-container">
               <input
                 v-model="column.comment"
+                :disabled="disableAlterColumn(column)"
                 placeholder="comment"
                 class="column-field-input"
                 type="text"
@@ -146,7 +157,9 @@
               <BBCheckbox
                 class="ml-3"
                 :value="!column.nullable"
-                :disabled="isColumnPrimaryKey(column)"
+                :disabled="
+                  disableAlterColumn(column) || isColumnPrimaryKey(column)
+                "
                 @toggle="(value) => (column.nullable = !value)"
               />
             </div>
@@ -156,6 +169,7 @@
               <BBCheckbox
                 class="ml-3"
                 :value="isColumnPrimaryKey(column)"
+                :disabled="disableAlterColumn(column)"
                 @toggle="(value) => setColumnPrimaryKey(column, value)"
               />
             </div>
@@ -165,6 +179,7 @@
               <span
                 v-if="checkColumnHasForeignKey(column)"
                 class="column-field-text cursor-pointer !w-auto hover:opacity-80"
+                @click="gotoForeignKeyReferencedTable(column)"
               >
                 {{ getReferencedForeignKeyName(column) }}
               </span>
@@ -175,15 +190,17 @@
               >
               <button
                 class="foreign-key-edit-button hidden cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="disableAlterColumn(column)"
                 @click="handleEditColumnForeignKey(column)"
               >
                 <heroicons:pencil-square class="w-4 h-auto text-gray-400" />
               </button>
             </div>
             <div class="w-full flex justify-start items-center">
-              <n-tooltip trigger="hover">
+              <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
                 <template #trigger>
                   <button
+                    :disabled="disableChangeTable"
                     class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
                     @click="handleDropColumn(column)"
                   >
@@ -191,6 +208,18 @@
                   </button>
                 </template>
                 <span>{{ $t("schema-editor.actions.drop-column") }}</span>
+              </n-tooltip>
+              <n-tooltip v-else trigger="hover">
+                <template #trigger>
+                  <button
+                    class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                    :disabled="disableChangeTable"
+                    @click="handleRestoreColumn(column)"
+                  >
+                    <heroicons:arrow-uturn-left class="w-4 h-auto" />
+                  </button>
+                </template>
+                <span>{{ $t("schema-editor.actions.restore") }}</span>
               </n-tooltip>
             </div>
           </div>
@@ -223,29 +252,38 @@
 
   <EditColumnForeignKeyModal
     v-if="state.showEditColumnForeignKeyModal && editForeignKeyColumn"
-    :schema="schema.name"
-    :table="table.name"
-    :column="editForeignKeyColumn.name"
+    :schema-id="schema.id"
+    :table-id="table.id"
+    :column-id="editForeignKeyColumn.id"
     @close="state.showEditColumnForeignKeyModal = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { isUndefined } from "lodash-es";
+import { isUndefined, flatten } from "lodash-es";
+import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { NDropdown } from "naive-ui";
+import { generateUniqueTabId } from "@/store/modules";
 import { ColumnMetadata } from "@/types/proto/store/database";
+import {
+  Column,
+  Table,
+  Schema,
+  convertColumnMetadataToColumn,
+  ForeignKey,
+} from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { Engine } from "@/types/proto/v1/common";
-import { TableTabContext, useSchemaDesignerContext } from "../common";
 import {
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
+  SchemaDesignerTabType,
+  TableTabContext,
+  useSchemaDesignerContext,
+} from "../common";
 
 type SubtabType = "column-list" | "raw-sql";
 
@@ -257,7 +295,8 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const { engine, metadata, getCurrentTab } = useSchemaDesignerContext();
+const { readonly, engine, editableSchemas, getCurrentTab, addTab } =
+  useSchemaDesignerContext();
 const currentTab = computed(() => getCurrentTab() as TableTabContext);
 const state = reactive<LocalState>({
   selectedSubtab:
@@ -268,27 +307,37 @@ const state = reactive<LocalState>({
 });
 
 const schema = computed(() => {
-  return metadata.value.schemas.find(
-    (schema) => schema.name === currentTab.value.schema
-  ) as SchemaMetadata;
+  return editableSchemas.value.find(
+    (schema) => schema.id === currentTab.value.schemaId
+  ) as Schema;
 });
-const table = computed(() => {
-  return schema.value.tables.find(
-    (table) => table.name === currentTab.value.table
-  ) as TableMetadata;
-});
+const table = computed(
+  () =>
+    schema.value.tableList.find(
+      (table) => table.id === currentTab.value.tableId
+    ) as Table
+);
 const foreignKeyList = computed(() => {
-  return table.value.foreignKeys;
+  return schema.value.foreignKeyList.filter(
+    (pk) => pk.tableId === currentTab.value.tableId
+  ) as ForeignKey[];
 });
 
 const searchPattern = ref("");
 const tableEditorContainerRef = ref<HTMLDivElement>();
-const editForeignKeyColumn = ref<ColumnMetadata>();
+const editForeignKeyColumn = ref<Column>();
 
 const shownColumnList = computed(() => {
-  return table.value.columns.filter((column) =>
+  return table.value.columnList.filter((column) =>
     column.name.includes(searchPattern.value.trim())
   );
+});
+const isDroppedSchema = computed(() => {
+  return schema.value.status === "dropped";
+});
+
+const isDroppedTable = computed(() => {
+  return table.value.status === "dropped";
 });
 
 const columnHeaderList = computed(() => {
@@ -319,10 +368,28 @@ const columnHeaderList = computed(() => {
     },
     {
       key: "foreign_key",
-      label: "Foreign Key",
+      label: t("schema-editor.column.foreign-key"),
     },
   ];
 });
+
+const dataTypeOptions = computed(() => {
+  return getDataTypeSuggestionList(engine).map((dataType) => {
+    return {
+      label: dataType,
+      key: dataType,
+    };
+  });
+});
+
+const getColumnItemComputedClassList = (column: Column) => {
+  if (column.status === "dropped") {
+    return ["text-red-700", "cursor-not-allowed", "!bg-red-50", "opacity-70"];
+  } else if (column.status === "created") {
+    return ["text-green-700", "!bg-green-50"];
+  }
+  return [];
+};
 
 const dataDefaultOptions = [
   {
@@ -335,66 +402,78 @@ const dataDefaultOptions = [
   },
 ];
 
-const dataTypeOptions = computed(() => {
-  return getDataTypeSuggestionList(engine).map((dataType) => {
-    return {
-      label: dataType,
-      key: dataType,
-    };
-  });
-});
-
-const getColumnComputedClassList = (column: ColumnMetadata) => {
-  return [`column-${column.name}`];
+const isColumnPrimaryKey = (column: Column): boolean => {
+  return table.value.primaryKey.columnIdList.includes(column.id);
 };
 
-const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
-  return (
-    table.value.indexes.find(
-      (index) => index.primary && index.expressions.includes(column.name)
-    ) !== undefined
+const checkColumnHasForeignKey = (column: Column): boolean => {
+  const columnIdList = flatten(
+    foreignKeyList.value.map((fk) => fk.columnIdList)
   );
+  return columnIdList.includes(column.id);
 };
 
-const checkColumnHasForeignKey = (column: ColumnMetadata): boolean => {
-  return foreignKeyList.value
-    .map((fk) => fk.columns)
-    .flat()
-    .flat()
-    .includes(column.name);
-};
-
-const getReferencedForeignKeyName = (column: ColumnMetadata) => {
+const getReferencedForeignKeyName = (column: Column) => {
   if (!checkColumnHasForeignKey(column)) {
     return;
   }
   const fk = foreignKeyList.value.find(
     (fk) =>
-      fk.columns.find((columnName) => columnName === column.name) !== undefined
+      fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
   );
-  const index = fk?.columns.findIndex(
-    (columnName) => columnName === column.name
+  const index = fk?.columnIdList.findIndex(
+    (columnId) => columnId === column.id
   );
+
   if (isUndefined(fk) || isUndefined(index) || index < 0) {
     return;
   }
-
-  const referencedSchema = fk.referencedSchema[index];
-  const referencedTable = fk.referencedTable[index];
-  const referencedColumn = fk.referencedSchema[index];
-  if (!referencedTable || !referencedColumn) {
+  const referencedSchema = editableSchemas.value.find(
+    (schema) => schema.id === fk.referencedSchemaId
+  );
+  const referencedTable = referencedSchema?.tableList.find(
+    (table) => table.id === fk.referencedTableId
+  );
+  if (!referencedTable) {
     return;
   }
-
+  const referColumn = referencedTable.columnList.find(
+    (column) => column.id === fk.referencedColumnIdList[index]
+  );
   if (engine === Engine.MYSQL) {
-    return `${referencedTable}(${referencedColumn})`;
+    return `${referencedTable.name}(${referColumn?.name})`;
   } else {
-    return `${referencedSchema}.${referencedTable}(${referencedColumn})`;
+    return `${referencedSchema?.name}.${referencedTable.name}(${referColumn?.name})`;
   }
 };
 
-const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
-  // TODO
+const isDroppedColumn = (column: Column): boolean => {
+  return column.status === "dropped";
+};
+
+const disableChangeTable = computed(() => {
+  return readonly || isDroppedSchema.value || isDroppedTable.value;
+});
+
+const disableAlterColumn = (column: Column): boolean => {
+  return (
+    readonly ||
+    isDroppedSchema.value ||
+    isDroppedTable.value ||
+    isDroppedColumn(column)
+  );
+};
+
+const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
+  if (isPrimaryKey) {
+    column.nullable = false;
+    table.value.primaryKey.columnIdList.push(column.id);
+  } else {
+    table.value.primaryKey.columnIdList =
+      table.value.primaryKey.columnIdList.filter(
+        (columnId) => columnId !== column.id
+      );
+  }
 };
 
 const handleChangeTab = (tab: SubtabType) => {
@@ -402,19 +481,20 @@ const handleChangeTab = (tab: SubtabType) => {
 };
 
 const handleAddColumn = () => {
-  const column = ColumnMetadata.fromPartial({});
-  table.value.columns.push(column);
+  const column = convertColumnMetadataToColumn(ColumnMetadata.fromPartial({}));
+  column.status = "created";
+  table.value.columnList.push(column);
   nextTick(() => {
     (
       tableEditorContainerRef.value?.querySelector(
-        `.column-${column.name} .column-name-input`
+        `.column-${column.id} .column-name-input`
       ) as HTMLInputElement
     )?.focus();
   });
 };
 
 const handleColumnDefaultFieldChange = (
-  column: ColumnMetadata,
+  column: Column,
   defaultString: string
 ) => {
   if (defaultString === "NULL") {
@@ -424,13 +504,94 @@ const handleColumnDefaultFieldChange = (
   }
 };
 
-const handleEditColumnForeignKey = (column: ColumnMetadata) => {
+const gotoForeignKeyReferencedTable = (column: Column) => {
+  if (!checkColumnHasForeignKey(column)) {
+    return;
+  }
+  const fk = foreignKeyList.value.find(
+    (fk) =>
+      fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
+  );
+  const index = fk?.columnIdList.findIndex(
+    (columnId) => columnId === column.id
+  );
+  if (isUndefined(fk) || isUndefined(index) || index < 0) {
+    return;
+  }
+
+  const referencedSchema = editableSchemas.value.find(
+    (schema) => schema.id === fk.referencedSchemaId
+  );
+  const referencedTable = referencedSchema?.tableList.find(
+    (table) => table.id === fk.referencedTableId
+  );
+  if (!referencedTable) {
+    return;
+  }
+  const referColumn = referencedTable?.columnList.find(
+    (column) => column.id === fk.referencedColumnIdList[index]
+  );
+  if (!referencedSchema || !referencedTable || !referColumn) {
+    return;
+  }
+
+  addTab({
+    id: generateUniqueTabId(),
+    type: SchemaDesignerTabType.TabForTable,
+    schemaId: referencedSchema.id,
+    tableId: referencedTable.id,
+  });
+
+  nextTick(() => {
+    const container = document.querySelector("#table-editor-container");
+    const input = container?.querySelector(
+      `.column-${referColumn.id} .column-name-input`
+    ) as HTMLInputElement | undefined;
+    if (input) {
+      input.focus();
+      scrollIntoView(input);
+    }
+  });
+};
+
+const handleEditColumnForeignKey = (column: Column) => {
   editForeignKeyColumn.value = column;
   state.showEditColumnForeignKeyModal = true;
 };
 
-const handleDropColumn = (column: ColumnMetadata) => {
-  table.value.columns = table.value.columns.filter((col) => col !== column);
+const handleDropColumn = (column: Column) => {
+  if (column.status === "created") {
+    table.value.columnList = table.value.columnList.filter(
+      (item) => item !== column
+    );
+    table.value.primaryKey.columnIdList =
+      table.value.primaryKey.columnIdList.filter(
+        (columnId) => columnId !== column.id
+      );
+
+    const foreignKeyList = schema.value.foreignKeyList.filter(
+      (fk) => fk.tableId === currentTab.value.tableId
+    );
+    for (const foreignKey of foreignKeyList) {
+      const columnRefIndex = foreignKey.columnIdList.findIndex(
+        (columnId) => columnId === column.id
+      );
+      if (columnRefIndex > -1) {
+        foreignKey.columnIdList.splice(columnRefIndex, 1);
+        foreignKey.referencedColumnIdList.splice(columnRefIndex, 1);
+      }
+    }
+  } else {
+    column.status = "dropped";
+  }
+};
+
+const handleRestoreColumn = (column: Column) => {
+  if (column.status === "created") {
+    return;
+  }
+
+  column.status = "normal";
 };
 </script>
 

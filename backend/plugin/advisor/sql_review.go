@@ -1055,6 +1055,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleWhereRequirement, nil
 		case db.Snowflake:
 			return SnowflakeWhereRequirement, nil
+		case db.MSSQL:
+			return MSSQLWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
@@ -1143,6 +1145,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleTableNamingNoKeyword, nil
 		case db.Snowflake:
 			return SnowflakeTableNamingNoKeyword, nil
+		case db.MSSQL:
+			return MSSQLTableNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierNoKeyword:
 		switch engine {
@@ -1150,6 +1154,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleIdentifierNamingNoKeyword, nil
 		case db.Snowflake:
 			return SnowflakeIdentifierNamingNoKeyword, nil
+		case db.MSSQL:
+			return MSSQLIdentifierNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierCase:
 		switch engine {
@@ -1241,6 +1247,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleColumnMaximumVarcharLength, nil
 		case db.Snowflake:
 			return SnowflakeColumnMaximumVarcharLength, nil
+		case db.MSSQL:
+			return MSSQLColumnMaximumVarcharLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {

@@ -557,6 +557,7 @@ export interface Project {
   dbNameTemplate: string;
   schemaChange: SchemaChange;
   webhooks: Webhook[];
+  dataCategoryConfigId: string;
 }
 
 export interface AddWebhookRequest {
@@ -2599,6 +2600,7 @@ function createBaseProject(): Project {
     dbNameTemplate: "",
     schemaChange: 0,
     webhooks: [],
+    dataCategoryConfigId: "",
   };
 }
 
@@ -2636,6 +2638,9 @@ export const Project = {
     }
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
+    }
+    if (message.dataCategoryConfigId !== "") {
+      writer.uint32(98).string(message.dataCategoryConfigId);
     }
     return writer;
   },
@@ -2724,6 +2729,13 @@ export const Project = {
 
           message.webhooks.push(Webhook.decode(reader, reader.uint32()));
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.dataCategoryConfigId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2746,6 +2758,7 @@ export const Project = {
       dbNameTemplate: isSet(object.dbNameTemplate) ? String(object.dbNameTemplate) : "",
       schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       webhooks: Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
+      dataCategoryConfigId: isSet(object.dataCategoryConfigId) ? String(object.dataCategoryConfigId) : "",
     };
   },
 
@@ -2766,6 +2779,7 @@ export const Project = {
     } else {
       obj.webhooks = [];
     }
+    message.dataCategoryConfigId !== undefined && (obj.dataCategoryConfigId = message.dataCategoryConfigId);
     return obj;
   },
 
@@ -2786,6 +2800,7 @@ export const Project = {
     message.dbNameTemplate = object.dbNameTemplate ?? "";
     message.schemaChange = object.schemaChange ?? 0;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
+    message.dataCategoryConfigId = object.dataCategoryConfigId ?? "";
     return message;
   },
 };

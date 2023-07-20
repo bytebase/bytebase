@@ -79,6 +79,22 @@
             {{ $t("database.change-data") }}
           </h3>
         </div>
+
+        <div
+          v-if="
+            isDev() && quickAction === 'quickaction.bb.database.schema.design'
+          "
+          class="flex flex-col items-center w-24"
+        >
+          <button class="btn-icon-primary p-3" @click.prevent="designSchema">
+            <heroicons-outline:table-cells class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("schema-designer.quick-action") }}
+          </h3>
+        </div>
       </template>
 
       <div
@@ -261,6 +277,11 @@
       :type="'bb.issue.database.data.update'"
       @dismiss="state.quickActionType = undefined"
     />
+    <DesignSchemaPrepForm
+      v-if="state.quickActionType === 'quickaction.bb.database.schema.design'"
+      :project-id="projectId"
+      @dismiss="state.quickActionType = undefined"
+    />
     <TransferDatabaseForm
       v-if="
         projectId &&
@@ -327,6 +348,7 @@ import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
+import DesignSchemaPrepForm from "@/components/SchemaDesigner/PrepForm/index.vue";
 
 interface LocalState {
   feature?: string;
@@ -407,6 +429,10 @@ const createInstance = () => {
 
 const alterSchema = () => {
   state.quickActionType = "quickaction.bb.database.schema.update";
+};
+
+const designSchema = () => {
+  state.quickActionType = "quickaction.bb.database.schema.design";
 };
 
 const changeData = () => {
