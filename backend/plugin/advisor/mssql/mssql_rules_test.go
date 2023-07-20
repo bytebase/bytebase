@@ -18,6 +18,7 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnMaximumVarcharLength,
 		advisor.SchemaRuleTableDropNamingConvention,
 		advisor.SchemaRuleTableRequirePK,
+		advisor.SchemaRuleColumnNotNull,
 	}
 
 	for _, rule := range snowflakeRules {
