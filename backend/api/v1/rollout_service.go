@@ -4,17 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -379,7 +380,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 
 // ListTaskRuns lists rollout task runs.
 func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
-	projectID, rolloutID, maybeStageID, maybeTaskID, err := getProjectIDRolloutIDStageIDTaskID(request.Parent)
+	projectID, rolloutID, maybeStageID, maybeTaskID, err := getProjectIDRolloutIDMaybeStageIDMaybeTaskID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -407,6 +408,144 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 		TaskRuns:      convertToTaskRuns(taskRuns),
 		NextPageToken: "",
 	}, nil
+}
+
+func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
+	if len(request.Tasks) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "The tasks in request cannot be empty")
+	}
+	projectID, rolloutID, err := getProjectIDRolloutID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	rollout, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find rollout, error: %v", err)
+	}
+	if rollout == nil {
+		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
+	}
+
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
+	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue not found for rollout %v", rolloutID)
+	}
+
+	stages, err := s.store.ListStageV2(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list stages, error: %v", err)
+	}
+	if len(stages) == 0 {
+		return nil, status.Errorf(codes.NotFound, "no stages found for rollout %v", rolloutID)
+	}
+
+	stageTasks := map[int][]int{}
+	taskIDsToRunMap := map[int]bool{}
+	taskIDsToRun := []int{}
+	for _, task := range request.Tasks {
+		_, _, stageID, taskID, err := getProjectIDRolloutIDStageIDTaskID(task)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		stageTasks[stageID] = append(stageTasks[stageID], taskID)
+		taskIDsToRun = append(taskIDsToRun, taskID)
+		taskIDsToRunMap[taskID] = true
+	}
+	if len(stageTasks) > 1 {
+		return nil, status.Errorf(codes.InvalidArgument, "tasks should be in the same stage")
+	}
+	var stageToRun *store.StageMessage
+	for stageID, _ := range stageTasks {
+		for _, stage := range stages {
+			if stage.ID == stageID {
+				stageToRun = stage
+				break
+			}
+			if stage.Active {
+				return nil, status.Errorf(codes.InvalidArgument, "Tasks in a prior stage are not done yet")
+			}
+		}
+		break
+	}
+
+	pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}
+	stageToRunTasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID, StageID: &stageToRun.ID, StatusList: &pendingApprovalStatus})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
+	}
+	if len(stageToRunTasks) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "No tasks to run in the stage")
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, err := s.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
+	}
+
+	ok, err := s.taskScheduler.CanPrincipalChangeIssueStageTaskStatus(ctx, user, issue, stageToRun.EnvironmentID, api.TaskPending)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "Not allowed to run tasks")
+	}
+
+	approved, err := utils.CheckIssueApproved(issue)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
+	}
+	if !approved {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
+	}
+
+	var tasksToRun []*store.TaskMessage
+	for _, task := range stageToRunTasks {
+		if !taskIDsToRunMap[task.ID] {
+			continue
+		}
+		tasksToRun = append(tasksToRun, task)
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find instance, error: %v", err)
+		}
+		taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list task check runs, error: %v", err)
+		}
+		ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the task has passed all the checks, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.InvalidArgument, "The task %v has not passed all the checks yet", task.Name)
+		}
+	}
+
+	if err := s.store.BatchPatchTaskStatus(ctx, taskIDsToRun, api.TaskPending, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update task status, error: %v", err)
+	}
+	if err := s.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasksToRun, principalID, issue, stageToRun.Name); err != nil {
+		log.Error("failed to create task status update activity", zap.Error(err))
+	}
+
+	return &v1pb.BatchRunTasksResponse{}, nil
 }
 
 func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
@@ -1312,7 +1451,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			},
 		}, nil
 	}()
-
 	if err != nil {
 		return nil, nil, err
 	}
