@@ -302,7 +302,7 @@ func getProjectIDRolloutID(name string) (string, int, error) {
 }
 
 func getProjectIDRolloutIDMaybeStageID(name string) (string, int, *int, error) {
-	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix, taskPrefix)
+	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix)
 	if err != nil {
 		return "", 0, nil, err
 	}
