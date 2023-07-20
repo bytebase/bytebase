@@ -652,6 +652,21 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	}
 }
 
+func convertToDatabaseLabels(labelsJSON string) (map[string]string, error) {
+	if labelsJSON == "" {
+		return nil, nil
+	}
+	var labels []*api.DatabaseLabel
+	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
+		return nil, err
+	}
+	labelsMap := make(map[string]string)
+	for _, label := range labels {
+		labelsMap[label.Key] = label.Value
+	}
+	return labelsMap, nil
+}
+
 func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -662,6 +677,10 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %d", task.InstanceID)
+	}
+	labels, err := convertToDatabaseLabels(payload.Labels)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert database labels %v", payload.Labels)
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
@@ -680,6 +699,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Sheet:        getResourceNameForSheet(project, payload.SheetID),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
+				Labels:       labels,
 			},
 		},
 	}
