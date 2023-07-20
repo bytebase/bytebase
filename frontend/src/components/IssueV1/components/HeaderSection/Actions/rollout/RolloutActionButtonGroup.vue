@@ -1,20 +1,10 @@
 <template>
   <div class="flex items-center gap-x-2">
-    <!-- <BBContextMenuButton
-      v-for="(transition, index) in taskStatusTransitionList"
-      :key="index"
-      data-label="bb-issue-status-transition-button"
-      default-action-key="ROLLOUT-STAGE"
-      :disabled="!allowApplyTaskTransition(transition)"
-      :action-list="getButtonActionListForTransition(transition)"
-      @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
-    /> -->
-    <ContextMenuButton
+    <RolloutActionButton
       v-for="(action, index) in taskRolloutActionList"
       :key="index"
-      :preference-key="`bb-rollout-action-${action}`"
-      :action-list="getButtonActionListForRolloutAction(action)"
-      :default-action-key="`${action}-STAGE`"
+      :action="action"
+      :stage-rollout-action-list="stageRolloutActionList"
     />
   </div>
 </template>
@@ -23,10 +13,9 @@
 import {
   StageRolloutAction,
   TaskRolloutAction,
-  taskRolloutActionDisplayName,
 } from "@/components/IssueV1/logic";
-import { ContextMenuButton, ContextMenuButtonAction } from "@/components/v2";
-import { useI18n } from "vue-i18n";
+import { ContextMenuButtonAction } from "@/components/v2";
+import RolloutActionButton from "./RolloutActionButton.vue";
 
 // import { Issue } from "@/types";
 // import {
@@ -54,7 +43,7 @@ export type RolloutAction<T = "TASK" | "STAGE"> = {
 
 export type RolloutButtonAction = ContextMenuButtonAction<RolloutAction>;
 
-const props = defineProps<{
+defineProps<{
   taskRolloutActionList: TaskRolloutAction[];
   stageRolloutActionList: StageRolloutAction[];
 }>();
@@ -63,7 +52,6 @@ defineEmits<{
   (event: "apply-action", action: RolloutAction): void;
 }>();
 
-const { t } = useI18n();
 // const issueLogic = useIssueLogic();
 // const issue = issueLogic.issue as Ref<Issue>;
 
@@ -84,38 +72,6 @@ const { t } = useI18n();
 //   }
 //   return true;
 // };
-
-const getButtonActionListForRolloutAction = (action: TaskRolloutAction) => {
-  const text = taskRolloutActionDisplayName(action);
-  const actionProps: RolloutButtonAction["props"] = {
-    type: "primary",
-    size: "large",
-  };
-  const actionList: RolloutButtonAction[] = [
-    {
-      key: `${action}-TASK`,
-      text,
-      props: actionProps,
-      params: {
-        action,
-        target: "TASK",
-      },
-    },
-  ];
-  if (props.stageRolloutActionList.includes(action as any)) {
-    actionList.push({
-      key: `${action}-STAGE`,
-      text: t("issue.action-to-current-stage", { action: text }),
-      props: actionProps,
-      params: {
-        action,
-        target: "STAGE",
-      },
-    });
-  }
-
-  return actionList;
-};
 
 // const allowApplyTaskTransitionToStage = (transition: TaskStatusTransition) => {
 //   // Only available for the issue type of schema.update and data.update.

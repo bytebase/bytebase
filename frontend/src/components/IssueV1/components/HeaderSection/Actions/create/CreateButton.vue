@@ -13,14 +13,7 @@
     </template>
 
     <template #default>
-      <ul
-        class="flex flex-col gap-y-2 whitespace-nowrap"
-        :class="[issueCreateErrorList.length > 1 && 'list-disc pl-4']"
-      >
-        <li v-for="(error, i) in issueCreateErrorList" :key="i">
-          {{ error }}
-        </li>
-      </ul>
+      <ErrorList :errors="issueCreateErrorList" />
     </template>
   </NTooltip>
 </template>
@@ -43,6 +36,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { extractSheetUID } from "@/utils";
+import { ErrorList } from "../common";
 
 const { issue } = useIssueContext();
 
