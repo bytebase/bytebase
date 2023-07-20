@@ -1350,6 +1350,14 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			delete(g.currentTable.foreignKeys, name)
 		}
 	default:
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
 		if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
 			g.err = err
 			return
