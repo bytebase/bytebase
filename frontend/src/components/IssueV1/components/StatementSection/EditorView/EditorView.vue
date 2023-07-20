@@ -41,13 +41,15 @@
         class="flex items-center justify-end gap-x-2"
       >
         <template v-if="isCreating">
-          <FormatOnSaveCheckbox
-            v-model:value="formatOnSave"
-            :language="language"
-          />
-          <UploadProgressButton :upload="handleUploadFile" size="tiny">
-            {{ $t("issue.upload-sql") }}
-          </UploadProgressButton>
+          <template v-if="allowEditStatementWhenCreating">
+            <FormatOnSaveCheckbox
+              v-model:value="formatOnSave"
+              :language="language"
+            />
+            <UploadProgressButton :upload="handleUploadFile" size="tiny">
+              {{ $t("issue.upload-sql") }}
+            </UploadProgressButton>
+          </template>
         </template>
 
         <template v-else>
@@ -152,12 +154,15 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from "vue";
 import { NButton } from "naive-ui";
+import { useRoute } from "vue-router";
 
 import {
   SQLDialect,
   TaskTypeListWithStatement,
   dialectOfEngineV1,
 } from "@/types";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   flattenTaskV1List,
   getSheetStatement,
@@ -171,7 +176,6 @@ import {
   useIssueContext,
 } from "../../../logic";
 import { hasFeature, useUIStateStore } from "@/store";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
@@ -179,7 +183,6 @@ import { EditState, useTempEditState } from "./useTempEditState";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
 import { readFileAsync } from "./utils";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
 
 type LocalState = EditState & {
   showFeatureModal: boolean;
@@ -187,6 +190,7 @@ type LocalState = EditState & {
 };
 
 const uiStateStore = useUIStateStore();
+const route = useRoute();
 const { isCreating, issue, selectedTask } = useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 
@@ -212,6 +216,16 @@ const dialect = computed((): SQLDialect => {
 });
 const { markers } = useSQLAdviceMarkers();
 
+const allowEditStatementWhenCreating = computed(() => {
+  if (route.query.sheetId) {
+    return false;
+  }
+  if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
+    return false;
+  }
+  return true;
+});
+
 /**
  * to set the MonacoEditor as readonly
  * This happens when
@@ -224,7 +238,7 @@ const isEditorReadonly = computed(() => {
     return true;
   }
   if (isCreating.value) {
-    return false;
+    return !allowEditStatementWhenCreating.value;
   }
   return (
     !state.isEditing ||
