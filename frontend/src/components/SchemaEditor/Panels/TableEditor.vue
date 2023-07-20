@@ -144,7 +144,7 @@
               <input
                 v-model="column.default"
                 :disabled="disableAlterColumn(column)"
-                :placeholder="column.default === undefined ? 'NULL' : 'EMPTY'"
+                :placeholder="column.default === undefined ? 'EMPTY' : 'NULL'"
                 class="column-field-input !pr-8"
                 type="text"
               />
@@ -654,9 +654,9 @@ const handleColumnDefaultFieldChange = (
   defaultString: string
 ) => {
   if (defaultString === "NULL") {
-    column.default = undefined;
+    column.default = "NULL";
   } else if (defaultString === "EMPTY") {
-    column.default = "";
+    column.default = undefined;
   }
 };
 
