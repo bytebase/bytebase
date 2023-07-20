@@ -7,9 +7,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -75,10 +73,7 @@ func (l *namingTableNoKeywordChecker) generateAdvice() ([]advisor.Advice, error)
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	tableName := ctx.Table_name().GetTable()
-	normalizedTableName, err := bbparser.NormalizeTSQLTableNamePart(tableName)
-	if err != nil {
-		log.Error("failed to normalize table name", zap.Error(err))
-	}
+	normalizedTableName := bbparser.NormalizeTSQLIdentifier(tableName)
 	if bbparser.IsTSQLKeyword(normalizedTableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

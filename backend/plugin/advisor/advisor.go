@@ -461,6 +461,9 @@ const (
 
 	// MSSQLTableDropNamingConvention is an advisor type for MSSQL table drop with naming convention.
 	MSSQLTableDropNamingConvention Type = "bb.plugin.advisor.mssql.table.drop-naming-convention"
+
+	// MSSQLTableRequirePK is an advisor type for MSSQL table require primary key.
+	MSSQLTableRequirePK Type = "bb.plugin.advisor.mssql.table.require-pk"
 )
 
 // Advice is the result of an advisor.

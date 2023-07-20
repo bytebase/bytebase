@@ -8,9 +8,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -87,11 +85,7 @@ func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tabl
 		if table == nil {
 			continue
 		}
-		normalizedTableName, err := bbparser.NormalizeTSQLTableNamePart(table)
-		if err != nil {
-			log.Error("failed to normalize table name", zap.String("tableName", table.GetText()), zap.Error(err))
-			continue
-		}
+		normalizedTableName := bbparser.NormalizeTSQLIdentifier(table)
 		if !l.format.MatchString(normalizedTableName) {
 			l.adviceList = append(l.adviceList, advisor.Advice{
 				Status:  l.level,
