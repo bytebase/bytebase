@@ -39,9 +39,11 @@
         />
       </div>
     </template>
+    <template v-else-if="status === Task_Status.SKIPPED">
+      <SkipIcon class="w-5 h-5" />
+    </template>
     <template v-else-if="status === Task_Status.DONE">
-      <SkipIcon v-if="isSkipped" class="w-5 h-5" />
-      <heroicons-solid:check v-else class="w-5 h-5" />
+      <heroicons-solid:check class="w-5 h-5" />
     </template>
     <template v-else-if="status === Task_Status.FAILED">
       <span
@@ -78,11 +80,6 @@ const props = defineProps<{
 
 const { isCreating } = useIssueContext();
 
-const isSkipped = computed(() => {
-  // return !isCreating.value && props.task && isTaskSkipped(props.task as Task);
-  return false;
-});
-
 const planCheckStatus = computed((): PlanCheckRun_Result_Status | undefined => {
   if (props.ignorePlanCheckStatus) return undefined;
   if (isCreating.value) return undefined;
@@ -113,10 +110,9 @@ const classes = computed((): string => {
       return "bg-white border-2 border-control";
     case Task_Status.RUNNING:
       return "bg-white border-2 border-info text-info";
+    case Task_Status.SKIPPED:
+      return "bg-gray-200 text-gray-500";
     case Task_Status.DONE:
-      if (isSkipped.value) {
-        return "bg-gray-200 text-gray-500";
-      }
       return "bg-success text-white";
     case Task_Status.FAILED:
       return "bg-error text-white";

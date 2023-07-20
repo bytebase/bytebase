@@ -36,6 +36,7 @@
           <InstanceV1Name
             :instance="databaseForTask(issue, task).instanceEntity"
             :link="false"
+            class="!gap-x-2"
           />
         </div>
         <div

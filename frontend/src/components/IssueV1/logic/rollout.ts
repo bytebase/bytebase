@@ -27,3 +27,12 @@ export const isTaskEditable = (task: Task): [boolean, string] => {
 
   return [false, `${task_StatusToJSON(task.status)} task is not editable`];
 };
+
+export const isTaskFinished = (task: Task): boolean => {
+  return [
+    Task_Status.DONE,
+    Task_Status.FAILED,
+    Task_Status.CANCELED,
+    Task_Status.SKIPPED,
+  ].includes(task.status);
+};
