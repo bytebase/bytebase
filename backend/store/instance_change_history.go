@@ -55,7 +55,7 @@ const instanceChangeHistoryTruncateLength = 1024 * 1024
 
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
-	ID         *int64
+	ID         *string
 	InstanceID *int
 	DatabaseID *int
 	SheetID    *int
@@ -253,19 +253,13 @@ func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistor
 // FindInstanceChangeHistoryList finds a list of instance change history and returns as a list of migration history.
 func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	findMessage := &FindInstanceChangeHistoryMessage{
+		ID:         find.ID,
 		InstanceID: find.InstanceID,
 		DatabaseID: find.DatabaseID,
 		Source:     find.Source,
 		Version:    find.Version,
 		Limit:      find.Limit,
 		ShowFull:   true,
-	}
-	if v := find.ID; v != nil {
-		id, err := strconv.ParseInt(*v, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		findMessage.ID = &id
 	}
 
 	list, err := s.ListInstanceChangeHistory(ctx, findMessage)
@@ -305,7 +299,11 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_change_history.id = $%d", len(args)+1)), append(args, *v)
+		id, err := strconv.Atoi(*v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert id %q to int", *v)
+		}
+		where, args = append(where, fmt.Sprintf("instance_change_history.id = $%d", len(args)+1)), append(args, id)
 	}
 	sheetField := "instance_change_history.sheet_id"
 	if v := find.InstanceID; v != nil {
