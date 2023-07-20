@@ -23,6 +23,7 @@ ruleList:
       - ORACLE
       - OCEANBASE
       - SNOWFLAKE
+      - MSSQL
     componentList: []
   - type: table.no-foreign-key
     category: TABLE
@@ -42,6 +43,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - SNOWFLAKE
+      - MSSQL
     componentList:
       - key: format
         payload:

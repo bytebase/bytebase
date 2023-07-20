@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -123,11 +122,7 @@ func (l *namingTableListener) EnterExecute_body(ctx *parser.Execute_bodyContext)
 	}
 
 	v := ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetProcedure()
-	normalizedProcedureName, err := bbparser.NormalizeTSQLTableNamePart(v)
-	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to normalize procedure name").Error())
-		return
-	}
+	normalizedProcedureName := bbparser.NormalizeTSQLIdentifier(v)
 	if normalizedProcedureName != "sp_rename" {
 		return
 	}

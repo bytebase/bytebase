@@ -2,12 +2,12 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	tsqlparser "github.com/bytebase/tsql-parser"
-	"github.com/pkg/errors"
 )
 
 // tsqlKeywordsMap is the map of all TSQL keywords.
@@ -539,25 +539,47 @@ func ParseTSQL(statement string) (antlr.Tree, error) {
 	return tree, nil
 }
 
-// NormalizeTSQLTableNamePart returns the normalized table name part.
+// NormalizeTSQLTableName returns the normalized table name.
+func NormalizeTSQLTableName(ctx tsqlparser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string, _ bool) string {
+	database := fallbackDatabaseName
+	schema := fallbackSchemaName
+	table := ""
+	if d := ctx.GetDatabase(); d != nil {
+		if id := NormalizeTSQLIdentifier(d); id != "" {
+			database = id
+		}
+	}
+	if s := ctx.GetSchema(); s != nil {
+		if id := NormalizeTSQLIdentifier(s); id != "" {
+			schema = id
+		}
+	}
+	if t := ctx.GetTable(); t != nil {
+		if id := NormalizeTSQLIdentifier(t); id != "" {
+			table = id
+		}
+	}
+	return fmt.Sprintf("%s.%s.%s", database, schema, table)
+}
+
+// NormalizeTSQLIdentifier returns the normalized identifier.
 // https://learn.microsoft.com/zh-cn/sql/relational-databases/databases/database-identifiers?view=sql-server-ver15
 // TODO(zp): currently, we returns the lower case of the part, we may need to get the CI/CS from the server/database.
-func NormalizeTSQLTableNamePart(part tsqlparser.IId_Context) (string, error) {
+func NormalizeTSQLIdentifier(part tsqlparser.IId_Context) string {
 	if part == nil {
-		return "", nil
+		return ""
 	}
 	text := part.GetText()
 	if text == "" {
-		return "", nil
+		return ""
 	}
 	if text[0] == '[' && text[len(text)-1] == ']' {
 		text = text[1 : len(text)-1]
 	}
-	var sb strings.Builder
+
+	s := ""
 	for _, r := range text {
-		if _, err := sb.WriteRune(unicode.ToLower(r)); err != nil {
-			return "", errors.Wrapf(err, "failed to write rune: %q", r)
-		}
+		s += string(unicode.ToLower(r))
 	}
-	return sb.String(), nil
+	return s
 }
