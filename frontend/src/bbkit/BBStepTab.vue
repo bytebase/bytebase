@@ -168,4 +168,8 @@ const finish = () => {
 const cancel = () => {
   emit("cancel");
 };
+
+defineExpose({
+  changeStep,
+});
 </script>

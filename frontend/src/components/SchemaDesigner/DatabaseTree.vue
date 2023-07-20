@@ -13,7 +13,7 @@
       </p>
       <NInput
         v-model:value="searchPattern"
-        :placeholder="$t('schema-editor.search-database-and-table')"
+        :placeholder="$t('schema-designer.search-tables')"
       >
         <template #prefix>
           <heroicons-outline:search class="w-4 h-auto text-gray-300" />

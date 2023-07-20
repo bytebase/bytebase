@@ -1,10 +1,10 @@
 import { isGhostTable } from "@/utils";
 import { v1 as uuidv1 } from "uuid";
 import {
-  ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "../proto/store/database";
+  ColumnMetadata,
+} from "../proto/v1/database_service";
 
 type AtomResourceStatus = "normal" | "created" | "dropped";
 
