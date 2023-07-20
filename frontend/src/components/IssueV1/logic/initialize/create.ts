@@ -81,6 +81,11 @@ export const createIssueSkeleton = async (route: _RouteLocationBase) => {
 
   await trySetDefaultAssignee(issue);
 
+  const description = route.query.description as string;
+  if (description) {
+    issue.description = description;
+  }
+
   return issue;
 };
 
