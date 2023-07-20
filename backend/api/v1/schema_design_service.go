@@ -774,7 +774,7 @@ type columnState struct {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("`%s`", c.name)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
 		return err
 	}
 	if c.nullable {
