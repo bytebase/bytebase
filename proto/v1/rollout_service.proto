@@ -311,7 +311,7 @@ message BatchRunTasksRequest {
 message BatchRunTasksResponse {}
 
 message BatchSkipTasksRequest {
-// The name of the parent of the tasks.
+  // The name of the parent of the tasks.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string parent = 1;
   // The tasks to skip.

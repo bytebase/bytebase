@@ -302,8 +302,8 @@ export interface ListPlanCheckRunsResponse {
 
 export interface BatchRunTasksRequest {
   /**
-   * The name of the rollout.
-   * Format: projects/{project}/rollouts/{rollout}
+   * The name of the parent of the tasks.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
    */
   parent: string;
   /**
@@ -318,8 +318,8 @@ export interface BatchRunTasksResponse {
 
 export interface BatchSkipTasksRequest {
   /**
-   * The name of the rollout.
-   * Format: projects/{project}/rollouts/{rollout}
+   * The name of the parent of the tasks.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
    */
   parent: string;
   /**
@@ -334,15 +334,15 @@ export interface BatchSkipTasksResponse {
 
 export interface BatchCancelTaskRunsRequest {
   /**
-   * The name of the rollout.
-   * Format: projects/{project}/rollouts/{rollout}
+   * The name of the parent of the taskRuns.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
    */
   parent: string;
   /**
-   * The tasks to cancel.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   * The taskRuns to cancel.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    */
-  tasks: string[];
+  taskRuns: string[];
 }
 
 export interface BatchCancelTaskRunsResponse {
@@ -2756,7 +2756,7 @@ export const BatchSkipTasksResponse = {
 };
 
 function createBaseBatchCancelTaskRunsRequest(): BatchCancelTaskRunsRequest {
-  return { parent: "", tasks: [] };
+  return { parent: "", taskRuns: [] };
 }
 
 export const BatchCancelTaskRunsRequest = {
@@ -2764,7 +2764,7 @@ export const BatchCancelTaskRunsRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
-    for (const v of message.tasks) {
+    for (const v of message.taskRuns) {
       writer.uint32(18).string(v!);
     }
     return writer;
@@ -2789,7 +2789,7 @@ export const BatchCancelTaskRunsRequest = {
             break;
           }
 
-          message.tasks.push(reader.string());
+          message.taskRuns.push(reader.string());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2803,17 +2803,17 @@ export const BatchCancelTaskRunsRequest = {
   fromJSON(object: any): BatchCancelTaskRunsRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
+      taskRuns: Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => String(e)) : [],
     };
   },
 
   toJSON(message: BatchCancelTaskRunsRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
-    if (message.tasks) {
-      obj.tasks = message.tasks.map((e) => e);
+    if (message.taskRuns) {
+      obj.taskRuns = message.taskRuns.map((e) => e);
     } else {
-      obj.tasks = [];
+      obj.taskRuns = [];
     }
     return obj;
   },
@@ -2825,7 +2825,7 @@ export const BatchCancelTaskRunsRequest = {
   fromPartial(object: DeepPartial<BatchCancelTaskRunsRequest>): BatchCancelTaskRunsRequest {
     const message = createBaseBatchCancelTaskRunsRequest();
     message.parent = object.parent ?? "";
-    message.tasks = object.tasks?.map((e) => e) || [];
+    message.taskRuns = object.taskRuns?.map((e) => e) || [];
     return message;
   },
 };
