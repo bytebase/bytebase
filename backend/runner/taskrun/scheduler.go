@@ -1388,6 +1388,7 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 	return nil
 }
 
+// CanPrincipalChangeIssueStageTaskStatus returns whether the principal can change the task status.
 func (s *Scheduler) CanPrincipalChangeIssueStageTaskStatus(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int, toStatus api.TaskStatus) (bool, error) {
 	// the workspace owner and DBA roles can always change task status.
 	if user.Role == api.Owner || user.Role == api.DBA {

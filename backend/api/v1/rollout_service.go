@@ -410,6 +410,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 	}, nil
 }
 
+// BatchRunTasks runs tasks in batch.
 func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
 	if len(request.Tasks) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "The tasks in request cannot be empty")
