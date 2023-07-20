@@ -468,7 +468,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.InvalidArgument, "tasks should be in the same stage")
 	}
 	var stageToRun *store.StageMessage
-	for stageID, _ := range stageTasks {
+	for stageID := range stageTasks {
 		for _, stage := range stages {
 			if stage.ID == stageID {
 				stageToRun = stage
