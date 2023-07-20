@@ -7,6 +7,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { randomString } from "@/utils";
 
 export const mergeSchemaEditToMetadata = (
   schemaEdits: Schema[],
@@ -106,11 +107,17 @@ export const mergeSchemaEditToMetadata = (
         continue;
       }
 
+      const foreignKeyName = foreignKey.name
+        ? foreignKey.name
+        : `${table.name}-fk-${randomString(4).toLowerCase()}`;
       const fk = ForeignKeyMetadata.fromPartial({
-        name: foreignKey.name,
+        name: foreignKeyName,
         referencedSchema: referencedSchema.name,
         referencedTable: referencedTable.name,
       });
+      if (table.foreignKeys.find((fk) => fk.name === foreignKeyName)) {
+        continue;
+      }
       if (
         foreignKey.columnIdList.length !==
         foreignKey.referencedColumnIdList.length

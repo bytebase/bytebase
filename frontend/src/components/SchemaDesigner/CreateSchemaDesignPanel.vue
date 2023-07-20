@@ -100,7 +100,10 @@ defineProps({
     default: undefined,
   },
 });
-const emit = defineEmits(["dismiss"]);
+const emit = defineEmits<{
+  (event: "dismiss"): void;
+  (event: "created", schemaDesign: SchemaDesign): void;
+}>();
 
 const { t } = useI18n();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
@@ -201,7 +204,7 @@ const handleConfirm = async () => {
       DatabaseMetadata.fromPartial({})
   );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
-  await schemaDesignStore.createSchemaDesign(
+  const createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
     project.value.name,
     SchemaDesign.fromPartial({
       title: state.schemaDesignName,
@@ -220,5 +223,6 @@ const handleConfirm = async () => {
     style: "SUCCESS",
     title: t("schema-designer.message.created-succeed"),
   });
+  emit("created", createdSchemaDesign);
 };
 </script>

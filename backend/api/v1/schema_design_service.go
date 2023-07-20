@@ -185,6 +185,10 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, err
 	}
+	// Try to transform the schema string to database metadata to make sure it's valid.
+	if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+	}
 
 	sheetCreate := &store.SheetMessage{
 		Name:        schemaDesign.Title,
@@ -239,6 +243,10 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		if err != nil {
 			return nil, err
+		}
+		// Try to transform the schema string to database metadata to make sure it's valid.
+		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 		}
 		sheetUpdate.Statement = &schema
 	}
