@@ -6,7 +6,6 @@ import {
   flattenTaskV1List,
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
-  isTaskV1Skipped,
   semverCompare,
 } from "@/utils";
 import { useCurrentUserV1, experimentalFetchIssueByName } from "@/store";
@@ -57,18 +56,17 @@ export const useRollbackContext = () => {
     if (isCreating.value) {
       return "SWITCH";
     }
-    if (task.value.status === Task_Status.DONE) {
-      if (isTaskV1Skipped(task.value)) {
-        // Rollback is not available for skipped tasks.
-        return "NONE";
-      }
-      return "FULL";
-    }
-    if (task.value.status === Task_Status.CANCELED) {
-      return "NONE";
-    }
 
-    return "SWITCH";
+    switch (task.value.status) {
+      case Task_Status.SKIPPED:
+        return "NONE";
+      case Task_Status.CANCELED:
+        return "NONE";
+      case Task_Status.DONE:
+        return "FULL";
+      default:
+        return "SWITCH";
+    }
   });
 
   // Decide whether current user can operate.
