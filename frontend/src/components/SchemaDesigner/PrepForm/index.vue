@@ -109,7 +109,6 @@
         <template v-if="state.selectedSchemaDesign">
           <SchemaDesigner
             ref="schemaDesignerRef"
-            :key="schemaDesignId"
             :readonly="isViewing"
             :engine="state.selectedSchemaDesign.engine"
             :schema-design="state.selectedSchemaDesign"
@@ -132,7 +131,7 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual, uniqueId } from "lodash-es";
+import { isEqual } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -205,14 +204,6 @@ const isEditing = computed(
 
 const project = computed(() => {
   return projectStore.getProjectByUID(state.baselineSchema.projectId || "");
-});
-const schemaDesignId = computed(() => {
-  if (!state.selectedSchemaDesign || !state.selectedSchemaDesign.name) {
-    return uniqueId();
-  } else {
-    // Force remount component.
-    return state.selectedSchemaDesign.name + isViewing.value;
-  }
 });
 
 const handleSchemaDesignItemClick = async (schemaDesign: SchemaDesign) => {
