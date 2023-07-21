@@ -47,21 +47,19 @@
         </div>
       </template>
       <template v-else>
-        <div class="space-y-2">
-          <div>
-            <span>{{ $t("common.project") }} - </span>
-            <a
-              class="normal-link inline-flex items-center"
-              :href="`/project/${projectV1Slug(project)}`"
-              >{{ project.title }}</a
-            >
-          </div>
-          <div>
-            <span>{{ $t("schema-designer.schema-design") }} - </span>
-            <span>
-              {{ schemaDesign?.title || "Unknown" }}
-            </span>
-          </div>
+        <div>
+          <span>{{ $t("common.project") }} - </span>
+          <a
+            class="normal-link inline-flex items-center"
+            :href="`/project/${projectV1Slug(project)}`"
+            >{{ project.title }}</a
+          >
+        </div>
+        <div>
+          <span>{{ $t("schema-designer.schema-design") }} - </span>
+          <span>
+            {{ schemaDesign?.title || "Unknown" }}
+          </span>
         </div>
       </template>
     </div>

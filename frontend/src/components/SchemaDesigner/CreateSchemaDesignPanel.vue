@@ -10,7 +10,7 @@
       :closable="true"
     >
       <div
-        class="space-y-3 w-[calc(100vw-8rem)] sm:w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+        class="space-y-3 py-1 w-[calc(100vw-8rem)] sm:w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
       >
         <div class="w-full flex flex-row justify-start items-center">
           <span class="flex w-40 items-center text-sm">{{
@@ -19,6 +19,7 @@
           <BBTextField
             class="w-60 !py-1.5"
             :value="state.schemaDesignName"
+            :placeholder="$t('schema-designer.schema-design')"
             @input="
               state.schemaDesignName = ($event.target as HTMLInputElement).value
             "
@@ -31,6 +32,7 @@
         <SchemaDesigner
           ref="schemaDesignerRef"
           :key="refreshId"
+          class="!mt-6"
           :readonly="readonly"
           :engine="state.schemaDesign.engine"
           :schema-design="state.schemaDesign"
