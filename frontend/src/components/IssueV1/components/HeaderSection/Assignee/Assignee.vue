@@ -21,6 +21,7 @@
     <UserSelect
       :multiple="false"
       :user="assigneeUID"
+      :disabled="!allowChangeAssignee"
       :filter="filterAssignee"
       style="width: 12rem"
       @update:user="changeAssigneeUID"
@@ -31,20 +32,22 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { useUserStore } from "@/store";
+import { useCurrentUserV1, useUserStore } from "@/store";
 import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
 import { extractUserResourceName, extractUserUID } from "@/utils";
 import { User } from "@/types/proto/v1/auth_service";
 import { UserSelect } from "@/components/v2";
 import {
+  allowUserToChangeAssignee,
   allowUserToBeAssignee,
   useCurrentRolloutPolicyForActiveEnvironment,
   useIssueContext,
-} from "../../../logic";
+} from "@/components/IssueV1/logic";
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const userStore = useUserStore();
 const { isCreating, issue } = useIssueContext();
+const currentUser = useCurrentUserV1();
 
 const assigneeUID = computed(() => {
   const assignee = issue.value.assignee;
@@ -54,6 +57,13 @@ const assigneeUID = computed(() => {
   const user = userStore.getUserByEmail(assigneeEmail);
   if (!user) return undefined;
   return extractUserUID(user.name);
+});
+
+const allowChangeAssignee = computed(() => {
+  if (isCreating.value) {
+    return true;
+  }
+  return allowUserToChangeAssignee(currentUser.value, issue.value);
 });
 
 const changeAssigneeUID = (uid: string | undefined) => {

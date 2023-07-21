@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-2 px-4 py-2">
     <div
-      class="flex flex-col md:flex-row md:items-stretch md:justify-between gap-2"
+      class="flex flex-col md:flex-row md:items-start md:justify-between gap-2"
     >
       <div class="flex-1 flex items-center gap-x-2">
         <div v-if="!isCreating">
