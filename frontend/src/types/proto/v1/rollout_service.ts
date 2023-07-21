@@ -508,11 +508,6 @@ export interface PlanCheckRun_Result {
   failure?: PlanCheckRun_Result_ResultFailure | undefined;
 }
 
-export interface PlanCheckRun_Result_ResultFailure {
-  title: string;
-  content: string;
-}
-
 export interface PlanCheckRun_Result_ResultSuccess {
   status: PlanCheckRun_Result_ResultSuccess_Status;
   title: string;
@@ -631,6 +626,11 @@ export interface PlanCheckRun_Result_ResultSuccess_AffectedRowsReport {
 export interface PlanCheckRun_Result_ResultSuccess_SqlReviewReport {
   line: number;
   detail: string;
+}
+
+export interface PlanCheckRun_Result_ResultFailure {
+  title: string;
+  content: string;
 }
 
 export interface GetRolloutRequest {
@@ -3129,77 +3129,6 @@ export const PlanCheckRun_Result = {
   },
 };
 
-function createBasePlanCheckRun_Result_ResultFailure(): PlanCheckRun_Result_ResultFailure {
-  return { title: "", content: "" };
-}
-
-export const PlanCheckRun_Result_ResultFailure = {
-  encode(message: PlanCheckRun_Result_ResultFailure, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
-    }
-    if (message.content !== "") {
-      writer.uint32(18).string(message.content);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_ResultFailure {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_ResultFailure();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.content = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun_Result_ResultFailure {
-    return {
-      title: isSet(object.title) ? String(object.title) : "",
-      content: isSet(object.content) ? String(object.content) : "",
-    };
-  },
-
-  toJSON(message: PlanCheckRun_Result_ResultFailure): unknown {
-    const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
-    message.content !== undefined && (obj.content = message.content);
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRun_Result_ResultFailure>): PlanCheckRun_Result_ResultFailure {
-    return PlanCheckRun_Result_ResultFailure.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<PlanCheckRun_Result_ResultFailure>): PlanCheckRun_Result_ResultFailure {
-    const message = createBasePlanCheckRun_Result_ResultFailure();
-    message.title = object.title ?? "";
-    message.content = object.content ?? "";
-    return message;
-  },
-};
-
 function createBasePlanCheckRun_Result_ResultSuccess(): PlanCheckRun_Result_ResultSuccess {
   return {
     status: 0,
@@ -3650,6 +3579,77 @@ export const PlanCheckRun_Result_ResultSuccess_SqlReviewReport = {
     const message = createBasePlanCheckRun_Result_ResultSuccess_SqlReviewReport();
     message.line = object.line ?? 0;
     message.detail = object.detail ?? "";
+    return message;
+  },
+};
+
+function createBasePlanCheckRun_Result_ResultFailure(): PlanCheckRun_Result_ResultFailure {
+  return { title: "", content: "" };
+}
+
+export const PlanCheckRun_Result_ResultFailure = {
+  encode(message: PlanCheckRun_Result_ResultFailure, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
+    }
+    if (message.content !== "") {
+      writer.uint32(18).string(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_ResultFailure {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanCheckRun_Result_ResultFailure();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.content = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanCheckRun_Result_ResultFailure {
+    return {
+      title: isSet(object.title) ? String(object.title) : "",
+      content: isSet(object.content) ? String(object.content) : "",
+    };
+  },
+
+  toJSON(message: PlanCheckRun_Result_ResultFailure): unknown {
+    const obj: any = {};
+    message.title !== undefined && (obj.title = message.title);
+    message.content !== undefined && (obj.content = message.content);
+    return obj;
+  },
+
+  create(base?: DeepPartial<PlanCheckRun_Result_ResultFailure>): PlanCheckRun_Result_ResultFailure {
+    return PlanCheckRun_Result_ResultFailure.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<PlanCheckRun_Result_ResultFailure>): PlanCheckRun_Result_ResultFailure {
+    const message = createBasePlanCheckRun_Result_ResultFailure();
+    message.title = object.title ?? "";
+    message.content = object.content ?? "";
     return message;
   },
 };
