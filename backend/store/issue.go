@@ -503,6 +503,7 @@ type IssueMessage struct {
 	Payload       string
 	Subscribers   []*UserMessage
 	PipelineUID   *int
+	PlanUID       *int
 
 	// The following fields are output only and not used for create().
 	UID         int
@@ -602,6 +603,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			updater_id,
 			project_id,
 			pipeline_id,
+			plan_id,
 			name,
 			status,
 			type,
@@ -610,7 +612,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			assignee_need_attention,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id, created_ts, updated_ts
 	`
 
@@ -625,6 +627,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		creatorID,
 		create.Project.UID,
 		create.PipelineUID,
+		create.PlanUID,
 		create.Title,
 		create.Status,
 		create.Type,
@@ -851,6 +854,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			issue.updated_ts,
 			issue.project_id,
 			issue.pipeline_id,
+			issue.plan_id,
 			issue.name,
 			issue.status,
 			issue.type,
@@ -885,6 +889,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.updatedTs,
 			&issue.projectUID,
 			&pipelineUID,
+			&issue.PlanUID,
 			&issue.Title,
 			&issue.Status,
 			&issue.Type,
