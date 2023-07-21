@@ -360,6 +360,8 @@ export interface PlanCheckRun {
   /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
   results: PlanCheckRun_Result[];
+  /** error is set if the Status is FAILED. */
+  error: string;
 }
 
 export enum PlanCheckRun_Type {
@@ -501,24 +503,16 @@ export function planCheckRun_StatusToJSON(object: PlanCheckRun_Status): string {
 }
 
 export interface PlanCheckRun_Result {
-  success?:
-    | PlanCheckRun_Result_ResultSuccess
-    | undefined;
-  /** Failure if the PlanCheckRun itself failed to run. */
-  failure?: PlanCheckRun_Result_ResultFailure | undefined;
-}
-
-export interface PlanCheckRun_Result_ResultSuccess {
-  status: PlanCheckRun_Result_ResultSuccess_Status;
+  status: PlanCheckRun_Result_Status;
   title: string;
   content: string;
-  code?: PlanCheckRun_Result_ResultSuccess_Code | undefined;
-  statementTypeReport?: PlanCheckRun_Result_ResultSuccess_StatementTypeReport | undefined;
-  affectedRowsReport?: PlanCheckRun_Result_ResultSuccess_AffectedRowsReport | undefined;
-  sqlReviewReport?: PlanCheckRun_Result_ResultSuccess_SqlReviewReport | undefined;
+  code: number;
+  statementTypeReport?: PlanCheckRun_Result_StatementTypeReport | undefined;
+  affectedRowsReport?: PlanCheckRun_Result_AffectedRowsReport | undefined;
+  sqlReviewReport?: PlanCheckRun_Result_SqlReviewReport | undefined;
 }
 
-export enum PlanCheckRun_Result_ResultSuccess_Status {
+export enum PlanCheckRun_Result_Status {
   STATUS_UNSPECIFIED = 0,
   ERROR = 1,
   WARNING = 2,
@@ -526,111 +520,55 @@ export enum PlanCheckRun_Result_ResultSuccess_Status {
   UNRECOGNIZED = -1,
 }
 
-export function planCheckRun_Result_ResultSuccess_StatusFromJSON(
-  object: any,
-): PlanCheckRun_Result_ResultSuccess_Status {
+export function planCheckRun_Result_StatusFromJSON(object: any): PlanCheckRun_Result_Status {
   switch (object) {
     case 0:
     case "STATUS_UNSPECIFIED":
-      return PlanCheckRun_Result_ResultSuccess_Status.STATUS_UNSPECIFIED;
+      return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
     case 1:
     case "ERROR":
-      return PlanCheckRun_Result_ResultSuccess_Status.ERROR;
+      return PlanCheckRun_Result_Status.ERROR;
     case 2:
     case "WARNING":
-      return PlanCheckRun_Result_ResultSuccess_Status.WARNING;
+      return PlanCheckRun_Result_Status.WARNING;
     case 3:
     case "SUCCESS":
-      return PlanCheckRun_Result_ResultSuccess_Status.SUCCESS;
+      return PlanCheckRun_Result_Status.SUCCESS;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return PlanCheckRun_Result_ResultSuccess_Status.UNRECOGNIZED;
+      return PlanCheckRun_Result_Status.UNRECOGNIZED;
   }
 }
 
-export function planCheckRun_Result_ResultSuccess_StatusToJSON(
-  object: PlanCheckRun_Result_ResultSuccess_Status,
-): string {
+export function planCheckRun_Result_StatusToJSON(object: PlanCheckRun_Result_Status): string {
   switch (object) {
-    case PlanCheckRun_Result_ResultSuccess_Status.STATUS_UNSPECIFIED:
+    case PlanCheckRun_Result_Status.STATUS_UNSPECIFIED:
       return "STATUS_UNSPECIFIED";
-    case PlanCheckRun_Result_ResultSuccess_Status.ERROR:
+    case PlanCheckRun_Result_Status.ERROR:
       return "ERROR";
-    case PlanCheckRun_Result_ResultSuccess_Status.WARNING:
+    case PlanCheckRun_Result_Status.WARNING:
       return "WARNING";
-    case PlanCheckRun_Result_ResultSuccess_Status.SUCCESS:
+    case PlanCheckRun_Result_Status.SUCCESS:
       return "SUCCESS";
-    case PlanCheckRun_Result_ResultSuccess_Status.UNRECOGNIZED:
+    case PlanCheckRun_Result_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export interface PlanCheckRun_Result_ResultSuccess_Code {
-  code: number;
-  namespace: PlanCheckRun_Result_ResultSuccess_Code_Namespace;
-}
-
-export enum PlanCheckRun_Result_ResultSuccess_Code_Namespace {
-  NAMESPACE_UNSPECIFIED = 0,
-  BYTEBASE = 1,
-  ADVISOR = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function planCheckRun_Result_ResultSuccess_Code_NamespaceFromJSON(
-  object: any,
-): PlanCheckRun_Result_ResultSuccess_Code_Namespace {
-  switch (object) {
-    case 0:
-    case "NAMESPACE_UNSPECIFIED":
-      return PlanCheckRun_Result_ResultSuccess_Code_Namespace.NAMESPACE_UNSPECIFIED;
-    case 1:
-    case "BYTEBASE":
-      return PlanCheckRun_Result_ResultSuccess_Code_Namespace.BYTEBASE;
-    case 2:
-    case "ADVISOR":
-      return PlanCheckRun_Result_ResultSuccess_Code_Namespace.ADVISOR;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return PlanCheckRun_Result_ResultSuccess_Code_Namespace.UNRECOGNIZED;
-  }
-}
-
-export function planCheckRun_Result_ResultSuccess_Code_NamespaceToJSON(
-  object: PlanCheckRun_Result_ResultSuccess_Code_Namespace,
-): string {
-  switch (object) {
-    case PlanCheckRun_Result_ResultSuccess_Code_Namespace.NAMESPACE_UNSPECIFIED:
-      return "NAMESPACE_UNSPECIFIED";
-    case PlanCheckRun_Result_ResultSuccess_Code_Namespace.BYTEBASE:
-      return "BYTEBASE";
-    case PlanCheckRun_Result_ResultSuccess_Code_Namespace.ADVISOR:
-      return "ADVISOR";
-    case PlanCheckRun_Result_ResultSuccess_Code_Namespace.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface PlanCheckRun_Result_ResultSuccess_StatementTypeReport {
+export interface PlanCheckRun_Result_StatementTypeReport {
   statementType: string;
 }
 
-export interface PlanCheckRun_Result_ResultSuccess_AffectedRowsReport {
+export interface PlanCheckRun_Result_AffectedRowsReport {
   affectedRows: number;
 }
 
-export interface PlanCheckRun_Result_ResultSuccess_SqlReviewReport {
+export interface PlanCheckRun_Result_SqlReviewReport {
   line: number;
   detail: string;
-}
-
-export interface PlanCheckRun_Result_ResultFailure {
-  title: string;
-  content: string;
+  code: number;
 }
 
 export interface GetRolloutRequest {
@@ -2913,7 +2851,7 @@ export const BatchCancelTaskRunsResponse = {
 };
 
 function createBasePlanCheckRun(): PlanCheckRun {
-  return { name: "", uid: "", type: 0, status: 0, target: "", sheet: "", results: [] };
+  return { name: "", uid: "", type: 0, status: 0, target: "", sheet: "", results: [], error: "" };
 }
 
 export const PlanCheckRun = {
@@ -2938,6 +2876,9 @@ export const PlanCheckRun = {
     }
     for (const v of message.results) {
       PlanCheckRun_Result.encode(v!, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.error !== "") {
+      writer.uint32(66).string(message.error);
     }
     return writer;
   },
@@ -2998,6 +2939,13 @@ export const PlanCheckRun = {
 
           message.results.push(PlanCheckRun_Result.decode(reader, reader.uint32()));
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3016,6 +2964,7 @@ export const PlanCheckRun = {
       target: isSet(object.target) ? String(object.target) : "",
       sheet: isSet(object.sheet) ? String(object.sheet) : "",
       results: Array.isArray(object?.results) ? object.results.map((e: any) => PlanCheckRun_Result.fromJSON(e)) : [],
+      error: isSet(object.error) ? String(object.error) : "",
     };
   },
 
@@ -3032,6 +2981,7 @@ export const PlanCheckRun = {
     } else {
       obj.results = [];
     }
+    message.error !== undefined && (obj.error = message.error);
     return obj;
   },
 
@@ -3048,101 +2998,25 @@ export const PlanCheckRun = {
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
     message.results = object.results?.map((e) => PlanCheckRun_Result.fromPartial(e)) || [];
+    message.error = object.error ?? "";
     return message;
   },
 };
 
 function createBasePlanCheckRun_Result(): PlanCheckRun_Result {
-  return { success: undefined, failure: undefined };
-}
-
-export const PlanCheckRun_Result = {
-  encode(message: PlanCheckRun_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== undefined) {
-      PlanCheckRun_Result_ResultSuccess.encode(message.success, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.failure !== undefined) {
-      PlanCheckRun_Result_ResultFailure.encode(message.failure, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.success = PlanCheckRun_Result_ResultSuccess.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.failure = PlanCheckRun_Result_ResultFailure.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun_Result {
-    return {
-      success: isSet(object.success) ? PlanCheckRun_Result_ResultSuccess.fromJSON(object.success) : undefined,
-      failure: isSet(object.failure) ? PlanCheckRun_Result_ResultFailure.fromJSON(object.failure) : undefined,
-    };
-  },
-
-  toJSON(message: PlanCheckRun_Result): unknown {
-    const obj: any = {};
-    message.success !== undefined &&
-      (obj.success = message.success ? PlanCheckRun_Result_ResultSuccess.toJSON(message.success) : undefined);
-    message.failure !== undefined &&
-      (obj.failure = message.failure ? PlanCheckRun_Result_ResultFailure.toJSON(message.failure) : undefined);
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
-    return PlanCheckRun_Result.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
-    const message = createBasePlanCheckRun_Result();
-    message.success = (object.success !== undefined && object.success !== null)
-      ? PlanCheckRun_Result_ResultSuccess.fromPartial(object.success)
-      : undefined;
-    message.failure = (object.failure !== undefined && object.failure !== null)
-      ? PlanCheckRun_Result_ResultFailure.fromPartial(object.failure)
-      : undefined;
-    return message;
-  },
-};
-
-function createBasePlanCheckRun_Result_ResultSuccess(): PlanCheckRun_Result_ResultSuccess {
   return {
     status: 0,
     title: "",
     content: "",
-    code: undefined,
+    code: 0,
     statementTypeReport: undefined,
     affectedRowsReport: undefined,
     sqlReviewReport: undefined,
   };
 }
 
-export const PlanCheckRun_Result_ResultSuccess = {
-  encode(message: PlanCheckRun_Result_ResultSuccess, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PlanCheckRun_Result = {
+  encode(message: PlanCheckRun_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.status !== 0) {
       writer.uint32(8).int32(message.status);
     }
@@ -3152,30 +3026,25 @@ export const PlanCheckRun_Result_ResultSuccess = {
     if (message.content !== "") {
       writer.uint32(26).string(message.content);
     }
-    if (message.code !== undefined) {
-      PlanCheckRun_Result_ResultSuccess_Code.encode(message.code, writer.uint32(34).fork()).ldelim();
+    if (message.code !== 0) {
+      writer.uint32(32).int64(message.code);
     }
     if (message.statementTypeReport !== undefined) {
-      PlanCheckRun_Result_ResultSuccess_StatementTypeReport.encode(
-        message.statementTypeReport,
-        writer.uint32(42).fork(),
-      ).ldelim();
+      PlanCheckRun_Result_StatementTypeReport.encode(message.statementTypeReport, writer.uint32(42).fork()).ldelim();
     }
     if (message.affectedRowsReport !== undefined) {
-      PlanCheckRun_Result_ResultSuccess_AffectedRowsReport.encode(message.affectedRowsReport, writer.uint32(50).fork())
-        .ldelim();
+      PlanCheckRun_Result_AffectedRowsReport.encode(message.affectedRowsReport, writer.uint32(50).fork()).ldelim();
     }
     if (message.sqlReviewReport !== undefined) {
-      PlanCheckRun_Result_ResultSuccess_SqlReviewReport.encode(message.sqlReviewReport, writer.uint32(58).fork())
-        .ldelim();
+      PlanCheckRun_Result_SqlReviewReport.encode(message.sqlReviewReport, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_ResultSuccess {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_ResultSuccess();
+    const message = createBasePlanCheckRun_Result();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3201,38 +3070,32 @@ export const PlanCheckRun_Result_ResultSuccess = {
           message.content = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag !== 32) {
             break;
           }
 
-          message.code = PlanCheckRun_Result_ResultSuccess_Code.decode(reader, reader.uint32());
+          message.code = longToNumber(reader.int64() as Long);
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.statementTypeReport = PlanCheckRun_Result_ResultSuccess_StatementTypeReport.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.statementTypeReport = PlanCheckRun_Result_StatementTypeReport.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.affectedRowsReport = PlanCheckRun_Result_ResultSuccess_AffectedRowsReport.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.affectedRowsReport = PlanCheckRun_Result_AffectedRowsReport.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.sqlReviewReport = PlanCheckRun_Result_ResultSuccess_SqlReviewReport.decode(reader, reader.uint32());
+          message.sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3243,161 +3106,81 @@ export const PlanCheckRun_Result_ResultSuccess = {
     return message;
   },
 
-  fromJSON(object: any): PlanCheckRun_Result_ResultSuccess {
+  fromJSON(object: any): PlanCheckRun_Result {
     return {
-      status: isSet(object.status) ? planCheckRun_Result_ResultSuccess_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? planCheckRun_Result_StatusFromJSON(object.status) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       content: isSet(object.content) ? String(object.content) : "",
-      code: isSet(object.code) ? PlanCheckRun_Result_ResultSuccess_Code.fromJSON(object.code) : undefined,
+      code: isSet(object.code) ? Number(object.code) : 0,
       statementTypeReport: isSet(object.statementTypeReport)
-        ? PlanCheckRun_Result_ResultSuccess_StatementTypeReport.fromJSON(object.statementTypeReport)
+        ? PlanCheckRun_Result_StatementTypeReport.fromJSON(object.statementTypeReport)
         : undefined,
       affectedRowsReport: isSet(object.affectedRowsReport)
-        ? PlanCheckRun_Result_ResultSuccess_AffectedRowsReport.fromJSON(object.affectedRowsReport)
+        ? PlanCheckRun_Result_AffectedRowsReport.fromJSON(object.affectedRowsReport)
         : undefined,
       sqlReviewReport: isSet(object.sqlReviewReport)
-        ? PlanCheckRun_Result_ResultSuccess_SqlReviewReport.fromJSON(object.sqlReviewReport)
+        ? PlanCheckRun_Result_SqlReviewReport.fromJSON(object.sqlReviewReport)
         : undefined,
     };
   },
 
-  toJSON(message: PlanCheckRun_Result_ResultSuccess): unknown {
+  toJSON(message: PlanCheckRun_Result): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = planCheckRun_Result_ResultSuccess_StatusToJSON(message.status));
+    message.status !== undefined && (obj.status = planCheckRun_Result_StatusToJSON(message.status));
     message.title !== undefined && (obj.title = message.title);
     message.content !== undefined && (obj.content = message.content);
-    message.code !== undefined &&
-      (obj.code = message.code ? PlanCheckRun_Result_ResultSuccess_Code.toJSON(message.code) : undefined);
+    message.code !== undefined && (obj.code = Math.round(message.code));
     message.statementTypeReport !== undefined && (obj.statementTypeReport = message.statementTypeReport
-      ? PlanCheckRun_Result_ResultSuccess_StatementTypeReport.toJSON(message.statementTypeReport)
+      ? PlanCheckRun_Result_StatementTypeReport.toJSON(message.statementTypeReport)
       : undefined);
     message.affectedRowsReport !== undefined && (obj.affectedRowsReport = message.affectedRowsReport
-      ? PlanCheckRun_Result_ResultSuccess_AffectedRowsReport.toJSON(message.affectedRowsReport)
+      ? PlanCheckRun_Result_AffectedRowsReport.toJSON(message.affectedRowsReport)
       : undefined);
     message.sqlReviewReport !== undefined && (obj.sqlReviewReport = message.sqlReviewReport
-      ? PlanCheckRun_Result_ResultSuccess_SqlReviewReport.toJSON(message.sqlReviewReport)
+      ? PlanCheckRun_Result_SqlReviewReport.toJSON(message.sqlReviewReport)
       : undefined);
     return obj;
   },
 
-  create(base?: DeepPartial<PlanCheckRun_Result_ResultSuccess>): PlanCheckRun_Result_ResultSuccess {
-    return PlanCheckRun_Result_ResultSuccess.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
+    return PlanCheckRun_Result.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<PlanCheckRun_Result_ResultSuccess>): PlanCheckRun_Result_ResultSuccess {
-    const message = createBasePlanCheckRun_Result_ResultSuccess();
+  fromPartial(object: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
+    const message = createBasePlanCheckRun_Result();
     message.status = object.status ?? 0;
     message.title = object.title ?? "";
     message.content = object.content ?? "";
-    message.code = (object.code !== undefined && object.code !== null)
-      ? PlanCheckRun_Result_ResultSuccess_Code.fromPartial(object.code)
-      : undefined;
+    message.code = object.code ?? 0;
     message.statementTypeReport = (object.statementTypeReport !== undefined && object.statementTypeReport !== null)
-      ? PlanCheckRun_Result_ResultSuccess_StatementTypeReport.fromPartial(object.statementTypeReport)
+      ? PlanCheckRun_Result_StatementTypeReport.fromPartial(object.statementTypeReport)
       : undefined;
     message.affectedRowsReport = (object.affectedRowsReport !== undefined && object.affectedRowsReport !== null)
-      ? PlanCheckRun_Result_ResultSuccess_AffectedRowsReport.fromPartial(object.affectedRowsReport)
+      ? PlanCheckRun_Result_AffectedRowsReport.fromPartial(object.affectedRowsReport)
       : undefined;
     message.sqlReviewReport = (object.sqlReviewReport !== undefined && object.sqlReviewReport !== null)
-      ? PlanCheckRun_Result_ResultSuccess_SqlReviewReport.fromPartial(object.sqlReviewReport)
+      ? PlanCheckRun_Result_SqlReviewReport.fromPartial(object.sqlReviewReport)
       : undefined;
     return message;
   },
 };
 
-function createBasePlanCheckRun_Result_ResultSuccess_Code(): PlanCheckRun_Result_ResultSuccess_Code {
-  return { code: 0, namespace: 0 };
-}
-
-export const PlanCheckRun_Result_ResultSuccess_Code = {
-  encode(message: PlanCheckRun_Result_ResultSuccess_Code, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.code !== 0) {
-      writer.uint32(8).int64(message.code);
-    }
-    if (message.namespace !== 0) {
-      writer.uint32(16).int32(message.namespace);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_ResultSuccess_Code {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_ResultSuccess_Code();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.code = longToNumber(reader.int64() as Long);
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.namespace = reader.int32() as any;
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun_Result_ResultSuccess_Code {
-    return {
-      code: isSet(object.code) ? Number(object.code) : 0,
-      namespace: isSet(object.namespace)
-        ? planCheckRun_Result_ResultSuccess_Code_NamespaceFromJSON(object.namespace)
-        : 0,
-    };
-  },
-
-  toJSON(message: PlanCheckRun_Result_ResultSuccess_Code): unknown {
-    const obj: any = {};
-    message.code !== undefined && (obj.code = Math.round(message.code));
-    message.namespace !== undefined &&
-      (obj.namespace = planCheckRun_Result_ResultSuccess_Code_NamespaceToJSON(message.namespace));
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRun_Result_ResultSuccess_Code>): PlanCheckRun_Result_ResultSuccess_Code {
-    return PlanCheckRun_Result_ResultSuccess_Code.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<PlanCheckRun_Result_ResultSuccess_Code>): PlanCheckRun_Result_ResultSuccess_Code {
-    const message = createBasePlanCheckRun_Result_ResultSuccess_Code();
-    message.code = object.code ?? 0;
-    message.namespace = object.namespace ?? 0;
-    return message;
-  },
-};
-
-function createBasePlanCheckRun_Result_ResultSuccess_StatementTypeReport(): PlanCheckRun_Result_ResultSuccess_StatementTypeReport {
+function createBasePlanCheckRun_Result_StatementTypeReport(): PlanCheckRun_Result_StatementTypeReport {
   return { statementType: "" };
 }
 
-export const PlanCheckRun_Result_ResultSuccess_StatementTypeReport = {
-  encode(
-    message: PlanCheckRun_Result_ResultSuccess_StatementTypeReport,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+export const PlanCheckRun_Result_StatementTypeReport = {
+  encode(message: PlanCheckRun_Result_StatementTypeReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.statementType !== "") {
       writer.uint32(10).string(message.statementType);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_ResultSuccess_StatementTypeReport {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_StatementTypeReport {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_ResultSuccess_StatementTypeReport();
+    const message = createBasePlanCheckRun_Result_StatementTypeReport();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3417,50 +3200,43 @@ export const PlanCheckRun_Result_ResultSuccess_StatementTypeReport = {
     return message;
   },
 
-  fromJSON(object: any): PlanCheckRun_Result_ResultSuccess_StatementTypeReport {
+  fromJSON(object: any): PlanCheckRun_Result_StatementTypeReport {
     return { statementType: isSet(object.statementType) ? String(object.statementType) : "" };
   },
 
-  toJSON(message: PlanCheckRun_Result_ResultSuccess_StatementTypeReport): unknown {
+  toJSON(message: PlanCheckRun_Result_StatementTypeReport): unknown {
     const obj: any = {};
     message.statementType !== undefined && (obj.statementType = message.statementType);
     return obj;
   },
 
-  create(
-    base?: DeepPartial<PlanCheckRun_Result_ResultSuccess_StatementTypeReport>,
-  ): PlanCheckRun_Result_ResultSuccess_StatementTypeReport {
-    return PlanCheckRun_Result_ResultSuccess_StatementTypeReport.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanCheckRun_Result_StatementTypeReport>): PlanCheckRun_Result_StatementTypeReport {
+    return PlanCheckRun_Result_StatementTypeReport.fromPartial(base ?? {});
   },
 
-  fromPartial(
-    object: DeepPartial<PlanCheckRun_Result_ResultSuccess_StatementTypeReport>,
-  ): PlanCheckRun_Result_ResultSuccess_StatementTypeReport {
-    const message = createBasePlanCheckRun_Result_ResultSuccess_StatementTypeReport();
+  fromPartial(object: DeepPartial<PlanCheckRun_Result_StatementTypeReport>): PlanCheckRun_Result_StatementTypeReport {
+    const message = createBasePlanCheckRun_Result_StatementTypeReport();
     message.statementType = object.statementType ?? "";
     return message;
   },
 };
 
-function createBasePlanCheckRun_Result_ResultSuccess_AffectedRowsReport(): PlanCheckRun_Result_ResultSuccess_AffectedRowsReport {
+function createBasePlanCheckRun_Result_AffectedRowsReport(): PlanCheckRun_Result_AffectedRowsReport {
   return { affectedRows: 0 };
 }
 
-export const PlanCheckRun_Result_ResultSuccess_AffectedRowsReport = {
-  encode(
-    message: PlanCheckRun_Result_ResultSuccess_AffectedRowsReport,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+export const PlanCheckRun_Result_AffectedRowsReport = {
+  encode(message: PlanCheckRun_Result_AffectedRowsReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.affectedRows !== 0) {
       writer.uint32(8).int64(message.affectedRows);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_ResultSuccess_AffectedRowsReport {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_AffectedRowsReport {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_ResultSuccess_AffectedRowsReport();
+    const message = createBasePlanCheckRun_Result_AffectedRowsReport();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3480,53 +3256,49 @@ export const PlanCheckRun_Result_ResultSuccess_AffectedRowsReport = {
     return message;
   },
 
-  fromJSON(object: any): PlanCheckRun_Result_ResultSuccess_AffectedRowsReport {
+  fromJSON(object: any): PlanCheckRun_Result_AffectedRowsReport {
     return { affectedRows: isSet(object.affectedRows) ? Number(object.affectedRows) : 0 };
   },
 
-  toJSON(message: PlanCheckRun_Result_ResultSuccess_AffectedRowsReport): unknown {
+  toJSON(message: PlanCheckRun_Result_AffectedRowsReport): unknown {
     const obj: any = {};
     message.affectedRows !== undefined && (obj.affectedRows = Math.round(message.affectedRows));
     return obj;
   },
 
-  create(
-    base?: DeepPartial<PlanCheckRun_Result_ResultSuccess_AffectedRowsReport>,
-  ): PlanCheckRun_Result_ResultSuccess_AffectedRowsReport {
-    return PlanCheckRun_Result_ResultSuccess_AffectedRowsReport.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanCheckRun_Result_AffectedRowsReport>): PlanCheckRun_Result_AffectedRowsReport {
+    return PlanCheckRun_Result_AffectedRowsReport.fromPartial(base ?? {});
   },
 
-  fromPartial(
-    object: DeepPartial<PlanCheckRun_Result_ResultSuccess_AffectedRowsReport>,
-  ): PlanCheckRun_Result_ResultSuccess_AffectedRowsReport {
-    const message = createBasePlanCheckRun_Result_ResultSuccess_AffectedRowsReport();
+  fromPartial(object: DeepPartial<PlanCheckRun_Result_AffectedRowsReport>): PlanCheckRun_Result_AffectedRowsReport {
+    const message = createBasePlanCheckRun_Result_AffectedRowsReport();
     message.affectedRows = object.affectedRows ?? 0;
     return message;
   },
 };
 
-function createBasePlanCheckRun_Result_ResultSuccess_SqlReviewReport(): PlanCheckRun_Result_ResultSuccess_SqlReviewReport {
-  return { line: 0, detail: "" };
+function createBasePlanCheckRun_Result_SqlReviewReport(): PlanCheckRun_Result_SqlReviewReport {
+  return { line: 0, detail: "", code: 0 };
 }
 
-export const PlanCheckRun_Result_ResultSuccess_SqlReviewReport = {
-  encode(
-    message: PlanCheckRun_Result_ResultSuccess_SqlReviewReport,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+export const PlanCheckRun_Result_SqlReviewReport = {
+  encode(message: PlanCheckRun_Result_SqlReviewReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.line !== 0) {
       writer.uint32(8).int64(message.line);
     }
     if (message.detail !== "") {
       writer.uint32(18).string(message.detail);
     }
+    if (message.code !== 0) {
+      writer.uint32(24).int64(message.code);
+    }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_ResultSuccess_SqlReviewReport {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_SqlReviewReport {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_ResultSuccess_SqlReviewReport();
+    const message = createBasePlanCheckRun_Result_SqlReviewReport();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3544,6 +3316,13 @@ export const PlanCheckRun_Result_ResultSuccess_SqlReviewReport = {
 
           message.detail = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.code = longToNumber(reader.int64() as Long);
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3553,103 +3332,31 @@ export const PlanCheckRun_Result_ResultSuccess_SqlReviewReport = {
     return message;
   },
 
-  fromJSON(object: any): PlanCheckRun_Result_ResultSuccess_SqlReviewReport {
+  fromJSON(object: any): PlanCheckRun_Result_SqlReviewReport {
     return {
       line: isSet(object.line) ? Number(object.line) : 0,
       detail: isSet(object.detail) ? String(object.detail) : "",
+      code: isSet(object.code) ? Number(object.code) : 0,
     };
   },
 
-  toJSON(message: PlanCheckRun_Result_ResultSuccess_SqlReviewReport): unknown {
+  toJSON(message: PlanCheckRun_Result_SqlReviewReport): unknown {
     const obj: any = {};
     message.line !== undefined && (obj.line = Math.round(message.line));
     message.detail !== undefined && (obj.detail = message.detail);
+    message.code !== undefined && (obj.code = Math.round(message.code));
     return obj;
   },
 
-  create(
-    base?: DeepPartial<PlanCheckRun_Result_ResultSuccess_SqlReviewReport>,
-  ): PlanCheckRun_Result_ResultSuccess_SqlReviewReport {
-    return PlanCheckRun_Result_ResultSuccess_SqlReviewReport.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanCheckRun_Result_SqlReviewReport>): PlanCheckRun_Result_SqlReviewReport {
+    return PlanCheckRun_Result_SqlReviewReport.fromPartial(base ?? {});
   },
 
-  fromPartial(
-    object: DeepPartial<PlanCheckRun_Result_ResultSuccess_SqlReviewReport>,
-  ): PlanCheckRun_Result_ResultSuccess_SqlReviewReport {
-    const message = createBasePlanCheckRun_Result_ResultSuccess_SqlReviewReport();
+  fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlReviewReport>): PlanCheckRun_Result_SqlReviewReport {
+    const message = createBasePlanCheckRun_Result_SqlReviewReport();
     message.line = object.line ?? 0;
     message.detail = object.detail ?? "";
-    return message;
-  },
-};
-
-function createBasePlanCheckRun_Result_ResultFailure(): PlanCheckRun_Result_ResultFailure {
-  return { title: "", content: "" };
-}
-
-export const PlanCheckRun_Result_ResultFailure = {
-  encode(message: PlanCheckRun_Result_ResultFailure, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
-    }
-    if (message.content !== "") {
-      writer.uint32(18).string(message.content);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_ResultFailure {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_ResultFailure();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.content = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun_Result_ResultFailure {
-    return {
-      title: isSet(object.title) ? String(object.title) : "",
-      content: isSet(object.content) ? String(object.content) : "",
-    };
-  },
-
-  toJSON(message: PlanCheckRun_Result_ResultFailure): unknown {
-    const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
-    message.content !== undefined && (obj.content = message.content);
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRun_Result_ResultFailure>): PlanCheckRun_Result_ResultFailure {
-    return PlanCheckRun_Result_ResultFailure.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<PlanCheckRun_Result_ResultFailure>): PlanCheckRun_Result_ResultFailure {
-    const message = createBasePlanCheckRun_Result_ResultFailure();
-    message.title = object.title ?? "";
-    message.content = object.content ?? "";
+    message.code = object.code ?? 0;
     return message;
   },
 };

@@ -452,12 +452,9 @@
     - [Plan.Step](#bytebase-v1-Plan-Step)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
-    - [PlanCheckRun.Result.ResultFailure](#bytebase-v1-PlanCheckRun-Result-ResultFailure)
-    - [PlanCheckRun.Result.ResultSuccess](#bytebase-v1-PlanCheckRun-Result-ResultSuccess)
-    - [PlanCheckRun.Result.ResultSuccess.AffectedRowsReport](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-AffectedRowsReport)
-    - [PlanCheckRun.Result.ResultSuccess.Code](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-Code)
-    - [PlanCheckRun.Result.ResultSuccess.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-SqlReviewReport)
-    - [PlanCheckRun.Result.ResultSuccess.StatementTypeReport](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-StatementTypeReport)
+    - [PlanCheckRun.Result.AffectedRowsReport](#bytebase-v1-PlanCheckRun-Result-AffectedRowsReport)
+    - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
+    - [PlanCheckRun.Result.StatementTypeReport](#bytebase-v1-PlanCheckRun-Result-StatementTypeReport)
     - [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest)
     - [Rollout](#bytebase-v1-Rollout)
     - [Stage](#bytebase-v1-Stage)
@@ -473,8 +470,7 @@
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
-    - [PlanCheckRun.Result.ResultSuccess.Code.Namespace](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-Code-Namespace)
-    - [PlanCheckRun.Result.ResultSuccess.Status](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-Status)
+    - [PlanCheckRun.Result.Status](#bytebase-v1-PlanCheckRun-Result-Status)
     - [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status)
     - [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type)
     - [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus)
@@ -7221,6 +7217,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
+| error | [string](#string) |  | error is set if the Status is FAILED. |
 
 
 
@@ -7235,54 +7232,22 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| success | [PlanCheckRun.Result.ResultSuccess](#bytebase-v1-PlanCheckRun-Result-ResultSuccess) |  |  |
-| failure | [PlanCheckRun.Result.ResultFailure](#bytebase-v1-PlanCheckRun-Result-ResultFailure) |  | Failure if the PlanCheckRun itself failed to run. |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result-ResultFailure"></a>
-
-### PlanCheckRun.Result.ResultFailure
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
+| status | [PlanCheckRun.Result.Status](#bytebase-v1-PlanCheckRun-Result-Status) |  |  |
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
+| code | [int64](#int64) |  |  |
+| statement_type_report | [PlanCheckRun.Result.StatementTypeReport](#bytebase-v1-PlanCheckRun-Result-StatementTypeReport) |  |  |
+| affected_rows_report | [PlanCheckRun.Result.AffectedRowsReport](#bytebase-v1-PlanCheckRun-Result-AffectedRowsReport) |  |  |
+| sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-PlanCheckRun-Result-ResultSuccess"></a>
+<a name="bytebase-v1-PlanCheckRun-Result-AffectedRowsReport"></a>
 
-### PlanCheckRun.Result.ResultSuccess
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [PlanCheckRun.Result.ResultSuccess.Status](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-Status) |  |  |
-| title | [string](#string) |  |  |
-| content | [string](#string) |  |  |
-| code | [PlanCheckRun.Result.ResultSuccess.Code](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-Code) |  |  |
-| statement_type_report | [PlanCheckRun.Result.ResultSuccess.StatementTypeReport](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-StatementTypeReport) |  |  |
-| affected_rows_report | [PlanCheckRun.Result.ResultSuccess.AffectedRowsReport](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-AffectedRowsReport) |  |  |
-| sql_review_report | [PlanCheckRun.Result.ResultSuccess.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-SqlReviewReport) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result-ResultSuccess-AffectedRowsReport"></a>
-
-### PlanCheckRun.Result.ResultSuccess.AffectedRowsReport
+### PlanCheckRun.Result.AffectedRowsReport
 
 
 
@@ -7295,25 +7260,9 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
-<a name="bytebase-v1-PlanCheckRun-Result-ResultSuccess-Code"></a>
+<a name="bytebase-v1-PlanCheckRun-Result-SqlReviewReport"></a>
 
-### PlanCheckRun.Result.ResultSuccess.Code
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [int64](#int64) |  |  |
-| namespace | [PlanCheckRun.Result.ResultSuccess.Code.Namespace](#bytebase-v1-PlanCheckRun-Result-ResultSuccess-Code-Namespace) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result-ResultSuccess-SqlReviewReport"></a>
-
-### PlanCheckRun.Result.ResultSuccess.SqlReviewReport
+### PlanCheckRun.Result.SqlReviewReport
 
 
 
@@ -7321,15 +7270,16 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | line | [int64](#int64) |  |  |
 | detail | [string](#string) |  |  |
+| code | [int64](#int64) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-PlanCheckRun-Result-ResultSuccess-StatementTypeReport"></a>
+<a name="bytebase-v1-PlanCheckRun-Result-StatementTypeReport"></a>
 
-### PlanCheckRun.Result.ResultSuccess.StatementTypeReport
+### PlanCheckRun.Result.StatementTypeReport
 
 
 
@@ -7608,22 +7558,9 @@ Type is the database change type.
 
 
 
-<a name="bytebase-v1-PlanCheckRun-Result-ResultSuccess-Code-Namespace"></a>
+<a name="bytebase-v1-PlanCheckRun-Result-Status"></a>
 
-### PlanCheckRun.Result.ResultSuccess.Code.Namespace
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| NAMESPACE_UNSPECIFIED | 0 |  |
-| BYTEBASE | 1 |  |
-| ADVISOR | 2 |  |
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result-ResultSuccess-Status"></a>
-
-### PlanCheckRun.Result.ResultSuccess.Status
+### PlanCheckRun.Result.Status
 
 
 | Name | Number | Description |
