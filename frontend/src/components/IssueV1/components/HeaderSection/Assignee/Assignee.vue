@@ -38,7 +38,7 @@ import { User } from "@/types/proto/v1/auth_service";
 import { UserSelect } from "@/components/v2";
 import {
   allowUserToBeAssignee,
-  useCurrentRollOutPolicyForActiveEnvironment,
+  useCurrentRolloutPolicyForActiveEnvironment,
   useIssueContext,
 } from "../../../logic";
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
@@ -69,7 +69,7 @@ const changeAssigneeUID = (uid: string | undefined) => {
   issue.value.assignee = `users/${assignee.email}`;
 };
 
-const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
+const rollOutPolicy = useCurrentRolloutPolicyForActiveEnvironment();
 const filterAssignee = (user: User): boolean => {
   const project = issue.value.projectEntity;
   return allowUserToBeAssignee(

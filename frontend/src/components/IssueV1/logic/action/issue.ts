@@ -4,17 +4,21 @@ import { t } from "@/plugins/i18n";
 import { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
+  extractUserResourceName,
   flattenTaskV1List,
+  hasWorkspacePermissionV1,
   isDatabaseRelatedIssue,
   isGrantRequestIssue,
+  isOwnerOfProjectV1,
 } from "@/utils";
 import { isTaskFinished } from "..";
+import { User } from "@/types/proto/v1/auth_service";
 
 export type IssueStatusAction = "RESOLVE" | "CANCEL" | "REOPEN";
 
 export const IssueStatusActionMap: Record<IssueStatus, IssueStatusAction[]> = {
   [IssueStatus.OPEN]: ["RESOLVE", "CANCEL"],
-  [IssueStatus.DONE]: ["RESOLVE"],
+  [IssueStatus.DONE]: ["REOPEN"],
   [IssueStatus.CANCELED]: ["REOPEN"],
 
   // Only to make TypeScript compiler happy
@@ -72,4 +76,35 @@ export const issueStatusActionButtonProps = (
         type: "default",
       };
   }
+};
+export const allowUserToApplyIssueStatusAction = (
+  issue: ComposedIssue,
+  user: User,
+  action: IssueStatusAction
+) => {
+  // Workspace level high-privileged user (DBA/OWNER) are always allowed.
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      user.userRole
+    )
+  ) {
+    return true;
+  }
+
+  // Project owners are also allowed
+  const project = issue.projectEntity;
+  if (isOwnerOfProjectV1(project.iamPolicy, user)) {
+    return true;
+  }
+
+  // The creator and the assignee are allowed.
+  if (extractUserResourceName(issue.creator) === user.email) {
+    return true;
+  }
+  if (extractUserResourceName(issue.assignee) === user.email) {
+    return true;
+  }
+
+  return false;
 };

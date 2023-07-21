@@ -1,4 +1,4 @@
-import IssueStatusActionButtonGroup from "./IssueStatusActionButtonGroup.vue";
+import IssueStatusActionButtonGroup from "./IssueStatusActionButtonGroup";
 import ErrorList from "./ErrorList.vue";
 
 export * from "./types";

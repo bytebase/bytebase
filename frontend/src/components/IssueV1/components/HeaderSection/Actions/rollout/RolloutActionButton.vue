@@ -1,5 +1,5 @@
 <template>
-  <NTooltip :disabled="errors.length === 0">
+  <NTooltip :disabled="errors.length === 0" placement="top">
     <template #trigger>
       <ContextMenuButton
         :preference-key="`bb-rollout-action-${action}`"
@@ -22,12 +22,13 @@ import {
   StageRolloutAction,
   TaskRolloutAction,
   allPlanChecksPassedForTask,
-  isUserAllowedToApplyTaskRolloutAction,
+  allowUserToApplyTaskRolloutAction,
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { RolloutButtonAction } from "./RolloutActionButtonGroup.vue";
 import { ErrorList } from "../common";
+import { asyncComputed } from "@vueuse/core";
 
 const props = defineProps<{
   action: TaskRolloutAction;
@@ -38,23 +39,41 @@ const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { issue, activeTask } = useIssueContext();
 
-const errors = computed(() => {
+const errors = asyncComputed(async () => {
   const errors: string[] = [];
   if (!allPlanChecksPassedForTask(issue.value, activeTask.value)) {
-    errors.push("Some checks failed.");
+    // errors.push("Some checks failed.");
   }
   if (
-    !isUserAllowedToApplyTaskRolloutAction(
+    !(await allowUserToApplyTaskRolloutAction(
       issue.value,
       activeTask.value,
-      props.action,
-      currentUser.value
-    )
+      currentUser.value,
+      props.action
+    ))
   ) {
     errors.push("You are not assignee of this issue.");
   }
   return errors;
-});
+}, []);
+
+// const errors = computed(() => {
+//   const errors: string[] = [];
+//   if (!allPlanChecksPassedForTask(issue.value, activeTask.value)) {
+//     errors.push("Some checks failed.");
+//   }
+//   if (
+//     !isUserAllowedToApplyTaskRolloutAction(
+//       issue.value,
+//       activeTask.value,
+//       currentUser.value,
+//       props.action
+//     )
+//   ) {
+//     errors.push("You are not assignee of this issue.");
+//   }
+//   return errors;
+// });
 
 const actionList = computed(() => {
   const { action } = props;

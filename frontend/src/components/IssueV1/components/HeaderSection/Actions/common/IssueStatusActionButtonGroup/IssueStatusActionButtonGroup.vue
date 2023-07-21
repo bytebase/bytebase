@@ -1,20 +1,17 @@
 <template>
   <div v-if="displayMode === 'BUTTON'" class="flex items-center gap-x-2">
-    <NButton
+    <IssueStatusActionButton
       v-for="(action, index) in issueStatusActionList"
       :key="index"
-      :disabled="!allowApplyIssueStatusAction(action)"
-      size="large"
-      v-bind="issueStatusActionButtonProps(action)"
-      @click.prevent="$emit('apply-issue-action', action)"
-    >
-      {{ issueStatusActionDisplayName(action) }}
-    </NButton>
+      :action="action"
+    />
+
     <NDropdown
       v-if="extraActionList.length > 0"
       trigger="click"
       placement="bottom-end"
       :options="extraActionList"
+      :render-label="renderDropdownOptionLabel"
       @select="handleDropdownSelect"
     >
       <NButton :quaternary="true" size="large" style="--n-padding: 0 4px">
@@ -28,6 +25,7 @@
     trigger="click"
     placement="bottom-end"
     :options="mergedDropdownActionList"
+    :render-label="renderDropdownOptionLabel"
     @select="handleDropdownSelect"
   >
     <NButton :quaternary="true" size="large" style="--n-padding: 0 4px">
@@ -37,18 +35,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { NButton, DropdownOption } from "naive-ui";
+import { computed, h } from "vue";
+import { NButton, NDropdown, DropdownOption } from "naive-ui";
 
 import { Task } from "@/types/proto/v1/rollout_service";
-import { ExtraActionOption } from "./types";
+import { ExtraActionOption } from "../types";
 import {
   IssueStatusAction,
   TaskRolloutAction,
+  allowUserToApplyIssueStatusAction,
   issueStatusActionDisplayName,
-  issueStatusActionButtonProps,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import IssueStatusActionButton from "./IssueStatusActionButton.vue";
+import ExtraActionDropdownItem from "./ExtraActionDropdownItem.vue";
+import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{
   displayMode: "BUTTON" | "DROPDOWN";
@@ -66,6 +67,7 @@ const emit = defineEmits<{
 }>();
 
 const { issue } = useIssueContext();
+const currentUser = useCurrentUserV1();
 
 const issueStatusActionDropdownOptions = computed(() => {
   return props.issueStatusActionList.map<ExtraActionOption>((action) => {
@@ -75,6 +77,11 @@ const issueStatusActionDropdownOptions = computed(() => {
       type: "ISSUE",
       action: action,
       target: issue.value,
+      disabled: !allowUserToApplyIssueStatusAction(
+        issue.value,
+        currentUser.value,
+        action
+      ),
     };
   });
 });
@@ -95,9 +102,9 @@ const mergedDropdownActionList = computed(() => {
   }
 });
 
-const allowApplyIssueStatusAction = (action: IssueStatusAction): boolean => {
-  // TODO: permission check
-  return true;
+const renderDropdownOptionLabel = (dropdownOption: DropdownOption) => {
+  const option = dropdownOption as ExtraActionOption;
+  return h(ExtraActionDropdownItem, { option });
 };
 
 const handleDropdownSelect = (key: string, dropdownOption: DropdownOption) => {

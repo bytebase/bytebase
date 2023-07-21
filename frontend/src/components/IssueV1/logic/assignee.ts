@@ -1,8 +1,11 @@
-import { computed } from "vue";
+import { computed, unref } from "vue";
+import { first } from "lodash-es";
+
 import {
   ComposedIssue,
   emptyStage,
   emptyTask,
+  MaybeRef,
   SYSTEM_BOT_EMAIL,
   unknownEnvironment,
 } from "@/types";
@@ -10,7 +13,6 @@ import {
   isDatabaseRelatedIssue,
   isOwnerOfProjectV1,
   hasWorkspacePermissionV1,
-  activeStageInRollout,
   extractUserResourceName,
   activeTaskInRollout,
 } from "@/utils";
@@ -24,20 +26,48 @@ import { DeploymentType } from "@/types/proto/v1/deployment";
 import {
   usePolicyByParentAndType,
   defaultApprovalStrategy,
+  usePolicyV1Store,
 } from "@/store/modules/v1/policy";
-import { useEnvironmentV1Store } from "@/store";
 import { Project } from "@/types/proto/v1/project_service";
 import { User } from "@/types/proto/v1/auth_service";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import { useIssueContext } from "./context";
-import { first } from "lodash-es";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { useEnvironmentV1Store } from "@/store";
+import { useIssueContext } from "./context";
 
-export const useCurrentRollOutPolicyForActiveEnvironment = () => {
-  const { isCreating, issue } = useIssueContext();
-  const environmentStore = useEnvironmentV1Store();
+export const getCurrentRolloutPolicyForTask = async (
+  issue: ComposedIssue,
+  task: Task
+) => {
+  if (!isDatabaseRelatedIssue(issue)) {
+    return {
+      policy: ApprovalStrategy.MANUAL,
+      assigneeGroup: undefined,
+    };
+  }
 
+  const stage = issue.rolloutEntity.stages.find((stage) =>
+    stage.tasks.findIndex((t) => t.uid === unref(task).uid)
+  );
+  const environment = stage
+    ? useEnvironmentV1Store().getEnvironmentByName(stage.environment)
+    : undefined;
+
+  if (!environment) {
+    return extractRollOutPolicyValue(undefined, task.type);
+  }
+
+  const approvalPolicy =
+    await usePolicyV1Store().getOrFetchPolicyByParentAndType({
+      parentPath: environment.name,
+      policyType: PolicyType.DEPLOYMENT_APPROVAL,
+    });
+  return extractRollOutPolicyValue(approvalPolicy, task.type);
+};
+
+export const useCurrentRolloutPolicyForTask = (task: MaybeRef<Task>) => {
+  const { issue } = useIssueContext();
   if (!isDatabaseRelatedIssue(issue.value)) {
     return computed(() => ({
       policy: ApprovalStrategy.MANUAL,
@@ -45,30 +75,32 @@ export const useCurrentRollOutPolicyForActiveEnvironment = () => {
     }));
   }
 
-  const activeEnvironment = computed(() => {
-    if (isCreating.value) {
-      const firstStage = first(issue.value.rolloutEntity.stages);
-      if (firstStage) {
-        return (
-          environmentStore.getEnvironmentByName(firstStage.environment) ??
-          unknownEnvironment()
-        );
-      }
-      return unknownEnvironment();
-    }
-    const activeStage = activeStageInRollout(issue.value.rolloutEntity);
+  const environment = computed(() => {
+    const stage = issue.value.rolloutEntity.stages.find((stage) =>
+      stage.tasks.findIndex((t) => t.uid === unref(task).uid)
+    );
+    if (!stage) return unknownEnvironment();
     return (
-      environmentStore.getEnvironmentByName(activeStage.environment) ??
+      useEnvironmentV1Store().getEnvironmentByName(stage.environment) ??
       unknownEnvironment()
     );
   });
 
-  const activeEnvironmentApprovalPolicy = usePolicyByParentAndType(
+  const approvalPolicy = usePolicyByParentAndType(
     computed(() => ({
-      parentPath: activeEnvironment.value.name,
+      parentPath: environment.value.name,
       policyType: PolicyType.DEPLOYMENT_APPROVAL,
     }))
   );
+
+  return computed(() => {
+    const policy = approvalPolicy.value;
+    return extractRollOutPolicyValue(policy, unref(task).type);
+  });
+};
+
+export const useCurrentRolloutPolicyForActiveEnvironment = () => {
+  const { isCreating, issue } = useIssueContext();
 
   const activeTask = computed(() => {
     const rollout = issue.value.rolloutEntity;
@@ -79,10 +111,7 @@ export const useCurrentRollOutPolicyForActiveEnvironment = () => {
     return activeTaskInRollout(rollout);
   });
 
-  return computed(() => {
-    const policy = activeEnvironmentApprovalPolicy.value;
-    return extractRollOutPolicyValue(policy, activeTask.value.type);
-  });
+  return useCurrentRolloutPolicyForTask(activeTask);
 };
 
 export const extractRollOutPolicyValue = (

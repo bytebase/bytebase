@@ -2,7 +2,12 @@ import { t } from "@/plugins/i18n";
 import { ComposedIssue } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Task, Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { extractUserResourceName } from "@/utils";
+import {
+  allowUserToBeAssignee,
+  getCurrentRolloutPolicyForTask,
+} from "../assignee";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // PENDING_APPROVAL -> PENDING
@@ -43,7 +48,21 @@ export const getApplicableTaskRolloutActionList = (
   if (issue.status !== IssueStatus.OPEN) {
     return [];
   }
-  return TaskRolloutActionMap[task.status];
+  const list = TaskRolloutActionMap[task.status];
+  return list.filter((action) => {
+    if (action === "CANCEL") {
+      // Now, only gh-ost sync task is cancelable
+      return task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC;
+    }
+    if (action === "RETRY") {
+      // RETRYing gh-ost cut-over task is not allowed (yet).
+      if (task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 };
 
 export const taskRolloutActionDisplayName = (action: TaskRolloutAction) => {
@@ -61,11 +80,29 @@ export const taskRolloutActionDisplayName = (action: TaskRolloutAction) => {
   }
 };
 
-export const isUserAllowedToApplyTaskRolloutAction = (
+export const allowUserToApplyTaskRolloutAction = async (
   issue: ComposedIssue,
   task: Task,
-  action: TaskRolloutAction,
-  user: User
+  user: User,
+  action: TaskRolloutAction
 ) => {
-  return false; // TODO
+  if (extractUserResourceName(issue.assignee) === user.email) {
+    return true;
+  }
+
+  const project = issue.projectEntity;
+  const rolloutPolicy = await getCurrentRolloutPolicyForTask(issue, task);
+  if (
+    allowUserToBeAssignee(
+      user,
+      project,
+      project.iamPolicy,
+      rolloutPolicy.policy,
+      rolloutPolicy.assigneeGroup
+    )
+  ) {
+    return true;
+  }
+
+  return false;
 };
