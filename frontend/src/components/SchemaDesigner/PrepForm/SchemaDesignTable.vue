@@ -2,6 +2,7 @@
   <div ref="wrapper" rule="database-table" v-bind="$attrs">
     <BBGrid
       class="border"
+      :show-placeholder="true"
       :column-list="COLUMN_LIST"
       :data-source="schemaDesigns"
       @click-row="clickSchemaDesign"
