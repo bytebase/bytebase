@@ -750,16 +750,27 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 
 	issueV1 := &v1pb.Issue{
-		Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, issuePrefix, issue.UID),
-		Uid:               fmt.Sprintf("%d", issue.UID),
-		Title:             issue.Title,
-		Description:       issue.Description,
-		Status:            convertToIssueStatus(issue.Status),
-		Assignee:          fmt.Sprintf("%s%s", userNamePrefix, issue.Assignee.Email),
-		AssigneeAttention: issue.NeedAttention,
-		Creator:           fmt.Sprintf("%s%s", userNamePrefix, issue.Creator.Email),
-		CreateTime:        timestamppb.New(issue.CreatedTime),
-		UpdateTime:        timestamppb.New(issue.UpdatedTime),
+		Name:                 fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, issuePrefix, issue.UID),
+		Uid:                  fmt.Sprintf("%d", issue.UID),
+		Title:                issue.Title,
+		Description:          issue.Description,
+		Status:               convertToIssueStatus(issue.Status),
+		Assignee:             fmt.Sprintf("%s%s", userNamePrefix, issue.Assignee.Email),
+		AssigneeAttention:    issue.NeedAttention,
+		Approvers:            nil,
+		ApprovalTemplates:    nil,
+		ApprovalFindingDone:  false,
+		ApprovalFindingError: "",
+		Subscribers:          nil,
+		Creator:              fmt.Sprintf("%s%s", userNamePrefix, issue.Creator.Email),
+		CreateTime:           timestamppb.New(issue.CreatedTime),
+		UpdateTime:           timestamppb.New(issue.UpdatedTime),
+		Plan:                 "",
+		Rollout:              "",
+	}
+
+	if issue.PlanUID != nil {
+		issueV1.Plan = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, planPrefix, *issue.PlanUID)
 	}
 
 	for _, subscriber := range issue.Subscribers {
