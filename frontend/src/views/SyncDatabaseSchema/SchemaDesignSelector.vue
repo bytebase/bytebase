@@ -14,6 +14,7 @@
     </div>
     <BBGrid
       class="border"
+      :show-placeholder="true"
       :column-list="COLUMN_LIST"
       :data-source="schemaDesignList"
       @click-row="clickSchemaDesign"
