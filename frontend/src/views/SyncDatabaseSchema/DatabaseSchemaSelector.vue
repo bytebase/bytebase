@@ -170,7 +170,7 @@ const hasSyncSchemaFeature = computed(() => {
 
 const shouldShowMoreVersionButton = computed(() => {
   return (
-    hasSyncSchemaFeature.value &&
+    !hasSyncSchemaFeature.value &&
     databaseChangeHistoryList(state.databaseId as string).length > 0
   );
 });
