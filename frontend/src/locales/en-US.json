@@ -1582,6 +1582,7 @@
           "gitlab-com-visit-application-page": "Go to Preferences -> Applications page. You can reach it through your profile picture on the top right corner.",
           "azure-devops-visit-application-page": "Go to the applications page.",
           "gitlab-paste-oauth-info": "Paste the Application ID and Secret from that just created application into fields below.",
+          "azure-paste-oauth-info": "Paste the Application ID and Client Secret from that just created application into fields below.",
           "github-register-oauth-application": "Register Bytebase as a GitHub organization-wide OAuth application.",
           "github-login-as-admin": "Log in as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",

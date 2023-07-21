@@ -1579,6 +1579,7 @@
           "gitlab-com-visit-application-page": "Vaya a la página de Preferencias -> Aplicaciones. Puede acceder a ella a través de su foto de perfil en la esquina superior derecha.",
           "azure-devops-visit-application-page": "Ir a la página de aplicaciones.",
           "gitlab-paste-oauth-info": "Pegue la ID de la aplicación y la clave secreta de la aplicación recién creada en los campos a continuación.",
+          "azure-paste-oauth-info": "Pegue el ID de la aplicación y el secreto del cliente de la aplicación que acaba de crear en los campos a continuación.",
           "github-register-oauth-application": "Registrar Bytebase como una aplicación OAuth de organización en GitHub.",
           "github-login-as-admin": "Inicie sesión como usuario administrador de la organización en GitHub.com. La cuenta debe ser un administrador de la organización de GitHub (capaz de acceder a la página de Configuración de la organización).",
           "github-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"Configuración de desarrollador > Aplicaciones OAuth\" y haga clic en el botón \"Registrar una aplicación\".",

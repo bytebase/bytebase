@@ -1574,6 +1574,7 @@
           "gitlab-com-visit-application-page": "访问 Preferences -> Applications 页面。您可以通过右上角的头像下拉菜单访问到该页面。",
           "azure-devops-visit-application-page": "访问 Applications 页面。",
           "gitlab-paste-oauth-info": "从刚创建好的应用上粘贴它的应用 ID 和 Secret 到下面的字段。",
+          "azure-paste-oauth-info": "从刚创建好的应用上粘贴它的应用 ID 和 客户端 Secret 到下面的字段。",
           "github-register-oauth-application": "注册 Bytebase 为一个 GitHub 组织级别 (organization-wide) 的 OAuth 应用。",
           "github-login-as-admin": "以组织管理员身份登录 GitHub.com。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。",
           "github-visit-admin-page": "进入组织 Settings 页面，然后导航到「Developer settings > OAuth Apps」分区，再点击「Register an application」。",

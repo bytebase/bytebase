@@ -491,7 +491,7 @@
           4.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.gitlab-paste-oauth-info"
+              "gitops.setting.add-git-provider.oauth-info.azure-paste-oauth-info"
             )
           }}
         </li>
