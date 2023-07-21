@@ -22,8 +22,9 @@
     </div>
     <div ref="treeRef" class="schema-editor-database-tree pb-2 h-auto">
       <NTree
+        :key="treeKeyRef"
         :block-line="true"
-        :data="treeDataRef"
+        :data="treeData"
         :pattern="searchPattern"
         :render-prefix="renderPrefix"
         :render-label="renderLabel"
@@ -138,8 +139,53 @@ const treeRef = ref();
 const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
-const treeDataRef = ref<TreeNode[]>([]);
+// Trigger re-render when the tree data is changed.
+const treeKeyRef = ref<string>("");
 
+const treeData = computed(() => {
+  const treeNodeList: TreeNode[] = [];
+  if (engine.value === Engine.MYSQL) {
+    const schema = schemaList.value[0];
+    if (!schema) {
+      return;
+    }
+    for (const table of tableList.value) {
+      const tableTreeNode: TreeNodeForTable = {
+        type: "table",
+        key: `t-${table.id}`,
+        label: table.name,
+        isLeaf: true,
+        schemaId: schema.id,
+        tableId: table.id,
+      };
+      treeNodeList.push(tableTreeNode);
+    }
+  } else {
+    for (const schema of schemaList.value) {
+      const schemaTreeNode: TreeNodeForSchema = {
+        type: "schema",
+        key: `s-${schema.id}`,
+        label: schema.name,
+        isLeaf: false,
+        schemaId: schema.id,
+      };
+      treeNodeList.push(schemaTreeNode);
+      for (const table of schema.tableList) {
+        const tableTreeNode: TreeNodeForTable = {
+          type: "table",
+          key: `t-${schema.id}-${table.id}`,
+          label: table.name,
+          isLeaf: true,
+          schemaId: schema.id,
+          tableId: table.id,
+        };
+        schemaTreeNode.children?.push(tableTreeNode);
+      }
+    }
+  }
+
+  return treeNodeList;
+});
 const schemaList = computed(() => editableSchemas.value);
 const tableList = computed(() =>
   schemaList.value.map((schema) => schema.tableList).flat()
@@ -152,7 +198,7 @@ const contextMenuOptions = computed(() => {
 
   if (treeNode.type === "schema") {
     const options = [];
-    if (engine === Engine.POSTGRES) {
+    if (engine.value === Engine.POSTGRES) {
       const schema = schemaList.value.find(
         (schema) => schema.id === treeNode.schemaId
       );
@@ -163,12 +209,12 @@ const contextMenuOptions = computed(() => {
       options.push({
         key: "create-table",
         label: t("schema-editor.actions.create-table"),
-        disabled: readonly,
+        disabled: readonly.value,
       });
       options.push({
         key: "drop-schema",
         label: t("schema-editor.actions.drop-schema"),
-        disabled: readonly,
+        disabled: readonly.value,
       });
     }
     return options;
@@ -191,7 +237,7 @@ const contextMenuOptions = computed(() => {
     options.push({
       key: "drop",
       label: t("schema-editor.actions.drop-table"),
-      disabled: readonly,
+      disabled: readonly.value,
     });
     return options;
   }
@@ -200,54 +246,13 @@ const contextMenuOptions = computed(() => {
 });
 
 watch(
-  () => [schemaList.value, tableList.value],
+  () => treeData.value,
   () => {
-    const treeNodeList: TreeNode[] = [];
-    if (engine === Engine.MYSQL) {
-      const schema = schemaList.value[0];
-      if (!schema) {
-        return;
-      }
-      for (const table of tableList.value) {
-        const tableTreeNode: TreeNodeForTable = {
-          type: "table",
-          key: `t-${table.id}`,
-          label: table.name,
-          isLeaf: true,
-          schemaId: schema.id,
-          tableId: table.id,
-        };
-        treeNodeList.push(tableTreeNode);
-      }
-    } else {
-      for (const schema of schemaList.value) {
-        const schemaTreeNode: TreeNodeForSchema = {
-          type: "schema",
-          key: `s-${schema.id}`,
-          label: schema.name,
-          isLeaf: false,
-          schemaId: schema.id,
-        };
-        treeNodeList.push(schemaTreeNode);
-        for (const table of schema.tableList) {
-          const tableTreeNode: TreeNodeForTable = {
-            type: "table",
-            key: `t-${schema.id}-${table.id}`,
-            label: table.name,
-            isLeaf: true,
-            schemaId: schema.id,
-            tableId: table.id,
-          };
-          schemaTreeNode.children?.push(tableTreeNode);
-        }
-      }
-    }
-
-    treeDataRef.value = treeNodeList;
+    treeKeyRef.value = Math.random().toString();
   },
   {
-    immediate: true,
     deep: true,
+    immediate: true,
   }
 );
 
@@ -341,7 +346,7 @@ const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
     },
   });
   if (treeNode.type === "schema") {
-    if (engine === Engine.POSTGRES) {
+    if (engine.value === Engine.POSTGRES) {
       return icon;
     }
   } else if (treeNode.type === "table") {
@@ -361,7 +366,7 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
 };
 
 const handleCreateTable = () => {
-  if (engine === Engine.MYSQL) {
+  if (engine.value === Engine.MYSQL) {
     const schema = editableSchemas.value[0];
     state.tableNameModalContext = {
       schemaId: schema.id,
