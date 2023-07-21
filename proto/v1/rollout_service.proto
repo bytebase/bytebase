@@ -377,11 +377,6 @@ message PlanCheckRun {
       ResultFailure failure = 2;
     }
 
-    message ResultFailure {
-      string title = 1;
-      string content = 2;
-    }
-
     message ResultSuccess {
       enum Status {
         STATUS_UNSPECIFIED = 0;
@@ -418,6 +413,11 @@ message PlanCheckRun {
         int64 line = 1;
         string detail = 2;
       }
+    }
+
+    message ResultFailure {
+      string title = 1;
+      string content = 2;
     }
   }
 }
