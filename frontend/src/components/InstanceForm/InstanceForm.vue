@@ -1082,13 +1082,9 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: Engine): boolean => {
-  return [
-    Engine.ORACLE,
-    Engine.MSSQL,
-    Engine.REDSHIFT,
-    Engine.MARIADB,
-    Engine.OCEANBASE,
-  ].includes(engine);
+  return false;
+  // return [
+  // ].includes(engine);
 };
 
 const handleSelectEnvironmentUID = (uid: number | string) => {
