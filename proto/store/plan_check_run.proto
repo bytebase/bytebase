@@ -39,6 +39,7 @@ message PlanCheckRunResultSuccess {
     }
     Namespace namespace = 2;
   }
+  Code code = 4;
 
   oneof report {
     StatementTypeReport statement_type_report = 1;
