@@ -40,7 +40,7 @@ message PlanCheckRunResultSuccess {
     Namespace namespace = 2;
   }
 
-  oneof result {
+  oneof report {
     StatementTypeReport statement_type_report = 1;
     AffectedRowsReport affected_rows_report = 2;
     SqlReviewReport sql_review_report = 3;
