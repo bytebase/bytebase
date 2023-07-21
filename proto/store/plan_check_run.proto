@@ -42,10 +42,10 @@ message PlanCheckRunResultSuccess {
   Code code = 4;
 
   oneof report {
-    StatementTypeReport statement_type_report = 1;
-    AffectedRowsReport affected_rows_report = 2;
-    SqlReviewReport sql_review_report = 3;
-    BytebaseReport bytebase_report = 4;
+    StatementTypeReport statement_type_report = 5;
+    AffectedRowsReport affected_rows_report = 6;
+    SqlReviewReport sql_review_report = 7;
+    BytebaseReport bytebase_report = 8;
   }
   message StatementTypeReport {
     string statement_type = 1;
