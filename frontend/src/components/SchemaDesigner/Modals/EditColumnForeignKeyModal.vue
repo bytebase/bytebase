@@ -132,7 +132,7 @@ const foreignKeyList = computed(() => {
 });
 
 const shouldShowSchemaSelector = computed(() => {
-  return engine === Engine.POSTGRES;
+  return engine.value === Engine.POSTGRES;
 });
 
 const selectedSchema = computed(() => {
