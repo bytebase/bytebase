@@ -144,6 +144,8 @@ const attentionText = computed((): string => {
     return t("gitops.setting.add-git-provider.github-com-admin-requirement");
   } else if (state.config.type === ExternalVersionControl_Type.BITBUCKET) {
     return t("gitops.setting.add-git-provider.bitbucket-admin-requirement");
+  } else if (state.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+    return t("gitops.setting.add-git-provider.azure-admin-requirement");
   }
   return "";
 });

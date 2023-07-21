@@ -36,6 +36,13 @@
           )
         }}
       </template>
+      <template v-else-if="config.uiType == 'AZURE_DEVOPS'">
+        {{
+          $t(
+            "gitops.setting.add-git-provider.oauth-info.azure-register-oauth-application"
+          )
+        }}
+      </template>
     </div>
     <ol class="textinfolabel space-y-2">
       <template v-if="config.uiType == 'GITLAB_SELF_HOST'">
