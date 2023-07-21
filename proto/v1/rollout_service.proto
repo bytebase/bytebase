@@ -382,16 +382,7 @@ message PlanCheckRun {
     Status status = 1;
     string title = 2;
     string content = 3;
-    message Code {
-      int64 code = 1;
-      enum Namespace {
-        NAMESPACE_UNSPECIFIED = 0;
-        BYTEBASE = 1;
-        ADVISOR = 2;
-      }
-      Namespace namespace = 2;
-    }
-    Code code = 4;
+    int64 code = 4;
 
     oneof report {
       StatementTypeReport statement_type_report = 5;
@@ -407,6 +398,7 @@ message PlanCheckRun {
     message SqlReviewReport {
       int64 line = 1;
       string detail = 2;
+      int64 code = 3;
     }
   }
 }
