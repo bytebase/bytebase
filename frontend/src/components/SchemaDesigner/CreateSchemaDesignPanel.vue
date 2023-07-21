@@ -81,6 +81,7 @@ import { databaseNamePrefix } from "@/store/modules/v1/common";
 import { mergeSchemaEditToMetadata } from "./common/util";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import SchemaDesigner from "./index.vue";
+import { UNKNOWN_ID } from "@/types";
 
 interface BaselineSchema {
   // The uid of project.
@@ -206,6 +207,12 @@ const handleConfirm = async () => {
       DatabaseMetadata.fromPartial({})
   );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
+  const schemaVersion =
+    !state.baselineSchema.changeHistory ||
+    state.baselineSchema.changeHistory?.uid === String(UNKNOWN_ID)
+      ? ""
+      : state.baselineSchema.changeHistory?.name;
+
   const createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
     project.value.name,
     SchemaDesign.fromPartial({
@@ -217,7 +224,7 @@ const handleConfirm = async () => {
       baselineSchemaMetadata: state.schemaDesign.baselineSchemaMetadata,
       engine: state.schemaDesign.engine,
       baselineDatabase: baselineDatabase,
-      schemaVersion: state.baselineSchema.changeHistory?.name || "",
+      schemaVersion: schemaVersion,
     })
   );
   pushNotification({

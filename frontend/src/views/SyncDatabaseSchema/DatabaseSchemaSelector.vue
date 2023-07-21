@@ -180,9 +180,9 @@ const prepareChangeHistoryList = async () => {
     return;
   }
 
-  await changeHistoryStore.fetchChangeHistoryList({
-    parent: database.value.name,
-  });
+  await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+    database.value.name
+  );
 };
 
 onMounted(async () => {
@@ -295,9 +295,9 @@ watch(
     const database = databaseStore.getDatabaseByUID(databaseId);
     if (database) {
       const changeHistoryList = (
-        await changeHistoryStore.fetchChangeHistoryList({
-          parent: database.name,
-        })
+        await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+          database.name
+        )
       ).filter((changeHistory) =>
         allowedMigrationTypeList.includes(changeHistory.type)
       );
