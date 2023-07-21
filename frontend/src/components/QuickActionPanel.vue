@@ -81,9 +81,7 @@
         </div>
 
         <div
-          v-if="
-            isDev() && quickAction === 'quickaction.bb.database.schema.design'
-          "
+          v-if="quickAction === 'quickaction.bb.database.schema.design'"
           class="flex flex-col items-center w-24"
         >
           <button class="btn-icon-primary p-3" @click.prevent="designSchema">
