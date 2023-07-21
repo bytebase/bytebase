@@ -11,7 +11,8 @@ export type VCSUIType =
   | "GITLAB_COM"
   | "GITHUB_COM"
   | "GITHUB_ENTERPRISE"
-  | "BITBUCKET_ORG";
+  | "BITBUCKET_ORG"
+  | "AZURE_DEVOPS";
 export interface VCSConfig {
   type: ExternalVersionControl_Type;
   uiType: VCSUIType;
@@ -82,6 +83,9 @@ export function isValidVCSApplicationIdOrSecret(
     return /^[a-zA-Z0-9_]{20}$|^[a-zA-Z0-9_]{40}$/.test(str);
   } else if (vcsType == ExternalVersionControl_Type.BITBUCKET) {
     return /^[a-zA-Z0-9_]{18}$|^[a-zA-Z0-9_]{32}$/.test(str);
+  } else if (vcsType == ExternalVersionControl_Type.AZURE_DEVOPS) {
+    // TODO: Azure App id is uuid but the secret is random string. We may need to distinguish them.
+    return /^[a-zA-Z0-9-_.]{1,}$/.test(str);
   }
   return false;
 }

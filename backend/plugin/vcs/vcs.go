@@ -24,6 +24,8 @@ const (
 	GitHub Type = "GITHUB"
 	// Bitbucket is the VCS type for Bitbucket Cloud (bitbucket.org).
 	Bitbucket Type = "BITBUCKET"
+	// AzureDevOps is the VCS type for Azure DevOps.
+	AzureDevOps Type = "AZURE_DEVOPS"
 
 	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
 	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"

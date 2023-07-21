@@ -66,12 +66,20 @@ export function openWindowForOAuth(
     endpointQueryParams["scope"] = "account repository:write webhook";
     windowOpenOptions =
       "location=yes,left=200,top=200,height=640,width=720,scrollbars=yes,status=yes";
-  } else {
+  } else if (vcsType == ExternalVersionControl_Type.GITLAB) {
     // GITLAB
     // GitLab OAuth App scopes: https://docs.gitlab.com/ee/integration/oauth_provider.html#authorized-applications
     endpointQueryParams["scope"] = "api";
     windowOpenOptions =
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes";
+  } else if (vcsType == ExternalVersionControl_Type.AZURE_DEVOPS) {
+    // Scopes for Azure: https://learn.microsoft.com/zh-cn/azure/devops/integrate/get-started/authentication/oauth?view=azure-devops#scopes
+    // We need full scopes in the application: https://stackoverflow.com/questions/56143321/azure-devops-oauth-enpoint-always-returns-error-invalidscope
+    // TODO: decide necessary scopes
+    endpointQueryParams["scope"] = "vso.code_full vso.identity";
+    endpointQueryParams["response_type"] = "Assertion";
+    windowOpenOptions =
+      "location=yes,left=200,top=200,height=640,width=720,scrollbars=yes,status=yes";
   }
 
   const fullEndpointURL = `${endpoint}?${stringify(endpointQueryParams)}`;
