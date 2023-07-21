@@ -150,32 +150,35 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	instanceID, _, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(schemaDesign.SchemaVersion)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		ID:         &changeHistoryIDStr,
-		InstanceID: &instance.UID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if changeHistory == nil {
-		return nil, status.Errorf(codes.NotFound, "schema version %s not found", changeHistoryIDStr)
-	}
+
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			BaselineChangeHistoryId: changeHistory.UID,
-			Engine:                  storepb.Engine(schemaDesign.Engine),
+			Engine: storepb.Engine(schemaDesign.Engine),
 		},
+	}
+	if schemaDesign.SchemaVersion != "" {
+		instanceID, _, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(schemaDesign.SchemaVersion)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			ResourceID: &instanceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+			ID:         &changeHistoryIDStr,
+			InstanceID: &instance.UID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if changeHistory == nil {
+			return nil, status.Errorf(codes.NotFound, "schema version %s not found", changeHistoryIDStr)
+		}
+		schemaDesignSheetPayload.SchemaDesign.BaselineChangeHistoryId = changeHistory.UID
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {

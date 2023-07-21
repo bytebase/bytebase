@@ -107,7 +107,7 @@ import {
   ChangeHistoryView,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
-import { isNull, isUndefined } from "lodash-es";
+import { head, isNull, isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
 
@@ -151,9 +151,9 @@ const prepareChangeHistoryList = async () => {
     return;
   }
 
-  await changeHistoryStore.fetchChangeHistoryList({
-    parent: database.value.name,
-  });
+  return await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+    database.value.name
+  );
 };
 
 onMounted(async () => {
@@ -172,7 +172,33 @@ onMounted(async () => {
   }
 });
 
-watch(() => state.databaseId, prepareChangeHistoryList);
+watch(
+  () => state.databaseId,
+  async () => {
+    if (!database.value) {
+      state.changeHistory = undefined;
+      return;
+    }
+
+    const list = await prepareChangeHistoryList();
+    if (!list || list.length === 0) {
+      // If database has no migration history, we will use its latest schema.
+      const schema = await databaseStore.fetchDatabaseSchema(
+        `${database.value.name}/schema`
+      );
+      state.changeHistory = {
+        name: `${database.value.name}/changeHistories/${UNKNOWN_ID}`,
+        uid: String(UNKNOWN_ID),
+        updateTime: new Date(),
+        schema: schema.schema,
+        version: "Latest version",
+        description: "the latest schema of database",
+      } as ChangeHistory;
+    } else {
+      state.changeHistory = head(list);
+    }
+  }
+);
 
 const prepareFullViewChangeHistory = async () => {
   const changeHistory = state.changeHistory;
