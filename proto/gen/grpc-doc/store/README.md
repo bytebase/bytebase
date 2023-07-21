@@ -104,7 +104,6 @@
     - [PlanCheckRunResultSuccess](#bytebase-store-PlanCheckRunResultSuccess)
     - [PlanCheckRunResultSuccess.AffectedRowsReport](#bytebase-store-PlanCheckRunResultSuccess-AffectedRowsReport)
     - [PlanCheckRunResultSuccess.Code](#bytebase-store-PlanCheckRunResultSuccess-Code)
-    - [PlanCheckRunResultSuccess.GeneralReport](#bytebase-store-PlanCheckRunResultSuccess-GeneralReport)
     - [PlanCheckRunResultSuccess.SqlReviewReport](#bytebase-store-PlanCheckRunResultSuccess-SqlReviewReport)
     - [PlanCheckRunResultSuccess.StatementTypeReport](#bytebase-store-PlanCheckRunResultSuccess-StatementTypeReport)
   
@@ -1557,7 +1556,6 @@ Type is the database change type.
 | statement_type_report | [PlanCheckRunResultSuccess.StatementTypeReport](#bytebase-store-PlanCheckRunResultSuccess-StatementTypeReport) |  |  |
 | affected_rows_report | [PlanCheckRunResultSuccess.AffectedRowsReport](#bytebase-store-PlanCheckRunResultSuccess-AffectedRowsReport) |  |  |
 | sql_review_report | [PlanCheckRunResultSuccess.SqlReviewReport](#bytebase-store-PlanCheckRunResultSuccess-SqlReviewReport) |  |  |
-| general_report | [PlanCheckRunResultSuccess.GeneralReport](#bytebase-store-PlanCheckRunResultSuccess-GeneralReport) |  |  |
 
 
 
@@ -1589,16 +1587,6 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | code | [int64](#int64) |  |  |
 | namespace | [PlanCheckRunResultSuccess.Code.Namespace](#bytebase-store-PlanCheckRunResultSuccess-Code-Namespace) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunResultSuccess-GeneralReport"></a>
-
-### PlanCheckRunResultSuccess.GeneralReport
-
 
 
 

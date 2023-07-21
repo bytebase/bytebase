@@ -29,7 +29,6 @@ export interface PlanCheckRunResultSuccess {
   statementTypeReport?: PlanCheckRunResultSuccess_StatementTypeReport | undefined;
   affectedRowsReport?: PlanCheckRunResultSuccess_AffectedRowsReport | undefined;
   sqlReviewReport?: PlanCheckRunResultSuccess_SqlReviewReport | undefined;
-  generalReport?: PlanCheckRunResultSuccess_GeneralReport | undefined;
 }
 
 export enum PlanCheckRunResultSuccess_Status {
@@ -136,9 +135,6 @@ export interface PlanCheckRunResultSuccess_AffectedRowsReport {
 export interface PlanCheckRunResultSuccess_SqlReviewReport {
   line: number;
   detail: string;
-}
-
-export interface PlanCheckRunResultSuccess_GeneralReport {
 }
 
 export interface PlanCheckRunResultFailure {
@@ -367,7 +363,6 @@ function createBasePlanCheckRunResultSuccess(): PlanCheckRunResultSuccess {
     statementTypeReport: undefined,
     affectedRowsReport: undefined,
     sqlReviewReport: undefined,
-    generalReport: undefined,
   };
 }
 
@@ -395,9 +390,6 @@ export const PlanCheckRunResultSuccess = {
     }
     if (message.sqlReviewReport !== undefined) {
       PlanCheckRunResultSuccess_SqlReviewReport.encode(message.sqlReviewReport, writer.uint32(58).fork()).ldelim();
-    }
-    if (message.generalReport !== undefined) {
-      PlanCheckRunResultSuccess_GeneralReport.encode(message.generalReport, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -458,13 +450,6 @@ export const PlanCheckRunResultSuccess = {
 
           message.sqlReviewReport = PlanCheckRunResultSuccess_SqlReviewReport.decode(reader, reader.uint32());
           continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.generalReport = PlanCheckRunResultSuccess_GeneralReport.decode(reader, reader.uint32());
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -489,9 +474,6 @@ export const PlanCheckRunResultSuccess = {
       sqlReviewReport: isSet(object.sqlReviewReport)
         ? PlanCheckRunResultSuccess_SqlReviewReport.fromJSON(object.sqlReviewReport)
         : undefined,
-      generalReport: isSet(object.generalReport)
-        ? PlanCheckRunResultSuccess_GeneralReport.fromJSON(object.generalReport)
-        : undefined,
     };
   },
 
@@ -510,9 +492,6 @@ export const PlanCheckRunResultSuccess = {
       : undefined);
     message.sqlReviewReport !== undefined && (obj.sqlReviewReport = message.sqlReviewReport
       ? PlanCheckRunResultSuccess_SqlReviewReport.toJSON(message.sqlReviewReport)
-      : undefined);
-    message.generalReport !== undefined && (obj.generalReport = message.generalReport
-      ? PlanCheckRunResultSuccess_GeneralReport.toJSON(message.generalReport)
       : undefined);
     return obj;
   },
@@ -537,9 +516,6 @@ export const PlanCheckRunResultSuccess = {
       : undefined;
     message.sqlReviewReport = (object.sqlReviewReport !== undefined && object.sqlReviewReport !== null)
       ? PlanCheckRunResultSuccess_SqlReviewReport.fromPartial(object.sqlReviewReport)
-      : undefined;
-    message.generalReport = (object.generalReport !== undefined && object.generalReport !== null)
-      ? PlanCheckRunResultSuccess_GeneralReport.fromPartial(object.generalReport)
       : undefined;
     return message;
   },
@@ -806,50 +782,6 @@ export const PlanCheckRunResultSuccess_SqlReviewReport = {
     const message = createBasePlanCheckRunResultSuccess_SqlReviewReport();
     message.line = object.line ?? 0;
     message.detail = object.detail ?? "";
-    return message;
-  },
-};
-
-function createBasePlanCheckRunResultSuccess_GeneralReport(): PlanCheckRunResultSuccess_GeneralReport {
-  return {};
-}
-
-export const PlanCheckRunResultSuccess_GeneralReport = {
-  encode(_: PlanCheckRunResultSuccess_GeneralReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRunResultSuccess_GeneralReport {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRunResultSuccess_GeneralReport();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(_: any): PlanCheckRunResultSuccess_GeneralReport {
-    return {};
-  },
-
-  toJSON(_: PlanCheckRunResultSuccess_GeneralReport): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRunResultSuccess_GeneralReport>): PlanCheckRunResultSuccess_GeneralReport {
-    return PlanCheckRunResultSuccess_GeneralReport.fromPartial(base ?? {});
-  },
-
-  fromPartial(_: DeepPartial<PlanCheckRunResultSuccess_GeneralReport>): PlanCheckRunResultSuccess_GeneralReport {
-    const message = createBasePlanCheckRunResultSuccess_GeneralReport();
     return message;
   },
 };
