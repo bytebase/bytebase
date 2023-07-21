@@ -1552,7 +1552,7 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | line | [int64](#int64) |  |  |
 | detail | [string](#string) |  |  |
-| code | [int64](#int64) |  |  |
+| code | [int64](#int64) |  | Code from sql review. |
 
 
 

@@ -80,6 +80,7 @@ export interface PlanCheckRunResult_Result_AffectedRowsReport {
 export interface PlanCheckRunResult_Result_SqlReviewReport {
   line: number;
   detail: string;
+  /** Code from sql review. */
   code: number;
 }
 

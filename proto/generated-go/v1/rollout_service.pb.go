@@ -3038,7 +3038,8 @@ type PlanCheckRun_Result_SqlReviewReport struct {
 
 	Line   int64  `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
 	Detail string `protobuf:"bytes,2,opt,name=detail,proto3" json:"detail,omitempty"`
-	Code   int64  `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`
+	// Code from sql review.
+	Code int64 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`
 }
 
 func (x *PlanCheckRun_Result_SqlReviewReport) Reset() {

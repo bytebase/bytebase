@@ -568,6 +568,7 @@ export interface PlanCheckRun_Result_AffectedRowsReport {
 export interface PlanCheckRun_Result_SqlReviewReport {
   line: number;
   detail: string;
+  /** Code from sql review. */
   code: number;
 }
 
