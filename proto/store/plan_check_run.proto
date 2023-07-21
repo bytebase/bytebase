@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message PlanCheckRunConfig {
+  int32 sheet_id = 1;
+  int32 database_id = 2;
+}
+
+message PlanCheckRunResult {
+  repeated Result results = 1;
+
+  message Result {
+    oneof result {
+      PlanCheckRunResultSuccess success = 1;
+      // Failure if the PlanCheckRun itself failed to run.
+      PlanCheckRunResultFailure failure = 2;
+    }
+  }
+}
+
+message PlanCheckRunResultSuccess {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    ERROR = 1;
+    WARNING = 2;
+    SUCCESS = 3;
+  }
+  Status status = 1;
+  string title = 2;
+  string content = 3;
+  message Code {
+    int64 code = 1;
+    enum Namespace {
+      NAMESPACE_UNSPECIFIED = 0;
+      BYTEBASE = 1;
+      ADVISOR = 2;
+    }
+    Namespace namespace = 2;
+  }
+  Code code = 4;
+
+  oneof report {
+    StatementTypeReport statement_type_report = 5;
+    AffectedRowsReport affected_rows_report = 6;
+    SqlReviewReport sql_review_report = 7;
+  }
+  message StatementTypeReport {
+    string statement_type = 1;
+  }
+  message AffectedRowsReport {
+    int64 affected_rows = 1;
+  }
+  message SqlReviewReport {
+    int64 line = 1;
+    string detail = 2;
+  }
+}
+
+message PlanCheckRunResultFailure {
+  string title = 1;
+  string content = 2;
+}

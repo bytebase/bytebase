@@ -96,6 +96,20 @@
   
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
+- [store/plan_check_run.proto](#store_plan_check_run-proto)
+    - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
+    - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
+    - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
+    - [PlanCheckRunResultFailure](#bytebase-store-PlanCheckRunResultFailure)
+    - [PlanCheckRunResultSuccess](#bytebase-store-PlanCheckRunResultSuccess)
+    - [PlanCheckRunResultSuccess.AffectedRowsReport](#bytebase-store-PlanCheckRunResultSuccess-AffectedRowsReport)
+    - [PlanCheckRunResultSuccess.Code](#bytebase-store-PlanCheckRunResultSuccess-Code)
+    - [PlanCheckRunResultSuccess.SqlReviewReport](#bytebase-store-PlanCheckRunResultSuccess-SqlReviewReport)
+    - [PlanCheckRunResultSuccess.StatementTypeReport](#bytebase-store-PlanCheckRunResultSuccess-StatementTypeReport)
+  
+    - [PlanCheckRunResultSuccess.Code.Namespace](#bytebase-store-PlanCheckRunResultSuccess-Code-Namespace)
+    - [PlanCheckRunResultSuccess.Status](#bytebase-store-PlanCheckRunResultSuccess-Status)
+  
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [IamPolicy](#bytebase-store-IamPolicy)
@@ -1447,6 +1461,195 @@ Type is the database change type.
 | MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
 | BRANCH | 5 | Used when restoring from a backup (the restored database branched from the original backup). |
 | DATA | 6 | Used for DML change. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_plan_check_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/plan_check_run.proto
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig"></a>
+
+### PlanCheckRunConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet_id | [int32](#int32) |  |  |
+| database_id | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult"></a>
+
+### PlanCheckRunResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result"></a>
+
+### PlanCheckRunResult.Result
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| success | [PlanCheckRunResultSuccess](#bytebase-store-PlanCheckRunResultSuccess) |  |  |
+| failure | [PlanCheckRunResultFailure](#bytebase-store-PlanCheckRunResultFailure) |  | Failure if the PlanCheckRun itself failed to run. |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResultFailure"></a>
+
+### PlanCheckRunResultFailure
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  |  |
+| content | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResultSuccess"></a>
+
+### PlanCheckRunResultSuccess
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [PlanCheckRunResultSuccess.Status](#bytebase-store-PlanCheckRunResultSuccess-Status) |  |  |
+| title | [string](#string) |  |  |
+| content | [string](#string) |  |  |
+| code | [PlanCheckRunResultSuccess.Code](#bytebase-store-PlanCheckRunResultSuccess-Code) |  |  |
+| statement_type_report | [PlanCheckRunResultSuccess.StatementTypeReport](#bytebase-store-PlanCheckRunResultSuccess-StatementTypeReport) |  |  |
+| affected_rows_report | [PlanCheckRunResultSuccess.AffectedRowsReport](#bytebase-store-PlanCheckRunResultSuccess-AffectedRowsReport) |  |  |
+| sql_review_report | [PlanCheckRunResultSuccess.SqlReviewReport](#bytebase-store-PlanCheckRunResultSuccess-SqlReviewReport) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResultSuccess-AffectedRowsReport"></a>
+
+### PlanCheckRunResultSuccess.AffectedRowsReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| affected_rows | [int64](#int64) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResultSuccess-Code"></a>
+
+### PlanCheckRunResultSuccess.Code
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [int64](#int64) |  |  |
+| namespace | [PlanCheckRunResultSuccess.Code.Namespace](#bytebase-store-PlanCheckRunResultSuccess-Code-Namespace) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResultSuccess-SqlReviewReport"></a>
+
+### PlanCheckRunResultSuccess.SqlReviewReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int64](#int64) |  |  |
+| detail | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResultSuccess-StatementTypeReport"></a>
+
+### PlanCheckRunResultSuccess.StatementTypeReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statement_type | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-PlanCheckRunResultSuccess-Code-Namespace"></a>
+
+### PlanCheckRunResultSuccess.Code.Namespace
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NAMESPACE_UNSPECIFIED | 0 |  |
+| BYTEBASE | 1 |  |
+| ADVISOR | 2 |  |
+
+
+
+<a name="bytebase-store-PlanCheckRunResultSuccess-Status"></a>
+
+### PlanCheckRunResultSuccess.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| SUCCESS | 3 |  |
 
 
  
