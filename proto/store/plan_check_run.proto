@@ -46,7 +46,7 @@ message PlanCheckRunResultSuccess {
     StatementTypeReport statement_type_report = 5;
     AffectedRowsReport affected_rows_report = 6;
     SqlReviewReport sql_review_report = 7;
-    BytebaseReport bytebase_report = 8;
+    GeneralReport general_report = 8;
   }
   message StatementTypeReport {
     string statement_type = 1;
@@ -58,7 +58,7 @@ message PlanCheckRunResultSuccess {
     int64 line = 1;
     string detail = 2;
   }
-  message BytebaseReport {}
+  message GeneralReport {}
 }
 
 message PlanCheckRunResultFailure {
