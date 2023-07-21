@@ -766,17 +766,6 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", userNamePrefix, subscriber.Email))
 	}
 
-	switch issue.Status {
-	case api.IssueOpen:
-		issueV1.Status = v1pb.IssueStatus_OPEN
-	case api.IssueDone:
-		issueV1.Status = v1pb.IssueStatus_DONE
-	case api.IssueCanceled:
-		issueV1.Status = v1pb.IssueStatus_CANCELED
-	default:
-		issueV1.Status = v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
-	}
-
 	if issuePayload.Approval != nil {
 		issueV1.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
 		issueV1.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
