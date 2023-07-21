@@ -467,6 +467,9 @@ const (
 
 	// MSSQLColumnNoNull is an advisor type for MSSQL column no NULL value.
 	MSSQLColumnNoNull Type = "bb.plugin.advisor.mssql.column.no-null"
+
+	// MSSQLTableNoFK is an advisor type for MSSQL table disallow foreign key.
+	MSSQLTableNoFK Type = "bb.plugin.advisor.mssql.table.no-foreign-key"
 )
 
 // Advice is the result of an advisor.
