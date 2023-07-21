@@ -15,6 +15,7 @@ message PlanCheckRunResult {
   message Result {
     oneof result {
       PlanCheckRunResultSuccess success = 1;
+      // Failure if the PlanCheckRun itself failed to run.
       PlanCheckRunResultFailure failure = 2;
     }
   }
