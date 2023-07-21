@@ -38,6 +38,14 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     await upsertChangeHistoryListMap(parent, changeHistories);
     return changeHistories;
   };
+  const getOrFetchChangeHistoryListOfDatabase = async (
+    databaseName: string
+  ) => {
+    if (changeHistoryListMapByDatabase.has(databaseName)) {
+      return changeHistoryListMapByDatabase.get(databaseName) ?? [];
+    }
+    return fetchChangeHistoryList({ parent: databaseName });
+  };
   const changeHistoryListByDatabase = (name: string) => {
     return changeHistoryListMapByDatabase.get(name) ?? [];
   };
@@ -59,6 +67,7 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
 
   return {
     fetchChangeHistoryList,
+    getOrFetchChangeHistoryListOfDatabase,
     changeHistoryListByDatabase,
     fetchChangeHistory,
     getOrFetchChangeHistoryByName,
