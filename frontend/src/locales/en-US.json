@@ -2692,11 +2692,14 @@
   "schema-designer": {
     "self": "Schema Designer",
     "quick-action": "Design Schema",
+    "schema-design": "Schema Design",
     "schema-design-list": "Schema Design List",
     "new-schema-design": "New Schema Design",
     "baseline-database": "Baseline database",
     "schema-version": "Schema version",
     "tables": "Tables",
+    "search-tables": "Search tables",
+    "use-tips": "Click a table to start.",
     "apply-to-database": "Apply to database",
     "message": {
       "created-succeed": "Schema design created successfully",

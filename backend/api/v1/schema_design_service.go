@@ -150,32 +150,35 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	instanceID, _, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(schemaDesign.SchemaVersion)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		ID:         &changeHistoryIDStr,
-		InstanceID: &instance.UID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if changeHistory == nil {
-		return nil, status.Errorf(codes.NotFound, "schema version %s not found", changeHistoryIDStr)
-	}
+
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			BaselineChangeHistoryId: changeHistory.UID,
-			Engine:                  storepb.Engine(schemaDesign.Engine),
+			Engine: storepb.Engine(schemaDesign.Engine),
 		},
+	}
+	if schemaDesign.SchemaVersion != "" {
+		instanceID, _, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(schemaDesign.SchemaVersion)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			ResourceID: &instanceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+			ID:         &changeHistoryIDStr,
+			InstanceID: &instance.UID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if changeHistory == nil {
+			return nil, status.Errorf(codes.NotFound, "schema version %s not found", changeHistoryIDStr)
+		}
+		schemaDesignSheetPayload.SchemaDesign.BaselineChangeHistoryId = changeHistory.UID
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {
@@ -184,6 +187,10 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 	if err != nil {
 		return nil, err
+	}
+	// Try to transform the schema string to database metadata to make sure it's valid.
+	if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
 	sheetCreate := &store.SheetMessage{
@@ -239,6 +246,10 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		if err != nil {
 			return nil, err
+		}
+		// Try to transform the schema string to database metadata to make sure it's valid.
+		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 		}
 		sheetUpdate.Statement = &schema
 	}
@@ -774,7 +785,7 @@ type columnState struct {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("`%s`", c.name)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
 		return err
 	}
 	if c.nullable {
@@ -788,10 +799,6 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	}
 	if c.defaultValue != nil {
 		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", *c.defaultValue)); err != nil {
-			return err
-		}
-	} else {
-		if _, err := buf.WriteString(" DEFAULT NULL"); err != nil {
 			return err
 		}
 	}

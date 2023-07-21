@@ -4,7 +4,49 @@
   >
     <div class="w-full flex flex-row gap-8">
       <span>{{ $t("database.sync-schema.source-schema") }}</span>
-      <div class="space-y-2">
+      <template
+        v-if="sourceSchemaType === 'DATABASE_SCHEMA' && databaseSourceSchema"
+      >
+        <div class="space-y-2">
+          <div>
+            <span>{{ $t("common.project") }} - </span>
+            <a
+              class="normal-link inline-flex items-center"
+              :href="`/project/${projectV1Slug(project)}`"
+              >{{ project.title }}</a
+            >
+          </div>
+          <div>
+            <span>{{ $t("common.environment") }} - </span>
+            <a
+              class="normal-link inline-flex items-center"
+              :href="`/environment#${getDatabaseSourceSchemaEnvironment()!.uid}`"
+              >{{ getDatabaseSourceSchemaEnvironment()!.title }}</a
+            >
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div>
+            <span>{{ $t("common.database") }} - </span>
+            <a
+              class="normal-link inline-flex items-center"
+              :href="`/db/${databaseV1Slug(getSourceDatabase()!)}`"
+              >{{ getSourceDatabase()!.databaseName }}</a
+            >
+          </div>
+          <div
+            v-if="databaseSourceSchema.changeHistory.uid !== String(UNKNOWN_ID)"
+          >
+            <span>{{ $t("database.sync-schema.schema-version.self") }} - </span>
+            <a
+              class="normal-link inline-flex items-center"
+              :href="changeHistoryLink(databaseSourceSchema.changeHistory)"
+              >{{ databaseSourceSchema.changeHistory.version }}</a
+            >
+          </div>
+        </div>
+      </template>
+      <template v-else>
         <div>
           <span>{{ $t("common.project") }} - </span>
           <a
@@ -14,32 +56,12 @@
           >
         </div>
         <div>
-          <span>{{ $t("common.environment") }} - </span>
-          <a
-            class="normal-link inline-flex items-center"
-            :href="`/environment#${environment.uid}`"
-            >{{ environment.title }}</a
-          >
+          <span>{{ $t("schema-designer.schema-design") }} - </span>
+          <span>
+            {{ schemaDesign?.title || "Unknown" }}
+          </span>
         </div>
-      </div>
-      <div class="space-y-2">
-        <div>
-          <span>{{ $t("common.database") }} - </span>
-          <a
-            class="normal-link inline-flex items-center"
-            :href="`/db/${databaseV1Slug(sourceDatabase)}`"
-            >{{ sourceDatabase.databaseName }}</a
-          >
-        </div>
-        <div v-if="sourceSchema.changeHistory.uid !== String(UNKNOWN_ID)">
-          <span>{{ $t("database.sync-schema.schema-version.self") }} - </span>
-          <a
-            class="normal-link inline-flex items-center"
-            :href="changeHistoryLink(sourceSchema.changeHistory)"
-            >{{ sourceSchema.changeHistory.version }}</a
-          >
-        </div>
-      </div>
+      </template>
     </div>
 
     <div
@@ -152,7 +174,7 @@
               ? databaseDiffCache[state.selectedDatabaseId].edited
               : ''
           "
-          :source-database="sourceDatabase"
+          :engine="engine"
           :target-database-schema="targetDatabaseSchema"
           :source-database-schema="sourceDatabaseSchema"
           :should-show-diff="shouldShowDiff"
@@ -182,8 +204,7 @@
   <TargetDatabasesSelectPanel
     v-if="state.showSelectDatabasePanel"
     :project-id="projectId"
-    :environment-id="sourceSchema.environmentId"
-    :database-id="sourceSchema.databaseId"
+    :engine="engine"
     :selected-database-id-list="state.selectedDatabaseIdList"
     @close="state.showSelectDatabasePanel = false"
     @update="handleSelectedDatabaseIdListChanged"
@@ -195,15 +216,7 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import axios from "axios";
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import {
-  PropType,
-  computed,
-  onMounted,
-  reactive,
-  ref,
-  toRef,
-  watch,
-} from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
@@ -218,8 +231,10 @@ import DiffViewPanel from "./DiffViewPanel.vue";
 import { Engine, engineToJSON } from "@/types/proto/v1/common";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { SourceSchemaType } from "./types";
 
-interface SourceSchema {
+interface DatabaseSourceSchema {
   environmentId: string;
   databaseId: string;
   changeHistory: ChangeHistory;
@@ -233,16 +248,12 @@ interface LocalState {
   showSelectDatabasePanel: boolean;
 }
 
-const props = defineProps({
-  projectId: {
-    type: String,
-    required: true,
-  },
-  sourceSchema: {
-    type: Object as PropType<SourceSchema>,
-    required: true,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+  sourceSchemaType: SourceSchemaType;
+  databaseSourceSchema?: DatabaseSourceSchema;
+  schemaDesign?: SchemaDesign;
+}>();
 
 const { t } = useI18n();
 const environmentV1Store = useEnvironmentV1Store();
@@ -266,17 +277,22 @@ const databaseDiffCache = reactive<
   >
 >({});
 
-const { project } = useProjectV1ByUID(toRef(props, "projectId"));
-const environment = computed(() => {
-  return environmentV1Store.getEnvironmentByUID(
-    props.sourceSchema.environmentId
-  );
-});
-const sourceDatabase = computed(() => {
-  return databaseStore.getDatabaseByUID(props.sourceSchema.databaseId);
-});
+const { project } = useProjectV1ByUID(props.projectId);
 const sourceDatabaseSchema = computed(() => {
-  return props.sourceSchema.changeHistory.schema || "";
+  if (props.sourceSchemaType === "DATABASE_SCHEMA") {
+    return props.databaseSourceSchema?.changeHistory.schema || "";
+  } else {
+    return props.schemaDesign?.schema || "";
+  }
+});
+const engine = computed(() => {
+  if (props.sourceSchemaType === "DATABASE_SCHEMA") {
+    return databaseStore.getDatabaseByUID(
+      props.databaseSourceSchema!.databaseId
+    ).instanceEntity.engine;
+  } else {
+    return props.schemaDesign!.engine;
+  }
 });
 const targetDatabaseList = computed(() => {
   return state.selectedDatabaseIdList.map((id) => {
@@ -335,6 +351,22 @@ const shownDatabaseList = computed(() => {
 onMounted(() => {
   state.isLoading = false;
 });
+
+const getSourceDatabase = () => {
+  if (!props.databaseSourceSchema) {
+    return;
+  }
+  return databaseStore.getDatabaseByUID(props.databaseSourceSchema.databaseId);
+};
+
+const getDatabaseSourceSchemaEnvironment = () => {
+  if (!props.databaseSourceSchema) {
+    return;
+  }
+  return environmentV1Store.getEnvironmentByUID(
+    props.databaseSourceSchema.environmentId
+  );
+};
 
 const handleSelectedDatabaseIdListChanged = (databaseIdList: string[]) => {
   state.selectedDatabaseIdList = databaseIdList;
@@ -397,7 +429,7 @@ watch(
         continue;
       } else {
         const schemaDiff = await getSchemaDiff(
-          sourceDatabase.value.instanceEntity.engine,
+          engine.value,
           /* the current schema of the database to be updated */
           schema.schema,
           /* the schema to be updated to */

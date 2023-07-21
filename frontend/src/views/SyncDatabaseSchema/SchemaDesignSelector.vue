@@ -1,13 +1,28 @@
 <template>
-  <div ref="wrapper" rule="database-table" v-bind="$attrs">
+  <div class="w-full" v-bind="$attrs">
+    <div
+      class="w-full mb-4 flex flex-row justify-between items-center space-x-2"
+    >
+      <span>
+        {{ $t("schema-designer.schema-design-list") }}
+      </span>
+      <div>
+        <NButton type="primary" @click="state.showCreatePanel = true">{{
+          $t("common.create")
+        }}</NButton>
+      </div>
+    </div>
     <BBGrid
       class="border"
       :show-placeholder="true"
       :column-list="COLUMN_LIST"
-      :data-source="schemaDesigns"
+      :data-source="schemaDesignList"
       @click-row="clickSchemaDesign"
     >
       <template #item="{ item: schemaDesign }: { item: SchemaDesign }">
+        <div class="bb-grid-cell">
+          <NRadio :checked="schemaDesign.name === selectedSchemaDesign?.name" />
+        </div>
         <div class="bb-grid-cell">
           {{ schemaDesign.title }}
         </div>
@@ -32,31 +47,57 @@
       </template>
     </BBGrid>
   </div>
+
+  <CreateSchemaDesignPanel
+    v-if="state.showCreatePanel"
+    @dismiss="state.showCreatePanel = false"
+    @created="
+      (schemaDesign) => {
+        state.showCreatePanel = false;
+        clickSchemaDesign(schemaDesign);
+      }
+    "
+  />
 </template>
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { computed } from "vue";
+import { computed, ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { useProjectV1Store, useUserStore } from "@/store";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { engineNameV1, projectV1Name } from "@/utils";
+import { useSchemaDesignList } from "@/store/modules/schemaDesign";
+import { NRadio } from "naive-ui";
+import CreateSchemaDesignPanel from "@/components/SchemaDesigner/CreateSchemaDesignPanel.vue";
+
+interface LocalState {
+  showCreatePanel: boolean;
+}
 
 const emit = defineEmits<{
-  (event: "click", schemaDesign: SchemaDesign): void;
+  (event: "select", schemaDesign: SchemaDesign): void;
 }>();
 
-defineProps<{
-  schemaDesigns: SchemaDesign[];
+const props = defineProps<{
+  selectedSchemaDesign?: SchemaDesign;
 }>();
 
 const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
+const { schemaDesignList } = useSchemaDesignList();
+const state = reactive<LocalState>({
+  showCreatePanel: false,
+});
+const selectedSchemaDesign = ref<SchemaDesign | undefined>(
+  props.selectedSchemaDesign
+);
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
+    { title: "", width: "3rem" },
     { title: t("common.name"), width: "1fr" },
     {
       title: t("common.project"),
@@ -95,6 +136,7 @@ const getFormatedValue = (schemaDesign: SchemaDesign) => {
 };
 
 const clickSchemaDesign = (schemaDesign: SchemaDesign) => {
-  emit("click", schemaDesign);
+  selectedSchemaDesign.value = schemaDesign;
+  emit("select", schemaDesign);
 };
 </script>

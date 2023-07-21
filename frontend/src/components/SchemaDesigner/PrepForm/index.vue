@@ -45,11 +45,9 @@
                 <NButton @click="state.isEditing = true">{{
                   $t("common.edit")
                 }}</NButton>
-                <NButton
-                  type="primary"
-                  @click="state.showSelectTargetDatabasePanel = true"
-                  >{{ $t("schema-designer.apply-to-database") }}</NButton
-                >
+                <NButton type="primary" @click="handleApplySchemaDesignClick">{{
+                  $t("schema-designer.apply-to-database")
+                }}</NButton>
               </template>
               <template v-else>
                 <NButton @click="handleCancelEdit">{{
@@ -75,26 +73,37 @@
         </div>
       </template>
       <template v-else>
-        <div class="w-full">
+        <div class="w-full flex flex-row justify-start items-center space-x-6">
           <div class="flex flex-row justify-start items-center">
-            <span class="text-sm w-40">{{
+            <span class="text-sm">{{ $t("common.project") }}</span>
+            <span class="mx-1">-</span>
+            <a
+              class="normal-link inline-flex items-center"
+              :href="`/project/${projectV1Slug(project)}`"
+              >{{ project.title }}</a
+            >
+          </div>
+          <div class="flex flex-row justify-start items-center">
+            <span class="text-sm">{{
               $t("schema-designer.baseline-database")
             }}</span>
-            <InstanceV1EngineIcon
-              class="mr-1"
-              :instance="
-                databaseStore.getDatabaseByUID(
-                  state.baselineSchema.databaseId || ''
-                ).instanceEntity
-              "
-            />
-            <DatabaseV1Name
-              :database="
-                databaseStore.getDatabaseByUID(
-                  state.baselineSchema.databaseId || ''
-                )
-              "
-            />
+            <span class="mx-1">-</span>
+            <div class="flex flex-row justify-start items-center space-x-0.5">
+              <InstanceV1EngineIcon
+                :instance="
+                  databaseStore.getDatabaseByUID(
+                    state.baselineSchema.databaseId || ''
+                  ).instanceEntity
+                "
+              />
+              <DatabaseV1Name
+                :database="
+                  databaseStore.getDatabaseByUID(
+                    state.baselineSchema.databaseId || ''
+                  )
+                "
+              />
+            </div>
           </div>
         </div>
         <template v-if="state.selectedSchemaDesign">
@@ -110,17 +119,15 @@
     </div>
   </DrawerContent>
 
-  <TargetDatabaseSelectPanel
-    v-if="state.selectedSchemaDesign && state.showSelectTargetDatabasePanel"
-    :project-id="state.baselineSchema.projectId || ''"
-    :engine="state.selectedSchemaDesign.engine"
-    :schema="state.selectedSchemaDesign.schema"
-    @close="state.showSelectTargetDatabasePanel = false"
-  />
-
   <CreateSchemaDesignPanel
     v-if="state.showCreatePanel"
     @dismiss="state.showCreatePanel = false"
+    @created="
+      (schemaDesign) => {
+        state.showCreatePanel = false;
+        handleSchemaDesignItemClick(schemaDesign);
+      }
+    "
   />
 </template>
 
@@ -138,6 +145,7 @@ import {
   pushNotification,
   useChangeHistoryStore,
   useDatabaseV1Store,
+  useProjectV1Store,
 } from "@/store";
 import {
   useSchemaDesignList,
@@ -147,8 +155,9 @@ import SchemaDesignTable from "./SchemaDesignTable.vue";
 import SchemaDesigner from "../index.vue";
 import { mergeSchemaEditToMetadata } from "../common/util";
 import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import TargetDatabaseSelectPanel from "./TargetDatabaseSelectPanel.vue";
 import CreateSchemaDesignPanel from "../CreateSchemaDesignPanel.vue";
+import { useRouter } from "vue-router";
+import { projectV1Slug } from "@/utils";
 
 interface BaselineSchema {
   // The uid of project.
@@ -162,7 +171,6 @@ interface LocalState {
   schemaDesignName: string;
   baselineSchema: BaselineSchema;
   isEditing: boolean;
-  showSelectTargetDatabasePanel: boolean;
   selectedSchemaDesign?: SchemaDesign;
   showCreatePanel: boolean;
 }
@@ -176,7 +184,9 @@ defineProps({
 defineEmits(["dismiss"]);
 
 const { t } = useI18n();
+const router = useRouter();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
+const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const { schemaDesignList, ready } = useSchemaDesignList();
@@ -184,7 +194,6 @@ const state = reactive<LocalState>({
   schemaDesignName: "",
   baselineSchema: {},
   isEditing: false,
-  showSelectTargetDatabasePanel: false,
   showCreatePanel: false,
 });
 const isViewing = computed(
@@ -194,6 +203,9 @@ const isEditing = computed(
   () => !!state.selectedSchemaDesign && state.isEditing
 );
 
+const project = computed(() => {
+  return projectStore.getProjectByUID(state.baselineSchema.projectId || "");
+});
 const schemaDesignId = computed(() => {
   if (!state.selectedSchemaDesign || !state.selectedSchemaDesign.name) {
     return uniqueId();
@@ -270,6 +282,15 @@ const handleUpdateSchemaDesign = async () => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("schema-designer.message.updated-succeed"),
+  });
+};
+
+const handleApplySchemaDesignClick = () => {
+  router.push({
+    name: "workspace.sync-schema",
+    query: {
+      schemaDesignName: state.selectedSchemaDesign?.name,
+    },
   });
 };
 </script>

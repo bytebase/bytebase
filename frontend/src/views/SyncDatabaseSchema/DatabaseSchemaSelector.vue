@@ -46,8 +46,8 @@
       </DatabaseSelect>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0 text-sm">
-        {{ $t("schema-designer.schema-version") }}
+      <span class="flex w-40 items-center shrink-0">
+        {{ $t("database.sync-schema.schema-version.self") }}
       </span>
       <div
         class="w-192 flex flex-row justify-start items-center relative"
@@ -88,10 +88,26 @@
               </span>
             </div>
           </template>
+          <template v-if="shouldShowMoreVersionButton" #suffixItem>
+            <div
+              class="w-full flex flex-row justify-start items-center pl-3 leading-8 text-accent cursor-pointer hover:opacity-80"
+              @click.prevent.capture="() => (state.showFeatureModal = true)"
+            >
+              <heroicons-solid:sparkles class="w-4 h-auto mr-1" />
+              {{ $t("database.sync-schema.more-version") }}
+            </div>
+          </template>
         </BBSelect>
       </div>
     </div>
   </div>
+
+  <FeatureModal
+    feature="bb.feature.sync-schema-all-versions"
+    :open="state.showFeatureModal"
+    :instance="database?.instanceEntity"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -99,6 +115,7 @@ import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
   useDatabaseV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -110,15 +127,10 @@ import {
 import { head, isNull, isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
-
-interface BaselineSchema {
-  projectId?: string;
-  databaseId?: string;
-  changeHistory?: ChangeHistory;
-}
+import { ChangeHistorySourceSchema } from "./types";
 
 const props = defineProps<{
-  baselineSchema?: BaselineSchema;
+  selectState?: ChangeHistorySourceSchema;
 }>();
 
 const emit = defineEmits<{
@@ -126,13 +138,16 @@ const emit = defineEmits<{
 }>();
 
 interface LocalState {
+  showFeatureModal: boolean;
   projectId?: string;
   environmentId?: string;
   databaseId?: string;
   changeHistory?: ChangeHistory;
 }
 
-const state = reactive<LocalState>({});
+const state = reactive<LocalState>({
+  showFeatureModal: false,
+});
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
@@ -146,59 +161,47 @@ const database = computed(() => {
   return databaseStore.getDatabaseByUID(databaseId);
 });
 
+const hasSyncSchemaFeature = computed(() => {
+  return useSubscriptionV1Store().hasInstanceFeature(
+    "bb.feature.sync-schema-all-versions",
+    database.value?.instanceEntity
+  );
+});
+
+const shouldShowMoreVersionButton = computed(() => {
+  return (
+    !hasSyncSchemaFeature.value &&
+    databaseChangeHistoryList(state.databaseId as string).length > 0
+  );
+});
+
 const prepareChangeHistoryList = async () => {
   if (!database.value) {
     return;
   }
 
-  return await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+  await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
     database.value.name
   );
 };
 
 onMounted(async () => {
-  if (props.baselineSchema?.databaseId) {
+  if (props.selectState?.databaseId) {
     try {
       const database = await databaseStore.getOrFetchDatabaseByUID(
-        props.baselineSchema.databaseId || ""
+        props.selectState.databaseId || ""
       );
-      state.projectId = props.baselineSchema.projectId;
+      state.projectId = props.selectState.projectId;
       state.databaseId = database.uid;
       state.environmentId = database.instanceEntity.environmentEntity.uid;
-      state.changeHistory = props.baselineSchema.changeHistory;
+      state.changeHistory = props.selectState.changeHistory;
     } catch (error) {
       // do nothing.
     }
   }
 });
 
-watch(
-  () => state.databaseId,
-  async () => {
-    if (!database.value) {
-      state.changeHistory = undefined;
-      return;
-    }
-
-    const list = await prepareChangeHistoryList();
-    if (!list || list.length === 0) {
-      // If database has no migration history, we will use its latest schema.
-      const schema = await databaseStore.fetchDatabaseSchema(
-        `${database.value.name}/schema`
-      );
-      state.changeHistory = {
-        name: `${database.value.name}/changeHistories/${UNKNOWN_ID}`,
-        uid: String(UNKNOWN_ID),
-        updateTime: new Date(),
-        schema: schema.schema,
-        version: "Latest version",
-        description: "the latest schema of database",
-      } as ChangeHistory;
-    } else {
-      state.changeHistory = head(list);
-    }
-  }
-);
+watch(() => state.databaseId, prepareChangeHistoryList);
 
 const prepareFullViewChangeHistory = async () => {
   const changeHistory = state.changeHistory;
@@ -224,7 +227,7 @@ watch(() => state.changeHistory, prepareFullViewChangeHistory, {
   deep: true,
 });
 
-const allowedEngineTypeList: Engine[] = [Engine.MYSQL];
+const allowedEngineTypeList: Engine[] = [Engine.MYSQL, Engine.POSTGRES];
 const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
   ChangeHistory_Type.MIGRATE,
@@ -281,10 +284,56 @@ const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
 };
 
 watch(
-  () => state,
+  () => [state.databaseId],
+  async () => {
+    const databaseId = state.databaseId;
+    if (!isValidId(databaseId)) {
+      state.changeHistory = undefined;
+      return;
+    }
+
+    const database = databaseStore.getDatabaseByUID(databaseId);
+    if (database) {
+      const changeHistoryList = (
+        await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+          database.name
+        )
+      ).filter((changeHistory) =>
+        allowedMigrationTypeList.includes(changeHistory.type)
+      );
+
+      if (changeHistoryList.length > 0) {
+        // Default select the first migration history.
+        state.changeHistory = head(changeHistoryList);
+      } else {
+        // If database has no migration history, we will use its latest schema.
+        const schema = await databaseStore.fetchDatabaseSchema(
+          `${database.name}/schema`
+        );
+        state.changeHistory = {
+          name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
+          uid: String(UNKNOWN_ID),
+          updateTime: new Date(),
+          schema: schema.schema,
+          version: "Latest version",
+          description: "the latest schema of database",
+        } as ChangeHistory;
+      }
+    } else {
+      state.changeHistory = undefined;
+    }
+  }
+);
+
+watch(
+  () => [state, fullViewChangeHistoryCache.value],
   () => {
+    const fullViewChangeHistory = fullViewChangeHistoryCache.value.get(
+      state.changeHistory?.name || ""
+    );
     emit("update", {
       ...state,
+      changeHistory: fullViewChangeHistory || state.changeHistory,
     });
   },
   { deep: true }

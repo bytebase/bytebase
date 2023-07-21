@@ -10,7 +10,7 @@
       :closable="true"
     >
       <div
-        class="space-y-3 w-[calc(100vw-8rem)] sm:w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+        class="space-y-3 py-1 w-[calc(100vw-8rem)] sm:w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
       >
         <div class="w-full flex flex-row justify-start items-center">
           <span class="flex w-40 items-center text-sm">{{
@@ -19,6 +19,7 @@
           <BBTextField
             class="w-60 !py-1.5"
             :value="state.schemaDesignName"
+            :placeholder="$t('schema-designer.schema-design')"
             @input="
               state.schemaDesignName = ($event.target as HTMLInputElement).value
             "
@@ -31,6 +32,7 @@
         <SchemaDesigner
           ref="schemaDesignerRef"
           :key="refreshId"
+          class="!mt-6"
           :readonly="readonly"
           :engine="state.schemaDesign.engine"
           :schema-design="state.schemaDesign"
@@ -79,6 +81,7 @@ import { databaseNamePrefix } from "@/store/modules/v1/common";
 import { mergeSchemaEditToMetadata } from "./common/util";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import SchemaDesigner from "./index.vue";
+import { UNKNOWN_ID } from "@/types";
 
 interface BaselineSchema {
   // The uid of project.
@@ -100,7 +103,10 @@ defineProps({
     default: undefined,
   },
 });
-const emit = defineEmits(["dismiss"]);
+const emit = defineEmits<{
+  (event: "dismiss"): void;
+  (event: "created", schemaDesign: SchemaDesign): void;
+}>();
 
 const { t } = useI18n();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
@@ -201,7 +207,13 @@ const handleConfirm = async () => {
       DatabaseMetadata.fromPartial({})
   );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
-  await schemaDesignStore.createSchemaDesign(
+  const schemaVersion =
+    !state.baselineSchema.changeHistory ||
+    state.baselineSchema.changeHistory?.uid === String(UNKNOWN_ID)
+      ? ""
+      : state.baselineSchema.changeHistory?.name;
+
+  const createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
     project.value.name,
     SchemaDesign.fromPartial({
       title: state.schemaDesignName,
@@ -212,7 +224,7 @@ const handleConfirm = async () => {
       baselineSchemaMetadata: state.schemaDesign.baselineSchemaMetadata,
       engine: state.schemaDesign.engine,
       baselineDatabase: baselineDatabase,
-      schemaVersion: state.baselineSchema.changeHistory?.name || "",
+      schemaVersion: schemaVersion,
     })
   );
   pushNotification({
@@ -220,5 +232,6 @@ const handleConfirm = async () => {
     style: "SUCCESS",
     title: t("schema-designer.message.created-succeed"),
   });
+  emit("created", createdSchemaDesign);
 };
 </script>
