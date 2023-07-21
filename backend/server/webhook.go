@@ -36,6 +36,7 @@ import (
 	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	_ "github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"

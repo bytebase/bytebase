@@ -1558,6 +1558,7 @@
           "gitlab-instance-url-label": "VCS 实例 URL。请确认这个实例和 Bytebase 之间网络是互通的。",
           "github-instance-url": "GitHub 实例 URL",
           "bitbucket-instance-url": "Bitbucket 实例 URL",
+          "azure-instance-url": "Azure DevOps 实例 URL",
           "instance-url-error": "实例 URL 必须以 https:// or http:// 开头",
           "display-name": "展示名称",
           "display-name-label": "一个可选的展示名称用以区分不同的 Git 供应方。"
@@ -1569,7 +1570,9 @@
           "gitlab-self-host-visit-admin-page": "通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。",
           "gitlab-com-register-oauth-application": "注册 Bytebase 为一个 GitLab 用户的 OAuth 应用。",
           "gitlab-com-login": "通过账号登陆 GitLab.com。通常这个账号对应的是一个专门的服务账号而非个人账号。",
+          "azure-devops-login": "通过账号登陆 Azure DevOps。通常这个账号对应的是一个专门的服务账号而非个人账号。",
           "gitlab-com-visit-application-page": "访问 Preferences -> Applications 页面。您可以通过右上角的头像下拉菜单访问到该页面。",
+          "azure-devops-visit-application-page": "访问 Applications 页面。",
           "gitlab-paste-oauth-info": "从刚创建好的应用上粘贴它的应用 ID 和 Secret 到下面的字段。",
           "github-register-oauth-application": "注册 Bytebase 为一个 GitHub 组织级别 (organization-wide) 的 OAuth 应用。",
           "github-login-as-admin": "以组织管理员身份登录 GitHub.com。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。",
