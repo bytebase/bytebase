@@ -368,28 +368,57 @@ message PlanCheckRun {
   // Format: projects/{project}/sheets/{sheet}
   string sheet = 6;
 
-  string detail = 7;
-  repeated Result results = 8;
+  repeated Result results = 7;
 
   message Result {
-    enum Namespace {
-      NAMESPACE_UNSPECIFIED = 0;
-      BYTEBASE = 1;
-      ADVISOR = 2;
+    oneof result {
+      ResultSuccess success = 1;
+      // Failure if the PlanCheckRun itself failed to run.
+      ResultFailure failure = 2;
     }
-    Namespace namespace = 1;
-    int64 code = 2;
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      ERROR = 1;
-      WARNING = 2;
-      SUCCESS = 3;
+
+    message ResultFailure {
+      string title = 1;
+      string content = 2;
     }
-    Status status = 3;
-    string title = 4;
-    string content = 5;
-    int64 line = 6;
-    string detail = 7;
+
+    message ResultSuccess {
+      enum Status {
+        STATUS_UNSPECIFIED = 0;
+        ERROR = 1;
+        WARNING = 2;
+        SUCCESS = 3;
+      }
+      Status status = 1;
+      string title = 2;
+      string content = 3;
+      message Code {
+        int64 code = 1;
+        enum Namespace {
+          NAMESPACE_UNSPECIFIED = 0;
+          BYTEBASE = 1;
+          ADVISOR = 2;
+        }
+        Namespace namespace = 2;
+      }
+      Code code = 4;
+
+      oneof report {
+        StatementTypeReport statement_type_report = 5;
+        AffectedRowsReport affected_rows_report = 6;
+        SqlReviewReport sql_review_report = 7;
+      }
+      message StatementTypeReport {
+        string statement_type = 1;
+      }
+      message AffectedRowsReport {
+        int64 affected_rows = 1;
+      }
+      message SqlReviewReport {
+        int64 line = 1;
+        string detail = 2;
+      }
+    }
   }
 }
 
