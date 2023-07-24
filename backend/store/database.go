@@ -583,7 +583,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	if v := find.EffectiveEnvironmentID; v != nil {
 		// TODO(d): filter by both instance environment ID and database environment ID.
-		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_environment.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -595,7 +595,8 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		// TODO(d): fix the row_status filter.
+		where, args = append(where, fmt.Sprintf("instance_environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
 		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
 		// We don't show databases that are deleted by users already.
 		where, args = append(where, fmt.Sprintf("db.sync_status = $%d", len(args)+1)), append(args, api.OK)
@@ -607,8 +608,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		SELECT
 			db.id,
 			project.resource_id AS project_id,
-			environment.resource_id AS environment_id,
+			COALESCE(instance_environment.resource_id, '') AS instance_environment_id,
 			instance.resource_id AS instance_id,
+			COALESCE(db_environment.resource_id, '') as db_environment_id,
 			db.name,
 			db.sync_status,
 			db.last_successful_sync_ts,
@@ -623,12 +625,13 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			db.datashare,
 			db.service_name
 		FROM db
+		LEFT JOIN environment AS db_environment ON db.environment_id = db_environment.id
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
-		LEFT JOIN environment ON instance.environment_id = environment.id
+		LEFT JOIN environment AS instance_environment ON instance.environment_id = instance_environment.id
 		LEFT JOIN db_label ON db.id = db_label.database_id
 		WHERE %s
-		GROUP BY db.id, project.resource_id, environment.resource_id, instance.resource_id`, strings.Join(where, " AND ")),
+		GROUP BY db.id, project.resource_id, instance_environment.resource_id, instance.resource_id, db_environment.resource_id`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -640,12 +643,13 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			Labels: make(map[string]string),
 		}
 		var keys, values []sql.NullString
-		var secretsString string
+		var instanceEnvironment, secretsString string
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
-			&databaseMessage.EnvironmentID,
+			&instanceEnvironment,
 			&databaseMessage.InstanceID,
+			&databaseMessage.EnvironmentID,
 			&databaseMessage.DatabaseName,
 			&databaseMessage.SyncState,
 			&databaseMessage.SuccessfulSyncTimeTs,
@@ -657,6 +661,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.ServiceName,
 		); err != nil {
 			return nil, err
+		}
+		if databaseMessage.EnvironmentID == "" {
+			databaseMessage.EffectiveEnvironmentID = instanceEnvironment
 		}
 		var secret storepb.Secrets
 		if err := protojson.Unmarshal([]byte(secretsString), &secret); err != nil {
