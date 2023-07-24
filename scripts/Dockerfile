@@ -7,22 +7,23 @@
 
 FROM --platform=${BUILDPLATFORM} node:18 as frontend
 
-ARG NVM_MIRROR=https://mirrors.ustc.edu.cn/node/
-ARG NODE_MIRROR=https://mirrors.ustc.edu.cn/node/
-ARG NPM_REGISTRY=https://npmreg.proxy.ustclug.org/
+
+ARG NVM_MIRROR=
+ARG NODE_MIRROR=
+ARG NPM_REGISTRY=
 ARG RELEASE="release"
 
 ENV NVM_MIRROR=${NVM_MIRROR}
 ENV NODE_MIRROR=${NODE_MIRROR}
 
-RUN npm i --registry ${NPM_REGISTRY} -g pnpm
+RUN if [ -n "${NPM_REGISTRY}" ]; then npm i --registry ${NPM_REGISTRY} -g pnpm; fi
 
 WORKDIR /frontend-build
 
 # Install build dependency (e.g. vite)
 COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/frontend-build/node_modules,rw \
-    pnpm install --registry ${NPM_REGISTRY} --frozen-lockfile
+    if [ -n "${NPM_REGISTRY}" ]; then pnpm install --registry ${NPM_REGISTRY} --frozen-lockfile; fi
 
 COPY ./frontend/ .
 # Copy the SQL review config files to the frontend
