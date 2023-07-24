@@ -315,8 +315,12 @@ message Database {
   // The version of database schema.
   string schema_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The environment resource.
+  // Format: environments/prod where prod is the environment resource ID.
+  string environment = 7 [(google.api.field_behavior) = OPTIONAL];
+
   // Labels will be used for deployment and policy control.
-  map<string, string> labels = 7;
+  map<string, string> labels = 8;
 }
 
 // DatabaseMetadata is the metadata for databases.
