@@ -1,3 +1,11 @@
+<!--
+ * @Author: SIOOOO gesiyuan01@gmail.com
+ * @Date: 2023-07-19 23:38:48
+ * @LastEditors: SIOOOO gesiyuan01@gmail.com
+ * @LastEditTime: 2023-07-20 01:51:13
+ * @FilePath: /bytebase/frontend/src/components/ColumnTable.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
 <template>
   <BBTable
     :column-list="columnNameList"
@@ -22,7 +30,7 @@
           />
           <input
             type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            class="w-4 h-4 rounded text-accent disabled:cursor-not-allowed border-control-border focus:ring-accent"
             :disabled="!allowAdmin"
             :checked="isSensitiveColumn(column)"
             @input="
@@ -148,6 +156,7 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.POSTGRES ||
       engine.value === Engine.REDSHIFT ||
       engine.value === Engine.ORACLE ||
+      engine.value === Engine.DM ||
       engine.value === Engine.SNOWFLAKE)
   );
 });

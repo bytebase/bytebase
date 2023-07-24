@@ -34,6 +34,7 @@ func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret string) *DBFactory 
 // GetAdminDatabaseDriver gets the admin database driver using the instance's admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
 func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) (db.Driver, error) {
+	print(instance.Engine)
 	dataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if dataSource == nil {
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)

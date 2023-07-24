@@ -29,6 +29,8 @@ const (
 	Snowflake Type = "SNOWFLAKE"
 	// MSSQL is the database type for SQL Server.
 	MSSQL Type = "MSSQL"
+	// DM is the database type for DM.
+	DM Type = "DM";
 )
 
 // ConvertToAdvisorDBType will convert db type into advisor db type.
@@ -48,6 +50,8 @@ func ConvertToAdvisorDBType(dbType string) (Type, error) {
 		return Snowflake, nil
 	case string(MSSQL):
 		return MSSQL, nil
+	case string(DM):
+		return DM, nil
 	}
 
 	return "", errors.Errorf("unsupported db type %s for advisor", dbType)

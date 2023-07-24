@@ -705,6 +705,8 @@ func convertToEngine(engine db.Type) v1pb.Engine {
 		return v1pb.Engine_MARIADB
 	case db.OceanBase:
 		return v1pb.Engine_OCEANBASE
+	case db.DM:
+		return v1pb.Engine_DM
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -739,6 +741,8 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.MariaDB
 	case v1pb.Engine_OCEANBASE:
 		return db.OceanBase
+	case v1pb.Engine_DM:
+		return db.DM
 	}
 	return db.UnknownType
 }

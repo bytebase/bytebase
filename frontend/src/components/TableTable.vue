@@ -43,7 +43,7 @@
         <tr>
           <td :colspan="columnList.length" class="p-0">
             <div
-              class="flex items-center justify-center cursor-pointer hover:bg-gray-200 py-2 text-gray-400 text-sm"
+              class="flex items-center justify-center py-2 text-sm text-gray-400 cursor-pointer hover:bg-gray-200"
               @click="state.showReservedTableList = true"
             >
               {{ $t("database.show-reserved-tables") }}
@@ -101,6 +101,7 @@ const hasSchemaProperty = computed(() => {
     isPostgres.value ||
     engine.value === Engine.SNOWFLAKE ||
     engine.value === Engine.ORACLE ||
+    engine.value === Engine.DM ||
     engine.value === Engine.MSSQL
   );
 });

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col justify-start" :class="props.className">
+  <div class="flex flex-col justify-start w-full" :class="props.className">
     <p class="w-full mt-1 text-sm text-gray-500">
       <template v-if="isEngineUsingSQL">
         {{
@@ -17,7 +17,7 @@
       </template>
       <span
         v-if="!props.createInstanceFlag"
-        class="normal-link select-none ml-1"
+        class="ml-1 select-none normal-link"
         @click="toggleCreateUserExample"
       >
         {{ $t("instance.show-how-to-create") }}
@@ -123,15 +123,15 @@
         </i18n-t>
         <!-- TODO(xz): add a "detailed guide" link to docs here -->
       </template>
-      <div class="mt-2 flex flex-row">
+      <div class="flex flex-row mt-2">
         <span
-          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre-line"
+          class="inline-flex items-center flex-1 w-full min-w-0 px-3 py-2 whitespace-pre-line border border-r border-control-border bg-gray-50 sm:text-sm"
         >
           {{ grantStatement(props.engine, props.dataSourceType) }}
         </span>
         <button
           tabindex="-1"
-          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
+          class="px-2 py-2 -ml-px text-sm font-medium border border-gray-300 text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
           @click.prevent="copyGrantStatement"
         >
           <heroicons-outline:clipboard class="w-6 h-6" />
@@ -313,6 +313,8 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
         return "-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.\n\nCREATE LOGIN bytebase WITH PASSWORD = 'YOUR_DB_PWD';\nALTER SERVER ROLE sysadmin ADD MEMBER bytebase;";
       case Engine.ORACLE:
         return "-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.\n\nCREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\nGRANT ALL PRIVILEGES TO bytebase;";
+      case Engine.DM:
+        return 'CREATE USER bytebase IDENTIFIED BY "YOUR_DB_PWD";\nGRANT "DBA" TO bytebase;';
     }
   } else {
     switch (engine) {

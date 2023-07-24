@@ -21,6 +21,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -32,6 +33,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -80,6 +82,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -91,6 +94,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -102,6 +106,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
     componentList: []
   - type: statement.disallow-commit
@@ -152,6 +157,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
     componentList: []
   - type: statement.insert.disallow-order-by-rand
@@ -202,6 +208,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -324,6 +331,7 @@ ruleList:
     category: NAMING
     engineList:
       - ORACLE
+      - DM
       - SNOWFLAKE
       - MSSQL
     componentList: []
@@ -331,6 +339,7 @@ ruleList:
     category: NAMING
     engineList:
       - ORACLE
+      - DM
       - SNOWFLAKE
       - MSSQL
     componentList: []
@@ -338,6 +347,7 @@ ruleList:
     category: NAMING
     engineList:
       - ORACLE
+      - DM
       - SNOWFLAKE
     componentList:
       - key: upper
@@ -351,6 +361,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -371,6 +382,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -389,6 +401,7 @@ ruleList:
       - MYSQL
       - TIDB
       - ORACLE
+      - DM
       - OCEANBASE
     componentList: []
   - type: column.disallow-change
@@ -434,6 +447,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
     componentList:
       - key: list
@@ -454,6 +468,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
     componentList:
       - key: number
@@ -464,6 +479,7 @@ ruleList:
     category: COLUMN
     engineList:
       - ORACLE
+      - DM
       - SNOWFLAKE
       - MSSQL
     componentList:
@@ -503,6 +519,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
     componentList: []
   - type: schema.backward-compatibility
@@ -537,6 +554,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - DM
       - OCEANBASE
     componentList:
       - key: number

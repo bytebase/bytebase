@@ -2,19 +2,19 @@
   <component :is="drawer ? DrawerContent : 'div'" v-bind="bindings">
     <div class="space-y-6 divide-y divide-block-border">
       <div class="divide-y divide-block-border w-[850px]">
-        <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
+        <div v-if="isCreating" class="grid w-full grid-cols-4 gap-2 mt-4 mb-6">
           <template v-for="engine in engineList" :key="engine">
             <div
-              class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
+              class="relative flex justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
               :class="
                 basicInfo.engine === engine && 'font-medium bg-control-bg-hover'
               "
               @click.capture="changeInstanceEngine(engine)"
             >
-              <div class="flex flex-row justify-start items-center">
+              <div class="flex flex-row items-center justify-start">
                 <input
                   type="radio"
-                  class="btn mr-2"
+                  class="mr-2 btn"
                   :checked="basicInfo.engine === engine"
                 />
                 <img
@@ -22,7 +22,7 @@
                   class="w-5 h-auto max-h-[20px] object-contain mr-1"
                   :src="EngineIconPath[engine]"
                 />
-                <p class="text-center text-sm">
+                <p class="text-sm text-center">
                   {{ engineNameV1(engine) }}
                 </p>
                 <template v-if="isEngineBeta(engine)">
@@ -36,11 +36,11 @@
         </div>
 
         <!-- Instance Name -->
-        <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+        <div class="grid grid-cols-1 pt-4 gap-y-6 gap-x-4 sm:grid-cols-4">
           <div class="sm:col-span-2 sm:col-start-1">
-            <label for="name" class="textlabel flex flex-row items-center">
+            <label for="name" class="flex flex-row items-center textlabel">
               {{ $t("instance.instance-name") }}
-              <span class="text-red-600 mr-2">*</span>
+              <span class="mr-2 text-red-600">*</span>
               <template v-if="props.instance">
                 <InstanceV1EngineIcon
                   :instance="props.instance"
@@ -55,16 +55,16 @@
               required
               name="name"
               type="text"
-              class="textfield mt-1 w-full"
+              class="w-full mt-1 textfield"
               :disabled="!allowEdit"
             />
           </div>
 
           <div
             v-if="subscriptionStore.currentPlan !== PlanType.FREE"
-            class="sm:col-span-2 ml-0 sm:ml-3"
+            class="ml-0 sm:col-span-2 sm:ml-3"
           >
-            <label for="activation" class="textlabel block">
+            <label for="activation" class="block textlabel">
               {{ $t("subscription.instance-assignment.assign-license") }}
               (<router-link to="/setting/subscription" class="accent-link">
                 {{
@@ -88,7 +88,7 @@
 
           <div
             :key="basicInfo.environment"
-            class="sm:col-span-3 sm:col-start-1 -mt-4"
+            class="-mt-4 sm:col-span-3 sm:col-start-1"
           >
             <ResourceIdField
               ref="resourceIdField"
@@ -107,7 +107,7 @@
             </label>
             <EnvironmentSelect
               id="environment"
-              class="mt-1 w-full"
+              class="w-full mt-1"
               name="environment"
               :disabled="!isCreating"
               :selected-id="environment.uid"
@@ -124,14 +124,14 @@
 
           <div class="sm:col-span-3 sm:col-start-1">
             <template v-if="basicInfo.engine !== Engine.SPANNER">
-              <label for="host" class="textlabel block">
+              <label for="host" class="block textlabel">
                 <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
                   {{ $t("instance.account-name") }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <span class="mr-2 text-red-600">*</span>
                 </template>
                 <template v-else>
                   {{ $t("instance.host-or-socket") }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <span class="mr-2 text-red-600">*</span>
                 </template>
               </label>
               <input
@@ -145,7 +145,7 @@
                     ? $t('instance.your-snowflake-account-name')
                     : $t('instance.sentence.host.snowflake')
                 "
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 :disabled="!allowEdit"
               />
               <div
@@ -164,14 +164,14 @@
 
           <template v-if="basicInfo.engine !== Engine.SPANNER">
             <div class="sm:col-span-1">
-              <label for="port" class="textlabel block">
+              <label for="port" class="block textlabel">
                 {{ $t("instance.port") }}
               </label>
               <input
                 id="port"
                 type="text"
                 name="port"
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 :value="adminDataSource.port"
                 :placeholder="defaultPort"
                 :disabled="!allowEdit || !allowEditPort"
@@ -187,7 +187,7 @@
           >
             <label
               for="connectionStringSchema"
-              class="textlabel flex flex-row items-center"
+              class="flex flex-row items-center textlabel"
             >
               {{ $t("data-source.connection-string-schema") }}
             </label>
@@ -212,7 +212,7 @@
 
           <!--Do not show external link on create to reduce cognitive load-->
           <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
-            <label for="external-link" class="textlabel inline-flex">
+            <label for="external-link" class="inline-flex textlabel">
               <span class>
                 {{
                   basicInfo.engine === Engine.SNOWFLAKE
@@ -234,7 +234,7 @@
                 required
                 name="external-link"
                 type="text"
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 disabled="true"
                 :value="instanceLink"
               />
@@ -250,7 +250,7 @@
                 name="external-link"
                 type="text"
                 :disabled="!allowEdit"
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 :placeholder="snowflakeExtraLinkPlaceHolder"
               />
             </template>
@@ -258,23 +258,23 @@
         </div>
 
         <!-- Connection Info -->
-        <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
+        <p class="w-full pt-4 mt-6 text-lg font-medium leading-6 text-gray-900">
           {{ $t("instance.connection-info") }}
         </p>
 
         <div
           v-if="!isCreating && !hasReadOnlyDataSource && allowEdit"
-          class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
+          class="flex flex-row items-center justify-start p-2 px-3 mt-2 border-none rounded-lg bg-yellow-50"
         >
           <heroicons-outline:exclamation
-            class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
+            class="flex-shrink-0 w-6 h-6 mr-1 text-yellow-400"
           />
-          <span class="text-yellow-800 text-sm">
+          <span class="text-sm text-yellow-800">
             {{ $t("instance.no-read-only-data-source-warn") }}
           </span>
           <button
             type="button"
-            class="btn-normal ml-4 text-sm"
+            class="ml-4 text-sm btn-normal"
             @click.prevent="handleCreateRODataSource"
           >
             {{ $t("common.create") }}
@@ -282,7 +282,7 @@
         </div>
 
         <div
-          class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
+          class="grid grid-cols-1 mt-2 border-none gap-y-2 gap-x-4 sm:grid-cols-3"
         >
           <NTabs
             v-if="!isCreating"
@@ -302,7 +302,7 @@
               <BBButtonConfirm
                 v-if="hasReadOnlyDataSource"
                 :style="'DELETE'"
-                class="absolute left-full ml-1"
+                class="absolute ml-1 left-full"
                 :require-confirm="!readonlyDataSource?.pendingCreate"
                 :ok-text="$t('common.delete')"
                 :confirm-title="
@@ -321,7 +321,7 @@
               :data-source-type="state.currentDataSourceType"
             />
             <div class="mt-2 sm:col-span-1 sm:col-start-1">
-              <label for="username" class="textlabel block">
+              <label for="username" class="block textlabel">
                 {{ $t("common.username") }}
               </label>
               <!-- For mysql, username can be empty indicating anonymous user.
@@ -332,7 +332,7 @@
                 v-model="currentDataSource.username"
                 name="username"
                 type="text"
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 :disabled="!allowEdit"
                 :placeholder="
                   basicInfo.engine === Engine.CLICKHOUSE
@@ -343,7 +343,7 @@
             </div>
             <div class="mt-2 sm:col-span-1 sm:col-start-1">
               <div class="flex flex-row items-center space-x-2">
-                <label for="password" class="textlabel block">
+                <label for="password" class="block textlabel">
                   {{ $t("common.password") }}
                 </label>
                 <BBCheckbox
@@ -358,7 +358,7 @@
                 id="password"
                 name="password"
                 type="text"
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 autocomplete="off"
                 :placeholder="
                   currentDataSource.useEmptyPassword
@@ -397,7 +397,7 @@
           <template v-if="showAuthenticationDatabase">
             <div class="sm:col-span-1 sm:col-start-1">
               <div class="flex flex-row items-center space-x-2">
-                <label for="authenticationDatabase" class="textlabel block">
+                <label for="authenticationDatabase" class="block textlabel">
                   {{ $t("instance.authentication-database") }}
                 </label>
               </div>
@@ -405,7 +405,7 @@
                 id="authenticationDatabase"
                 name="authenticationDatabase"
                 type="text"
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 autocomplete="off"
                 placeholder="admin"
                 :value="currentDataSource.authenticationDatabase"
@@ -429,7 +429,7 @@
               class="mt-2 sm:col-span-1 sm:col-start-1"
             >
               <div class="flex flex-row items-center space-x-2">
-                <label for="host" class="textlabel block">
+                <label for="host" class="block textlabel">
                   {{ $t("data-source.read-replica-host") }}
                 </label>
               </div>
@@ -437,7 +437,7 @@
                 id="host"
                 name="host"
                 type="text"
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 autocomplete="off"
                 :value="currentDataSource.host"
                 @input="handleCurrentDataSourceHostInput"
@@ -449,7 +449,7 @@
               class="mt-2 sm:col-span-1 sm:col-start-1"
             >
               <div class="flex flex-row items-center space-x-2">
-                <label for="port" class="textlabel block">
+                <label for="port" class="block textlabel">
                   {{ $t("data-source.read-replica-port") }}
                 </label>
               </div>
@@ -457,7 +457,7 @@
                 id="port"
                 name="port"
                 type="text"
-                class="textfield mt-1 w-full"
+                class="w-full mt-1 textfield"
                 autocomplete="off"
                 :value="currentDataSource.port"
                 @input="handleCurrentDataSourcePortInput"
@@ -466,7 +466,7 @@
           </template>
 
           <div v-if="showDatabase" class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="database" class="textlabel block">
+            <label for="database" class="block textlabel">
               {{ $t("common.database") }}
             </label>
             <input
@@ -474,7 +474,7 @@
               v-model="currentDataSource.database"
               name="database"
               type="text"
-              class="textfield mt-1 w-full"
+              class="w-full mt-1 textfield"
               :disabled="!allowEdit"
               :placeholder="$t('common.database')"
             />
@@ -482,7 +482,7 @@
 
           <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
             <div class="flex flex-row items-center">
-              <label for="ssl" class="textlabel block">
+              <label for="ssl" class="block textlabel">
                 {{ $t("data-source.ssl-connection") }}
               </label>
             </div>
@@ -501,7 +501,7 @@
               </template>
               <template v-else>
                 <button
-                  class="btn-normal mt-2"
+                  class="mt-2 btn-normal"
                   :disabled="!allowEdit"
                   @click.prevent="handleEditSsl"
                 >
@@ -513,7 +513,7 @@
 
           <div v-if="showSSH" class="mt-2 sm:col-span-3 sm:col-start-1">
             <div class="flex flex-row items-center gap-x-1">
-              <label for="ssh" class="textlabel block">
+              <label for="ssh" class="block textlabel">
                 {{ $t("data-source.ssh-connection") }}
               </label>
               <FeatureBadge
@@ -538,7 +538,7 @@
               </template>
               <template v-else>
                 <button
-                  class="btn-normal mt-2"
+                  class="mt-2 btn-normal"
                   :disabled="!allowEdit"
                   @click.prevent="handleEditSsh"
                 >
@@ -557,11 +557,11 @@
           :description="outboundIpList"
         />
 
-        <div class="mt-6 pt-0 border-none">
+        <div class="pt-0 mt-6 border-none">
           <div class="flex flex-row space-x-2">
             <button
               type="button"
-              class="btn-normal whitespace-nowrap flex items-center gap-x-1"
+              class="flex items-center btn-normal whitespace-nowrap gap-x-1"
               :disabled="!allowCreate || state.isRequesting || !allowEdit"
               @click.prevent="testConnection(false /* !silent */)"
             >
@@ -574,8 +574,8 @@
 
       <!-- Action Button Group -->
       <div v-if="!drawer" class="pt-4">
-        <div class="w-full flex justify-between items-center">
-          <div class="w-full flex justify-end items-center gap-x-4">
+        <div class="flex items-center justify-between w-full">
+          <div class="flex items-center justify-end w-full gap-x-4">
             <NButton
               v-if="allowEdit"
               :disabled="!allowUpdate || state.isRequesting"
@@ -591,8 +591,8 @@
     </div>
 
     <template v-if="drawer" #footer>
-      <div class="w-full flex justify-between items-center">
-        <div class="w-full flex justify-end items-center gap-x-3">
+      <div class="flex items-center justify-between w-full">
+        <div class="flex items-center justify-end w-full gap-x-3">
           <NButton
             :disabled="state.isRequesting || state.isTestingConnection"
             @click.prevent="cancel"
@@ -883,6 +883,8 @@ const getDefaultPort = (engine: Engine) => {
     return "5439";
   } else if (engine === Engine.OCEANBASE) {
     return "2883";
+  } else if (engine === Engine.DM) {
+    return "5236";
   }
   return "3306";
 };
@@ -942,6 +944,7 @@ const EngineIconPath: Record<number, string> = {
   [Engine.SPANNER]: new URL("@/assets/db-spanner.png", import.meta.url).href,
   [Engine.REDIS]: new URL("@/assets/db-redis.png", import.meta.url).href,
   [Engine.ORACLE]: new URL("@/assets/db-oracle.svg", import.meta.url).href,
+  [Engine.DM]: new URL("@/assets/db-dm.png", import.meta.url).href,
   [Engine.MSSQL]: new URL("@/assets/db-mssql.svg", import.meta.url).href,
   [Engine.REDSHIFT]: new URL("@/assets/db-redshift.svg", import.meta.url).href,
   [Engine.MARIADB]: new URL("@/assets/db-mariadb.png", import.meta.url).href,
@@ -1082,9 +1085,20 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: Engine): boolean => {
+<<<<<<< Updated upstream
   return false;
   // return [
   // ].includes(engine);
+=======
+  return [
+    Engine.ORACLE,
+    Engine.DM,
+    Engine.MSSQL,
+    Engine.REDSHIFT,
+    Engine.MARIADB,
+    Engine.OCEANBASE,
+  ].includes(engine);
+>>>>>>> Stashed changes
 };
 
 const handleSelectEnvironmentUID = (uid: number | string) => {

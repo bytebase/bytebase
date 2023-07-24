@@ -96,7 +96,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
+	//print(instanceMessage.Engine)
 	// Test connection.
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.DataSources {
@@ -745,7 +745,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 			SchemaTenantMode: instance.Options.SchemaTenantMode,
 		}
 	}
-
+	
 	return &store.InstanceMessage{
 		ResourceID:    instanceID,
 		Title:         instance.Title,

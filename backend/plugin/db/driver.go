@@ -47,6 +47,8 @@ const (
 	Redis Type = "REDIS"
 	// Oracle is the database type for Oracle.
 	Oracle Type = "ORACLE"
+	// DM is the database type for DM.
+	DM Type = "DM"
 	// MSSQL is the database type for MS SQL Server.
 	MSSQL Type = "MSSQL"
 	// Redshift is the database type for Redshift.

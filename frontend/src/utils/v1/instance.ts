@@ -88,6 +88,7 @@ export const supportedEngineV1List = () => {
     Engine.MARIADB,
     Engine.MSSQL,
     Engine.REDSHIFT,
+    Engine.DM,
   ];
   return engines;
 };
@@ -138,6 +139,7 @@ export const instanceV1HasCreateDatabase = (
   const engine = engineOfInstanceV1(instanceOrEngine);
   if (engine === Engine.REDIS) return false;
   if (engine === Engine.ORACLE) return false;
+  if (engine === Engine.DM) return false;
   return true;
 };
 
@@ -163,6 +165,7 @@ export const instanceV1HasSSL = (
     Engine.ORACLE,
     Engine.MARIADB,
     Engine.OCEANBASE,
+    Engine.DM,
   ].includes(engine);
 };
 
@@ -229,6 +232,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "MariaDB";
     case Engine.OCEANBASE:
       return "OceanBase";
+    case Engine.DM:
+      return "DM";
   }
   return "";
 };

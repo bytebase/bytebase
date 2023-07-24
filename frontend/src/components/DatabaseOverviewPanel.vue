@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
     <div v-if="anomalySectionList.length > 0">
-      <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
+      <div class="flex flex-row mb-4 text-lg font-medium leading-6 text-main">
         {{ $t("common.anomalies") }}
-        <span class="ml-2 textinfolabel items-center flex">
+        <span class="flex items-center ml-2 textinfolabel">
           {{
             $t(
               "database.the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes"
@@ -15,15 +15,15 @@
     </div>
     <div
       v-else
-      class="text-lg leading-6 font-medium text-main mb-4 flex flex-row"
+      class="flex flex-row mb-4 text-lg font-medium leading-6 text-main"
     >
       {{ $t("database.no-anomalies-detected") }}
-      <heroicons-outline:check-circle class="ml-1 w-6 h-6 text-success" />
+      <heroicons-outline:check-circle class="w-6 h-6 ml-1 text-success" />
     </div>
 
     <!-- Description list -->
     <dl
-      class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 pt-4"
+      class="grid grid-cols-1 pt-4 gap-x-4 gap-y-4 sm:grid-cols-2"
       data-label="bb-database-overview-description-list"
     >
       <template
@@ -80,9 +80,9 @@
     <div class="pt-6">
       <div
         v-if="hasSchemaProperty"
-        class="flex flex-row justify-start items-center mb-4"
+        class="flex flex-row items-center justify-start mb-4"
       >
-        <span class="text-lg leading-6 font-medium text-main mr-2">Schema</span>
+        <span class="mr-2 text-lg font-medium leading-6 text-main">Schema</span>
         <BBSelect
           class="!w-auto min-w-[12rem]"
           :selected-item="state.selectedSchemaName"
@@ -98,7 +98,7 @@
       </div>
 
       <template v-if="databaseEngine !== Engine.REDIS">
-        <div class="text-lg leading-6 font-medium text-main mb-4">
+        <div class="mb-4 text-lg font-medium leading-6 text-main">
           <span v-if="databaseEngine === Engine.MONGODB">{{
             $t("db.collections")
           }}</span>
@@ -111,7 +111,7 @@
           :table-list="tableList"
         />
 
-        <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+        <div class="mt-6 mb-4 text-lg font-medium leading-6 text-main">
           {{ $t("db.views") }}
         </div>
         <ViewTable
@@ -121,14 +121,14 @@
         />
 
         <template v-if="databaseEngine === Engine.POSTGRES">
-          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+          <div class="mt-6 mb-4 text-lg font-medium leading-6 text-main">
             {{ $t("db.extensions") }}
           </div>
           <DBExtensionTable :db-extension-list="dbExtensionList" />
         </template>
 
         <template v-if="databaseEngine === Engine.POSTGRES">
-          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+          <div class="mt-6 mb-4 text-lg font-medium leading-6 text-main">
             {{ $t("db.functions") }}
           </div>
           <FunctionTable
@@ -139,7 +139,7 @@
         </template>
 
         <template v-if="databaseEngine === Engine.SNOWFLAKE">
-          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+          <div class="mt-6 mb-4 text-lg font-medium leading-6 text-main">
             {{ $t("db.streams") }}
           </div>
           <StreamTable
@@ -148,7 +148,7 @@
             :stream-list="streamList"
           />
 
-          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+          <div class="mt-6 mb-4 text-lg font-medium leading-6 text-main">
             {{ $t("db.tasks") }}
           </div>
           <TaskTable
@@ -204,6 +204,7 @@ const hasSchemaProperty = computed(() => {
     databaseEngine.value === Engine.POSTGRES ||
     databaseEngine.value === Engine.SNOWFLAKE ||
     databaseEngine.value === Engine.ORACLE ||
+    databaseEngine.value === Engine.DM ||
     databaseEngine.value === Engine.MSSQL ||
     databaseEngine.value === Engine.REDSHIFT
   );
