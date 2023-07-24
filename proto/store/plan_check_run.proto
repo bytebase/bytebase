@@ -26,15 +26,12 @@ message PlanCheckRunResult {
     int64 code = 4;
 
     oneof report {
-      StatementTypeReport statement_type_report = 5;
-      AffectedRowsReport affected_rows_report = 6;
-      SqlReviewReport sql_review_report = 7;
+      SqlSummaryReport sql_summary_report = 5;
+      SqlReviewReport sql_review_report = 6;
     }
-    message StatementTypeReport {
+    message SqlSummaryReport {
       string statement_type = 1;
-    }
-    message AffectedRowsReport {
-      int64 affected_rows = 1;
+      int64 affected_rows = 2;
     }
     message SqlReviewReport {
       int64 line = 1;
