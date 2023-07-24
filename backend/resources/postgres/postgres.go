@@ -65,14 +65,19 @@ func isPgDump15(pgDumpPath string) (bool, error) {
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
 	var tarName string
-	switch runtime.GOOS {
-	case "darwin":
-		tarName = "postgres-darwin-x86_64.txz"
-	case "linux":
-		tarName = "postgres-linux-x86_64.txz"
+	switch {
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
+		tarName = "postgres-darwin-amd64.txz"
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+		tarName = "postgres-darwin-arm64.txz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
+		tarName = "postgres-linux-amd64.txz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		tarName = "postgres-linux-arm64.txz"
 	default:
-		return "", errors.Errorf("OS %q is not supported", runtime.GOOS)
+		return "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
 	}
+
 	version := strings.TrimSuffix(tarName, ".txz")
 	pgBaseDir := path.Join(resourceDir, version)
 	pgBinDir := path.Join(pgBaseDir, "bin")
