@@ -324,7 +324,7 @@ CREATE TABLE instance (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    environment_id INTEGER NULL REFERENCES environment (id),
+    environment_id INTEGER REFERENCES environment (id),
     name TEXT NOT NULL,
     engine TEXT NOT NULL,
     engine_version TEXT NOT NULL DEFAULT '',
@@ -379,7 +379,7 @@ CREATE TABLE db (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    environment_id INTEGER NULL REFERENCES environment (id),
+    environment_id INTEGER REFERENCES environment (id),
     -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
     source_backup_id INTEGER,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
