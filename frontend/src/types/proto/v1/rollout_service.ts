@@ -371,11 +371,10 @@ export enum PlanCheckRun_Type {
   DATABASE_STATEMENT_COMPATIBILITY = 3,
   DATABASE_STATEMENT_ADVISE = 4,
   DATABASE_STATEMENT_TYPE = 5,
-  DATABASE_STATEMENT_TYPE_REPORT = 6,
-  DATABASE_STATEMENT_AFFECTED_ROWS_REPORT = 7,
-  DATABASE_CONNECT = 8,
-  DATABASE_GHOST_SYNC = 9,
-  DATABASE_PITR_MYSQL = 10,
+  DATABASE_STATEMENT_SUMMARY_REPORT = 6,
+  DATABASE_CONNECT = 7,
+  DATABASE_GHOST_SYNC = 8,
+  DATABASE_PITR_MYSQL = 9,
   UNRECOGNIZED = -1,
 }
 
@@ -400,18 +399,15 @@ export function planCheckRun_TypeFromJSON(object: any): PlanCheckRun_Type {
     case "DATABASE_STATEMENT_TYPE":
       return PlanCheckRun_Type.DATABASE_STATEMENT_TYPE;
     case 6:
-    case "DATABASE_STATEMENT_TYPE_REPORT":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_TYPE_REPORT;
+    case "DATABASE_STATEMENT_SUMMARY_REPORT":
+      return PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT;
     case 7:
-    case "DATABASE_STATEMENT_AFFECTED_ROWS_REPORT":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_AFFECTED_ROWS_REPORT;
-    case 8:
     case "DATABASE_CONNECT":
       return PlanCheckRun_Type.DATABASE_CONNECT;
-    case 9:
+    case 8:
     case "DATABASE_GHOST_SYNC":
       return PlanCheckRun_Type.DATABASE_GHOST_SYNC;
-    case 10:
+    case 9:
     case "DATABASE_PITR_MYSQL":
       return PlanCheckRun_Type.DATABASE_PITR_MYSQL;
     case -1:
@@ -435,10 +431,8 @@ export function planCheckRun_TypeToJSON(object: PlanCheckRun_Type): string {
       return "DATABASE_STATEMENT_ADVISE";
     case PlanCheckRun_Type.DATABASE_STATEMENT_TYPE:
       return "DATABASE_STATEMENT_TYPE";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_TYPE_REPORT:
-      return "DATABASE_STATEMENT_TYPE_REPORT";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_AFFECTED_ROWS_REPORT:
-      return "DATABASE_STATEMENT_AFFECTED_ROWS_REPORT";
+    case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
+      return "DATABASE_STATEMENT_SUMMARY_REPORT";
     case PlanCheckRun_Type.DATABASE_CONNECT:
       return "DATABASE_CONNECT";
     case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
