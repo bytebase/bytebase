@@ -317,7 +317,7 @@ message Database {
 
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
-  // string environment = 7 [(google.api.field_behavior) = OPTIONAL];
+  string environment = 7 [(google.api.field_behavior) = OPTIONAL];
 
   // The effective environment based on environment tag above and environment tag on the instance.
   // Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview.
