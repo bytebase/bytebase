@@ -470,6 +470,9 @@ const (
 
 	// MSSQLTableNoFK is an advisor type for MSSQL table disallow foreign key.
 	MSSQLTableNoFK Type = "bb.plugin.advisor.mssql.table.no-foreign-key"
+
+	// MSSQLMigrationCompatibility is an advisor type for MSSQL migration compatibility.
+	MSSQLMigrationCompatibility Type = "bb.plugin.advisor.mssql.migration-compatibility"
 )
 
 // Advice is the result of an advisor.

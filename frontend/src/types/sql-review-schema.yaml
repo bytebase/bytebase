@@ -511,6 +511,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - SNOWFLAKE
+      - MSSQL
     componentList: []
   - type: database.drop-empty-database
     category: DATABASE
