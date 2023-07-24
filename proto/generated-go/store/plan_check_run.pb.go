@@ -20,24 +20,24 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type PlanCheckRunResultSuccess_Status int32
+type PlanCheckRunResult_Result_Status int32
 
 const (
-	PlanCheckRunResultSuccess_STATUS_UNSPECIFIED PlanCheckRunResultSuccess_Status = 0
-	PlanCheckRunResultSuccess_ERROR              PlanCheckRunResultSuccess_Status = 1
-	PlanCheckRunResultSuccess_WARNING            PlanCheckRunResultSuccess_Status = 2
-	PlanCheckRunResultSuccess_SUCCESS            PlanCheckRunResultSuccess_Status = 3
+	PlanCheckRunResult_Result_STATUS_UNSPECIFIED PlanCheckRunResult_Result_Status = 0
+	PlanCheckRunResult_Result_ERROR              PlanCheckRunResult_Result_Status = 1
+	PlanCheckRunResult_Result_WARNING            PlanCheckRunResult_Result_Status = 2
+	PlanCheckRunResult_Result_SUCCESS            PlanCheckRunResult_Result_Status = 3
 )
 
-// Enum value maps for PlanCheckRunResultSuccess_Status.
+// Enum value maps for PlanCheckRunResult_Result_Status.
 var (
-	PlanCheckRunResultSuccess_Status_name = map[int32]string{
+	PlanCheckRunResult_Result_Status_name = map[int32]string{
 		0: "STATUS_UNSPECIFIED",
 		1: "ERROR",
 		2: "WARNING",
 		3: "SUCCESS",
 	}
-	PlanCheckRunResultSuccess_Status_value = map[string]int32{
+	PlanCheckRunResult_Result_Status_value = map[string]int32{
 		"STATUS_UNSPECIFIED": 0,
 		"ERROR":              1,
 		"WARNING":            2,
@@ -45,80 +45,31 @@ var (
 	}
 )
 
-func (x PlanCheckRunResultSuccess_Status) Enum() *PlanCheckRunResultSuccess_Status {
-	p := new(PlanCheckRunResultSuccess_Status)
+func (x PlanCheckRunResult_Result_Status) Enum() *PlanCheckRunResult_Result_Status {
+	p := new(PlanCheckRunResult_Result_Status)
 	*p = x
 	return p
 }
 
-func (x PlanCheckRunResultSuccess_Status) String() string {
+func (x PlanCheckRunResult_Result_Status) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (PlanCheckRunResultSuccess_Status) Descriptor() protoreflect.EnumDescriptor {
+func (PlanCheckRunResult_Result_Status) Descriptor() protoreflect.EnumDescriptor {
 	return file_store_plan_check_run_proto_enumTypes[0].Descriptor()
 }
 
-func (PlanCheckRunResultSuccess_Status) Type() protoreflect.EnumType {
+func (PlanCheckRunResult_Result_Status) Type() protoreflect.EnumType {
 	return &file_store_plan_check_run_proto_enumTypes[0]
 }
 
-func (x PlanCheckRunResultSuccess_Status) Number() protoreflect.EnumNumber {
+func (x PlanCheckRunResult_Result_Status) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use PlanCheckRunResultSuccess_Status.Descriptor instead.
-func (PlanCheckRunResultSuccess_Status) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 0}
-}
-
-type PlanCheckRunResultSuccess_Code_Namespace int32
-
-const (
-	PlanCheckRunResultSuccess_Code_NAMESPACE_UNSPECIFIED PlanCheckRunResultSuccess_Code_Namespace = 0
-	PlanCheckRunResultSuccess_Code_BYTEBASE              PlanCheckRunResultSuccess_Code_Namespace = 1
-	PlanCheckRunResultSuccess_Code_ADVISOR               PlanCheckRunResultSuccess_Code_Namespace = 2
-)
-
-// Enum value maps for PlanCheckRunResultSuccess_Code_Namespace.
-var (
-	PlanCheckRunResultSuccess_Code_Namespace_name = map[int32]string{
-		0: "NAMESPACE_UNSPECIFIED",
-		1: "BYTEBASE",
-		2: "ADVISOR",
-	}
-	PlanCheckRunResultSuccess_Code_Namespace_value = map[string]int32{
-		"NAMESPACE_UNSPECIFIED": 0,
-		"BYTEBASE":              1,
-		"ADVISOR":               2,
-	}
-)
-
-func (x PlanCheckRunResultSuccess_Code_Namespace) Enum() *PlanCheckRunResultSuccess_Code_Namespace {
-	p := new(PlanCheckRunResultSuccess_Code_Namespace)
-	*p = x
-	return p
-}
-
-func (x PlanCheckRunResultSuccess_Code_Namespace) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (PlanCheckRunResultSuccess_Code_Namespace) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_plan_check_run_proto_enumTypes[1].Descriptor()
-}
-
-func (PlanCheckRunResultSuccess_Code_Namespace) Type() protoreflect.EnumType {
-	return &file_store_plan_check_run_proto_enumTypes[1]
-}
-
-func (x PlanCheckRunResultSuccess_Code_Namespace) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use PlanCheckRunResultSuccess_Code_Namespace.Descriptor instead.
-func (PlanCheckRunResultSuccess_Code_Namespace) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 0, 0}
+// Deprecated: Use PlanCheckRunResult_Result_Status.Descriptor instead.
+func (PlanCheckRunResult_Result_Status) EnumDescriptor() ([]byte, []int) {
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 0}
 }
 
 type PlanCheckRunConfig struct {
@@ -182,6 +133,7 @@ type PlanCheckRunResult struct {
 	unknownFields protoimpl.UnknownFields
 
 	Results []*PlanCheckRunResult_Result `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Error   string                       `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 }
 
 func (x *PlanCheckRunResult) Reset() {
@@ -223,184 +175,9 @@ func (x *PlanCheckRunResult) GetResults() []*PlanCheckRunResult_Result {
 	return nil
 }
 
-type PlanCheckRunResultSuccess struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Status  PlanCheckRunResultSuccess_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.PlanCheckRunResultSuccess_Status" json:"status,omitempty"`
-	Title   string                           `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Content string                           `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	Code    *PlanCheckRunResultSuccess_Code  `protobuf:"bytes,4,opt,name=code,proto3" json:"code,omitempty"`
-	// Types that are assignable to Report:
-	//
-	//	*PlanCheckRunResultSuccess_StatementTypeReport_
-	//	*PlanCheckRunResultSuccess_AffectedRowsReport_
-	//	*PlanCheckRunResultSuccess_SqlReviewReport_
-	Report isPlanCheckRunResultSuccess_Report `protobuf_oneof:"report"`
-}
-
-func (x *PlanCheckRunResultSuccess) Reset() {
-	*x = PlanCheckRunResultSuccess{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_plan_check_run_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PlanCheckRunResultSuccess) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanCheckRunResultSuccess) ProtoMessage() {}
-
-func (x *PlanCheckRunResultSuccess) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanCheckRunResultSuccess.ProtoReflect.Descriptor instead.
-func (*PlanCheckRunResultSuccess) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *PlanCheckRunResultSuccess) GetStatus() PlanCheckRunResultSuccess_Status {
+func (x *PlanCheckRunResult) GetError() string {
 	if x != nil {
-		return x.Status
-	}
-	return PlanCheckRunResultSuccess_STATUS_UNSPECIFIED
-}
-
-func (x *PlanCheckRunResultSuccess) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *PlanCheckRunResultSuccess) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *PlanCheckRunResultSuccess) GetCode() *PlanCheckRunResultSuccess_Code {
-	if x != nil {
-		return x.Code
-	}
-	return nil
-}
-
-func (m *PlanCheckRunResultSuccess) GetReport() isPlanCheckRunResultSuccess_Report {
-	if m != nil {
-		return m.Report
-	}
-	return nil
-}
-
-func (x *PlanCheckRunResultSuccess) GetStatementTypeReport() *PlanCheckRunResultSuccess_StatementTypeReport {
-	if x, ok := x.GetReport().(*PlanCheckRunResultSuccess_StatementTypeReport_); ok {
-		return x.StatementTypeReport
-	}
-	return nil
-}
-
-func (x *PlanCheckRunResultSuccess) GetAffectedRowsReport() *PlanCheckRunResultSuccess_AffectedRowsReport {
-	if x, ok := x.GetReport().(*PlanCheckRunResultSuccess_AffectedRowsReport_); ok {
-		return x.AffectedRowsReport
-	}
-	return nil
-}
-
-func (x *PlanCheckRunResultSuccess) GetSqlReviewReport() *PlanCheckRunResultSuccess_SqlReviewReport {
-	if x, ok := x.GetReport().(*PlanCheckRunResultSuccess_SqlReviewReport_); ok {
-		return x.SqlReviewReport
-	}
-	return nil
-}
-
-type isPlanCheckRunResultSuccess_Report interface {
-	isPlanCheckRunResultSuccess_Report()
-}
-
-type PlanCheckRunResultSuccess_StatementTypeReport_ struct {
-	StatementTypeReport *PlanCheckRunResultSuccess_StatementTypeReport `protobuf:"bytes,5,opt,name=statement_type_report,json=statementTypeReport,proto3,oneof"`
-}
-
-type PlanCheckRunResultSuccess_AffectedRowsReport_ struct {
-	AffectedRowsReport *PlanCheckRunResultSuccess_AffectedRowsReport `protobuf:"bytes,6,opt,name=affected_rows_report,json=affectedRowsReport,proto3,oneof"`
-}
-
-type PlanCheckRunResultSuccess_SqlReviewReport_ struct {
-	SqlReviewReport *PlanCheckRunResultSuccess_SqlReviewReport `protobuf:"bytes,7,opt,name=sql_review_report,json=sqlReviewReport,proto3,oneof"`
-}
-
-func (*PlanCheckRunResultSuccess_StatementTypeReport_) isPlanCheckRunResultSuccess_Report() {}
-
-func (*PlanCheckRunResultSuccess_AffectedRowsReport_) isPlanCheckRunResultSuccess_Report() {}
-
-func (*PlanCheckRunResultSuccess_SqlReviewReport_) isPlanCheckRunResultSuccess_Report() {}
-
-type PlanCheckRunResultFailure struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Title   string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	Content string `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-}
-
-func (x *PlanCheckRunResultFailure) Reset() {
-	*x = PlanCheckRunResultFailure{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_plan_check_run_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PlanCheckRunResultFailure) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanCheckRunResultFailure) ProtoMessage() {}
-
-func (x *PlanCheckRunResultFailure) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanCheckRunResultFailure.ProtoReflect.Descriptor instead.
-func (*PlanCheckRunResultFailure) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *PlanCheckRunResultFailure) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *PlanCheckRunResultFailure) GetContent() string {
-	if x != nil {
-		return x.Content
+		return x.Error
 	}
 	return ""
 }
@@ -410,17 +187,21 @@ type PlanCheckRunResult_Result struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Types that are assignable to Result:
+	Status  PlanCheckRunResult_Result_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.PlanCheckRunResult_Result_Status" json:"status,omitempty"`
+	Title   string                           `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Content string                           `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	Code    int64                            `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
+	// Types that are assignable to Report:
 	//
-	//	*PlanCheckRunResult_Result_Success
-	//	*PlanCheckRunResult_Result_Failure
-	Result isPlanCheckRunResult_Result_Result `protobuf_oneof:"result"`
+	//	*PlanCheckRunResult_Result_SqlSummaryReport_
+	//	*PlanCheckRunResult_Result_SqlReviewReport_
+	Report isPlanCheckRunResult_Result_Report `protobuf_oneof:"report"`
 }
 
 func (x *PlanCheckRunResult_Result) Reset() {
 	*x = PlanCheckRunResult_Result{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_plan_check_run_proto_msgTypes[4]
+		mi := &file_store_plan_check_run_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -433,7 +214,7 @@ func (x *PlanCheckRunResult_Result) String() string {
 func (*PlanCheckRunResult_Result) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	mi := &file_store_plan_check_run_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -449,124 +230,97 @@ func (*PlanCheckRunResult_Result) Descriptor() ([]byte, []int) {
 	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0}
 }
 
-func (m *PlanCheckRunResult_Result) GetResult() isPlanCheckRunResult_Result_Result {
-	if m != nil {
-		return m.Result
+func (x *PlanCheckRunResult_Result) GetStatus() PlanCheckRunResult_Result_Status {
+	if x != nil {
+		return x.Status
 	}
-	return nil
+	return PlanCheckRunResult_Result_STATUS_UNSPECIFIED
 }
 
-func (x *PlanCheckRunResult_Result) GetSuccess() *PlanCheckRunResultSuccess {
-	if x, ok := x.GetResult().(*PlanCheckRunResult_Result_Success); ok {
-		return x.Success
+func (x *PlanCheckRunResult_Result) GetTitle() string {
+	if x != nil {
+		return x.Title
 	}
-	return nil
+	return ""
 }
 
-func (x *PlanCheckRunResult_Result) GetFailure() *PlanCheckRunResultFailure {
-	if x, ok := x.GetResult().(*PlanCheckRunResult_Result_Failure); ok {
-		return x.Failure
+func (x *PlanCheckRunResult_Result) GetContent() string {
+	if x != nil {
+		return x.Content
 	}
-	return nil
+	return ""
 }
 
-type isPlanCheckRunResult_Result_Result interface {
-	isPlanCheckRunResult_Result_Result()
-}
-
-type PlanCheckRunResult_Result_Success struct {
-	Success *PlanCheckRunResultSuccess `protobuf:"bytes,1,opt,name=success,proto3,oneof"`
-}
-
-type PlanCheckRunResult_Result_Failure struct {
-	// Failure if the PlanCheckRun itself failed to run.
-	Failure *PlanCheckRunResultFailure `protobuf:"bytes,2,opt,name=failure,proto3,oneof"`
-}
-
-func (*PlanCheckRunResult_Result_Success) isPlanCheckRunResult_Result_Result() {}
-
-func (*PlanCheckRunResult_Result_Failure) isPlanCheckRunResult_Result_Result() {}
-
-type PlanCheckRunResultSuccess_Code struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Code      int64                                    `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Namespace PlanCheckRunResultSuccess_Code_Namespace `protobuf:"varint,2,opt,name=namespace,proto3,enum=bytebase.store.PlanCheckRunResultSuccess_Code_Namespace" json:"namespace,omitempty"`
-}
-
-func (x *PlanCheckRunResultSuccess_Code) Reset() {
-	*x = PlanCheckRunResultSuccess_Code{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_plan_check_run_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PlanCheckRunResultSuccess_Code) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanCheckRunResultSuccess_Code) ProtoMessage() {}
-
-func (x *PlanCheckRunResultSuccess_Code) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanCheckRunResultSuccess_Code.ProtoReflect.Descriptor instead.
-func (*PlanCheckRunResultSuccess_Code) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 0}
-}
-
-func (x *PlanCheckRunResultSuccess_Code) GetCode() int64 {
+func (x *PlanCheckRunResult_Result) GetCode() int64 {
 	if x != nil {
 		return x.Code
 	}
 	return 0
 }
 
-func (x *PlanCheckRunResultSuccess_Code) GetNamespace() PlanCheckRunResultSuccess_Code_Namespace {
-	if x != nil {
-		return x.Namespace
+func (m *PlanCheckRunResult_Result) GetReport() isPlanCheckRunResult_Result_Report {
+	if m != nil {
+		return m.Report
 	}
-	return PlanCheckRunResultSuccess_Code_NAMESPACE_UNSPECIFIED
+	return nil
 }
 
-type PlanCheckRunResultSuccess_StatementTypeReport struct {
+func (x *PlanCheckRunResult_Result) GetSqlSummaryReport() *PlanCheckRunResult_Result_SqlSummaryReport {
+	if x, ok := x.GetReport().(*PlanCheckRunResult_Result_SqlSummaryReport_); ok {
+		return x.SqlSummaryReport
+	}
+	return nil
+}
+
+func (x *PlanCheckRunResult_Result) GetSqlReviewReport() *PlanCheckRunResult_Result_SqlReviewReport {
+	if x, ok := x.GetReport().(*PlanCheckRunResult_Result_SqlReviewReport_); ok {
+		return x.SqlReviewReport
+	}
+	return nil
+}
+
+type isPlanCheckRunResult_Result_Report interface {
+	isPlanCheckRunResult_Result_Report()
+}
+
+type PlanCheckRunResult_Result_SqlSummaryReport_ struct {
+	SqlSummaryReport *PlanCheckRunResult_Result_SqlSummaryReport `protobuf:"bytes,5,opt,name=sql_summary_report,json=sqlSummaryReport,proto3,oneof"`
+}
+
+type PlanCheckRunResult_Result_SqlReviewReport_ struct {
+	SqlReviewReport *PlanCheckRunResult_Result_SqlReviewReport `protobuf:"bytes,6,opt,name=sql_review_report,json=sqlReviewReport,proto3,oneof"`
+}
+
+func (*PlanCheckRunResult_Result_SqlSummaryReport_) isPlanCheckRunResult_Result_Report() {}
+
+func (*PlanCheckRunResult_Result_SqlReviewReport_) isPlanCheckRunResult_Result_Report() {}
+
+type PlanCheckRunResult_Result_SqlSummaryReport struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	StatementType string `protobuf:"bytes,1,opt,name=statement_type,json=statementType,proto3" json:"statement_type,omitempty"`
+	AffectedRows  int64  `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 }
 
-func (x *PlanCheckRunResultSuccess_StatementTypeReport) Reset() {
-	*x = PlanCheckRunResultSuccess_StatementTypeReport{}
+func (x *PlanCheckRunResult_Result_SqlSummaryReport) Reset() {
+	*x = PlanCheckRunResult_Result_SqlSummaryReport{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_plan_check_run_proto_msgTypes[6]
+		mi := &file_store_plan_check_run_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *PlanCheckRunResultSuccess_StatementTypeReport) String() string {
+func (x *PlanCheckRunResult_Result_SqlSummaryReport) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PlanCheckRunResultSuccess_StatementTypeReport) ProtoMessage() {}
+func (*PlanCheckRunResult_Result_SqlSummaryReport) ProtoMessage() {}
 
-func (x *PlanCheckRunResultSuccess_StatementTypeReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[6]
+func (x *PlanCheckRunResult_Result_SqlSummaryReport) ProtoReflect() protoreflect.Message {
+	mi := &file_store_plan_check_run_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,91 +331,53 @@ func (x *PlanCheckRunResultSuccess_StatementTypeReport) ProtoReflect() protorefl
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PlanCheckRunResultSuccess_StatementTypeReport.ProtoReflect.Descriptor instead.
-func (*PlanCheckRunResultSuccess_StatementTypeReport) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 1}
+// Deprecated: Use PlanCheckRunResult_Result_SqlSummaryReport.ProtoReflect.Descriptor instead.
+func (*PlanCheckRunResult_Result_SqlSummaryReport) Descriptor() ([]byte, []int) {
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 0}
 }
 
-func (x *PlanCheckRunResultSuccess_StatementTypeReport) GetStatementType() string {
+func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetStatementType() string {
 	if x != nil {
 		return x.StatementType
 	}
 	return ""
 }
 
-type PlanCheckRunResultSuccess_AffectedRowsReport struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	AffectedRows int64 `protobuf:"varint,1,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
-}
-
-func (x *PlanCheckRunResultSuccess_AffectedRowsReport) Reset() {
-	*x = PlanCheckRunResultSuccess_AffectedRowsReport{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_plan_check_run_proto_msgTypes[7]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PlanCheckRunResultSuccess_AffectedRowsReport) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanCheckRunResultSuccess_AffectedRowsReport) ProtoMessage() {}
-
-func (x *PlanCheckRunResultSuccess_AffectedRowsReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[7]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanCheckRunResultSuccess_AffectedRowsReport.ProtoReflect.Descriptor instead.
-func (*PlanCheckRunResultSuccess_AffectedRowsReport) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 2}
-}
-
-func (x *PlanCheckRunResultSuccess_AffectedRowsReport) GetAffectedRows() int64 {
+func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetAffectedRows() int64 {
 	if x != nil {
 		return x.AffectedRows
 	}
 	return 0
 }
 
-type PlanCheckRunResultSuccess_SqlReviewReport struct {
+type PlanCheckRunResult_Result_SqlReviewReport struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	Line   int64  `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
 	Detail string `protobuf:"bytes,2,opt,name=detail,proto3" json:"detail,omitempty"`
+	// Code from sql review.
+	Code int64 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`
 }
 
-func (x *PlanCheckRunResultSuccess_SqlReviewReport) Reset() {
-	*x = PlanCheckRunResultSuccess_SqlReviewReport{}
+func (x *PlanCheckRunResult_Result_SqlReviewReport) Reset() {
+	*x = PlanCheckRunResult_Result_SqlReviewReport{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_plan_check_run_proto_msgTypes[8]
+		mi := &file_store_plan_check_run_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *PlanCheckRunResultSuccess_SqlReviewReport) String() string {
+func (x *PlanCheckRunResult_Result_SqlReviewReport) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PlanCheckRunResultSuccess_SqlReviewReport) ProtoMessage() {}
+func (*PlanCheckRunResult_Result_SqlReviewReport) ProtoMessage() {}
 
-func (x *PlanCheckRunResultSuccess_SqlReviewReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[8]
+func (x *PlanCheckRunResult_Result_SqlReviewReport) ProtoReflect() protoreflect.Message {
+	mi := &file_store_plan_check_run_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -672,23 +388,30 @@ func (x *PlanCheckRunResultSuccess_SqlReviewReport) ProtoReflect() protoreflect.
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PlanCheckRunResultSuccess_SqlReviewReport.ProtoReflect.Descriptor instead.
-func (*PlanCheckRunResultSuccess_SqlReviewReport) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 3}
+// Deprecated: Use PlanCheckRunResult_Result_SqlReviewReport.ProtoReflect.Descriptor instead.
+func (*PlanCheckRunResult_Result_SqlReviewReport) Descriptor() ([]byte, []int) {
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 1}
 }
 
-func (x *PlanCheckRunResultSuccess_SqlReviewReport) GetLine() int64 {
+func (x *PlanCheckRunResult_Result_SqlReviewReport) GetLine() int64 {
 	if x != nil {
 		return x.Line
 	}
 	return 0
 }
 
-func (x *PlanCheckRunResultSuccess_SqlReviewReport) GetDetail() string {
+func (x *PlanCheckRunResult_Result_SqlReviewReport) GetDetail() string {
 	if x != nil {
 		return x.Detail
 	}
 	return ""
+}
+
+func (x *PlanCheckRunResult_Result_SqlReviewReport) GetCode() int64 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
 }
 
 var File_store_plan_check_run_proto protoreflect.FileDescriptor
@@ -701,93 +424,55 @@ var file_store_plan_check_run_proto_rawDesc = []byte{
 	0x69, 0x67, 0x12, 0x19, 0x0a, 0x08, 0x73, 0x68, 0x65, 0x65, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x73, 0x68, 0x65, 0x65, 0x74, 0x49, 0x64, 0x12, 0x1f, 0x0a,
 	0x0b, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x05, 0x52, 0x0a, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x49, 0x64, 0x22, 0xfc,
-	0x01, 0x0a, 0x12, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52,
+	0x28, 0x05, 0x52, 0x0a, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x49, 0x64, 0x22, 0xe1,
+	0x05, 0x0a, 0x12, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52,
 	0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x43, 0x0a, 0x07, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73,
 	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
 	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63,
 	0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c,
-	0x74, 0x52, 0x07, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x1a, 0xa0, 0x01, 0x0a, 0x06, 0x52,
-	0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x45, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63,
-	0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x53, 0x75, 0x63, 0x63, 0x65, 0x73,
-	0x73, 0x48, 0x00, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x45, 0x0a, 0x07,
-	0x66, 0x61, 0x69, 0x6c, 0x75, 0x72, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50,
-	0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c,
-	0x74, 0x46, 0x61, 0x69, 0x6c, 0x75, 0x72, 0x65, 0x48, 0x00, 0x52, 0x07, 0x66, 0x61, 0x69, 0x6c,
-	0x75, 0x72, 0x65, 0x42, 0x08, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0xea, 0x07,
-	0x0a, 0x19, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65,
-	0x73, 0x75, 0x6c, 0x74, 0x53, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x48, 0x0a, 0x06, 0x73,
+	0x74, 0x52, 0x07, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x65, 0x72,
+	0x72, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72,
+	0x1a, 0xef, 0x04, 0x0a, 0x06, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x48, 0x0a, 0x06, 0x73,
 	0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x30, 0x2e, 0x62, 0x79,
 	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61,
-	0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x53,
-	0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x73,
+	0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2e,
+	0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x73,
 	0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63,
 	0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f,
-	0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x42, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x04, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73,
-	0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75,
-	0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x53, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x2e, 0x43,
-	0x6f, 0x64, 0x65, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x73, 0x0a, 0x15, 0x73, 0x74, 0x61,
-	0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x5f, 0x72, 0x65, 0x70, 0x6f,
-	0x72, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
-	0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68,
-	0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x53, 0x75, 0x63, 0x63,
-	0x65, 0x73, 0x73, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x54, 0x79, 0x70,
-	0x65, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x48, 0x00, 0x52, 0x13, 0x73, 0x74, 0x61, 0x74, 0x65,
-	0x6d, 0x65, 0x6e, 0x74, 0x54, 0x79, 0x70, 0x65, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x12, 0x70,
-	0x0a, 0x14, 0x61, 0x66, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x5f, 0x72, 0x6f, 0x77, 0x73, 0x5f,
-	0x72, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3c, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c,
-	0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
-	0x53, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x2e, 0x41, 0x66, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64,
-	0x52, 0x6f, 0x77, 0x73, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x48, 0x00, 0x52, 0x12, 0x61, 0x66,
-	0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x52, 0x6f, 0x77, 0x73, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74,
-	0x12, 0x67, 0x0a, 0x11, 0x73, 0x71, 0x6c, 0x5f, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x5f, 0x72,
-	0x65, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61,
-	0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x53,
-	0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x2e, 0x53, 0x71, 0x6c, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77,
-	0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x48, 0x00, 0x52, 0x0f, 0x73, 0x71, 0x6c, 0x52, 0x65, 0x76,
-	0x69, 0x65, 0x77, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x1a, 0xb5, 0x01, 0x0a, 0x04, 0x43, 0x6f,
-	0x64, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03,
-	0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x56, 0x0a, 0x09, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x70,
-	0x61, 0x63, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x38, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x43,
-	0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x53, 0x75, 0x63,
-	0x63, 0x65, 0x73, 0x73, 0x2e, 0x43, 0x6f, 0x64, 0x65, 0x2e, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70,
-	0x61, 0x63, 0x65, 0x52, 0x09, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x22, 0x41,
-	0x0a, 0x09, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x12, 0x19, 0x0a, 0x15, 0x4e,
-	0x41, 0x4d, 0x45, 0x53, 0x50, 0x41, 0x43, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49,
-	0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08, 0x42, 0x59, 0x54, 0x45, 0x42, 0x41,
-	0x53, 0x45, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x41, 0x44, 0x56, 0x49, 0x53, 0x4f, 0x52, 0x10,
-	0x02, 0x1a, 0x3c, 0x0a, 0x13, 0x53, 0x74, 0x61, 0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x54, 0x79,
-	0x70, 0x65, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x12, 0x25, 0x0a, 0x0e, 0x73, 0x74, 0x61, 0x74,
-	0x65, 0x6d, 0x65, 0x6e, 0x74, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0d, 0x73, 0x74, 0x61, 0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x54, 0x79, 0x70, 0x65, 0x1a,
-	0x39, 0x0a, 0x12, 0x41, 0x66, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x52, 0x6f, 0x77, 0x73, 0x52,
-	0x65, 0x70, 0x6f, 0x72, 0x74, 0x12, 0x23, 0x0a, 0x0d, 0x61, 0x66, 0x66, 0x65, 0x63, 0x74, 0x65,
-	0x64, 0x5f, 0x72, 0x6f, 0x77, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x61, 0x66,
-	0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x52, 0x6f, 0x77, 0x73, 0x1a, 0x3d, 0x0a, 0x0f, 0x53, 0x71,
-	0x6c, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x12, 0x12, 0x0a,
-	0x04, 0x6c, 0x69, 0x6e, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x6c, 0x69, 0x6e,
-	0x65, 0x12, 0x16, 0x0a, 0x06, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x06, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x22, 0x45, 0x0a, 0x06, 0x53, 0x74, 0x61,
-	0x74, 0x75, 0x73, 0x12, 0x16, 0x0a, 0x12, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e,
-	0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x45,
-	0x52, 0x52, 0x4f, 0x52, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x57, 0x41, 0x52, 0x4e, 0x49, 0x4e,
-	0x47, 0x10, 0x02, 0x12, 0x0b, 0x0a, 0x07, 0x53, 0x55, 0x43, 0x43, 0x45, 0x53, 0x53, 0x10, 0x03,
-	0x42, 0x08, 0x0a, 0x06, 0x72, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x22, 0x4b, 0x0a, 0x19, 0x50, 0x6c,
-	0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
-	0x46, 0x61, 0x69, 0x6c, 0x75, 0x72, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x18, 0x0a,
-	0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
-	0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72,
-	0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x6a, 0x0a, 0x12, 0x73, 0x71, 0x6c,
+	0x5f, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x5f, 0x72, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x18,
+	0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3a, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b,
+	0x52, 0x75, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
+	0x2e, 0x53, 0x71, 0x6c, 0x53, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x52, 0x65, 0x70, 0x6f, 0x72,
+	0x74, 0x48, 0x00, 0x52, 0x10, 0x73, 0x71, 0x6c, 0x53, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x52,
+	0x65, 0x70, 0x6f, 0x72, 0x74, 0x12, 0x67, 0x0a, 0x11, 0x73, 0x71, 0x6c, 0x5f, 0x72, 0x65, 0x76,
+	0x69, 0x65, 0x77, 0x5f, 0x72, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x39, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x52, 0x65,
+	0x73, 0x75, 0x6c, 0x74, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2e, 0x53, 0x71, 0x6c, 0x52,
+	0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x48, 0x00, 0x52, 0x0f, 0x73,
+	0x71, 0x6c, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x1a, 0x5e,
+	0x0a, 0x10, 0x53, 0x71, 0x6c, 0x53, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x52, 0x65, 0x70, 0x6f,
+	0x72, 0x74, 0x12, 0x25, 0x0a, 0x0e, 0x73, 0x74, 0x61, 0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x5f,
+	0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x73, 0x74, 0x61, 0x74,
+	0x65, 0x6d, 0x65, 0x6e, 0x74, 0x54, 0x79, 0x70, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x61, 0x66, 0x66,
+	0x65, 0x63, 0x74, 0x65, 0x64, 0x5f, 0x72, 0x6f, 0x77, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03,
+	0x52, 0x0c, 0x61, 0x66, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x52, 0x6f, 0x77, 0x73, 0x1a, 0x51,
+	0x0a, 0x0f, 0x53, 0x71, 0x6c, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x65, 0x70, 0x6f, 0x72,
+	0x74, 0x12, 0x12, 0x0a, 0x04, 0x6c, 0x69, 0x6e, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x04, 0x6c, 0x69, 0x6e, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x12, 0x12, 0x0a,
+	0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x63, 0x6f, 0x64,
+	0x65, 0x22, 0x45, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x16, 0x0a, 0x12, 0x53,
+	0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45,
+	0x44, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x10, 0x01, 0x12, 0x0b,
+	0x0a, 0x07, 0x57, 0x41, 0x52, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x12, 0x0b, 0x0a, 0x07, 0x53,
+	0x55, 0x43, 0x43, 0x45, 0x53, 0x53, 0x10, 0x03, 0x42, 0x08, 0x0a, 0x06, 0x72, 0x65, 0x70, 0x6f,
+	0x72, 0x74, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d,
+	0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -802,36 +487,26 @@ func file_store_plan_check_run_proto_rawDescGZIP() []byte {
 	return file_store_plan_check_run_proto_rawDescData
 }
 
-var file_store_plan_check_run_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_store_plan_check_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_plan_check_run_proto_goTypes = []interface{}{
-	(PlanCheckRunResultSuccess_Status)(0),                 // 0: bytebase.store.PlanCheckRunResultSuccess.Status
-	(PlanCheckRunResultSuccess_Code_Namespace)(0),         // 1: bytebase.store.PlanCheckRunResultSuccess.Code.Namespace
-	(*PlanCheckRunConfig)(nil),                            // 2: bytebase.store.PlanCheckRunConfig
-	(*PlanCheckRunResult)(nil),                            // 3: bytebase.store.PlanCheckRunResult
-	(*PlanCheckRunResultSuccess)(nil),                     // 4: bytebase.store.PlanCheckRunResultSuccess
-	(*PlanCheckRunResultFailure)(nil),                     // 5: bytebase.store.PlanCheckRunResultFailure
-	(*PlanCheckRunResult_Result)(nil),                     // 6: bytebase.store.PlanCheckRunResult.Result
-	(*PlanCheckRunResultSuccess_Code)(nil),                // 7: bytebase.store.PlanCheckRunResultSuccess.Code
-	(*PlanCheckRunResultSuccess_StatementTypeReport)(nil), // 8: bytebase.store.PlanCheckRunResultSuccess.StatementTypeReport
-	(*PlanCheckRunResultSuccess_AffectedRowsReport)(nil),  // 9: bytebase.store.PlanCheckRunResultSuccess.AffectedRowsReport
-	(*PlanCheckRunResultSuccess_SqlReviewReport)(nil),     // 10: bytebase.store.PlanCheckRunResultSuccess.SqlReviewReport
+	(PlanCheckRunResult_Result_Status)(0),              // 0: bytebase.store.PlanCheckRunResult.Result.Status
+	(*PlanCheckRunConfig)(nil),                         // 1: bytebase.store.PlanCheckRunConfig
+	(*PlanCheckRunResult)(nil),                         // 2: bytebase.store.PlanCheckRunResult
+	(*PlanCheckRunResult_Result)(nil),                  // 3: bytebase.store.PlanCheckRunResult.Result
+	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 4: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 5: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
 }
 var file_store_plan_check_run_proto_depIdxs = []int32{
-	6,  // 0: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
-	0,  // 1: bytebase.store.PlanCheckRunResultSuccess.status:type_name -> bytebase.store.PlanCheckRunResultSuccess.Status
-	7,  // 2: bytebase.store.PlanCheckRunResultSuccess.code:type_name -> bytebase.store.PlanCheckRunResultSuccess.Code
-	8,  // 3: bytebase.store.PlanCheckRunResultSuccess.statement_type_report:type_name -> bytebase.store.PlanCheckRunResultSuccess.StatementTypeReport
-	9,  // 4: bytebase.store.PlanCheckRunResultSuccess.affected_rows_report:type_name -> bytebase.store.PlanCheckRunResultSuccess.AffectedRowsReport
-	10, // 5: bytebase.store.PlanCheckRunResultSuccess.sql_review_report:type_name -> bytebase.store.PlanCheckRunResultSuccess.SqlReviewReport
-	4,  // 6: bytebase.store.PlanCheckRunResult.Result.success:type_name -> bytebase.store.PlanCheckRunResultSuccess
-	5,  // 7: bytebase.store.PlanCheckRunResult.Result.failure:type_name -> bytebase.store.PlanCheckRunResultFailure
-	1,  // 8: bytebase.store.PlanCheckRunResultSuccess.Code.namespace:type_name -> bytebase.store.PlanCheckRunResultSuccess.Code.Namespace
-	9,  // [9:9] is the sub-list for method output_type
-	9,  // [9:9] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	3, // 0: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
+	0, // 1: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.PlanCheckRunResult.Result.Status
+	4, // 2: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	5, // 3: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_check_run_proto_init() }
@@ -865,30 +540,6 @@ func file_store_plan_check_run_proto_init() {
 			}
 		}
 		file_store_plan_check_run_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRunResultSuccess); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_plan_check_run_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRunResultFailure); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_plan_check_run_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PlanCheckRunResult_Result); i {
 			case 0:
 				return &v.state
@@ -900,8 +551,8 @@ func file_store_plan_check_run_proto_init() {
 				return nil
 			}
 		}
-		file_store_plan_check_run_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRunResultSuccess_Code); i {
+		file_store_plan_check_run_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PlanCheckRunResult_Result_SqlSummaryReport); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -912,32 +563,8 @@ func file_store_plan_check_run_proto_init() {
 				return nil
 			}
 		}
-		file_store_plan_check_run_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRunResultSuccess_StatementTypeReport); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_plan_check_run_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRunResultSuccess_AffectedRowsReport); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_plan_check_run_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRunResultSuccess_SqlReviewReport); i {
+		file_store_plan_check_run_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PlanCheckRunResult_Result_SqlReviewReport); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -950,21 +577,16 @@ func file_store_plan_check_run_proto_init() {
 		}
 	}
 	file_store_plan_check_run_proto_msgTypes[2].OneofWrappers = []interface{}{
-		(*PlanCheckRunResultSuccess_StatementTypeReport_)(nil),
-		(*PlanCheckRunResultSuccess_AffectedRowsReport_)(nil),
-		(*PlanCheckRunResultSuccess_SqlReviewReport_)(nil),
-	}
-	file_store_plan_check_run_proto_msgTypes[4].OneofWrappers = []interface{}{
-		(*PlanCheckRunResult_Result_Success)(nil),
-		(*PlanCheckRunResult_Result_Failure)(nil),
+		(*PlanCheckRunResult_Result_SqlSummaryReport_)(nil),
+		(*PlanCheckRunResult_Result_SqlReviewReport_)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_plan_check_run_proto_rawDesc,
-			NumEnums:      2,
-			NumMessages:   9,
+			NumEnums:      1,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
