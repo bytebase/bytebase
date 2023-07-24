@@ -108,6 +108,8 @@ import (
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	// Register dm driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
 
 	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"

@@ -1351,6 +1351,9 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if instance.Engine == db.Oracle {
 		return nil, nil, errors.Errorf("creating Oracle database is not supported")
 	}
+	if instance.Engine == db.DM {
+		return nil, nil, errors.Errorf("creating DM database is not supported")
+	}
 	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return nil, nil, err
@@ -2271,6 +2274,8 @@ func getCreateDatabaseStatement(dbType db.Type, c *storepb.PlanConfig_CreateData
 	case db.Spanner:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	case db.Oracle:
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
+	case db.DM:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	case db.Redshift:
 		options := make(map[string]string)

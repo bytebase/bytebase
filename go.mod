@@ -71,7 +71,7 @@ require (
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	golang.org/x/oauth2 v0.9.0
 	golang.org/x/sys v0.9.0
-	golang.org/x/text v0.10.0
+	golang.org/x/text v0.11.0
 	google.golang.org/api v0.128.0
 	google.golang.org/genproto v0.0.0-20230629202037-9506855d4529
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
@@ -81,6 +81,7 @@ require (
 )
 
 require (
+	gitee.com/chunanyong/dm v1.8.12 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.1 // indirect

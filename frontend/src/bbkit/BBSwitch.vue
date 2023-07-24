@@ -2,7 +2,7 @@
   <div class="flex items-center">
     <button
       type="button"
-      class="relative inline-flex flex-shrink-0 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed select-none"
+      class="relative inline-flex flex-shrink-0 transition-colors duration-200 ease-in-out border-2 border-transparent rounded-full cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed"
       :class="[
         `w-${sizes.cw}`,
         `h-${sizes.ch}`,
@@ -22,7 +22,7 @@
       <span class="sr-only">{{ label }}</span>
       <span
         aria-hidden="true"
-        class="pointer-events-none inline-block rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
+        class="inline-block transition duration-200 ease-in-out transform bg-white rounded-full shadow pointer-events-none ring-0"
         :class="[`w-${sizes.base}`, `h-${sizes.base}`]"
         :style="{
           transform: state.dirtyOn ? `translateX(${sizes.base * 0.25}rem)` : '',
@@ -31,7 +31,7 @@
       <span
         v-if="text"
         aria-hidden="true"
-        class="pointer-events-none absolute right-0 top-0 flex items-center justify-center transition ease-in-out duration-200 overflow-hidden whitespace-nowrap"
+        class="absolute top-0 right-0 flex items-center justify-center overflow-hidden transition duration-200 ease-in-out pointer-events-none whitespace-nowrap"
         :class="[
           `w-${sizes.base}`,
           `h-${sizes.base}`,
@@ -49,7 +49,7 @@
     </button>
     <span
       v-if="label"
-      class="ml-2 text-sm font-medium items-center whitespace-nowrap"
+      class="items-center ml-2 text-sm font-medium whitespace-nowrap"
       :class="disabled ? 'text-gray-400' : 'text-main'"
     >
       {{ label }}
