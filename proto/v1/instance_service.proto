@@ -239,9 +239,9 @@ message Instance {
 
   repeated DataSource data_sources = 8;
 
-  // The environment resource. Optional.
+  // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
-  string environment = 9;
+  string environment = 9 [(google.api.field_behavior) = OPTIONAL];
 
   bool activation = 10;
 

@@ -2499,7 +2499,7 @@ CreateBackupRequest is the request message for CreateBackup.
 | successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
 | project | [string](#string) |  | The project for a database. Format: projects/{project} |
 | schema_version | [string](#string) |  | The version of database schema. |
-| environment | [string](#string) |  | The environment resource. Optional. Format: environments/prod where prod is the environment resource ID. |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 
 
@@ -4802,7 +4802,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | engine_version | [string](#string) |  |  |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
-| environment | [string](#string) |  | The environment resource. Optional. Format: environments/prod where prod is the environment resource ID. |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | activation | [bool](#bool) |  |  |
 | options | [InstanceOptions](#bytebase-v1-InstanceOptions) |  |  |
 

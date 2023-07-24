@@ -284,7 +284,7 @@ export interface Database {
   /** The version of database schema. */
   schemaVersion: string;
   /**
-   * The environment resource. Optional.
+   * The environment resource.
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
