@@ -1,0 +1,45 @@
+- statement: |-
+    CREATE TABLE MySchema.MyTable (
+      Id INT NOT NULL,
+      Name VARCHAR(50) NOT NULL
+    );
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table MySchema.MyTable requires PRIMARY KEY.
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE MySchema.MyTable (
+      Id INT NOT NULL PRIMARY KEY,
+      Name VARCHAR(50) NOT NULL
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE MySchema.MyTable (
+      Id INT NOT NULL,
+      Name VARCHAR(50) NOT NULL,
+      PRIMARY KEY (Id)
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE MySchema.MyTable ADD CONSTRAINT PK_MyTable PRIMARY KEY (Id);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

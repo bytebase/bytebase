@@ -208,9 +208,6 @@ func (s *ExternalVersionControlService) ExchangeToken(ctx context.Context, reque
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 		vcsType = tp
-		if vcsType != vcs.GitLab && vcsType != vcs.GitHub && vcsType != vcs.Bitbucket {
-			return nil, status.Errorf(codes.InvalidArgument, "unsupport vcs type %v", request.ExchangeToken.Type)
-		}
 
 		instanceURL = request.ExchangeToken.InstanceUrl
 		oauthExchange = &common.OAuthExchange{
@@ -310,6 +307,8 @@ func convertToExternalVersionControl(externalVersionControl *store.ExternalVersi
 		tp = v1pb.ExternalVersionControl_GITLAB
 	case vcs.Bitbucket:
 		tp = v1pb.ExternalVersionControl_BITBUCKET
+	case vcs.AzureDevOps:
+		tp = v1pb.ExternalVersionControl_AZURE_DEVOPS
 	}
 
 	return &v1pb.ExternalVersionControl{
@@ -363,6 +362,8 @@ func convertExternalVersionControlTypeToVCSType(tp v1pb.ExternalVersionControl_T
 		return vcs.GitLab, nil
 	case v1pb.ExternalVersionControl_BITBUCKET:
 		return vcs.Bitbucket, nil
+	case v1pb.ExternalVersionControl_AZURE_DEVOPS:
+		return vcs.AzureDevOps, nil
 	}
 	return "", errors.Errorf("unknown external version control type: %v", tp)
 }

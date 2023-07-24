@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { Engine } from "@/types/proto/v1/common";
@@ -40,6 +40,8 @@ const state = reactive<LocalState>({
   isLoading: true,
 });
 
+const readonly = ref(props.readonly);
+const engine = ref(props.engine);
 const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
 const editableSchemas = ref<Schema[]>([]);
 const baselineMetadata = ref<DatabaseMetadata>(
@@ -61,14 +63,25 @@ onMounted(async () => {
 });
 
 provideSchemaDesignerContext({
-  readonly: props.readonly,
-  baselineMetadata: baselineMetadata.value,
-  engine: props.engine,
+  readonly: readonly,
+  baselineMetadata: baselineMetadata,
+  engine: engine,
   metadata: metadata,
   tabState: tabState,
   originalSchemas: cloneDeep(editableSchemas.value),
   editableSchemas: editableSchemas,
 });
+
+watch(
+  () => props,
+  () => {
+    readonly.value = props.readonly;
+    engine.value = props.engine;
+  },
+  {
+    deep: true,
+  }
+);
 
 defineExpose({
   metadata,

@@ -1,0 +1,460 @@
+- engine: 2
+  metadata:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default:
+                    value: "1"
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: abcdefg
+                - name: b
+                  position: 0
+                  default:
+                    value: '''NULL'''
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - a
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default:
+                    value: "NULL"
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  err: ""
+- engine: 2
+  metadata:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default:
+                    value: "1"
+                  nullable: true
+                  type: abcd
+                  characterset: ""
+                  collation: ""
+                  comment: abcdefg
+                - name: b
+                  position: 0
+                  default:
+                    value: '''NULL'''
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - a
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default:
+                    value: "NULL"
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  err: column a type abcd is invalid in table t
+- engine: 2
+  metadata:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default:
+                    value: "1"
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: abcdefg
+                - name: b
+                  position: 0
+                  default:
+                    value: '''NULL'''
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                    - c
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - a
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default:
+                    value: "NULL"
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  err: primary key column c not found in table t
+- engine: 2
+  metadata:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default:
+                    value: "1"
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: abcdefg
+                - name: b
+                  position: 0
+                  default:
+                    value: '''NULL'''
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - a
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - a
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default:
+                    value: "NULL"
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  err: foreign key fk1 in table t references column a in table t2 but not found
+- engine: 2
+  metadata:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default:
+                    value: "1"
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: abcdefg
+                - name: b
+                  position: 0
+                  default:
+                    value: '''NULL'''
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - a
+                  referencedschema: ""
+                  referencedtable: t3
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default:
+                    value: "NULL"
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  err: foreign key fk1 in table t references table t3 but not found

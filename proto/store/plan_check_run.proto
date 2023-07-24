@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message PlanCheckRunConfig {
+  int32 sheet_id = 1;
+  int32 database_id = 2;
+}
+
+message PlanCheckRunResult {
+  repeated Result results = 1;
+  string error = 2;
+
+  message Result {
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      ERROR = 1;
+      WARNING = 2;
+      SUCCESS = 3;
+    }
+    Status status = 1;
+    string title = 2;
+    string content = 3;
+    int64 code = 4;
+
+    oneof report {
+      SqlSummaryReport sql_summary_report = 5;
+      SqlReviewReport sql_review_report = 6;
+    }
+    message SqlSummaryReport {
+      string statement_type = 1;
+      int64 affected_rows = 2;
+    }
+    message SqlReviewReport {
+      int64 line = 1;
+      string detail = 2;
+      // Code from sql review.
+      int64 code = 3;
+    }
+  }
+}

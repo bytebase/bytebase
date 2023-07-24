@@ -95,7 +95,7 @@ const handleConfirmButtonClick = async () => {
   table.name = state.tableName;
   const column = ColumnMetadata.fromPartial({});
   column.name = "id";
-  if (engine === Engine.POSTGRES) {
+  if (engine.value === Engine.POSTGRES) {
     column.type = "INTEGER";
   } else {
     column.type = "INT";

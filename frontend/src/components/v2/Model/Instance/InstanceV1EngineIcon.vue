@@ -1,7 +1,7 @@
 <template>
   <NTooltip :disabled="!tooltip">
     <template #trigger>
-      <div class="relative w-4" v-bind="$attrs">
+      <div class="relative w-4 shrink-0" v-bind="$attrs">
         <EngineIcon :engine="instance.engine" />
         <div
           v-if="showStatus"

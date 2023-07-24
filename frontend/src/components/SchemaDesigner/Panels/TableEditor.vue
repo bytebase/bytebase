@@ -125,7 +125,7 @@
               <input
                 v-model="column.default"
                 :disabled="disableAlterColumn(column)"
-                :placeholder="column.default === undefined ? 'NULL' : 'EMPTY'"
+                :placeholder="column.default === undefined ? 'EMPTY' : 'NULL'"
                 class="column-field-input !pr-8"
                 type="text"
               />
@@ -374,7 +374,7 @@ const columnHeaderList = computed(() => {
 });
 
 const dataTypeOptions = computed(() => {
-  return getDataTypeSuggestionList(engine).map((dataType) => {
+  return getDataTypeSuggestionList(engine.value).map((dataType) => {
     return {
       label: dataType,
       key: dataType,
@@ -440,7 +440,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   const referColumn = referencedTable.columnList.find(
     (column) => column.id === fk.referencedColumnIdList[index]
   );
-  if (engine === Engine.MYSQL) {
+  if (engine.value === Engine.MYSQL) {
     return `${referencedTable.name}(${referColumn?.name})`;
   } else {
     return `${referencedSchema?.name}.${referencedTable.name}(${referColumn?.name})`;
@@ -452,12 +452,12 @@ const isDroppedColumn = (column: Column): boolean => {
 };
 
 const disableChangeTable = computed(() => {
-  return readonly || isDroppedSchema.value || isDroppedTable.value;
+  return readonly.value || isDroppedSchema.value || isDroppedTable.value;
 });
 
 const disableAlterColumn = (column: Column): boolean => {
   return (
-    readonly ||
+    readonly.value ||
     isDroppedSchema.value ||
     isDroppedTable.value ||
     isDroppedColumn(column)
@@ -498,9 +498,9 @@ const handleColumnDefaultFieldChange = (
   defaultString: string
 ) => {
   if (defaultString === "NULL") {
-    column.default = undefined;
+    column.default = "NULL";
   } else if (defaultString === "EMPTY") {
-    column.default = "";
+    column.default = undefined;
   }
 };
 

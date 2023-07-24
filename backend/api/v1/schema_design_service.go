@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -126,6 +126,9 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	}
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	schemaDesign := request.SchemaDesign
+	if err := checkDatabaseMetadata(schemaDesign.Engine, schemaDesign.SchemaMetadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design: %v", err))
+	}
 	instanceID, databaseName, err := getInstanceDatabaseID(schemaDesign.BaselineDatabase)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -147,38 +150,35 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	instanceID, _, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(schemaDesign.SchemaVersion)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	schemaVersionID, err := strconv.ParseInt(changeHistoryIDStr, 10, 64)
-	if err != nil || schemaVersionID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema version %s, must be positive integer", schemaDesign.SchemaVersion))
-	}
-	changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		ID:         &schemaVersionID,
-		InstanceID: &instance.UID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if changeHistory == nil {
-		return nil, status.Errorf(codes.NotFound, "schema version %d not found", schemaVersionID)
-	}
+
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
 			Engine: storepb.Engine(schemaDesign.Engine),
 		},
 	}
-	if changeHistory.SheetID != nil {
-		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = int64(*changeHistory.SheetID)
+	if schemaDesign.SchemaVersion != "" {
+		instanceID, _, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(schemaDesign.SchemaVersion)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			ResourceID: &instanceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+			ID:         &changeHistoryIDStr,
+			InstanceID: &instance.UID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if changeHistory == nil {
+			return nil, status.Errorf(codes.NotFound, "schema version %s not found", changeHistoryIDStr)
+		}
+		schemaDesignSheetPayload.SchemaDesign.BaselineChangeHistoryId = changeHistory.UID
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {
@@ -187,6 +187,10 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 	if err != nil {
 		return nil, err
+	}
+	// Try to transform the schema string to database metadata to make sure it's valid.
+	if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
 	sheetCreate := &store.SheetMessage{
@@ -242,6 +246,10 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		if err != nil {
 			return nil, err
+		}
+		// Try to transform the schema string to database metadata to make sure it's valid.
+		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 		}
 		sheetUpdate.Statement = &schema
 	}
@@ -361,24 +369,17 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	baselineSheetID := int(sheetPayload.SchemaDesign.BaselineSheetId)
-	baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-		UID: &baselineSheetID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find sheet: %v", err))
-	}
 	baselineSchema := ""
 	schemaVersion := ""
-	if baselineSheet != nil {
-		baselineSchema = baselineSheet.Statement
+	if sheetPayload.SchemaDesign.BaselineChangeHistoryId != "" {
 		changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-			SheetID: &baselineSheet.UID,
+			ID: &sheetPayload.SchemaDesign.BaselineChangeHistoryId,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find change history: %v", err))
 		}
 		if changeHistory != nil {
+			baselineSchema = changeHistory.Schema
 			schemaVersion = changeHistory.UID
 		}
 	}
@@ -784,7 +785,7 @@ type columnState struct {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("`%s`", c.name)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
 		return err
 	}
 	if c.nullable {
@@ -798,10 +799,6 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	}
 	if c.defaultValue != nil {
 		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", *c.defaultValue)); err != nil {
-			return err
-		}
-	} else {
-		if _, err := buf.WriteString(" DEFAULT NULL"); err != nil {
 			return err
 		}
 	}
@@ -1360,6 +1357,14 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			delete(g.currentTable.foreignKeys, name)
 		}
 	default:
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
 		if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
 			g.err = err
 			return
@@ -1560,4 +1565,146 @@ func nextDefaultChannelTokenIndex(tokens antlr.TokenStream, currentIndex int) in
 		}
 	}
 	return 0
+}
+
+func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) error {
+	type fkMetadata struct {
+		name                string
+		tableName           string
+		referencedTableName string
+		referencedColumns   []string
+	}
+	fkMap := make(map[string][]*fkMetadata)
+	if engine != v1pb.Engine_MYSQL {
+		return errors.Errorf("only mysql is supported")
+	}
+	for _, schema := range metadata.Schemas {
+		if schema.Name != "" {
+			return errors.Errorf("schema name should be empty for MySQL")
+		}
+		tableNameMap := make(map[string]bool)
+		for _, table := range schema.Tables {
+			if table.Name == "" {
+				return errors.Errorf("table name should not be empty")
+			}
+			if _, ok := tableNameMap[table.Name]; ok {
+				return errors.Errorf("duplicate table name %s", table.Name)
+			}
+			tableNameMap[table.Name] = true
+			columnNameMap := make(map[string]bool)
+			for _, column := range table.Columns {
+				if column.Name == "" {
+					return errors.Errorf("column name should not be empty in table %s", table.Name)
+				}
+				if _, ok := columnNameMap[column.Name]; ok {
+					return errors.Errorf("duplicate column name %s in table %s", column.Name, table.Name)
+				}
+
+				columnNameMap[column.Name] = true
+				if column.Type == "" {
+					return errors.Errorf("column %s type should not be empty in table %s", column.Name, table.Name)
+				}
+
+				if !checkMySQLColumnType(column.Type) {
+					return errors.Errorf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name)
+				}
+			}
+
+			indexNameMap := make(map[string]bool)
+			for _, index := range table.Indexes {
+				if index.Name == "" {
+					return errors.Errorf("index name should not be empty in table %s", table.Name)
+				}
+				if _, ok := indexNameMap[index.Name]; ok {
+					return errors.Errorf("duplicate index name %s in table %s", index.Name, table.Name)
+				}
+				indexNameMap[index.Name] = true
+				if index.Primary {
+					for _, key := range index.Expressions {
+						if _, ok := columnNameMap[key]; !ok {
+							return errors.Errorf("primary key column %s not found in table %s", key, table.Name)
+						}
+					}
+				}
+			}
+
+			for _, fk := range table.ForeignKeys {
+				if fk.Name == "" {
+					return errors.Errorf("foreign key name should not be empty in table %s", table.Name)
+				}
+				if _, ok := indexNameMap[fk.Name]; ok {
+					return errors.Errorf("duplicate foreign key name %s in table %s", fk.Name, table.Name)
+				}
+				indexNameMap[fk.Name] = true
+				for _, key := range fk.Columns {
+					if _, ok := columnNameMap[key]; !ok {
+						return errors.Errorf("foreign key column %s not found in table %s", key, table.Name)
+					}
+				}
+				fks, ok := fkMap[fk.ReferencedTable]
+				if !ok {
+					fks = []*fkMetadata{}
+					fkMap[fk.ReferencedTable] = fks
+				}
+				meta := &fkMetadata{
+					name:                fk.Name,
+					tableName:           table.Name,
+					referencedTableName: fk.ReferencedTable,
+					referencedColumns:   fk.ReferencedColumns,
+				}
+				fks = append(fks, meta)
+				fkMap[fk.ReferencedTable] = fks
+			}
+		}
+
+		// check foreign key reference
+		for _, table := range schema.Tables {
+			fks, ok := fkMap[table.Name]
+			if !ok {
+				continue
+			}
+			columnNameMap := make(map[string]bool)
+			for _, column := range table.Columns {
+				columnNameMap[column.Name] = true
+			}
+			for _, fk := range fks {
+				for _, key := range fk.referencedColumns {
+					if _, ok := columnNameMap[key]; !ok {
+						return errors.Errorf("foreign key %s in table %s references column %s in table %s but not found", fk.name, fk.tableName, key, fk.referencedTableName)
+					}
+				}
+				hasIndex := false
+				for _, index := range table.Indexes {
+					if len(index.Expressions) < len(fk.referencedColumns) {
+						continue
+					}
+					for i, key := range fk.referencedColumns {
+						if index.Expressions[i] != key {
+							break
+						}
+						if i == len(fk.referencedColumns)-1 {
+							hasIndex = true
+						}
+					}
+				}
+				if !hasIndex {
+					return errors.Errorf("missing index for foreign key %s for table %s in the referenced table '%s'", fk.name, fk.tableName, fk.referencedTableName)
+				}
+			}
+			delete(fkMap, table.Name)
+		}
+
+		for _, fks := range fkMap {
+			if len(fks) == 0 {
+				continue
+			}
+			return errors.Errorf("foreign key %s in table %s references table %s but not found", fks[0].name, fks[0].tableName, fks[0].referencedTableName)
+		}
+	}
+	return nil
+}
+
+func checkMySQLColumnType(tp string) bool {
+	_, err := parser.ParseMySQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
+	return err == nil
 }

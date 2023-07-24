@@ -53,7 +53,7 @@
             history.type === ChangeHistory_Type.BRANCH
           "
           class="textinfolabel"
-          >({{ history.type }})</span
+          >({{ changeHistory_TypeToJSON(history.type) }})</span
         >
       </BBTableCell>
       <BBTableCell>
@@ -106,6 +106,7 @@ import {
   ChangeHistory,
   changeHistory_SourceToJSON,
   ChangeHistory_Type,
+  changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
 import { useUserStore } from "@/store";
 

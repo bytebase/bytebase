@@ -981,11 +981,19 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			Line:    walkThroughError.Line,
 			Details: details,
 		})
+	case catalog.ErrorTypeInvalidColumnTypeForDefaultValue:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    InvalidColumnDefault,
+			Title:   "Invalid column default value",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
 	default:
 		res = append(res, Advice{
 			Status:  Error,
 			Code:    Internal,
-			Title:   "Failed to walk-through",
+			Title:   fmt.Sprintf("Failed to walk-through with code %d", walkThroughError.Type),
 			Content: walkThroughError.Content,
 			Line:    walkThroughError.Line,
 		})
@@ -1185,6 +1193,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleColumnNoNull, nil
 		case db.Snowflake:
 			return SnowflakeColumnNoNull, nil
+		case db.MSSQL:
+			return MSSQLColumnNoNull, nil
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {
@@ -1288,6 +1298,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleTableRequirePK, nil
 		case db.Snowflake:
 			return SnowflakeTableRequirePK, nil
+		case db.MSSQL:
+			return MSSQLTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
@@ -1299,6 +1311,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleTableNoFK, nil
 		case db.Snowflake:
 			return SnowflakeTableNoFK, nil
+		case db.MSSQL:
+			return MSSQLTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
@@ -1308,6 +1322,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLTableDropNamingConvention, nil
 		case db.Snowflake:
 			return SnowflakeTableDropNamingConvention, nil
+		case db.MSSQL:
+			return MSSQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {

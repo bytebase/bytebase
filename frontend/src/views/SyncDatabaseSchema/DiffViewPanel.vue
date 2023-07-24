@@ -66,16 +66,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { CodeDiff } from "v-code-diff";
 import { NTabs, NTab } from "naive-ui";
 
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import { ComposedDatabase, dialectOfEngineV1 } from "@/types";
+import { dialectOfEngineV1 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 
-const props = defineProps<{
+defineProps<{
   statement: string;
-  sourceDatabase: ComposedDatabase;
+  engine: Engine;
   targetDatabaseSchema: string;
   sourceDatabaseSchema: string;
   shouldShowDiff: boolean;
@@ -89,10 +90,6 @@ const $emit = defineEmits<{
 
 const tab = ref<"diff" | "ddl">("diff");
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-
-const engine = computed(() => {
-  return props.sourceDatabase.instanceEntity.engine;
-});
 
 const updateEditorHeight = () => {
   const contentHeight =

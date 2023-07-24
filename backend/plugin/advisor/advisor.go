@@ -458,6 +458,18 @@ const (
 
 	// MSSQLColumnMaximumVarcharLength is an advisor type for MSSQL maximum varchar length.
 	MSSQLColumnMaximumVarcharLength Type = "bb.plugin.advisor.mssql.column.maximum-varchar-length"
+
+	// MSSQLTableDropNamingConvention is an advisor type for MSSQL table drop with naming convention.
+	MSSQLTableDropNamingConvention Type = "bb.plugin.advisor.mssql.table.drop-naming-convention"
+
+	// MSSQLTableRequirePK is an advisor type for MSSQL table require primary key.
+	MSSQLTableRequirePK Type = "bb.plugin.advisor.mssql.table.require-pk"
+
+	// MSSQLColumnNoNull is an advisor type for MSSQL column no NULL value.
+	MSSQLColumnNoNull Type = "bb.plugin.advisor.mssql.column.no-null"
+
+	// MSSQLTableNoFK is an advisor type for MSSQL table disallow foreign key.
+	MSSQLTableNoFK Type = "bb.plugin.advisor.mssql.table.no-foreign-key"
 )
 
 // Advice is the result of an advisor.

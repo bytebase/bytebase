@@ -300,8 +300,8 @@ message ListPlanCheckRunsResponse {
 }
 
 message BatchRunTasksRequest {
-  // The name of the rollout.
-  // Format: projects/{project}/rollouts/{rollout}
+  // The name of the parent of the tasks.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string parent = 1;
   // The tasks to run.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
@@ -311,8 +311,8 @@ message BatchRunTasksRequest {
 message BatchRunTasksResponse {}
 
 message BatchSkipTasksRequest {
-  // The name of the rollout.
-  // Format: projects/{project}/rollouts/{rollout}
+  // The name of the parent of the tasks.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string parent = 1;
   // The tasks to skip.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
@@ -322,12 +322,12 @@ message BatchSkipTasksRequest {
 message BatchSkipTasksResponse {}
 
 message BatchCancelTaskRunsRequest {
-  // The name of the rollout.
-  // Format: projects/{project}/rollouts/{rollout}
-  string parent = 1;
-  // The tasks to cancel.
+  // The name of the parent of the taskRuns.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-  repeated string tasks = 2;
+  string parent = 1;
+  // The taskRuns to cancel.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  repeated string task_runs = 2;
 }
 
 message BatchCancelTaskRunsResponse {}
@@ -368,28 +368,36 @@ message PlanCheckRun {
   // Format: projects/{project}/sheets/{sheet}
   string sheet = 6;
 
-  string detail = 7;
-  repeated Result results = 8;
+  repeated Result results = 7;
+  // error is set if the Status is FAILED.
+  string error = 8;
 
   message Result {
-    enum Namespace {
-      NAMESPACE_UNSPECIFIED = 0;
-      BYTEBASE = 1;
-      ADVISOR = 2;
-    }
-    Namespace namespace = 1;
-    int64 code = 2;
     enum Status {
       STATUS_UNSPECIFIED = 0;
       ERROR = 1;
       WARNING = 2;
       SUCCESS = 3;
     }
-    Status status = 3;
-    string title = 4;
-    string content = 5;
-    int64 line = 6;
-    string detail = 7;
+    Status status = 1;
+    string title = 2;
+    string content = 3;
+    int64 code = 4;
+
+    oneof report {
+      SqlSummaryReport sql_summary_report = 5;
+      SqlReviewReport sql_review_report = 6;
+    }
+    message SqlSummaryReport {
+      string statement_type = 1;
+      int64 affected_rows = 2;
+    }
+    message SqlReviewReport {
+      int64 line = 1;
+      string detail = 2;
+      // Code from sql review.
+      int64 code = 3;
+    }
   }
 }
 

@@ -159,12 +159,12 @@
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
       `c` int NOT NULL,
       `e` int  NULL,
-      `b` NOT NULL DEFAULT NULL,
+      `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
     );
     CREATE TABLE `t2` (
-      `b` NULL DEFAULT NULL,
+      `b` int NULL,
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );

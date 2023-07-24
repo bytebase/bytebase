@@ -8,14 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -86,10 +85,10 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		if errs != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check external approval status, error: %v", errs)
 		}
-	}
-	issue, err = s.getIssueMessage(ctx, request.Name)
-	if err != nil {
-		return nil, err
+		issue, err = s.getIssueMessage(ctx, request.Name)
+		if err != nil {
+			return nil, err
+		}
 	}
 	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
@@ -751,31 +750,31 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 
 	issueV1 := &v1pb.Issue{
-		Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, issuePrefix, issue.UID),
-		Uid:               fmt.Sprintf("%d", issue.UID),
-		Title:             issue.Title,
-		Description:       issue.Description,
-		Status:            convertToIssueStatus(issue.Status),
-		Assignee:          fmt.Sprintf("%s%s", userNamePrefix, issue.Assignee.Email),
-		AssigneeAttention: issue.NeedAttention,
-		Creator:           fmt.Sprintf("%s%s", userNamePrefix, issue.Creator.Email),
-		CreateTime:        timestamppb.New(issue.CreatedTime),
-		UpdateTime:        timestamppb.New(issue.UpdatedTime),
+		Name:                 fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, issuePrefix, issue.UID),
+		Uid:                  fmt.Sprintf("%d", issue.UID),
+		Title:                issue.Title,
+		Description:          issue.Description,
+		Status:               convertToIssueStatus(issue.Status),
+		Assignee:             fmt.Sprintf("%s%s", userNamePrefix, issue.Assignee.Email),
+		AssigneeAttention:    issue.NeedAttention,
+		Approvers:            nil,
+		ApprovalTemplates:    nil,
+		ApprovalFindingDone:  false,
+		ApprovalFindingError: "",
+		Subscribers:          nil,
+		Creator:              fmt.Sprintf("%s%s", userNamePrefix, issue.Creator.Email),
+		CreateTime:           timestamppb.New(issue.CreatedTime),
+		UpdateTime:           timestamppb.New(issue.UpdatedTime),
+		Plan:                 "",
+		Rollout:              "",
+	}
+
+	if issue.PlanUID != nil {
+		issueV1.Plan = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, planPrefix, *issue.PlanUID)
 	}
 
 	for _, subscriber := range issue.Subscribers {
 		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", userNamePrefix, subscriber.Email))
-	}
-
-	switch issue.Status {
-	case api.IssueOpen:
-		issueV1.Status = v1pb.IssueStatus_OPEN
-	case api.IssueDone:
-		issueV1.Status = v1pb.IssueStatus_DONE
-	case api.IssueCanceled:
-		issueV1.Status = v1pb.IssueStatus_CANCELED
-	default:
-		issueV1.Status = v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
 	}
 
 	if issuePayload.Approval != nil {
