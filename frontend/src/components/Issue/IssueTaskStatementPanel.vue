@@ -586,43 +586,20 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     return;
   }
 
-  const projectName = selectedDatabase.value.project;
-
-  const uploadStatementAsSheet = async () => {
+  const readStatementFromUploadFileEvent = async () => {
     state.isUploadingFile = true;
     try {
-      const { filename, content: statement } = await handleUploadFileEvent(
-        event,
-        100
-      );
+      const { content: statement } = await handleUploadFileEvent(event, 100);
 
-      let payload = {};
-      if (!create.value) {
-        payload = getBacktracePayloadWithIssue(issue.value as Issue);
-      }
-      // TODO: upload process
-      const sheet = await sheetV1Store.createSheet(projectName, {
-        title: filename,
-        content: new TextEncoder().encode(statement),
-        visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-        source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-        type: Sheet_Type.TYPE_SQL,
-        payload: JSON.stringify(payload),
-      });
+      // Set statement to UI state for local editing.
+      // Postpone the sheet creation when the issue is really created.
 
       resetTempEditState();
-      updateSheetId(sheetV1Store.getSheetUid(sheet.name));
       await updateStatement(statement);
       state.editing = false;
       if (selectedTask.value) {
         updateEditorHeight();
       }
-
-      pushNotification({
-        module: "bytebase",
-        style: "INFO",
-        title: "File upload success",
-      });
     } finally {
       state.isUploadingFile = false;
     }
@@ -630,10 +607,10 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
 
   if (state.editStatement) {
     await showOverwriteConfirmDialog();
-    return uploadStatementAsSheet();
+    return readStatementFromUploadFileEvent();
   }
 
-  return uploadStatementAsSheet();
+  return readStatementFromUploadFileEvent();
 };
 
 const handleUploadFileEvent = (
