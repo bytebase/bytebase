@@ -341,7 +341,7 @@ func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {
 	)
 }
 
-var getCategoryFromCommentReg = regexp.MustCompile("[0-9]+-[0-9]+-[0-9]+")
+var getCategoryFromCommentReg = regexp.MustCompile("^[0-9]+-[0-9]+-[0-9]+")
 
 func setCategoryFromComment(dbSchema *storepb.DatabaseMetadata) {
 	for _, schema := range dbSchema.Schemas {
