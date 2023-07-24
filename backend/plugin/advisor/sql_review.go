@@ -1096,6 +1096,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLMigrationCompatibility, nil
 		case db.Snowflake:
 			return SnowflakeMigrationCompatibility, nil
+		case db.MSSQL:
+			return MSSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
