@@ -239,7 +239,7 @@ message Instance {
 
   repeated DataSource data_sources = 8;
 
-  // The environment resource.
+  // The environment resource. Optional.
   // Format: environments/prod where prod is the environment resource ID.
   string environment = 9;
 

@@ -894,7 +894,7 @@ type Instance struct {
 	EngineVersion string        `protobuf:"bytes,6,opt,name=engine_version,json=engineVersion,proto3" json:"engine_version,omitempty"`
 	ExternalLink  string        `protobuf:"bytes,7,opt,name=external_link,json=externalLink,proto3" json:"external_link,omitempty"`
 	DataSources   []*DataSource `protobuf:"bytes,8,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
-	// The environment resource.
+	// The environment resource. Optional.
 	// Format: environments/prod where prod is the environment resource ID.
 	Environment string           `protobuf:"bytes,9,opt,name=environment,proto3" json:"environment,omitempty"`
 	Activation  bool             `protobuf:"varint,10,opt,name=activation,proto3" json:"activation,omitempty"`

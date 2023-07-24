@@ -224,7 +224,7 @@ export interface Instance {
   externalLink: string;
   dataSources: DataSource[];
   /**
-   * The environment resource.
+   * The environment resource. Optional.
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
