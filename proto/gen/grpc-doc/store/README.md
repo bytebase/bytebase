@@ -100,9 +100,8 @@
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
-    - [PlanCheckRunResult.Result.AffectedRowsReport](#bytebase-store-PlanCheckRunResult-Result-AffectedRowsReport)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
-    - [PlanCheckRunResult.Result.StatementTypeReport](#bytebase-store-PlanCheckRunResult-Result-StatementTypeReport)
+    - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
   
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
@@ -1518,24 +1517,8 @@ Type is the database change type.
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
 | code | [int64](#int64) |  |  |
-| statement_type_report | [PlanCheckRunResult.Result.StatementTypeReport](#bytebase-store-PlanCheckRunResult-Result-StatementTypeReport) |  |  |
-| affected_rows_report | [PlanCheckRunResult.Result.AffectedRowsReport](#bytebase-store-PlanCheckRunResult-Result-AffectedRowsReport) |  |  |
+| sql_summary_report | [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunResult-Result-AffectedRowsReport"></a>
-
-### PlanCheckRunResult.Result.AffectedRowsReport
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| affected_rows | [int64](#int64) |  |  |
 
 
 
@@ -1559,15 +1542,16 @@ Type is the database change type.
 
 
 
-<a name="bytebase-store-PlanCheckRunResult-Result-StatementTypeReport"></a>
+<a name="bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport"></a>
 
-### PlanCheckRunResult.Result.StatementTypeReport
+### PlanCheckRunResult.Result.SqlSummaryReport
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement_type | [string](#string) |  |  |
+| affected_rows | [int64](#int64) |  |  |
 
 
 

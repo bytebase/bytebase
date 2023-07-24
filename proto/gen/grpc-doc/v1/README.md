@@ -452,9 +452,8 @@
     - [Plan.Step](#bytebase-v1-Plan-Step)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
-    - [PlanCheckRun.Result.AffectedRowsReport](#bytebase-v1-PlanCheckRun-Result-AffectedRowsReport)
     - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
-    - [PlanCheckRun.Result.StatementTypeReport](#bytebase-v1-PlanCheckRun-Result-StatementTypeReport)
+    - [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport)
     - [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest)
     - [Rollout](#bytebase-v1-Rollout)
     - [Stage](#bytebase-v1-Stage)
@@ -7236,24 +7235,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
 | code | [int64](#int64) |  |  |
-| statement_type_report | [PlanCheckRun.Result.StatementTypeReport](#bytebase-v1-PlanCheckRun-Result-StatementTypeReport) |  |  |
-| affected_rows_report | [PlanCheckRun.Result.AffectedRowsReport](#bytebase-v1-PlanCheckRun-Result-AffectedRowsReport) |  |  |
+| sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result-AffectedRowsReport"></a>
-
-### PlanCheckRun.Result.AffectedRowsReport
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| affected_rows | [int64](#int64) |  |  |
 
 
 
@@ -7277,15 +7260,16 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
-<a name="bytebase-v1-PlanCheckRun-Result-StatementTypeReport"></a>
+<a name="bytebase-v1-PlanCheckRun-Result-SqlSummaryReport"></a>
 
-### PlanCheckRun.Result.StatementTypeReport
+### PlanCheckRun.Result.SqlSummaryReport
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement_type | [string](#string) |  |  |
+| affected_rows | [int64](#int64) |  |  |
 
 
 
