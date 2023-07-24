@@ -23,7 +23,6 @@
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
         :on-update:expanded-keys="handleExpandedKeysChange"
-        :on-update:selected-keys="handleSelectedKeysChange"
       />
       <NDropdown
         trigger="manual"
@@ -787,10 +786,6 @@ const handleDropdownClickoutside = (e: MouseEvent) => {
 
 const handleExpandedKeysChange = (expandedKeys: string[]) => {
   expandedKeysRef.value = expandedKeys;
-};
-
-const handleSelectedKeysChange = (selectedKeys: string[]) => {
-  selectedKeysRef.value = selectedKeys;
 };
 </script>
 

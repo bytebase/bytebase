@@ -32,8 +32,6 @@
         :node-props="nodeProps"
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
-        :on-update:expanded-keys="handleExpandedKeysChange"
-        :on-update:selected-keys="handleSelectedKeysChange"
       />
       <NDropdown
         trigger="manual"
@@ -152,7 +150,7 @@ const treeData = computed(() => {
     for (const table of tableList.value) {
       const tableTreeNode: TreeNodeForTable = {
         type: "table",
-        key: `t-${table.id}`,
+        key: `t-${schema.id}-${table.id}`,
         label: table.name,
         isLeaf: true,
         schemaId: schema.id,
@@ -395,7 +393,7 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
         nextTick(() => {
           if (treeNode.type === "table") {
             selectedKeysRef.value = [
-              `t-${treeNode.databaseId}-${treeNode.tableId}`,
+              `t-${treeNode.schemaId}-${treeNode.tableId}`,
             ];
           }
           state.shouldRelocateTreeNode = true;
@@ -440,14 +438,6 @@ const handleDropdownClickoutside = (e: MouseEvent) => {
     selectedKeysRef.value = [];
     contextMenu.showDropdown = false;
   }
-};
-
-const handleExpandedKeysChange = (expandedKeys: string[]) => {
-  expandedKeysRef.value = expandedKeys;
-};
-
-const handleSelectedKeysChange = (selectedKeys: string[]) => {
-  selectedKeysRef.value = selectedKeys;
 };
 </script>
 
