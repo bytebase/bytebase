@@ -585,7 +585,7 @@ func NormalizeTSQLIdentifier(part tsqlparser.IId_Context) string {
 	return s
 }
 
-// FlattenExecuteStatementArgExecuteStatementArgNamed returns the flattened unnamed execute statement arg.
+// FlattenExecuteStatementArgExecuteStatementArgUnnamed returns the flattened unnamed execute statement arg.
 func FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx parser.IExecute_statement_argContext) []parser.IExecute_statement_arg_unnamedContext {
 	var queue []parser.IExecute_statement_arg_unnamedContext
 	ele := ctx

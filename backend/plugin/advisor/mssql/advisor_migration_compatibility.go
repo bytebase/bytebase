@@ -91,7 +91,7 @@ func (l *migrationCompatibilityChecker) EnterCreate_table(ctx *parser.Create_tab
 		return
 	}
 	normalizedTableName := bbparser.NormalizeTSQLTableName(tableName, l.currentDatabase, "dbo", false)
-	l.normalizedNewCreateTableNameMap[normalizedTableName] = interface{}(nil)
+	l.normalizedNewCreateTableNameMap[normalizedTableName] = any(nil)
 }
 
 func (l *migrationCompatibilityChecker) EnterCreate_schema(ctx *parser.Create_schemaContext) {
@@ -103,12 +103,12 @@ func (l *migrationCompatibilityChecker) EnterCreate_schema(ctx *parser.Create_sc
 	}
 
 	normalizedDatabaseSchemaName := fmt.Sprintf("%s.%s", l.currentDatabase, schemaName)
-	l.normalizedNewCreateSchemaNameMap[normalizedDatabaseSchemaName] = interface{}(nil)
+	l.normalizedNewCreateSchemaNameMap[normalizedDatabaseSchemaName] = any(nil)
 }
 
 func (l *migrationCompatibilityChecker) EnterCreate_database(ctx *parser.Create_databaseContext) {
 	databaseName := bbparser.NormalizeTSQLIdentifier(ctx.GetDatabase())
-	l.normalizedNewCreateDatabaseNameMap[databaseName] = interface{}(nil)
+	l.normalizedNewCreateDatabaseNameMap[databaseName] = any(nil)
 }
 
 func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
@@ -239,7 +239,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 				Status:  l.level,
 				Code:    advisor.CompatibilityAddForeignKey,
 				Title:   l.title,
-				Content: fmt.Sprintf("Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code"),
+				Content: "Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code",
 				Line:    ctx.FOREIGN().GetSymbol().GetLine(),
 			})
 			return
@@ -249,7 +249,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 				Status:  l.level,
 				Code:    advisor.CompatibilityAddForeignKey,
 				Title:   l.title,
-				Content: fmt.Sprintf("Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code"),
+				Content: "Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code",
 				Line:    ctx.CHECK(0).GetSymbol().GetLine(),
 			})
 			return
@@ -343,5 +343,4 @@ func (l *migrationCompatibilityChecker) EnterExecute_body(ctx *parser.Execute_bo
 			Line:    ctx.GetStart().GetLine(),
 		})
 	}
-	return
 }
