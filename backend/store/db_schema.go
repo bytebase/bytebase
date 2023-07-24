@@ -33,6 +33,21 @@ func (s *DBSchema) TableExists(schemaName string, tableName string) bool {
 	return false
 }
 
+// ViewExists checks if the view exists.
+func (s *DBSchema) ViewExists(schemaName string, name string) bool {
+	for _, schema := range s.Metadata.Schemas {
+		if schema.Name != schemaName {
+			continue
+		}
+		for _, view := range schema.Views {
+			if view.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // CompactText returns the compact text representation of the database schema.
 func (s *DBSchema) CompactText() (string, error) {
 	if s.Metadata == nil {
