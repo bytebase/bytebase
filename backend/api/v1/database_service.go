@@ -230,6 +230,25 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			patch.ProjectID = &project.ResourceID
 		case "labels":
 			patch.Labels = &request.Database.Labels
+		case "environment":
+			environmentID, err := getEnvironmentID(request.Database.Environment)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+				ResourceID:  &environmentID,
+				ShowDeleted: true,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if environment == nil {
+				return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+			}
+			if environment.Deleted {
+				return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
+			}
+			patch.EnvironmentID = &environment.ResourceID
 		}
 	}
 
@@ -307,6 +326,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		projectURI = req.Database.Project
 		databases = append(databases, database)
 	}
+	// TODO(d): support batch update environment.
 	projectID, err := getProjectID(projectURI)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1437,12 +1457,17 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	case api.NotFound:
 		syncState = v1pb.State_DELETED
 	}
+	environment := ""
+	if database.EnvironmentID != "" {
+		environment = fmt.Sprintf("%s%s", environmentNamePrefix, database.EnvironmentID)
+	}
 	return &v1pb.Database{
 		Name:               fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 		Uid:                fmt.Sprintf("%d", database.UID),
 		SyncState:          syncState,
 		SuccessfulSyncTime: timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
 		Project:            fmt.Sprintf("%s%s", projectNamePrefix, database.ProjectID),
+		Environment:        environment,
 		SchemaVersion:      database.SchemaVersion,
 		Labels:             database.Labels,
 	}
