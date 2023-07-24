@@ -591,9 +591,6 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		index.Type = getIndexMethodType(statement)
 		index.Unique = node.Index.Unique
 		index.Expressions = node.Index.GetKeyNameList()
-		if err != nil {
-			return nil, err
-		}
 		if primary.Valid && primary.Int32 == 1 {
 			index.Primary = true
 		}
