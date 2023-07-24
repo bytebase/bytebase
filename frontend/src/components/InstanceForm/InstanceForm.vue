@@ -1085,11 +1085,6 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: Engine): boolean => {
-<<<<<<< Updated upstream
-  return false;
-  // return [
-  // ].includes(engine);
-=======
   return [
     Engine.ORACLE,
     Engine.DM,
@@ -1098,7 +1093,6 @@ const isEngineBeta = (engine: Engine): boolean => {
     Engine.MARIADB,
     Engine.OCEANBASE,
   ].includes(engine);
->>>>>>> Stashed changes
 };
 
 const handleSelectEnvironmentUID = (uid: number | string) => {
