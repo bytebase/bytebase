@@ -6,7 +6,7 @@
     @click="onClickTask(task)"
   >
     <div class="flex-1 flex flex-col gap-y-1">
-      <div class="flex items-center">
+      <div class="flex items-start">
         <div class="flex items-center flex-1 gap-x-1">
           <TaskStatusIcon
             :create="isCreating"
