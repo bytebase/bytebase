@@ -7,7 +7,6 @@ import (
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/tsql-parser"
 	tsqlparser "github.com/bytebase/tsql-parser"
 )
 
@@ -586,8 +585,8 @@ func NormalizeTSQLIdentifier(part tsqlparser.IId_Context) string {
 }
 
 // FlattenExecuteStatementArgExecuteStatementArgUnnamed returns the flattened unnamed execute statement arg.
-func FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx parser.IExecute_statement_argContext) []parser.IExecute_statement_arg_unnamedContext {
-	var queue []parser.IExecute_statement_arg_unnamedContext
+func FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx tsqlparser.IExecute_statement_argContext) []tsqlparser.IExecute_statement_arg_unnamedContext {
+	var queue []tsqlparser.IExecute_statement_arg_unnamedContext
 	ele := ctx
 	for {
 		if ele.Execute_statement_arg_unnamed() == nil {
