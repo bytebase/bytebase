@@ -1649,14 +1649,14 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
-				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) {
+				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) && !resourceDBSchema.ViewExists(resource.Schema, resource.Table) {
 					// If table not found, we regard it as a CTE/alias/... and skip.
 					continue
 				}
 				result = append(result, resource)
 				continue
 			}
-			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+			if !dbSchema.TableExists(resource.Schema, resource.Table) && !dbSchema.ViewExists(resource.Schema, resource.Table) {
 				// If table not found, skip.
 				continue
 			}
@@ -1689,7 +1689,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 				continue
 			}
 
-			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+			if !dbSchema.TableExists(resource.Schema, resource.Table) && !dbSchema.ViewExists(resource.Schema, resource.Table) {
 				// If table not found, skip.
 				continue
 			}
@@ -1748,7 +1748,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
-				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) {
+				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) && !resourceDBSchema.ViewExists(resource.Schema, resource.Table) {
 					// If table not found, we regard it as a CTE/alias/... and skip.
 					continue
 				}
@@ -1756,7 +1756,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 				continue
 			}
 
-			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+			if !dbSchema.TableExists(resource.Schema, resource.Table) && !dbSchema.ViewExists(resource.Schema, resource.Table) {
 				// If table not found, skip.
 				continue
 			}
@@ -1808,14 +1808,14 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
-				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) {
+				if !resourceDBSchema.TableExists(resource.Schema, resource.Table) && !resourceDBSchema.ViewExists(resource.Schema, resource.Table) {
 					// If table not found, we regard it as a CTE/alias/... and skip.
 					continue
 				}
 				result = append(result, resource)
 				continue
 			}
-			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+			if !dbSchema.TableExists(resource.Schema, resource.Table) && !dbSchema.ViewExists(resource.Schema, resource.Table) {
 				// If table not found, skip.
 				continue
 			}
