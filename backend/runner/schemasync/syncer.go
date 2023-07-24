@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"sync"
 	"time"
 
@@ -269,6 +270,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if err != nil {
 		return err
 	}
+	setCategoryFromComment(databaseMetadata)
 
 	var patchSchemaVersion *string
 	if force {
@@ -337,4 +339,17 @@ func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {
 	return cmp.Equal(x, y, protocmp.Transform(),
 		protocmp.IgnoreFields(&storepb.TableMetadata{}, "row_count", "data_size", "index_size", "data_free"),
 	)
+}
+
+var getCategoryFromCommentReg = regexp.MustCompile("[0-9]+-[0-9]+-[0-9]+")
+
+func setCategoryFromComment(dbSchema *storepb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Category = getCategoryFromCommentReg.FindString(table.Comment)
+			for _, col := range table.Columns {
+				col.Category = getCategoryFromCommentReg.FindString(col.Comment)
+			}
+		}
+	}
 }
