@@ -110,10 +110,11 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 
 // DatabaseMessage is the message for database.
 type DatabaseMessage struct {
-	UID           int
-	ProjectID     string
-	InstanceID    string
-	EnvironmentID string
+	UID                    int
+	ProjectID              string
+	InstanceID             string
+	EnvironmentID          string
+	EffectiveEnvironmentID string
 
 	DatabaseName         string
 	SyncState            api.SyncStatus
@@ -145,11 +146,11 @@ type UpdateDatabaseMessage struct {
 
 // FindDatabaseMessage is the message for finding databases.
 type FindDatabaseMessage struct {
-	ProjectID     *string
-	EnvironmentID *string
-	InstanceID    *string
-	DatabaseName  *string
-	UID           *int
+	ProjectID              *string
+	EffectiveEnvironmentID *string
+	InstanceID             *string
+	DatabaseName           *string
+	UID                    *int
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
 	ShowDeleted bool
@@ -580,7 +581,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.EnvironmentID; v != nil {
+	if v := find.EffectiveEnvironmentID; v != nil {
 		// TODO(d): filter by both instance environment ID and database environment ID.
 		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
