@@ -7,7 +7,6 @@ CREATE TABLE plan_check_run (
     plan_id INTEGER NOT NULL REFERENCES plan (id),
     status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.plan-check.%'),
-    code INTEGER NOT NULL DEFAULT 0,
     config JSONB NOT NULL DEFAULT '{}',
     result JSONB NOT NULL DEFAULT '{}',
     payload JSONB NOT NULL DEFAULT '{}'
