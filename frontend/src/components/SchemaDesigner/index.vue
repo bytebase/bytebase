@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!state.isLoading" class="w-full h-[32rem] border rounded-lg">
+  <div class="w-full h-[32rem] border rounded-lg">
     <Splitpanes
       class="default-theme w-full h-full flex flex-row overflow-hidden"
     >
@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
-import { onMounted, reactive, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { Engine } from "@/types/proto/v1/common";
@@ -26,19 +26,11 @@ import Designer from "./Designer.vue";
 import { Schema, convertSchemaMetadataList } from "@/types";
 import { cloneDeep } from "lodash-es";
 
-interface LocalState {
-  isLoading: boolean;
-}
-
 const props = defineProps<{
   readonly: boolean;
   engine: Engine;
   schemaDesign: SchemaDesign;
 }>();
-
-const state = reactive<LocalState>({
-  isLoading: true,
-});
 
 const readonly = ref(props.readonly);
 const engine = ref(props.engine);
@@ -49,17 +41,6 @@ const baselineMetadata = ref<DatabaseMetadata>(
 );
 const tabState = ref<SchemaDesignerTabState>({
   tabMap: new Map(),
-});
-
-onMounted(async () => {
-  baselineMetadata.value =
-    cloneDeep(props.schemaDesign?.baselineSchemaMetadata) ||
-    DatabaseMetadata.fromPartial({});
-  metadata.value =
-    cloneDeep(props.schemaDesign?.schemaMetadata) ||
-    DatabaseMetadata.fromPartial({});
-  editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
-  state.isLoading = false;
 });
 
 provideSchemaDesignerContext({
@@ -75,10 +56,25 @@ provideSchemaDesignerContext({
 watch(
   () => props,
   () => {
+    baselineMetadata.value =
+      cloneDeep(props.schemaDesign?.baselineSchemaMetadata) ||
+      DatabaseMetadata.fromPartial({});
+    metadata.value =
+      cloneDeep(props.schemaDesign?.schemaMetadata) ||
+      DatabaseMetadata.fromPartial({});
+    editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
     readonly.value = props.readonly;
     engine.value = props.engine;
+    // NOTE: clear tab state in the following cases:
+    // * change baseline schema.
+    // * change selected schema design.
+    // * toggle the editing state.
+    tabState.value = {
+      tabMap: new Map(),
+    };
   },
   {
+    immediate: true,
     deep: true,
   }
 );
