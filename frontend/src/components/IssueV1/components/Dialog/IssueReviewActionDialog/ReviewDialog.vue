@@ -20,7 +20,8 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
+const { t } = useI18n();
 
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import ReviewForm from "./ReviewForm.vue";
@@ -29,9 +30,13 @@ import {
   targetReviewStatusForReviewAction,
   useIssueContext,
 } from "@/components/IssueV1";
+import { useI18n } from "vue-i18n";
 
-defineProps<{
-  title: string;
+type LocalState = {
+  loading: boolean;
+};
+
+const props = defineProps<{
   action: IssueReviewAction;
 }>();
 
@@ -39,15 +44,23 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-type LocalState = {
-  loading: boolean;
-};
-
 const state = reactive<LocalState>({
   loading: false,
 });
 
 const { events } = useIssueContext();
+
+const title = computed(() => {
+  switch (props.action) {
+    case "APPROVE":
+      return t("custom-approval.issue-review.approve-issue");
+    case "SEND_BACK":
+      return t("custom-approval.issue-review.send-back-issue");
+    case "RE_REQUEST":
+      return t("custom-approval.issue-review.re-request-review-issue");
+  }
+  return ""; // Make linter happy
+});
 
 const handleModalConfirm = async (
   params: {
