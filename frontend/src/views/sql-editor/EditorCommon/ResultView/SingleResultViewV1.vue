@@ -27,7 +27,7 @@
           <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
         </span>
       </div>
-      <div class="flex justify-between items-center gap-x-3">
+      <div class="flex justify-between items-center gap-x-3 overflow-y-hidden">
         <NPagination
           v-if="showPagination"
           :simple="true"
