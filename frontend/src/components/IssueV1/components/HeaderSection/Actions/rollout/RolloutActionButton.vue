@@ -5,6 +5,7 @@
         :preference-key="`bb-rollout-action-${action}`"
         :action-list="actionList"
         :default-action-key="`${action}-STAGE`"
+        @click="$emit('perform-action', ($event as RolloutButtonAction).params)"
       />
     </template>
     <template #default>
@@ -16,6 +17,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { asyncComputed } from "@vueuse/core";
 
 import { useCurrentUserV1 } from "@/store";
 import {
@@ -26,13 +28,17 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { RolloutButtonAction } from "./RolloutActionButtonGroup.vue";
 import { ErrorList } from "../common";
-import { asyncComputed } from "@vueuse/core";
+import { ContextMenuButton } from "@/components/v2";
+import { RolloutAction, RolloutButtonAction } from "./common";
 
 const props = defineProps<{
   action: TaskRolloutAction;
   stageRolloutActionList: StageRolloutAction[];
+}>();
+
+defineEmits<{
+  (event: "perform-action", action: RolloutAction): void;
 }>();
 
 const { t } = useI18n();

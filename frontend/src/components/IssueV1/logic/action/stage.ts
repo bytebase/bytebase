@@ -1,6 +1,6 @@
 import { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Stage, Task_Status } from "@/types/proto/v1/rollout_service";
+import { Stage, Task } from "@/types/proto/v1/rollout_service";
 import { getApplicableTaskRolloutActionList } from "./task";
 
 export type StageRolloutAction =
@@ -9,31 +9,43 @@ export type StageRolloutAction =
 
 export const getApplicableStageRolloutActionList = (
   issue: ComposedIssue,
-  stage: Stage
+  stage: Stage,
+  allowSkipPendingTasks = false // If set to true, only FAILED tasks can be skipped
 ) => {
   if (issue.status !== IssueStatus.OPEN) {
     return [];
   }
 
-  const taskAndActions = stage.tasks.map((task) => ({
-    task,
-    actions: getApplicableTaskRolloutActionList(issue, task),
-  }));
+  const applicableActionsMap: Record<StageRolloutAction, Task[]> = {
+    ROLLOUT: [],
+    SKIP: [],
+  };
+  stage.tasks.forEach((task) => {
+    const actions = getApplicableTaskRolloutActionList(
+      issue,
+      task,
+      allowSkipPendingTasks
+    );
+    if (actions.includes("ROLLOUT")) {
+      applicableActionsMap.ROLLOUT.push(task);
+    }
+    if (actions.includes("SKIP")) {
+      applicableActionsMap.SKIP.push(task);
+    }
+  });
 
-  const actions: StageRolloutAction[] = [];
-  if (
-    taskAndActions.filter(({ actions }) => {
-      return actions.includes("ROLLOUT");
-    }).length > 1
-  ) {
-    actions.push("ROLLOUT");
+  const actions: { action: StageRolloutAction; tasks: Task[] }[] = [];
+  if (applicableActionsMap.ROLLOUT.length > 1) {
+    actions.push({
+      action: "ROLLOUT",
+      tasks: applicableActionsMap.ROLLOUT,
+    });
   }
-  if (
-    taskAndActions.filter(({ task, actions }) => {
-      return task.status === Task_Status.FAILED && actions.includes("SKIP");
-    }).length > 1
-  ) {
-    actions.push("SKIP");
+  if (applicableActionsMap.SKIP.length > 1) {
+    actions.push({
+      action: "SKIP",
+      tasks: applicableActionsMap.SKIP,
+    });
   }
   return actions;
 };

@@ -58,11 +58,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "apply-issue-action", action: IssueStatusAction): void;
+  (event: "perform-issue-action", action: IssueStatusAction): void;
   (
-    event: "apply-batch-task-action",
+    event: "perform-batch-task-action",
     action: TaskRolloutAction,
-    targets: Task[]
+    target: Task[]
   ): void;
 }>();
 
@@ -110,11 +110,11 @@ const renderDropdownOptionLabel = (dropdownOption: DropdownOption) => {
 const handleDropdownSelect = (key: string, dropdownOption: DropdownOption) => {
   const option = dropdownOption as ExtraActionOption;
   if (option.type === "ISSUE") {
-    emit("apply-issue-action", option.action as IssueStatusAction);
+    emit("perform-issue-action", option.action as IssueStatusAction);
   }
   if (option.type === "TASK-BATCH") {
     emit(
-      "apply-batch-task-action",
+      "perform-batch-task-action",
       option.action as TaskRolloutAction,
       option.target as Task[]
     );

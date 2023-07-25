@@ -680,7 +680,7 @@
         "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
-        "resolve": "解决",
+        "resolve": "解决工单",
         "cancel": "取消工单",
         "reopen": "重开"
       },

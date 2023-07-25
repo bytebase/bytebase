@@ -5,6 +5,7 @@
       :key="index"
       :action="action"
       :stage-rollout-action-list="stageRolloutActionList"
+      @perform-action="$emit('perform-action', $event)"
     />
   </div>
 </template>
@@ -14,34 +15,8 @@ import {
   StageRolloutAction,
   TaskRolloutAction,
 } from "@/components/IssueV1/logic";
-import { ContextMenuButtonAction } from "@/components/v2";
 import RolloutActionButton from "./RolloutActionButton.vue";
-
-// import { Issue } from "@/types";
-// import {
-//   StageStatusTransition,
-//   TaskStatusTransition,
-//   isDatabaseRelatedIssueType,
-//   taskCheckRunSummary,
-// } from "@/utils";
-// import { useIssueLogic } from "../logic";
-// import {
-//   default as BBContextMenuButton,
-//   type ButtonAction,
-// } from "@/bbkit/BBContextMenuButton.vue";
-// import { IssueContext } from "./common";
-
-// export type TaskStatusTransitionButtonAction = ButtonAction<{
-//   transition: TaskStatusTransition;
-//   target: "TASK" | "STAGE";
-// }>;
-
-export type RolloutAction<T = "TASK" | "STAGE"> = {
-  target: T;
-  action: T extends "TASK" ? TaskRolloutAction : StageRolloutAction;
-};
-
-export type RolloutButtonAction = ContextMenuButtonAction<RolloutAction>;
+import { RolloutAction } from "./common";
 
 defineProps<{
   taskRolloutActionList: TaskRolloutAction[];
@@ -49,7 +24,7 @@ defineProps<{
 }>();
 
 defineEmits<{
-  (event: "apply-action", action: RolloutAction): void;
+  (event: "perform-action", action: RolloutAction): void;
 }>();
 
 // const issueLogic = useIssueLogic();

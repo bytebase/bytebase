@@ -6,7 +6,7 @@
         size="large"
         tag="div"
         v-bind="issueStatusActionButtonProps(action)"
-        @click.prevent="$emit('action', action)"
+        @click.prevent="$emit('perform-action', action)"
       >
         {{ issueStatusActionDisplayName(action) }}
       </NButton>
@@ -37,7 +37,7 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (event: "action", action: IssueStatusAction): void;
+  (event: "perform-action", action: IssueStatusAction): void;
 }>();
 
 const { issue } = useIssueContext();

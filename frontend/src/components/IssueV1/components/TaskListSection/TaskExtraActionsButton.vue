@@ -8,20 +8,33 @@
 import { computed } from "vue";
 
 import { Task } from "@/types/proto/v1/rollout_service";
-import { useIssueContext } from "../../logic";
+import {
+  getApplicableTaskRolloutActionList,
+  useIssueContext,
+} from "../../logic";
 
-defineProps<{
+const props = defineProps<{
   task: Task;
 }>();
 
-const { isCreating } = useIssueContext();
+const { isCreating, activeTask, issue } = useIssueContext();
+
+const actionList = computed(() => {
+  return getApplicableTaskRolloutActionList(
+    issue.value,
+    props.task,
+    true /* allowSkipPendingTask */
+  );
+});
 
 const show = computed(() => {
   if (isCreating.value) {
     return false;
   }
+  if (props.task.uid !== activeTask.value.uid) {
+    return false;
+  }
 
-  // TODO
-  return true;
+  return actionList.value.length > 0;
 });
 </script>

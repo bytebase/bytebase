@@ -43,7 +43,8 @@ export const TaskRolloutActionMap: Record<Task_Status, TaskRolloutAction[]> = {
 
 export const getApplicableTaskRolloutActionList = (
   issue: ComposedIssue,
-  task: Task
+  task: Task,
+  allowSkipPendingTask = false // If set to true, only FAILED tasks can be skipped
 ): TaskRolloutAction[] => {
   if (issue.status !== IssueStatus.OPEN) {
     return [];
@@ -57,6 +58,11 @@ export const getApplicableTaskRolloutActionList = (
     if (action === "RETRY") {
       // RETRYing gh-ost cut-over task is not allowed (yet).
       if (task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER) {
+        return false;
+      }
+    }
+    if (action === "SKIP") {
+      if (task.status !== Task_Status.FAILED && !allowSkipPendingTask) {
         return false;
       }
     }

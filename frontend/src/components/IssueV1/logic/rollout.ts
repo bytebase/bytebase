@@ -29,10 +29,7 @@ export const isTaskEditable = (task: Task): [boolean, string] => {
 };
 
 export const isTaskFinished = (task: Task): boolean => {
-  return [
-    Task_Status.DONE,
-    Task_Status.FAILED,
-    Task_Status.CANCELED,
-    Task_Status.SKIPPED,
-  ].includes(task.status);
+  return [Task_Status.DONE, Task_Status.CANCELED, Task_Status.SKIPPED].includes(
+    task.status
+  );
 };
