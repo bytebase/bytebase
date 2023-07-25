@@ -18,6 +18,9 @@
         <template v-if="vcs.type === ExternalVersionControl_Type.BITBUCKET">
           <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
         </template>
+        <template v-if="vcs.type === ExternalVersionControl_Type.AZURE_DEVOPS">
+          <img class="h-6 w-auto" src="../assets/azure-devops-logo.svg" />
+        </template>
         <span>{{ vcs.title }}</span>
       </button>
     </template>
