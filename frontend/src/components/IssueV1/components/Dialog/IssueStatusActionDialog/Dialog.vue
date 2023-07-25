@@ -1,26 +1,15 @@
 <template>
-  <BBModal
-    :title="title"
-    class="relative overflow-hidden !w-[30rem] !max-w-[30rem]"
-    header-class="overflow-hidden"
-    @close="$emit('close')"
-  >
+  <CommonDialog :title="title" :loading="state.loading" @close="$emit('close')">
     <Form :action="action" @cancel="$emit('close')" @confirm="handleConfirm" />
-    <div
-      v-if="state.loading"
-      class="absolute inset-0 flex items-center justify-center bg-white/50"
-    >
-      <BBSpin />
-    </div>
-  </BBModal>
+  </CommonDialog>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { BBSpin } from "@/bbkit";
 import { IssueStatusAction } from "@/components/IssueV1/logic";
+import CommonDialog from "../CommonDialog.vue";
 import Form from "./Form.vue";
 
 type LocalState = {

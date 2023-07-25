@@ -1,36 +1,26 @@
 <template>
-  <BBModal
-    :title="title"
-    class="relative overflow-hidden !w-[30rem] !max-w-[30rem]"
-    header-class="overflow-hidden"
-    @close="$emit('close')"
-  >
+  <CommonDialog :title="title" :loading="state.loading" @close="$emit('close')">
     <ReviewForm
       :action="action"
       @cancel="$emit('close')"
-      @confirm="handleModalConfirm"
+      @confirm="handleConfirm"
     />
-    <div
-      v-if="state.loading"
-      class="absolute inset-0 flex items-center justify-center bg-white/50"
-    >
-      <BBSpin />
-    </div>
-  </BBModal>
+  </CommonDialog>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
-const { t } = useI18n();
+import { useI18n } from "vue-i18n";
 
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import ReviewForm from "./ReviewForm.vue";
 import {
   IssueReviewAction,
   targetReviewStatusForReviewAction,
   useIssueContext,
 } from "@/components/IssueV1";
-import { useI18n } from "vue-i18n";
+import CommonDialog from "../CommonDialog.vue";
+import ReviewForm from "./ReviewForm.vue";
+import { issueServiceClient } from "@/grpcweb";
 
 type LocalState = {
   loading: boolean;
@@ -44,11 +34,12 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
+const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
 
-const { events } = useIssueContext();
+const { issue, events } = useIssueContext();
 
 const title = computed(() => {
   switch (props.action) {
@@ -62,7 +53,7 @@ const title = computed(() => {
   return ""; // Make linter happy
 });
 
-const handleModalConfirm = async (
+const handleConfirm = async (
   params: {
     action: IssueReviewAction;
     comment?: string;
@@ -71,23 +62,29 @@ const handleModalConfirm = async (
 ) => {
   state.loading = true;
   try {
-    // TODO
-    const { action } = params;
+    const { action, comment = "" } = params;
     const status = targetReviewStatusForReviewAction(action);
     if (status === Issue_Approver_Status.APPROVED) {
       // await store.approveIssue(issue.value, comment);
       onSuccess();
     } else if (status === Issue_Approver_Status.PENDING) {
-      // await store.requestIssue(issue.value, comment);
+      await issueServiceClient.requestIssue({
+        name: issue.value.name,
+        comment,
+      });
+      //
     } else if (status === Issue_Approver_Status.REJECTED) {
-      // await store.rejectIssue(issue.value, comment);
+      await issueServiceClient.rejectIssue({
+        name: issue.value.name,
+        comment,
+      });
     }
-    emit("close");
 
     // notify the issue logic to update issue status
     events.emit("status-changed", { eager: true });
   } finally {
     state.loading = false;
+    emit("close");
   }
 };
 </script>
