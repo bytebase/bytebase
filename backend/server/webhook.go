@@ -759,7 +759,7 @@ func (s *Server) sqlAdviceForFile(
 		policy, err := s.store.GetSQLReviewPolicy(ctx, environment.UID)
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-				log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", database.EnvironmentID), zap.Error(err))
+				log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", database.EffectiveEnvironmentID), zap.Error(err))
 				continue
 			}
 			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", instance.EnvironmentID, err)
@@ -1403,7 +1403,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	if environmentResourceID != "" {
 		for _, database := range foundDatabases {
 			// Environment resource ID comparison is case-sensitive.
-			if database.EnvironmentID == environmentResourceID {
+			if database.EffectiveEnvironmentID == environmentResourceID {
 				filteredDatabases = append(filteredDatabases, database)
 			}
 		}
@@ -1417,10 +1417,10 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	// In case there are databases with identical name in a project for the same environment.
 	marked := make(map[string]bool)
 	for _, database := range filteredDatabases {
-		if _, ok := marked[database.EnvironmentID]; ok {
+		if _, ok := marked[database.EffectiveEnvironmentID]; ok {
 			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, environmentResourceID)
 		}
-		marked[database.EnvironmentID] = true
+		marked[database.EffectiveEnvironmentID] = true
 	}
 	return filteredDatabases, nil
 }

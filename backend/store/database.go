@@ -526,8 +526,8 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	var wheres []string
 	args := []any{project.UID, updaterID}
 	for i, database := range databases {
-		wheres = append(wheres, fmt.Sprintf("(environment.resource_id = $%d AND instance.resource_id = $%d AND db.name = $%d)", 3*i+3, 3*i+4, 3*i+5))
-		args = append(args, database.EnvironmentID, database.InstanceID, database.DatabaseName)
+		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+2, 2*i+3))
+		args = append(args, database.InstanceID, database.DatabaseName)
 	}
 	databaseClause := ""
 	if len(wheres) > 0 {
@@ -681,7 +681,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		}
 		// System default environment label.
 		// The value of bb.environment is resource ID of the environment.
-		databaseMessage.Labels[api.EnvironmentLabelKey] = databaseMessage.EnvironmentID
+		databaseMessage.Labels[api.EnvironmentLabelKey] = databaseMessage.EffectiveEnvironmentID
 
 		databaseMessages = append(databaseMessages, &databaseMessage)
 	}

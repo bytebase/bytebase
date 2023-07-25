@@ -1506,7 +1506,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, nil, errors.Errorf("database %q not found", databaseName)
 	}
 
-	if err := registerEnvironmentID(database.EnvironmentID); err != nil {
+	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
 		return nil, nil, err
 	}
 
@@ -1728,7 +1728,7 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		return nil, nil, errors.Errorf("database %q is not in project %q", databaseName, project.ResourceID)
 	}
 
-	if err := registerEnvironmentID(database.EnvironmentID); err != nil {
+	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
 		return nil, nil, err
 	}
 

@@ -111,7 +111,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID:            project.ResourceID,
-		EnvironmentID:        environment.ResourceID,
 		InstanceID:           instance.ResourceID,
 		DatabaseName:         payload.DatabaseName,
 		SyncState:            api.NotFound,
@@ -373,7 +372,7 @@ func getPeerTenantDatabase(databaseMatrix [][]*store.DatabaseMessage, environmen
 	// We try to use an existing tenant with the same environment, if possible.
 	for _, databaseList := range databaseMatrix {
 		for _, db := range databaseList {
-			if db.EnvironmentID == environmentID {
+			if db.EffectiveEnvironmentID == environmentID {
 				similarDB = db
 				break
 			}

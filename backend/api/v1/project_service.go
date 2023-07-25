@@ -1885,7 +1885,7 @@ func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 		res, _, err := prog.ContextEval(ctx, map[string]any{
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
-				"environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, database.EnvironmentID),
+				"environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, database.EffectiveEnvironmentID),
 				"instance_id":      database.InstanceID,
 			},
 		})
