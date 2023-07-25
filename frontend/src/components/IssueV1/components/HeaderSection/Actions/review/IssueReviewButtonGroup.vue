@@ -4,7 +4,6 @@
       v-for="action in issueReviewActionList"
       :key="action"
       :action="action"
-      debugger
       @perform-action="showModal"
     />
 

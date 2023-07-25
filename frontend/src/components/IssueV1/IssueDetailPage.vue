@@ -40,5 +40,17 @@ import {
   ActivitySection,
 } from "./components";
 
-const { isCreating, phase, issue } = useIssueContext();
+const { isCreating, phase, issue, events } = useIssueContext();
+
+events.on("perform-issue-status-action", ({ action }) => {
+  alert(`perform issue status action: action=${action}`);
+});
+
+events.on("perform-task-rollout-action", ({ action, tasks }) => {
+  alert(
+    `perform task status action: action=${action}, tasks=${tasks.map(
+      (t) => t.uid
+    )}`
+  );
+});
 </script>

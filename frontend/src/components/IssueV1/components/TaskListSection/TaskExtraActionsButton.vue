@@ -35,6 +35,6 @@ const show = computed(() => {
     return false;
   }
 
-  return actionList.value.length > 0;
+  return actionList.value.includes("SKIP");
 });
 </script>

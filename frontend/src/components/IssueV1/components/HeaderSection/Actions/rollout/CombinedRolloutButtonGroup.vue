@@ -52,7 +52,7 @@ import { RolloutAction } from "./common";
 import { Task } from "@/types/proto/v1/rollout_service";
 
 const { t } = useI18n();
-const { issue, activeStage, activeTask } = useIssueContext();
+const { issue, activeStage, activeTask, events } = useIssueContext();
 
 const issueStatusActionList = computed(() => {
   return getApplicableIssueStatusActionList(issue.value);
@@ -112,8 +112,6 @@ const performBatchTaskAction = async (
   action: TaskRolloutAction,
   tasks: Task[]
 ) => {
-  alert(
-    `performBatchTaskAction: action=${action}, tasks=${tasks.map((t) => t.uid)}`
-  );
+  events.emit("perform-task-rollout-action", { action, tasks });
 };
 </script>

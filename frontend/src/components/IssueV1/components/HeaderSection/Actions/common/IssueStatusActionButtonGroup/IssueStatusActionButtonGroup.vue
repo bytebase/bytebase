@@ -57,16 +57,7 @@ const props = defineProps<{
   extraActionList: ExtraActionOption[];
 }>();
 
-const emit = defineEmits<{
-  (event: "perform-issue-action", action: IssueStatusAction): void;
-  (
-    event: "perform-batch-task-action",
-    action: TaskRolloutAction,
-    target: Task[]
-  ): void;
-}>();
-
-const { issue } = useIssueContext();
+const { issue, events } = useIssueContext();
 const currentUser = useCurrentUserV1();
 
 const issueStatusActionDropdownOptions = computed(() => {
@@ -110,14 +101,15 @@ const renderDropdownOptionLabel = (dropdownOption: DropdownOption) => {
 const handleDropdownSelect = (key: string, dropdownOption: DropdownOption) => {
   const option = dropdownOption as ExtraActionOption;
   if (option.type === "ISSUE") {
-    emit("perform-issue-action", option.action as IssueStatusAction);
+    events.emit("perform-issue-status-action", {
+      action: option.action as IssueStatusAction,
+    });
   }
   if (option.type === "TASK-BATCH") {
-    emit(
-      "perform-batch-task-action",
-      option.action as TaskRolloutAction,
-      option.target as Task[]
-    );
+    events.emit("perform-task-rollout-action", {
+      action: option.action as TaskRolloutAction,
+      tasks: option.target as Task[],
+    });
   }
 };
 </script>

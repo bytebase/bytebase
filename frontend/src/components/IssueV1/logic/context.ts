@@ -5,12 +5,15 @@ import Emittery from "emittery";
 import { ComposedIssue, ReviewFlow } from "@/types";
 import { Stage, Task } from "@/types/proto/v1/rollout_service";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import { IssueStatusAction, TaskRolloutAction } from "./action";
 
 export type IssuePhase = "CREATE" | "REVIEW" | "ROLLOUT";
 
 export type IssueEvents = Emittery<{
   "status-changed": { eager: boolean };
   "select-task": { task: Task };
+  "perform-issue-status-action": { action: IssueStatusAction };
+  "perform-task-rollout-action": { action: TaskRolloutAction; tasks: Task[] };
 }>;
 
 export type ReviewContext = {
