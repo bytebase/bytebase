@@ -51,7 +51,6 @@
           @select="handleExportBtnClick"
         >
           <NButton
-            class="overflow-y-hidden"
             size="small"
             :loading="isExportingData"
             :disabled="isExportingData"
