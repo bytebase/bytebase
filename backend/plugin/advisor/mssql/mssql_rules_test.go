@@ -21,6 +21,7 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnNotNull,
 		advisor.SchemaRuleTableNoFK,
 		advisor.SchemaRuleSchemaBackwardCompatibility,
+		advisor.SchemaRuleRequiredColumn,
 	}
 
 	for _, rule := range snowflakeRules {
