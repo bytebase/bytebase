@@ -35,6 +35,7 @@ import { Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { useEnvironmentV1Store } from "@/store";
 import { useIssueContext } from "./context";
+import { stageForTask } from "./utils";
 
 export const getCurrentRolloutPolicyForTask = async (
   issue: ComposedIssue,
@@ -47,9 +48,7 @@ export const getCurrentRolloutPolicyForTask = async (
     };
   }
 
-  const stage = issue.rolloutEntity.stages.find((stage) =>
-    stage.tasks.findIndex((t) => t.uid === unref(task).uid)
-  );
+  const stage = stageForTask(issue, task);
   const environment = stage
     ? useEnvironmentV1Store().getEnvironmentByName(stage.environment)
     : undefined;
@@ -76,9 +75,7 @@ export const useCurrentRolloutPolicyForTask = (task: MaybeRef<Task>) => {
   }
 
   const environment = computed(() => {
-    const stage = issue.value.rolloutEntity.stages.find((stage) =>
-      stage.tasks.findIndex((t) => t.uid === unref(task).uid)
-    );
+    const stage = stageForTask(issue.value, unref(task));
     if (!stage) return unknownEnvironment();
     return (
       useEnvironmentV1Store().getEnvironmentByName(stage.environment) ??

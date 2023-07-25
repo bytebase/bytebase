@@ -54,7 +54,11 @@ import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { databaseForTask, useIssueContext } from "../../../logic";
+import {
+  databaseForTask,
+  stageForTask,
+  useIssueContext,
+} from "@/components/IssueV1/logic";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
 
@@ -87,10 +91,7 @@ const databaseCreationStatus = computed((): DatabaseCreationStatus => {
     }
 
     if (!targetDatabase) return "PENDING_CREATE";
-    const rollout = issue.value.rolloutEntity;
-    const stage = rollout.stages.find((stage) =>
-      stage.tasks.includes(selectedTask.value)
-    );
+    const stage = stageForTask(issue.value, selectedTask.value);
     if (!stage) return "PENDING_CREATE";
 
     const targetDatabaseCreateTask = stage.tasks.find((t) => {

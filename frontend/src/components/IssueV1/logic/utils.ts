@@ -86,3 +86,10 @@ export const specForTask = (issue: ComposedIssue, task: Task) => {
   if (!plan) return undefined;
   return flattenSpecList(plan).find((spec) => spec.id === task.specId);
 };
+
+export const stageForTask = (issue: ComposedIssue, task: Task) => {
+  const rollout = issue.rolloutEntity;
+  return rollout.stages.find(
+    (stage) => stage.tasks.findIndex((t) => t.name === task.name) >= 0
+  );
+};

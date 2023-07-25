@@ -40,7 +40,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-import { IssueReviewAction, IssueStatusAction, useIssueContext } from "./logic";
+import {
+  IssueReviewAction,
+  IssueStatusAction,
+  stageForTask,
+  useIssueContext,
+} from "./logic";
 import {
   BannerSection,
   HeaderSection,
@@ -54,6 +59,7 @@ import {
   IssueReviewActionDialog,
   IssueStatusActionDialog,
 } from "./components";
+import { rolloutServiceClient } from "@/grpcweb";
 
 const { isCreating, phase, issue, events } = useIssueContext();
 
@@ -76,11 +82,22 @@ events.on("perform-issue-status-action", ({ action }) => {
   };
 });
 
-events.on("perform-task-rollout-action", ({ action, tasks }) => {
+events.on("perform-task-rollout-action", async ({ action, tasks }) => {
   alert(
     `perform task status action: action=${action}, tasks=${tasks.map(
       (t) => t.uid
     )}`
   );
+  const stage = stageForTask(issue.value, tasks[0]);
+  if (!stage) return;
+  try {
+    const response = await rolloutServiceClient.batchRunTasks({
+      parent: stage.name,
+      tasks: tasks.map((task) => task.name),
+    });
+    debugger;
+  } catch (ex) {
+    debugger;
+  }
 });
 </script>

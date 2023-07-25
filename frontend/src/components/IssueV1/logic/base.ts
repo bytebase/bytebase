@@ -18,6 +18,7 @@ import {
 import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
 import { extractReviewContext } from "./review";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import { stageForTask } from "./utils";
 
 const state = {
   uid: -101,
@@ -108,9 +109,7 @@ export const useBaseIssueContext = (
 
   events.on("select-task", ({ task }) => {
     const stages = rollout.value.stages;
-    const stage = stages.find(
-      (stage) => stage.tasks.findIndex((t) => t === task) >= 0
-    );
+    const stage = stageForTask(issue.value, task);
     if (!stage) return;
     const stageParam = isCreating.value
       ? String(stages.indexOf(stage))

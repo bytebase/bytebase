@@ -23,6 +23,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { ComposedIssue } from "@/types";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
+import { stageForTask } from "@/components/IssueV1/logic";
 
 const props = defineProps<{
   issue: ComposedIssue;
@@ -40,9 +41,7 @@ const link = computed(() => {
     task: task.uid,
   };
 
-  const stage = issue.rolloutEntity.stages.find((stage) => {
-    return stage.tasks.findIndex((t) => t.uid === task.uid) >= 0;
-  });
+  const stage = stageForTask(issue, task);
   if (stage) {
     query.stage = stage.uid;
   }
