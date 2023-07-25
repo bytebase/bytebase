@@ -20,7 +20,7 @@
         <NInput
           v-if="state.selectedSubtab === 'column-list'"
           v-model:value="searchPattern"
-          class="!w-48 mr-3"
+          class="!w-48"
           :placeholder="$t('schema-editor.search-column')"
         >
           <template #prefix>
