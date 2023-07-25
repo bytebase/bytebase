@@ -102,6 +102,7 @@ const handleConfirmButtonClick = async () => {
   }
   column.comment = "ID";
   const columnEdit = convertColumnMetadataToColumn(column);
+  columnEdit.status = "created";
   const tableEdit = convertTableMetadataToTable(table);
   tableEdit.status = "created";
   tableEdit.columnList.push(columnEdit);

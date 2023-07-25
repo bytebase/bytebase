@@ -29,8 +29,7 @@ export interface SchemaDesignerContext {
   engine: Ref<Engine>;
   metadata: Ref<DatabaseMetadata>;
   tabState: Ref<SchemaDesignerTabState>;
-
-  originalSchemas: Schema[];
+  originalSchemas: Ref<Schema[]>;
   editableSchemas: Ref<Schema[]>;
 
   // Tab related functions.
