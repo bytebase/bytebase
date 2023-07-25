@@ -955,6 +955,11 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 		s.runnerWG.Add(1)
 		go s.MetricReporter.Run(ctx, &s.runnerWG)
+
+		if s.profile.Mode == common.ReleaseModeDev {
+			s.runnerWG.Add(1)
+			go s.PlanCheckScheduler.Run(ctx, &s.runnerWG)
+		}
 	}
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
