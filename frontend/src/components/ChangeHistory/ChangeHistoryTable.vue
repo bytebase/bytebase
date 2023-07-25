@@ -16,13 +16,18 @@
           class="w-2"
           :title="columnList[0].title"
         />
-        <BBTableHeaderCell class="w-8" :title="columnList[1].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
+        <BBTableHeaderCell
+          :left-padding="4"
+          class="w-2"
+          :title="columnList[1].title"
+        />
+        <BBTableHeaderCell class="w-8" :title="columnList[2].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-48" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
+        <BBTableHeaderCell class="w-48" :title="columnList[5].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[7].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[8].title" />
       </template>
       <template v-else>
         <BBTableHeaderCell
@@ -39,6 +44,14 @@
       </template>
     </template>
     <template #body="{ rowData: history }: { rowData: ChangeHistory }">
+      <BBTableCell v-if="mode == 'DATABASE'">
+        <NCheckbox
+          :disabled="!allowToSelectChangeHistory(history)"
+          :checked="selectedChangeHistoryNameList?.includes(history.name)"
+          @update:checked="() => handleToggleChangeHistorySelected(history)"
+          @click.stop=""
+        />
+      </BBTableCell>
       <BBTableCell :left-padding="4">
         <ChangeHistoryStatusIcon :status="history.status" />
       </BBTableCell>
@@ -88,9 +101,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { NCheckbox } from "naive-ui";
 
 import { ComposedDatabase } from "@/types";
 import { BBTableSectionDataSource } from "@/bbkit/types";
@@ -112,20 +126,16 @@ import { useUserStore } from "@/store";
 
 type Mode = "DATABASE" | "PROJECT";
 
-const props = defineProps({
-  mode: {
-    default: "DATABASE",
-    type: String as PropType<Mode>,
-  },
-  databaseSectionList: {
-    required: true,
-    type: Array as PropType<ComposedDatabase[]>,
-  },
-  historySectionList: {
-    required: true,
-    type: Array as PropType<BBTableSectionDataSource<ChangeHistory>[]>,
-  },
-});
+const props = defineProps<{
+  mode?: Mode;
+  databaseSectionList: ComposedDatabase[];
+  historySectionList: BBTableSectionDataSource<ChangeHistory>[];
+  selectedChangeHistoryNameList?: string[];
+}>();
+
+const emit = defineEmits<{
+  (event: "update:selected", value: string[]): void;
+}>();
 
 const router = useRouter();
 
@@ -134,6 +144,9 @@ const { t } = useI18n();
 const columnList = computed(() => {
   if (props.mode === "DATABASE") {
     return [
+      {
+        title: "",
+      },
       {
         title: "",
       },
@@ -194,5 +207,25 @@ const clickHistory = (section: number, row: number) => {
 const creatorOfChangeHistory = (history: ChangeHistory) => {
   const email = extractUserResourceName(history.creator);
   return useUserStore().getUserByEmail(email);
+};
+
+const allowToSelectChangeHistory = (history: ChangeHistory) => {
+  return (
+    history.type === ChangeHistory_Type.BASELINE ||
+    history.type === ChangeHistory_Type.MIGRATE ||
+    history.type === ChangeHistory_Type.MIGRATE_SDL
+  );
+};
+
+const handleToggleChangeHistorySelected = (history: ChangeHistory) => {
+  const selected = props.selectedChangeHistoryNameList ?? [];
+  if (selected.includes(history.name)) {
+    emit(
+      "update:selected",
+      selected.filter((name) => name !== history.name)
+    );
+  } else {
+    emit("update:selected", [...selected, history.name]);
+  }
 };
 </script>
