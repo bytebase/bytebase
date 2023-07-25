@@ -489,7 +489,7 @@
                   Scopes
                 </dt>
                 <!-- TODO: decide necessary scopes -->
-                <dd class="text-sm text-main">Code (full)</dd>
+                <dd class="text-sm text-main">Code (full), Identity (read)</dd>
               </div>
             </dl>
           </div>
