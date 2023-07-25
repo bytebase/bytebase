@@ -31,13 +31,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 	}
 
 	var quotedSchemas []string
-	if driver.schemaTenantMode {
-		quotedSchemas = append(quotedSchemas, fmt.Sprintf("'%s'", driver.databaseName))
-	} else {
-		for _, schema := range schemas {
-			quotedSchemas = append(quotedSchemas, fmt.Sprintf("'%s'", schema))
-		}
-	}
+	quotedSchemas = append(quotedSchemas, fmt.Sprintf("'%s'", driver.databaseName))
 	if err := dumpTxn(ctx, txn, quotedSchemas, out); err != nil {
 		return "", err
 	}

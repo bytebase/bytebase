@@ -37,7 +37,6 @@ type Driver struct {
 	db               *sql.DB
 	databaseName     string
 	serviceName      string
-	schemaTenantMode bool
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -50,15 +49,12 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionC
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
 	}
-	// dsn := go_dm.BuildUrl(config.Host, port, config.ServiceName, config.Username, config.Password, options)
-	// dsn := fmt.Sprintf("dm://%s:%s@%s:%d", config.Username, config.Password , config.Host, port)
-	//dsn := fmt.Sprintf("dm://%s:%s@%s:%d?schema=%s", config.Username, config.Password , config.Host, port, config.Username)
 	dsn := fmt.Sprintf("dm://%s:%s@%s:%d", config.Username, config.Password , config.Host, port)
 	db, err := sql.Open("dm", dsn)
 	if err != nil {
 		return nil, err
 	}
-	if config.SchemaTenantMode && config.Database != "" {
+	if config.Database != "" {
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.Database)); err != nil {
 			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.Database)
 		}
@@ -66,7 +62,6 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionC
 	driver.db = db
 	driver.databaseName = config.Database
 	driver.serviceName = config.ServiceName
-	driver.schemaTenantMode = config.SchemaTenantMode
 	return driver, nil
 }
 

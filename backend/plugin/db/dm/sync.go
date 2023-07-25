@@ -45,71 +45,16 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
 	}
 
-	if driver.schemaTenantMode {
-		databases, err := driver.syncSchemaTenantModeInstance(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		return &db.InstanceMetadata{
-			Version:   version,
-			Databases: databases,
-		}, nil
-	}
-
-	var databases []*storepb.DatabaseMetadata
-	// sync CDB
-	//cdbRows, err := driver.db.QueryContext(ctx, "SELECT name FROM v$database")
-	cdbRows, err := driver.db.QueryContext(ctx, "SELECT username FROM dba_users")
+	databases, err := driver.syncSchemaTenantModeInstance(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer cdbRows.Close()
-
-	for cdbRows.Next() {
-		database := &storepb.DatabaseMetadata{}
-		if err := cdbRows.Scan(&database.Name); err != nil {
-			return nil, err
-		}
-		databases = append(databases, database)
-	}
-	if err := cdbRows.Err(); err != nil {
-		return nil, err
-	}
-
-	// sync PDBs (not sure if DM support PDB mode)
-	// query := `
-	// 	WITH db AS (
-	// 		SELECT pdb_name FROM dba_pdbs WHERE pdb_name NOT IN ('PDB$SEED') and status = 'NORMAL'
-	// 	)
-	// 	SELECT db.pdb_name, s.name FROM db INNER JOIN v$services s ON db.pdb_name = s.pdb
-	// `
-	// rows, err := driver.db.QueryContext(ctx, query)
-	// if err != nil {
-	// 	// nolint
-	// 	// Failed-open for non-CDB database
-	// 	return &db.InstanceMetadata{
-	// 		Version:   version,
-	// 		Databases: databases,
-	// 	}, nil
-	// }
-	// defer rows.Close()
-
-	// for rows.Next() {
-	// 	database := &storepb.DatabaseMetadata{}
-	// 	if err := rows.Scan(&database.Name, &database.ServiceName); err != nil {
-	// 		return nil, err
-	// 	}
-	// 	databases = append(databases, database)
-	// }
-	// if err := rows.Err(); err != nil {
-	// 	return nil, err
-	// }
 
 	return &db.InstanceMetadata{
 		Version:   version,
 		Databases: databases,
 	}, nil
+
 }
 
 func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
@@ -138,48 +83,6 @@ func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*stor
 
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
-	if driver.schemaTenantMode {
-		return driver.syncSchemaTenantModeDBSchema(ctx)
-	}
-
-	txn, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer txn.Rollback()
-
-	schemaNames, err := getSchemas(txn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
-	}
-	tableMap, err := getTables(txn, "")
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
-	}
-	viewMap, err := getViews(txn, "")
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
-	}
-
-	if err := txn.Commit(); err != nil {
-		return nil, err
-	}
-
-	databaseMetadata := &storepb.DatabaseMetadata{
-		Name:        driver.databaseName,
-		ServiceName: driver.serviceName,
-	}
-	for _, schemaName := range schemaNames {
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-			Name:   schemaName,
-			Tables: tableMap[schemaName],
-			Views:  viewMap[schemaName],
-		})
-	}
-	return databaseMetadata, nil
-}
-
-func (driver *Driver) syncSchemaTenantModeDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -211,10 +114,11 @@ func (driver *Driver) syncSchemaTenantModeDBSchema(ctx context.Context) (*storep
 	return databaseMetadata, nil
 }
 
+
 func getSchemas(txn *sql.Tx) ([]string, error) {
 	query := fmt.Sprintf(`
 		SELECT username FROM all_users
-		WHERE username NOT IN (%s) AND username NOT LIKE 'APEX_%%' ORDER BY username`,
+		WHERE username NOT IN (%s) ORDER BY username`,
 		systemSchema)
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -254,7 +158,7 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 		query = fmt.Sprintf(`
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
 		FROM all_tables
-		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
+		WHERE OWNER NOT IN (%s) 
 		ORDER BY OWNER, TABLE_NAME`, systemSchema)
 	} else {
 		query = fmt.Sprintf(`
@@ -309,7 +213,7 @@ func getTableColumns(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb
 			DATA_DEFAULT,
 			NULLABLE
 		FROM sys.all_tab_columns
-		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COLUMN_ID IS NOT NULL
+		WHERE OWNER NOT IN (%s) AND COLUMN_ID IS NOT NULL
 		ORDER BY OWNER, TABLE_NAME, COLUMN_ID`, systemSchema)
 	} else {
 		query = fmt.Sprintf(`
@@ -368,7 +272,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		queryColumn = fmt.Sprintf(`
 		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_NAME
 		FROM sys.all_ind_columns
-		WHERE TABLE_OWNER NOT IN (%s) AND TABLE_OWNER NOT LIKE 'APEX_%%'
+		WHERE TABLE_OWNER NOT IN (%s) 
 		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, systemSchema)
 	} else {
 		queryColumn = fmt.Sprintf(`
@@ -393,49 +297,12 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 	if err := colRows.Err(); err != nil {
 		return nil, err
 	}
-	// dm里似乎不存在exp索引
-	// queryExpression := ""
-	// if schemaName == "" {
-	// 	queryExpression = fmt.Sprintf(`
-	// 	SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION
-	// 	FROM sys.all_ind_expressions
-	// 	WHERE TABLE_OWNER NOT IN (%s) AND TABLE_OWNER NOT LIKE 'APEX_%%'
-	// 	ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, systemSchema)
-	// } else {
-	// 	queryExpression = fmt.Sprintf(`
-	// 	SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION
-	// 	FROM sys.all_ind_expressions
-	// 	WHERE TABLE_OWNER = '%s'
-	// 	ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
-	// }
-	// expRows, err := txn.Query(queryExpression)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer expRows.Close()
-	// for expRows.Next() {
-	// 	var schemaName, tableName, indexName, columnExpression string
-	// 	var position int
-	// 	if err := expRows.Scan(&schemaName, &tableName, &indexName, &columnExpression, &position); err != nil {
-	// 		return nil, err
-	// 	}
-	// 	key := db.IndexKey{Schema: schemaName, Table: tableName, Index: indexName}
-	// 	// Position starts from 1.
-	// 	expIndex := position - 1
-	// 	if expIndex >= len(expressionsMap[key]) {
-	// 		return nil, errors.Errorf("expression %q position %v out of range for index %q.%q.%q", columnExpression, position, schemaName, tableName, indexName)
-	// 	}
-	// 	expressionsMap[key][expIndex] = columnExpression
-	// }
-	// if err := expRows.Err(); err != nil {
-	// 	return nil, err
-	// }
 	query := ""
 	if schemaName == "" {
 		query = fmt.Sprintf(`
 		SELECT OWNER, TABLE_NAME, INDEX_NAME, UNIQUENESS, INDEX_TYPE
 		FROM sys.all_indexes
-		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
+		WHERE OWNER NOT IN (%s) 
 		ORDER BY OWNER, TABLE_NAME, INDEX_NAME`, systemSchema)
 	} else {
 		query = fmt.Sprintf(`
@@ -483,7 +350,7 @@ func getViews(txn *sql.Tx, schemaName string) (map[string][]*storepb.ViewMetadat
 		query = fmt.Sprintf(`
 		SELECT OWNER, VIEW_NAME, TEXT
 		FROM sys.all_views
-		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
+		WHERE OWNER NOT IN (%s) 
 		ORDER BY owner, view_name
 	`, systemSchema)
 	} else {

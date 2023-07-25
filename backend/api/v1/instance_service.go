@@ -96,8 +96,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	//print(instanceMessage.Engine)
-	// Test connection.
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.DataSources {
 			err := func() error {
