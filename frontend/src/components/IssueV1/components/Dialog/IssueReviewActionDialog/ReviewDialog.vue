@@ -5,17 +5,17 @@
     header-class="overflow-hidden"
     @close="$emit('close')"
   >
+    <ReviewForm
+      :action="action"
+      @cancel="$emit('close')"
+      @confirm="handleModalConfirm"
+    />
     <div
       v-if="state.loading"
       class="absolute inset-0 flex items-center justify-center bg-white/50"
     >
       <BBSpin />
     </div>
-    <ReviewForm
-      :action="action"
-      @cancel="$emit('close')"
-      @confirm="handleModalConfirm"
-    />
   </BBModal>
 </template>
 

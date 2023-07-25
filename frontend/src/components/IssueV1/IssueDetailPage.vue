@@ -21,9 +21,14 @@
     <ActivitySection v-if="!isCreating" />
 
     <IssueReviewActionDialog
-      v-if="ongoingReviewAction"
-      :action="ongoingReviewAction.action"
-      @close="ongoingReviewAction = undefined"
+      v-if="ongoingIssueReviewAction"
+      :action="ongoingIssueReviewAction.action"
+      @close="ongoingIssueReviewAction = undefined"
+    />
+    <IssueStatusActionDialog
+      v-if="ongoingIssueStatusAction"
+      :action="ongoingIssueStatusAction.action"
+      @close="ongoingIssueStatusAction = undefined"
     />
   </div>
 
@@ -35,7 +40,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-import { IssueReviewAction, useIssueContext } from "./logic";
+import { IssueReviewAction, IssueStatusAction, useIssueContext } from "./logic";
 import {
   BannerSection,
   HeaderSection,
@@ -47,22 +52,28 @@ import {
   DescriptionSection,
   ActivitySection,
   IssueReviewActionDialog,
+  IssueStatusActionDialog,
 } from "./components";
 
 const { isCreating, phase, issue, events } = useIssueContext();
 
-const ongoingReviewAction = ref<{
+const ongoingIssueReviewAction = ref<{
   action: IssueReviewAction;
+}>();
+const ongoingIssueStatusAction = ref<{
+  action: IssueStatusAction;
 }>();
 
 events.on("perform-issue-review-action", ({ action }) => {
-  ongoingReviewAction.value = {
+  ongoingIssueReviewAction.value = {
     action,
   };
 });
 
 events.on("perform-issue-status-action", ({ action }) => {
-  alert(`perform issue status action: action=${action}`);
+  ongoingIssueStatusAction.value = {
+    action,
+  };
 });
 
 events.on("perform-task-rollout-action", ({ action, tasks }) => {
