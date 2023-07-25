@@ -180,3 +180,22 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 
 	return planCheckRuns, nil
 }
+
+// UpdatePlanCheckRun updates a plan check run.
+func (s *Store) UpdatePlanCheckRun(ctx context.Context, updaterUID int, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
+	resultBytes, err := protojson.Marshal(result)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal result %v", result)
+	}
+	query := `
+    UPDATE plan_check_run
+    SET
+		updater_id = $1,
+		status = $2,
+		result = $3
+	WHERE id = $4`
+	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, status, resultBytes, uid); err != nil {
+		return errors.Wrapf(err, "failed to update plan check run")
+	}
+	return nil
+}

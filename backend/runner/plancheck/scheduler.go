@@ -13,7 +13,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -140,7 +142,29 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 }
 
 func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, results []*storepb.PlanCheckRunResult_Result) {
+	result := &storepb.PlanCheckRunResult{
+		Results: results,
+	}
+	if err := s.store.UpdatePlanCheckRun(ctx,
+		api.SystemBotID,
+		store.PlanCheckRunStatusDone,
+		result,
+		planCheckRun.UID,
+	); err != nil {
+		log.Error("failed to mark plan check run failed", zap.Error(err))
+	}
 }
 
 func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, reason string) {
+	result := &storepb.PlanCheckRunResult{
+		Error: reason,
+	}
+	if err := s.store.UpdatePlanCheckRun(ctx,
+		api.SystemBotID,
+		store.PlanCheckRunStatusFailed,
+		result,
+		planCheckRun.UID,
+	); err != nil {
+		log.Error("failed to mark plan check run failed", zap.Error(err))
+	}
 }
