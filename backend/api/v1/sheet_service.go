@@ -578,7 +578,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 				}
 				for _, database := range databases {
 					database := database // create a new var "database".
-					if database.EnvironmentID == sheetInfo.EnvironmentID {
+					if database.EffectiveEnvironmentID == sheetInfo.EnvironmentID {
 						databaseID = &database.UID
 						break
 					}
