@@ -20,9 +20,14 @@
         </template>
       </NInput>
     </div>
-    <div ref="treeRef" class="schema-editor-database-tree pb-2 h-auto">
+    <div
+      class="schema-designer-database-tree pb-2 overflow-y-auto h-full text-sm"
+    >
       <NTree
+        ref="treeRef"
         :key="treeKeyRef"
+        virtual-scroll
+        style="height: 100%"
         :block-line="true"
         :data="treeData"
         :pattern="searchPattern"
@@ -65,7 +70,6 @@ import { escape, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import scrollIntoView from "scroll-into-view-if-needed";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import TableIcon from "~icons/heroicons-outline/table-cells";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
@@ -133,7 +137,7 @@ const contextMenu = reactive<TreeContextMenu>({
   clientY: 0,
   treeNode: undefined,
 });
-const treeRef = ref();
+const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
@@ -274,12 +278,9 @@ watch(
 
     if (state.shouldRelocateTreeNode) {
       nextTick(() => {
-        const element = treeRef.value?.querySelector(".n-tree-node--selected");
-        if (element) {
-          scrollIntoView(element, {
-            scrollMode: "if-needed",
-          });
-        }
+        treeRef.value?.scrollTo({
+          key: selectedKeysRef.value[0],
+        });
       });
     }
   }
@@ -442,37 +443,36 @@ const handleDropdownClickoutside = (e: MouseEvent) => {
 </script>
 
 <style>
-.schema-editor-database-tree .n-tree-node-wrapper {
+.schema-designer-database-tree .n-tree-node-wrapper {
   @apply !py-px;
 }
-.schema-editor-database-tree .n-tree-node-content__prefix {
+.schema-designer-database-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
 }
-.schema-editor-database-tree .n-tree-node-content__text {
+.schema-designer-database-tree .n-tree-node-content__text {
   @apply truncate mr-1;
 }
-.schema-editor-database-tree .n-tree-node-content__suffix {
+.schema-designer-database-tree .n-tree-node-content__suffix {
   @apply rounded-sm !hidden hover:opacity-80;
 }
-.schema-editor-database-tree
+.schema-designer-database-tree
   .n-tree-node-wrapper:hover
   .n-tree-node-content__suffix {
   @apply !flex;
 }
-.schema-editor-database-tree
+.schema-designer-database-tree
   .n-tree-node-wrapper
   .n-tree-node--selected
   .n-tree-node-content__suffix {
   @apply !flex;
 }
-.schema-editor-database-tree .n-tree-node-switcher {
+.schema-designer-database-tree .n-tree-node-switcher {
   @apply px-0 !w-4 !h-7;
 }
 </style>
 
 <style scoped>
-.schema-editor-database-tree {
-  @apply overflow-y-auto;
+.schema-designer-database-tree {
   max-height: calc(100% - 48px);
 }
 </style>
