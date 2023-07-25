@@ -38,9 +38,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 	if driver.schemaTenantMode {
 		list = append(list, driver.databaseName)
 	} else {
-		for _, schema := range schemas {
-			list = append(list, schema)
-		}
+		list = append(list, schemas...)
 	}
 	if err := dumpTxn(ctx, txn, list, out); err != nil {
 		return "", err
@@ -104,8 +102,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) 
 
 	text := ""
 	log.Debug("start dumping Oracle schemas", zap.String("query", query))
-	_, err := txn.ExecContext(ctx, query, schemas, go_ora.Out{Dest: &text, Size: maxOutputSize})
-	if err != nil {
+	if _, err := txn.ExecContext(ctx, query, schemas, go_ora.Out{Dest: &text, Size: maxOutputSize}); err != nil {
 		return errors.Wrap(err, "failed to dump schemas")
 	}
 
