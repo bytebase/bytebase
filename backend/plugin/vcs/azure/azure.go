@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 )
 
@@ -118,9 +120,57 @@ func (*Provider) GetDiffFileList(_ context.Context, _ common.OauthContext, _, _,
 	return nil, errors.New("not implemented")
 }
 
-// FetchAllRepositoryList fetches all repositories.
-func (*Provider) FetchAllRepositoryList(_ context.Context, _ common.OauthContext, _ string) ([]*vcs.Repository, error) {
+// FetchAllRepositoryList fetches all projects where the authenticated use has permissions, which is required
+// to create webhook in the repository.
+//
+// NOTE: Azure DevOps does not support listing all projects cross all organizations API yet, thus we need
+// to follow the https://stackoverflow.com/questions/53608013/get-all-organizations-via-rest-api-for-azure-devops
+// to get all projects.
+// The request included in this function requires the following scopes:
+// vso.profile, vso.project
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+	publicAlias, err := p.getAuthenticatedProfilePublicAlias(ctx, oauthCtx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get authenticated profile public alias")
+	}
+	log.Info("Authenticated user public alias", zap.String("publicAlias", publicAlias))
 	return nil, errors.New("not implemented")
+}
+
+// getAuthenticatedProfilePublicAlias gets the authenticated user's profile, and returns the public alias in the
+// profile response.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/profile/profiles/get?view=azure-devops-rest-7.0&tabs=HTTP
+func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauthCtx common.OauthContext) (string, error) {
+	url := "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.0"
+	type profileAlias struct {
+		PublicAlias string `json:"publicAlias"`
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", errors.Wrapf(err, "construct GET %s", url)
+	}
+	req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get authenticated profile")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to read profile response body, code %v", resp.StatusCode)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	r := new(profileAlias)
+	if err := json.Unmarshal(body, r); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal profile response body, code %v", resp.StatusCode)
+	}
+
+	return r.PublicAlias, nil
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree recursively.
