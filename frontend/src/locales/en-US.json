@@ -1116,7 +1116,9 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "instance-missing-change-schema": "Missing change history schema on instance \"{name}\".",
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve change history.",
-    "contact-dba": "Please contact your DBA to config it"
+    "contact-dba": "Please contact your DBA to config it",
+    "export": "Export Change History",
+    "need-to-select-first": "Need to select change history first"
   },
   "database": {
     "select": "Select database",
