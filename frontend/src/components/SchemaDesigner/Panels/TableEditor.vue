@@ -20,7 +20,7 @@
         <NInput
           v-if="state.selectedSubtab === 'column-list'"
           v-model:value="searchPattern"
-          class="!w-48 mr-3"
+          class="!w-48"
           :placeholder="$t('schema-editor.search-column')"
         >
           <template #prefix>
@@ -284,6 +284,7 @@ import {
   TableTabContext,
   useSchemaDesignerContext,
 } from "../common";
+import { isColumnChanged } from "../utils/column";
 
 type SubtabType = "column-list" | "raw-sql";
 
@@ -387,6 +388,14 @@ const getColumnItemComputedClassList = (column: Column) => {
     return ["text-red-700", "cursor-not-allowed", "!bg-red-50", "opacity-70"];
   } else if (column.status === "created") {
     return ["text-green-700", "!bg-green-50"];
+  } else if (
+    isColumnChanged(
+      currentTab.value.schemaId,
+      currentTab.value.tableId,
+      column.id
+    )
+  ) {
+    return ["text-yellow-700", "!bg-yellow-50"];
   }
   return [];
 };

@@ -78,6 +78,7 @@ import { Engine } from "@/types/proto/v1/common";
 import { useSchemaDesignerContext, SchemaDesignerTabType } from "./common";
 import { generateUniqueTabId } from "@/store";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
+import { isTableChanged } from "./utils/table";
 import SchemaNameModal from "./Modals/SchemaNameModal.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
 
@@ -125,6 +126,7 @@ const {
   editableSchemas,
   tabState,
   addTab,
+  getTable,
   getCurrentTab,
   dropTable,
 } = useSchemaDesignerContext();
@@ -235,12 +237,20 @@ const contextMenuOptions = computed(() => {
       return [];
     }
 
+    const isDropped = table.status === "dropped";
     const options = [];
-    options.push({
-      key: "drop",
-      label: t("schema-editor.actions.drop-table"),
-      disabled: readonly.value,
-    });
+    if (isDropped) {
+      options.push({
+        key: "restore",
+        label: t("schema-editor.actions.restore"),
+      });
+    } else {
+      options.push({
+        key: "drop",
+        label: t("schema-editor.actions.drop-table"),
+        disabled: readonly.value,
+      });
+    }
     return options;
   }
 
@@ -316,6 +326,8 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
         additionalClassList.push("text-green-700");
       } else if (table.status === "dropped") {
         additionalClassList.push("text-red-700 line-through");
+      } else if (isTableChanged(treeNode.schemaId, treeNode.tableId)) {
+        additionalClassList.push("text-yellow-700");
       }
     }
   }
@@ -426,6 +438,12 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   } else if (treeNode.type === "table") {
     if (key === "drop") {
       dropTable(treeNode.schemaId, treeNode.tableId);
+    } else if (key === "restore") {
+      const table = getTable(treeNode.schemaId, treeNode.tableId);
+      if (!table) {
+        return;
+      }
+      table.status = "normal";
     }
   }
   contextMenu.showDropdown = false;

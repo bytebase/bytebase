@@ -35,6 +35,7 @@ const props = defineProps<{
 const readonly = ref(props.readonly);
 const engine = ref(props.engine);
 const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
+const originalSchemas = ref<Schema[]>([]);
 const editableSchemas = ref<Schema[]>([]);
 const baselineMetadata = ref<DatabaseMetadata>(
   DatabaseMetadata.fromPartial({})
@@ -49,7 +50,7 @@ provideSchemaDesignerContext({
   engine: engine,
   metadata: metadata,
   tabState: tabState,
-  originalSchemas: cloneDeep(editableSchemas.value),
+  originalSchemas: originalSchemas,
   editableSchemas: editableSchemas,
 });
 
@@ -63,6 +64,7 @@ watch(
       cloneDeep(props.schemaDesign?.schemaMetadata) ||
       DatabaseMetadata.fromPartial({});
     editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
+    originalSchemas.value = cloneDeep(editableSchemas.value);
     readonly.value = props.readonly;
     engine.value = props.engine;
     // NOTE: clear tab state in the following cases:
