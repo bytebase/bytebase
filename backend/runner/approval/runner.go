@@ -519,7 +519,7 @@ func getGrantRequestRiskLevel(ctx context.Context, s *store.Store, issue *store.
 					return 0, false, errors.Wrap(err, "failed to get instance")
 				}
 				args := map[string]any{
-					"environment_id":  database.EnvironmentID,
+					"environment_id":  database.EffectiveEnvironmentID,
 					"project_id":      issue.Project.ResourceID,
 					"database_name":   database.DatabaseName,
 					"db_engine":       instance.Engine,
@@ -550,7 +550,7 @@ func getGrantRequestRiskLevel(ctx context.Context, s *store.Store, issue *store.
 					return 0, false, errors.Wrap(err, "failed to get instance")
 				}
 				args := map[string]any{
-					"environment_id":  database.EnvironmentID,
+					"environment_id":  database.EffectiveEnvironmentID,
 					"project_id":      issue.Project.ResourceID,
 					"database_name":   database.DatabaseName,
 					"db_engine":       instance.Engine,
