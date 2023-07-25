@@ -184,7 +184,7 @@ const changeHistorySectionList = computed(
   }
 );
 
-const handleExportChangeHistory = () => {
+const handleExportChangeHistory = async () => {
   const selectedChangeHistoryList = state.selectedChangeHistoryNameList
     .map((name) => {
       return changeHistoryList.value.find((item) => item.name === name);
@@ -205,12 +205,12 @@ const handleExportChangeHistory = () => {
     }
   }
 
-  zip.generateAsync({ type: "blob" }).then(function (content) {
-    saveAs(
-      content,
-      `${props.database.databaseName}_${dayjs().format("YYYYMMDD")}.zip`
-    );
-  });
+  const content = await zip.generateAsync({ type: "blob" });
+  const fileName = `${props.database.databaseName}_${dayjs().format(
+    "YYYYMMDD"
+  )}.zip`;
+  saveAs(content, fileName);
+  state.selectedChangeHistoryNameList = [];
 };
 
 const doCreateBaseline = () => {
