@@ -1,0 +1,81 @@
+- statement: |-
+    CREATE TABLE MyTable (
+      id INT,
+      creator_id INT,
+      created_ts INT,
+      updated_ts INT,
+      updater_id INT
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t (
+      name TEXT,
+      age INT
+    );
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: Table t missing required column "created_ts"
+      line: 1
+      details: ""
+    - status: WARN
+      code: 401
+      title: column.required
+      content: Table t missing required column "creator_id"
+      line: 1
+      details: ""
+    - status: WARN
+      code: 401
+      title: column.required
+      content: Table t missing required column "id"
+      line: 1
+      details: ""
+    - status: WARN
+      code: 401
+      title: column.required
+      content: Table t missing required column "updated_ts"
+      line: 1
+      details: ""
+    - status: WARN
+      code: 401
+      title: column.required
+      content: Table t missing required column "updater_id"
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE t (
+      id INT,
+      creator_id INT,
+      created_ts INT,
+      updater_id INT
+    );
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: Table t missing required column "updated_ts"
+      line: 1
+      details: ""
+- statement: ALTER TABLE t DROP COLUMN created_ts;
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: Table t missing required column "created_ts"
+      line: 1
+      details: ""
+- statement: ALTER TABLE t DROP COLUMN creator_id;
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: Table t missing required column "creator_id"
+      line: 1
+      details: ""
