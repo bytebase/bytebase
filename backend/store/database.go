@@ -110,9 +110,11 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 
 // DatabaseMessage is the message for database.
 type DatabaseMessage struct {
-	UID        int
-	ProjectID  string
-	InstanceID string
+	UID                    int
+	ProjectID              string
+	InstanceID             string
+	EnvironmentID          string
+	EffectiveEnvironmentID string
 
 	DatabaseName         string
 	SyncState            api.SyncStatus
@@ -122,8 +124,7 @@ type DatabaseMessage struct {
 	Secrets              *storepb.Secrets
 	DataShare            bool
 	// ServiceName is the Oracle specific field.
-	ServiceName   string
-	EnvironmentID string
+	ServiceName string
 }
 
 // UpdateDatabaseMessage is the mssage for updating a database.
@@ -140,17 +141,16 @@ type UpdateDatabaseMessage struct {
 	Secrets              *storepb.Secrets
 	DataShare            *bool
 	ServiceName          *string
-	// TODO(d): allow database environment updates.
-	EnvironmentID *string
+	EnvironmentID        *string
 }
 
 // FindDatabaseMessage is the message for finding databases.
 type FindDatabaseMessage struct {
-	ProjectID     *string
-	EnvironmentID *string
-	InstanceID    *string
-	DatabaseName  *string
-	UID           *int
+	ProjectID              *string
+	EffectiveEnvironmentID *string
+	InstanceID             *string
+	DatabaseName           *string
+	UID                    *int
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
 	ShowDeleted bool
@@ -328,6 +328,17 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", create.InstanceID)
 	}
+	var environmentUID *int
+	if create.EnvironmentID != "" {
+		environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: &create.EnvironmentID})
+		if err != nil {
+			return nil, err
+		}
+		if environment == nil {
+			return nil, errors.Errorf("environment %q not found", create.EnvironmentID)
+		}
+		environmentUID = &environment.UID
+	}
 
 	secretsString, err := protojson.Marshal(create.Secrets)
 	if err != nil {
@@ -347,6 +358,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			updater_id,
 			instance_id,
 			project_id,
+			environment_id,
 			name,
 			sync_status,
 			last_successful_sync_ts,
@@ -355,9 +367,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			datashare,
 			service_name
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
+			environment_id = EXCLUDED.environment_id,
 			name = EXCLUDED.name,
 			schema_version = EXCLUDED.schema_version
 		RETURNING id`
@@ -367,6 +380,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		api.SystemBotID,
 		instance.UID,
 		project.UID,
+		environmentUID,
 		create.DatabaseName,
 		api.OK,
 		create.SuccessfulSyncTimeTs,
@@ -406,6 +420,20 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 			return nil, err
 		}
 		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, project.UID)
+	}
+	if v := patch.EnvironmentID; v != nil {
+		if *v == "" {
+			set = append(set, "environment_id = NULL")
+		} else {
+			environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: patch.EnvironmentID})
+			if err != nil {
+				return nil, err
+			}
+			if environment == nil {
+				return nil, errors.Errorf("environment %v not found", *v)
+			}
+			set, args = append(set, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, environment.UID)
+		}
 	}
 	if v := patch.SyncState; v != nil {
 		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
@@ -553,8 +581,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.EffectiveEnvironmentID; v != nil {
+		// TODO(d): filter by both instance environment ID and database environment ID.
+		where, args = append(where, fmt.Sprintf("instance_environment.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -566,19 +595,22 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		// TODO(d): fix the row_status filter.
+		where, args = append(where, fmt.Sprintf("instance_environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
 		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
 		// We don't show databases that are deleted by users already.
 		where, args = append(where, fmt.Sprintf("db.sync_status = $%d", len(args)+1)), append(args, api.OK)
 	}
 
+	// TODO(d): separate database environment and instance environment.
 	var databaseMessages []*DatabaseMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			db.id,
 			project.resource_id AS project_id,
-			environment.resource_id AS environment_id,
+			COALESCE(instance_environment.resource_id, '') AS instance_environment_id,
 			instance.resource_id AS instance_id,
+			COALESCE(db_environment.resource_id, '') as db_environment_id,
 			db.name,
 			db.sync_status,
 			db.last_successful_sync_ts,
@@ -593,12 +625,13 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			db.datashare,
 			db.service_name
 		FROM db
+		LEFT JOIN environment AS db_environment ON db.environment_id = db_environment.id
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
-		LEFT JOIN environment ON instance.environment_id = environment.id
+		LEFT JOIN environment AS instance_environment ON instance.environment_id = instance_environment.id
 		LEFT JOIN db_label ON db.id = db_label.database_id
 		WHERE %s
-		GROUP BY db.id, project.resource_id, environment.resource_id, instance.resource_id`, strings.Join(where, " AND ")),
+		GROUP BY db.id, project.resource_id, instance_environment.resource_id, instance.resource_id, db_environment.resource_id`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -610,12 +643,13 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			Labels: make(map[string]string),
 		}
 		var keys, values []sql.NullString
-		var secretsString string
+		var instanceEnvironment, secretsString string
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
-			&databaseMessage.EnvironmentID,
+			&instanceEnvironment,
 			&databaseMessage.InstanceID,
+			&databaseMessage.EnvironmentID,
 			&databaseMessage.DatabaseName,
 			&databaseMessage.SyncState,
 			&databaseMessage.SuccessfulSyncTimeTs,
@@ -627,6 +661,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.ServiceName,
 		); err != nil {
 			return nil, err
+		}
+		if databaseMessage.EnvironmentID == "" {
+			databaseMessage.EffectiveEnvironmentID = instanceEnvironment
 		}
 		var secret storepb.Secrets
 		if err := protojson.Unmarshal([]byte(secretsString), &secret); err != nil {

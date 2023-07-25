@@ -2500,6 +2500,7 @@ CreateBackupRequest is the request message for CreateBackup.
 | project | [string](#string) |  | The project for a database. Format: projects/{project} |
 | schema_version | [string](#string) |  | The version of database schema. |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| effective_environment | [string](#string) |  | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 
 
