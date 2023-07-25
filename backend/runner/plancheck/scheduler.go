@@ -46,6 +46,16 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
+func (s *Scheduler) Register(planCheckRunType store.PlanCheckRunType, executor Executor) {
+	if executor == nil {
+		panic("plan check scheduler: Register executor is nil for plan check run type: " + planCheckRunType)
+	}
+	if _, dup := s.executors[planCheckRunType]; dup {
+		panic("plan check scheduler: Register called twice for plan check run type: " + planCheckRunType)
+	}
+	s.executors[planCheckRunType] = executor
+}
+
 func (s *Scheduler) runOnce(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
