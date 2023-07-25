@@ -1,15 +1,11 @@
 <template>
-  <div class="issue-debug">
-    <div>allowReject: {{ shouldShowReject }}</div>
-    <div>allowApprove: {{ shouldShowApprove }}</div>
-    <div>allowReRequestReview: {{ shouldShowReRequestReview }}</div>
-  </div>
   <div class="flex items-stretch gap-x-3">
     <ReviewActionButton
       v-for="action in issueReviewActionList"
       :key="action"
       :action="action"
-      @perform-action="handleApplyAction"
+      debugger
+      @perform-action="showModal"
     />
 
     <IssueStatusActionButtonGroup
@@ -33,10 +29,7 @@
       <BBSpin />
     </div>
     <ReviewForm
-      :status="state.modal.status"
-      :ok-text="state.modal.okText"
-      :button-style="state.modal.buttonStyle"
-      :review-type="state.modal.reviewType"
+      :action="state.modal.action"
       @cancel="state.modal = undefined"
       @confirm="handleModalConfirm"
     />
@@ -54,6 +47,7 @@ import ReviewForm from "./ReviewForm.vue";
 import {
   IssueReviewAction,
   getApplicableIssueStatusActionList,
+  targetReviewStatusForReviewAction,
   useIssueContext,
 } from "@/components/IssueV1";
 import { IssueStatusActionButtonGroup } from "../common";
@@ -62,10 +56,7 @@ import ReviewActionButton from "./ReviewActionButton.vue";
 type LocalState = {
   modal?: {
     title: string;
-    status: Issue_Approver_Status;
-    okText: string;
-    buttonStyle: "PRIMARY" | "ERROR" | "NORMAL";
-    reviewType: "APPROVAL" | "SEND_BACK" | "RE_REQUEST_REVIEW";
+    action: IssueReviewAction;
   };
   loading: boolean;
 };
@@ -120,57 +111,28 @@ const issueReviewActionList = computed(() => {
   return actionList;
 });
 
-const handleApplyAction = (action: IssueReviewAction) => {
+const showModal = (action: IssueReviewAction) => {
+  state.modal = {
+    title: "",
+    action,
+  };
   switch (action) {
     case "APPROVE":
-      showModal(Issue_Approver_Status.APPROVED);
+      state.modal.title = t("custom-approval.issue-review.approve-issue");
       break;
     case "SEND_BACK":
-      showModal(Issue_Approver_Status.REJECTED);
+      state.modal.title = t("custom-approval.issue-review.send-back-issue");
       break;
     case "RE_REQUEST":
-      showModal(Issue_Approver_Status.PENDING);
-      break;
-  }
-};
-
-const showModal = (status: Issue_Approver_Status) => {
-  state.modal = {
-    status,
-    title: "",
-    okText: "",
-    buttonStyle: "NORMAL",
-    reviewType: "APPROVAL",
-  };
-  switch (status) {
-    case Issue_Approver_Status.APPROVED:
-      state.modal.title = t("custom-approval.issue-review.approve-issue");
-      state.modal.okText = t("common.approval");
-      state.modal.buttonStyle = "PRIMARY";
-      state.modal.reviewType = "APPROVAL";
-      break;
-    case Issue_Approver_Status.REJECTED:
-      state.modal.title = t("custom-approval.issue-review.send-back-issue");
-      state.modal.okText = t("custom-approval.issue-review.send-back");
-      state.modal.buttonStyle = "PRIMARY";
-      state.modal.reviewType = "SEND_BACK";
-      break;
-    case Issue_Approver_Status.PENDING:
       state.modal.title = t(
         "custom-approval.issue-review.re-request-review-issue"
       );
-      state.modal.okText = t("custom-approval.issue-review.re-request-review");
-      state.modal.buttonStyle = "PRIMARY";
-      state.modal.reviewType = "RE_REQUEST_REVIEW";
   }
 };
 
 const handleModalConfirm = async (
-  {
-    status,
-    comment,
-  }: {
-    status: Issue_Approver_Status;
+  params: {
+    action: IssueReviewAction;
     comment?: string;
   },
   onSuccess: () => void
@@ -178,14 +140,16 @@ const handleModalConfirm = async (
   state.loading = true;
   try {
     // TODO
-    // if (status === Issue_Approver_Status.APPROVED) {
-    //   await store.approveIssue(issue.value, comment);
-    //   onSuccess();
-    // } else if (status === Issue_Approver_Status.PENDING) {
-    //   await store.requestIssue(issue.value, comment);
-    // } else if (status === Issue_Approver_Status.REJECTED) {
-    //   await store.rejectIssue(issue.value, comment);
-    // }
+    const { action } = params;
+    const status = targetReviewStatusForReviewAction(action);
+    if (status === Issue_Approver_Status.APPROVED) {
+      // await store.approveIssue(issue.value, comment);
+      onSuccess();
+    } else if (status === Issue_Approver_Status.PENDING) {
+      // await store.requestIssue(issue.value, comment);
+    } else if (status === Issue_Approver_Status.REJECTED) {
+      // await store.rejectIssue(issue.value, comment);
+    }
     state.modal = undefined;
 
     // notify the issue logic to update issue status

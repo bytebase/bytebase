@@ -1,54 +1,52 @@
 <template>
   <div class="mt-2 flex flex-col gap-y-4">
     <div class="text-sm">
-      {{ issue.name }}
+      {{ issue.title }}
     </div>
     <div class="flex flex-col gap-y-1">
       <p class="textlabel">
         {{ $t("common.comment") }}
-        <RequiredStar v-show="props.reviewType === 'SEND_BACK'" />
+        <RequiredStar v-show="props.action === 'SEND_BACK'" />
       </p>
-      <AutoHeightTextarea
+      <NInput
         v-model:value="comment"
+        type="textarea"
         :placeholder="$t('issue.leave-a-comment')"
-        :max-height="160"
-        class="w-full"
+        :autosize="{
+          minRows: 3,
+          maxRows: 10,
+        }"
       />
     </div>
     <div class="py-1 flex justify-end gap-x-3">
-      <button class="btn-normal" @click="$emit('cancel')">
+      <NButton @click="$emit('cancel')">
         {{ $t("common.cancel") }}
-      </button>
-      <button
-        :class="
-          buttonStyle === 'PRIMARY'
-            ? 'btn-primary'
-            : buttonStyle === 'ERROR'
-            ? 'btn-danger'
-            : 'btn-normal'
-        "
+      </NButton>
+      <NButton
         :disabled="!allowConfirm"
+        v-bind="issueReviewActionButtonProps(action)"
         @click="handleConfirm"
       >
-        {{ okText }}
-      </button>
+        {{ issueReviewActionDisplayName(action) }}
+      </NButton>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
+import { NButton, NInput } from "naive-ui";
 
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { useIssueContext } from "@/components/IssueV1";
+import {
+  IssueReviewAction,
+  issueReviewActionButtonProps,
+  issueReviewActionDisplayName,
+  useIssueContext,
+} from "@/components/IssueV1";
 
 const props = defineProps<{
-  okText: string;
-  status: Issue_Approver_Status;
-  buttonStyle: "PRIMARY" | "ERROR" | "NORMAL";
-  reviewType: "APPROVAL" | "SEND_BACK" | "RE_REQUEST_REVIEW";
+  action: IssueReviewAction;
 }>();
 
 const emit = defineEmits<{
@@ -56,7 +54,7 @@ const emit = defineEmits<{
   (
     event: "confirm",
     params: {
-      status: Issue_Approver_Status;
+      action: IssueReviewAction;
       comment?: string;
     },
     onSuccess: () => void
@@ -67,7 +65,7 @@ const { issue } = useIssueContext();
 const comment = ref("");
 
 const allowConfirm = computed(() => {
-  if (props.reviewType === "SEND_BACK" && comment.value === "") {
+  if (props.action === "SEND_BACK" && comment.value === "") {
     return false;
   }
 
@@ -79,7 +77,7 @@ const handleConfirm = (e: MouseEvent) => {
   const { left, top, width, height } = button.getBoundingClientRect();
   const { innerWidth: winWidth, innerHeight: winHeight } = window;
   const onSuccess = () => {
-    if (props.status !== Issue_Approver_Status.APPROVED) {
+    if (props.action !== "APPROVE") {
       return;
     }
     // import the effect lib asynchronously
@@ -99,7 +97,7 @@ const handleConfirm = (e: MouseEvent) => {
   emit(
     "confirm",
     {
-      status: props.status,
+      action: props.action,
       comment: comment.value,
     },
     onSuccess

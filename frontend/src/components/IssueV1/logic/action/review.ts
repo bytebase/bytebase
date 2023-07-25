@@ -2,12 +2,28 @@ import { t } from "@/plugins/i18n";
 import { candidatesOfApprovalStepV1 } from "@/store";
 import { ComposedIssue } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import {
+  IssueStatus,
+  Issue_Approver_Status,
+} from "@/types/proto/v1/issue_service";
 import { extractUserResourceName } from "@/utils";
 import { ButtonProps } from "naive-ui";
 import { ReviewContext } from "../context";
 
 export type IssueReviewAction = "APPROVE" | "SEND_BACK" | "RE_REQUEST";
+
+export const targetReviewStatusForReviewAction = (
+  action: IssueReviewAction
+) => {
+  switch (action) {
+    case "APPROVE":
+      return Issue_Approver_Status.APPROVED;
+    case "SEND_BACK":
+      return Issue_Approver_Status.REJECTED;
+    case "RE_REQUEST":
+      return Issue_Approver_Status.PENDING;
+  }
+};
 
 export const issueReviewActionDisplayName = (action: IssueReviewAction) => {
   switch (action) {

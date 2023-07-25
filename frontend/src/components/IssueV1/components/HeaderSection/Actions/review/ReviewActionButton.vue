@@ -6,6 +6,7 @@
         tag="div"
         :disabled="errors.length > 0"
         v-bind="issueReviewActionButtonProps(action)"
+        @click="$emit('perform-action', action)"
       >
         {{ issueReviewActionDisplayName(action) }}
       </NButton>
@@ -45,7 +46,7 @@ const currentUser = useCurrentUserV1();
 
 const allTaskChecksPassed = computed(() => {
   // TODO
-  return false;
+  return true;
   // const taskList =
   //   issue.value.pipeline?.stageList.flatMap((stage) => stage.taskList) ?? [];
   // return taskList.every((task) => {
