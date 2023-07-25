@@ -473,6 +473,9 @@ const (
 
 	// MSSQLMigrationCompatibility is an advisor type for MSSQL migration compatibility.
 	MSSQLMigrationCompatibility Type = "bb.plugin.advisor.mssql.migration-compatibility"
+
+	// MSSQLColumnRequirement is an advisor type for MSSQL column requirement.
+	MSSQLColumnRequirement Type = "bb.plugin.advisor.mssql.column.require"
 )
 
 // Advice is the result of an advisor.
