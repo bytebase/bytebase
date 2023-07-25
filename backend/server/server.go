@@ -72,6 +72,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -152,6 +153,7 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *taskrun.Scheduler
 	TaskCheckScheduler *taskcheck.Scheduler
+	PlanCheckScheduler *plancheck.Scheduler
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
 	SlowQuerySyncer    *slowquerysync.Syncer
@@ -464,6 +466,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementTypeReport, statementTypeReportExecutor)
 		statementAffectedRowsExecutor := taskcheck.NewStatementAffectedRowsReportExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAffectedRowsReport, statementAffectedRowsExecutor)
+
+		if s.profile.Mode == common.ReleaseModeDev {
+			s.PlanCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
+			databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
+			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
+		}
 
 		// Anomaly scanner
 		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
