@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -62,6 +63,10 @@ type PlanCheckRunMessage struct {
 	Result *storepb.PlanCheckRunResult
 }
 
+type FindPlanCheckRunMessage struct {
+	Status *[]PlanCheckRunStatus
+}
+
 func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRunMessage) error {
 	var query strings.Builder
 	var values []any
@@ -109,4 +114,69 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 		return errors.Wrapf(err, "failed to execute insert")
 	}
 	return nil
+}
+
+func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMessage) ([]*PlanCheckRunMessage, error) {
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.Status; v != nil {
+		var list []string
+		for _, status := range *v {
+			list = append(list, fmt.Sprintf("$%d", len(args)+1))
+			args = append(args, status)
+		}
+		where = append(where, fmt.Sprintf("plan_check_run.status in (%s)", strings.Join(list, ",")))
+	}
+	query := fmt.Sprintf(`
+		SELECT
+			plan_check_run.id,
+			plan_check_run.creator_id,
+			plan_check_run.created_ts,
+			plan_check_run.updater_id,
+			plan_check_run.updated_ts,
+			plan_check_run.plan_id,
+			plan_check_run.status,
+			plan_check_run.type,
+			plan_check_run.config,
+			plan_check_run.result
+		FROM plan_check_run
+		WHERE %s
+	`, strings.Join(where, " AND "))
+	rows, err := s.db.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var planCheckRuns []*PlanCheckRunMessage
+	for rows.Next() {
+		var planCheckRun PlanCheckRunMessage
+		var config, result string
+		if err := rows.Scan(
+			&planCheckRun.UID,
+			&planCheckRun.CreatorUID,
+			&planCheckRun.CreatedTs,
+			&planCheckRun.UpdaterUID,
+			&planCheckRun.UpdatedTs,
+			&planCheckRun.PlanUID,
+			&planCheckRun.Status,
+			&planCheckRun.Type,
+			&config,
+			&result,
+		); err != nil {
+			return nil, err
+		}
+		if err := protojson.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
+			return nil, err
+		}
+		if err := protojson.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
+			return nil, err
+		}
+		planCheckRuns = append(planCheckRuns, &planCheckRun)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return planCheckRuns, nil
 }
