@@ -6,6 +6,7 @@
 {{- $data := .Values.bytebase.option.data -}}
 {{- $version := .Values.bytebase.version -}}
 {{- $registryMirrorHost := .Values.bytebase.registryMirrorHost -}}
+{{- $disable_sample := index .Values.bytebase.option "disable-sample" -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -54,6 +55,9 @@ spec:
               "--external-url",
               # helm parser cannot handle the dash in the value, so we need to quote it, so we use $external_url instead of $external-url.
               {{ $external_url | quote }},
+              {{ if $disable_sample }}
+              "--disable-sample",
+              {{ end }}
             ]
           ports:
             - containerPort: {{ $port }}
