@@ -51,13 +51,12 @@ const handleConfirm = async (
   action: IssueStatusAction,
   comment: string | undefined
 ) => {
-  console.log(
-    `confirm issue status action, action=${action}, comment=${comment}`
-  );
   state.loading = true;
   // TODO
   try {
     await new Promise((r) => setTimeout(r, 1000));
+
+    alert(`confirm issue status action, action=${action}, comment=${comment}`);
   } finally {
     state.loading = false;
     emit("close");

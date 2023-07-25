@@ -29,7 +29,7 @@ export const SecondaryTaskRolloutActionList: TaskRolloutAction[] = ["SKIP"];
 
 export const TaskRolloutActionMap: Record<Task_Status, TaskRolloutAction[]> = {
   [Task_Status.PENDING_APPROVAL]: ["ROLLOUT", "SKIP"],
-  [Task_Status.PENDING]: ["CANCEL"],
+  [Task_Status.PENDING]: ["CANCEL"], // Only gh-ost sync task can be cancelled
   [Task_Status.RUNNING]: ["CANCEL"], // Only gh-ost sync task can be cancelled
   [Task_Status.SKIPPED]: [],
   [Task_Status.DONE]: [],
