@@ -205,11 +205,6 @@ type Provider interface {
 	// oauthExchange: api message for exchanging oauth token
 	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*OAuthToken, error)
 
-	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
-	//
-	// oauthCtx: OAuth context to write the file content
-	// instanceURL: VCS instance URL
-	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
 	// Fetch the commit data by id
 	//
 	// oauthCtx: OAuth context to fetch commit

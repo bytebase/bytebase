@@ -354,11 +354,6 @@ func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthC
 	return &userInfo, err
 }
 
-// TryLogin tries to fetch the user info from the current OAuth context.
-func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, "user")
-}
-
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)

@@ -108,11 +108,6 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 	return oauthResp.toVCSOAuthToken()
 }
 
-// TryLogin tries to fetch the user info from the current OAuth context.
-func (*Provider) TryLogin(context.Context, common.OauthContext, string) (*vcs.UserInfo, error) {
-	return nil, errors.New("not implemented")
-}
-
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (*Provider) FetchCommitByID(_ context.Context, _ common.OauthContext, _, _, _ string) (*vcs.Commit, error) {
 	return nil, errors.New("not implemented")
