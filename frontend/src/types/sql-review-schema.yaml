@@ -352,6 +352,7 @@ ruleList:
       - ORACLE
       - OCEANBASE
       - SNOWFLAKE
+      - MSSQL
     componentList:
       - key: list
         payload:
