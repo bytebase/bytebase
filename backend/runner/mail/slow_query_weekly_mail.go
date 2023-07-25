@@ -287,10 +287,10 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 		if _, exists := instanceMap[database.InstanceID]; !exists {
 			continue
 		}
-		if list, exists := databaseMap[database.EnvironmentID]; exists {
-			databaseMap[database.EnvironmentID] = append(list, database)
+		if list, exists := databaseMap[database.EffectiveEnvironmentID]; exists {
+			databaseMap[database.EffectiveEnvironmentID] = append(list, database)
 		} else {
-			databaseMap[database.EnvironmentID] = []*store.DatabaseMessage{database}
+			databaseMap[database.EffectiveEnvironmentID] = []*store.DatabaseMessage{database}
 		}
 	}
 

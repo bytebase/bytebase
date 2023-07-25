@@ -1458,8 +1458,8 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		syncState = v1pb.State_DELETED
 	}
 	environment := ""
-	if database.EnvironmentID != "" {
-		environment = fmt.Sprintf("%s%s", environmentNamePrefix, database.EnvironmentID)
+	if database.EffectiveEnvironmentID != "" {
+		environment = fmt.Sprintf("%s%s", environmentNamePrefix, database.EffectiveEnvironmentID)
 	}
 	return &v1pb.Database{
 		Name:               fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
@@ -1688,14 +1688,14 @@ func (s *DatabaseService) validateAndConvertToStoreBackupSetting(ctx context.Con
 	}
 
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID:  &database.EnvironmentID,
+		ResourceID:  &database.EffectiveEnvironmentID,
 		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EnvironmentID)
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
 	backupPlanPolicy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, environment.UID)
 	if err != nil {

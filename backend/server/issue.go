@@ -856,12 +856,12 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, project *
 			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 		}
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 	if err != nil {
 		return nil, err
 	}
 	if environment == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("environment %q not found", database.EnvironmentID))
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("environment %q not found", database.EffectiveEnvironmentID))
 	}
 	if database.ProjectID != project.ResourceID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The issue project %d must be the same as the database project %q.", issueCreate.ProjectID, database.ProjectID))
@@ -1081,10 +1081,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			var taskCreateLists [][]*store.TaskMessage
 			var taskIndexDAGLists [][]store.TaskIndexDAG
 			for _, database := range databaseList {
-				if environmentID != "" && environmentID != database.EnvironmentID {
+				if environmentID != "" && environmentID != database.EffectiveEnvironmentID {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
 				}
-				environmentID = database.EnvironmentID
+				environmentID = database.EffectiveEnvironmentID
 
 				schemaVersion := common.DefaultMigrationVersion()
 				migrationDetailList := databaseToMigrationList[database.UID]
@@ -1133,10 +1133,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		var taskCreateList []*store.TaskMessage
 		var taskIndexDAGList []store.TaskIndexDAG
 		for _, database := range databaseList {
-			if environmentID != "" && environmentID != database.EnvironmentID {
+			if environmentID != "" && environmentID != database.EffectiveEnvironmentID {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
 			}
-			environmentID = database.EnvironmentID
+			environmentID = database.EffectiveEnvironmentID
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 			if err != nil {
 				return nil, err
@@ -1929,7 +1929,7 @@ func (s *Server) getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGr
 		res, _, err := prog.ContextEval(ctx, map[string]any{
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
-				"environment_name": fmt.Sprintf("%s%s", "environments/", database.EnvironmentID),
+				"environment_name": fmt.Sprintf("%s%s", "environments/", database.EffectiveEnvironmentID),
 				"instance_id":      database.InstanceID,
 			},
 		})
