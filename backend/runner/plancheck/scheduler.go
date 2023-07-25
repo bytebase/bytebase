@@ -3,6 +3,7 @@ package plancheck
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -16,11 +17,15 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func NewScheduler(s *store.Store, licenseService enterpriseAPI.LicenseService, stageCfg *state.State) *Scheduler {
+const (
+	planCheckSchedulerInterval = time.Duration(1) * time.Second
+)
+
+func NewScheduler(s *store.Store, licenseService enterpriseAPI.LicenseService, stateCfg *state.State) *Scheduler {
 	return &Scheduler{
 		store:          s,
 		licenseService: licenseService,
-		stateCfg:       stageCfg,
+		stateCfg:       stateCfg,
 		executors:      make(map[store.PlanCheckRunType]Executor),
 	}
 }
@@ -33,9 +38,10 @@ type Scheduler struct {
 }
 
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(planCheckSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
+	log.Debug(fmt.Sprintf("Plan check scheduler started and will run every %v", planCheckSchedulerInterval))
 	for {
 		select {
 		case <-ticker.C:
