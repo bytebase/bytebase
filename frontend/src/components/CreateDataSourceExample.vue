@@ -314,7 +314,7 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
       case Engine.ORACLE:
         return "-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.\n\nCREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\nGRANT ALL PRIVILEGES TO bytebase;";
       case Engine.DM:
-        return 'CREATE USER bytebase IDENTIFIED BY "YOUR_DB_PWD";\nGRANT "DBA" TO bytebase;';
+        return 'CREATE USER BYTEBASE IDENTIFIED BY "YOUR_DB_PWD";\nGRANT "DBA" TO bytebase;';
     }
   } else {
     switch (engine) {
