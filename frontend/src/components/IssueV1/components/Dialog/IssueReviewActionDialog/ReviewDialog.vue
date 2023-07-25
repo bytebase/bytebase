@@ -65,14 +65,16 @@ const handleConfirm = async (
     const { action, comment = "" } = params;
     const status = targetReviewStatusForReviewAction(action);
     if (status === Issue_Approver_Status.APPROVED) {
-      // await store.approveIssue(issue.value, comment);
+      await issueServiceClient.approveIssue({
+        name: issue.value.name,
+        comment,
+      });
       onSuccess();
     } else if (status === Issue_Approver_Status.PENDING) {
       await issueServiceClient.requestIssue({
         name: issue.value.name,
         comment,
       });
-      //
     } else if (status === Issue_Approver_Status.REJECTED) {
       await issueServiceClient.rejectIssue({
         name: issue.value.name,

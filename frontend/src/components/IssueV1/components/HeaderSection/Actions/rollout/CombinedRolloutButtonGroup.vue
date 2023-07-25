@@ -15,7 +15,6 @@
       "
       :issue-status-action-list="issueStatusActionList"
       :extra-action-list="extraActionList"
-      @perform-batch-task-action="performBatchTaskAction"
     />
   </div>
 
