@@ -29,7 +29,7 @@
 
       <div class="flex flex-col items-end gap-y-2">
         <ReviewSection v-if="!isCreating" />
-        <Assignee />
+        <Assignee v-if="shouldShowAssignee" />
       </div>
     </div>
   </div>
@@ -59,5 +59,9 @@ const issueTaskStatus = computed(() => {
   }
 
   return activeTaskInRollout(issue.value.rolloutEntity).status;
+});
+
+const shouldShowAssignee = computed(() => {
+  return isDatabaseRelatedIssue(issue.value);
 });
 </script>

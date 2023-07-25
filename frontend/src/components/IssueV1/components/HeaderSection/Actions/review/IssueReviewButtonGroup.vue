@@ -1,52 +1,22 @@
 <template>
-  <div class="flex items-stretch gap-x-4">
-    <NButton
-      v-if="allowReject"
-      type="default"
-      size="large"
-      @click="showModal(Issue_Approver_Status.REJECTED)"
-    >
-      {{ $t("custom-approval.issue-review.send-back") }}
-    </NButton>
+  <div class="issue-debug">
+    <div>allowReject: {{ shouldShowReject }}</div>
+    <div>allowApprove: {{ shouldShowApprove }}</div>
+    <div>allowReRequestReview: {{ shouldShowReRequestReview }}</div>
+  </div>
+  <div class="flex items-stretch gap-x-3">
+    <ReviewActionButton
+      v-for="action in issueReviewActionList"
+      :key="action"
+      :action="action"
+      @perform-action="handleApplyAction"
+    />
 
-    <TooltipButton
-      v-if="allowApprove"
-      :disabled="disallowApproveReasonList.length > 0"
-      :tooltip-props="{
-        placement: 'top-end',
-      }"
-      type="primary"
-      size="large"
-      tooltip-mode="DISABLED-ONLY"
-      @click="showModal(Issue_Approver_Status.APPROVED)"
-    >
-      {{ $t("common.approve") }}
-
-      <template #tooltip>
-        <div class="whitespace-pre-line max-w-[20rem]">
-          <div v-for="(reason, i) in disallowApproveReasonList" :key="i">
-            {{ reason }}
-          </div>
-        </div>
-      </template>
-    </TooltipButton>
-
-    <NButton
-      v-if="allowReRequestReview"
-      type="primary"
-      size="large"
-      @click="showModal(Issue_Approver_Status.PENDING)"
-    >
-      {{ $t("custom-approval.issue-review.re-request-review") }}
-    </NButton>
-
-    <!-- <StandaloneIssueStatusTransitionButtonGroup
-      :display-mode="
-        allowApprove || allowReject || allowReRequestReview
-          ? 'DROPDOWN'
-          : 'BUTTON'
-      "
-    /> -->
+    <IssueStatusActionButtonGroup
+      :display-mode="issueReviewActionList.length > 0 ? 'DROPDOWN' : 'BUTTON'"
+      :issue-status-action-list="issueStatusActionList"
+      :extra-action-list="[]"
+    />
   </div>
 
   <BBModal
@@ -76,16 +46,18 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton } from "naive-ui";
 
-import { candidatesOfApprovalStepV1, useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName } from "@/utils";
 import ReviewForm from "./ReviewForm.vue";
-
-import { useIssueContext } from "@/components/IssueV1";
-import { TooltipButton } from "@/components/v2";
-// import { StandaloneIssueStatusTransitionButtonGroup } from "../StatusTransitionButtonGroup";
+import {
+  IssueReviewAction,
+  getApplicableIssueStatusActionList,
+  useIssueContext,
+} from "@/components/IssueV1";
+import { IssueStatusActionButtonGroup } from "../common";
+import ReviewActionButton from "./ReviewActionButton.vue";
 
 type LocalState = {
   modal?: {
@@ -106,9 +78,9 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { issue, phase, reviewContext, events } = useIssueContext();
-const { flow, ready, status, done } = reviewContext;
+const { ready, status, done } = reviewContext;
 
-const allowApproveOrReject = computed(() => {
+const shouldShowApproveOrReject = computed(() => {
   if (phase.value !== "REVIEW") {
     return false;
   }
@@ -116,53 +88,51 @@ const allowApproveOrReject = computed(() => {
   if (!ready.value) return false;
   if (done.value) return false;
 
-  const index = flow.value.currentStepIndex;
-  const steps = flow.value.template.flow?.steps ?? [];
-  const step = steps[index];
-  if (!step) return false;
-  const candidates = candidatesOfApprovalStepV1(issue.value, step);
-  return candidates.includes(currentUser.value.name);
+  return true;
 });
-
-const allowApprove = computed(() => {
-  if (!allowApproveOrReject.value) return false;
+const shouldShowApprove = computed(() => {
+  if (!shouldShowApproveOrReject.value) return false;
 
   return status.value === Issue_Approver_Status.PENDING;
 });
-const allowReject = computed(() => {
-  if (!allowApproveOrReject.value) return false;
+const shouldShowReject = computed(() => {
+  if (!shouldShowApproveOrReject.value) return false;
   return status.value === Issue_Approver_Status.PENDING;
 });
-
-const allowReRequestReview = computed(() => {
+const shouldShowReRequestReview = computed(() => {
   return (
     extractUserResourceName(issue.value.creator) === currentUser.value.email &&
     status.value === Issue_Approver_Status.REJECTED
   );
 });
-
-const allTaskChecksPassed = computed(() => {
-  // TODO
-  return false;
-  // const taskList =
-  //   issue.value.pipeline?.stageList.flatMap((stage) => stage.taskList) ?? [];
-  // return taskList.every((task) => {
-  //   const summary = taskCheckRunSummary(task);
-  //   return summary.errorCount === 0 && summary.runningCount === 0;
-  // });
-});
-
-const disallowApproveReasonList = computed((): string[] => {
-  const reasons: string[] = [];
-  if (!allTaskChecksPassed.value) {
-    reasons.push(
-      t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-      )
-    );
+const issueReviewActionList = computed(() => {
+  const actionList: IssueReviewAction[] = [];
+  if (shouldShowReject.value) {
+    actionList.push("SEND_BACK");
   }
-  return reasons;
+  if (shouldShowApprove.value) {
+    actionList.push("APPROVE");
+  }
+  if (shouldShowReRequestReview.value) {
+    actionList.push("RE_REQUEST");
+  }
+
+  return actionList;
 });
+
+const handleApplyAction = (action: IssueReviewAction) => {
+  switch (action) {
+    case "APPROVE":
+      showModal(Issue_Approver_Status.APPROVED);
+      break;
+    case "SEND_BACK":
+      showModal(Issue_Approver_Status.REJECTED);
+      break;
+    case "RE_REQUEST":
+      showModal(Issue_Approver_Status.PENDING);
+      break;
+  }
+};
 
 const showModal = (status: Issue_Approver_Status) => {
   state.modal = {
@@ -224,4 +194,8 @@ const handleModalConfirm = async (
     state.loading = false;
   }
 };
+
+const issueStatusActionList = computed(() => {
+  return getApplicableIssueStatusActionList(issue.value);
+});
 </script>

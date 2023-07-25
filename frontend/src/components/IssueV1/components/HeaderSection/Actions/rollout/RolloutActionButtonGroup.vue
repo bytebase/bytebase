@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-x-2">
+  <div class="flex items-center gap-x-3">
     <RolloutActionButton
       v-for="(action, index) in taskRolloutActionList"
       :key="index"

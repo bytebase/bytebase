@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-x-2">
+  <div class="flex gap-x-3">
     <RolloutActionButtonGroup
       v-if="primaryTaskRolloutActionList.length > 0"
       :task-rollout-action-list="primaryTaskRolloutActionList"
