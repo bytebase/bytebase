@@ -4,6 +4,9 @@
       v-for="(action, index) in issueStatusActionList"
       :key="index"
       :action="action"
+      @perform-action="
+        (action) => events.emit('perform-issue-status-action', { action })
+      "
     />
 
     <NDropdown
