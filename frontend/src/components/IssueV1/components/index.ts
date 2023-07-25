@@ -8,6 +8,7 @@ import StatementSection from "./StatementSection";
 import DescriptionSection from "./DescriptionSection";
 import ActivitySection from "./ActivitySection";
 
+export * from "./Dialog";
 export {
   BannerSection,
   HeaderSection,

@@ -19,6 +19,13 @@
     <DescriptionSection />
 
     <ActivitySection v-if="!isCreating" />
+
+    <IssueReviewActionDialog
+      v-if="ongoingReviewAction"
+      :title="ongoingReviewAction.title"
+      :action="ongoingReviewAction.action"
+      @close="ongoingReviewAction = undefined"
+    />
   </div>
 
   <div class="issue-debug">
@@ -27,7 +34,10 @@
 </template>
 
 <script setup lang="ts">
-import { useIssueContext } from "./logic";
+import { ref } from "vue";
+import { useI18n } from "vue-i18n";
+
+import { IssueReviewAction, useIssueContext } from "./logic";
 import {
   BannerSection,
   HeaderSection,
@@ -38,9 +48,39 @@ import {
   StatementSection,
   DescriptionSection,
   ActivitySection,
+  IssueReviewActionDialog,
 } from "./components";
 
+const { t } = useI18n();
 const { isCreating, phase, issue, events } = useIssueContext();
+
+const ongoingReviewAction = ref<{
+  title: string;
+  action: IssueReviewAction;
+}>();
+
+events.on("perform-issue-review-action", ({ action }) => {
+  ongoingReviewAction.value = {
+    title: "",
+    action,
+  };
+  switch (action) {
+    case "APPROVE":
+      ongoingReviewAction.value.title = t(
+        "custom-approval.issue-review.approve-issue"
+      );
+      break;
+    case "SEND_BACK":
+      ongoingReviewAction.value.title = t(
+        "custom-approval.issue-review.send-back-issue"
+      );
+      break;
+    case "RE_REQUEST":
+      ongoingReviewAction.value.title = t(
+        "custom-approval.issue-review.re-request-review-issue"
+      );
+  }
+});
 
 events.on("perform-issue-status-action", ({ action }) => {
   alert(`perform issue status action: action=${action}`);
