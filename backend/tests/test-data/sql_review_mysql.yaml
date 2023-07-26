@@ -16,7 +16,7 @@
       title: Syntax error
       content: |-
         Syntax error at line 1:20 
-        related text: CREATE TABLE user(id
+        related text: CREATE TABLE user(id)
       line: 1
       details: ""
   run: false
