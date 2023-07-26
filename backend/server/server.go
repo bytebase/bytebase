@@ -467,7 +467,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		statementAffectedRowsExecutor := taskcheck.NewStatementAffectedRowsReportExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAffectedRowsReport, statementAffectedRowsExecutor)
 
-		if s.profile.Mode == common.ReleaseModeDev {
+		{
 			s.PlanCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 			databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
 			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
@@ -603,7 +603,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
 	v1pb.RegisterIssueServiceServer(s.grpcServer, v1.NewIssueService(s.store, s.ActivityManager, s.TaskScheduler, s.TaskCheckScheduler, s.RelayRunner, s.stateCfg))
-	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.stateCfg, s.ActivityManager))
+	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
 	v1pb.RegisterSchemaDesignServiceServer(s.grpcServer, v1.NewSchemaDesignService(s.store, s.licenseService))
