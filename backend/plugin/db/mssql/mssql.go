@@ -123,11 +123,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	return totalRowsAffected, nil
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	return util.Query(ctx, db.MSSQL, conn, statement, queryContext)
-}
-
 func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
 	return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, limit)

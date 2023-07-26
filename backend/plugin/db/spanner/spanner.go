@@ -192,62 +192,6 @@ func (d *Driver) creataDatabase(ctx context.Context, createStatement string, ext
 	return nil
 }
 
-// QueryConn querys statements.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	stmts, err := sanitizeSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	if len(stmts) != 1 {
-		return nil, errors.Errorf("expect to get 1 statement, get %d", len(stmts))
-	}
-
-	statement = stmts[0]
-	if !queryContext.ReadOnly && !isSelect(statement) {
-		return d.queryAdmin(ctx, statement)
-	}
-
-	statement = getStatementWithResultLimit(statement, queryContext.Limit)
-	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
-	defer iter.Stop()
-
-	row, err := iter.Next()
-	if err == iterator.Done {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	data := []any{}
-	columnNames := getColumnNames(iter)
-	columnTypeNames, err := getColumnTypeNames(iter)
-	if err != nil {
-		return nil, err
-	}
-
-	for {
-		rowData, err := readRow(row)
-		if err != nil {
-			return nil, err
-		}
-		data = append(data, rowData)
-
-		row, err = iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// spanner doesn't mask the sensitive fields.
-	// Return the all false boolean slice here as the placeholder.
-	sensitiveInfo := make([]bool, len(columnNames))
-	return []any{columnNames, columnTypeNames, data, sensitiveInfo}, nil
-}
-
 func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]any, error) {
 	if isDDL(statement) {
 		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{

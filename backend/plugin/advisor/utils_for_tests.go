@@ -255,41 +255,6 @@ func (*MockDriver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1
 	return nil, nil
 }
 
-// QueryConn implements the Driver interface.
-func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *database.QueryContext) ([]any, error) {
-	switch statement {
-	// For TestStatementDMLDryRun
-	case "EXPLAIN DELETE FROM tech_book":
-		return nil, errors.Errorf("MockDriver disallows it")
-	// For TestStatementAffectedRowLimit
-	case "EXPLAIN UPDATE tech_book SET id = 1":
-		return []any{
-			nil,
-			nil,
-			[]any{
-				[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
-			},
-		}, nil
-	// For TestInsertRowLimit
-	case "EXPLAIN INSERT INTO tech_book SELECT * FROM tech_book":
-		return []any{
-			nil,
-			nil,
-			[]any{
-				nil,
-				[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
-			},
-		}, nil
-	}
-	return []any{
-		nil,
-		nil,
-		[]any{
-			[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1, nil, nil},
-		},
-	}, nil
-}
-
 // SyncInstance implements the Driver interface.
 func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, error) {
 	return nil, nil

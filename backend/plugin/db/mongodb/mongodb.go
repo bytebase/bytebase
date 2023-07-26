@@ -127,34 +127,6 @@ func (driver *Driver) Execute(_ context.Context, statement string, _ bool, _ db.
 	return 0, nil
 }
 
-// QueryConn querys statements and returns the result.
-func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]any, error) {
-	connectionURI := getMongoDBConnectionURI(driver.connCfg)
-	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
-	// 1. Query always short, so it's safe to execute in the command line.
-	// 2. We cannot catch the output if we use the --file option.
-
-	mongoshArgs := []string{
-		connectionURI,
-		"--quiet",
-		"--eval",
-		statement,
-	}
-
-	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
-	var errContent bytes.Buffer
-	var outContent bytes.Buffer
-	mongoshCmd.Stderr = &errContent
-	mongoshCmd.Stdout = &outContent
-	if err := mongoshCmd.Run(); err != nil {
-		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
-	}
-	field := []string{"result"}
-	types := []string{"TEXT"}
-	rows := [][]any{{outContent.String()}}
-	return []any{field, types, rows}, nil
-}
-
 // Dump dumps the database.
 func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
