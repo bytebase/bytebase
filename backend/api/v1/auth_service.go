@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/nyaruka/phonenumbers"
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
@@ -16,10 +18,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/pquerna/otp/totp"
-
-	"github.com/nyaruka/phonenumbers"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -61,7 +59,7 @@ func NewAuthService(store *store.Store, secret string, licenseService enterprise
 
 // GetUser gets a user.
 func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest) (*v1pb.User, error) {
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -244,7 +242,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	userID, err := getUserID(request.User.Name)
+	userID, err := common.GetUserID(request.User.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -403,7 +401,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 // DeleteUser deletes a user.
 func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRequest) (*emptypb.Empty, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -432,7 +430,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 // UndeleteUser undeletes a user.
 func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUserRequest) (*v1pb.User, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -480,7 +478,7 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	}
 
 	convertedUser := &v1pb.User{
-		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
+		Name:     fmt.Sprintf("%s%d", common.UserNamePrefix, user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Phone:    user.Phone,
@@ -664,7 +662,7 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 }
 
 func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	idpID, err := getIdentityProviderID(request.IdpName)
+	idpID, err := common.GetIdentityProviderID(request.IdpName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get identity provider ID: %v", err)
 	}

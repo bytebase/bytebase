@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/pkg/errors"
-
+	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
@@ -280,7 +280,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 }
 
 func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context, name string) (*store.IdentityProviderMessage, error) {
-	identityProviderID, err := getIdentityProviderID(name)
+	identityProviderID, err := common.GetIdentityProviderID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -302,7 +302,7 @@ func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) 
 	identityProviderType := v1pb.IdentityProviderType(identityProvider.Type)
 	config := convertIdentityProviderConfigFromStore(identityProvider.Config)
 	return &v1pb.IdentityProvider{
-		Name:   fmt.Sprintf("%s%s", identityProviderNamePrefix, identityProvider.ResourceID),
+		Name:   fmt.Sprintf("%s%s", common.IdentityProviderNamePrefix, identityProvider.ResourceID),
 		Uid:    fmt.Sprintf("%d", identityProvider.UID),
 		State:  convertDeletedToState(identityProvider.Deleted),
 		Title:  identityProvider.Title,
