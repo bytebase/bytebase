@@ -20,7 +20,7 @@
           "
         />
       </div>
-      <div class="bb-grid-cell truncate">
+      <div class="bb-grid-cell">
         <InstanceV1Name
           :instance="extractComposedDatabase(item).instanceEntity"
         />
