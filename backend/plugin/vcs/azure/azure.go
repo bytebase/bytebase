@@ -332,9 +332,66 @@ func (*Provider) ReadFileContent(_ context.Context, _ common.OauthContext, _, _,
 	return "", errors.New("not implemented")
 }
 
-// GetBranch gets the given branch in the repository.
-func (*Provider) GetBranch(_ context.Context, _ common.OauthContext, _, _, _ string) (*vcs.BranchInfo, error) {
-	return nil, errors.New("not implemented")
+// GetBranch try to retrieve the branch from the repository, and returns the last commit ID of the branch, if the branch
+// does not exist, it returns common.NotFound.
+// Args:
+// - repositoryID: The repository ID in the format of <organization>/<repository>.
+// - branchName: The branch name.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/stats/get?view=azure-devops-rest-7.0&tabs=HTTP
+func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+	if branchName == "" {
+		return nil, errors.New("branch name is required")
+	}
+
+	parts := strings.Split(repositoryID, "/")
+	if len(parts) != 2 {
+		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
+	}
+	organizationName, repositoryID := parts[0], parts[1]
+
+	urlParams := &url.Values{}
+	urlParams.Set("name", branchName)
+	urlParams.Set("api-version", "7.0")
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/stats/branches?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), urlParams.Encode())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "construct GET %s", url)
+	}
+	req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, fmt.Sprintf("failed to get the static of the branch %s of the repository %s under the organization %s", branchName, repositoryID, organizationName))
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("branch %q does not exist in the repository %s under the organization %s", branchName, repositoryID, organizationName))
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, fmt.Sprintf("failed to read get the static of the branch %s of the repository %s under the organization %s response body, code %v", branchName, repositoryID, organizationName, resp.StatusCode))
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	type branchStatResponseCommit struct {
+		CommitID string `json:"commitId"`
+	}
+	type branchStatResponse struct {
+		Name   string                   `json:"name"`
+		Commit branchStatResponseCommit `json:"commit"`
+	}
+
+	r := new(branchStatResponse)
+	if err := json.Unmarshal(body, r); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal get the static of the branch %s of the repository %s under the organization %s response body, body: %s", branchName, repositoryID, organizationName, string(body))
+	}
+	return &vcs.BranchInfo{
+		Name:         r.Name,
+		LastCommitID: r.Commit.CommitID,
+	}, nil
 }
 
 // CreateBranch creates the branch in the repository.
