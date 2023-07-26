@@ -584,6 +584,7 @@ func getOracleStatementWithResultLimit(stmt string, limit int) string {
 func getDMStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
 }
+
 func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
 	return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, limit)
