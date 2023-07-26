@@ -14,7 +14,9 @@
       code: 201
       status: ERROR
       title: Syntax error
-      content: Syntax error at line 1:20 \nrelated text: CREATE TABLE user(
+      content: |-
+        Syntax error at line 1:20 
+        related text: CREATE TABLE user(
       line: 1
       details: ""
   run: false
