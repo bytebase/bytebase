@@ -582,7 +582,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.EffectiveEnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("(instance_environment = $%d OR db_environment = $%d)", len(args)+1, len(args)+2)), append(args, *v, *v)
+		where, args = append(where, fmt.Sprintf("((instance_environment = $%d AND db_environment == NULL) OR db_environment = $%d)", len(args)+1, len(args)+2)), append(args, *v, *v)
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -607,7 +607,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		SELECT
 			db.id,
 			project.resource_id AS project_id,
-			COALESCE((SELECT environment.resource_id FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id), ''),
+			COALESCE(COALESCE((SELECT environment.resource_id FROM environment where environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id)), ''),
 			COALESCE((SELECT environment.resource_id FROM environment where environment.id = db.environment_id), ''),
 			instance.resource_id AS instance_id,
 			db.name,
@@ -640,11 +640,11 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			Labels: make(map[string]string),
 		}
 		var keys, values []sql.NullString
-		var instanceEnvironment, secretsString string
+		var secretsString string
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
-			&instanceEnvironment,
+			&databaseMessage.EffectiveEnvironmentID,
 			&databaseMessage.EnvironmentID,
 			&databaseMessage.InstanceID,
 			&databaseMessage.DatabaseName,
@@ -658,9 +658,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.ServiceName,
 		); err != nil {
 			return nil, err
-		}
-		if databaseMessage.EnvironmentID == "" {
-			databaseMessage.EffectiveEnvironmentID = instanceEnvironment
 		}
 		var secret storepb.Secrets
 		if err := protojson.Unmarshal([]byte(secretsString), &secret); err != nil {
