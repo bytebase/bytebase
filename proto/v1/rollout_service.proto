@@ -68,6 +68,14 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
   }
 
+  rpc RunPlanChecks(RunPlanChecksRequest) returns (RunPlanChecksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/plans/*}:runPlanCheks"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun",
@@ -298,6 +306,14 @@ message ListPlanCheckRunsResponse {
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
+
+message RunPlanChecksRequest {
+  // The plan to run plan checks.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RunPlanChecksResponse {}
 
 message BatchRunTasksRequest {
   // The name of the parent of the tasks.
