@@ -27,8 +27,3 @@ UPDATE data_source
 SET port = '6379'
 FROM instance
 WHERE data_source.instance_id = instance.id AND data_source.port = '' AND instance.engine = 'REDIS';
-
-UPDATE data_source
-SET port = '5236'
-FROM instance
-WHERE data_source.instance_id = instance.id AND data_source.port = '' AND instance.engine = 'DM';
