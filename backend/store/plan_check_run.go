@@ -152,7 +152,10 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 
 	var planCheckRuns []*PlanCheckRunMessage
 	for rows.Next() {
-		var planCheckRun PlanCheckRunMessage
+		planCheckRun := PlanCheckRunMessage{
+			Config: &storepb.PlanCheckRunConfig{},
+			Result: &storepb.PlanCheckRunResult{},
+		}
 		var config, result string
 		if err := rows.Scan(
 			&planCheckRun.UID,
