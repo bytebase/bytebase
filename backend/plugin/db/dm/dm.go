@@ -34,7 +34,6 @@ func init() {
 type Driver struct {
 	db               *sql.DB
 	databaseName     string
-	serviceName      string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -47,19 +46,18 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionC
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
 	}
-	dsn := fmt.Sprintf("dm://%s:%s@%s:%d", config.Username, config.Password , config.Host, port)
+	dsn := fmt.Sprintf("dm://%s:%s@%s:%d?shcema=%s", config.Username, config.Password , config.Host, port,config.Database)
 	db, err := sql.Open("dm", dsn)
 	if err != nil {
 		return nil, err
 	}
-	if config.Database != "" {
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.Database)); err != nil {
-			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.Database)
-		}
-	}
+	// if config.Database != "" {
+	// 	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.Database)); err != nil {
+	// 		return nil, errors.Wrapf(err, "failed to set current schema to %q", config.Database)
+	// 	}
+	// }
 	driver.db = db
 	driver.databaseName = config.Database
-	driver.serviceName = config.ServiceName
 	return driver, nil
 }
 
@@ -101,7 +99,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
-		// The underlying dm golang driver go-dm does not support semicolon, so we should trim the suffix semicolon.(like the go-ora driver..)
+		// The underlying dm golang driver go-dm does not support semicolon, so we should trim the suffix semicolon similar to the go-ora driver.
 		stmt = strings.TrimSuffix(stmt, ";")
 		sqlResult, err := tx.ExecContext(ctx, stmt)
 		if err != nil {

@@ -104,7 +104,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 
 	databaseMetadata := &storepb.DatabaseMetadata{
 		Name:        driver.databaseName,
-		ServiceName: driver.serviceName,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 		Name:   driver.databaseName,
