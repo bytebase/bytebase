@@ -582,7 +582,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.EffectiveEnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("((instance_environment = $%d AND db_environment == NULL) OR db_environment = $%d)", len(args)+1, len(args)+2)), append(args, *v, *v)
+		where, args = append(where, fmt.Sprintf("((instance_environment = $%d AND db_environment IS NULL) OR db_environment = $%d)", len(args)+1, len(args)+2)), append(args, *v, *v)
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
