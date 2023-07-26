@@ -5,7 +5,7 @@
     class="inline-flex items-center gap-x-1"
     :class="link && !plain && 'normal-link'"
   >
-    <span>{{ environmentV1Name(environment) }}</span>
+    <span class="line-clamp-1">{{ environmentV1Name(environment) }}</span>
     <ProductionEnvironmentV1Icon
       :environment="environment"
       :class="iconClass ?? '!text-current'"
