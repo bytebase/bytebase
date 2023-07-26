@@ -517,6 +517,7 @@ func mssqlSyntaxCheck(statement string) (any, []Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
 				},
 			}
 		}
@@ -545,6 +546,7 @@ func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
 				},
 			}
 		}
@@ -573,6 +575,7 @@ func oracleSyntaxCheck(statement string) (any, []Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
 				},
 			}
 		}
@@ -680,6 +683,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 							Title:   SyntaxErrorTitle,
 							Content: syntaxErr.Message,
 							Line:    syntaxErr.Line,
+							Column:  syntaxErr.Column,
 						},
 					}
 				}
