@@ -143,6 +143,7 @@ import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import { isPITRDatabaseV1 } from "@/utils";
+import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
 
 defineProps<{
   database: ComposedDatabase;
