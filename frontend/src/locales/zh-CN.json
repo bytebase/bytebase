@@ -1759,7 +1759,6 @@
       "sheet-is-read-only": "分享的工作表是只读的，无法编辑。"
     },
     "view-all-tabs": "查看所有标签页",
-    "sheet": "工作表",
     "sheets": "工作表",
     "connection-holder": "点击左侧数据库列表中的节点来建立连接",
     "link-access": "链接访问权限",
@@ -1794,7 +1793,11 @@
     "clear-screen": "清屏",
     "query-time": "查询时间",
     "request-query": "申请查询权限",
-    "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。"
+    "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
+    "sheet": {
+      "choose-sheet": "选择工作表",
+      "self": "工作表"
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",

@@ -1764,7 +1764,6 @@
       "sheet-is-read-only": "La hoja compartida es solo de lectura."
     },
     "view-all-tabs": "Ver todas las pestañas",
-    "sheet": "Hoja",
     "sheets": "Hojas",
     "connection-holder": "Haz clic en los nodos del panel izquierdo para comenzar",
     "link-access": "Acceso al enlace",
@@ -1799,7 +1798,11 @@
     "clear-screen": "Limpiar pantalla",
     "query-time": "Tiempo de consulta",
     "request-query": "Solicitar consulta",
-    "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta."
+    "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
+    "sheet": {
+      "choose-sheet": "Elegir hoja",
+      "self": "Hoja"
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",
