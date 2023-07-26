@@ -36,6 +36,8 @@ type State struct {
 	RunningTaskChecks sync.Map // map[taskCheckID]bool
 	// RunningTasks is the set of running tasks.
 	RunningTasks sync.Map // map[taskID]bool
+	// RunningPlanChecks is the set of running plan checks.
+	RunningPlanChecks sync.Map
 	// RunningTasksCancel is the cancel's of running tasks.
 	RunningTasksCancel sync.Map // map[taskID]context.CancelFunc
 	// InstanceOutstandingConnections is the maximum number of connections per instance.
