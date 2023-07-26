@@ -3,7 +3,7 @@
     <Splitpanes
       class="default-theme w-full h-full flex flex-row overflow-hidden"
     >
-      <Pane size="20">
+      <Pane min-size="15" size="20">
         <AsidePanel />
       </Pane>
       <Pane min-size="60" size="80">
