@@ -21,7 +21,6 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
-      - DM
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
