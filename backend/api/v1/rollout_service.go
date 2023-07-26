@@ -623,9 +623,9 @@ func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type 
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
 	case store.PlanCheckDatabaseConnect:
 		return v1pb.PlanCheckRun_DATABASE_CONNECT
-	case store.PlanCheckGhostSync:
+	case store.PlanCheckDatabaseGhostSync:
 		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
-	case store.PlanCheckPITRMySQL:
+	case store.PlanCheckDatabasePITRMySQL:
 		return v1pb.PlanCheckRun_DATABASE_PITR_MYSQL
 	}
 	return v1pb.PlanCheckRun_TYPE_UNSPECIFIED
