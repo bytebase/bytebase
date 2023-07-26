@@ -760,6 +760,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | REDSHIFT | 12 |  |
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
+| DM | 15 |  |
 
 
 
