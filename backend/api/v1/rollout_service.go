@@ -25,6 +25,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -41,18 +42,20 @@ type RolloutService struct {
 	dbFactory          *dbfactory.DBFactory
 	taskScheduler      *taskrun.Scheduler
 	taskCheckScheduler *taskcheck.Scheduler
+	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
 	activityManager    *activity.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
 	return &RolloutService{
 		store:              store,
 		licenseService:     licenseService,
 		dbFactory:          dbFactory,
 		taskScheduler:      taskScheduler,
 		taskCheckScheduler: taskCheckScheduler,
+		planCheckScheduler: planCheckScheduler,
 		stateCfg:           stateCfg,
 		activityManager:    activityManager,
 	}
@@ -376,6 +379,25 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		}
 	}
 	return nil, nil
+}
+
+// RunPlanChecks runs plan checks for a plan.
+func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanChecksRequest) (*v1pb.RunPlanChecksResponse, error) {
+	planUID, err := common.GetPlanID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	plan, err := s.store.GetPlan(ctx, planUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
+	}
+	if plan == nil {
+		return nil, status.Errorf(codes.NotFound, "plan not found")
+	}
+	if err := s.planCheckScheduler.SchedulePlanChecksForPlan(ctx, planUID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to run plan checks, error: %v", err)
+	}
+	return &v1pb.RunPlanChecksResponse{}, nil
 }
 
 // ListTaskRuns lists rollout task runs.
