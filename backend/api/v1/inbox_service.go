@@ -136,7 +136,7 @@ func (s *InboxService) UpdateInbox(ctx context.Context, request *v1pb.UpdateInbo
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	inboxUID, err := getUIDFromName(request.InboxMessage.Name, inboxNamePrefix)
+	inboxUID, err := common.GetUIDFromName(request.InboxMessage.Name, common.InboxNamePrefix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -194,7 +194,7 @@ func (s *InboxService) convertToInboxMessage(ctx context.Context, inbox *store.I
 	}
 
 	return &v1pb.InboxMessage{
-		Name:        fmt.Sprintf("%s%d", inboxNamePrefix, inbox.UID),
+		Name:        fmt.Sprintf("%s%d", common.InboxNamePrefix, inbox.UID),
 		ActivityUid: fmt.Sprintf("%d", inbox.ActivityUID),
 		Status:      status,
 		Activity:    activity,

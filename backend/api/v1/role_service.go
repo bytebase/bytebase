@@ -69,7 +69,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	roleID, err := getRoleID(request.Role.Name)
+	roleID, err := common.GetRoleID(request.Role.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -104,7 +104,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 
 // DeleteRole deletes an existing role.
 func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRequest) (*emptypb.Empty, error) {
-	roleID, err := getRoleID(request.Name)
+	roleID, err := common.GetRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -120,7 +120,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
 	}
 	if has {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", convertToRoleName(roleID), fmt.Sprintf("%s%s", projectNamePrefix, project))
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", convertToRoleName(roleID), fmt.Sprintf("%s%s", common.ProjectNamePrefix, project))
 	}
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
@@ -145,5 +145,5 @@ func convertToRole(role *store.RoleMessage) *v1pb.Role {
 }
 
 func convertToRoleName(role string) string {
-	return fmt.Sprintf("%s%s", rolePrefix, role)
+	return fmt.Sprintf("%s%s", common.RolePrefix, role)
 }

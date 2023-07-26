@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/pkg/errors"
-
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -151,7 +151,7 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 			}
 			activityFind.TypeList = append(activityFind.TypeList, typeList...)
 			switch fmt.Sprintf("%s/", sections[0]) {
-			case userNamePrefix:
+			case common.UserNamePrefix:
 				user, err := s.store.GetUser(ctx, &store.FindUserMessage{
 					Email:       &sections[1],
 					ShowDeleted: true,
@@ -163,7 +163,7 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 					return nil, status.Errorf(codes.NotFound, "user %q not found", spec.value)
 				}
 				activityFind.ContainerUID = &user.ID
-			case instanceNamePrefix:
+			case common.InstanceNamePrefix:
 				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 					ResourceID:  &sections[1],
 					ShowDeleted: true,
@@ -175,7 +175,7 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 					return nil, status.Errorf(codes.NotFound, "instance %q not found", spec.value)
 				}
 				activityFind.ContainerUID = &instance.UID
-			case projectNamePrefix:
+			case common.ProjectNamePrefix:
 				project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 					ResourceID:  &sections[1],
 					ShowDeleted: true,
@@ -187,7 +187,7 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 					return nil, status.Errorf(codes.NotFound, "project %q not found", spec.value)
 				}
 				activityFind.ContainerUID = &project.UID
-			case pipelineNamePrefix, issueNamePrefix:
+			case common.PipelineNamePrefix, common.IssueNamePrefix:
 				uid, err := strconv.Atoi(sections[1])
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, `invalid resource id "%s"`, spec.value)
@@ -269,7 +269,7 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 
 // GetLog gets the log.
 func (s *LoggingService) GetLog(ctx context.Context, request *v1pb.GetLogRequest) (*v1pb.LogEntity, error) {
-	activityUID, err := getUIDFromName(request.Name, logNamePrefix)
+	activityUID, err := common.GetUIDFromName(request.Name, common.LogNamePrefix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -304,21 +304,21 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		if user == nil {
 			return nil, errors.Errorf("cannot found user with id %d", activity.ContainerUID)
 		}
-		resource = fmt.Sprintf("%s%s", userNamePrefix, user.Email)
+		resource = fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email)
 	case
 		api.ActivityIssueCreate,
 		api.ActivityIssueCommentCreate,
 		api.ActivityIssueFieldUpdate,
 		api.ActivityIssueStatusUpdate,
 		api.ActivityIssueApprovalNotify:
-		resource = fmt.Sprintf("%s%d", issueNamePrefix, activity.ContainerUID)
+		resource = fmt.Sprintf("%s%d", common.IssueNamePrefix, activity.ContainerUID)
 	case
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
 		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
-		resource = fmt.Sprintf("%s%d", pipelineNamePrefix, activity.ContainerUID)
+		resource = fmt.Sprintf("%s%d", common.PipelineNamePrefix, activity.ContainerUID)
 	case
 		api.ActivityProjectRepositoryPush,
 		api.ActivityProjectDatabaseTransfer,
@@ -335,7 +335,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		if project == nil {
 			return nil, errors.Errorf("failed to find project by id %d", activity.ContainerUID)
 		}
-		resource = fmt.Sprintf("%s%s", projectNamePrefix, project.ResourceID)
+		resource = fmt.Sprintf("%s%s", common.ProjectNamePrefix, project.ResourceID)
 	case
 		api.ActivitySQLEditorQuery,
 		api.ActivitySQLExport:
@@ -348,7 +348,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		if instance == nil {
 			return nil, errors.Errorf("failed to find instance by id %d", activity.ContainerUID)
 		}
-		resource = fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID)
+		resource = fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID)
 	}
 
 	user, err := db.GetUserByID(ctx, activity.CreatorUID)
@@ -360,8 +360,8 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 	}
 
 	return &v1pb.LogEntity{
-		Name:       fmt.Sprintf("%s%d", logNamePrefix, activity.UID),
-		Creator:    fmt.Sprintf("%s%s", userNamePrefix, user.Email),
+		Name:       fmt.Sprintf("%s%d", common.LogNamePrefix, activity.UID),
+		Creator:    fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email),
 		Resource:   resource,
 		Action:     convertToActionType(activity.Type),
 		Level:      convertToLogLevel(activity.Level),

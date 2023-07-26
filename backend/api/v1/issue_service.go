@@ -675,7 +675,7 @@ func (s *IssueService) onIssueApproved(ctx context.Context, issue *store.IssueMe
 }
 
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {
-	issueID, err := getIssueID(name)
+	issueID, err := common.GetIssueID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -750,19 +750,19 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 
 	issueV1 := &v1pb.Issue{
-		Name:                 fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, issuePrefix, issue.UID),
+		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssuePrefix, issue.UID),
 		Uid:                  fmt.Sprintf("%d", issue.UID),
 		Title:                issue.Title,
 		Description:          issue.Description,
 		Status:               convertToIssueStatus(issue.Status),
-		Assignee:             fmt.Sprintf("%s%s", userNamePrefix, issue.Assignee.Email),
+		Assignee:             fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Assignee.Email),
 		AssigneeAttention:    issue.NeedAttention,
 		Approvers:            nil,
 		ApprovalTemplates:    nil,
 		ApprovalFindingDone:  false,
 		ApprovalFindingError: "",
 		Subscribers:          nil,
-		Creator:              fmt.Sprintf("%s%s", userNamePrefix, issue.Creator.Email),
+		Creator:              fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Creator.Email),
 		CreateTime:           timestamppb.New(issue.CreatedTime),
 		UpdateTime:           timestamppb.New(issue.UpdatedTime),
 		Plan:                 "",
@@ -770,11 +770,11 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 
 	if issue.PlanUID != nil {
-		issueV1.Plan = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, planPrefix, *issue.PlanUID)
+		issueV1.Plan = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.PlanPrefix, *issue.PlanUID)
 	}
 
 	for _, subscriber := range issue.Subscribers {
-		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", userNamePrefix, subscriber.Email))
+		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", common.UserNamePrefix, subscriber.Email))
 	}
 
 	if issuePayload.Approval != nil {
