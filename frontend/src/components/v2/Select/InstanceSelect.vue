@@ -20,7 +20,7 @@ import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
 import { ComposedInstance, UNKNOWN_ID, unknownInstance } from "@/types";
-import { InstanceV1EngineIcon } from "../Model";
+import { InstanceV1EngineIcon } from "../Model/Instance";
 import { Engine, State } from "@/types/proto/v1/common";
 import { supportedEngineV1List } from "@/utils";
 import { useEnvironmentV1Store, useInstanceV1List } from "@/store";
