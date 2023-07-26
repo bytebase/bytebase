@@ -203,7 +203,8 @@ const handleExportChangeHistory = async () => {
     if (changeHistory) {
       if (
         changeHistory.type === ChangeHistory_Type.MIGRATE ||
-        changeHistory.type === ChangeHistory_Type.MIGRATE_SDL
+        changeHistory.type === ChangeHistory_Type.MIGRATE_SDL ||
+        changeHistory.type === ChangeHistory_Type.DATA
       ) {
         zip.file(`${changeHistory.version}.sql`, changeHistory.statement);
       } else if (changeHistory.type === ChangeHistory_Type.BASELINE) {
