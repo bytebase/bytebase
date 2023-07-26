@@ -283,6 +283,16 @@ export interface Database {
   project: string;
   /** The version of database schema. */
   schemaVersion: string;
+  /**
+   * The environment resource.
+   * Format: environments/prod where prod is the environment resource ID.
+   */
+  environment: string;
+  /**
+   * The effective environment based on environment tag above and environment tag on the instance.
+   * Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview.
+   */
+  effectiveEnvironment: string;
   /** Labels will be used for deployment and policy control. */
   labels: { [key: string]: string };
 }
@@ -2402,7 +2412,17 @@ export const ListBackupsResponse = {
 };
 
 function createBaseDatabase(): Database {
-  return { name: "", uid: "", syncState: 0, successfulSyncTime: undefined, project: "", schemaVersion: "", labels: {} };
+  return {
+    name: "",
+    uid: "",
+    syncState: 0,
+    successfulSyncTime: undefined,
+    project: "",
+    schemaVersion: "",
+    environment: "",
+    effectiveEnvironment: "",
+    labels: {},
+  };
 }
 
 export const Database = {
@@ -2425,8 +2445,14 @@ export const Database = {
     if (message.schemaVersion !== "") {
       writer.uint32(50).string(message.schemaVersion);
     }
+    if (message.environment !== "") {
+      writer.uint32(58).string(message.environment);
+    }
+    if (message.effectiveEnvironment !== "") {
+      writer.uint32(66).string(message.effectiveEnvironment);
+    }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
+      Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
     });
     return writer;
   },
@@ -2485,9 +2511,23 @@ export const Database = {
             break;
           }
 
-          const entry7 = Database_LabelsEntry.decode(reader, reader.uint32());
-          if (entry7.value !== undefined) {
-            message.labels[entry7.key] = entry7.value;
+          message.environment = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.effectiveEnvironment = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          const entry9 = Database_LabelsEntry.decode(reader, reader.uint32());
+          if (entry9.value !== undefined) {
+            message.labels[entry9.key] = entry9.value;
           }
           continue;
       }
@@ -2507,6 +2547,8 @@ export const Database = {
       successfulSyncTime: isSet(object.successfulSyncTime) ? fromJsonTimestamp(object.successfulSyncTime) : undefined,
       project: isSet(object.project) ? String(object.project) : "",
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
+      effectiveEnvironment: isSet(object.effectiveEnvironment) ? String(object.effectiveEnvironment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -2524,6 +2566,8 @@ export const Database = {
     message.successfulSyncTime !== undefined && (obj.successfulSyncTime = message.successfulSyncTime.toISOString());
     message.project !== undefined && (obj.project = message.project);
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.environment !== undefined && (obj.environment = message.environment);
+    message.effectiveEnvironment !== undefined && (obj.effectiveEnvironment = message.effectiveEnvironment);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -2545,6 +2589,8 @@ export const Database = {
     message.successfulSyncTime = object.successfulSyncTime ?? undefined;
     message.project = object.project ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
+    message.environment = object.environment ?? "";
+    message.effectiveEnvironment = object.effectiveEnvironment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);

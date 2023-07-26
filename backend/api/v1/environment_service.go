@@ -182,7 +182,7 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 
 // UpdateBackupSetting updates the backup setting for an environment.
 func (s *EnvironmentService) UpdateBackupSetting(ctx context.Context, request *v1pb.UpdateEnvironmentBackupSettingRequest) (*v1pb.EnvironmentBackupSetting, error) {
-	environmentName, err := trimSuffix(request.Setting.Name, backupSettingSuffix)
+	environmentName, err := common.TrimSuffix(request.Setting.Name, common.BackupSettingSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -202,7 +202,7 @@ func (s *EnvironmentService) UpdateBackupSetting(ctx context.Context, request *v
 }
 
 func (s *EnvironmentService) getEnvironmentMessage(ctx context.Context, name string) (*store.EnvironmentMessage, error) {
-	environmentID, err := getEnvironmentID(name)
+	environmentID, err := common.GetEnvironmentID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -232,7 +232,7 @@ func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environme
 		tier = v1pb.EnvironmentTier_PROTECTED
 	}
 	return &v1pb.Environment{
-		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+		Name:  fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
 		Uid:   fmt.Sprintf("%d", environment.UID),
 		State: convertDeletedToState(environment.Deleted),
 		Title: environment.Title,

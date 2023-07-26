@@ -470,6 +470,12 @@ const (
 
 	// MSSQLTableNoFK is an advisor type for MSSQL table disallow foreign key.
 	MSSQLTableNoFK Type = "bb.plugin.advisor.mssql.table.no-foreign-key"
+
+	// MSSQLMigrationCompatibility is an advisor type for MSSQL migration compatibility.
+	MSSQLMigrationCompatibility Type = "bb.plugin.advisor.mssql.migration-compatibility"
+
+	// MSSQLColumnRequirement is an advisor type for MSSQL column requirement.
+	MSSQLColumnRequirement Type = "bb.plugin.advisor.mssql.column.require"
 )
 
 // Advice is the result of an advisor.
@@ -481,6 +487,7 @@ type Advice struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 	Line    int    `json:"line"`
+	Column  int    `json:"column"`
 	Details string `json:"details,omitempty"`
 }
 

@@ -110,6 +110,7 @@ import {
 import { head, isNull, isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
+import { InstanceV1EngineIcon } from "@/components/v2";
 
 interface BaselineSchema {
   projectId?: string;

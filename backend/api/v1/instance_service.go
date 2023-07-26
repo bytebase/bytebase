@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -658,7 +657,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 }
 
 func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
-	instanceID, err := getInstanceID(name)
+	instanceID, err := common.GetInstanceID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -716,7 +715,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	}
 
 	return &v1pb.Instance{
-		Name:          fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
+		Name:          fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
 		Uid:           fmt.Sprintf("%d", instance.UID),
 		Title:         instance.Title,
 		Engine:        engine,
@@ -735,7 +734,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	if err != nil {
 		return nil, err
 	}
-	environmentID, err := getEnvironmentID(instance.Environment)
+	environmentID, err := common.GetEnvironmentID(instance.Environment)
 	if err != nil {
 		return nil, err
 	}

@@ -195,37 +195,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	return totalRowsAffected, nil
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
-	if err != nil {
-		return nil, err
-	}
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-	// https://dev.mysql.com/doc/c-api/8.0/en/mysql-affected-rows.html
-	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
-	if len(singleSQLs) == 1 && parser.IsMySQLAffectedRowsStatement(singleSQLs[0].Text) {
-		sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
-		if err != nil {
-			return nil, err
-		}
-		affectedRows, err := sqlResult.RowsAffected()
-		if err != nil {
-			log.Info("rowsAffected returns error", zap.Error(err))
-		}
-
-		field := []string{"Affected Rows"}
-		types := []string{"INT"}
-		rows := [][]any{{affectedRows}}
-		return []any{field, types, rows}, nil
-	}
-	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
-}
-
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		return nil, err
@@ -283,7 +254,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, driver.dbType, conn, stmt, queryContext)
+	result, err := util.Query(ctx, driver.dbType, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

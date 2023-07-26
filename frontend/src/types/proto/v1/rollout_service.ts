@@ -300,6 +300,17 @@ export interface ListPlanCheckRunsResponse {
   nextPageToken: string;
 }
 
+export interface RunPlanChecksRequest {
+  /**
+   * The plan to run plan checks.
+   * Format: projects/{project}/plans/{plan}
+   */
+  name: string;
+}
+
+export interface RunPlanChecksResponse {
+}
+
 export interface BatchRunTasksRequest {
   /**
    * The name of the parent of the tasks.
@@ -371,11 +382,10 @@ export enum PlanCheckRun_Type {
   DATABASE_STATEMENT_COMPATIBILITY = 3,
   DATABASE_STATEMENT_ADVISE = 4,
   DATABASE_STATEMENT_TYPE = 5,
-  DATABASE_STATEMENT_TYPE_REPORT = 6,
-  DATABASE_STATEMENT_AFFECTED_ROWS_REPORT = 7,
-  DATABASE_CONNECT = 8,
-  DATABASE_GHOST_SYNC = 9,
-  DATABASE_PITR_MYSQL = 10,
+  DATABASE_STATEMENT_SUMMARY_REPORT = 6,
+  DATABASE_CONNECT = 7,
+  DATABASE_GHOST_SYNC = 8,
+  DATABASE_PITR_MYSQL = 9,
   UNRECOGNIZED = -1,
 }
 
@@ -400,18 +410,15 @@ export function planCheckRun_TypeFromJSON(object: any): PlanCheckRun_Type {
     case "DATABASE_STATEMENT_TYPE":
       return PlanCheckRun_Type.DATABASE_STATEMENT_TYPE;
     case 6:
-    case "DATABASE_STATEMENT_TYPE_REPORT":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_TYPE_REPORT;
+    case "DATABASE_STATEMENT_SUMMARY_REPORT":
+      return PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT;
     case 7:
-    case "DATABASE_STATEMENT_AFFECTED_ROWS_REPORT":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_AFFECTED_ROWS_REPORT;
-    case 8:
     case "DATABASE_CONNECT":
       return PlanCheckRun_Type.DATABASE_CONNECT;
-    case 9:
+    case 8:
     case "DATABASE_GHOST_SYNC":
       return PlanCheckRun_Type.DATABASE_GHOST_SYNC;
-    case 10:
+    case 9:
     case "DATABASE_PITR_MYSQL":
       return PlanCheckRun_Type.DATABASE_PITR_MYSQL;
     case -1:
@@ -435,10 +442,8 @@ export function planCheckRun_TypeToJSON(object: PlanCheckRun_Type): string {
       return "DATABASE_STATEMENT_ADVISE";
     case PlanCheckRun_Type.DATABASE_STATEMENT_TYPE:
       return "DATABASE_STATEMENT_TYPE";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_TYPE_REPORT:
-      return "DATABASE_STATEMENT_TYPE_REPORT";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_AFFECTED_ROWS_REPORT:
-      return "DATABASE_STATEMENT_AFFECTED_ROWS_REPORT";
+    case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
+      return "DATABASE_STATEMENT_SUMMARY_REPORT";
     case PlanCheckRun_Type.DATABASE_CONNECT:
       return "DATABASE_CONNECT";
     case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
@@ -2486,6 +2491,106 @@ export const ListPlanCheckRunsResponse = {
     const message = createBaseListPlanCheckRunsResponse();
     message.planCheckRuns = object.planCheckRuns?.map((e) => PlanCheckRun.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseRunPlanChecksRequest(): RunPlanChecksRequest {
+  return { name: "" };
+}
+
+export const RunPlanChecksRequest = {
+  encode(message: RunPlanChecksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RunPlanChecksRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunPlanChecksRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunPlanChecksRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: RunPlanChecksRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunPlanChecksRequest>): RunPlanChecksRequest {
+    return RunPlanChecksRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<RunPlanChecksRequest>): RunPlanChecksRequest {
+    const message = createBaseRunPlanChecksRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseRunPlanChecksResponse(): RunPlanChecksResponse {
+  return {};
+}
+
+export const RunPlanChecksResponse = {
+  encode(_: RunPlanChecksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RunPlanChecksResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunPlanChecksResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): RunPlanChecksResponse {
+    return {};
+  },
+
+  toJSON(_: RunPlanChecksResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunPlanChecksResponse>): RunPlanChecksResponse {
+    return RunPlanChecksResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<RunPlanChecksResponse>): RunPlanChecksResponse {
+    const message = createBaseRunPlanChecksResponse();
     return message;
   },
 };
@@ -5529,6 +5634,70 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    runPlanChecks: {
+      name: "RunPlanChecks",
+      requestType: RunPlanChecksRequest,
+      requestStream: false,
+      responseType: RunPlanChecksResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              47,
+              58,
+              1,
+              42,
+              34,
+              42,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              112,
+              108,
+              97,
+              110,
+              115,
+              47,
+              42,
+              125,
+              58,
+              114,
+              117,
+              110,
+              80,
+              108,
+              97,
+              110,
+              67,
+              104,
+              101,
+              107,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
     batchRunTasks: {
       name: "BatchRunTasks",
       requestType: BatchRunTasksRequest,
@@ -5803,6 +5972,10 @@ export interface RolloutServiceImplementation<CallContextExt = {}> {
     request: ListPlanCheckRunsRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListPlanCheckRunsResponse>>;
+  runPlanChecks(
+    request: RunPlanChecksRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<RunPlanChecksResponse>>;
   batchRunTasks(
     request: BatchRunTasksRequest,
     context: CallContext & CallContextExt,
@@ -5833,6 +6006,10 @@ export interface RolloutServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListPlanCheckRunsRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListPlanCheckRunsResponse>;
+  runPlanChecks(
+    request: DeepPartial<RunPlanChecksRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<RunPlanChecksResponse>;
   batchRunTasks(
     request: DeepPartial<BatchRunTasksRequest>,
     options?: CallOptions & CallOptionsExt,

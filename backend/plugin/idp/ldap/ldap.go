@@ -31,15 +31,31 @@ const (
 // IdentityProviderConfig is the configuration to be consumed by the LDAP
 // Identity Provider.
 type IdentityProviderConfig struct {
-	Host             string                `json:"host"`
-	Port             int                   `json:"port"`
-	SkipTLSVerify    bool                  `json:"skipTlsVerify"`
-	BindDN           string                `json:"bindDn"`
-	BindPassword     string                `json:"bindPassword"`
-	BaseDN           string                `json:"baseDn"`
-	UserFilter       string                `json:"userFilter"`
-	SecurityProtocol SecurityProtocol      `json:"securityProtocol"`
-	FieldMapping     *storepb.FieldMapping `json:"fieldMapping"`
+	// Host is the hostname or IP address of the LDAP server, e.g.
+	// "ldap.example.com".
+	Host string `json:"host"`
+	// Port is the port number of the LDAP server, e.g. 389. When not set, the
+	// default port of the corresponding security protocol will be used, i.e. 389
+	// for StartTLS and 636 for LDAPS.
+	Port int `json:"port"`
+	// SkipTLSVerify controls whether to skip TLS certificate verification.
+	SkipTLSVerify bool `json:"skipTlsVerify"`
+	// BindDN is the DN of the user to bind as a service account to perform
+	// search requests.
+	BindDN string `json:"bindDn"`
+	// BindPassword is the password of the user to bind as a service account.
+	BindPassword string `json:"bindPassword"`
+	// BaseDN is the base DN to search for users, e.g. "ou=users,dc=example,dc=com".
+	BaseDN string `json:"baseDn"`
+	// UserFilter is the filter to search for users, e.g. "(uid=%s)".
+	UserFilter string `json:"userFilter"`
+	// SecurityProtocol is the security protocol to be used for establishing
+	// connections with the LDAP server. It should be either StartTLS or LDAPS, and
+	// cannot be empty.
+	SecurityProtocol SecurityProtocol `json:"securityProtocol"`
+	// FieldMapping is the mapping of the user attributes returned by the LDAP
+	// server.
+	FieldMapping *storepb.FieldMapping `json:"fieldMapping"`
 }
 
 // NewIdentityProvider initializes a new LDAP Identity Provider with the given

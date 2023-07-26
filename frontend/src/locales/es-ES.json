@@ -1120,7 +1120,9 @@
     "establish-database-baseline": "Establecer línea base de \"{name}\"",
     "instance-missing-change-schema": "Esquema de historial de cambios faltante en la instancia \"{name}\".",
     "instance-bad-connection": "No se pudo conectar la instancia \"{name}\" para recuperar el historial de cambios.",
-    "contact-dba": "Por favor, contacte a su DBA para configurarlo"
+    "contact-dba": "Por favor, contacte a su DBA para configurarlo",
+    "export": "Exportar historial de cambios",
+    "need-to-select-first": "Necesita seleccionar primero el historial de cambios"
   },
   "database": {
     "select": "Seleccionar base de datos",

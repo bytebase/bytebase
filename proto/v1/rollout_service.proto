@@ -68,6 +68,14 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
   }
 
+  rpc RunPlanChecks(RunPlanChecksRequest) returns (RunPlanChecksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/plans/*}:runPlanCheks"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun",
@@ -299,6 +307,14 @@ message ListPlanCheckRunsResponse {
   string next_page_token = 2;
 }
 
+message RunPlanChecksRequest {
+  // The plan to run plan checks.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RunPlanChecksResponse {}
+
 message BatchRunTasksRequest {
   // The name of the parent of the tasks.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
@@ -346,11 +362,10 @@ message PlanCheckRun {
     DATABASE_STATEMENT_COMPATIBILITY = 3;
     DATABASE_STATEMENT_ADVISE = 4;
     DATABASE_STATEMENT_TYPE = 5;
-    DATABASE_STATEMENT_TYPE_REPORT = 6;
-    DATABASE_STATEMENT_AFFECTED_ROWS_REPORT = 7;
-    DATABASE_CONNECT = 8;
-    DATABASE_GHOST_SYNC = 9;
-    DATABASE_PITR_MYSQL = 10;
+    DATABASE_STATEMENT_SUMMARY_REPORT = 6;
+    DATABASE_CONNECT = 7;
+    DATABASE_GHOST_SYNC = 8;
+    DATABASE_PITR_MYSQL = 9;
   }
   Type type = 3;
 

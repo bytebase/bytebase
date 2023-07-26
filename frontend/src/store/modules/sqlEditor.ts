@@ -13,7 +13,7 @@ import { useDatabaseV1Store } from "./v1/database";
 import { useInstanceV1Store, useSQLStore, useActivityV1Store } from "./v1";
 import { QueryResult } from "@/types/proto/v1/sql_service";
 
-// set the limit to 10000 temporarily to avoid the query timeout and page crash
+// set the limit to 1000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
 
 export const useSQLEditorStore = defineStore("sqlEditor", {

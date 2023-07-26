@@ -128,6 +128,7 @@ import { head, isNull, isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
 import { ChangeHistorySourceSchema } from "./types";
+import { InstanceV1EngineIcon } from "@/components/v2";
 
 const props = defineProps<{
   selectState?: ChangeHistorySourceSchema;

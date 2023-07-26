@@ -1117,7 +1117,9 @@
     "establish-database-baseline": "建立「{name}」基线",
     "instance-missing-change-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
-    "contact-dba": "请联系您的 DBA 进行配置。"
+    "contact-dba": "请联系您的 DBA 进行配置。",
+    "export": "导出变更历史",
+    "need-to-select-first": "需要先选择变更历史"
   },
   "database": {
     "select": "选择数据库",
