@@ -18,13 +18,14 @@
     </div>
     <div class="databases-tree--tree flex-1 overflow-y-auto select-none">
       <NTree
+        ref="treeRef"
         block-line
         :data="treeData"
         :pattern="mounted ? throttledSearchPattern : ''"
         :show-irrelevant-nodes="false"
         :expand-on-click="true"
         :selected-keys="selectedKeys"
-        :expanded-keys="connectionTreeStore.expandedTreeNodeKeys"
+        :expanded-keys="expandedTreeNodeKeysForCurrentTreeMode"
         :render-label="renderLabel"
         :render-prefix="renderPrefix"
         :render-suffix="renderSuffix"
@@ -56,13 +57,13 @@ import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { useMounted, useThrottleFn } from "@vueuse/core";
 
-import type {
-  ConnectionAtom,
-  CoreTabInfo,
-  DatabaseId,
-  InstanceId,
+import type { ConnectionAtom, CoreTabInfo, DatabaseId } from "@/types";
+import {
+  ConnectionTreeMode,
+  ConnectionTreeState,
+  TabMode,
+  UNKNOWN_ID,
 } from "@/types";
-import { ConnectionTreeState, TabMode, UNKNOWN_ID } from "@/types";
 import {
   isConnectableAtom,
   useConnectionTreeStore,
@@ -81,7 +82,6 @@ import {
   isDescendantOf,
   isSimilarTab,
 } from "@/utils";
-import { scrollIntoViewIfNeeded } from "@/bbkit/BBUtil";
 import { Prefix, Label, Suffix } from "./TreeNode";
 
 type Position = {
@@ -114,6 +114,7 @@ const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
 
 const mounted = useMounted();
+const treeRef = ref<InstanceType<typeof NTree>>();
 const throttledSearchPattern = ref(props.searchPattern);
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
@@ -279,6 +280,18 @@ const handleClickoutside = () => {
   showDropdown.value = false;
 };
 
+const expandedTreeNodeKeysForCurrentTreeMode = computed(() => {
+  const { tree, expandedTreeNodeKeys } = connectionTreeStore;
+  switch (tree.mode) {
+    case ConnectionTreeMode.INSTANCE:
+      return expandedTreeNodeKeys.filter((key) => !key.startsWith("project-"));
+    case ConnectionTreeMode.PROJECT:
+      return expandedTreeNodeKeys.filter((key) => !key.startsWith("instance-"));
+  }
+  // Fallback to make TypeScript compiler happy
+  return [];
+});
+
 const maybeExpandKey = (key: string) => {
   const keys = connectionTreeStore.expandedTreeNodeKeys;
   if (!keys.includes(key)) {
@@ -324,24 +337,23 @@ const updateExpandedKeys = (keys: string[]) => {
 };
 
 // When switching tabs, scroll the matched node into view if needed.
-const scrollToConnectedNode = (
-  instanceId: InstanceId,
-  databaseId: DatabaseId
-) => {
-  if (instanceId === UNKNOWN_ID && databaseId === UNKNOWN_ID) {
+const scrollToConnectedNode = (instanceId: string, databaseId: string) => {
+  if (instanceId === String(UNKNOWN_ID) && databaseId === String(UNKNOWN_ID)) {
     return;
   }
-  let id: string;
-  if (databaseId === UNKNOWN_ID) {
-    id = `tree-node-label-instance-${instanceId}`;
-  } else {
-    id = `tree-node-label-database-${databaseId}`;
+  const tree = treeRef.value;
+  if (!tree) {
+    return;
   }
+  const key =
+    databaseId !== String(UNKNOWN_ID)
+      ? `database-${databaseId}`
+      : `instance-${instanceId}`;
+
   nextTick(() => {
-    const elem = document.getElementById(id);
-    if (elem) {
-      scrollIntoViewIfNeeded(elem);
-    }
+    tree.scrollTo({
+      key,
+    });
   });
 };
 
