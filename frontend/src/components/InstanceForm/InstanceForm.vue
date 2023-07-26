@@ -883,6 +883,8 @@ const getDefaultPort = (engine: Engine) => {
     return "5439";
   } else if (engine === Engine.OCEANBASE) {
     return "2883";
+  } else if (engine === Engine.DM) {
+    return "5236";
   }
   return "3306";
 };
@@ -942,6 +944,7 @@ const EngineIconPath: Record<number, string> = {
   [Engine.SPANNER]: new URL("@/assets/db-spanner.png", import.meta.url).href,
   [Engine.REDIS]: new URL("@/assets/db-redis.png", import.meta.url).href,
   [Engine.ORACLE]: new URL("@/assets/db-oracle.svg", import.meta.url).href,
+  [Engine.DM]: new URL("@/assets/db-dm.png", import.meta.url).href,
   [Engine.MSSQL]: new URL("@/assets/db-mssql.svg", import.meta.url).href,
   [Engine.REDSHIFT]: new URL("@/assets/db-redshift.svg", import.meta.url).href,
   [Engine.MARIADB]: new URL("@/assets/db-mariadb.png", import.meta.url).href,
@@ -1082,9 +1085,9 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: Engine): boolean => {
-  return false;
-  // return [
-  // ].includes(engine);
+  return [
+    Engine.DM,
+  ].includes(engine);
 };
 
 const handleSelectEnvironmentUID = (uid: number | string) => {
