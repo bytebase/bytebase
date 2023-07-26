@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/cel-go/cel"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/google/cel-go/cel"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -26,10 +25,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var (
-	// defaultWorkspaceResourceID is a placeholder for resource id in workspace level IAM policy.
-	defaultWorkspaceResourceID = 1
-)
+// defaultWorkspaceResourceID is a placeholder for resource id in workspace level IAM policy.
+var defaultWorkspaceResourceID = 1
 
 // OrgPolicyService implements the workspace policy service.
 type OrgPolicyService struct {
@@ -192,7 +189,7 @@ func (s *OrgPolicyService) DeletePolicy(ctx context.Context, request *v1pb.Delet
 
 // findPolicyMessage finds the policy and the parent name by the policy name.
 func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName string) (*store.PolicyMessage, string, error) {
-	tokens := strings.Split(policyName, policyNamePrefix)
+	tokens := strings.Split(policyName, common.PolicyNamePrefix)
 	if len(tokens) != 2 {
 		return nil, "", status.Errorf(codes.InvalidArgument, "invalid request %s", policyName)
 	}
@@ -234,8 +231,8 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		return api.PolicyResourceTypeWorkspace, &defaultWorkspaceResourceID, nil
 	}
 
-	if strings.HasPrefix(requestName, projectNamePrefix) {
-		projectID, err := getProjectID(requestName)
+	if strings.HasPrefix(requestName, common.ProjectNamePrefix) {
+		projectID, err := common.GetProjectID(requestName)
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -252,9 +249,9 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 
 	sections := strings.Split(requestName, "/")
 
-	if strings.HasPrefix(requestName, environmentNamePrefix) && len(sections) == 2 {
+	if strings.HasPrefix(requestName, common.EnvironmentNamePrefix) && len(sections) == 2 {
 		// environment policy request name should be environments/{environment id}
-		environmentID, err := getEnvironmentID(requestName)
+		environmentID, err := common.GetEnvironmentID(requestName)
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -271,9 +268,9 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		return api.PolicyResourceTypeEnvironment, &environment.UID, nil
 	}
 
-	if strings.HasPrefix(requestName, instanceNamePrefix) && len(sections) == 2 {
+	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 2 {
 		// instance policy request name should be instances/{instance id}
-		instanceID, err := getInstanceID(requestName)
+		instanceID, err := common.GetInstanceID(requestName)
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -291,10 +288,10 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		return api.PolicyResourceTypeInstance, &instance.UID, nil
 	}
 
-	if strings.HasPrefix(requestName, instanceNamePrefix) && len(sections) == 4 {
+	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 4 {
 		// database policy request name should be instances/{instance id}/databases/{db name}
 
-		instanceID, databaseName, err := getInstanceDatabaseID(requestName)
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -416,7 +413,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s", environmentNamePrefix, env.ResourceID), nil
+		return fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, env.ResourceID), nil
 	case api.PolicyResourceTypeProject:
 		proj, err := s.findActiveProject(ctx, &store.FindProjectMessage{
 			UID: &policyMessage.ResourceUID,
@@ -424,7 +421,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s", projectNamePrefix, proj.ResourceID), nil
+		return fmt.Sprintf("%s%s", common.ProjectNamePrefix, proj.ResourceID), nil
 	case api.PolicyResourceTypeInstance:
 		ins, err := s.findActiveInstance(ctx, &store.FindInstanceMessage{
 			UID: &policyMessage.ResourceUID,
@@ -432,7 +429,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s", instanceNamePrefix, ins.ResourceID), nil
+		return fmt.Sprintf("%s%s", common.InstanceNamePrefix, ins.ResourceID), nil
 	case api.PolicyResourceTypeDatabase:
 		db, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
 			UID: &policyMessage.ResourceUID,
@@ -440,7 +437,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, db.InstanceID, databaseIDPrefix, db.DatabaseName), nil
+		return fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, db.InstanceID, common.DatabaseIDPrefix, db.DatabaseName), nil
 	default:
 		return "", nil
 	}
@@ -634,7 +631,7 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 	}
 
 	policy.Type = pType
-	policy.Name = fmt.Sprintf("%s%s", policyNamePrefix, strings.ToLower(pType.String()))
+	policy.Name = fmt.Sprintf("%s%s", common.PolicyNamePrefix, strings.ToLower(pType.String()))
 	if parentPath != "" {
 		policy.Name = fmt.Sprintf("%s/%s", parentPath, policy.Name)
 	}
