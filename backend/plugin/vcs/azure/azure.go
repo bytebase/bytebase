@@ -4,6 +4,7 @@ package azure
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -44,7 +46,7 @@ func (*Provider) APIURL(instanceURL string) string {
 	return instanceURL
 }
 
-// oauthResponse is a Bitbucket Cloud OAuth response.
+// oauthResponse is a Azure DevOps OAuth response.
 type oauthResponse struct {
 	AccessToken      string `json:"access_token"`
 	RefreshToken     string `json:"refresh_token"`
@@ -52,6 +54,10 @@ type oauthResponse struct {
 	TokenType        string `json:"token_type"`
 	Error            string `json:"error,omitempty"`
 	ErrorDescription string `json:"error_description,omitempty"`
+}
+
+// project is Azure DevOps project.
+type repository struct {
 }
 
 // toVCSOAuthToken converts the response to *vcs.OAuthToken.
@@ -127,14 +133,74 @@ func (*Provider) GetDiffFileList(_ context.Context, _ common.OauthContext, _, _,
 // to follow the https://stackoverflow.com/questions/53608013/get-all-organizations-via-rest-api-for-azure-devops
 // to get all projects.
 // The request included in this function requires the following scopes:
-// vso.profile, vso.project
+// vso.profile, vso.project.
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	publicAlias, err := p.getAuthenticatedProfilePublicAlias(ctx, oauthCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get authenticated profile public alias")
 	}
 	log.Info("Authenticated user public alias", zap.String("publicAlias", publicAlias))
-	return nil, errors.New("not implemented")
+	organizations, err := p.listOrganizationsForMember(ctx, oauthCtx, publicAlias)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list organizations for member")
+	}
+	log.Info("Authenticated user organizations", zap.Strings("organizations", organizations))
+
+	var result []*vcs.Repository
+
+	type project struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+		Url  string `json:"url"`
+	}
+	type listProjectResponse struct {
+		Count int       `json:"count"`
+		Value []project `json:"value"`
+	}
+
+	urlParams := &url.Values{}
+	urlParams.Set("api-version", "7.0")
+	urlParams.Set("stateFilter", "wellFormed")
+	for _, organization := range organizations {
+		url := fmt.Sprintf("https://dev.azure.com/%s/_apis/projects?%s", url.PathEscape(organization), urlParams.Encode())
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "construct GET %s", url)
+		}
+		req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
+
+		resp, err := p.client.Do(req)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list repositories")
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read list organizations for member response body, code %v", resp.StatusCode)
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+
+		l := new(listProjectResponse)
+		if err := json.Unmarshal(body, l); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal list organizations for member response body, code %v", resp.StatusCode)
+		}
+		for _, p := range l.Value {
+			result = append(result, &vcs.Repository{
+				ID:       p.ID,
+				Name:     p.Name,
+				FullPath: fmt.Sprintf("%s/%s", organization, p.Name),
+				WebURL:   p.Url,
+			})
+		}
+	}
+
+	// Sort result by FullPath.
+	slices.SortFunc[*vcs.Repository](result, func(i, j *vcs.Repository) bool {
+		return i.FullPath < j.FullPath
+	})
+
+	return result, nil
 }
 
 // getAuthenticatedProfilePublicAlias gets the authenticated user's profile, and returns the public alias in the
@@ -171,6 +237,57 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauth
 	}
 
 	return r.PublicAlias, nil
+}
+
+// listOrganizationsForMember lists all organization for a given member.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/account/accounts/list?view=azure-devops-rest-7.0&tabs=HTTP
+func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx common.OauthContext, memberId string) ([]string, error) {
+	log.Info("Token: ", zap.String("token", oauthCtx.AccessToken))
+	urlParams := &url.Values{}
+	urlParams.Set("memberId", memberId)
+	urlParams.Set("api-version", "7.0")
+	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/accounts?%s", urlParams.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "construct GET %s", url)
+	}
+	req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list organizations for member")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read list organizations for member response body, code %v", resp.StatusCode)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	log.Info("List organizations for member response", zap.String("body", string(body)))
+
+	type accountsValue struct {
+		AccountName string `json:"accountName"`
+	}
+	type accountsResponse struct {
+		Count int             `json:"count"`
+		Value []accountsValue `json:"value"`
+	}
+
+	r := new(accountsResponse)
+	if err := json.Unmarshal(body, r); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal list organizations for member response body, code %v", resp.StatusCode)
+	}
+
+	result := make([]string, 0, len(r.Value))
+	for _, v := range r.Value {
+		result = append(result, v.AccountName)
+	}
+
+	return result, nil
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree recursively.
