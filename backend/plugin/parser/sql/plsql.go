@@ -378,18 +378,29 @@ func NewPLSQLErrorListener() *ParseErrorListener {
 }
 
 // SyntaxError returns the errors.
-func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
+func (l *ParseErrorListener) SyntaxError(a antlr.Recognizer, token any, line, column int, msg string, _ antlr.RecognitionException) {
 	if len(msg) > 1024 {
 		msg = msg[:1024]
 	}
 	if l.err == nil {
+		errMessage := ""
+		if token, ok := token.(*antlr.CommonToken); ok {
+			stream := token.GetInputStream()
+			start := token.GetTokenIndex() - 10
+			if start < 0 {
+				start = 0
+			}
+			stop := token.GetTokenIndex() + 10
+			if stop > stream.Size() {
+				stop = stream.Size()
+			}
+			errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
+		}
 		l.err = &SyntaxError{
 			Line:    line,
 			Column:  column,
-			Message: fmt.Sprintf("line %d:%d %s", line, column, msg),
+			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", line, column, errMessage),
 		}
-	} else {
-		l.err.Message = fmt.Sprintf("%s \nline %d:%d %s", l.err.Message, line, column, msg)
 	}
 }
 
