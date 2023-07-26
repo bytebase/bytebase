@@ -171,51 +171,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 	return 0, nil
 }
 
-// QueryConn executes the statement, returns the results.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]any, error) {
-	lines := strings.Split(statement, "\n")
-	for i := range lines {
-		lines[i] = strings.Trim(lines[i], " \n\t\r")
-	}
-
-	var data []any
-	var cmds []*redis.Cmd
-
-	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for _, line := range lines {
-			if line == "" {
-				continue
-			}
-			var input []any
-			for _, s := range strings.Split(line, " ") {
-				input = append(input, s)
-			}
-			cmd := p.Do(ctx, input...)
-			cmds = append(cmds, cmd)
-		}
-		return nil
-	}); err != nil && err != redis.Nil {
-		return nil, err
-	}
-
-	for _, cmd := range cmds {
-		if cmd.Err() == redis.Nil {
-			data = append(data, []any{"redis: nil"})
-			continue
-		}
-
-		val := cmd.Val()
-		if _, ok := val.(map[any]any); ok {
-			// json.Marshal cannot handle map[any]any
-			val = cmd.String()
-		}
-
-		data = append(data, []any{val})
-	}
-
-	return []any{[]string{"result"}, []string{"TEXT"}, data}, nil
-}
-
 // Dump and restore
 // Dump the database, if dbName is empty, then dump all databases.
 // Redis is schemaless, we don't support dump Redis data currently.
@@ -231,8 +186,8 @@ func (*Driver) Restore(context.Context, io.Reader) error {
 	return errors.New("redis: not supported")
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
 	lines := strings.Split(statement, "\n")
 	for i := range lines {
@@ -281,5 +236,5 @@ func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, 
 
 // RunStatement runs a SQL statement in a given connection.
 func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn2(ctx, nil, statement, nil)
+	return d.QueryConn(ctx, nil, statement, nil)
 }

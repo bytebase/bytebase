@@ -343,7 +343,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 	}
 
 	start := time.Now().UnixNano()
-	result, err := driver.QueryConn2(ctx, conn, request.Statement, &db.QueryContext{
+	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
 		ReadOnly:        true,
 		CurrentDatabase: request.ConnectionDatabase,
@@ -1007,7 +1007,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	defer cancelCtx()
 
 	start := time.Now().UnixNano()
-	result, err := driver.QueryConn2(ctx, conn, request.Statement, &db.QueryContext{
+	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
 		ReadOnly:        true,
 		CurrentDatabase: request.ConnectionDatabase,
