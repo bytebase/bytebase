@@ -148,50 +148,67 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 
 	var result []*vcs.Repository
 
-	type project struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-		Url  string `json:"url"`
+	type listRepositoriesResponseValueProject struct {
+		ID    string `json:"id"`
+		Name  string `json:"name"`
+		Url   string `json:"url"`
+		State string `json:"state"`
 	}
-	type listProjectResponse struct {
-		Count int       `json:"count"`
-		Value []project `json:"value"`
+
+	type listRepositoriesResponseValue struct {
+		ID      string                               `json:"id"`
+		Name    string                               `json:"name"`
+		Url     string                               `json:"url"`
+		Project listRepositoriesResponseValueProject `json:"project"`
+	}
+	type listRepositoriesResponse struct {
+		Count int                             `json:"count"`
+		Value []listRepositoriesResponseValue `json:"value"`
 	}
 
 	urlParams := &url.Values{}
 	urlParams.Set("api-version", "7.0")
-	urlParams.Set("stateFilter", "wellFormed")
 	for _, organization := range organizations {
-		url := fmt.Sprintf("https://dev.azure.com/%s/_apis/projects?%s", url.PathEscape(organization), urlParams.Encode())
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-		if err != nil {
-			return nil, errors.Wrapf(err, "construct GET %s", url)
-		}
-		req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
+		if err := func() error {
+			url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories?%s", url.PathEscape(organization), urlParams.Encode())
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			if err != nil {
+				return errors.Wrapf(err, "construct GET %s", url)
+			}
+			req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
 
-		resp, err := p.client.Do(req)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list repositories")
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read list organizations for member response body, code %v", resp.StatusCode)
-		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
+			resp, err := p.client.Do(req)
+			if err != nil {
+				return errors.Wrapf(err, fmt.Sprintf("failed to list the repositories under the organization %s", organization))
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return errors.Wrapf(err, fmt.Sprintf("failed to read list organizations for member response body under the organization %s, code %v", organization, resp.StatusCode))
+			}
+			defer func() {
+				_ = resp.Body.Close()
+			}()
 
-		l := new(listProjectResponse)
-		if err := json.Unmarshal(body, l); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal list organizations for member response body, code %v", resp.StatusCode)
-		}
-		for _, p := range l.Value {
-			result = append(result, &vcs.Repository{
-				ID:       p.ID,
-				Name:     p.Name,
-				FullPath: fmt.Sprintf("%s/%s", organization, p.Name),
-				WebURL:   p.Url,
-			})
+			l := new(listRepositoriesResponse)
+			if err := json.Unmarshal(body, l); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal list organizations for member response body, code %v", resp.StatusCode)
+			}
+
+			for _, r := range l.Value {
+				if r.Project.State != "wellFormed" {
+					log.Debug("Skip the repository whose project is not wellFormed", zap.String("organization", organization), zap.String("project", r.Project.Name), zap.String("repository", r.Name))
+				}
+
+				result = append(result, &vcs.Repository{
+					ID:       fmt.Sprintf("%s/%s", organization, r.ID),
+					Name:     r.Name,
+					FullPath: fmt.Sprintf("%s/%s/%s", organization, r.Project.Name, r.Name),
+					WebURL:   r.Url,
+				})
+			}
+			return nil
+		}(); err != nil {
+			return nil, errors.Wrapf(err, "failed to list repositories under the organization %s", organization)
 		}
 	}
 
