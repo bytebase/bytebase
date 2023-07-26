@@ -2,7 +2,7 @@
   <NTooltip :disabled="true">
     <!-- TODO: enabled if have engineVersion -->
     <template #trigger>
-      <div class="relative w-4" v-bind="$attrs">
+      <div class="relative shrink-0 w-4" v-bind="$attrs">
         <EngineIcon :engine="instance.engine" />
         <div
           v-if="showStatus"
@@ -11,7 +11,6 @@
         />
       </div>
     </template>
-    <!-- <span>{{ instance.engineVersion }}</span> -->
   </NTooltip>
 </template>
 
