@@ -19,19 +19,18 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	webhookPlugin "github.com/bytebase/bytebase/backend/plugin/webhook"
-	"github.com/bytebase/bytebase/backend/utils"
-
-	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -249,7 +248,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProje
 
 // GetIamPolicy returns the IAM policy for a project.
 func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -273,7 +272,7 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.BatchGetIamPolicyRequest) (*v1pb.BatchGetIamPolicyResponse, error) {
 	resp := &v1pb.BatchGetIamPolicyResponse{}
 	for _, name := range request.Names {
-		projectID, err := getProjectID(name)
+		projectID, err := common.GetProjectID(name)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -298,7 +297,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -356,7 +355,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 
 // GetProjectGitOpsInfo gets the GitOps info for a project.
 func (s *ProjectService) GetProjectGitOpsInfo(ctx context.Context, request *v1pb.GetProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
-	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -372,7 +371,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 	if request.ProjectGitopsInfo == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "project gitops info is missing")
 	}
-	projectName, err := trimSuffix(request.ProjectGitopsInfo.Name, gitOpsInfoSuffix)
+	projectName, err := common.TrimSuffix(request.ProjectGitopsInfo.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -491,7 +490,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 
 // SetupProjectSQLReviewCI sets the SQL review CI for a project.
 func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v1pb.SetupSQLReviewCIRequest) (*v1pb.SetupSQLReviewCIResponse, error) {
-	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -531,7 +530,7 @@ func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v
 
 // UnsetProjectGitOpsInfo deletes the GitOps info for a project.
 func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1pb.UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
-	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -621,7 +620,7 @@ func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remo
 
 // GetDeploymentConfig returns the deployment config for a project.
 func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.GetDeploymentConfigRequest) (*v1pb.DeploymentConfig, error) {
-	projectID, err := trimSuffixAndGetProjectID(request.Name, deploymentConfigSuffix)
+	projectID, err := common.TrimSuffixAndGetProjectID(request.Name, common.DeploymentConfigSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -651,7 +650,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 	if request.Config == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "deployment config is required")
 	}
-	projectID, err := trimSuffixAndGetProjectID(request.Config.Name, deploymentConfigSuffix)
+	projectID, err := common.TrimSuffixAndGetProjectID(request.Config.Name, common.DeploymentConfigSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -690,7 +689,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -727,7 +726,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 
 // UpdateWebhook updates a webhook.
 func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.UpdateWebhookRequest) (*v1pb.Project, error) {
-	projectID, webhookID, err := getProjectIDWebhookID(request.Webhook.Name)
+	projectID, webhookID, err := common.GetProjectIDWebhookID(request.Webhook.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1258,7 +1257,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 
 // RemoveWebhook removes a webhook from a given project.
 func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
-	projectID, webhookID, err := getProjectIDWebhookID(request.Webhook.Name)
+	projectID, webhookID, err := common.GetProjectIDWebhookID(request.Webhook.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1314,7 +1313,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1367,7 +1366,7 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	projectResourceID, err := getProjectID(request.Parent)
+	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1423,7 +1422,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
+	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1483,7 +1482,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 
 // DeleteDatabaseGroup deletes a database group.
 func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.DeleteDatabaseGroupRequest) (*emptypb.Empty, error) {
-	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Name)
+	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1519,7 +1518,7 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 
 // ListDatabaseGroups lists database groups.
 func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.ListDatabaseGroupsRequest) (*v1pb.ListDatabaseGroupsResponse, error) {
-	projectResourceID, err := getProjectID(request.Parent)
+	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1576,7 +1575,7 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 
 // GetDatabaseGroup gets a database group.
 func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.GetDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Name)
+	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1610,7 +1609,7 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
+	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1675,7 +1674,7 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
+	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1745,7 +1744,7 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 
 // DeleteSchemaGroup deletes a schema group.
 func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.DeleteSchemaGroupRequest) (*emptypb.Empty, error) {
-	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.Name)
+	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1791,7 +1790,7 @@ func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.De
 
 // ListSchemaGroups lists database groups.
 func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.ListSchemaGroupsRequest) (*v1pb.ListSchemaGroupsResponse, error) {
-	projectResourceID, databaseResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
+	projectResourceID, databaseResourceID, err := common.GetProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1832,7 +1831,7 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 
 // GetSchemaGroup gets a database group.
 func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
-	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.Name)
+	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1885,7 +1884,7 @@ func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 		res, _, err := prog.ContextEval(ctx, map[string]any{
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
-				"environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, database.EffectiveEnvironmentID),
+				"environment_name": fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID),
 				"instance_id":      database.InstanceID,
 			},
 		})
@@ -1919,18 +1918,18 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 		return nil, err
 	}
 	ret := &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}
 	for _, database := range matches {
 		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+			Name: fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		})
 	}
 	for _, database := range unmatches {
 		ret.UnmatchedDatabases = append(ret.UnmatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+			Name: fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		})
 	}
 	return ret, nil
@@ -1938,7 +1937,7 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 
 func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
 	return &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}
@@ -1950,7 +1949,7 @@ func (s *ProjectService) convertStoreToAPISchemaGroupFull(ctx context.Context, s
 		return nil, err
 	}
 	ret := &v1pb.SchemaGroup{
-		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
+		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID, common.SchemaGroupNamePrefix, schemaGroup.ResourceID),
 		TablePlaceholder: schemaGroup.Placeholder,
 		TableExpr:        schemaGroup.Expression,
 		MatchedTables:    matches,
@@ -2007,7 +2006,7 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 				}
 
 				schemaGroupTable := &v1pb.SchemaGroup_Table{
-					Database: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, matchesDatabase.InstanceID, databaseIDPrefix, matchesDatabase.DatabaseName),
+					Database: fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, matchesDatabase.InstanceID, common.DatabaseIDPrefix, matchesDatabase.DatabaseName),
 					Schema:   schema.Name,
 					Table:    table.Name,
 				}
@@ -2025,7 +2024,7 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 
 func convertStoreToAPISchemaGroupBasic(schemaGroup *store.SchemaGroupMessage, projectResourceID, databaseGroupResourceID string) *v1pb.SchemaGroup {
 	return &v1pb.SchemaGroup{
-		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroupResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
+		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroupResourceID, common.SchemaGroupNamePrefix, schemaGroup.ResourceID),
 		TablePlaceholder: schemaGroup.Placeholder,
 		TableExpr:        schemaGroup.Expression,
 	}
@@ -2244,7 +2243,7 @@ func validateAndConvertToStoreDeploymentSchedule(deployment *v1pb.DeploymentConf
 }
 
 func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
-	projectID, err := getProjectID(name)
+	projectID, err := common.GetProjectID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -2342,11 +2341,11 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 }
 
 func convertToProjectRole(role api.Role) string {
-	return fmt.Sprintf("%s%s", rolePrefix, role)
+	return fmt.Sprintf("%s%s", common.RolePrefix, role)
 }
 
 func convertProjectRole(role string) (api.Role, error) {
-	roleID, err := getRoleID(role)
+	roleID, err := common.GetRoleID(role)
 	if err != nil {
 		return api.Role(""), errors.Wrapf(err, "invalid project role %q", role)
 	}
@@ -2389,7 +2388,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
-			Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, projectMessage.ResourceID, webhookIDPrefix, webhook.ID),
+			Name:              fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectMessage.ResourceID, common.WebhookIDPrefix, webhook.ID),
 			Type:              convertWebhookTypeString(webhook.Type),
 			Title:             webhook.Title,
 			Url:               webhook.URL,
@@ -2398,7 +2397,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 
 	return &v1pb.Project{
-		Name:           fmt.Sprintf("%s%s", projectNamePrefix, projectMessage.ResourceID),
+		Name:           fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
 		Uid:            fmt.Sprintf("%d", projectMessage.UID),
 		State:          convertDeletedToState(projectMessage.Deleted),
 		Title:          projectMessage.Title,
@@ -2694,7 +2693,7 @@ func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
 
 func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {
 	return &v1pb.ProjectGitOpsInfo{
-		Name:               fmt.Sprintf("%s%s/gitOpsInfo", projectNamePrefix, repository.ProjectResourceID),
+		Name:               fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
 		VcsUid:             fmt.Sprintf("%d", repository.VCSUID),
 		Title:              repository.Title,
 		FullPath:           repository.FullPath,
