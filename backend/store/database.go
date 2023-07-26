@@ -595,7 +595,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS instance_environment_status FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
-		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS db_environment_status FROM environment where environment.id = db.environment_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
+		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS db_environment_status FROM environment WHERE environment.id = db.environment_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
 
 		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
 		// We don't show databases that are deleted by users already.
