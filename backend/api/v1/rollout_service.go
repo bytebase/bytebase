@@ -381,6 +381,23 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	return nil, nil
 }
 
+func (s *RolloutService) ListPlanCheckRuns(ctx context.Context, request *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
+	planUID, err := common.GetPlanID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		PlanUID: &planUID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list plan check runs, error: %v", err)
+	}
+	return &v1pb.ListPlanCheckRunsResponse{
+		PlanCheckRuns: convertToPlanCheckRuns(planCheckRuns),
+		NextPageToken: "",
+	}, nil
+}
+
 // RunPlanChecks runs plan checks for a plan.
 func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanChecksRequest) (*v1pb.RunPlanChecksResponse, error) {
 	planUID, err := common.GetPlanID(request.Name)
@@ -569,6 +586,113 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 
 	return &v1pb.BatchRunTasksResponse{}, nil
+}
+
+func convertToPlanCheckRuns(runs []*store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
+	var planCheckRuns []*v1pb.PlanCheckRun
+	for _, run := range runs {
+		planCheckRuns = append(planCheckRuns, convertToPlanCheckRun(run))
+	}
+	return planCheckRuns
+}
+
+func convertToPlanCheckRun(run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
+	return &v1pb.PlanCheckRun{
+		Name:    "",
+		Uid:     fmt.Sprintf("%d", run.UID),
+		Type:    convertToPlanCheckRunType(run.Type),
+		Status:  convertToPlanCheckRunStatus(run.Status),
+		Target:  "",
+		Sheet:   "",
+		Results: convertToPlanCheckRunResults(run.Result.Results),
+		Error:   run.Result.Error,
+	}
+}
+
+func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type {
+	switch t {
+	case store.PlanCheckDatabaseStatementFakeAdvise:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE
+	case store.PlanCheckDatabaseStatementCompatibility:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_COMPATIBILITY
+	case store.PlanCheckDatabaseStatementAdvise:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE
+	case store.PlanCheckDatabaseStatementType:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_TYPE
+	case store.PlanCheckDatabaseStatementSummaryReport:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
+	case store.PlanCheckDatabaseConnect:
+		return v1pb.PlanCheckRun_DATABASE_CONNECT
+	case store.PlanCheckGhostSync:
+		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
+	case store.PlanCheckPITRMySQL:
+		return v1pb.PlanCheckRun_DATABASE_PITR_MYSQL
+	}
+	return v1pb.PlanCheckRun_TYPE_UNSPECIFIED
+}
+
+func convertToPlanCheckRunStatus(status store.PlanCheckRunStatus) v1pb.PlanCheckRun_Status {
+	switch status {
+	case store.PlanCheckRunStatusCanceled:
+		return v1pb.PlanCheckRun_CANCELED
+	case store.PlanCheckRunStatusDone:
+		return v1pb.PlanCheckRun_DONE
+	case store.PlanCheckRunStatusFailed:
+		return v1pb.PlanCheckRun_FAILED
+	case store.PlanCheckRunStatusRunning:
+		return v1pb.PlanCheckRun_RUNNING
+	}
+	return v1pb.PlanCheckRun_STATUS_UNSPECIFIED
+}
+
+func convertToPlanCheckRunResults(results []*storepb.PlanCheckRunResult_Result) []*v1pb.PlanCheckRun_Result {
+	var resultsV1 []*v1pb.PlanCheckRun_Result
+	for _, result := range results {
+		resultsV1 = append(resultsV1, convertToPlanCheckRunResult(result))
+	}
+	return resultsV1
+}
+
+func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1pb.PlanCheckRun_Result {
+	resultV1 := &v1pb.PlanCheckRun_Result{
+		Status:  convertToPlanCheckRunResultStatus(result.Status),
+		Title:   result.Title,
+		Content: result.Content,
+		Code:    result.Code,
+		Report:  nil,
+	}
+	switch report := result.Report.(type) {
+	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:
+		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlSummaryReport_{
+			SqlSummaryReport: &v1pb.PlanCheckRun_Result_SqlSummaryReport{
+				StatementType: report.SqlSummaryReport.StatementType,
+				AffectedRows:  report.SqlSummaryReport.AffectedRows,
+			},
+		}
+	case *storepb.PlanCheckRunResult_Result_SqlReviewReport_:
+		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+			SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+				Line:   report.SqlReviewReport.Line,
+				Detail: report.SqlReviewReport.Detail,
+				Code:   report.SqlReviewReport.Code,
+			},
+		}
+	}
+	return resultV1
+}
+
+func convertToPlanCheckRunResultStatus(status storepb.PlanCheckRunResult_Result_Status) v1pb.PlanCheckRun_Result_Status {
+	switch status {
+	case storepb.PlanCheckRunResult_Result_STATUS_UNSPECIFIED:
+		return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
+	case storepb.PlanCheckRunResult_Result_SUCCESS:
+		return v1pb.PlanCheckRun_Result_SUCCESS
+	case storepb.PlanCheckRunResult_Result_WARNING:
+		return v1pb.PlanCheckRun_Result_WARNING
+	case storepb.PlanCheckRunResult_Result_ERROR:
+		return v1pb.PlanCheckRun_Result_ERROR
+	}
+	return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
 }
 
 func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
