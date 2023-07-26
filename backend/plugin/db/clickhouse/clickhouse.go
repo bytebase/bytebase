@@ -193,8 +193,8 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 	return results, nil
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// TODO(rebelice): implement multi-statement query
 	var results []*v1pb.QueryResult
 

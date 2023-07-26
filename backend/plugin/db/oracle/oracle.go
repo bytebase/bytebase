@@ -139,8 +139,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	return totalRowsAffected, nil
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
 	if err != nil {
 		return nil, err
@@ -182,7 +182,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.Oracle, conn, stmt, queryContext)
+	result, err := util.Query(ctx, db.Oracle, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

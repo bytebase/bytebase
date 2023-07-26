@@ -245,8 +245,8 @@ func (*MockDriver) Execute(_ context.Context, _ string, _ bool, _ database.Execu
 	return 0, nil
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (*MockDriver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *database.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *database.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, nil
 }
 

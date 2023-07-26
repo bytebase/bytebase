@@ -186,8 +186,8 @@ func (*Driver) Restore(context.Context, io.Reader) error {
 	return errors.New("redis: not supported")
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
 	lines := strings.Split(statement, "\n")
 	for i := range lines {
@@ -236,5 +236,5 @@ func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, 
 
 // RunStatement runs a SQL statement in a given connection.
 func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn2(ctx, nil, statement, nil)
+	return d.QueryConn(ctx, nil, statement, nil)
 }

@@ -154,10 +154,10 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	return rowsAffected, nil
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (*Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.SQLite, conn, statement, queryContext)
+	result, err := util.Query(ctx, db.SQLite, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}
