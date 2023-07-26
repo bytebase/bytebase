@@ -136,6 +136,7 @@ import { useI18n } from "vue-i18n";
 
 import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
