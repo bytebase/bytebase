@@ -22,11 +22,13 @@ func NewDatabaseConnectExecutor(store *store.Store, dbFactory *dbfactory.DBFacto
 	}
 }
 
+// DatabaseConnectExecutor checks if the database connection is valid.
 type DatabaseConnectExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
+// Run runs the executor.
 func (e *DatabaseConnectExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) (results []*storepb.PlanCheckRunResult_Result, err error) {
 	databaseID := int(planCheckRun.Config.DatabaseId)
 	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})

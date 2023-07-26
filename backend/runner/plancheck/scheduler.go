@@ -23,6 +23,7 @@ const (
 	planCheckSchedulerInterval = time.Duration(1) * time.Second
 )
 
+// NewScheduler creates a new plan check scheduler.
 func NewScheduler(s *store.Store, licenseService enterpriseAPI.LicenseService, stateCfg *state.State) *Scheduler {
 	return &Scheduler{
 		store:          s,
@@ -32,6 +33,7 @@ func NewScheduler(s *store.Store, licenseService enterpriseAPI.LicenseService, s
 	}
 }
 
+// Scheduler is the plan check run scheduler.
 type Scheduler struct {
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
@@ -39,6 +41,7 @@ type Scheduler struct {
 	executors      map[store.PlanCheckRunType]Executor
 }
 
+// Run runs the scheduler.
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(planCheckSchedulerInterval)
 	defer ticker.Stop()
@@ -54,6 +57,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
+// Register registers a plan check executor.
 func (s *Scheduler) Register(planCheckRunType store.PlanCheckRunType, executor Executor) {
 	if executor == nil {
 		panic("plan check scheduler: Register executor is nil for plan check run type: " + planCheckRunType)

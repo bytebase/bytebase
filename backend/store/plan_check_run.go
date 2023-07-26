@@ -63,10 +63,12 @@ type PlanCheckRunMessage struct {
 	Result *storepb.PlanCheckRunResult
 }
 
+// FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
 	Status *[]PlanCheckRunStatus
 }
 
+// CreatePlanCheckRuns creates new plan check runs.
 func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRunMessage) error {
 	var query strings.Builder
 	var values []any
@@ -116,6 +118,7 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 	return nil
 }
 
+// ListPlanCheckRuns returns a list of plan check runs based on find.
 func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMessage) ([]*PlanCheckRunMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.Status; v != nil {
