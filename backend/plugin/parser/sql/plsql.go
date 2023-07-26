@@ -378,10 +378,7 @@ func NewPLSQLErrorListener() *ParseErrorListener {
 }
 
 // SyntaxError returns the errors.
-func (l *ParseErrorListener) SyntaxError(a antlr.Recognizer, token any, line, column int, msg string, _ antlr.RecognitionException) {
-	if len(msg) > 1024 {
-		msg = msg[:1024]
-	}
+func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, column int, _ string, _ antlr.RecognitionException) {
 	if l.err == nil {
 		errMessage := ""
 		if token, ok := token.(*antlr.CommonToken); ok {
