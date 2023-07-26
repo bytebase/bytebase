@@ -65,6 +65,8 @@ type PlanCheckRunMessage struct {
 
 // FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
+	PlanUID *int64
+
 	Status *[]PlanCheckRunStatus
 }
 
@@ -121,6 +123,10 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 // ListPlanCheckRuns returns a list of plan check runs based on find.
 func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMessage) ([]*PlanCheckRunMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if v := find.PlanUID; v != nil {
+		where = append(where, fmt.Sprintf("plan_check_run.plan_id = $%d", len(args)+1))
+		args = append(args, *v)
+	}
 	if v := find.Status; v != nil {
 		var list []string
 		for _, status := range *v {
