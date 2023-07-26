@@ -272,7 +272,7 @@ const keywordAndEnvironmentFilter = (issue: Issue) => {
       return false;
     }
   }
-  const keyword = state.searchText.trim();
+  const keyword = state.searchText.trim().toLowerCase();
   if (keyword) {
     if (!issue.name.toLowerCase().includes(keyword)) {
       return false;
