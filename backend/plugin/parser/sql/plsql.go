@@ -383,13 +383,13 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 		errMessage := ""
 		if token, ok := token.(*antlr.CommonToken); ok {
 			stream := token.GetInputStream()
-			start := token.GetTokenIndex() - 10
+			start := token.GetStart() - 10
 			if start < 0 {
 				start = 0
 			}
-			stop := token.GetTokenIndex() + 10
-			if stop > stream.Size() {
-				stop = stream.Size()
+			stop := token.GetStop() + 10
+			if stop >= stream.Size() {
+				stop = stream.Size() - 1
 			}
 			errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
 		}
