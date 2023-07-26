@@ -607,7 +607,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		SELECT
 			db.id,
 			project.resource_id AS project_id,
-			COALESCE(COALESCE((SELECT environment.resource_id FROM environment where environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id)), ''),
+			COALESCE(COALESCE((SELECT environment.resource_id FROM environment WHERE environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id)), ''),
 			COALESCE((SELECT environment.resource_id FROM environment WHERE environment.id = db.environment_id), ''),
 			instance.resource_id AS instance_id,
 			db.name,
