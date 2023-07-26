@@ -55,7 +55,7 @@ type PlanCheckRunMessage struct {
 	UpdaterUID int
 	UpdatedTs  int64
 
-	PlanUID int
+	PlanUID int64
 
 	Status PlanCheckRunStatus
 	Type   PlanCheckRunType
