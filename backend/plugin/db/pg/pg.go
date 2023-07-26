@@ -447,37 +447,8 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 	return owner, nil
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
-	if err != nil {
-		return nil, err
-	}
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
-	// https://github.com/postgres/postgres/blob/master/src/bin/psql/common.c#L969
-	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
-		sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
-		if err != nil {
-			return nil, err
-		}
-		affectedRows, err := sqlResult.RowsAffected()
-		if err != nil {
-			return nil, err
-		}
-		field := []string{"Affected Rows"}
-		types := []string{"INT"}
-		rows := [][]any{{affectedRows}}
-		return []any{field, types, rows}, nil
-	}
-	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
-}
-
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
@@ -514,7 +485,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.Postgres, conn, stmt, queryContext)
+	result, err := util.Query(ctx, db.Postgres, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
