@@ -83,6 +83,16 @@ type WebhookCreateOrUpdate struct {
 	PublisherInputs  WebhookCreatePublisherInputs `json:"publisherInputs"`
 }
 
+type CommitAuthor struct {
+	Name  string    `json:"name"`
+	Email string    `json:"email"`
+	Date  time.Time `json:"date"`
+}
+type Commit struct {
+	CommitID string       `json:"commitId"`
+	Author   CommitAuthor `json:"author"`
+}
+
 // toVCSOAuthToken converts the response to *vcs.OAuthToken.
 func (o oauthResponse) toVCSOAuthToken() (*vcs.OAuthToken, error) {
 	expiresIn, err := strconv.ParseInt(o.ExpiresIn, 10, 64)
@@ -141,8 +151,46 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
-func (*Provider) FetchCommitByID(_ context.Context, _ common.OauthContext, _, _, _ string) (*vcs.Commit, error) {
-	return nil, errors.New("not implemented")
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get?view=azure-devops-rest-7.0&tabs=HTTP
+func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, _, externalRepositoryID, commitID string) (*vcs.Commit, error) {
+	// By design, we encode the repository ID as <organization>/<projectID>/<repositoryID> for Azure DevOps.
+	parts := strings.Split(externalRepositoryID, "/")
+	if len(parts) != 3 {
+		return nil, errors.Errorf("invalid repository ID %q", externalRepositoryID)
+	}
+	organizationName, projectID, repositoryID := parts[0], parts[1], parts[2]
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/%s/commits/%s?%s", url.PathEscape(organizationName), url.PathEscape(projectID), url.PathEscape(repositoryID), url.PathEscape(commitID), values.Encode())
+	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("commit %q does not exist in the repository %s under the organization %s", commitID, repositoryID, organizationName))
+	}
+	if code != http.StatusOK {
+		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
+	}
+
+	commit := new(Commit)
+	if err := json.Unmarshal([]byte(body), commit); err != nil {
+		return nil, errors.Wrapf(err, "unmarshal body")
+	}
+
+	return &vcs.Commit{
+		ID:         commit.CommitID,
+		AuthorName: commit.Author.Name,
+		CreatedTs:  commit.Author.Date.Unix(),
+	}, nil
 }
 
 // GetDiffFileList gets the diff files list between two commits.

@@ -209,9 +209,9 @@ type Provider interface {
 	//
 	// oauthCtx: OAuth context to fetch commit
 	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// externalRepositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// commitID: the commit ID
-	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*Commit, error)
+	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, externalRepositoryID, commitID string) (*Commit, error)
 	// Get the diff files list between two commits
 	//
 	// oauthCtx: OAuth context to fetch commit
