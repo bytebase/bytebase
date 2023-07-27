@@ -531,10 +531,10 @@ type refreshOAuthTokenResponse struct {
 func tokenRefresher(oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
 		values := url.Values{}
-		values.Set("client_assertion_type", `[{"key":"client_assertion_type","value":"urn:ietf:params:oauth:client-assertion-type:jwt-bearer","description":"","type":"text","enabled":true}]`)
-		values.Set("grant_type", oauthCtx.RefreshToken)
+		values.Set("client_assertion_type", `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`)
 		values.Set("client_assertion", oauthCtx.ClientSecret)
-		values.Set("assertion", *oldToken)
+		values.Set("grant_type", "refresh_token")
+		values.Set("assertion", oauthCtx.RefreshToken)
 		values.Set("redirect_uri", oauthCtx.RedirectURL)
 		encodedValues := values.Encode()
 
