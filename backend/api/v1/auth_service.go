@@ -716,6 +716,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 				ClientSecret:  idp.Config.GetOidcConfig().ClientSecret,
 				FieldMapping:  idp.Config.GetOidcConfig().FieldMapping,
 				SkipTLSVerify: idp.Config.GetOidcConfig().SkipTlsVerify,
+				AuthStyle:     idp.Config.GetOidcConfig().GetAuthStyle(),
 			},
 		)
 		if err != nil {
