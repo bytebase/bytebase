@@ -2695,6 +2695,7 @@
   },
   "schema-designer": {
     "self": "Diseñador de esquemas",
+    "new-design": "Nuevo Diseño",
     "quick-action": "Diseñar esquema",
     "schema-design": "Esquema diseñar",
     "schema-design-list": "Lista de Diseñar esquema",
