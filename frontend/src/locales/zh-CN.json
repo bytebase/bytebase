@@ -2692,6 +2692,7 @@
   },
   "schema-designer": {
     "self": "Schema 设计器",
+    "new-design": "创建设计",
     "quick-action": "设计 Schema",
     "schema-design": "Schema 设计",
     "schema-design-list": "Schema 设计列表",

@@ -3,6 +3,7 @@
     :show="true"
     width="auto"
     :auto-focus="false"
+    :close-on-esc="true"
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
     <NDrawerContent

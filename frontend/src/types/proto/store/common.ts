@@ -19,6 +19,7 @@ export enum Engine {
   REDSHIFT = 12,
   MARIADB = 13,
   OCEANBASE = 14,
+  DM = 15,
   UNRECOGNIZED = -1,
 }
 
@@ -69,6 +70,9 @@ export function engineFromJSON(object: any): Engine {
     case 14:
     case "OCEANBASE":
       return Engine.OCEANBASE;
+    case 15:
+    case "DM":
+      return Engine.DM;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -108,6 +112,8 @@ export function engineToJSON(object: Engine): string {
       return "MARIADB";
     case Engine.OCEANBASE:
       return "OCEANBASE";
+    case Engine.DM:
+      return "DM";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

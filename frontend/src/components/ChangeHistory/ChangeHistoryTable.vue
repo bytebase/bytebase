@@ -11,51 +11,55 @@
   >
     <template #header>
       <template v-if="mode == 'DATABASE'">
-        <BBTableHeaderCell
-          :left-padding="4"
-          class="w-2"
-          :title="columnList[0].title"
-        />
-        <BBTableHeaderCell
-          :left-padding="4"
-          class="w-2"
-          :title="columnList[1].title"
-        />
-        <BBTableHeaderCell class="w-8" :title="columnList[2].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
+        <BBTableHeaderCell class="w-12" :left-padding="4">
+          <NCheckbox
+            v-if="historySectionList.length > 0"
+            :checked="allSelectionState.checked"
+            :indeterminate="allSelectionState.indeterminate"
+            @update:checked="toggleAllChangeHistorySelection"
+            @click.stop=""
+          />
+        </BBTableHeaderCell>
+        <BBTableHeaderCell class="w-8" :title="columnList[1].title" />
+        <BBTableHeaderCell class="w-24" :title="columnList[2].title" />
+        <BBTableHeaderCell class="w-56" :title="columnList[3].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-48" :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[7].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[8].title" />
+        <BBTableHeaderCell :title="columnList[5].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[6].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[7].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[8].title" />
       </template>
       <template v-else>
         <BBTableHeaderCell
           :left-padding="4"
-          class="w-2"
+          class="w-8"
           :title="columnList[0].title"
         />
-        <BBTableHeaderCell class="w-16" :title="columnList[1].title" />
+        <BBTableHeaderCell class="w-56" :title="columnList[1].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
-        <BBTableHeaderCell class="w-48" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
+        <BBTableHeaderCell :title="columnList[3].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[4].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[5].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[6].title" />
       </template>
     </template>
     <template #body="{ rowData: history }: { rowData: ChangeHistory }">
-      <BBTableCell v-if="mode == 'DATABASE'">
+      <BBTableCell
+        v-if="mode == 'DATABASE'"
+        class="table-cell"
+        :left-padding="4"
+        @click.stop="handleToggleChangeHistorySelected(history)"
+      >
         <NCheckbox
           :disabled="!allowToSelectChangeHistory(history)"
           :checked="selectedChangeHistoryNameList?.includes(history.name)"
-          @update:checked="() => handleToggleChangeHistorySelected(history)"
-          @click.stop=""
+          @update:checked="handleToggleChangeHistorySelected(history)"
         />
       </BBTableCell>
-      <BBTableCell :left-padding="4">
-        <ChangeHistoryStatusIcon :status="history.status" />
+      <BBTableCell :left-padding="mode !== 'DATABASE' && 4">
+        <ChangeHistoryStatusIcon class="mx-auto" :status="history.status" />
       </BBTableCell>
-      <BBTableCell v-if="mode == 'DATABASE'">
+      <BBTableCell v-if="mode === 'DATABASE'">
         {{ changeHistory_SourceToJSON(history.source) }}
       </BBTableCell>
       <BBTableCell>
@@ -209,11 +213,52 @@ const creatorOfChangeHistory = (history: ChangeHistory) => {
   return useUserStore().getUserByEmail(email);
 };
 
+const allSelectionState = computed(() => {
+  const set = props.selectedChangeHistoryNameList || [];
+  const list = props.historySectionList
+    .map((t) => t.list)
+    .flat()
+    .filter(
+      (changeHistory) => allowToSelectChangeHistory(changeHistory) === true
+    );
+
+  const checked = list.every((changeHistory) =>
+    set.includes(changeHistory.name)
+  );
+
+  const indeterminate =
+    !checked && list.some((changeHistory) => set.includes(changeHistory.name));
+
+  return {
+    checked,
+    indeterminate,
+  };
+});
+
+const toggleAllChangeHistorySelection = (): void => {
+  const list = props.historySectionList
+    .map((t) => t.list)
+    .flat()
+    .filter(
+      (changeHistory) => allowToSelectChangeHistory(changeHistory) === true
+    );
+
+  if (allSelectionState.value.checked === false) {
+    emit(
+      "update:selected",
+      list.map((i) => i.name)
+    );
+  } else {
+    emit("update:selected", []);
+  }
+};
+
 const allowToSelectChangeHistory = (history: ChangeHistory) => {
   return (
     history.type === ChangeHistory_Type.BASELINE ||
     history.type === ChangeHistory_Type.MIGRATE ||
-    history.type === ChangeHistory_Type.MIGRATE_SDL
+    history.type === ChangeHistory_Type.MIGRATE_SDL ||
+    history.type === ChangeHistory_Type.DATA
   );
 };
 

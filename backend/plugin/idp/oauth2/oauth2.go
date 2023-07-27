@@ -52,6 +52,10 @@ func NewIdentityProvider(config *storepb.OAuth2IdentityProviderConfig) (*Identit
 
 // ExchangeToken returns the exchanged OAuth2 token using the given authorization code.
 func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code string) (string, error) {
+	authStyle := oauth2.AuthStyleInParams
+	if p.config.GetAuthStyle() == storepb.OAuth2AuthStyle_IN_HEADER {
+		authStyle = oauth2.AuthStyleInHeader
+	}
 	conf := &oauth2.Config{
 		ClientID:     p.config.ClientId,
 		ClientSecret: p.config.ClientSecret,
@@ -60,7 +64,7 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   p.config.AuthUrl,
 			TokenURL:  p.config.TokenUrl,
-			AuthStyle: oauth2.AuthStyleInParams,
+			AuthStyle: authStyle,
 		},
 	}
 

@@ -4,7 +4,7 @@
       <p class="w-full flex flex-row justify-between items-center h-8 px-1">
         <span class="text-sm">{{ $t("schema-designer.tables") }}</span>
         <button
-          class="text-gray-400 hover:text-gray-500"
+          class="text-gray-400 hover:text-gray-500 disabled:cursor-not-allowed"
           :disabled="readonly"
           @click="handleCreateTable"
         >
