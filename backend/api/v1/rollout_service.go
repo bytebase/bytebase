@@ -626,8 +626,8 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, r
 		Uid:     fmt.Sprintf("%d", run.UID),
 		Type:    convertToPlanCheckRunType(run.Type),
 		Status:  convertToPlanCheckRunStatus(run.Status),
-		Target:  fmt.Sprintf("%s%d/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Sheet:   fmt.Sprintf("%s%d/%s%d", common.ProjectNamePrefix, sheetProject.ResourceID, common.SheetIDPrefix, sheet.UID),
+		Target:  fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Sheet:   fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, sheetProject.ResourceID, common.SheetIDPrefix, sheet.UID),
 		Results: convertToPlanCheckRunResults(run.Result.Results),
 		Error:   run.Result.Error,
 	}
