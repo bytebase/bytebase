@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -274,111 +273,40 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	}
 	pipeline, err := s.createPipeline(ctx, project, pipelineCreate, creatorID)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to create pipeline, error: %v", err)
 	}
 
 	// Update pipeline ID in the plan.
 	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:         planID,
 		UpdaterID:   creatorID,
-		PipelineUID: &pipelineCreate.ID,
+		PipelineUID: &pipeline.ID,
 	}); err != nil {
 		return nil, err
 	}
 
-	issueCreateMessage := &store.IssueMessage{
-		Project:     project,
-		Title:       plan.Name,
-		Type:        api.IssueDatabaseGeneral,
-		Description: plan.Description,
-		Assignee:    nil,
-	}
-	// Find an assignee.
-	firstEnvironmentID := pipelineCreate.Stages[0].EnvironmentID
-	assignee, err := s.taskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreateMessage.Project.UID, issueCreateMessage.Type)
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &planID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find a default assignee, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get issue by plan id %v, error: %v", planID, err)
 	}
-	issueCreateMessage.Assignee = assignee
-
-	issueCreatePayload := &storepb.IssuePayload{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: false,
-		},
-	}
-	if s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil {
-		issueCreatePayload.Approval.ApprovalFindingDone = true
-	}
-
-	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
-
-	issueCreateMessage.PipelineUID = &pipeline.ID
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
-	}
-	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.taskCheckScheduler.SchedulePipelineTaskCheck(ctx, pipeline.ID); err != nil {
-		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
-	}
-
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-
-	createActivityPayload := api.ActivityIssueCreatePayload{
-		IssueName: issue.Title,
-	}
-
-	bytes, err := json.Marshal(createActivityPayload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:   creatorID,
-		ContainerUID: issue.UID,
-		Type:         api.ActivityIssueCreate,
-		Level:        api.ActivityInfo,
-		Payload:      string(bytes),
-	}
-	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: issue,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-
-	if len(composedIssue.Pipeline.StageList) > 0 {
-		stage := composedIssue.Pipeline.StageList[0]
-		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-			StageID:               stage.ID,
-			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
-			IssueName:             issue.Title,
-			StageName:             stage.Name,
-		}
-		bytes, err := json.Marshal(createActivityPayload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
-		}
-		activityCreate := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: *issue.PipelineUID,
-			Type:         api.ActivityPipelineStageStatusUpdate,
-			Level:        api.ActivityInfo,
-			Payload:      string(bytes),
-		}
-		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: issue,
-		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
+	if issue != nil {
+		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			PipelineUID: &pipeline.ID,
+		}, creatorID); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to update issue by plan id %v, error: %v", planID, err)
 		}
 	}
-	return nil, nil
+
+	rollout, err := s.store.GetRollout(ctx, pipeline.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
+	}
+
+	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+	}
+	return rolloutV1, nil
 }
 
 // ListPlanCheckRuns lists plan check runs for the plan.
