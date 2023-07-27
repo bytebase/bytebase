@@ -69,6 +69,59 @@ func (IdentityProviderType) EnumDescriptor() ([]byte, []int) {
 	return file_store_idp_proto_rawDescGZIP(), []int{0}
 }
 
+type OAuth2AuthStyle int32
+
+const (
+	OAuth2AuthStyle_OAUTH2_AUTH_STYLE_UNSPECIFIED OAuth2AuthStyle = 0
+	// IN_PARAMS sends the "client_id" and "client_secret" in the POST body
+	// as application/x-www-form-urlencoded parameters.
+	OAuth2AuthStyle_IN_PARAMS OAuth2AuthStyle = 1
+	// IN_HEADER sends the client_id and client_password using HTTP Basic Authorization.
+	// This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.
+	OAuth2AuthStyle_IN_HEADER OAuth2AuthStyle = 2
+)
+
+// Enum value maps for OAuth2AuthStyle.
+var (
+	OAuth2AuthStyle_name = map[int32]string{
+		0: "OAUTH2_AUTH_STYLE_UNSPECIFIED",
+		1: "IN_PARAMS",
+		2: "IN_HEADER",
+	}
+	OAuth2AuthStyle_value = map[string]int32{
+		"OAUTH2_AUTH_STYLE_UNSPECIFIED": 0,
+		"IN_PARAMS":                     1,
+		"IN_HEADER":                     2,
+	}
+)
+
+func (x OAuth2AuthStyle) Enum() *OAuth2AuthStyle {
+	p := new(OAuth2AuthStyle)
+	*p = x
+	return p
+}
+
+func (x OAuth2AuthStyle) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (OAuth2AuthStyle) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_idp_proto_enumTypes[1].Descriptor()
+}
+
+func (OAuth2AuthStyle) Type() protoreflect.EnumType {
+	return &file_store_idp_proto_enumTypes[1]
+}
+
+func (x OAuth2AuthStyle) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use OAuth2AuthStyle.Descriptor instead.
+func (OAuth2AuthStyle) EnumDescriptor() ([]byte, []int) {
+	return file_store_idp_proto_rawDescGZIP(), []int{1}
+}
+
 type IdentityProviderConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -156,14 +209,15 @@ type OAuth2IdentityProviderConfig struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	AuthUrl       string        `protobuf:"bytes,1,opt,name=auth_url,json=authUrl,proto3" json:"auth_url,omitempty"`
-	TokenUrl      string        `protobuf:"bytes,2,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
-	UserInfoUrl   string        `protobuf:"bytes,3,opt,name=user_info_url,json=userInfoUrl,proto3" json:"user_info_url,omitempty"`
-	ClientId      string        `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	ClientSecret  string        `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	Scopes        []string      `protobuf:"bytes,6,rep,name=scopes,proto3" json:"scopes,omitempty"`
-	FieldMapping  *FieldMapping `protobuf:"bytes,7,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
-	SkipTlsVerify bool          `protobuf:"varint,8,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	AuthUrl       string          `protobuf:"bytes,1,opt,name=auth_url,json=authUrl,proto3" json:"auth_url,omitempty"`
+	TokenUrl      string          `protobuf:"bytes,2,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
+	UserInfoUrl   string          `protobuf:"bytes,3,opt,name=user_info_url,json=userInfoUrl,proto3" json:"user_info_url,omitempty"`
+	ClientId      string          `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	ClientSecret  string          `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
+	Scopes        []string        `protobuf:"bytes,6,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	FieldMapping  *FieldMapping   `protobuf:"bytes,7,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
+	SkipTlsVerify bool            `protobuf:"varint,8,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	AuthStyle     OAuth2AuthStyle `protobuf:"varint,9,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
 }
 
 func (x *OAuth2IdentityProviderConfig) Reset() {
@@ -254,17 +308,25 @@ func (x *OAuth2IdentityProviderConfig) GetSkipTlsVerify() bool {
 	return false
 }
 
+func (x *OAuth2IdentityProviderConfig) GetAuthStyle() OAuth2AuthStyle {
+	if x != nil {
+		return x.AuthStyle
+	}
+	return OAuth2AuthStyle_OAUTH2_AUTH_STYLE_UNSPECIFIED
+}
+
 // OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 type OIDCIdentityProviderConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Issuer        string        `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	ClientId      string        `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	ClientSecret  string        `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	FieldMapping  *FieldMapping `protobuf:"bytes,4,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
-	SkipTlsVerify bool          `protobuf:"varint,5,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	Issuer        string          `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	ClientId      string          `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	ClientSecret  string          `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
+	FieldMapping  *FieldMapping   `protobuf:"bytes,4,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
+	SkipTlsVerify bool            `protobuf:"varint,5,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	AuthStyle     OAuth2AuthStyle `protobuf:"varint,6,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
 }
 
 func (x *OIDCIdentityProviderConfig) Reset() {
@@ -332,6 +394,13 @@ func (x *OIDCIdentityProviderConfig) GetSkipTlsVerify() bool {
 		return x.SkipTlsVerify
 	}
 	return false
+}
+
+func (x *OIDCIdentityProviderConfig) GetAuthStyle() OAuth2AuthStyle {
+	if x != nil {
+		return x.AuthStyle
+	}
+	return OAuth2AuthStyle_OAUTH2_AUTH_STYLE_UNSPECIFIED
 }
 
 // FieldMapping saves the field names from user info API of identity provider.
@@ -491,7 +560,7 @@ var file_store_idp_proto_rawDesc = []byte{
 	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x4f, 0x49, 0x44, 0x43, 0x49, 0x64, 0x65, 0x6e,
 	0x74, 0x69, 0x74, 0x79, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66,
 	0x69, 0x67, 0x48, 0x00, 0x52, 0x0a, 0x6f, 0x69, 0x64, 0x63, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
-	0x42, 0x08, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0xbf, 0x02, 0x0a, 0x1c, 0x4f,
+	0x42, 0x08, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0xff, 0x02, 0x0a, 0x1c, 0x4f,
 	0x41, 0x75, 0x74, 0x68, 0x32, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x50, 0x72, 0x6f,
 	0x76, 0x69, 0x64, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x19, 0x0a, 0x08, 0x61,
 	0x75, 0x74, 0x68, 0x5f, 0x75, 0x72, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61,
@@ -511,7 +580,11 @@ var file_store_idp_proto_rawDesc = []byte{
 	0x61, 0x70, 0x70, 0x69, 0x6e, 0x67, 0x52, 0x0c, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x4d, 0x61, 0x70,
 	0x70, 0x69, 0x6e, 0x67, 0x12, 0x26, 0x0a, 0x0f, 0x73, 0x6b, 0x69, 0x70, 0x5f, 0x74, 0x6c, 0x73,
 	0x5f, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x18, 0x08, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0d, 0x73,
-	0x6b, 0x69, 0x70, 0x54, 0x6c, 0x73, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x22, 0xe1, 0x01, 0x0a,
+	0x6b, 0x69, 0x70, 0x54, 0x6c, 0x73, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x12, 0x3e, 0x0a, 0x0a,
+	0x61, 0x75, 0x74, 0x68, 0x5f, 0x73, 0x74, 0x79, 0x6c, 0x65, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0e,
+	0x32, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x4f, 0x41, 0x75, 0x74, 0x68, 0x32, 0x41, 0x75, 0x74, 0x68, 0x53, 0x74, 0x79, 0x6c,
+	0x65, 0x52, 0x09, 0x61, 0x75, 0x74, 0x68, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x22, 0xa1, 0x02, 0x0a,
 	0x1a, 0x4f, 0x49, 0x44, 0x43, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x50, 0x72, 0x6f,
 	0x76, 0x69, 0x64, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x16, 0x0a, 0x06, 0x69,
 	0x73, 0x73, 0x75, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x69, 0x73, 0x73,
@@ -526,6 +599,10 @@ var file_store_idp_proto_rawDesc = []byte{
 	0x64, 0x4d, 0x61, 0x70, 0x70, 0x69, 0x6e, 0x67, 0x12, 0x26, 0x0a, 0x0f, 0x73, 0x6b, 0x69, 0x70,
 	0x5f, 0x74, 0x6c, 0x73, 0x5f, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x18, 0x05, 0x20, 0x01, 0x28,
 	0x08, 0x52, 0x0d, 0x73, 0x6b, 0x69, 0x70, 0x54, 0x6c, 0x73, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79,
+	0x12, 0x3e, 0x0a, 0x0a, 0x61, 0x75, 0x74, 0x68, 0x5f, 0x73, 0x74, 0x79, 0x6c, 0x65, 0x18, 0x06,
+	0x20, 0x01, 0x28, 0x0e, 0x32, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x4f, 0x41, 0x75, 0x74, 0x68, 0x32, 0x41, 0x75, 0x74, 0x68,
+	0x53, 0x74, 0x79, 0x6c, 0x65, 0x52, 0x09, 0x61, 0x75, 0x74, 0x68, 0x53, 0x74, 0x79, 0x6c, 0x65,
 	0x22, 0x67, 0x0a, 0x0c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4d, 0x61, 0x70, 0x70, 0x69, 0x6e, 0x67,
 	0x12, 0x1e, 0x0a, 0x0a, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72,
@@ -545,9 +622,14 @@ var file_store_idp_proto_rawDesc = []byte{
 	0x54, 0x59, 0x5f, 0x50, 0x52, 0x4f, 0x56, 0x49, 0x44, 0x45, 0x52, 0x5f, 0x54, 0x59, 0x50, 0x45,
 	0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0a,
 	0x0a, 0x06, 0x4f, 0x41, 0x55, 0x54, 0x48, 0x32, 0x10, 0x01, 0x12, 0x08, 0x0a, 0x04, 0x4f, 0x49,
-	0x44, 0x43, 0x10, 0x02, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65,
-	0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x44, 0x43, 0x10, 0x02, 0x2a, 0x52, 0x0a, 0x0f, 0x4f, 0x41, 0x75, 0x74, 0x68, 0x32, 0x41, 0x75,
+	0x74, 0x68, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x12, 0x21, 0x0a, 0x1d, 0x4f, 0x41, 0x55, 0x54, 0x48,
+	0x32, 0x5f, 0x41, 0x55, 0x54, 0x48, 0x5f, 0x53, 0x54, 0x59, 0x4c, 0x45, 0x5f, 0x55, 0x4e, 0x53,
+	0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0d, 0x0a, 0x09, 0x49, 0x4e,
+	0x5f, 0x50, 0x41, 0x52, 0x41, 0x4d, 0x53, 0x10, 0x01, 0x12, 0x0d, 0x0a, 0x09, 0x49, 0x4e, 0x5f,
+	0x48, 0x45, 0x41, 0x44, 0x45, 0x52, 0x10, 0x02, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65,
+	0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -562,26 +644,29 @@ func file_store_idp_proto_rawDescGZIP() []byte {
 	return file_store_idp_proto_rawDescData
 }
 
-var file_store_idp_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_idp_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_idp_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_idp_proto_goTypes = []interface{}{
 	(IdentityProviderType)(0),            // 0: bytebase.store.IdentityProviderType
-	(*IdentityProviderConfig)(nil),       // 1: bytebase.store.IdentityProviderConfig
-	(*OAuth2IdentityProviderConfig)(nil), // 2: bytebase.store.OAuth2IdentityProviderConfig
-	(*OIDCIdentityProviderConfig)(nil),   // 3: bytebase.store.OIDCIdentityProviderConfig
-	(*FieldMapping)(nil),                 // 4: bytebase.store.FieldMapping
-	(*IdentityProviderUserInfo)(nil),     // 5: bytebase.store.IdentityProviderUserInfo
+	(OAuth2AuthStyle)(0),                 // 1: bytebase.store.OAuth2AuthStyle
+	(*IdentityProviderConfig)(nil),       // 2: bytebase.store.IdentityProviderConfig
+	(*OAuth2IdentityProviderConfig)(nil), // 3: bytebase.store.OAuth2IdentityProviderConfig
+	(*OIDCIdentityProviderConfig)(nil),   // 4: bytebase.store.OIDCIdentityProviderConfig
+	(*FieldMapping)(nil),                 // 5: bytebase.store.FieldMapping
+	(*IdentityProviderUserInfo)(nil),     // 6: bytebase.store.IdentityProviderUserInfo
 }
 var file_store_idp_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.IdentityProviderConfig.oauth2_config:type_name -> bytebase.store.OAuth2IdentityProviderConfig
-	3, // 1: bytebase.store.IdentityProviderConfig.oidc_config:type_name -> bytebase.store.OIDCIdentityProviderConfig
-	4, // 2: bytebase.store.OAuth2IdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
-	4, // 3: bytebase.store.OIDCIdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 0: bytebase.store.IdentityProviderConfig.oauth2_config:type_name -> bytebase.store.OAuth2IdentityProviderConfig
+	4, // 1: bytebase.store.IdentityProviderConfig.oidc_config:type_name -> bytebase.store.OIDCIdentityProviderConfig
+	5, // 2: bytebase.store.OAuth2IdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
+	1, // 3: bytebase.store.OAuth2IdentityProviderConfig.auth_style:type_name -> bytebase.store.OAuth2AuthStyle
+	5, // 4: bytebase.store.OIDCIdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
+	1, // 5: bytebase.store.OIDCIdentityProviderConfig.auth_style:type_name -> bytebase.store.OAuth2AuthStyle
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_store_idp_proto_init() }
@@ -660,7 +745,7 @@ func file_store_idp_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_idp_proto_rawDesc,
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,

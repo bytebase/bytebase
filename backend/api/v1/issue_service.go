@@ -97,6 +97,102 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	return issueV1, nil
 }
 
+// CreateIssue creates a issue.
+func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
+	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
+	}
+
+	if request.Issue.Plan == "" {
+		// TODO(p0ny): support plan-less issue
+		return nil, status.Errorf(codes.InvalidArgument, "plan is required")
+	}
+
+	var planUID *int64
+	planID, err := common.GetPlanID(request.Issue.Plan)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	plan, err := s.store.GetPlan(ctx, planID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
+	}
+	if plan == nil {
+		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
+	}
+	planUID = &plan.UID
+
+	issueCreateMessage := &store.IssueMessage{
+		Project:     project,
+		PlanUID:     planUID,
+		PipelineUID: nil,
+		Title:       request.Issue.Title,
+		Status:      api.IssueOpen,
+		Type:        api.IssueDatabaseGeneral,
+		Description: request.Issue.Description,
+		Assignee: &store.UserMessage{
+			ID: api.SystemBotID,
+		},
+		NeedAttention: false,
+	}
+
+	// TODO(p0ny): find approval template
+	issueCreatePayload := &storepb.IssuePayload{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: true,
+			ApprovalTemplates:   nil,
+			Approvers:           nil,
+		},
+	}
+	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+	}
+	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
+
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
+	}
+	createActivityPayload := api.ActivityIssueCreatePayload{
+		IssueName: issue.Title,
+	}
+	bytes, err := json.Marshal(createActivityPayload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
+	}
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: issue,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+
+	converted, err := convertToIssue(ctx, s.store, issue)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+	}
+
+	return converted, nil
+}
+
 // ApproveIssue approves the approval flow of the issue.
 func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIssueRequest) (*v1pb.Issue, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
@@ -771,6 +867,9 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 
 	if issue.PlanUID != nil {
 		issueV1.Plan = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.PlanPrefix, *issue.PlanUID)
+	}
+	if issue.PipelineUID != nil {
+		issueV1.Rollout = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, *issue.PipelineUID)
 	}
 
 	for _, subscriber := range issue.Subscribers {

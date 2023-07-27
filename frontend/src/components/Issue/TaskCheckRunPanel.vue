@@ -173,6 +173,7 @@ const checkResultList = computed((): TaskCheckResult[] => {
         content: props.taskCheckRun.result.detail,
         namespace: "bb.core",
         line: undefined,
+        column: undefined,
       },
     ];
   } else if (props.taskCheckRun.status == "CANCELED") {
@@ -184,6 +185,7 @@ const checkResultList = computed((): TaskCheckResult[] => {
         content: "",
         namespace: "bb.core",
         line: undefined,
+        column: undefined,
       },
     ];
   }

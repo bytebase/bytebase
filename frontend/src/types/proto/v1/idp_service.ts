@@ -46,6 +46,53 @@ export function identityProviderTypeToJSON(object: IdentityProviderType): string
   }
 }
 
+export enum OAuth2AuthStyle {
+  OAUTH2_AUTH_STYLE_UNSPECIFIED = 0,
+  /**
+   * IN_PARAMS - IN_PARAMS sends the "client_id" and "client_secret" in the POST body
+   * as application/x-www-form-urlencoded parameters.
+   */
+  IN_PARAMS = 1,
+  /**
+   * IN_HEADER - IN_HEADER sends the client_id and client_password using HTTP Basic Authorization.
+   * This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.
+   */
+  IN_HEADER = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function oAuth2AuthStyleFromJSON(object: any): OAuth2AuthStyle {
+  switch (object) {
+    case 0:
+    case "OAUTH2_AUTH_STYLE_UNSPECIFIED":
+      return OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED;
+    case 1:
+    case "IN_PARAMS":
+      return OAuth2AuthStyle.IN_PARAMS;
+    case 2:
+    case "IN_HEADER":
+      return OAuth2AuthStyle.IN_HEADER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return OAuth2AuthStyle.UNRECOGNIZED;
+  }
+}
+
+export function oAuth2AuthStyleToJSON(object: OAuth2AuthStyle): string {
+  switch (object) {
+    case OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED:
+      return "OAUTH2_AUTH_STYLE_UNSPECIFIED";
+    case OAuth2AuthStyle.IN_PARAMS:
+      return "IN_PARAMS";
+    case OAuth2AuthStyle.IN_HEADER:
+      return "IN_HEADER";
+    case OAuth2AuthStyle.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetIdentityProviderRequest {
   name: string;
 }
@@ -169,6 +216,7 @@ export interface OAuth2IdentityProviderConfig {
   scopes: string[];
   fieldMapping?: FieldMapping | undefined;
   skipTlsVerify: boolean;
+  authStyle: OAuth2AuthStyle;
 }
 
 /** OIDCIdentityProviderConfig is the structure for OIDC identity provider config. */
@@ -179,6 +227,7 @@ export interface OIDCIdentityProviderConfig {
   scopes: string[];
   fieldMapping?: FieldMapping | undefined;
   skipTlsVerify: boolean;
+  authStyle: OAuth2AuthStyle;
 }
 
 /**
@@ -1083,6 +1132,7 @@ function createBaseOAuth2IdentityProviderConfig(): OAuth2IdentityProviderConfig 
     scopes: [],
     fieldMapping: undefined,
     skipTlsVerify: false,
+    authStyle: 0,
   };
 }
 
@@ -1111,6 +1161,9 @@ export const OAuth2IdentityProviderConfig = {
     }
     if (message.skipTlsVerify === true) {
       writer.uint32(64).bool(message.skipTlsVerify);
+    }
+    if (message.authStyle !== 0) {
+      writer.uint32(72).int32(message.authStyle);
     }
     return writer;
   },
@@ -1178,6 +1231,13 @@ export const OAuth2IdentityProviderConfig = {
 
           message.skipTlsVerify = reader.bool();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.authStyle = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1197,6 +1257,7 @@ export const OAuth2IdentityProviderConfig = {
       scopes: Array.isArray(object?.scopes) ? object.scopes.map((e: any) => String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
       skipTlsVerify: isSet(object.skipTlsVerify) ? Boolean(object.skipTlsVerify) : false,
+      authStyle: isSet(object.authStyle) ? oAuth2AuthStyleFromJSON(object.authStyle) : 0,
     };
   },
 
@@ -1215,6 +1276,7 @@ export const OAuth2IdentityProviderConfig = {
     message.fieldMapping !== undefined &&
       (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
     message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
+    message.authStyle !== undefined && (obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle));
     return obj;
   },
 
@@ -1234,12 +1296,21 @@ export const OAuth2IdentityProviderConfig = {
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
     message.skipTlsVerify = object.skipTlsVerify ?? false;
+    message.authStyle = object.authStyle ?? 0;
     return message;
   },
 };
 
 function createBaseOIDCIdentityProviderConfig(): OIDCIdentityProviderConfig {
-  return { issuer: "", clientId: "", clientSecret: "", scopes: [], fieldMapping: undefined, skipTlsVerify: false };
+  return {
+    issuer: "",
+    clientId: "",
+    clientSecret: "",
+    scopes: [],
+    fieldMapping: undefined,
+    skipTlsVerify: false,
+    authStyle: 0,
+  };
 }
 
 export const OIDCIdentityProviderConfig = {
@@ -1261,6 +1332,9 @@ export const OIDCIdentityProviderConfig = {
     }
     if (message.skipTlsVerify === true) {
       writer.uint32(48).bool(message.skipTlsVerify);
+    }
+    if (message.authStyle !== 0) {
+      writer.uint32(56).int32(message.authStyle);
     }
     return writer;
   },
@@ -1314,6 +1388,13 @@ export const OIDCIdentityProviderConfig = {
 
           message.skipTlsVerify = reader.bool();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.authStyle = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1331,6 +1412,7 @@ export const OIDCIdentityProviderConfig = {
       scopes: Array.isArray(object?.scopes) ? object.scopes.map((e: any) => String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
       skipTlsVerify: isSet(object.skipTlsVerify) ? Boolean(object.skipTlsVerify) : false,
+      authStyle: isSet(object.authStyle) ? oAuth2AuthStyleFromJSON(object.authStyle) : 0,
     };
   },
 
@@ -1347,6 +1429,7 @@ export const OIDCIdentityProviderConfig = {
     message.fieldMapping !== undefined &&
       (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
     message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
+    message.authStyle !== undefined && (obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle));
     return obj;
   },
 
@@ -1364,6 +1447,7 @@ export const OIDCIdentityProviderConfig = {
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
     message.skipTlsVerify = object.skipTlsVerify ?? false;
+    message.authStyle = object.authStyle ?? 0;
     return message;
   },
 };

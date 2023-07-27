@@ -4,7 +4,7 @@ CREATE TABLE plan_check_run (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    plan_id INTEGER NOT NULL REFERENCES plan (id),
+    plan_id BIGINT NOT NULL REFERENCES plan (id),
     status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.plan-check.%'),
     config JSONB NOT NULL DEFAULT '{}',

@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -274,111 +273,63 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	}
 	pipeline, err := s.createPipeline(ctx, project, pipelineCreate, creatorID)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to create pipeline, error: %v", err)
 	}
 
 	// Update pipeline ID in the plan.
 	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:         planID,
 		UpdaterID:   creatorID,
-		PipelineUID: &pipelineCreate.ID,
+		PipelineUID: &pipeline.ID,
 	}); err != nil {
 		return nil, err
 	}
 
-	issueCreateMessage := &store.IssueMessage{
-		Project:     project,
-		Title:       plan.Name,
-		Type:        api.IssueDatabaseGeneral,
-		Description: plan.Description,
-		Assignee:    nil,
-	}
-	// Find an assignee.
-	firstEnvironmentID := pipelineCreate.Stages[0].EnvironmentID
-	assignee, err := s.taskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreateMessage.Project.UID, issueCreateMessage.Type)
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &planID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find a default assignee, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get issue by plan id %v, error: %v", planID, err)
 	}
-	issueCreateMessage.Assignee = assignee
-
-	issueCreatePayload := &storepb.IssuePayload{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: false,
-		},
-	}
-	if s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil {
-		issueCreatePayload.Approval.ApprovalFindingDone = true
-	}
-
-	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
-
-	issueCreateMessage.PipelineUID = &pipeline.ID
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
-	}
-	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.taskCheckScheduler.SchedulePipelineTaskCheck(ctx, pipeline.ID); err != nil {
-		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
-	}
-
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-
-	createActivityPayload := api.ActivityIssueCreatePayload{
-		IssueName: issue.Title,
-	}
-
-	bytes, err := json.Marshal(createActivityPayload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:   creatorID,
-		ContainerUID: issue.UID,
-		Type:         api.ActivityIssueCreate,
-		Level:        api.ActivityInfo,
-		Payload:      string(bytes),
-	}
-	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: issue,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-
-	if len(composedIssue.Pipeline.StageList) > 0 {
-		stage := composedIssue.Pipeline.StageList[0]
-		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-			StageID:               stage.ID,
-			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
-			IssueName:             issue.Title,
-			StageName:             stage.Name,
-		}
-		bytes, err := json.Marshal(createActivityPayload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
-		}
-		activityCreate := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: *issue.PipelineUID,
-			Type:         api.ActivityPipelineStageStatusUpdate,
-			Level:        api.ActivityInfo,
-			Payload:      string(bytes),
-		}
-		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: issue,
-		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
+	if issue != nil {
+		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			PipelineUID: &pipeline.ID,
+		}, creatorID); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to update issue by plan id %v, error: %v", planID, err)
 		}
 	}
-	return nil, nil
+
+	rollout, err := s.store.GetRollout(ctx, pipeline.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
+	}
+
+	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+	}
+	return rolloutV1, nil
+}
+
+// ListPlanCheckRuns lists plan check runs for the plan.
+func (s *RolloutService) ListPlanCheckRuns(ctx context.Context, request *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
+	planUID, err := common.GetPlanID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		PlanUID: &planUID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list plan check runs, error: %v", err)
+	}
+	converted, err := convertToPlanCheckRuns(ctx, s.store, request.Parent, planCheckRuns)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert plan check runs, error: %v", err)
+	}
+
+	return &v1pb.ListPlanCheckRunsResponse{
+		PlanCheckRuns: converted,
+		NextPageToken: "",
+	}, nil
 }
 
 // RunPlanChecks runs plan checks for a plan.
@@ -569,6 +520,138 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 
 	return &v1pb.BatchRunTasksResponse{}, nil
+}
+
+func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
+	var planCheckRuns []*v1pb.PlanCheckRun
+	for _, run := range runs {
+		converted, err := convertToPlanCheckRun(ctx, s, parent, run)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert plan check run")
+		}
+		planCheckRuns = append(planCheckRuns, converted)
+	}
+	return planCheckRuns, nil
+}
+
+func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
+	converted := &v1pb.PlanCheckRun{
+		Name:    fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
+		Uid:     fmt.Sprintf("%d", run.UID),
+		Type:    convertToPlanCheckRunType(run.Type),
+		Status:  convertToPlanCheckRunStatus(run.Status),
+		Target:  "",
+		Sheet:   "",
+		Results: convertToPlanCheckRunResults(run.Result.Results),
+		Error:   run.Result.Error,
+	}
+	if run.Config.DatabaseId != 0 {
+		databaseUID := int(run.Config.DatabaseId)
+		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database")
+		}
+		converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
+	}
+	if run.Config.SheetId != 0 {
+		sheetUID := int(run.Config.SheetId)
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet")
+		}
+		sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet project")
+		}
+		converted.Sheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, sheetProject.ResourceID, common.SheetIDPrefix, sheet.UID)
+	}
+	return converted, nil
+}
+
+func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type {
+	switch t {
+	case store.PlanCheckDatabaseStatementFakeAdvise:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE
+	case store.PlanCheckDatabaseStatementCompatibility:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_COMPATIBILITY
+	case store.PlanCheckDatabaseStatementAdvise:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE
+	case store.PlanCheckDatabaseStatementType:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_TYPE
+	case store.PlanCheckDatabaseStatementSummaryReport:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
+	case store.PlanCheckDatabaseConnect:
+		return v1pb.PlanCheckRun_DATABASE_CONNECT
+	case store.PlanCheckDatabaseGhostSync:
+		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
+	case store.PlanCheckDatabasePITRMySQL:
+		return v1pb.PlanCheckRun_DATABASE_PITR_MYSQL
+	}
+	return v1pb.PlanCheckRun_TYPE_UNSPECIFIED
+}
+
+func convertToPlanCheckRunStatus(status store.PlanCheckRunStatus) v1pb.PlanCheckRun_Status {
+	switch status {
+	case store.PlanCheckRunStatusCanceled:
+		return v1pb.PlanCheckRun_CANCELED
+	case store.PlanCheckRunStatusDone:
+		return v1pb.PlanCheckRun_DONE
+	case store.PlanCheckRunStatusFailed:
+		return v1pb.PlanCheckRun_FAILED
+	case store.PlanCheckRunStatusRunning:
+		return v1pb.PlanCheckRun_RUNNING
+	}
+	return v1pb.PlanCheckRun_STATUS_UNSPECIFIED
+}
+
+func convertToPlanCheckRunResults(results []*storepb.PlanCheckRunResult_Result) []*v1pb.PlanCheckRun_Result {
+	var resultsV1 []*v1pb.PlanCheckRun_Result
+	for _, result := range results {
+		resultsV1 = append(resultsV1, convertToPlanCheckRunResult(result))
+	}
+	return resultsV1
+}
+
+func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1pb.PlanCheckRun_Result {
+	resultV1 := &v1pb.PlanCheckRun_Result{
+		Status:  convertToPlanCheckRunResultStatus(result.Status),
+		Title:   result.Title,
+		Content: result.Content,
+		Code:    result.Code,
+		Report:  nil,
+	}
+	switch report := result.Report.(type) {
+	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:
+		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlSummaryReport_{
+			SqlSummaryReport: &v1pb.PlanCheckRun_Result_SqlSummaryReport{
+				StatementType: report.SqlSummaryReport.StatementType,
+				AffectedRows:  report.SqlSummaryReport.AffectedRows,
+			},
+		}
+	case *storepb.PlanCheckRunResult_Result_SqlReviewReport_:
+		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+			SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+				Line:   report.SqlReviewReport.Line,
+				Detail: report.SqlReviewReport.Detail,
+				Code:   report.SqlReviewReport.Code,
+			},
+		}
+	}
+	return resultV1
+}
+
+func convertToPlanCheckRunResultStatus(status storepb.PlanCheckRunResult_Result_Status) v1pb.PlanCheckRun_Result_Status {
+	switch status {
+	case storepb.PlanCheckRunResult_Result_STATUS_UNSPECIFIED:
+		return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
+	case storepb.PlanCheckRunResult_Result_SUCCESS:
+		return v1pb.PlanCheckRun_Result_SUCCESS
+	case storepb.PlanCheckRunResult_Result_WARNING:
+		return v1pb.PlanCheckRun_Result_WARNING
+	case storepb.PlanCheckRunResult_Result_ERROR:
+		return v1pb.PlanCheckRun_Result_ERROR
+	}
+	return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
 }
 
 func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {

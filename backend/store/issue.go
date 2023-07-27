@@ -503,7 +503,7 @@ type IssueMessage struct {
 	Payload       string
 	Subscribers   []*UserMessage
 	PipelineUID   *int
-	PlanUID       *int
+	PlanUID       *int64
 
 	// The following fields are output only and not used for create().
 	UID         int
@@ -531,12 +531,15 @@ type UpdateIssueMessage struct {
 	NeedAttention *bool
 	Payload       *string
 	Subscribers   *[]*UserMessage
+
+	PipelineUID *int
 }
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
 	UID        *int
 	ProjectUID *int
+	PlanUID    *int64
 	PipelineID *int
 	// Find issues where principalID is either creator, assignee or subscriber.
 	PrincipalID *int
@@ -797,6 +800,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.pipeline_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PlanUID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.project_id = $%d", len(args)+1)), append(args, *v)

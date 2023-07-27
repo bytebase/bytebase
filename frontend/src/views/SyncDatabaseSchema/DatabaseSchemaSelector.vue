@@ -46,7 +46,7 @@
       </DatabaseSelect>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0">
+      <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("database.sync-schema.schema-version.self") }}
       </span>
       <div
