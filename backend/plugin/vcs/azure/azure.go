@@ -96,6 +96,7 @@ func (o oauthResponse) toVCSOAuthToken() (*vcs.OAuthToken, error) {
 		CreatedAt:    time.Now().Unix(),
 		ExpiresTs:    time.Now().Add(time.Duration(expiresIn) * time.Second).Unix(),
 	}
+	log.Debug("OAuth Token", zap.Any("oauthToken", oauthToken))
 	return oauthToken, nil
 }
 
@@ -194,27 +195,24 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 	for _, organization := range organizations {
 		if err := func() error {
 			url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories?%s", url.PathEscape(organization), urlParams.Encode())
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+				oauthContext{
+					RefreshToken: oauthCtx.RefreshToken,
+					ClientSecret: oauthCtx.ClientSecret,
+					RedirectURL:  oauthCtx.RedirectURL,
+				},
+				oauthCtx.Refresher,
+			))
 			if err != nil {
-				return errors.Wrapf(err, "construct GET %s", url)
+				return errors.Wrapf(err, "GET %s", url)
 			}
-			req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
-
-			resp, err := p.client.Do(req)
-			if err != nil {
-				return errors.Wrapf(err, fmt.Sprintf("failed to list the repositories under the organization %s", organization))
+			if code != http.StatusOK {
+				return errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 			}
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return errors.Wrapf(err, fmt.Sprintf("failed to read list organizations for member response body under the organization %s, code %v", organization, resp.StatusCode))
-			}
-			defer func() {
-				_ = resp.Body.Close()
-			}()
 
 			l := new(listRepositoriesResponse)
-			if err := json.Unmarshal(body, l); err != nil {
-				return errors.Wrapf(err, "failed to unmarshal list organizations for member response body, code %v", resp.StatusCode)
+			if err := json.Unmarshal([]byte(body), l); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal list organizations for member response body %v, code %v", body, code)
 			}
 
 			for _, r := range l.Value {
@@ -253,27 +251,24 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauth
 		PublicAlias string `json:"publicAlias"`
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
 	if err != nil {
-		return "", errors.Wrapf(err, "construct GET %s", url)
+		return "", errors.Wrapf(err, "GET %s", url)
 	}
-	req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get authenticated profile")
+	if code != http.StatusOK {
+		return "", errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to read profile response body, code %v", resp.StatusCode)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
 	r := new(profileAlias)
-	if err := json.Unmarshal(body, r); err != nil {
-		return "", errors.Wrapf(err, "failed to unmarshal profile response body, code %v", resp.StatusCode)
+	if err := json.Unmarshal([]byte(body), r); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal profile response body, code %v", code)
 	}
 
 	return r.PublicAlias, nil
@@ -289,23 +284,20 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx comm
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/accounts?%s", urlParams.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
 	if err != nil {
-		return nil, errors.Wrapf(err, "construct GET %s", url)
+		return nil, errors.Wrapf(err, "GET %s", url)
 	}
-	req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list organizations for member")
+	if code != http.StatusOK {
+		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read list organizations for member response body, code %v", resp.StatusCode)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
 	log.Info("List organizations for member response", zap.String("body", string(body)))
 
@@ -318,8 +310,8 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx comm
 	}
 
 	r := new(accountsResponse)
-	if err := json.Unmarshal(body, r); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal list organizations for member response body, code %v", resp.StatusCode)
+	if err := json.Unmarshal([]byte(body), r); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal list organizations for member response body, code %v", code)
 	}
 
 	result := make([]string, 0, len(r.Value))
@@ -377,27 +369,24 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 	urlParams.Set("name", branchName)
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/stats/branches?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), urlParams.Encode())
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "construct GET %s", url)
-	}
-	req.Header.Set("Authorization", "Bearer "+oauthCtx.AccessToken)
 
-	resp, err := p.client.Do(req)
+	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
 	if err != nil {
-		return nil, errors.Wrapf(err, fmt.Sprintf("failed to get the static of the branch %s of the repository %s under the organization %s", branchName, repositoryID, organizationName))
+		return nil, errors.Wrapf(err, "GET %s", url)
 	}
-	if resp.StatusCode == http.StatusNotFound {
+	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, fmt.Sprintf("branch %q does not exist in the repository %s under the organization %s", branchName, repositoryID, organizationName))
 	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Wrapf(err, fmt.Sprintf("failed to read get the static of the branch %s of the repository %s under the organization %s response body, code %v", branchName, repositoryID, organizationName, resp.StatusCode))
+	if code != http.StatusOK {
+		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
 	type branchStatResponseCommit struct {
 		CommitID string `json:"commitId"`
@@ -408,7 +397,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 	}
 
 	r := new(branchStatResponse)
-	if err := json.Unmarshal(body, r); err != nil {
+	if err := json.Unmarshal([]byte(body), r); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal get the static of the branch %s of the repository %s under the organization %s response body, body: %s", branchName, repositoryID, organizationName, string(body))
 	}
 	return &vcs.BranchInfo{
@@ -456,7 +445,14 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 		url,
 		&oauthCtx.AccessToken,
 		bytes.NewReader(payload),
-		nil,
+		tokenRefresher(
+			oauthContext{
+				RefreshToken: oauthCtx.RefreshToken,
+				ClientSecret: oauthCtx.ClientSecret,
+				RedirectURL:  oauthCtx.RedirectURL,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create webhook")
@@ -483,4 +479,66 @@ func (*Provider) PatchWebhook(_ context.Context, _ common.OauthContext, _, _, _ 
 // DeleteWebhook deletes the webhook from the repository.
 func (*Provider) DeleteWebhook(_ context.Context, _ common.OauthContext, _, _, _ string) error {
 	return errors.New("not implemented")
+}
+
+// oauthContext is the request context for OAuth.
+type oauthContext struct {
+	ClientSecret string
+	RefreshToken string
+	RedirectURL  string
+}
+
+type refreshOAuthTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    string `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+func tokenRefresher(oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
+	return func(ctx context.Context, client *http.Client, oldToken *string) error {
+		values := url.Values{}
+		values.Set("client_assertion_type", `[{"key":"client_assertion_type","value":"urn:ietf:params:oauth:client-assertion-type:jwt-bearer","description":"","type":"text","enabled":true}]`)
+		values.Set("grant_type", oauthCtx.RefreshToken)
+		values.Set("client_assertion", oauthCtx.ClientSecret)
+		values.Set("assertion", *oldToken)
+		values.Set("redirect_uri", oauthCtx.RedirectURL)
+		encodedValues := values.Encode()
+
+		url := "https://app.vssps.visualstudio.com/oauth2/token"
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(encodedValues))
+		if err != nil {
+			return errors.Wrapf(err, "construct POST %s", url)
+		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Content-Length", strconv.Itoa(len(encodedValues)))
+		resp, err := client.Do(req)
+		if err != nil {
+			return errors.Wrapf(err, "failed to refresh OAuth token")
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return errors.Wrapf(err, "read body of POST %s", url)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return errors.Errorf("non-200 POST %s status code %d with body %q", url, resp.StatusCode, body)
+		}
+
+		r := new(refreshOAuthTokenResponse)
+		if err := json.Unmarshal(body, r); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal refresh OAuth token response body, code %v", resp.StatusCode)
+		}
+
+		*oldToken = r.AccessToken
+
+		var expiresIn int64
+		if r.ExpiresIn != "" {
+			expiresAt, _ := strconv.ParseInt(r.ExpiresIn, 10, 64)
+			expiresIn = time.Now().Unix() + expiresAt
+		}
+		return refresher(r.AccessToken, r.RefreshToken, expiresIn)
+	}
 }

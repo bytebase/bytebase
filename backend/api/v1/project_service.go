@@ -384,6 +384,14 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
+
 	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
 		ProjectResourceID: &project.ResourceID,
 	})
@@ -457,6 +465,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 				repo.RefreshToken,
 				repo.ExternalID,
 				*v,
+				setting.ExternalUrl,
 			)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
@@ -560,6 +569,13 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, `failed to list repository for web url "%s" with error: %v`, repo.WebURL, err.Error())
 	}
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
 	if len(repos) == 0 {
 		// Delete the webhook after we successfully delete the repository.
 		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
@@ -573,6 +589,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
 				Refresher:    refreshTokenNoop(),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
@@ -889,6 +906,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 			repositoryCreate.RefreshToken,
 			repositoryCreate.ExternalID,
 			repositoryCreate.BranchFilter,
+			setting.ExternalUrl,
 		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", repositoryCreate.BranchFilter, err.Error())
@@ -955,6 +973,10 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 		return nil, err
 	}
 
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
+
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository, vcs)
 	if err != nil {
 		return nil, err
@@ -968,6 +990,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1002,6 +1025,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1017,6 +1041,13 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 
 // setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
 func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsPlugin.BranchInfo, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
 	branch, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(
 		ctx,
 		common.OauthContext{
@@ -1025,6 +1056,7 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1047,6 +1079,7 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1070,6 +1103,14 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 	fileLastCommitID := ""
 	fileSHA := ""
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
+
 	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
@@ -1078,6 +1119,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1105,6 +1147,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1127,6 +1170,13 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 	branch *vcsPlugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
 	// create or update the .gitlab-ci.yml
 	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
 		content := make(map[string]any)
@@ -1140,6 +1190,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 					AccessToken:  repository.AccessToken,
 					RefreshToken: repository.RefreshToken,
 					Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+					RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 				},
 				vcs.InstanceURL,
 				repository.ExternalID,
@@ -1179,6 +1230,13 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 	fileName string,
 	getNewContent func(meta *vcsPlugin.FileMeta) (string, error),
 ) error {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
 	fileExisted := true
 	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
@@ -1188,6 +1246,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1222,6 +1281,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 				AccessToken:  repository.AccessToken,
 				RefreshToken: repository.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			vcs.InstanceURL,
 			repository.ExternalID,
@@ -1244,6 +1304,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -2714,7 +2775,7 @@ func isBranchNotFound(
 	ctx context.Context,
 	vcs *store.ExternalVersionControlMessage,
 	store *store.Store,
-	webURL, accessToken, refreshToken, externalID, branch string,
+	webURL, accessToken, refreshToken, externalID, branch, externalURL string,
 ) (bool, error) {
 	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
 		common.OauthContext{
@@ -2723,6 +2784,7 @@ func isBranchNotFound(
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
 			Refresher:    utils.RefreshToken(ctx, store, webURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
 		},
 		vcs.InstanceURL, externalID, branch)
 

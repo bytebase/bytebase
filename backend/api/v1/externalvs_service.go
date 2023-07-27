@@ -143,6 +143,14 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 		return nil, status.Errorf(codes.NotFound, "External version control not found: %v", err)
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
+
 	apiExternalProjectList, err := vcs.Get(externalVersionControl.Type, vcs.ProviderConfig{}).FetchAllRepositoryList(
 		ctx,
 		common.OauthContext{
@@ -150,6 +158,7 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 			ClientSecret: externalVersionControl.Secret,
 			AccessToken:  request.AccessToken,
 			RefreshToken: request.RefreshToken,
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			Refresher:    nil,
 		},
 		externalVersionControl.InstanceURL,
@@ -251,7 +260,7 @@ func (s *ExternalVersionControlService) ExchangeToken(ctx context.Context, reque
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
 	}
 	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "external url is required")
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 
 	oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
