@@ -4,7 +4,7 @@
       class="w-full mb-4 flex flex-row justify-between items-center space-x-2"
     >
       <span>
-        {{ $t("schema-designer.schema-design-list") }}
+        {{ $t("schema-designer.select-design") }}
       </span>
       <div>
         <NButton @click="state.showCreatePanel = true">

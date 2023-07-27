@@ -2708,6 +2708,7 @@
   "schema-designer": {
     "self": "Diseñador de esquemas",
     "new-design": "Nuevo Diseño",
+    "select-design": "Seleccionar un diseño de esquema",
     "quick-action": "Diseñar esquema",
     "schema-design": "Esquema diseñar",
     "schema-design-list": "Lista de Diseñar esquema",
