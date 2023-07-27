@@ -15,10 +15,10 @@ export interface InstanceOptions {
 /** InstanceMetadata is the metadata for instances. */
 export interface InstanceMetadata {
   /**
-   * The lower_case_table_name config for MySQL instances.
-   * It is used to determine whether the table name and database name are case sensitive.
+   * The lower_case_table_names config for MySQL instances.
+   * It is used to determine whether the table names and database names are case sensitive.
    */
-  mysqlLowerCaseTableName: number;
+  mysqlLowerCaseTableNames: number;
 }
 
 function createBaseInstanceOptions(): InstanceOptions {
@@ -78,13 +78,13 @@ export const InstanceOptions = {
 };
 
 function createBaseInstanceMetadata(): InstanceMetadata {
-  return { mysqlLowerCaseTableName: 0 };
+  return { mysqlLowerCaseTableNames: 0 };
 }
 
 export const InstanceMetadata = {
   encode(message: InstanceMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.mysqlLowerCaseTableName !== 0) {
-      writer.uint32(8).int32(message.mysqlLowerCaseTableName);
+    if (message.mysqlLowerCaseTableNames !== 0) {
+      writer.uint32(8).int32(message.mysqlLowerCaseTableNames);
     }
     return writer;
   },
@@ -101,7 +101,7 @@ export const InstanceMetadata = {
             break;
           }
 
-          message.mysqlLowerCaseTableName = reader.int32();
+          message.mysqlLowerCaseTableNames = reader.int32();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -114,14 +114,14 @@ export const InstanceMetadata = {
 
   fromJSON(object: any): InstanceMetadata {
     return {
-      mysqlLowerCaseTableName: isSet(object.mysqlLowerCaseTableName) ? Number(object.mysqlLowerCaseTableName) : 0,
+      mysqlLowerCaseTableNames: isSet(object.mysqlLowerCaseTableNames) ? Number(object.mysqlLowerCaseTableNames) : 0,
     };
   },
 
   toJSON(message: InstanceMetadata): unknown {
     const obj: any = {};
-    message.mysqlLowerCaseTableName !== undefined &&
-      (obj.mysqlLowerCaseTableName = Math.round(message.mysqlLowerCaseTableName));
+    message.mysqlLowerCaseTableNames !== undefined &&
+      (obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames));
     return obj;
   },
 
@@ -131,7 +131,7 @@ export const InstanceMetadata = {
 
   fromPartial(object: DeepPartial<InstanceMetadata>): InstanceMetadata {
     const message = createBaseInstanceMetadata();
-    message.mysqlLowerCaseTableName = object.mysqlLowerCaseTableName ?? 0;
+    message.mysqlLowerCaseTableNames = object.mysqlLowerCaseTableNames ?? 0;
     return message;
   },
 };

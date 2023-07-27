@@ -1096,7 +1096,7 @@ InstanceMetadata is the metadata for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| mysql_lower_case_table_name | [int32](#int32) |  | The lower_case_table_name config for MySQL instances. It is used to determine whether the table name and database name are case sensitive. |
+| mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
 
 
 
