@@ -249,14 +249,14 @@ message WorkspaceTrialSetting {
   PlanType plan = 6;
 }
 
-message DataCategorySetting {
+message DataClassificationSetting {
   // Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+
-  message DataCategoryConfig {
+  message DataClassificationConfig {
     string id = 1;
     string title = 2;
-    // Maps category to level.
-    map<string, string> category_level = 3;
+    // Maps classification to level.
+    map<string, string> classification_level = 3;
     // TODO(ed): store the actual config.
   }
-  repeated DataCategoryConfig configs = 1;
+  repeated DataClassificationConfig configs = 1;
 }

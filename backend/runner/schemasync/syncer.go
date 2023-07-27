@@ -269,7 +269,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if err != nil {
 		return err
 	}
-	setCategoryAndUserCommentFromComment(databaseMetadata)
+	setClassificationAndUserCommentFromComment(databaseMetadata)
 
 	var patchSchemaVersion *string
 	if force {
@@ -340,12 +340,12 @@ func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {
 	)
 }
 
-func setCategoryAndUserCommentFromComment(dbSchema *storepb.DatabaseMetadata) {
+func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseMetadata) {
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
-			table.Category, table.UserComment = common.GetCategoryAndUserComment(table.Comment)
+			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
 			for _, col := range table.Columns {
-				col.Category, col.UserComment = common.GetCategoryAndUserComment(col.Comment)
+				col.Classification, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
 			}
 		}
 	}
