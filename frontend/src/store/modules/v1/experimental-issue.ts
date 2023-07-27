@@ -10,8 +10,7 @@ import {
   UNKNOWN_ID,
   UNKNOWN_ISSUE_NAME,
 } from "@/types";
-import { extractIssueUID, extractProjectResourceName } from "@/utils";
-import { useIssueStore } from "../issue";
+import { extractProjectResourceName } from "@/utils";
 import { useProjectV1Store } from "./project";
 
 export const experimentalFetchIssueByUID = async (uid: string) => {
@@ -22,8 +21,6 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
 
   if (uid === String(EMPTY_ID)) return emptyIssue();
   if (uid === String(UNKNOWN_ID)) return unknownIssue();
-
-  const legacyIssue = await useIssueStore().fetchIssueById(Number(uid));
 
   const rawIssue = await issueServiceClient.getIssue({
     name: `projects/-/issues/${uid}`,
@@ -42,22 +39,18 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
     ...rawIssue,
     planEntity: undefined,
     planCheckRunList: [],
-    rollout: EMPTY_ROLLOUT_NAME,
     rolloutEntity: emptyRollout(),
     rolloutTaskRunList: [],
     project,
     projectEntity,
   };
 
-  if (legacyIssue.pipeline) {
-    const rollout = `${project}/rollouts/${legacyIssue.pipeline.id}`;
-    rawIssue.rollout = rollout;
-    issue.rollout = rollout;
+  if (issue.rollout) {
     issue.rolloutEntity = await rolloutServiceClient.getRollout({
-      name: rollout,
+      name: issue.rollout,
     });
     const { taskRuns } = await rolloutServiceClient.listTaskRuns({
-      parent: `${rollout}/stages/-/tasks/-`,
+      parent: `${issue.rollout}/stages/-/tasks/-`,
       pageSize: 1000, // MAX
     });
     issue.rolloutTaskRunList = taskRuns;
@@ -81,9 +74,6 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
 export const experimentalFetchIssueByName = async (name: string) => {
   if (name === EMPTY_ISSUE_NAME) return emptyIssue();
   if (name === UNKNOWN_ISSUE_NAME) return unknownIssue();
-
-  const uid = extractIssueUID(name);
-  const legacyIssue = await useIssueStore().fetchIssueById(Number(uid));
 
   const rawIssue = await issueServiceClient.getIssue({
     name,
@@ -109,13 +99,15 @@ export const experimentalFetchIssueByName = async (name: string) => {
     projectEntity,
   };
 
-  if (legacyIssue.pipeline) {
-    const rollout = `${project}/rollouts/${legacyIssue.pipeline.id}`;
-    rawIssue.rollout = rollout;
-    issue.rollout = rollout;
+  if (issue.rollout) {
     issue.rolloutEntity = await rolloutServiceClient.getRollout({
-      name: rollout,
+      name: issue.rollout,
     });
+    const { taskRuns } = await rolloutServiceClient.listTaskRuns({
+      parent: `${issue.rollout}/stages/-/tasks/-`,
+      pageSize: 1000, // MAX
+    });
+    issue.rolloutTaskRunList = taskRuns;
   }
   // const plan = await rolloutServiceClient.getPlan({
   //   name: issue.plan,
