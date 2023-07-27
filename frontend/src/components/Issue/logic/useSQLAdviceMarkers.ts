@@ -34,16 +34,16 @@ const getLatestAdviceOptions = (taskCheckRunList: TaskCheckRun[]) => {
     .filter((result) => result.status === "ERROR" || result.status === "WARN")
     .filter((result) => result.line !== undefined)
     .map<AdviceOption>((result) => {
+      const line = result.line!;
+      const column = result.column ?? Number.MAX_SAFE_INTEGER;
       return {
         severity: result.status === "ERROR" ? "ERROR" : "WARNING",
         message: result.content,
         source: `${result.title} (${result.code})`,
-        startLineNumber: result.line!,
-        // We don't know the actual column yet, so we show the marker at then end of the line
-        startColumn: Number.MAX_SAFE_INTEGER,
-        endLineNumber: result.line!,
-        // We don't know the actual column yet, so we show the marker at then end of the line
-        endColumn: Number.MAX_SAFE_INTEGER,
+        startLineNumber: line,
+        endLineNumber: line,
+        startColumn: column,
+        endColumn: column,
       };
     });
 };

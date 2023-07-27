@@ -282,6 +282,7 @@ export type TaskCheckResult = {
   title: string;
   content: string;
   line: number | undefined;
+  column: number | undefined;
   namespace: TaskCheckNamespace;
   details?: string;
 };
