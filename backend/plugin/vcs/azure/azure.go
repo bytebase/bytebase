@@ -471,7 +471,12 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 	return fmt.Sprintf("%s/%s", organizationName, c.ID), nil
 }
 
-// PatchWebhook patches the webhook in the repository with given payload.
+// PatchWebhook patches the webhook in the repository.
+// Due to the Azure DevOps API do not provide an endpoint the update the webhook,
+// so we should set the webhook full configuration in the payload.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/replace-subscription?view=azure-devops-rest-7.0&tabs=HTTP
+// (2023/07/07, zp): It seems that the PatchWebhook API of each provider is not used by Bytebase, should we remove it?
 func (*Provider) PatchWebhook(_ context.Context, _ common.OauthContext, _, _, _ string, _ []byte) error {
 	return errors.New("not implemented")
 }
@@ -528,6 +533,7 @@ type refreshOAuthTokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/oauth?view=azure-devops#refresh-an-expired-access-token
 func tokenRefresher(oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
 		values := url.Values{}
