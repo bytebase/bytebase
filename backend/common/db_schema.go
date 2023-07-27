@@ -5,22 +5,22 @@ import (
 	"strings"
 )
 
-var getCategoryFromCommentReg = regexp.MustCompile("^[0-9]+-[0-9]+-[0-9]+")
+var getClassificationFromCommentReg = regexp.MustCompile("^[0-9]+-[0-9]+-[0-9]+")
 
-// GetCategoryAndUserComment parses category and user comment from the given comment.
-func GetCategoryAndUserComment(comment string) (string, string) {
-	category := getCategoryFromCommentReg.FindString(comment)
-	userComment := strings.TrimPrefix(strings.TrimPrefix(comment, category), "-")
-	return category, userComment
+// GetClassificationAndUserComment parses classification and user comment from the given comment.
+func GetClassificationAndUserComment(comment string) (string, string) {
+	classification := getClassificationFromCommentReg.FindString(comment)
+	userComment := strings.TrimPrefix(strings.TrimPrefix(comment, classification), "-")
+	return classification, userComment
 }
 
-// GetCommentFromCategoryAndUserComment returns the comment from the given category and user comment.
-func GetCommentFromCategoryAndUserComment(category, userComment string) string {
-	if category == "" {
+// GetCommentFromClassificationAndUserComment returns the comment from the given classification and user comment.
+func GetCommentFromClassificationAndUserComment(classification, userComment string) string {
+	if classification == "" {
 		return userComment
 	}
 	if userComment == "" {
-		return category
+		return classification
 	}
-	return category + "-" + userComment
+	return classification + "-" + userComment
 }
