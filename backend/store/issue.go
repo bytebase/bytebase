@@ -670,6 +670,10 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	}
 
 	set, args := []string{"updater_id = $1"}, []any{updaterID}
+
+	if v := patch.PipelineUID; v != nil {
+		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
