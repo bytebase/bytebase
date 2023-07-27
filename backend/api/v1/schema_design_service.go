@@ -1227,7 +1227,7 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 			case "DEFAULT":
 				defaultExists = true
 			case "COMMENT":
-				defaultExists = true
+				commentExists = true
 			}
 		} else if attr.NullLiteral() != nil {
 			nullExists = true
