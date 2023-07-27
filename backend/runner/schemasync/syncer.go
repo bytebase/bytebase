@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -346,8 +347,10 @@ func setCategoryFromComment(dbSchema *storepb.DatabaseMetadata) {
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
 			table.Category = getCategoryFromCommentReg.FindString(table.Comment)
+			table.UserComment = strings.TrimPrefix(strings.TrimPrefix(table.Comment, table.Category), "-")
 			for _, col := range table.Columns {
 				col.Category = getCategoryFromCommentReg.FindString(col.Comment)
+				col.UserComment = strings.TrimPrefix(strings.TrimPrefix(col.Comment, col.Category), "-")
 			}
 		}
 	}
