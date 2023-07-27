@@ -32,8 +32,8 @@ func init() {
 
 // Driver is the DM driver.
 type Driver struct {
-	db               *sql.DB
-	databaseName     string
+	db           *sql.DB
+	databaseName string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -41,21 +41,19 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a DM driver.
-func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
 	}
-	dsn := fmt.Sprintf("dm://%s:%s@%s:%d?shcema=%s", config.Username, config.Password , config.Host, port,config.Database)
+	dsn := fmt.Sprintf("dm://%s:%s@%s:%d", config.Username, config.Password, config.Host, port)
+	if config.Database != "" {
+		dsn = fmt.Sprintf("%s?schema=%s", dsn, config.Database)
+	}
 	db, err := sql.Open("dm", dsn)
 	if err != nil {
 		return nil, err
 	}
-	// if config.Database != "" {
-	// 	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.Database)); err != nil {
-	// 		return nil, errors.Wrapf(err, "failed to set current schema to %q", config.Database)
-	// 	}
-	// }
 	driver.db = db
 	driver.databaseName = config.Database
 	return driver, nil
@@ -115,7 +113,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 		return nil
 	}
 
-	// use oracle sql parser 
+	// use oracle sql parser
 	if _, err := parser.SplitMultiSQLStream(parser.Oracle, strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
@@ -185,7 +183,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 }
 
 // RunStatement runs a SQL statement in a given connection.
-// and like usual,use Oracle sql parser
+// and like usual,use Oracle sql parser.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, parser.Oracle, conn, statement)
 }

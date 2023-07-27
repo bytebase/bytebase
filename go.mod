@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	cloud.google.com/go/spanner v1.47.0
+	gitee.com/chunanyong/dm v1.8.12
 	github.com/ClickHouse/clickhouse-go/v2 v2.10.1
 	github.com/antlr4-go/antlr/v4 v4.13.0
 	github.com/aws/aws-sdk-go-v2 v1.18.1

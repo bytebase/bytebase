@@ -34,6 +34,8 @@ message OAuth2IdentityProviderConfig {
   FieldMapping field_mapping = 7;
 
   bool skip_tls_verify = 8;
+
+  OAuth2AuthStyle auth_style = 9;
 }
 
 // OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
@@ -47,6 +49,8 @@ message OIDCIdentityProviderConfig {
   FieldMapping field_mapping = 4;
 
   bool skip_tls_verify = 5;
+
+  OAuth2AuthStyle auth_style = 6;
 }
 
 // FieldMapping saves the field names from user info API of identity provider.
@@ -77,4 +81,14 @@ message IdentityProviderUserInfo {
 
   // Email is the value of primary email in 3rd-party idp user info.
   string email = 3;
+}
+
+enum OAuth2AuthStyle {
+  OAUTH2_AUTH_STYLE_UNSPECIFIED = 0;
+  // IN_PARAMS sends the "client_id" and "client_secret" in the POST body
+  // as application/x-www-form-urlencoded parameters.
+  IN_PARAMS = 1;
+  // IN_HEADER sends the client_id and client_password using HTTP Basic Authorization.
+  // This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.
+  IN_HEADER = 2;
 }

@@ -55,6 +55,8 @@ const (
 	Redshift Type = "REDSHIFT"
 	// MariaDB is the database type for MariaDB.
 	MariaDB Type = "MARIADB"
+	// DM is the database type for DM.
+	DM Type = "DM"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
