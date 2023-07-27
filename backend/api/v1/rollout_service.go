@@ -381,6 +381,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	return nil, nil
 }
 
+// ListPlanCheckRuns lists plan check runs for the plan.
 func (s *RolloutService) ListPlanCheckRuns(ctx context.Context, request *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
 	planUID, err := common.GetPlanID(request.Parent)
 	if err != nil {
