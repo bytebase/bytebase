@@ -333,7 +333,8 @@ CREATE TABLE instance (
     resource_id TEXT NOT NULL,
     -- activation should set to be TRUE if users assign license to this instance.
     activation BOOLEAN NOT NULL DEFAULT false,
-    options JSONB NOT NULL DEFAULT '{}'
+    options JSONB NOT NULL DEFAULT '{}',
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
