@@ -503,7 +503,7 @@ type IssueMessage struct {
 	Payload       string
 	Subscribers   []*UserMessage
 	PipelineUID   *int
-	PlanUID       *int
+	PlanUID       *int64
 
 	// The following fields are output only and not used for create().
 	UID         int
