@@ -607,31 +607,36 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, 
 }
 
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
-	databaseUID := int(run.Config.DatabaseId)
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	sheetUID := int(run.Config.SheetId)
-	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet")
-	}
-	sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet project")
-	}
 	converted := &v1pb.PlanCheckRun{
 		Name:    fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
 		Uid:     fmt.Sprintf("%d", run.UID),
 		Type:    convertToPlanCheckRunType(run.Type),
 		Status:  convertToPlanCheckRunStatus(run.Status),
-		Target:  fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Sheet:   fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, sheetProject.ResourceID, common.SheetIDPrefix, sheet.UID),
+		Target:  "",
+		Sheet:   "",
 		Results: convertToPlanCheckRunResults(run.Result.Results),
 		Error:   run.Result.Error,
 	}
-
+	if run.Config.DatabaseId != 0 {
+		databaseUID := int(run.Config.DatabaseId)
+		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database")
+		}
+		converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
+	}
+	if run.Config.SheetId != 0 {
+		sheetUID := int(run.Config.SheetId)
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet")
+		}
+		sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet project")
+		}
+		converted.Sheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, sheetProject.ResourceID, common.SheetIDPrefix, sheet.UID)
+	}
 	return converted, nil
 }
 
