@@ -7,9 +7,10 @@
         {{ $t("schema-designer.schema-design-list") }}
       </span>
       <div>
-        <NButton type="primary" @click="state.showCreatePanel = true">{{
-          $t("common.create")
-        }}</NButton>
+        <NButton @click="state.showCreatePanel = true">
+          <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
+          <span>{{ $t("schema-designer.new-design") }}</span>
+        </NButton>
       </div>
     </div>
     <BBGrid
@@ -107,9 +108,9 @@ const COLUMN_LIST = computed(() => {
       title: t("database.engine"),
       width: "1fr",
     },
-    { title: t("common.creator"), width: "minmax(auto, 10rem)" },
-    { title: t("common.updater"), width: "minmax(auto, 10rem)" },
-    { title: t("common.updated-at"), width: "minmax(auto, 10rem)" },
+    { title: t("common.creator"), width: "1fr" },
+    { title: t("common.updater"), width: "1fr" },
+    { title: t("common.updated-at"), width: "1fr" },
   ];
 
   return columns;

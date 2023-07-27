@@ -29,6 +29,7 @@ const (
 	TaskPrefix                   = "tasks/"
 	TaskRunPrefix                = "taskRuns/"
 	PlanPrefix                   = "plans/"
+	PlanCheckRunPrefix           = "planCheckRuns/"
 	RolePrefix                   = "roles/"
 	SecretNamePrefix             = "secrets/"
 	WebhookIDPrefix              = "webhooks/"

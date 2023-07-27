@@ -378,14 +378,13 @@ export interface PlanCheckRun {
 export enum PlanCheckRun_Type {
   TYPE_UNSPECIFIED = 0,
   DATABASE_STATEMENT_FAKE_ADVISE = 1,
-  DATABASE_STATEMENT_SYNTAX = 2,
-  DATABASE_STATEMENT_COMPATIBILITY = 3,
-  DATABASE_STATEMENT_ADVISE = 4,
-  DATABASE_STATEMENT_TYPE = 5,
-  DATABASE_STATEMENT_SUMMARY_REPORT = 6,
-  DATABASE_CONNECT = 7,
-  DATABASE_GHOST_SYNC = 8,
-  DATABASE_PITR_MYSQL = 9,
+  DATABASE_STATEMENT_COMPATIBILITY = 2,
+  DATABASE_STATEMENT_ADVISE = 3,
+  DATABASE_STATEMENT_TYPE = 4,
+  DATABASE_STATEMENT_SUMMARY_REPORT = 5,
+  DATABASE_CONNECT = 6,
+  DATABASE_GHOST_SYNC = 7,
+  DATABASE_PITR_MYSQL = 8,
   UNRECOGNIZED = -1,
 }
 
@@ -398,27 +397,24 @@ export function planCheckRun_TypeFromJSON(object: any): PlanCheckRun_Type {
     case "DATABASE_STATEMENT_FAKE_ADVISE":
       return PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE;
     case 2:
-    case "DATABASE_STATEMENT_SYNTAX":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_SYNTAX;
-    case 3:
     case "DATABASE_STATEMENT_COMPATIBILITY":
       return PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY;
-    case 4:
+    case 3:
     case "DATABASE_STATEMENT_ADVISE":
       return PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE;
-    case 5:
+    case 4:
     case "DATABASE_STATEMENT_TYPE":
       return PlanCheckRun_Type.DATABASE_STATEMENT_TYPE;
-    case 6:
+    case 5:
     case "DATABASE_STATEMENT_SUMMARY_REPORT":
       return PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT;
-    case 7:
+    case 6:
     case "DATABASE_CONNECT":
       return PlanCheckRun_Type.DATABASE_CONNECT;
-    case 8:
+    case 7:
     case "DATABASE_GHOST_SYNC":
       return PlanCheckRun_Type.DATABASE_GHOST_SYNC;
-    case 9:
+    case 8:
     case "DATABASE_PITR_MYSQL":
       return PlanCheckRun_Type.DATABASE_PITR_MYSQL;
     case -1:
@@ -434,8 +430,6 @@ export function planCheckRun_TypeToJSON(object: PlanCheckRun_Type): string {
       return "TYPE_UNSPECIFIED";
     case PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE:
       return "DATABASE_STATEMENT_FAKE_ADVISE";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_SYNTAX:
-      return "DATABASE_STATEMENT_SYNTAX";
     case PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY:
       return "DATABASE_STATEMENT_COMPATIBILITY";
     case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:

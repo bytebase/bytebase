@@ -2699,6 +2699,7 @@
   },
   "schema-designer": {
     "self": "Schema Designer",
+    "new-design": "New Design",
     "quick-action": "Design Schema",
     "schema-design": "Schema Design",
     "schema-design-list": "Schema Design List",

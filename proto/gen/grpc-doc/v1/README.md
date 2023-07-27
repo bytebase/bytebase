@@ -247,6 +247,7 @@
     - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
   
     - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
+    - [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle)
   
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
@@ -760,6 +761,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | REDSHIFT | 12 |  |
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
+| DM | 15 |  |
 
 
 
@@ -2464,7 +2466,9 @@ ColumnMetadata is the metadata for columns.
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
 | collation | [string](#string) |  | The collation is the collation of a column. |
-| comment | [string](#string) |  | The comment is the comment of a column. |
+| comment | [string](#string) |  | The comment is the comment of a column. category and user_comment is parsed from the comment. |
+| category | [string](#string) |  | The category is the category of a column parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
 
 
 
@@ -3125,7 +3129,9 @@ TableMetadata is the metadata for tables.
 | index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
 | data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
 | create_options | [string](#string) |  | The create_options is the create option of a table. |
-| comment | [string](#string) |  | The comment is the comment of a table. |
+| comment | [string](#string) |  | The comment is the comment of a table. category and user_comment is parsed from the comment. |
+| category | [string](#string) |  | The category is the category of a table parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 
 
@@ -4090,6 +4096,7 @@ OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider confi
 | scopes | [string](#string) | repeated |  |
 | field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
+| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  |  |
 
 
 
@@ -4125,6 +4132,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | scopes | [string](#string) | repeated |  |
 | field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
+| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  |  |
 
 
 
@@ -4202,6 +4210,19 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
+
+
+
+<a name="bytebase-v1-OAuth2AuthStyle"></a>
+
+### OAuth2AuthStyle
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OAUTH2_AUTH_STYLE_UNSPECIFIED | 0 |  |
+| IN_PARAMS | 1 | IN_PARAMS sends the &#34;client_id&#34; and &#34;client_secret&#34; in the POST body as application/x-www-form-urlencoded parameters. |
+| IN_HEADER | 2 | IN_HEADER sends the client_id and client_password using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
 
 
  
@@ -7609,14 +7630,13 @@ Type is the database change type.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_STATEMENT_FAKE_ADVISE | 1 |  |
-| DATABASE_STATEMENT_SYNTAX | 2 |  |
-| DATABASE_STATEMENT_COMPATIBILITY | 3 |  |
-| DATABASE_STATEMENT_ADVISE | 4 |  |
-| DATABASE_STATEMENT_TYPE | 5 |  |
-| DATABASE_STATEMENT_SUMMARY_REPORT | 6 |  |
-| DATABASE_CONNECT | 7 |  |
-| DATABASE_GHOST_SYNC | 8 |  |
-| DATABASE_PITR_MYSQL | 9 |  |
+| DATABASE_STATEMENT_COMPATIBILITY | 2 |  |
+| DATABASE_STATEMENT_ADVISE | 3 |  |
+| DATABASE_STATEMENT_TYPE | 4 |  |
+| DATABASE_STATEMENT_SUMMARY_REPORT | 5 |  |
+| DATABASE_CONNECT | 6 |  |
+| DATABASE_GHOST_SYNC | 7 |  |
+| DATABASE_PITR_MYSQL | 8 |  |
 
 
 
