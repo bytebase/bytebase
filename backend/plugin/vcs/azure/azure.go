@@ -476,9 +476,43 @@ func (*Provider) PatchWebhook(_ context.Context, _ common.OauthContext, _, _, _ 
 	return errors.New("not implemented")
 }
 
-// DeleteWebhook deletes the webhook from the repository.
-func (*Provider) DeleteWebhook(_ context.Context, _ common.OauthContext, _, _, _ string) error {
-	return errors.New("not implemented")
+// DeleteWebhook deletes the webhook in the repository.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/delete?view=azure-devops-rest-7.0&tabs=HTTP
+func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, _, _, webhookID string) error {
+	// By design, we encode the webhook ID as <organization>/<webhookID> for Azure DevOps.
+	parts := strings.Split(webhookID, "/")
+	if len(parts) != 2 {
+		return errors.Errorf("invalid webhook ID %q", webhookID)
+	}
+	organizationName, webhookID := parts[0], parts[1]
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/hooks/subscriptions/%s?%s", url.PathEscape(organizationName), url.PathEscape(webhookID), values.Encode())
+
+	code, _, body, err := oauth.Delete(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				RefreshToken: oauthCtx.RefreshToken,
+				ClientSecret: oauthCtx.ClientSecret,
+				RedirectURL:  oauthCtx.RedirectURL,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to send delete webhook request")
+	}
+	if code != http.StatusNoContent {
+		return errors.Errorf("failed to delete webhook, code: %v, body: %s", code, string(body))
+	}
+
+	return nil
 }
 
 // oauthContext is the request context for OAuth.
