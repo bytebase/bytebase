@@ -1,5 +1,5 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
-import { Issue } from "../../proto/v1/issue_service";
+import { Issue, Issue_Type } from "../../proto/v1/issue_service";
 import {
   Plan,
   PlanCheckRun,
@@ -41,6 +41,7 @@ export const emptyIssue = (): ComposedIssue => {
       name: EMPTY_ISSUE_NAME,
       rollout: EMPTY_ROLLOUT_NAME,
       uid: String(EMPTY_ID),
+      type: Issue_Type.DATABASE_CHANGE,
     }),
     planEntity: undefined,
     planCheckRunList: [],
@@ -57,6 +58,7 @@ export const unknownIssue = (): ComposedIssue => {
       name: UNKNOWN_ISSUE_NAME,
       rollout: UNKNOWN_ROLLOUT_NAME,
       uid: String(UNKNOWN_ID),
+      type: Issue_Type.DATABASE_CHANGE,
     }),
     planEntity: undefined,
     planCheckRunList: [],
