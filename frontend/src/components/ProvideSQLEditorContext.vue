@@ -17,6 +17,7 @@ import {
   useInstanceV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
+  useUserStore,
 } from "@/store";
 import {
   Connection,
@@ -382,6 +383,8 @@ const syncURLWithConnection = () => {
 };
 
 onMounted(async () => {
+  await useUserStore().fetchUserList();
+
   if (connectionTreeStore.tree.state === ConnectionTreeState.UNSET) {
     connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
     // Initialize project list state for iam policy.

@@ -1,11 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
     <BannersWrapper />
-    <nav class="bg-white border-b border-block-border">
-      <div class="max-w-full mx-auto px-4">
-        <EditorHeader />
-      </div>
-    </nav>
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense>
       <template #default>
@@ -31,7 +26,6 @@
 <script lang="ts" setup>
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
 import { pushNotification, useActuatorV1Store } from "@/store";
-import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 
 const actuatorStore = useActuatorV1Store();
