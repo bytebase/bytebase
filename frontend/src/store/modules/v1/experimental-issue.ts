@@ -10,6 +10,7 @@ import {
   UNKNOWN_ID,
   UNKNOWN_ISSUE_NAME,
 } from "@/types";
+import { Issue } from "@/types/proto/v1/issue_service";
 import { extractProjectResourceName } from "@/utils";
 import { useProjectV1Store } from "./project";
 
@@ -27,7 +28,7 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
   });
   console.log(
     "raw Issue from IssueService.GetIssue",
-    JSON.stringify(rawIssue, null, "  ")
+    JSON.stringify(Issue.toJSON(rawIssue), null, "  ")
   );
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;

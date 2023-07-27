@@ -33,7 +33,7 @@
 import { computed } from "vue";
 
 import { useCurrentUserV1, useUserStore } from "@/store";
-import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
+import { SYSTEM_BOT_EMAIL, SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
 import { extractUserResourceName, extractUserUID } from "@/utils";
 import { User } from "@/types/proto/v1/auth_service";
 import { UserSelect } from "@/components/v2";
@@ -49,12 +49,16 @@ const userStore = useUserStore();
 const { isCreating, issue } = useIssueContext();
 const currentUser = useCurrentUserV1();
 
-const assigneeUID = computed(() => {
+const assigneeEmail = computed(() => {
   const assignee = issue.value.assignee;
   if (!assignee) return undefined;
-  const assigneeEmail = extractUserResourceName(assignee);
-  if (assigneeEmail === SYSTEM_BOT_EMAIL) return String(UNKNOWN_ID);
-  const user = userStore.getUserByEmail(assigneeEmail);
+  return extractUserResourceName(assignee);
+});
+
+const assigneeUID = computed(() => {
+  if (!assigneeEmail.value) return undefined;
+  if (assigneeEmail.value === SYSTEM_BOT_EMAIL) return String(SYSTEM_BOT_ID);
+  const user = userStore.getUserByEmail(assigneeEmail.value);
   if (!user) return undefined;
   return extractUserUID(user.name);
 });
