@@ -95,7 +95,7 @@ type TaskCheckResult struct {
 	Title     string          `json:"title,omitempty"`
 	Content   string          `json:"content,omitempty"`
 	Line      int             `json:"line,omitempty"`
-	Column    int             `json:"column,omitempty"`
+	Column    int             `json:"column"`
 	Details   string          `json:"details,omitempty"`
 }
 
