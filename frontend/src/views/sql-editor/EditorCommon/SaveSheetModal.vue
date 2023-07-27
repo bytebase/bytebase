@@ -21,6 +21,7 @@ import {
   Sheet_Type,
   Sheet,
 } from "@/types/proto/v1/sheet_service";
+import { useSheetPanelContext } from "../TabList/SheetPanel/common";
 
 type LocalState = {
   showModal: boolean;
@@ -29,6 +30,7 @@ type LocalState = {
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sheetV1Store = useSheetV1Store();
+const { events: sheetEvents } = useSheetPanelContext();
 
 const state = reactive<LocalState>({
   showModal: false,
@@ -85,6 +87,9 @@ const doSaveSheet = async (sheetTitle?: string) => {
       isSaved: true,
       name: sheetTitle,
     });
+
+    // Refresh "my" sheet list.
+    sheetEvents.emit("refresh", { views: ["my"] });
   }
 };
 

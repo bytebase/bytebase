@@ -1766,7 +1766,6 @@
       "sheet-is-read-only": "The shared sheet is read-only."
     },
     "view-all-tabs": "View all Tabs",
-    "sheet": "Sheet",
     "sheets": "Sheets",
     "connection-holder": "Click nodes on the left panel to get started",
     "link-access": "Link access",
@@ -1801,7 +1800,11 @@
     "clear-screen": "Clear screen",
     "query-time": "Query time",
     "request-query": "Request Query",
-    "connection-lost": "Connection lost. Will try to reconnect when executing next query."
+    "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
+    "sheet": {
+      "choose-sheet": "Choose Sheet",
+      "self": "Sheet"
+    }
   },
   "schema-editor": {
     "self": "Schema Editor",
