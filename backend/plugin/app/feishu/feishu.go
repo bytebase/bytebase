@@ -14,8 +14,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // Response code definition in feishu response body.
@@ -384,6 +386,9 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
+		}
+		if err := resp.Body.Close(); err != nil {
+			log.Warn("failed to close resp body", zap.Error(err))
 		}
 
 		var response struct {
