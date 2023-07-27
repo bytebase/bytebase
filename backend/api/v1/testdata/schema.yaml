@@ -24,6 +24,8 @@
                   characterset: ""
                   collation: ""
                   comment: abcdefg
+                  category: ""
+                  usercomment: abcdefg
                 - name: b
                   position: 0
                   default:
@@ -33,6 +35,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  category: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -51,6 +55,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              category: ""
+              usercomment: ""
               foreignkeys:
                 - name: fk1
                   columns:
@@ -73,6 +79,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  category: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -90,6 +98,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              category: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []

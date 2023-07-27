@@ -1493,6 +1493,8 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 				DataFree:      table.DataFree,
 				CreateOptions: table.CreateOptions,
 				Comment:       table.Comment,
+				Category:      table.Category,
+				UserComment:   table.UserComment,
 			}
 			for _, column := range table.Columns {
 				t.Columns = append(t.Columns, &v1pb.ColumnMetadata{
@@ -1504,6 +1506,8 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 					CharacterSet: column.CharacterSet,
 					Collation:    column.Collation,
 					Comment:      column.Comment,
+					Category:     column.Category,
+					UserComment:  column.UserComment,
 				})
 			}
 			for _, index := range table.Indexes {
