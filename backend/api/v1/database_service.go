@@ -1484,30 +1484,30 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 		}
 		for _, table := range schema.Tables {
 			t := &v1pb.TableMetadata{
-				Name:          table.Name,
-				Engine:        table.Engine,
-				Collation:     table.Collation,
-				RowCount:      table.RowCount,
-				DataSize:      table.DataSize,
-				IndexSize:     table.IndexSize,
-				DataFree:      table.DataFree,
-				CreateOptions: table.CreateOptions,
-				Comment:       table.Comment,
-				Category:      table.Category,
-				UserComment:   table.UserComment,
+				Name:           table.Name,
+				Engine:         table.Engine,
+				Collation:      table.Collation,
+				RowCount:       table.RowCount,
+				DataSize:       table.DataSize,
+				IndexSize:      table.IndexSize,
+				DataFree:       table.DataFree,
+				CreateOptions:  table.CreateOptions,
+				Comment:        table.Comment,
+				Classification: table.Classification,
+				UserComment:    table.UserComment,
 			}
 			for _, column := range table.Columns {
 				t.Columns = append(t.Columns, &v1pb.ColumnMetadata{
-					Name:         column.Name,
-					Position:     column.Position,
-					Default:      column.Default,
-					Nullable:     column.Nullable,
-					Type:         column.Type,
-					CharacterSet: column.CharacterSet,
-					Collation:    column.Collation,
-					Comment:      column.Comment,
-					Category:     column.Category,
-					UserComment:  column.UserComment,
+					Name:           column.Name,
+					Position:       column.Position,
+					Default:        column.Default,
+					Nullable:       column.Nullable,
+					Type:           column.Type,
+					CharacterSet:   column.CharacterSet,
+					Collation:      column.Collation,
+					Comment:        column.Comment,
+					Classification: column.Classification,
+					UserComment:    column.UserComment,
 				})
 			}
 			for _, index := range table.Indexes {
