@@ -1,5 +1,6 @@
 import {
   IdentityProviderType,
+  OAuth2AuthStyle,
   OAuth2IdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
 
@@ -39,6 +40,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       userInfoUrl: "https://api.github.com/user",
       scopes: ["user"],
       skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
       fieldMapping: {
         identifier: "email",
         displayName: "name",
@@ -59,6 +61,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       userInfoUrl: "https://gitlab.com/api/v4/user",
       scopes: ["read_user"],
       skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
       fieldMapping: {
         identifier: "email",
         displayName: "name",
@@ -82,6 +85,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
         "https://www.googleapis.com/auth/userinfo.profile",
       ],
       skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
       fieldMapping: {
         identifier: "email",
         displayName: "name",
@@ -102,6 +106,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       userInfoUrl: "",
       scopes: [],
       skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
       fieldMapping: {
         identifier: "",
         displayName: "",

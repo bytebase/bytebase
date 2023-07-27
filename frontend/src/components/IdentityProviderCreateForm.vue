@@ -242,6 +242,24 @@
       </div>
       <div class="w-full flex flex-col justify-start items-start">
         <p class="textlabel">
+          {{ $t("settings.sso.form.auth-style.self") }}
+          <span class="text-red-600">*</span>
+        </p>
+        <p class="textinfolabel mt-1">
+          <NRadioGroup v-model:value="configForOAuth2.authStyle">
+            <NRadio
+              :value="OAuth2AuthStyle.IN_PARAMS"
+              :label="$t('settings.sso.form.auth-style.in-params.self')"
+            />
+            <NRadio
+              :value="OAuth2AuthStyle.IN_HEADER"
+              :label="$t('settings.sso.form.auth-style.in-header.self')"
+            />
+          </NRadioGroup>
+        </p>
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
           {{ $t("settings.sso.form.connection-security") }}
         </p>
         <p class="textinfolabel mt-1">
@@ -411,6 +429,24 @@
               : $t('common.sensitive-placeholder')
           "
         />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          {{ $t("settings.sso.form.auth-style.self") }}
+          <span class="text-red-600">*</span>
+        </p>
+        <p class="textinfolabel mt-1">
+          <NRadioGroup v-model:value="configForOIDC.authStyle">
+            <NRadio
+              :value="OAuth2AuthStyle.IN_PARAMS"
+              :label="$t('settings.sso.form.auth-style.in-params.self')"
+            />
+            <NRadio
+              :value="OAuth2AuthStyle.IN_HEADER"
+              :label="$t('settings.sso.form.auth-style.in-header.self')"
+            />
+          </NRadioGroup>
+        </p>
       </div>
       <div class="w-full flex flex-col justify-start items-start">
         <p class="textlabel">
@@ -585,6 +621,7 @@ import {
   IdentityProvider,
   IdentityProviderConfig,
   IdentityProviderType,
+  OAuth2AuthStyle,
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
@@ -606,6 +643,7 @@ import {
 } from "@/store/modules/v1/common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { getErrorCode } from "@/utils/grpcweb";
+import { NRadioGroup, NRadio } from "naive-ui";
 
 interface LocalState {
   type: IdentityProviderType;

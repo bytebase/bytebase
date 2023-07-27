@@ -505,7 +505,16 @@
         "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
         "identifier": "Bytebase user identifier",
         "display-name": "Bytebase user display name",
-        "email": "Bytebase user email"
+        "email": "Bytebase user email",
+        "auth-style": {
+          "self": "Auth style",
+          "in-params": {
+            "self": "In params"
+          },
+          "in-header": {
+            "self": "In header"
+          }
+        }
       },
       "copy-redirect-url": "Redirect URL copied to clipboard."
     },

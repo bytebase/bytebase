@@ -501,7 +501,16 @@
         "connection-security-skip-tls-verify": "跳过自签名证书验证",
         "identifier": "Bytebase 用户的唯一标识符",
         "display-name": "Bytebase 用户的昵称",
-        "email": "Bytebase 用户的 Email"
+        "email": "Bytebase 用户的 Email",
+        "auth-style": {
+          "self": "认证参数传递方式",
+          "in-params": {
+            "self": "通过请求参数"
+          },
+          "in-header": {
+            "self": "通过请求头"
+          }
+        }
       },
       "copy-redirect-url": "Redirect URL 已复制到剪切板。"
     },
