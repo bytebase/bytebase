@@ -31,18 +31,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
-import { SheetViewMode } from "../types";
+import { SheetViewMode, useSheetPanelContextByView } from "../common";
 import Dropdown from "./Dropdown.vue";
-import {
-  extractProjectResourceName,
-  getSheetIssueBacktracePayloadV1,
-} from "@/utils";
-import { useUserStore, useSheetV1Store, useProjectV1Store } from "@/store";
+import { extractProjectResourceName } from "@/utils";
+import { useUserStore, useProjectV1Store } from "@/store";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { ProjectV1Name } from "@/components/v2";
@@ -57,40 +54,14 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const sheetStore = useSheetV1Store();
 const projectStore = useProjectV1Store();
 const userStore = useUserStore();
-const isLoading = ref(false);
-const sheetList = ref<Sheet[]>([]);
+const { isInitialized, isLoading, sheetList, fetchSheetList } =
+  useSheetPanelContextByView(props.view);
 
 const showCreator = computed(() => {
   return props.view === "shared" || props.view === "starred";
 });
-
-const fetchSheetList = async () => {
-  isLoading.value = true;
-  try {
-    let list: Sheet[] = [];
-    switch (props.view) {
-      case "my":
-        list = await sheetStore.fetchMySheetList();
-        break;
-      case "shared":
-        list = await sheetStore.fetchSharedSheetList();
-        break;
-      case "starred":
-        list = await sheetStore.fetchStarredSheetList();
-        break;
-    }
-
-    // Hide those sheets from issue.
-    sheetList.value = list.filter((sheet) => {
-      return !getSheetIssueBacktracePayloadV1(sheet);
-    });
-  } finally {
-    isLoading.value = false;
-  }
-};
 
 const handleSheetClick = (sheet: Sheet) => {
   emit("select-sheet", sheet);
@@ -151,5 +122,9 @@ const visibilityDisplayName = (visibility: Sheet_Visibility) => {
   }
 };
 
-onMounted(fetchSheetList);
+onMounted(() => {
+  if (!isInitialized.value) {
+    fetchSheetList();
+  }
+});
 </script>

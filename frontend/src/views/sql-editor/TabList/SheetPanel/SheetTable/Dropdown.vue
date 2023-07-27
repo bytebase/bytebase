@@ -17,7 +17,7 @@ import { useI18n } from "vue-i18n";
 import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { SheetViewMode } from "../types";
+import type { SheetViewMode } from "../common";
 import { isSheetWritableV1 } from "@/utils";
 import { useSheetV1Store, pushNotification } from "@/store";
 import {

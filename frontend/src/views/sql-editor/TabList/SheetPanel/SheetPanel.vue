@@ -1,6 +1,6 @@
 <template>
   <div class="w-[40vw] max-w-[calc(100vw-2rem)]">
-    <NTabs v-model:value="viewMode">
+    <NTabs v-model:value="view">
       <NTabPane name="my" :tab="$t('sheet.my-sheets')">
         <SheetTable view="my" @select-sheet="handleSelectSheet" />
       </NTabPane>
@@ -15,17 +15,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import { NTabs, NTabPane } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { emptyConnection, isSheetReadableV1 } from "@/utils";
-import { SheetViewMode } from "./types";
-import SheetTable from "./SheetTable";
-import { pushNotification, useInstanceV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { pushNotification, useInstanceV1Store, useTabStore } from "@/store";
 import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
+import { useSheetPanelContext } from "./common";
+import SheetTable from "./SheetTable";
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -33,7 +32,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const tabStore = useTabStore();
-const viewMode = ref<SheetViewMode>("my");
+const { view } = useSheetPanelContext();
 
 const handleSelectSheet = async (sheet: Sheet) => {
   const openingSheetTab = tabStore.tabList.find(
