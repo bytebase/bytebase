@@ -109,7 +109,7 @@ export const mergeSchemaEditToMetadata = (
 
       const foreignKeyName = foreignKey.name
         ? foreignKey.name
-        : `${table.name}-fk-${randomString(4).toLowerCase()}`;
+        : `${table.name}-fk-${randomString(8).toLowerCase()}`;
       const fk = ForeignKeyMetadata.fromPartial({
         name: foreignKeyName,
         referencedSchema: referencedSchema.name,
@@ -175,6 +175,7 @@ const transformSchemaEditToMetadata = (schemaEdit: Schema): SchemaMetadata => {
 
     if (table.primaryKey.columnIdList.length > 0) {
       const primaryIndex = IndexMetadata.fromPartial({
+        name: `${table.name}-pk-${randomString(8).toLowerCase()}`,
         primary: true,
         expressions: [],
       });
@@ -219,6 +220,7 @@ const transformTableEditToMetadata = (tableEdit: Table): TableMetadata => {
 
   if (tableEdit.primaryKey.columnIdList.length > 0) {
     const primaryIndex = IndexMetadata.fromPartial({
+      name: `${tableEdit.name}-pk-${randomString(8).toLowerCase()}`,
       primary: true,
       expressions: [],
     });
