@@ -38,7 +38,7 @@ import {
   InstanceV1Name,
   EnvironmentV1Name,
   SpinnerSwitch,
-} from "@/components/v2/";
+} from "@/components/v2";
 import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 

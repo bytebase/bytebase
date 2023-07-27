@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/pkg/errors"
-
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -23,16 +23,14 @@ const (
 	resourceFilterKey = "resource"
 )
 
-var (
-	typesMap = map[string]api.AnomalyType{
-		"INSTANCE_CONNECTION":              api.AnomalyInstanceConnection,
-		"MIGRATION_SCHEMA":                 api.AnomalyInstanceMigrationSchema,
-		"DATABASE_BACKUP_POLICY_VIOLATION": api.AnomalyDatabaseBackupPolicyViolation,
-		"DATABASE_BACKUP_MISSING":          api.AnomalyDatabaseBackupMissing,
-		"DATABASE_CONNECTION":              api.AnomalyDatabaseConnection,
-		"DATABASE_SCHEMA_DRIFT":            api.AnomalyDatabaseSchemaDrift,
-	}
-)
+var typesMap = map[string]api.AnomalyType{
+	"INSTANCE_CONNECTION":              api.AnomalyInstanceConnection,
+	"MIGRATION_SCHEMA":                 api.AnomalyInstanceMigrationSchema,
+	"DATABASE_BACKUP_POLICY_VIOLATION": api.AnomalyDatabaseBackupPolicyViolation,
+	"DATABASE_BACKUP_MISSING":          api.AnomalyDatabaseBackupMissing,
+	"DATABASE_CONNECTION":              api.AnomalyDatabaseConnection,
+	"DATABASE_SCHEMA_DRIFT":            api.AnomalyDatabaseSchemaDrift,
+}
 
 // AnomalyService implements the anomaly service.
 type AnomalyService struct {
@@ -47,7 +45,8 @@ func NewAnomalyService(store *store.Store) *AnomalyService {
 
 // SearchAnomalies implements the SearchAnomalies RPC.
 func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.SearchAnomaliesRequest) (*v1pb.
-	SearchAnomaliesResponse, error) {
+	SearchAnomaliesResponse, error,
+) {
 	var find store.ListAnomalyMessage
 	if request.Filter != "" {
 		// We only support filter by type and resource now.
@@ -72,14 +71,14 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 			sections := strings.Split(resources[0], "/")
 			if len(sections) == 2 {
 				// Treat as instances/{resource id}
-				insID, err := getInstanceID(resources[0])
+				insID, err := common.GetInstanceID(resources[0])
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s": %v`, resources[0], err.Error())
 				}
 				find.InstanceID = &insID
 			} else if len(sections) == 4 {
 				// Treat as instances/{resource id}/databases/{db name}
-				insID, dbName, err := getInstanceDatabaseID(resources[0])
+				insID, dbName, err := common.GetInstanceDatabaseID(resources[0])
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s": %v`, resources[0], err.Error())
 				}
@@ -134,9 +133,9 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 		if database == nil {
 			return nil, errors.Errorf("cannot found database with id %d", v)
 		}
-		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName)
+		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
 	} else {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s", instanceNamePrefix, anomaly.InstanceID)
+		pbAnomaly.Resource = fmt.Sprintf("%s%s", common.InstanceNamePrefix, anomaly.InstanceID)
 	}
 
 	switch anomaly.Type {
@@ -167,7 +166,7 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 			DatabaseBackupPolicyViolationDetail: &v1pb.Anomaly_DatabaseBackupPolicyViolationDetail{
 				// The instance are bind to a specify environment, and cannot be moved to another environment in Bytebase.
 				// So it's safe to use environmentID here.
-				Parent:           fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+				Parent:           fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
 				ExpectedSchedule: convertBackupPlanSchedule(detail.ExpectedBackupSchedule),
 				ActualSchedule:   convertBackupPlanSchedule(detail.ActualBackupSchedule),
 			},

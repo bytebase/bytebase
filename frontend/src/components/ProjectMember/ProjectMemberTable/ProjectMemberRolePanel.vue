@@ -49,10 +49,12 @@
                 <RoleExpiredTip v-if="checkRoleExpired(item)" />
               </div>
               <div class="bb-grid-cell">
-                {{ extractDatabaseName(item.databaseResource) }}
+                <span class="shrink-0 mr-1">{{
+                  extractDatabaseName(item.databaseResource)
+                }}</span>
                 <template v-if="item.databaseResource">
                   <InstanceV1Name
-                    class="text-gray-500 ml-0.5"
+                    class="text-gray-500"
                     :instance="
                       extractDatabase(item.databaseResource).instanceEntity
                     "
@@ -134,6 +136,7 @@ import { useI18n } from "vue-i18n";
 
 import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -201,11 +204,11 @@ const COLUMNS = computed(() => {
     },
     {
       title: t("common.schema"),
-      width: "1fr",
+      width: "6rem",
     },
     {
       title: t("common.table"),
-      width: "1fr",
+      width: "6rem",
     },
     {
       title: t("common.expiration"),

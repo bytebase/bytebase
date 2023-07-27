@@ -14,7 +14,7 @@
         <BBTooltipButton
           v-if="showEstablishBaselineButton"
           type="normal"
-          :disabled="!allowExportChangeHistory"
+          :disabled="!allowExportChangeHistory || state.isExporting"
           tooltip-mode="DISABLED-ONLY"
           @click="handleExportChangeHistory"
         >
@@ -93,6 +93,7 @@ import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   ChangeHistory,
   ChangeHistory_Type,
+  ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
 import { ChangeHistoryTable } from "@/components/ChangeHistory";
 import dayjs from "dayjs";
@@ -101,6 +102,7 @@ interface LocalState {
   showBaselineModal: boolean;
   loading: boolean;
   selectedChangeHistoryNameList: string[];
+  isExporting: boolean;
 }
 
 const props = defineProps({
@@ -123,6 +125,7 @@ const state = reactive<LocalState>({
   showBaselineModal: false,
   loading: false,
   selectedChangeHistoryNameList: [],
+  isExporting: false,
 });
 
 const prepareChangeHistoryList = () => {
@@ -185,32 +188,45 @@ const changeHistorySectionList = computed(
 );
 
 const handleExportChangeHistory = async () => {
-  const selectedChangeHistoryList = state.selectedChangeHistoryNameList
-    .map((name) => {
-      return changeHistoryList.value.find((item) => item.name === name);
-    })
-    .filter(Boolean) as ChangeHistory[];
-  const zip = new JSZip();
+  if (state.isExporting) {
+    return;
+  }
 
-  for (const changeHistory of selectedChangeHistoryList) {
-    if (
-      changeHistory.type === ChangeHistory_Type.MIGRATE ||
-      changeHistory.type === ChangeHistory_Type.MIGRATE_SDL
-    ) {
-      zip.file(`${changeHistory.version}.sql`, changeHistory.statement);
-    } else if (changeHistory.type === ChangeHistory_Type.BASELINE) {
-      zip.file(`${changeHistory.version}_baseline.sql`, changeHistory.schema);
-    } else {
-      // NOT SUPPORTED.
+  state.isExporting = true;
+  const zip = new JSZip();
+  for (const name of state.selectedChangeHistoryNameList) {
+    const changeHistory = await changeHistoryStore.fetchChangeHistory({
+      name,
+      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+    });
+
+    if (changeHistory) {
+      if (
+        changeHistory.type === ChangeHistory_Type.MIGRATE ||
+        changeHistory.type === ChangeHistory_Type.MIGRATE_SDL ||
+        changeHistory.type === ChangeHistory_Type.DATA
+      ) {
+        zip.file(`${changeHistory.version}.sql`, changeHistory.statement);
+      } else if (changeHistory.type === ChangeHistory_Type.BASELINE) {
+        zip.file(`${changeHistory.version}_baseline.sql`, changeHistory.schema);
+      } else {
+        // NOT SUPPORTED.
+      }
     }
   }
 
-  const content = await zip.generateAsync({ type: "blob" });
-  const fileName = `${props.database.databaseName}_${dayjs().format(
-    "YYYYMMDD"
-  )}.zip`;
-  saveAs(content, fileName);
+  try {
+    const content = await zip.generateAsync({ type: "blob" });
+    const fileName = `${props.database.databaseName}_${dayjs().format(
+      "YYYYMMDD"
+    )}.zip`;
+    saveAs(content, fileName);
+  } catch (error) {
+    console.error(error);
+  }
+
   state.selectedChangeHistoryNameList = [];
+  state.isExporting = false;
 };
 
 const doCreateBaseline = () => {

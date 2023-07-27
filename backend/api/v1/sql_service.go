@@ -13,19 +13,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
+	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
+	tidbast "github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
+	"github.com/xuri/excelize/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/google/cel-go/cel"
-	"github.com/labstack/echo/v4"
-	"github.com/lib/pq"
-	"github.com/pkg/errors"
-	"github.com/xuri/excelize/v2"
-
-	tidbast "github.com/pingcap/tidb/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -343,7 +341,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 	}
 
 	start := time.Now().UnixNano()
-	result, err := driver.QueryConn2(ctx, conn, request.Statement, &db.QueryContext{
+	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
 		ReadOnly:        true,
 		CurrentDatabase: request.ConnectionDatabase,
@@ -1007,7 +1005,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	defer cancelCtx()
 
 	start := time.Now().UnixNano()
-	result, err := driver.QueryConn2(ctx, conn, request.Statement, &db.QueryContext{
+	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
 		ReadOnly:        true,
 		CurrentDatabase: request.ConnectionDatabase,
@@ -1852,7 +1850,7 @@ func (s *SQLService) checkWorkspaceIAMPolicy(
 	}
 
 	attributes := map[string]any{
-		"resource.environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+		"resource.environment_name": fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
 	}
 	formattedRole := fmt.Sprintf("roles/%s", role)
 	bindings := v1pbPolicy.GetWorkspaceIamPolicy().Bindings
@@ -2138,7 +2136,7 @@ func (s *SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 }
 
 func (s *SQLService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
-	instanceID, err := getInstanceID(name)
+	instanceID, err := common.GetInstanceID(name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

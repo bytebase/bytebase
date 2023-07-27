@@ -487,6 +487,7 @@ type Advice struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 	Line    int    `json:"line"`
+	Column  int    `json:"column"`
 	Details string `json:"details,omitempty"`
 }
 

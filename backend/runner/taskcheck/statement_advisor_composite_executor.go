@@ -178,6 +178,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 			Title:     advice.Title,
 			Content:   advice.Content,
 			Line:      advice.Line,
+			Column:    advice.Column,
 			Details:   advice.Details,
 		})
 	}
@@ -190,6 +191,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 			Title:     "OK",
 			Content:   "",
 			Line:      0,
+			Column:    0,
 			Details:   "",
 		})
 	}

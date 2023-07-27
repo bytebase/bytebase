@@ -3,7 +3,7 @@
     <Splitpanes
       class="default-theme w-full h-full flex flex-row overflow-hidden"
     >
-      <Pane size="25">
+      <Pane min-size="15" size="25">
         <AsidePanel />
       </Pane>
       <Pane min-size="60" size="75">
@@ -24,7 +24,7 @@ import { SchemaDesignerTabState } from "./common/type";
 import AsidePanel from "./AsidePanel.vue";
 import Designer from "./Designer.vue";
 import { Schema, convertSchemaMetadataList } from "@/types";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 
 const props = defineProps<{
   readonly: boolean;
@@ -35,6 +35,7 @@ const props = defineProps<{
 const readonly = ref(props.readonly);
 const engine = ref(props.engine);
 const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
+const originalSchemas = ref<Schema[]>([]);
 const editableSchemas = ref<Schema[]>([]);
 const baselineMetadata = ref<DatabaseMetadata>(
   DatabaseMetadata.fromPartial({})
@@ -49,7 +50,7 @@ provideSchemaDesignerContext({
   engine: engine,
   metadata: metadata,
   tabState: tabState,
-  originalSchemas: cloneDeep(editableSchemas.value),
+  originalSchemas: originalSchemas,
   editableSchemas: editableSchemas,
 });
 
@@ -62,16 +63,28 @@ watch(
     metadata.value =
       cloneDeep(props.schemaDesign?.schemaMetadata) ||
       DatabaseMetadata.fromPartial({});
-    editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
     readonly.value = props.readonly;
     engine.value = props.engine;
-    // NOTE: clear tab state in the following cases:
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
+
+watch(
+  () => metadata.value,
+  (value, oldValue) => {
+    // NOTE: regenerate editing state in the following cases:
     // * change baseline schema.
     // * change selected schema design.
-    // * toggle the editing state.
-    tabState.value = {
-      tabMap: new Map(),
-    };
+    if (!isEqual(value, oldValue)) {
+      editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
+      originalSchemas.value = cloneDeep(editableSchemas.value);
+      tabState.value = {
+        tabMap: new Map(),
+      };
+    }
   },
   {
     immediate: true,

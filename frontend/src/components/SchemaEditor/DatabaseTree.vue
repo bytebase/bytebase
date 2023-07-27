@@ -10,9 +10,14 @@
         </template>
       </NInput>
     </div>
-    <div ref="treeRef" class="schema-editor-database-tree pb-2 h-auto">
+    <div
+      class="schema-editor-database-tree pb-2 overflow-y-auto h-full text-sm"
+    >
       <NTree
+        ref="treeRef"
         block-line
+        virtual-scroll
+        style="height: 100%"
         :data="treeDataRef"
         :pattern="searchPattern"
         :render-prefix="renderPrefix"
@@ -59,7 +64,6 @@ import { escape, head, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import scrollIntoView from "scroll-into-view-if-needed";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import TableIcon from "~icons/heroicons-outline/table-cells";
@@ -152,7 +156,7 @@ const contextMenu = reactive<TreeContextMenu>({
   clientY: 0,
   treeNode: undefined,
 });
-const treeRef = ref();
+const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
@@ -437,12 +441,9 @@ watch(
 
     if (state.shouldRelocateTreeNode) {
       nextTick(() => {
-        const element = treeRef.value?.querySelector(".n-tree-node--selected");
-        if (element) {
-          scrollIntoView(element, {
-            scrollMode: "if-needed",
-          });
-        }
+        treeRef.value?.scrollTo({
+          key: selectedKeysRef.value[0],
+        });
       });
     }
   }
@@ -820,7 +821,6 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
 
 <style scoped>
 .schema-editor-database-tree {
-  @apply overflow-y-auto;
   max-height: calc(100% - 48px);
 }
 </style>

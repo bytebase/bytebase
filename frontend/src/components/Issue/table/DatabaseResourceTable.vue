@@ -11,7 +11,7 @@
         {{ extractDatabaseName(item) }}
       </div>
       <div class="bb-grid-cell">
-        {{ extractTableName(item) }}
+        <span class="line-clamp-1">{{ extractTableName(item) }}</span>
       </div>
       <div class="bb-grid-cell">
         <EnvironmentV1Name
@@ -93,10 +93,10 @@ watch(
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     { title: t("common.database"), width: "1fr" },
-    { title: t("common.table"), width: "1fr" },
+    { title: t("common.table"), width: "0.5fr" },
     {
       title: t("common.environment"),
-      width: "1fr",
+      width: "0.5fr",
     },
     { title: t("common.instance"), width: "1fr" },
   ];

@@ -191,25 +191,25 @@ func getProjectIDs(req any) ([]string, error) {
 		if request.Project == nil {
 			return nil, errors.Errorf("project not found")
 		}
-		projectID, err := getProjectID(request.Project.Name)
+		projectID, err := common.GetProjectID(request.Project.Name)
 		if err != nil {
 			return nil, err
 		}
 		return []string{projectID}, nil
 	case *v1pb.DeleteProjectRequest:
-		projectID, err := getProjectID(request.Name)
+		projectID, err := common.GetProjectID(request.Name)
 		if err != nil {
 			return nil, err
 		}
 		return []string{projectID}, nil
 	case *v1pb.UndeleteProjectRequest:
-		projectID, err := getProjectID(request.Name)
+		projectID, err := common.GetProjectID(request.Name)
 		if err != nil {
 			return nil, err
 		}
 		return []string{projectID}, nil
 	case *v1pb.SetIamPolicyRequest:
-		projectID, err := getProjectID(request.Project)
+		projectID, err := common.GetProjectID(request.Project)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +233,7 @@ func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req
 		if !hasPath(request.UpdateMask, "project") || request.Database == nil {
 			continue
 		}
-		instanceID, databaseName, err := getInstanceDatabaseID(request.Database.Name)
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database.Name)
 		if err != nil {
 			return nil, err
 		}

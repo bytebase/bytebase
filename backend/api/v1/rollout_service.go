@@ -25,6 +25,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -41,18 +42,20 @@ type RolloutService struct {
 	dbFactory          *dbfactory.DBFactory
 	taskScheduler      *taskrun.Scheduler
 	taskCheckScheduler *taskcheck.Scheduler
+	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
 	activityManager    *activity.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
 	return &RolloutService{
 		store:              store,
 		licenseService:     licenseService,
 		dbFactory:          dbFactory,
 		taskScheduler:      taskScheduler,
 		taskCheckScheduler: taskCheckScheduler,
+		planCheckScheduler: planCheckScheduler,
 		stateCfg:           stateCfg,
 		activityManager:    activityManager,
 	}
@@ -60,7 +63,7 @@ func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseS
 
 // GetPlan gets a plan.
 func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanRequest) (*v1pb.Plan, error) {
-	planID, err := getPlanID(request.Name)
+	planID, err := common.GetPlanID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -76,7 +79,7 @@ func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanReque
 
 // ListPlans lists plans.
 func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequest) (*v1pb.ListPlansResponse, error) {
-	projectID, err := getProjectID(request.Parent)
+	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -136,7 +139,7 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 // CreatePlan creates a new plan.
 func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRequest) (*v1pb.Plan, error) {
 	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
-	projectID, err := getProjectID(request.Parent)
+	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -172,7 +175,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 
 // PreviewRollout previews the rollout for a plan.
 func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.PreviewRolloutRequest) (*v1pb.Rollout, error) {
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -208,7 +211,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 
 // GetRollout gets a rollout.
 func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRolloutRequest) (*v1pb.Rollout, error) {
-	projectID, rolloutID, err := getProjectIDRolloutID(request.Name)
+	projectID, rolloutID, err := common.GetProjectIDRolloutID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -236,7 +239,7 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 // CreateRollout creates a rollout from plan.
 func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
 	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
-	projectID, err := getProjectID(request.Parent)
+	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -250,7 +253,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 
-	planID, err := getPlanID(request.Plan)
+	planID, err := common.GetPlanID(request.Plan)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -378,9 +381,28 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	return nil, nil
 }
 
+// RunPlanChecks runs plan checks for a plan.
+func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanChecksRequest) (*v1pb.RunPlanChecksResponse, error) {
+	planUID, err := common.GetPlanID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	plan, err := s.store.GetPlan(ctx, planUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
+	}
+	if plan == nil {
+		return nil, status.Errorf(codes.NotFound, "plan not found")
+	}
+	if err := s.planCheckScheduler.SchedulePlanChecksForPlan(ctx, planUID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to run plan checks, error: %v", err)
+	}
+	return &v1pb.RunPlanChecksResponse{}, nil
+}
+
 // ListTaskRuns lists rollout task runs.
 func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
-	projectID, rolloutID, maybeStageID, maybeTaskID, err := getProjectIDRolloutIDMaybeStageIDMaybeTaskID(request.Parent)
+	projectID, rolloutID, maybeStageID, maybeTaskID, err := common.GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -415,7 +437,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	if len(request.Tasks) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "The tasks in request cannot be empty")
 	}
-	projectID, rolloutID, _, err := getProjectIDRolloutIDMaybeStageID(request.Parent)
+	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -457,7 +479,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	taskIDsToRunMap := map[int]bool{}
 	taskIDsToRun := []int{}
 	for _, task := range request.Tasks {
-		_, _, stageID, taskID, err := getProjectIDRolloutIDStageIDTaskID(task)
+		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -576,7 +598,7 @@ func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
 
 func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	return &v1pb.TaskRun{
-		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", projectNamePrefix, taskRun.ProjectID, rolloutPrefix, taskRun.PipelineUID, stagePrefix, taskRun.StageUID, taskPrefix, taskRun.TaskUID, taskRunPrefix, taskRun.ID),
+		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),
 		Creator:       fmt.Sprintf("user:%s", taskRun.Creator.Email),
 		Updater:       fmt.Sprintf("user:%s", taskRun.Updater.Email),
@@ -592,7 +614,7 @@ func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
 	rolloutV1 := &v1pb.Rollout{
-		Name:   fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, rollout.ID),
+		Name:   fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID),
 		Uid:    fmt.Sprintf("%d", rollout.ID),
 		Plan:   "",
 		Title:  rollout.Name,
@@ -609,9 +631,9 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 			return nil, errors.Errorf("environment %d not found", stage.EnvironmentID)
 		}
 		rolloutStage := &v1pb.Stage{
-			Name:        fmt.Sprintf("%s%s/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, rollout.ID, stagePrefix, stage.ID),
+			Name:        fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID, common.StagePrefix, stage.ID),
 			Uid:         fmt.Sprintf("%d", stage.ID),
-			Environment: fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+			Environment: fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
 			Title:       stage.Name,
 		}
 		for _, task := range stage.TaskList {
@@ -683,14 +705,14 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		return nil, errors.Wrapf(err, "failed to convert database labels %v", payload.Labels)
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
-		Target:         fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
+		Target:         fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Project:      "",
@@ -723,14 +745,14 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
 			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
 				SchemaVersion: payload.SchemaVersion,
@@ -756,14 +778,14 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
 				Sheet:         getResourceNameForSheet(project, payload.SheetID),
@@ -790,14 +812,14 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}
 	return v1pbTask, nil
@@ -823,14 +845,14 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
@@ -856,8 +878,8 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get rollback task %q", payload.RollbackFromTaskID)
 		}
-		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromIssue = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, issuePrefix, rollbackFromIssue.UID)
-		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromTask = fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, rollbackFromIssue.Project.ResourceID, rolloutPrefix, rollbackFromTask.PipelineID, stagePrefix, rollbackFromTask.StageID, taskPrefix, rollbackFromTask.ID)
+		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromIssue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.IssuePrefix, rollbackFromIssue.UID)
+		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromTask = fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, rollbackFromIssue.Project.ResourceID, common.RolloutPrefix, rollbackFromTask.PipelineID, common.StagePrefix, rollbackFromTask.StageID, common.TaskPrefix, rollbackFromTask.ID)
 	}
 
 	v1pbTask.Payload = v1pbTaskPayload
@@ -896,17 +918,17 @@ func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, projec
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseBackup_{
 			DatabaseBackup: &v1pb.Task_DatabaseBackup{
-				Backup: fmt.Sprintf("%s%s/%s%s/%s%d", instanceNamePrefix, databaseBackup.InstanceID, databaseIDPrefix, databaseBackup.DatabaseName, backupPrefix, backup.UID),
+				Backup: fmt.Sprintf("%s%s/%s%s/%s%d", common.InstanceNamePrefix, databaseBackup.InstanceID, common.DatabaseIDPrefix, databaseBackup.DatabaseName, common.BackupPrefix, backup.UID),
 			},
 		},
 	}
@@ -932,14 +954,14 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 		DatabaseRestoreRestore: &v1pb.Task_DatabaseRestoreRestore{},
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}
 	if (payload.BackupID == nil) == (payload.PointInTimeTs == nil) {
@@ -959,7 +981,7 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 		if targetInstance == nil {
 			return nil, errors.Errorf("target instance not found")
 		}
-		v1pbTaskPayload.DatabaseRestoreRestore.Target = fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, targetInstance.ResourceID, databaseIDPrefix, *payload.DatabaseName)
+		v1pbTaskPayload.DatabaseRestoreRestore.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, targetInstance.ResourceID, common.DatabaseIDPrefix, *payload.DatabaseName)
 	}
 
 	if payload.BackupID != nil {
@@ -980,7 +1002,7 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 			return nil, errors.Errorf("database not found")
 		}
 		v1pbTaskPayload.DatabaseRestoreRestore.Source = &v1pb.Task_DatabaseRestoreRestore_Backup{
-			Backup: fmt.Sprintf("%s%s/%s%s/%s%d", instanceNamePrefix, databaseBackup.InstanceID, databaseIDPrefix, databaseBackup.DatabaseName, backupPrefix, backup.UID),
+			Backup: fmt.Sprintf("%s%s/%s%s/%s%d", common.InstanceNamePrefix, databaseBackup.InstanceID, common.DatabaseIDPrefix, databaseBackup.DatabaseName, common.BackupPrefix, backup.UID),
 		}
 	}
 	if payload.PointInTimeTs != nil {
@@ -1009,14 +1031,14 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}
 
@@ -1102,7 +1124,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			return nil, status.Errorf(codes.InvalidArgument, "invalid update_mask path %q", path)
 		}
 	}
-	planID, err := getPlanID(request.Plan.Name)
+	planID, err := common.GetPlanID(request.Plan.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -1155,7 +1177,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if !ok {
 					continue
 				}
-				sheetID, _, err := getProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+				sheetID, _, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
 				}
@@ -1337,7 +1359,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if c.Database == "" {
 		return nil, nil, errors.Errorf("database name is required")
 	}
-	instanceID, err := getInstanceID(c.Target)
+	instanceID, err := common.GetInstanceID(c.Target)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get instance id from %q", c.Target)
 	}
@@ -1482,7 +1504,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
-	instanceID, databaseName, err := getInstanceDatabaseID(c.Target)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get instance database id from target %q", c.Target)
 	}
@@ -1533,7 +1555,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		_, sheetIDStr, err := getProjectResourceIDSheetID(c.Sheet)
+		_, sheetIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
@@ -1564,7 +1586,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
-		_, sheetIDStr, err := getProjectResourceIDSheetID(c.Sheet)
+		_, sheetIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
@@ -1595,7 +1617,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
-		_, sheetIDStr, err := getProjectResourceIDSheetID(c.Sheet)
+		_, sheetIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
@@ -1651,7 +1673,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return taskCreateList, taskIndexDAGList, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-		_, sheetIDStr, err := getProjectResourceIDSheetID(c.Sheet)
+		_, sheetIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
@@ -1668,12 +1690,12 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
 		}
 		if c.RollbackDetail != nil {
-			issueID, err := getIssueID(c.RollbackDetail.RollbackFromIssue)
+			issueID, err := common.GetIssueID(c.RollbackDetail.RollbackFromIssue)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get issue id from issue %q", c.RollbackDetail.RollbackFromIssue)
 			}
 			payload.RollbackFromIssueID = issueID
-			taskID, err := getTaskID(c.RollbackDetail.RollbackFromTask)
+			taskID, err := common.GetTaskID(c.RollbackDetail.RollbackFromTask)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get task id from task %q", c.RollbackDetail.RollbackFromTask)
 			}
@@ -1703,7 +1725,7 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 	if c.Source == nil {
 		return nil, nil, errors.Errorf("missing source in restore database config")
 	}
-	instanceID, databaseName, err := getInstanceDatabaseID(c.Target)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get instance and database id from target %q", c.Target)
 	}
@@ -1740,7 +1762,7 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 			ProjectID: project.UID,
 		}
 		// restore to a new database
-		targetInstanceID, err := getInstanceID(c.CreateDatabaseConfig.Target)
+		targetInstanceID, err := common.GetInstanceID(c.CreateDatabaseConfig.Target)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get instance id from %q", c.CreateDatabaseConfig.Target)
 		}
@@ -1762,7 +1784,7 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		// task 2: restore the database
 		switch source := c.Source.(type) {
 		case *storepb.PlanConfig_RestoreDatabaseConfig_Backup:
-			backupInstanceID, backupDatabaseName, backupName, err := getInstanceDatabaseIDBackupName(source.Backup)
+			backupInstanceID, backupDatabaseName, backupName, err := common.GetInstanceDatabaseIDBackupName(source.Backup)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
 			}
@@ -1818,7 +1840,7 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		}
 		switch source := c.Source.(type) {
 		case *storepb.PlanConfig_RestoreDatabaseConfig_Backup:
-			backupInstanceID, backupDatabaseName, backupName, err := getInstanceDatabaseIDBackupName(source.Backup)
+			backupInstanceID, backupDatabaseName, backupName, err := common.GetInstanceDatabaseIDBackupName(source.Backup)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
 			}
@@ -1901,7 +1923,7 @@ func convertToPlans(plans []*store.PlanMessage) []*v1pb.Plan {
 
 func convertToPlan(plan *store.PlanMessage) *v1pb.Plan {
 	return &v1pb.Plan{
-		Name:        fmt.Sprintf("%s%s/%s%d", projectNamePrefix, plan.ProjectID, planPrefix, plan.UID),
+		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, plan.ProjectID, common.PlanPrefix, plan.UID),
 		Uid:         fmt.Sprintf("%d", plan.UID),
 		Issue:       "",
 		Title:       plan.Name,
@@ -2346,5 +2368,5 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 }
 
 func getResourceNameForSheet(project *store.ProjectMessage, sheetUID int) string {
-	return fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, sheetIDPrefix, sheetUID)
+	return fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheetUID)
 }

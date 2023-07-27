@@ -72,6 +72,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -152,6 +153,7 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *taskrun.Scheduler
 	TaskCheckScheduler *taskcheck.Scheduler
+	PlanCheckScheduler *plancheck.Scheduler
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
 	SlowQuerySyncer    *slowquerysync.Syncer
@@ -465,6 +467,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		statementAffectedRowsExecutor := taskcheck.NewStatementAffectedRowsReportExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAffectedRowsReport, statementAffectedRowsExecutor)
 
+		{
+			s.PlanCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
+			databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
+			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
+		}
+
 		// Anomaly scanner
 		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
@@ -595,7 +603,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
 	v1pb.RegisterIssueServiceServer(s.grpcServer, v1.NewIssueService(s.store, s.ActivityManager, s.TaskScheduler, s.TaskCheckScheduler, s.RelayRunner, s.stateCfg))
-	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.stateCfg, s.ActivityManager))
+	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
 	v1pb.RegisterSchemaDesignServiceServer(s.grpcServer, v1.NewSchemaDesignService(s.store, s.licenseService))
@@ -947,6 +955,11 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 		s.runnerWG.Add(1)
 		go s.MetricReporter.Run(ctx, &s.runnerWG)
+
+		if s.profile.Mode == common.ReleaseModeDev {
+			s.runnerWG.Add(1)
+			go s.PlanCheckScheduler.Run(ctx, &s.runnerWG)
+		}
 	}
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))

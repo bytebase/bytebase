@@ -9,7 +9,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -63,7 +62,7 @@ func (s *BookmarkService) ListBookmarks(ctx context.Context, _ *v1pb.ListBookmar
 // DeleteBookmark deletes a bookmark.
 func (s *BookmarkService) DeleteBookmark(ctx context.Context, request *v1pb.DeleteBookmarkRequest) (*emptypb.Empty, error) {
 	currentPincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
-	bookmarkUID, err := getBookmarkID(request.Name)
+	bookmarkUID, err := common.GetBookmarkID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid book mark name: %v", err)
 	}
@@ -90,7 +89,7 @@ func convertToStoreBookmark(request *v1pb.Bookmark) *store.BookmarkMessage {
 
 func convertToAPIBookmark(bookmark *store.BookmarkMessage) *v1pb.Bookmark {
 	return &v1pb.Bookmark{
-		Name:  fmt.Sprintf("%s%d", bookmarkPrefix, bookmark.UID),
+		Name:  fmt.Sprintf("%s%d", common.BookmarkPrefix, bookmark.UID),
 		Title: bookmark.Name,
 		Link:  bookmark.Link,
 	}

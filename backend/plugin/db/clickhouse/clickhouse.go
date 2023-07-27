@@ -162,11 +162,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, _ d
 	return totalRowsAffected, err
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
-}
-
 // RunStatement runs a SQL statement.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	var results []*v1pb.QueryResult
@@ -198,8 +193,8 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 	return results, nil
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// TODO(rebelice): implement multi-statement query
 	var results []*v1pb.QueryResult
 
