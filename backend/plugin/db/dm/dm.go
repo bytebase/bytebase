@@ -46,7 +46,10 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
 	}
-	dsn := fmt.Sprintf("dm://%s:%s@%s:%d?schema=%s", config.Username, config.Password, config.Host, port, config.Database)
+	dsn := fmt.Sprintf("dm://%s:%s@%s:%d", config.Username, config.Password, config.Host, port)
+	if config.Database != "" {
+		dsn = fmt.Sprintf("%s?schema=%s", dsn, config.Database)
+	}
 	db, err := sql.Open("dm", dsn)
 	if err != nil {
 		return nil, err
