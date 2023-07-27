@@ -393,8 +393,13 @@ func (s *RolloutService) ListPlanCheckRuns(ctx context.Context, request *v1pb.Li
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list plan check runs, error: %v", err)
 	}
+	converted, err := convertToPlanCheckRuns(ctx, s.store, request.Parent, planCheckRuns)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert plan check runs, error: %v", err)
+	}
+
 	return &v1pb.ListPlanCheckRunsResponse{
-		PlanCheckRuns: convertToPlanCheckRuns(planCheckRuns),
+		PlanCheckRuns: converted,
 		NextPageToken: "",
 	}, nil
 }
@@ -589,17 +594,21 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	return &v1pb.BatchRunTasksResponse{}, nil
 }
 
-func convertToPlanCheckRuns(runs []*store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
+func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
 	var planCheckRuns []*v1pb.PlanCheckRun
 	for _, run := range runs {
-		planCheckRuns = append(planCheckRuns, convertToPlanCheckRun(run))
+		converted, err := convertToPlanCheckRun(ctx, s, parent, run)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert plan check run")
+		}
+		planCheckRuns = append(planCheckRuns, converted)
 	}
-	return planCheckRuns
+	return planCheckRuns, nil
 }
 
-func convertToPlanCheckRun(run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
-	return &v1pb.PlanCheckRun{
-		Name:    "",
+func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
+	converted := &v1pb.PlanCheckRun{
+		Name:    fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
 		Uid:     fmt.Sprintf("%d", run.UID),
 		Type:    convertToPlanCheckRunType(run.Type),
 		Status:  convertToPlanCheckRunStatus(run.Status),
@@ -608,6 +617,27 @@ func convertToPlanCheckRun(run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
 		Results: convertToPlanCheckRunResults(run.Result.Results),
 		Error:   run.Result.Error,
 	}
+	if run.Config.DatabaseId != 0 {
+		databaseUID := int(run.Config.DatabaseId)
+		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database")
+		}
+		converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
+	}
+	if run.Config.SheetId != 0 {
+		sheetUID := int(run.Config.SheetId)
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet")
+		}
+		sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet project")
+		}
+		converted.Sheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, sheetProject.ResourceID, common.SheetIDPrefix, sheet.UID)
+	}
+	return converted, nil
 }
 
 func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type {
