@@ -405,11 +405,29 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 }
 
 func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) (*v1pb.DatabaseMetadata, error) {
-	switch engine {
-	case v1pb.Engine_MYSQL:
-		return parseMySQLSchemaStringToDatabaseMetadata(schema)
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+	dbSchema, err := func() (*v1pb.DatabaseMetadata, error) {
+		switch engine {
+		case v1pb.Engine_MYSQL:
+			return parseMySQLSchemaStringToDatabaseMetadata(schema)
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+		}
+	}()
+	if err != nil {
+		return nil, err
+	}
+	setCategoryAndUserCommentFromComment(dbSchema)
+	return dbSchema, nil
+}
+
+func setCategoryAndUserCommentFromComment(dbSchema *v1pb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Category, table.UserComment = common.GetCategoryAndUserComment(table.Comment)
+			for _, col := range table.Columns {
+				col.Category, col.UserComment = common.GetCategoryAndUserComment(col.Comment)
+			}
+		}
 	}
 }
 
