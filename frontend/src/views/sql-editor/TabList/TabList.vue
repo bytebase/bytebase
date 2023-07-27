@@ -39,7 +39,7 @@
       </button>
     </div>
 
-    <NButton size="tiny" quaternary @click="showSheetPanel = true">
+    <NButton size="tiny" @click="showSheetPanel = true">
       {{ $t("sql-editor.sheet.choose-sheet") }}
     </NButton>
 
