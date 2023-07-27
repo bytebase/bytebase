@@ -13,3 +13,13 @@ func GetCategoryAndUserComment(comment string) (string, string) {
 	userComment := strings.TrimPrefix(strings.TrimPrefix(comment, category), "-")
 	return category, userComment
 }
+
+func GetCommentFromCategoryAndUserComment(category, userComment string) string {
+	if category == "" {
+		return userComment
+	}
+	if userComment == "" {
+		return category
+	}
+	return category + "-" + userComment
+}
