@@ -13,10 +13,7 @@
         class="w-full border-b pb-2 mb-2 flex flex-row justify-between items-center"
       >
         <div class="flex flex-row justify-start items-center space-x-2">
-          <span v-if="!isViewing && !isEditing">
-            {{ $t("schema-designer.schema-design-list") }}
-          </span>
-          <template v-else>
+          <template v-if="isViewing || isEditing">
             <NButton
               class="w-full flex flex-row justify-start items-center"
               @click="state.selectedSchemaDesign = undefined"
@@ -37,8 +34,10 @@
             v-if="!isViewing && !isEditing"
             type="primary"
             @click="state.showCreatePanel = true"
-            >{{ $t("common.create") }}</NButton
           >
+            <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
+            <span>{{ $t("schema-designer.new-design") }}</span>
+          </NButton>
           <div v-else class="w-full flex flex-row justify-between items-center">
             <div class="flex flex-row justify-end items-center space-x-2">
               <template v-if="isViewing">
@@ -153,10 +152,15 @@ import {
 import SchemaDesignTable from "./SchemaDesignTable.vue";
 import SchemaDesigner from "../index.vue";
 import { mergeSchemaEditToMetadata } from "../common/util";
-import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import {
+  DatabaseV1Name,
+  DrawerContent,
+  InstanceV1EngineIcon,
+} from "@/components/v2";
 import CreateSchemaDesignPanel from "../CreateSchemaDesignPanel.vue";
 import { useRouter } from "vue-router";
 import { projectV1Slug } from "@/utils";
+import { useEventListener } from "@vueuse/core";
 
 interface BaselineSchema {
   // The uid of project.
@@ -180,7 +184,13 @@ defineProps({
     default: undefined,
   },
 });
-defineEmits(["dismiss"]);
+const emit = defineEmits(["dismiss"]);
+
+useEventListener("keydown", (e) => {
+  if (e.code == "Escape") {
+    emit("dismiss");
+  }
+});
 
 const { t } = useI18n();
 const router = useRouter();
