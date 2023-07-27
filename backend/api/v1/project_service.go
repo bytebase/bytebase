@@ -25,6 +25,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
@@ -2767,6 +2768,33 @@ func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpoi
 			URL:         fmt.Sprintf("%s/hook/bitbucket/%s", gitopsWebhookURL, webhookEndpointID),
 			Active:      true,
 			Events:      []string{"repo:push"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcsPlugin.AzureDevOps:
+		part := strings.Split(externalRepoID, "/")
+		if len(part) != 3 {
+			return "", errors.Errorf("invalid external repo id %q", externalRepoID)
+		}
+		projectID, repositoryID := part[1], part[2]
+
+		webhookPost := azure.WebhookCreateOrUpdate{
+			ConsumerActionID: "httpRequest",
+			ConsumerID:       "webHooks",
+			ConsumerInputs: azure.WebhookCreateConsumerInputs{
+				URL:                  fmt.Sprintf("%s/hook/azure/%s", gitopsWebhookURL, webhookEndpointID),
+				AcceptUntrustedCerts: true,
+			},
+			EventType:   "git.push",
+			PublisherID: "tfs",
+			PublisherInputs: azure.WebhookCreatePublisherInputs{
+				Repository: repositoryID,
+				Branch:     "", /* Any branches */
+				PushedBy:   "", /* Any users */
+				ProjectID:  projectID,
+			},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {

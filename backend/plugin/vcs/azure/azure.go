@@ -2,6 +2,7 @@
 package azure
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
 )
 
 func init() {
@@ -56,8 +58,29 @@ type oauthResponse struct {
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
-// project is Azure DevOps project.
-type repository struct {
+// WebhookCreateConsumerInputs represents the consumer inputs for creating a webhook.
+type WebhookCreateConsumerInputs struct {
+	URL                  string `json:"url"`
+	AcceptUntrustedCerts bool   `json:"acceptUntrustedCerts"`
+}
+
+// WebhookCreatePublisherInputs represents the publisher inputs for creating a webhook.
+type WebhookCreatePublisherInputs struct {
+	Repository string `json:"repository"`
+	Branch     string `json:"branch"`
+	PushedBy   string `json:"pushedBy"`
+	ProjectID  string `json:"projectId"`
+}
+
+// WebhookCreateOrUpdate represents a Bitbucket API request for creating or
+// updating a webhook.
+type WebhookCreateOrUpdate struct {
+	ConsumerActionID string                       `json:"consumerActionId"`
+	ConsumerID       string                       `json:"consumerId"`
+	ConsumerInputs   WebhookCreateConsumerInputs  `json:"consumerInputs"`
+	EventType        string                       `json:"eventType"`
+	PublisherID      string                       `json:"publisherId"`
+	PublisherInputs  WebhookCreatePublisherInputs `json:"publisherInputs"`
 }
 
 // toVCSOAuthToken converts the response to *vcs.OAuthToken.
@@ -200,7 +223,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 				}
 
 				result = append(result, &vcs.Repository{
-					ID:       fmt.Sprintf("%s/%s", organization, r.ID),
+					ID:       fmt.Sprintf("%s/%s/%s", organization, r.Project.ID, r.ID),
 					Name:     r.Name,
 					FullPath: fmt.Sprintf("%s/%s/%s", organization, r.Project.Name, r.Name),
 					WebURL:   r.Url,
@@ -345,10 +368,10 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 	}
 
 	parts := strings.Split(repositoryID, "/")
-	if len(parts) != 2 {
+	if len(parts) != 3 {
 		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
 	}
-	organizationName, repositoryID := parts[0], parts[1]
+	organizationName, repositoryID := parts[0], parts[2]
 
 	urlParams := &url.Values{}
 	urlParams.Set("name", branchName)
@@ -414,9 +437,42 @@ func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext,
 	return errors.New("not supported")
 }
 
-// CreateWebhook creates a webhook in the repository with given payload.
-func (*Provider) CreateWebhook(_ context.Context, _ common.OauthContext, _, _ string, _ []byte) (string, error) {
-	return "", errors.New("not implemented")
+// CreateWebhook creates a webhook in the organization, and returns the webhook ID which can be used in PatchWebhook.
+// API Version 7.0 do not specify the OAuth scope for creating webhook explicitly, but it works.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/create?view=azure-devops-rest-7.0&tabs=HTTP
+func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, _, externalRepositoryID string, payload []byte) (string, error) {
+	parts := strings.Split(externalRepositoryID, "/")
+	if len(parts) != 3 {
+		return "", errors.Errorf("invalid repository ID %q", externalRepositoryID)
+	}
+	organizationName, _, _ := parts[0], parts[1], parts[2]
+	urlParams := &url.Values{}
+	urlParams.Set("api-version", "7.0")
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/hooks/subscriptions?%s", url.PathEscape(organizationName), urlParams.Encode())
+	code, _, body, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(payload),
+		nil,
+	)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create webhook")
+	}
+	if code != http.StatusOK {
+		return "", errors.Errorf("failed to create webhook, code: %v, body: %s", code, string(body))
+	}
+
+	type createServiceResponse struct {
+		ID string `json:"id"`
+	}
+	c := new(createServiceResponse)
+	if err := json.Unmarshal([]byte(body), c); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal create webhook response body, code %v", code)
+	}
+	return fmt.Sprintf("%s/%s", organizationName, c.ID), nil
 }
 
 // PatchWebhook patches the webhook in the repository with given payload.
