@@ -10,3 +10,10 @@ message InstanceOptions {
   // For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
   bool schema_tenant_mode = 1;
 }
+
+// InstanceMetadata is the metadata for instances.
+message InstanceMetadata {
+  // The lower_case_table_name config for MySQL instances.
+  // It is used to determine whether the table name and database name are case sensitive.
+  int32 mysql_lower_case_table_name = 1;
+}
