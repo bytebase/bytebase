@@ -125,6 +125,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	}
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	schemaDesign := request.SchemaDesign
+	sanitizeSchemaDesignSchemaMetadata(schemaDesign)
 	if err := checkDatabaseMetadata(schemaDesign.Engine, schemaDesign.SchemaMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design: %v", err))
 	}
@@ -242,6 +243,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		sheetUpdate.Name = &schemaDesign.Title
 	}
 	if slices.Contains(request.UpdateMask.Paths, "schema") {
+		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
 		schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		if err != nil {
 			return nil, err
@@ -405,11 +407,52 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 }
 
 func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) (*v1pb.DatabaseMetadata, error) {
-	switch engine {
-	case v1pb.Engine_MYSQL:
-		return parseMySQLSchemaStringToDatabaseMetadata(schema)
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+	dbSchema, err := func() (*v1pb.DatabaseMetadata, error) {
+		switch engine {
+		case v1pb.Engine_MYSQL:
+			return parseMySQLSchemaStringToDatabaseMetadata(schema)
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+		}
+	}()
+	if err != nil {
+		return nil, err
+	}
+	setCategoryAndUserCommentFromComment(dbSchema)
+	return dbSchema, nil
+}
+
+func sanitizeSchemaDesignSchemaMetadata(design *v1pb.SchemaDesign) {
+	if dbSchema := design.GetBaselineSchemaMetadata(); dbSchema != nil {
+		for _, schema := range dbSchema.Schemas {
+			for _, table := range schema.Tables {
+				table.Comment = common.GetCommentFromCategoryAndUserComment(table.Category, table.UserComment)
+				for _, col := range table.Columns {
+					col.Comment = common.GetCommentFromCategoryAndUserComment(col.Category, col.UserComment)
+				}
+			}
+		}
+	}
+	if dbSchema := design.GetSchemaMetadata(); dbSchema != nil {
+		for _, schema := range dbSchema.Schemas {
+			for _, table := range schema.Tables {
+				table.Comment = common.GetCommentFromCategoryAndUserComment(table.Category, table.UserComment)
+				for _, col := range table.Columns {
+					col.Comment = common.GetCommentFromCategoryAndUserComment(col.Category, col.UserComment)
+				}
+			}
+		}
+	}
+}
+
+func setCategoryAndUserCommentFromComment(dbSchema *v1pb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Category, table.UserComment = common.GetCategoryAndUserComment(table.Comment)
+			for _, col := range table.Columns {
+				col.Category, col.UserComment = common.GetCategoryAndUserComment(col.Comment)
+			}
+		}
 	}
 }
 
