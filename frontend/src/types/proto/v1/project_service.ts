@@ -557,7 +557,7 @@ export interface Project {
   dbNameTemplate: string;
   schemaChange: SchemaChange;
   webhooks: Webhook[];
-  dataCategoryConfigId: string;
+  dataClassificationConfigId: string;
 }
 
 export interface AddWebhookRequest {
@@ -2600,7 +2600,7 @@ function createBaseProject(): Project {
     dbNameTemplate: "",
     schemaChange: 0,
     webhooks: [],
-    dataCategoryConfigId: "",
+    dataClassificationConfigId: "",
   };
 }
 
@@ -2639,8 +2639,8 @@ export const Project = {
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
     }
-    if (message.dataCategoryConfigId !== "") {
-      writer.uint32(98).string(message.dataCategoryConfigId);
+    if (message.dataClassificationConfigId !== "") {
+      writer.uint32(98).string(message.dataClassificationConfigId);
     }
     return writer;
   },
@@ -2734,7 +2734,7 @@ export const Project = {
             break;
           }
 
-          message.dataCategoryConfigId = reader.string();
+          message.dataClassificationConfigId = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2758,7 +2758,9 @@ export const Project = {
       dbNameTemplate: isSet(object.dbNameTemplate) ? String(object.dbNameTemplate) : "",
       schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       webhooks: Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
-      dataCategoryConfigId: isSet(object.dataCategoryConfigId) ? String(object.dataCategoryConfigId) : "",
+      dataClassificationConfigId: isSet(object.dataClassificationConfigId)
+        ? String(object.dataClassificationConfigId)
+        : "",
     };
   },
 
@@ -2779,7 +2781,8 @@ export const Project = {
     } else {
       obj.webhooks = [];
     }
-    message.dataCategoryConfigId !== undefined && (obj.dataCategoryConfigId = message.dataCategoryConfigId);
+    message.dataClassificationConfigId !== undefined &&
+      (obj.dataClassificationConfigId = message.dataClassificationConfigId);
     return obj;
   },
 
@@ -2800,7 +2803,7 @@ export const Project = {
     message.dbNameTemplate = object.dbNameTemplate ?? "";
     message.schemaChange = object.schemaChange ?? 0;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
-    message.dataCategoryConfigId = object.dataCategoryConfigId ?? "";
+    message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     return message;
   },
 };
