@@ -68,6 +68,7 @@
     - [OAuth2AuthStyle](#bytebase-store-OAuth2AuthStyle)
   
 - [store/instance.proto](#store_instance-proto)
+    - [InstanceMetadata](#bytebase-store-InstanceMetadata)
     - [InstanceOptions](#bytebase-store-InstanceOptions)
   
 - [store/vcs.proto](#store_vcs-proto)
@@ -1084,6 +1085,21 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/instance.proto
+
+
+
+<a name="bytebase-store-InstanceMetadata"></a>
+
+### InstanceMetadata
+InstanceMetadata is the metadata for instances.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mysql_lower_case_table_name | [int32](#int32) |  | The lower_case_table_name config for MySQL instances. It is used to determine whether the table name and database name are case sensitive. |
+
+
+
 
 
 
