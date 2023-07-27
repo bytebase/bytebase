@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"regexp"
-	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -341,16 +340,12 @@ func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {
 	)
 }
 
-var getCategoryFromCommentReg = regexp.MustCompile("^[0-9]+-[0-9]+-[0-9]+")
-
 func setCategoryFromComment(dbSchema *storepb.DatabaseMetadata) {
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
-			table.Category = getCategoryFromCommentReg.FindString(table.Comment)
-			table.UserComment = strings.TrimPrefix(strings.TrimPrefix(table.Comment, table.Category), "-")
+			table.Category, table.UserComment = common.GetCategoryAndUserComment(table.Comment)
 			for _, col := range table.Columns {
-				col.Category = getCategoryFromCommentReg.FindString(col.Comment)
-				col.UserComment = strings.TrimPrefix(strings.TrimPrefix(col.Comment, col.Category), "-")
+				col.Category, col.UserComment = common.GetCategoryAndUserComment(col.Comment)
 			}
 		}
 	}
