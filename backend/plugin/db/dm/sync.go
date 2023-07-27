@@ -54,7 +54,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		Version:   version,
 		Databases: databases,
 	}, nil
-
 }
 
 func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
@@ -103,7 +102,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	}
 
 	databaseMetadata := &storepb.DatabaseMetadata{
-		Name:        driver.databaseName,
+		Name: driver.databaseName,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 		Name:   driver.databaseName,
@@ -112,7 +111,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	})
 	return databaseMetadata, nil
 }
-
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
 	query := fmt.Sprintf(`
