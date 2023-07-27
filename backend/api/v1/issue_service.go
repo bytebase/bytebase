@@ -772,6 +772,9 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	if issue.PlanUID != nil {
 		issueV1.Plan = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.PlanPrefix, *issue.PlanUID)
 	}
+	if issue.PipelineUID != nil {
+		issueV1.Rollout = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, *issue.PipelineUID)
+	}
 
 	for _, subscriber := range issue.Subscribers {
 		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", common.UserNamePrefix, subscriber.Email))
