@@ -605,8 +605,9 @@ ColumnMetadata is the metadata for columns.
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
 | collation | [string](#string) |  | The collation is the collation of a column. |
-| comment | [string](#string) |  | The comment is the comment of a column. |
-| category | [string](#string) |  | The category is the category of a table from the comment. |
+| comment | [string](#string) |  | The comment is the comment of a column. category and user_comment is parsed from the comment. |
+| category | [string](#string) |  | The category is the category of a table parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 
 
 
@@ -837,8 +838,9 @@ TableMetadata is the metadata for tables.
 | index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
 | data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
 | create_options | [string](#string) |  | The create_options is the create option of a table. |
-| comment | [string](#string) |  | The comment is the comment of a table. |
-| category | [string](#string) |  | The category is the category of a table from the comment. |
+| comment | [string](#string) |  | The comment is the comment of a table. category and user_comment is parsed from the comment. |
+| category | [string](#string) |  | The category is the category of a table parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 
 

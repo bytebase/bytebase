@@ -359,8 +359,15 @@ export interface TableMetadata {
   dataFree: number;
   /** The create_options is the create option of a table. */
   createOptions: string;
-  /** The comment is the comment of a table. */
+  /**
+   * The comment is the comment of a table.
+   * category and user_comment is parsed from the comment.
+   */
   comment: string;
+  /** The category is the category of a table parsed from the comment. */
+  category: string;
+  /** The user_comment is the user comment of a table parsed from the comment. */
+  userComment: string;
   /** The foreign_keys is the list of foreign keys in a table. */
   foreignKeys: ForeignKeyMetadata[];
 }
@@ -383,8 +390,15 @@ export interface ColumnMetadata {
   characterSet: string;
   /** The collation is the collation of a column. */
   collation: string;
-  /** The comment is the comment of a column. */
+  /**
+   * The comment is the comment of a column.
+   * category and user_comment is parsed from the comment.
+   */
   comment: string;
+  /** The category is the category of a column parsed from the comment. */
+  category: string;
+  /** The user_comment is the user comment of a column parsed from the comment. */
+  userComment: string;
 }
 
 /** ViewMetadata is the metadata for views. */
@@ -2945,6 +2959,8 @@ function createBaseTableMetadata(): TableMetadata {
     dataFree: 0,
     createOptions: "",
     comment: "",
+    category: "",
+    userComment: "",
     foreignKeys: [],
   };
 }
@@ -2983,6 +2999,12 @@ export const TableMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
+    }
+    if (message.category !== "") {
+      writer.uint32(106).string(message.category);
+    }
+    if (message.userComment !== "") {
+      writer.uint32(114).string(message.userComment);
     }
     for (const v of message.foreignKeys) {
       ForeignKeyMetadata.encode(v!, writer.uint32(98).fork()).ldelim();
@@ -3074,6 +3096,20 @@ export const TableMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.userComment = reader.string();
+          continue;
         case 12:
           if (tag !== 98) {
             break;
@@ -3103,6 +3139,8 @@ export const TableMetadata = {
       dataFree: isSet(object.dataFree) ? Number(object.dataFree) : 0,
       createOptions: isSet(object.createOptions) ? String(object.createOptions) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      category: isSet(object.category) ? String(object.category) : "",
+      userComment: isSet(object.userComment) ? String(object.userComment) : "",
       foreignKeys: Array.isArray(object?.foreignKeys)
         ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
         : [],
@@ -3130,6 +3168,8 @@ export const TableMetadata = {
     message.dataFree !== undefined && (obj.dataFree = Math.round(message.dataFree));
     message.createOptions !== undefined && (obj.createOptions = message.createOptions);
     message.comment !== undefined && (obj.comment = message.comment);
+    message.category !== undefined && (obj.category = message.category);
+    message.userComment !== undefined && (obj.userComment = message.userComment);
     if (message.foreignKeys) {
       obj.foreignKeys = message.foreignKeys.map((e) => e ? ForeignKeyMetadata.toJSON(e) : undefined);
     } else {
@@ -3155,6 +3195,8 @@ export const TableMetadata = {
     message.dataFree = object.dataFree ?? 0;
     message.createOptions = object.createOptions ?? "";
     message.comment = object.comment ?? "";
+    message.category = object.category ?? "";
+    message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     return message;
   },
@@ -3170,6 +3212,8 @@ function createBaseColumnMetadata(): ColumnMetadata {
     characterSet: "",
     collation: "",
     comment: "",
+    category: "",
+    userComment: "",
   };
 }
 
@@ -3198,6 +3242,12 @@ export const ColumnMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(66).string(message.comment);
+    }
+    if (message.category !== "") {
+      writer.uint32(74).string(message.category);
+    }
+    if (message.userComment !== "") {
+      writer.uint32(82).string(message.userComment);
     }
     return writer;
   },
@@ -3265,6 +3315,20 @@ export const ColumnMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.userComment = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3284,6 +3348,8 @@ export const ColumnMetadata = {
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
       collation: isSet(object.collation) ? String(object.collation) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      category: isSet(object.category) ? String(object.category) : "",
+      userComment: isSet(object.userComment) ? String(object.userComment) : "",
     };
   },
 
@@ -3297,6 +3363,8 @@ export const ColumnMetadata = {
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
     message.collation !== undefined && (obj.collation = message.collation);
     message.comment !== undefined && (obj.comment = message.comment);
+    message.category !== undefined && (obj.category = message.category);
+    message.userComment !== undefined && (obj.userComment = message.userComment);
     return obj;
   },
 
@@ -3314,6 +3382,8 @@ export const ColumnMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";
+    message.category = object.category ?? "";
+    message.userComment = object.userComment ?? "";
     return message;
   },
 };
