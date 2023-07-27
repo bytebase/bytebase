@@ -55,16 +55,16 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
     });
     issue.rolloutTaskRunList = taskRuns;
   }
-  // const plan = await rolloutServiceClient.getPlan({
-  //   name: issue.plan,
-  // });
-  // console.log("plan", plan);
-  // const { plans: taskRunList } = await rolloutServiceClient.listTaskRuns(
-  //   {
-  //     parent: rollout.name,
-  //   }
-  // );
-  // console.log("taskRunList", taskRunList);
+  if (issue.plan) {
+    const plan = await rolloutServiceClient.getPlan({
+      name: issue.plan,
+    });
+    issue.planEntity = plan;
+    const { planCheckRuns } = await rolloutServiceClient.listPlanCheckRuns({
+      parent: plan.name,
+    });
+    issue.planCheckRunList = planCheckRuns;
+  }
 
   await new Promise((r) => setTimeout(r, 500));
 
@@ -109,16 +109,16 @@ export const experimentalFetchIssueByName = async (name: string) => {
     });
     issue.rolloutTaskRunList = taskRuns;
   }
-  // const plan = await rolloutServiceClient.getPlan({
-  //   name: issue.plan,
-  // });
-  // console.log("plan", plan);
-  // const { plans: taskRunList } = await rolloutServiceClient.listTaskRuns(
-  //   {
-  //     parent: rollout.name,
-  //   }
-  // );
-  // console.log("taskRunList", taskRunList);
+  if (issue.plan) {
+    const plan = await rolloutServiceClient.getPlan({
+      name: issue.plan,
+    });
+    issue.planEntity = plan;
+    const { planCheckRuns } = await rolloutServiceClient.listPlanCheckRuns({
+      parent: plan.name,
+    });
+    issue.planCheckRunList = planCheckRuns;
+  }
 
   await new Promise((r) => setTimeout(r, 500));
 
