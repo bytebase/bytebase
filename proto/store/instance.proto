@@ -13,7 +13,7 @@ message InstanceOptions {
 
 // InstanceMetadata is the metadata for instances.
 message InstanceMetadata {
-  // The lower_case_table_name config for MySQL instances.
-  // It is used to determine whether the table name and database name are case sensitive.
-  int32 mysql_lower_case_table_name = 1;
+  // The lower_case_table_names config for MySQL instances.
+  // It is used to determine whether the table names and database names are case sensitive.
+  int32 mysql_lower_case_table_names = 1;
 }
