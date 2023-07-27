@@ -22,10 +22,11 @@
 import { computed } from "vue";
 import { NTooltip, NButton } from "naive-ui";
 
-import { Issue } from "@/types/proto/v1/issue_service";
+import { CreateIssueRequest, Issue } from "@/types/proto/v1/issue_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
+  Rollout,
 } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { useSheetV1Store } from "@/store";
@@ -37,7 +38,10 @@ import {
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { extractSheetUID } from "@/utils";
 import { ErrorList } from "../common";
+import { ComposedIssue } from "@/types";
+import { useRouter } from "vue-router";
 
+const router = useRouter();
 const { issue } = useIssueContext();
 
 const issueCreateErrorList = computed(() => {
@@ -53,15 +57,58 @@ const issueCreateErrorList = computed(() => {
 
 const doCreateIssue = async () => {
   await createSheets();
-  const plan = await createPlan();
-  if (!plan) return;
+  const createdPlan = await createPlan();
+  if (!createdPlan) return;
+
+  issue.value.plan = createdPlan.name;
+  issue.value.planEntity = createdPlan;
+
+  console.log(
+    "CreateIssueRequest",
+    JSON.stringify(
+      CreateIssueRequest.toJSON(
+        CreateIssueRequest.fromJSON({
+          parent: issue.value.project,
+          issue: issue.value,
+        })
+      ),
+      null,
+      "  "
+    )
+  );
 
   const createdIssue = await issueServiceClient.createIssue({
     parent: issue.value.project,
     issue: issue.value,
   });
 
-  console.log("created issue", Issue.toJSON(createdIssue));
+  const createdRollout = await rolloutServiceClient.createRollout({
+    parent: issue.value.project,
+    plan: createdPlan.name,
+  });
+  console.log(
+    "createdRollout",
+    JSON.stringify(Rollout.toJSON(createdRollout), null, "  ")
+  );
+
+  createdIssue.rollout = createdRollout.name;
+
+  console.log(
+    "created issue",
+    JSON.stringify(Issue.toJSON(createdIssue), null, "  ")
+  );
+
+  const composedIssue: ComposedIssue = {
+    ...issue.value,
+    ...createdIssue,
+    planEntity: createdPlan,
+    rolloutEntity: createdRollout,
+  };
+  console.log("created composed issue", composedIssue);
+
+  router.push(`/issue-v1/${composedIssue.uid}`);
+
+  return composedIssue;
 };
 
 // Create sheets for spec configs and update their resource names.
@@ -115,7 +162,6 @@ const createPlan = async () => {
     plan,
   });
   console.log("created plan", Plan.toJSON(createdPlan));
-  issue.value.plan = createPlan.name;
   return createdPlan;
 };
 </script>
