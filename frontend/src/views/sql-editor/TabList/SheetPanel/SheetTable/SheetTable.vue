@@ -24,7 +24,7 @@
         <HumanizeDate :date="sheet.updateTime" />
       </div>
       <div class="bb-grid-cell" @click.stop>
-        <Dropdown :sheet="sheet" :view="view" @refresh="fetchSheetList" />
+        <Dropdown :sheet="sheet" :view="view" />
       </div>
     </template>
   </BBGrid>

@@ -39,13 +39,13 @@
       </button>
     </div>
 
-    <NButton size="tiny" quaternary @click="state.showSheetPanel = true">
+    <NButton size="tiny" quaternary @click="showSheetPanel = true">
       {{ $t("sql-editor.sheet.choose-sheet") }}
     </NButton>
 
-    <Drawer v-model:show="state.showSheetPanel">
+    <Drawer v-model:show="showSheetPanel">
       <DrawerContent :title="$t('sql-editor.sheet.self')">
-        <SheetPanel @close="state.showSheetPanel = false" />
+        <SheetPanel @close="showSheetPanel = false" />
       </DrawerContent>
     </Drawer>
   </div>
@@ -65,11 +65,11 @@ import { useTabStore } from "@/store";
 import { Drawer, DrawerContent } from "@/components/v2";
 import TabItem from "./TabItem";
 import SheetPanel from "./SheetPanel";
+import { useSheetPanelContext } from "./SheetPanel/common";
 
 type LocalState = {
   dragging: boolean;
   hoverTabId: string;
-  showSheetPanel: boolean;
 };
 
 const tabStore = useTabStore();
@@ -80,9 +80,9 @@ const dialog = useDialog();
 const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
-  showSheetPanel: false,
 });
 
+const { showPanel: showSheetPanel } = useSheetPanelContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 
 const scrollState = reactive({

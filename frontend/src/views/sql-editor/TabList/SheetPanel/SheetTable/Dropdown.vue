@@ -17,7 +17,7 @@ import { useI18n } from "vue-i18n";
 import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { SheetViewMode } from "../common";
+import { useSheetPanelContext, type SheetViewMode } from "../common";
 import { isSheetWritableV1 } from "@/utils";
 import { useSheetV1Store, pushNotification } from "@/store";
 import {
@@ -31,13 +31,10 @@ const props = defineProps<{
   sheet: Sheet;
 }>();
 
-const emit = defineEmits<{
-  (event: "refresh"): void;
-}>();
-
 const { t } = useI18n();
 const sheetV1Store = useSheetV1Store();
 const dialog = useDialog();
+const { events } = useSheetPanelContext();
 
 const options = computed(() => {
   const options: DropdownOption[] = [];
@@ -84,7 +81,7 @@ const handleAction = async (key: string) => {
       closeOnEsc: false,
       async onPositiveClick() {
         await sheetV1Store.deleteSheetByName(sheet.name);
-        emit("refresh");
+        events.emit("refresh", { views: ["my", "shared", "starred"] });
         dialogInstance.destroy();
       },
       onNegativeClick() {
@@ -99,7 +96,7 @@ const handleAction = async (key: string) => {
       sheet: sheet.name,
       starred: key === "star",
     });
-    emit("refresh");
+    events.emit("refresh", { views: ["starred"] });
   } else if (key === "duplicate") {
     const dialogInstance = dialog.create({
       title: t("sheet.hint-tips.confirm-to-duplicate-sheet"),
