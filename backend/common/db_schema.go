@@ -14,6 +14,7 @@ func GetCategoryAndUserComment(comment string) (string, string) {
 	return category, userComment
 }
 
+// GetCommentFromCategoryAndUserComment returns the comment from the given category and user comment.
 func GetCommentFromCategoryAndUserComment(category, userComment string) string {
 	if category == "" {
 		return userComment
