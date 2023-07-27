@@ -498,13 +498,22 @@
         "scopes-description": "Una lista separada por espacios de ámbitos que se llevarán al acceder a la URL de autenticación",
         "token-url-description": "La dirección API para obtener el token de acceso",
         "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso",
+        "connection-security": "Seguridad de la conexión",
+        "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
         "identifier": "Identificador de usuario Bytebase",
         "display-name": "Nombre de visualización de usuario Bytebase",
         "email": "Correo electrónico de usuario Bytebase",
-        "connection-security": "Seguridad de la conexión",
-        "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados"
+        "auth-style": {
+          "self": "Estilo de autenticación",
+          "in-params": {
+            "self": "En parámetros"
+          },
+          "in-header": {
+            "self": "En encabezado"
+          }
+        }
       },
       "copy-redirect-url": "URL de redireccionamiento copiada al portapapeles."
     },
