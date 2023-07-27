@@ -63,7 +63,7 @@
 </template>
 
 <script lang="ts" setup>
-import { isUndefined, uniqueId } from "lodash-es";
+import { cloneDeep, isUndefined, uniqueId } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -204,8 +204,10 @@ const handleConfirm = async () => {
 
   const metadata = mergeSchemaEditToMetadata(
     designerState.editableSchemas,
-    state.schemaDesign.baselineSchemaMetadata ||
-      DatabaseMetadata.fromPartial({})
+    cloneDeep(
+      state.schemaDesign.baselineSchemaMetadata ||
+        DatabaseMetadata.fromPartial({})
+    )
   );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
   const schemaVersion =
