@@ -4,16 +4,20 @@
     <div v-if="!isCreating">
       <NButton type="primary" @click="runPlanChecks">Run plan checks</NButton>
     </div>
-    <div>issue.planCheckRunList:</div>
-    <pre>{{ issue.planCheckRunList.map(PlanCheckRun.toJSON) }}</pre>
+    <div>
+      issue.planCheckRunList.length: {{ issue.planCheckRunList.length }}
+    </div>
   </div>
+
+  <PlanCheckBar v-if="!isCreating" />
 </template>
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { useIssueContext } from "../../logic";
+
 import { rolloutServiceClient } from "@/grpcweb";
-import { PlanCheckRun } from "@/types/proto/v1/rollout_service";
+import { useIssueContext } from "../../logic";
+
 const { isCreating, issue } = useIssueContext();
 
 const runPlanChecks = async () => {
