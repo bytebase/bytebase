@@ -34,11 +34,11 @@ const (
 	RefreshTokenAudienceFmt = "bb.user.refresh.%s"
 	// MFATempTokenAudienceFmt is the format of the MFA temp token audience.
 	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
-	apiTokenDuration        = 2 * time.Hour
-	accessTokenDuration     = 8 * time.Hour
+	apiTokenDuration        = 1 * time.Hour
+	accessTokenDuration     = 1 * time.Hour
 	refreshTokenDuration    = 7 * 24 * time.Hour
 	// RefreshThresholdDuration is the threshold duration for refreshing token.
-	RefreshThresholdDuration = 1 * time.Hour
+	RefreshThresholdDuration = 0 * time.Hour
 
 	// CookieExpDuration expires slightly earlier than the jwt expiration. Client would be logged out if the user
 	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
