@@ -625,7 +625,10 @@ const (
 
 // SensitiveSchemaInfo is the schema info using to extract sensitive fields.
 type SensitiveSchemaInfo struct {
-	DatabaseList []DatabaseSchema
+	// IgnoreCaseSensitive is the flag to ignore case sensitive.
+	// IMPORTANT: This flag is ONLY for database names, table names and view names in MySQL-like database.
+	IgnoreCaseSensitive bool
+	DatabaseList        []DatabaseSchema
 }
 
 // DatabaseSchema is the database schema using to extract sensitive fields.
