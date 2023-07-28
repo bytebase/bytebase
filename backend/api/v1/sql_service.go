@@ -1198,7 +1198,11 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			continue
 		}
 
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -1530,7 +1534,11 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 
 	var database *store.DatabaseMessage
 	if databaseName != "" {
-		database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
@@ -1618,7 +1626,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
 		if err != nil {
 			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
 				// If database not found, skip.
@@ -1636,7 +1648,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		for _, resource := range list {
 			if resource.Database != dbSchema.Metadata.Name {
 				// MySQL allows cross-database query, we should check the corresponding database.
-				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &resource.Database})
+				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					InstanceID:          &instance.ResourceID,
+					DatabaseName:        &resource.Database,
+					IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -1667,7 +1683,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
@@ -1715,7 +1735,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
@@ -1735,7 +1759,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 					continue
 				}
 				// Schema tenant mode allows cross-database query, we should check the corresponding database.
-				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &resource.Database})
+				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					InstanceID:          &instance.ResourceID,
+					DatabaseName:        &resource.Database,
+					IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -1777,7 +1805,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
 		if err != nil {
 			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
 				// If database not found, skip.
@@ -1795,7 +1827,11 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		for _, resource := range list {
 			if resource.Database != dbSchema.Metadata.Name {
 				// Snowflake allows cross-database query, we should check the corresponding database.
-				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &resource.Database})
+				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					InstanceID:          &instance.ResourceID,
+					DatabaseName:        &resource.Database,
+					IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -2100,7 +2136,11 @@ func evaluateCondition(expression string, attributes map[string]any) (bool, erro
 }
 
 func (s *SQLService) getProjectAndDatabaseMessage(ctx context.Context, instance *store.InstanceMessage, database string) (*store.ProjectMessage, *store.DatabaseMessage, error) {
-	databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &database})
+	databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instance.ResourceID,
+		DatabaseName:        &database,
+		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
 	if err != nil {
 		return nil, nil, err
 	}

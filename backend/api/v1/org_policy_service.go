@@ -298,9 +298,14 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		if databaseName == "-" {
 			return api.PolicyResourceTypeDatabase, nil, nil
 		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())
+		}
 		database, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instanceID,
-			DatabaseName: &databaseName,
+			InstanceID:          &instanceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())

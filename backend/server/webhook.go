@@ -1375,15 +1375,31 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	if project == nil {
 		return nil, errors.Errorf("project %d not found", projectID)
 	}
-	foundDatabases, err := s.store.ListDatabases(ctx,
+	// The database name for PostgreSQL, Oracle, Snowflake and some databases are case sensitive.
+	// But the database name for MySQL, TiDB and other databases are case insensitive.
+	// So we should find databases by case-insensitive and double-check for case sensitive database engines.
+	caseInsensitiveDatabases, err := s.store.ListDatabases(ctx,
 		&store.FindDatabaseMessage{
-			ProjectID:    &project.ResourceID,
-			DatabaseName: &dbName,
+			ProjectID:           &project.ResourceID,
+			DatabaseName:        &dbName,
+			IgnoreCaseSensitive: true,
 		},
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "find database")
-	} else if len(foundDatabases) == 0 {
+	}
+	var foundDatabases []*store.DatabaseMessage
+	for _, database := range caseInsensitiveDatabases {
+		database := database
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+		if err != nil {
+			return nil, errors.Wrap(err, "find instance")
+		}
+		if s.store.IgnoreDatabaseAndTableCaseSensitive(instance) || database.DatabaseName == dbName {
+			foundDatabases = append(foundDatabases, database)
+		}
+	}
+	if len(foundDatabases) == 0 {
 		return nil, errors.Errorf("project %d does not have database %q", projectID, dbName)
 	}
 
