@@ -13,7 +13,6 @@ export type SchemaRuleEngineType =
   | "POSTGRES"
   | "TIDB"
   | "ORACLE"
-  | "DM"
   | "OCEANBASE"
   | "SNOWFLKE"
   | "MSSQL";
