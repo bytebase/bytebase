@@ -645,7 +645,7 @@ message Task {
 }
 
 message TaskRun {
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun}
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
