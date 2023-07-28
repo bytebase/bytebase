@@ -204,6 +204,7 @@ const hasSchemaProperty = computed(() => {
     databaseEngine.value === Engine.POSTGRES ||
     databaseEngine.value === Engine.SNOWFLAKE ||
     databaseEngine.value === Engine.ORACLE ||
+    databaseEngine.value === Engine.DM ||
     databaseEngine.value === Engine.MSSQL ||
     databaseEngine.value === Engine.REDSHIFT
   );
