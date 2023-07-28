@@ -1,11 +1,16 @@
 <template>
   <div
-    class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-4 border-b bg-white"
+    class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-2 border-b bg-white"
   >
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
     >
-      <NButton type="primary" :disabled="!allowQuery" @click="handleRunQuery">
+      <NButton
+        type="primary"
+        size="small"
+        :disabled="!allowQuery"
+        @click="handleRunQuery"
+      >
         <mdi:play class="h-5 w-5 -ml-1.5" />
         <span>
           {{
@@ -17,14 +22,14 @@
           ({{ keyboardShortcutStr("cmd_or_ctrl+⏎") }})
         </span>
       </NButton>
-      <NButton :disabled="!allowQuery" @click="handleExplainQuery">
+      <NButton size="small" :disabled="!allowQuery" @click="handleExplainQuery">
         <mdi:play class="h-5 w-5 -ml-1.5" />
         <span>Explain</span>
         <span class="hidden sm:inline ml-1">
           ({{ keyboardShortcutStr("cmd_or_ctrl+E") }})
         </span>
       </NButton>
-      <NButton :disabled="!allowQuery" @click="handleFormatSQL">
+      <NButton size="small" :disabled="!allowQuery" @click="handleFormatSQL">
         <span>{{ $t("sql-editor.format") }}</span>
         <span class="hidden sm:inline ml-1">
           ({{ keyboardShortcutStr("shift+opt_or_alt+F") }})
@@ -32,6 +37,7 @@
       </NButton>
       <NButton
         v-if="showClearScreen"
+        size="small"
         :disabled="queryList.length <= 1 || isExecutingSQL"
         @click="handleClearScreen"
       >
@@ -44,13 +50,14 @@
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
     >
-      <AdminModeButton />
+      <AdminModeButton :size="'small'" />
 
       <template v-if="showSheetsFeature">
         <NButton
           secondary
           strong
           type="primary"
+          size="small"
           :disabled="!allowSave"
           @click="() => emit('save-sheet')"
         >
@@ -68,6 +75,7 @@
         >
           <template #trigger>
             <NButton
+              size="small"
               :disabled="
                 isEmptyStatement ||
                 tabStore.isDisconnected ||
