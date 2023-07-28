@@ -7541,8 +7541,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| creator | [string](#string) |  | Format: user:hello@world.com |
-| updater | [string](#string) |  | Format: user:hello@world.com |
+| creator | [string](#string) |  | Format: user/hello@world.com |
+| updater | [string](#string) |  | Format: user/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | title | [string](#string) |  |  |

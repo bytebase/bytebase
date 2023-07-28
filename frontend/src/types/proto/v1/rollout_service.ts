@@ -1005,9 +1005,9 @@ export interface TaskRun {
   name: string;
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
-  /** Format: user:hello@world.com */
+  /** Format: user/hello@world.com */
   creator: string;
-  /** Format: user:hello@world.com */
+  /** Format: user/hello@world.com */
   updater: string;
   createTime?: Date | undefined;
   updateTime?: Date | undefined;
@@ -5639,12 +5639,12 @@ export const RolloutServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              47,
+              48,
               58,
               1,
               42,
               34,
-              42,
+              43,
               47,
               118,
               49,
@@ -5685,6 +5685,7 @@ export const RolloutServiceDefinition = {
               67,
               104,
               101,
+              99,
               107,
               115,
             ]),
