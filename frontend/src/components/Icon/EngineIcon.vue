@@ -27,6 +27,7 @@ const ICON_PATH_MAP = new Map([
   [Engine.SPANNER, new URL("@/assets/db-spanner.png", import.meta.url).href],
   [Engine.REDIS, new URL("@/assets/db-redis.png", import.meta.url).href],
   [Engine.ORACLE, new URL("@/assets/db-oracle.svg", import.meta.url).href],
+  [Engine.DM, new URL("@/assets/db-dm.png", import.meta.url).href],
   [Engine.MSSQL, new URL("@/assets/db-mssql.svg", import.meta.url).href],
   [Engine.REDSHIFT, new URL("@/assets/db-redshift.svg", import.meta.url).href],
   [Engine.MARIADB, new URL("@/assets/db-mariadb.png", import.meta.url).href],

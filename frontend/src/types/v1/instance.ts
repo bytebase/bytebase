@@ -66,6 +66,8 @@ export const defaultCharsetOfEngineV1 = (engine: Engine): string => {
       return "";
     case Engine.REDSHIFT:
       return "UNICODE";
+    case Engine.DM:
+      return "UTF8";
   }
   return "";
 };
@@ -97,6 +99,8 @@ export const defaultCollationOfEngineV1 = (engine: Engine): string => {
       return "";
     case Engine.REDSHIFT:
       return "";
+    case Engine.DM:
+      return "BINARY_CI";
   }
   return "";
 };

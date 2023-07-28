@@ -19,6 +19,7 @@ export const EngineTypeList = [
   "REDSHIFT",
   "MARIADB",
   "OCEANBASE",
+  "DM",
 ] as const;
 
 export type EngineType = typeof EngineTypeList[number];
@@ -51,6 +52,8 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.MARIADB;
     case "OCEANBASE":
       return Engine.OCEANBASE;
+    case "DM":
+      return Engine.DM;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -74,6 +77,8 @@ export function defaultCharset(type: EngineType): string {
     case "REDIS":
       return "";
     case "ORACLE":
+      return "UTF8";
+    case "DM":
       return "UTF8";
     case "MSSQL":
       return "";
@@ -110,6 +115,8 @@ export function engineName(type: EngineType): string {
       return "MariaDB";
     case "OCEANBASE":
       return "OceanBase";
+    case "DM":
+      return "DM";
   }
 }
 
@@ -140,6 +147,8 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "REDSHIFT":
       return "";
+    case "DM":
+      return "BINARY_CI";
   }
 }
 

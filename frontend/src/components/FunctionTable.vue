@@ -59,6 +59,7 @@ const hasSchemaProperty = computed(() => {
     isPostgres.value ||
     engine.value === Engine.SNOWFLAKE ||
     engine.value === Engine.ORACLE ||
+    engine.value === Engine.DM ||
     engine.value === Engine.MSSQL
   );
 });
