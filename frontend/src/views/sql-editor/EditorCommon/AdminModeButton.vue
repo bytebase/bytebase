@@ -1,6 +1,7 @@
 <template>
   <NButton
     v-if="showButton"
+    :size="props.size"
     type="warning"
     :disabled="tabStore.isDisconnected"
     @click="enterAdminMode"
@@ -24,6 +25,13 @@ import { last } from "lodash-es";
 const emit = defineEmits<{
   (e: "enter"): void;
 }>();
+
+const props = defineProps({
+  size: {
+    type: String,
+    default: "medium",
+  },
+});
 
 const currentUserV1 = useCurrentUserV1();
 
