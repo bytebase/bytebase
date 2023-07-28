@@ -8376,6 +8376,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
+| enabled | [bool](#bool) |  |  |
 | types | [string](#string) | repeated |  |
 
 
