@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,6 +47,15 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	lowerCaseTableNamesText, err := driver.getServerVariable(ctx, "lower_case_table_names")
+	if err != nil {
+		return nil, err
+	}
+	lowerCaseTableNames, err := strconv.Atoi(lowerCaseTableNamesText)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid lower_case_table_names value: %s", lowerCaseTableNamesText)
 	}
 
 	users, err := driver.getInstanceRoles(ctx)
@@ -97,6 +107,9 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		Version:       version,
 		InstanceRoles: users,
 		Databases:     databases,
+		Metadata: &storepb.InstanceMetadata{
+			MysqlLowerCaseTableNames: int32(lowerCaseTableNames),
+		},
 	}, nil
 }
 
