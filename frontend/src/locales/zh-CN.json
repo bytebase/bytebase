@@ -1238,9 +1238,11 @@
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个数据库的指定 Schema 版本同步到其他数据库。",
+      "schema-history-version": "Schema 历史版本",
       "select-source-schema": "选择源数据库",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
+      "select-database-placeholder": "选择数据库 (仅限 MySQL, PostgreSQL)",
       "source-database": "源数据库",
       "source-schema": "源 Schema",
       "schema-version": {
@@ -2712,6 +2714,7 @@
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用 Schema 设计",
     "delete-this-design": "删除这个设计",
+    "select-database-placeholder": "选择数据库 (仅限 MySQL)",
     "message": {
       "created-succeed": "Schema 设计创建成功",
       "updated-succeed": "Schema 设计更新成功"

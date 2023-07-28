@@ -259,6 +259,6 @@ provideSheetPanelContext();
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
 
-  @apply flex-1 overflow-hidden flex flex-col;
+  @apply flex-1 overflow-hidden flex flex-col pt-2;
 }
 </style>

@@ -293,7 +293,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		SchemaVersion:        patchSchemaVersion,
 		ServiceName:          &database.ServiceName,
 	}, api.SystemBotID); err != nil {
-		return errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-1"
+    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2"
   >
     <div class="relative flex flex-1 flex-nowrap overflow-hidden">
       <Draggable
@@ -39,9 +39,11 @@
       </button>
     </div>
 
-    <NButton size="tiny" @click="showSheetPanel = true">
-      {{ $t("sql-editor.sheet.choose-sheet") }}
-    </NButton>
+    <div class="pb-1">
+      <NButton size="small" @click="showSheetPanel = true">
+        {{ $t("sql-editor.sheet.choose-sheet") }}
+      </NButton>
+    </div>
 
     <Drawer v-model:show="showSheetPanel">
       <DrawerContent :title="$t('sql-editor.sheet.self')">

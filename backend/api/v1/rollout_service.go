@@ -495,21 +495,6 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 			continue
 		}
 		tasksToRun = append(tasksToRun, task)
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find instance, error: %v", err)
-		}
-		taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to list task check runs, error: %v", err)
-		}
-		ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check if the task has passed all the checks, error: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.InvalidArgument, "The task %v has not passed all the checks yet", task.Name)
-		}
 	}
 
 	if err := s.store.BatchPatchTaskStatus(ctx, taskIDsToRun, api.TaskPending, principalID); err != nil {
