@@ -781,10 +781,11 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				}
 			}
 
-			for _, stopInstance := range stopInstances {
-				//nolint: revive
-				defer stopInstance()
-			}
+			defer func() {
+				for _, stopInstance := range stopInstances {
+					stopInstance()
+				}
+			}()
 
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
 				Parent:          project.Name,
