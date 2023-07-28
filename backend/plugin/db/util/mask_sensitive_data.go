@@ -1438,7 +1438,21 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 	}
 
 	for _, database := range extractor.schemaInfo.DatabaseList {
-		if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
+		if extractor.schemaInfo.IgnoreCaseSensitive {
+			lowerDatabase := strings.ToLower(database.Name)
+			lowerTable := strings.ToLower(tableName)
+			if lowerDatabase == strings.ToLower(database.Name) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+				for _, table := range database.TableList {
+					if lowerTable == strings.ToLower(table.Name) {
+						explicitDatabase := databaseName
+						if explicitDatabase == "" {
+							explicitDatabase = extractor.currentDatabase
+						}
+						return explicitDatabase, table, nil
+					}
+				}
+			}
+		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
 			for _, table := range database.TableList {
 				if tableName == table.Name {
 					explicitDatabase := databaseName
