@@ -1452,16 +1452,14 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 					}
 				}
 			}
-		} else {
-			if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
-				for _, table := range database.TableList {
-					if tableName == table.Name {
-						explicitDatabase := databaseName
-						if explicitDatabase == "" {
-							explicitDatabase = extractor.currentDatabase
-						}
-						return explicitDatabase, table, nil
+		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
+			for _, table := range database.TableList {
+				if tableName == table.Name {
+					explicitDatabase := databaseName
+					if explicitDatabase == "" {
+						explicitDatabase = extractor.currentDatabase
 					}
+					return explicitDatabase, table, nil
 				}
 			}
 		}
