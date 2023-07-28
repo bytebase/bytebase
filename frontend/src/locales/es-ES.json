@@ -1244,6 +1244,7 @@
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
+      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL)",
       "source-database": "Base de datos de origen",
       "source-schema": "Esquema de origen",
       "schema-version": {
@@ -2720,6 +2721,7 @@
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar a la base de datos",
+    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito"
