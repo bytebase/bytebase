@@ -27,6 +27,10 @@ func init() {
 	vcs.Register(vcs.AzureDevOps, newProvider)
 }
 
+const (
+	apiPageSize = 100
+)
+
 var _ vcs.Provider = (*Provider)(nil)
 
 // Provider is a Azure DevOps VCS provider.
@@ -194,8 +198,95 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 }
 
 // GetDiffFileList gets the diff files list between two commits.
-func (*Provider) GetDiffFileList(_ context.Context, _ common.OauthContext, _, _, _, _ string) ([]vcs.FileDiff, error) {
-	return nil, errors.New("not implemented")
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/diffs/get?view=azure-devops-rest-7.0&tabs=HTTP#between-commit-ids
+func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, beforeCommit string, afterCommit string) ([]vcs.FileDiff, error) {
+	var result []vcs.FileDiff
+	page := 0
+	for {
+		files, hasMore, err := p.getPaginatedDiffFileList(ctx, oauthCtx, instanceURL, repositoryID, beforeCommit, afterCommit, page)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get paginated diff file list")
+		}
+		result = append(result, files...)
+		if !hasMore {
+			break
+		}
+		page++
+	}
+	return result, nil
+}
+
+// getPaginatedDiffFileList gets the diff file list between two commits with pagination.
+func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, beforeCommit string, afterCommit string, page int) ([]vcs.FileDiff, bool, error) {
+	parts := strings.Split(repositoryID, "/")
+	if len(parts) != 3 {
+		return nil, false, errors.Errorf("invalid repository ID %q", repositoryID)
+	}
+	organizationName, repositoryID := parts[0], parts[2]
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	values.Set("$top", fmt.Sprintf("%d", apiPageSize))
+	values.Set("$skip", fmt.Sprintf("%d", page*apiPageSize))
+	values.Set("baseVersion", beforeCommit)
+	values.Set("baseVersionType", "commit")
+	values.Set("targetVersion", afterCommit)
+	values.Set("targetVersionType", "commit")
+	values.Set("diffCommonCommit", "false")
+
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/diffs/commits?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), values.Encode())
+	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code != http.StatusOK {
+		return nil, false, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
+	}
+
+	type diffFileResponseChangeItem struct {
+		Path string `json:"path"`
+	}
+	type diffFileResponseChange struct {
+		Item       diffFileResponseChangeItem `json:"item"`
+		ChangeType string                     `json:"changeType"`
+	}
+	type diffFileResponse struct {
+		Changes []diffFileResponseChange `json:"changes"`
+	}
+
+	r := new(diffFileResponse)
+	if err := json.Unmarshal([]byte(body), r); err != nil {
+		return nil, false, errors.Wrapf(err, "failed to unmarshal get diff file list response body, code %v", code)
+	}
+
+	result := make([]vcs.FileDiff, 0, len(r.Changes))
+	for _, c := range r.Changes {
+		var changeType vcs.FileDiffType
+		switch c.ChangeType {
+		case "add":
+			changeType = vcs.FileDiffTypeAdded
+		case "delete":
+			changeType = vcs.FileDiffTypeRemoved
+		case "edit":
+			changeType = vcs.FileDiffTypeModified
+		default:
+			changeType = vcs.FileDiffTypeUnknown
+		}
+		result = append(result, vcs.FileDiff{
+			Path: c.Item.Path,
+			Type: changeType,
+		})
+	}
+
+	return result, len(r.Changes) == apiPageSize, nil
 }
 
 // FetchAllRepositoryList fetches all projects where the authenticated use has permissions, which is required
