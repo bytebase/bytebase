@@ -1238,6 +1238,7 @@
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个数据库的指定 Schema 版本同步到其他数据库。",
+      "schema-history-version": "Schema 历史版本",
       "select-source-schema": "选择源数据库",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
