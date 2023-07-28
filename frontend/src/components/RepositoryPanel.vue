@@ -281,6 +281,7 @@ import {
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
+import { getVCSUid } from "@/store/modules/v1/common";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -475,6 +476,9 @@ const doUpdate = async () => {
     state.repositoryConfig.enableSQLReviewCI;
 
   const repositoryPatch: Partial<ProjectGitOpsInfo> = {};
+
+  repositoryPatch.vcsUid = `${getVCSUid(props.vcs.name)}`;
+
   if (props.repository.branchFilter != state.repositoryConfig.branchFilter) {
     repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
   }

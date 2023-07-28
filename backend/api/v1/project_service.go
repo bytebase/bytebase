@@ -422,7 +422,26 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		case "branch_filter":
 			patch.BranchFilter = &request.ProjectGitopsInfo.BranchFilter
 		case "base_directory":
-			baseDir := strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
+			intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
+			}
+			storeVCS, err := s.store.GetExternalVersionControlV2(ctx, intVCSUID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+			}
+			if storeVCS == nil {
+				return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
+			}
+			baseDir := request.ProjectGitopsInfo.BaseDirectory
+			// Azure DevOps base directory should start with /.
+			if storeVCS.Type == vcsPlugin.AzureDevOps {
+				if !strings.HasPrefix(baseDir, "/") {
+					baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
+				}
+			} else {
+				baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
+			}
 			patch.BaseDirectory = &baseDir
 		case "file_path_template":
 			if err := api.ValidateRepositoryFilePathTemplate(request.ProjectGitopsInfo.FilePathTemplate, project.TenantMode); err != nil {
@@ -844,6 +863,28 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
+	intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
+	}
+	storeVCS, err := s.store.GetExternalVersionControlV2(ctx, intVCSUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+	}
+	if storeVCS == nil {
+		return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
+	}
+
+	baseDir := request.ProjectGitopsInfo.BaseDirectory
+	// Azure DevOps base directory should start with /.
+	if storeVCS.Type == vcsPlugin.AzureDevOps {
+		if !strings.HasPrefix(baseDir, "/") {
+			baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
+		}
+	} else {
+		baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
+	}
+
 	vcsID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
@@ -857,7 +898,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		FullPath:           request.ProjectGitopsInfo.FullPath,
 		WebURL:             request.ProjectGitopsInfo.WebUrl,
 		BranchFilter:       request.ProjectGitopsInfo.BranchFilter,
-		BaseDirectory:      request.ProjectGitopsInfo.BaseDirectory,
+		BaseDirectory:      baseDir,
 		FilePathTemplate:   request.ProjectGitopsInfo.FilePathTemplate,
 		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
 		SheetPathTemplate:  request.ProjectGitopsInfo.SheetPathTemplate,
@@ -954,8 +995,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		repositoryCreate.ExternalWebhookID = webhookID
 	}
 
-	// Remove enclosing /
-	repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 	repository, err := s.store.CreateRepositoryV2(ctx, repositoryCreate, ctx.Value(common.PrincipalIDContextKey).(int))
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {

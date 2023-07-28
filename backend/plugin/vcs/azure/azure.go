@@ -97,6 +97,71 @@ type Commit struct {
 	Author   CommitAuthor `json:"author"`
 }
 
+// ServiceHookCodePushEventMessage represents a Azure DevOps service hook code push event message.
+type ServiceHookCodePushEventMessage struct {
+	Text string `json:"text"`
+}
+
+// ServiceHookCodePushEventResourceCommit represents a Azure DevOps service hook code push event resource commit.
+type ServiceHookCodePushEventResourceCommit struct {
+	CommitID string       `json:"commitId"`
+	Author   CommitAuthor `json:"author"`
+	Comment  string       `json:"comment"`
+	URL      string       `json:"url"`
+}
+
+// ServiceHookCodePushEventRefUpdates represents a Azure DevOps service hook code push event ref updates.
+type ServiceHookCodePushEventRefUpdates struct {
+	Name        string `json:"name"`
+	OldObjectID string `json:"oldObjectId"`
+	NewObjectID string `json:"newObjectId"`
+}
+
+// ServiceHookCodePushEventResourcePushedBy represents a Azure DevOps service hook code push event resource pushed by.
+type ServiceHookCodePushEventResourcePushedBy struct {
+	DisplayName string `json:"displayName"`
+	UniqueName  string `json:"uniqueName"`
+}
+
+type ServiceHookCodePushEventResourceRepository struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+// ServiceHookCodePushEventResource represents a Azure DevOps service hook code push event resource.
+type ServiceHookCodePushEventResource struct {
+	Commits    []ServiceHookCodePushEventResourceCommit   `json:"commits"`
+	Repository ServiceHookCodePushEventResourceRepository `json:"repository"`
+	RefUpdates []ServiceHookCodePushEventRefUpdates       `json:"refUpdates"`
+	PushedBy   ServiceHookCodePushEventResourcePushedBy   `json:"pushedBy"`
+}
+
+// ServiceHookCodePushEvent represents a Azure DevOps service hook code push event.
+//
+// Docs: https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops#git.push
+type ServiceHookCodePushEvent struct {
+	EventType string                           `json:"eventType"`
+	Message   ServiceHookCodePushEventMessage  `json:"message"`
+	Resource  ServiceHookCodePushEventResource `json:"resource"`
+}
+
+func (e *ServiceHookCodePushEvent) ToVCS(organizationName, repositoryID string) vcs.PushEvent {
+	var commitList []vcs.Commit
+	for _, commit := range e.Resource.Commits {
+		commitList = append(commitList, vcs.Commit{
+			ID:          commit.CommitID,
+			Title:       commit.Comment,
+			Message:     commit.Comment,
+			CreatedTs:   commit.Author.Date.Unix(),
+			AuthorName:  commit.Author.Name,
+			AuthorEmail: commit.Author.Email,
+			URL:         fmt.Sprintf("https://dev.azure.com/%s/%s/_git/%s/commit/%s", organizationName, repositoryID, e.Resource.Repository.Name, commit.CommitID),
+			AddedList:   []string{},
+		})
+	}
+	return vcs.PushEvent{}
+}
+
 // toVCSOAuthToken converts the response to *vcs.OAuthToken.
 func (o oauthResponse) toVCSOAuthToken() (*vcs.OAuthToken, error) {
 	expiresIn, err := strconv.ParseInt(o.ExpiresIn, 10, 64)
@@ -152,6 +217,68 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 		return nil, errors.Errorf("failed to exchange OAuth token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
 	}
 	return oauthResp.toVCSOAuthToken()
+}
+
+type ChangesResponseChangeItem struct {
+	GitObjectType string `json:"gitObjectType"`
+	Path          string `json:"path"`
+}
+
+type ChangesResponseChange struct {
+	Item       ChangesResponseChangeItem `json:"item"`
+	ChangeType string                    `json:"changeType"`
+}
+
+type ChangesResponse struct {
+	Changes []ChangesResponseChange `json:"changes"`
+}
+
+// GetChangesByCommit gets the changes by commit ID.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-changes?view=azure-devops-rest-7.0&tabs=HTTP
+// TODO(zp): We should GET the changes pagenated, otherwise it may hit the Azure DevOps API limit.
+func GetChangesByCommit(ctx context.Context, oauthCtx common.OauthContext, externalRepositoryID, commitID string) (*ChangesResponse, error) {
+	client := &http.Client{}
+	// By design, we encode the repository ID as <organization>/<projectID>/<repositoryID> for Azure DevOps.
+	parts := strings.Split(externalRepositoryID, "/")
+	if len(parts) != 3 {
+		return nil, errors.Errorf("invalid repository ID %q", externalRepositoryID)
+	}
+	organizationName, repositoryID := parts[0], parts[2]
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/commits/%s/changes?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), url.PathEscape(commitID), values.Encode())
+	code, _, body, err := oauth.Get(ctx, client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("commit %q does not exist in the repository %s under the organization %s", commitID, repositoryID, organizationName))
+	}
+	if code != http.StatusOK {
+		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
+	}
+
+	changes := new(ChangesResponse)
+	if err := json.Unmarshal([]byte(body), changes); err != nil {
+		return nil, errors.Wrapf(err, "unmarshal body")
+	}
+
+	var result ChangesResponse
+	for _, change := range changes.Changes {
+		if change.Item.GitObjectType == "blob" {
+			result.Changes = append(result.Changes, change)
+		}
+	}
+
+	return changes, nil
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -228,8 +355,10 @@ func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common
 	values.Set("api-version", "7.0")
 	values.Set("$top", fmt.Sprintf("%d", apiPageSize))
 	values.Set("$skip", fmt.Sprintf("%d", page*apiPageSize))
-	values.Set("baseVersion", beforeCommit)
-	values.Set("baseVersionType", "commit")
+	if beforeCommit != "" {
+		values.Set("baseVersion", beforeCommit)
+		values.Set("baseVersionType", "commit")
+	}
 	values.Set("targetVersion", afterCommit)
 	values.Set("targetVersionType", "commit")
 	values.Set("diffCommonCommit", "false")
@@ -533,8 +662,35 @@ func (*Provider) ReadFileMeta(_ context.Context, _ common.OauthContext, _, _, _,
 }
 
 // ReadFileContent reads the content of the given file in the repository.
-func (*Provider) ReadFileContent(_ context.Context, _ common.OauthContext, _, _, _, _ string) (string, error) {
-	return "", errors.New("not implemented")
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, _ string, repositoryID string, filePath string, ref string) (string, error) {
+	parts := strings.Split(repositoryID, "/")
+	if len(parts) != 3 {
+		return "", errors.Errorf("invalid repository ID %q", repositoryID)
+	}
+	organizationName, repositoryID := parts[0], parts[2]
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	values.Set("download", "false")
+	values.Set("resolveLfs", "true")
+	values.Set("includeContent", "true")
+	values.Set("path", filePath)
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/items?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), values.Encode())
+
+	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return "", errors.Wrapf(err, "GET %s", url)
+	}
+	if code != http.StatusOK {
+		return "", errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
+	}
+	return string(body), nil
 }
 
 // GetBranch try to retrieve the branch from the repository, and returns the last commit ID of the branch, if the branch

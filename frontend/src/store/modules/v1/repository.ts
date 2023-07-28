@@ -26,6 +26,8 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
         { silent }
       );
 
+      console.log("fetchRepositoryByProject", gitopsInfo);
+
       repositoryMapByProject.set(project, gitopsInfo);
       return gitopsInfo;
     } catch (e) {
@@ -54,12 +56,15 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     const repo = await getOrFetchRepositoryByProject(project);
     let gitops: ProjectGitOpsInfo;
 
+    console.log("upsertRepository", repo, gitopsInfo);
+
     if (!repo) {
       gitops = await projectServiceClient.updateProjectGitOpsInfo({
         projectGitopsInfo: gitopsInfo,
         allowMissing: true,
       });
     } else {
+      gitopsInfo.vcsUid = repo.vcsUid;
       const updateMask = getUpdateMaskForRepository(repo, gitopsInfo);
       if (updateMask.length === 0) {
         return repo;
