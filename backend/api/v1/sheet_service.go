@@ -95,6 +95,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 			find.UID = &dbUID
 		} else {
 			find.DatabaseName = &databaseName
+			find.IgnoreCaseSensitive = s.store.IgnoreDatabaseAndTableCaseSensitive(instance)
 		}
 
 		database, err := s.store.GetDatabaseV2(ctx, find)
@@ -571,12 +572,26 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		// and ENV_ID and DB_NAME is either both present or neither present.
 		if project.TenantMode != api.TenantModeDisabled {
 			if sheetInfo.EnvironmentID != "" && sheetInfo.DatabaseName != "" {
-				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID, DatabaseName: &sheetInfo.DatabaseName})
+				// The database name for PostgreSQL, Oracle, Snowflake and some databases are case sensitive.
+				// But the database name for MySQL, TiDB and other databases are case insensitive.
+				// So we should find databases by case-insensitive and double-check for case sensitive database engines.
+				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+					ProjectID:           &project.ResourceID,
+					DatabaseName:        &sheetInfo.DatabaseName,
+					IgnoreCaseSensitive: true,
+				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, project.UID))
 				}
 				for _, database := range databases {
 					database := database // create a new var "database".
+					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to find instance with ID: %s", database.InstanceID))
+					}
+					if !s.store.IgnoreDatabaseAndTableCaseSensitive(instance) && database.DatabaseName != sheetInfo.DatabaseName {
+						continue
+					}
 					if database.EffectiveEnvironmentID == sheetInfo.EnvironmentID {
 						databaseID = &database.UID
 						break

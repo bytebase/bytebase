@@ -1586,8 +1586,9 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: s.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
@@ -1805,8 +1806,9 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: s.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
@@ -1856,9 +1858,14 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
 			}
+			backupInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &backupInstanceID})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get instance %q", backupInstanceID)
+			}
 			backupDatabase, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &backupInstanceID,
-				DatabaseName: &backupDatabaseName,
+				InstanceID:          &backupInstanceID,
+				DatabaseName:        &backupDatabaseName,
+				IgnoreCaseSensitive: s.IgnoreDatabaseAndTableCaseSensitive(backupInstance),
 			})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get database %q", backupDatabaseName)
@@ -1912,9 +1919,14 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
 			}
+			backupInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &backupInstanceID})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get instance %q", backupInstanceID)
+			}
 			backupDatabase, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &backupInstanceID,
-				DatabaseName: &backupDatabaseName,
+				InstanceID:          &backupInstanceID,
+				DatabaseName:        &backupDatabaseName,
+				IgnoreCaseSensitive: s.IgnoreDatabaseAndTableCaseSensitive(backupInstance),
 			})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get database %q", backupDatabaseName)
