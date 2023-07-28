@@ -78,6 +78,7 @@ type InstanceMetadata struct {
 	InstanceRoles []*storepb.InstanceRoleMetadata
 	// Simplified database metadata.
 	Databases []*storepb.DatabaseMetadata
+	Metadata  *storepb.InstanceMetadata
 }
 
 // TableKey is the map key for table metadata.
