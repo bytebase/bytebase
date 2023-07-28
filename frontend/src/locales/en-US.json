@@ -2720,6 +2720,7 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply to database",
+    "delete-this-design": "Delete this design",
     "message": {
       "created-succeed": "Schema design created successfully",
       "updated-succeed": "Schema design updated successfully"
