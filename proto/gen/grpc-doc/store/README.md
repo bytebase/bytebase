@@ -1771,6 +1771,7 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
+| enabled | [bool](#bool) |  |  |
 | types | [string](#string) | repeated |  |
 
 

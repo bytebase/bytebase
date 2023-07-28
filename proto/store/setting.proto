@@ -116,7 +116,9 @@ message SchemaTemplateSetting {
   message ColumnType {
     Engine engine = 1;
 
-    repeated string types = 2;
+    bool enabled = 2;
+
+    repeated string types = 3;
   }
 
   repeated ColumnType column_types = 2;
