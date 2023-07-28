@@ -232,7 +232,13 @@ message SchemaTemplateSetting {
 
   repeated FieldTemplate field_templates = 1;
 
-  // TODO: support table_templates
+  message ColumnType {
+    Engine engine = 1;
+
+    repeated string types = 2;
+  }
+
+  repeated ColumnType column_types = 2;
 }
 
 message WorkspaceTrialSetting {

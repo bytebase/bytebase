@@ -178,6 +178,7 @@ export function sMTPMailDeliverySetting_AuthenticationToJSON(object: SMTPMailDel
 
 export interface SchemaTemplateSetting {
   fieldTemplates: SchemaTemplateSetting_FieldTemplate[];
+  columnTypes: SchemaTemplateSetting_ColumnType[];
 }
 
 export interface SchemaTemplateSetting_FieldTemplate {
@@ -185,6 +186,11 @@ export interface SchemaTemplateSetting_FieldTemplate {
   engine: Engine;
   category: string;
   column?: ColumnMetadata | undefined;
+}
+
+export interface SchemaTemplateSetting_ColumnType {
+  engine: Engine;
+  types: string[];
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -861,13 +867,16 @@ export const SMTPMailDeliverySetting = {
 };
 
 function createBaseSchemaTemplateSetting(): SchemaTemplateSetting {
-  return { fieldTemplates: [] };
+  return { fieldTemplates: [], columnTypes: [] };
 }
 
 export const SchemaTemplateSetting = {
   encode(message: SchemaTemplateSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.fieldTemplates) {
       SchemaTemplateSetting_FieldTemplate.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.columnTypes) {
+      SchemaTemplateSetting_ColumnType.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -886,6 +895,13 @@ export const SchemaTemplateSetting = {
 
           message.fieldTemplates.push(SchemaTemplateSetting_FieldTemplate.decode(reader, reader.uint32()));
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.columnTypes.push(SchemaTemplateSetting_ColumnType.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -900,6 +916,9 @@ export const SchemaTemplateSetting = {
       fieldTemplates: Array.isArray(object?.fieldTemplates)
         ? object.fieldTemplates.map((e: any) => SchemaTemplateSetting_FieldTemplate.fromJSON(e))
         : [],
+      columnTypes: Array.isArray(object?.columnTypes)
+        ? object.columnTypes.map((e: any) => SchemaTemplateSetting_ColumnType.fromJSON(e))
+        : [],
     };
   },
 
@@ -912,6 +931,11 @@ export const SchemaTemplateSetting = {
     } else {
       obj.fieldTemplates = [];
     }
+    if (message.columnTypes) {
+      obj.columnTypes = message.columnTypes.map((e) => e ? SchemaTemplateSetting_ColumnType.toJSON(e) : undefined);
+    } else {
+      obj.columnTypes = [];
+    }
     return obj;
   },
 
@@ -923,6 +947,7 @@ export const SchemaTemplateSetting = {
     const message = createBaseSchemaTemplateSetting();
     message.fieldTemplates = object.fieldTemplates?.map((e) => SchemaTemplateSetting_FieldTemplate.fromPartial(e)) ||
       [];
+    message.columnTypes = object.columnTypes?.map((e) => SchemaTemplateSetting_ColumnType.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1022,6 +1047,81 @@ export const SchemaTemplateSetting_FieldTemplate = {
     message.column = (object.column !== undefined && object.column !== null)
       ? ColumnMetadata.fromPartial(object.column)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseSchemaTemplateSetting_ColumnType(): SchemaTemplateSetting_ColumnType {
+  return { engine: 0, types: [] };
+}
+
+export const SchemaTemplateSetting_ColumnType = {
+  encode(message: SchemaTemplateSetting_ColumnType, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.engine !== 0) {
+      writer.uint32(8).int32(message.engine);
+    }
+    for (const v of message.types) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting_ColumnType {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting_ColumnType();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.types.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting_ColumnType {
+    return {
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      types: Array.isArray(object?.types) ? object.types.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting_ColumnType): unknown {
+    const obj: any = {};
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    if (message.types) {
+      obj.types = message.types.map((e) => e);
+    } else {
+      obj.types = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
+    return SchemaTemplateSetting_ColumnType.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
+    const message = createBaseSchemaTemplateSetting_ColumnType();
+    message.engine = object.engine ?? 0;
+    message.types = object.types?.map((e) => e) || [];
     return message;
   },
 };
