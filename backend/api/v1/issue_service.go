@@ -54,7 +54,6 @@ func NewIssueService(store *store.Store, activityManager *activity.Manager, task
 }
 
 // GetIssue gets a issue.
-// Currently, only issue.ApprovalTemplates and issue.Approvers are set.
 func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueRequest) (*v1pb.Issue, error) {
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
