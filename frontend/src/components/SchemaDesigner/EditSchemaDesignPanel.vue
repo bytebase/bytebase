@@ -77,6 +77,14 @@
           :engine="schemaDesign.engine"
           :schema-design="schemaDesign"
         />
+        <div>
+          <BBButtonConfirm
+            :style="'DELETE'"
+            :button-text="$t('schema-designer.delete-this-design')"
+            :require-confirm="true"
+            @confirm="deleteSchemaDesign"
+          />
+        </div>
       </div>
     </NDrawerContent>
   </NDrawer>
@@ -210,5 +218,10 @@ const handleApplySchemaDesignClick = () => {
       schemaDesignName: schemaDesign.value.name,
     },
   });
+};
+
+const deleteSchemaDesign = async () => {
+  await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
+  emit("dismiss");
 };
 </script>
