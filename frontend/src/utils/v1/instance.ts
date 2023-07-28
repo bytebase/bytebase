@@ -75,6 +75,7 @@ export const sortInstanceV1ListByEnvironmentV1 = <T extends Instance>(
 };
 
 export const supportedEngineV1List = () => {
+  const { locale } = useI18n();
   const engines: Engine[] = [
     Engine.MYSQL,
     Engine.POSTGRES,
@@ -90,8 +91,10 @@ export const supportedEngineV1List = () => {
     Engine.MSSQL,
     Engine.REDSHIFT,
   ];
-  if (isDev()) {
-    engines.push(Engine.DM);
+  if (locale.value === "zh-CN") {
+    if (isDev()) {
+      engines.push(Engine.DM);
+    }
   }
   return engines;
 };
