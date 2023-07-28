@@ -5,20 +5,25 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -170,17 +175,25 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	simpleStatement := false
+	if _, err := parser.ParseMongo(statement); err == nil {
+		simpleStatement = true
+	}
 	startTime := time.Now()
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
 	// 1. Query always short, so it's safe to execute in the command line.
 	// 2. We cannot catch the output if we use the --file option.
 
+	evalArg := statement
+	if simpleStatement {
+		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {EJSON.stringify(a.toArray())} else {EJSON.stringify(a)}", strings.TrimRight(statement, " \t\n\r\f;"))
+	}
 	mongoshArgs := []string{
 		connectionURI,
 		"--quiet",
 		"--eval",
-		statement,
+		evalArg,
 	}
 
 	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
@@ -191,20 +204,61 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	if err := mongoshCmd.Run(); err != nil {
 		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
 	}
-	field := []string{"result"}
-	types := []string{"TEXT"}
-	rows := []*v1pb.QueryRow{{
-		Values: []*v1pb.RowValue{{
-			Kind: &v1pb.RowValue_StringValue{StringValue: outContent.String()},
-		}},
-	}}
+
+	if simpleStatement {
+		// We make best-effort attempt to parse the content and fallback to single bulk result on failure.
+		result, err := getSimpleStatementResult(outContent.Bytes())
+		if err != nil {
+			log.Error("failed to get simple statement result", zap.String("content", outContent.String()), zap.Error(err))
+		} else {
+			result.Latency = durationpb.New(time.Since(startTime))
+			result.Statement = statement
+			return []*v1pb.QueryResult{result}, nil
+		}
+	}
+
 	return []*v1pb.QueryResult{{
-		ColumnNames:     field,
-		ColumnTypeNames: types,
-		Rows:            rows,
-		Latency:         durationpb.New(time.Since(startTime)),
-		Statement:       statement,
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows: []*v1pb.QueryRow{{
+			Values: []*v1pb.RowValue{{
+				Kind: &v1pb.RowValue_StringValue{StringValue: outContent.String()},
+			}},
+		}},
+		Latency:   durationpb.New(time.Since(startTime)),
+		Statement: statement,
 	}}, nil
+}
+
+func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
+	var a any
+	if err := json.Unmarshal(data, &a); err != nil {
+		return nil, err
+	}
+	var rows []any
+	aa, ok := a.([]any)
+	if ok {
+		rows = aa
+	} else {
+		rows = []any{a}
+	}
+
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+	}
+	for _, v := range rows {
+		r, err := json.MarshalIndent(v, "", "	")
+		if err != nil {
+			return nil, err
+		}
+		result.Rows = append(result.Rows, &v1pb.QueryRow{
+			Values: []*v1pb.RowValue{{
+				Kind: &v1pb.RowValue_StringValue{StringValue: string(r)},
+			}},
+		})
+	}
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.
