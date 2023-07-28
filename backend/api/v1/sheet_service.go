@@ -485,6 +485,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 
 	basePath := filepath.Dir(repo.SheetPathTemplate)
 	// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
+	// TODO(zp): We may need a need VCS interface to get fetch repository file list for a branch instead of a SHA1.
 	fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,

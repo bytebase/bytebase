@@ -371,8 +371,59 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx comm
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree recursively.
-func (*Provider) FetchRepositoryFileList(_ context.Context, _ common.OauthContext, _, _, _, _ string) ([]*vcs.RepositoryTreeNode, error) {
-	return nil, errors.New("not implemented")
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/trees/get?view=azure-devops-rest-7.0&tabs=HTTP
+func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+	parts := strings.Split(repositoryID, "/")
+	if len(parts) != 3 {
+		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
+	}
+	organizationName, repositoryID := parts[0], parts[2]
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	values.Set("recursive", "true")
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/trees/%s?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), url.PathEscape(ref), values.Encode())
+
+	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code != http.StatusOK {
+		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
+	}
+
+	type getTreesResponseTreeEntries struct {
+		RelativePath  string `json:"relativePath"`
+		GitObjectType string `json:"gitObjectType"`
+	}
+	type getTreesResponse struct {
+		TreeEntries []getTreesResponseTreeEntries `json:"treeEntries"`
+	}
+
+	r := new(getTreesResponse)
+	if err := json.Unmarshal([]byte(body), r); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal get trees response body, code %v", code)
+	}
+
+	result := make([]*vcs.RepositoryTreeNode, 0, len(r.TreeEntries))
+	for _, e := range r.TreeEntries {
+		if e.GitObjectType != "blob" || !strings.HasPrefix(e.RelativePath, filePath) {
+			continue
+		}
+		result = append(result, &vcs.RepositoryTreeNode{
+			Path: e.RelativePath,
+			Type: e.GitObjectType,
+		})
+	}
+	return result, nil
 }
 
 // CreateFile creates a file at given path in the repository.
