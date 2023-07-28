@@ -1001,7 +1001,7 @@ export interface Task_DatabaseRestoreRestore {
 }
 
 export interface TaskRun {
-  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun} */
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} */
   name: string;
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
