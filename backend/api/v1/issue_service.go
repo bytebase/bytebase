@@ -850,6 +850,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		Uid:                  fmt.Sprintf("%d", issue.UID),
 		Title:                issue.Title,
 		Description:          issue.Description,
+		Type:                 convertToIssueType(issue.Type),
 		Status:               convertToIssueStatus(issue.Status),
 		Assignee:             fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Assignee.Email),
 		AssigneeAttention:    issue.NeedAttention,
@@ -894,6 +895,17 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 
 	return issueV1, nil
+}
+
+func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
+	switch t {
+	case api.IssueDatabaseCreate, api.IssueDatabaseSchemaUpdate, api.IssueDatabaseSchemaUpdateGhost, api.IssueDatabaseDataUpdate, api.IssueDatabaseRestorePITR, api.IssueDatabaseGeneral:
+		return v1pb.Issue_DATABASE_CHANGE
+	case api.IssueGrantRequest:
+		return v1pb.Issue_GRANT_REQUEST
+	default:
+		return v1pb.Issue_TYPE_UNSPECIFIED
+	}
 }
 
 func convertToIssueStatus(status api.IssueStatus) v1pb.IssueStatus {
