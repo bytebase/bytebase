@@ -60,7 +60,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			return nil, err
 		}
 		return result, nil
-	case db.Oracle:
+	case db.Oracle, db.DM:
 		extractor := &sensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
