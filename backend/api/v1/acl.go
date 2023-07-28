@@ -237,7 +237,15 @@ func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req
 		if err != nil {
 			return nil, err
 		}
-		database, err := in.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instanceID, DatabaseName: &databaseName})
+		instance, err := in.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+		}
+		database, err := in.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instanceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: in.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
 		if err != nil {
 			return nil, err
 		}

@@ -608,3 +608,15 @@ func validateDataSourceList(dataSources []*DataSourceMessage) error {
 	}
 	return nil
 }
+
+// IgnoreDatabaseAndTableCaseSensitive returns true if the engine ignores database and table case sensitive.
+func (s *Store) IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
+	switch instance.Engine {
+	case db.TiDB:
+		return true
+	case db.MySQL, db.MariaDB:
+		return instance.Metadata != nil && instance.Metadata.MysqlLowerCaseTableNames != 0
+	default:
+		return false
+	}
+}

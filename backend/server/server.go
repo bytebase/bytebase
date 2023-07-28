@@ -1148,8 +1148,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 
 	dbName := postgres.SampleDatabase
 	testDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &testInstance.ResourceID,
-		DatabaseName: &dbName,
+		InstanceID:          &testInstance.ResourceID,
+		DatabaseName:        &dbName,
+		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(testInstance),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find test onboarding instance")
@@ -1203,8 +1204,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 
 	dbName = postgres.SampleDatabase
 	prodDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &prodInstance.ResourceID,
-		DatabaseName: &dbName,
+		InstanceID:          &prodInstance.ResourceID,
+		DatabaseName:        &dbName,
+		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(prodInstance),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find prod onboarding instance")
