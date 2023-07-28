@@ -46,7 +46,10 @@
           />
         </div>
         <div class="bb-grid-cell">
-          <NButton size="small" @click="state.showEditPanel = true">
+          <NButton
+            size="small"
+            @click.stop="handleViewSchemaDesign(schemaDesign)"
+          >
             {{ $t("common.view") }}
           </NButton>
         </div>
@@ -155,5 +158,10 @@ const getFormatedValue = (schemaDesign: SchemaDesign) => {
 const clickSchemaDesign = (schemaDesign: SchemaDesign) => {
   selectedSchemaDesign.value = schemaDesign;
   emit("select", schemaDesign);
+};
+
+const handleViewSchemaDesign = (schemaDesign: SchemaDesign) => {
+  clickSchemaDesign(schemaDesign);
+  state.showEditPanel = true;
 };
 </script>
