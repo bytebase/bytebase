@@ -190,6 +190,7 @@ export interface SchemaTemplateSetting_FieldTemplate {
 
 export interface SchemaTemplateSetting_ColumnType {
   engine: Engine;
+  enabled: boolean;
   types: string[];
 }
 
@@ -1052,7 +1053,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
 };
 
 function createBaseSchemaTemplateSetting_ColumnType(): SchemaTemplateSetting_ColumnType {
-  return { engine: 0, types: [] };
+  return { engine: 0, enabled: false, types: [] };
 }
 
 export const SchemaTemplateSetting_ColumnType = {
@@ -1060,8 +1061,11 @@ export const SchemaTemplateSetting_ColumnType = {
     if (message.engine !== 0) {
       writer.uint32(8).int32(message.engine);
     }
+    if (message.enabled === true) {
+      writer.uint32(16).bool(message.enabled);
+    }
     for (const v of message.types) {
-      writer.uint32(18).string(v!);
+      writer.uint32(26).string(v!);
     }
     return writer;
   },
@@ -1081,7 +1085,14 @@ export const SchemaTemplateSetting_ColumnType = {
           message.engine = reader.int32() as any;
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -1099,6 +1110,7 @@ export const SchemaTemplateSetting_ColumnType = {
   fromJSON(object: any): SchemaTemplateSetting_ColumnType {
     return {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
       types: Array.isArray(object?.types) ? object.types.map((e: any) => String(e)) : [],
     };
   },
@@ -1106,6 +1118,7 @@ export const SchemaTemplateSetting_ColumnType = {
   toJSON(message: SchemaTemplateSetting_ColumnType): unknown {
     const obj: any = {};
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.enabled !== undefined && (obj.enabled = message.enabled);
     if (message.types) {
       obj.types = message.types.map((e) => e);
     } else {
@@ -1121,6 +1134,7 @@ export const SchemaTemplateSetting_ColumnType = {
   fromPartial(object: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
     const message = createBaseSchemaTemplateSetting_ColumnType();
     message.engine = object.engine ?? 0;
+    message.enabled = object.enabled ?? false;
     message.types = object.types?.map((e) => e) || [];
     return message;
   },
