@@ -43,7 +43,7 @@ type DatabaseCreateExecutor struct {
 var cannotCreateDatabase = map[db.Type]bool{
 	db.Redis:  true,
 	db.Oracle: true,
-	db.DM: true,
+	db.DM:     true,
 }
 
 // RunOnce will run the database create task executor once.

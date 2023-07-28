@@ -30,7 +30,7 @@ const (
 	// MSSQL is the database type for SQL Server.
 	MSSQL Type = "MSSQL"
 	// DM is the database type for DM.
-	DM Type = "DM";
+	DM Type = "DM"
 )
 
 // ConvertToAdvisorDBType will convert db type into advisor db type.

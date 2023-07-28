@@ -1085,9 +1085,7 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: Engine): boolean => {
-  return [
-    Engine.DM,
-  ].includes(engine);
+  return [Engine.DM].includes(engine);
 };
 
 const handleSelectEnvironmentUID = (uid: number | string) => {
