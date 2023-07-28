@@ -176,13 +176,29 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil, err
 	}
 
+	updateInstance := (*store.UpdateInstanceMessage)(nil)
 	if instanceMeta.Version != instance.EngineVersion {
-		if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		updateInstance = &store.UpdateInstanceMessage{
 			UpdaterID:     api.SystemBotID,
 			EnvironmentID: instance.EnvironmentID,
 			ResourceID:    instance.ResourceID,
 			EngineVersion: &instanceMeta.Version,
-		}, -1); err != nil {
+		}
+	}
+	if !cmp.Equal(instanceMeta.Metadata, instance.Metadata, protocmp.Transform()) {
+		if updateInstance == nil {
+			updateInstance = &store.UpdateInstanceMessage{
+				UpdaterID:     api.SystemBotID,
+				EnvironmentID: instance.EnvironmentID,
+				ResourceID:    instance.ResourceID,
+				Metadata:      instanceMeta.Metadata,
+			}
+		} else {
+			updateInstance.Metadata = instanceMeta.Metadata
+		}
+	}
+	if updateInstance != nil {
+		if _, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1); err != nil {
 			return nil, err
 		}
 	}
