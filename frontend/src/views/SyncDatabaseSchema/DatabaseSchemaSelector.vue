@@ -32,6 +32,7 @@
         :engine-type-list="allowedEngineTypeList"
         :sync-status="'OK'"
         :customize-item="true"
+        :placeholder="$t('database.sync-schema.select-database-placeholder')"
         @select-database-id="handleDatabaseSelect"
       >
         <template #customizeItem="{ database: db }">

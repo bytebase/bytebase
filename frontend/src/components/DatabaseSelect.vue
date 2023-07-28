@@ -3,7 +3,7 @@
     :selected-item="selectedDatabase"
     :item-list="databaseList"
     :disabled="disabled"
-    :placeholder="$t('database.select')"
+    :placeholder="placeholder || $t('database.select')"
     :show-prefix-item="true"
     @select-item="(database: ComposedDatabase) => $emit('select-database-id', database.uid)"
   >
@@ -57,6 +57,10 @@ export default defineComponent({
     mode: {
       required: true,
       type: String as PropType<"ALL" | "INSTANCE" | "ENVIRONMENT" | "USER">,
+    },
+    placeholder: {
+      type: String,
+      default: "",
     },
     environmentId: {
       type: String,
