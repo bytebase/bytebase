@@ -1160,7 +1160,7 @@ func RegisterRolloutServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/RunPlanChecks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}:runPlanCheks"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.RolloutService/RunPlanChecks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}:runPlanChecks"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1497,7 +1497,7 @@ func RegisterRolloutServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/RunPlanChecks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}:runPlanCheks"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.RolloutService/RunPlanChecks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}:runPlanChecks"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1601,7 +1601,7 @@ var (
 
 	pattern_RolloutService_ListPlanCheckRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "projects", "plans", "parent", "planCheckRuns"}, ""))
 
-	pattern_RolloutService_RunPlanChecks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "plans", "name"}, "runPlanCheks"))
+	pattern_RolloutService_RunPlanChecks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "plans", "name"}, "runPlanChecks"))
 
 	pattern_RolloutService_BatchRunTasks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "projects", "rollouts", "stages", "parent", "tasks"}, "batchRun"))
 
