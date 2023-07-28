@@ -4,7 +4,7 @@
       class="w-full mb-4 flex flex-row justify-between items-center space-x-2"
     >
       <span>
-        {{ $t("schema-designer.schema-design-list") }}
+        {{ $t("schema-designer.select-design") }}
       </span>
       <div>
         <NButton @click="state.showCreatePanel = true">
@@ -45,6 +45,11 @@
             class="ml-1"
           />
         </div>
+        <div class="bb-grid-cell">
+          <NButton size="small" @click="state.showEditPanel = true">
+            {{ $t("common.view") }}
+          </NButton>
+        </div>
       </template>
     </BBGrid>
   </div>
@@ -59,12 +64,19 @@
       }
     "
   />
+
+  <EditSchemaDesignPanel
+    v-if="state.showEditPanel && selectedSchemaDesign"
+    :schema-design-name="selectedSchemaDesign.name"
+    @dismiss="state.showEditPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { computed, ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { NButton } from "naive-ui";
 import { BBGridColumn } from "@/bbkit";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { useProjectV1Store, useUserStore } from "@/store";
@@ -73,9 +85,11 @@ import { engineNameV1, projectV1Name } from "@/utils";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import { NRadio } from "naive-ui";
 import CreateSchemaDesignPanel from "@/components/SchemaDesigner/CreateSchemaDesignPanel.vue";
+import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
 
 interface LocalState {
   showCreatePanel: boolean;
+  showEditPanel: boolean;
 }
 
 const emit = defineEmits<{
@@ -91,6 +105,7 @@ const projectV1Store = useProjectV1Store();
 const { schemaDesignList } = useSchemaDesignList();
 const state = reactive<LocalState>({
   showCreatePanel: false,
+  showEditPanel: false,
 });
 const selectedSchemaDesign = ref<SchemaDesign | undefined>(
   props.selectedSchemaDesign
@@ -111,6 +126,7 @@ const COLUMN_LIST = computed(() => {
     { title: t("common.creator"), width: "1fr" },
     { title: t("common.updater"), width: "1fr" },
     { title: t("common.updated-at"), width: "1fr" },
+    { title: "", width: "5rem" },
   ];
 
   return columns;

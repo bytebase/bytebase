@@ -1243,9 +1243,11 @@
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a specified schema version of one database to others.",
+      "schema-history-version": "Schema History Version",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "select-project": "Select project",
+      "select-database-placeholder": "Select database (MySQL, PostgreSQL only)",
       "source-database": "Source database",
       "source-schema": "Source schema",
       "schema-version": {
@@ -2709,6 +2711,7 @@
   "schema-designer": {
     "self": "Schema Designer",
     "new-design": "New Design",
+    "select-design": "Select a schema design",
     "quick-action": "Design Schema",
     "schema-design": "Schema Design",
     "schema-design-list": "Schema Design List",
@@ -2719,6 +2722,7 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply to database",
+    "select-database-placeholder": "Select a database (MySQL only)",
     "message": {
       "created-succeed": "Schema design created successfully",
       "updated-succeed": "Schema design updated successfully"
