@@ -1243,6 +1243,7 @@
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a specified schema version of one database to others.",
+      "schema-history-version": "Schema history version",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "select-project": "Select project",
