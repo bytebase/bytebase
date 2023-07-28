@@ -142,6 +142,11 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		// Expected format: "instances/{instance}/database/{database}"
 		find.InstanceID = &instanceID
 		find.DatabaseName = &databaseName
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		find.IgnoreCaseSensitive = s.store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
