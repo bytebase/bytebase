@@ -56,19 +56,21 @@ const (
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.
 type APIAuthInterceptor struct {
-	store          *store.Store
-	secret         string
-	licenseService enterpriseAPI.LicenseService
-	mode           common.ReleaseMode
+	store                *store.Store
+	secret               string
+	refreshTokenDuration time.Duration
+	licenseService       enterpriseAPI.LicenseService
+	mode                 common.ReleaseMode
 }
 
 // New returns a new API auth interceptor.
-func New(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, mode common.ReleaseMode) *APIAuthInterceptor {
+func New(store *store.Store, secret string, refreshTokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, mode common.ReleaseMode) *APIAuthInterceptor {
 	return &APIAuthInterceptor{
-		store:          store,
-		secret:         secret,
-		licenseService: licenseService,
-		mode:           mode,
+		store:                store,
+		secret:               secret,
+		refreshTokenDuration: refreshTokenDuration,
+		licenseService:       licenseService,
+		mode:                 mode,
 	}
 }
 
@@ -216,7 +218,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 
 			// If we have a valid refresh token, we will generate new access token and refresh token
 			if refreshToken != nil && refreshToken.Valid {
-				if err := generateTokensAndSetCookies(ctx, user.Name, user.ID, in.mode, in.secret); err != nil {
+				if err := generateTokensAndSetCookies(ctx, user.Name, user.ID, in.mode, in.secret, in.refreshTokenDuration); err != nil {
 					return errs.Wrapf(err, "failed to regenerate token")
 				}
 			}
@@ -303,13 +305,13 @@ type claimsMessage struct {
 }
 
 // generateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
-func generateTokensAndSetCookies(ctx context.Context, userName string, userID int, mode common.ReleaseMode, secret string) error {
+func generateTokensAndSetCookies(ctx context.Context, userName string, userID int, mode common.ReleaseMode, secret string, refreshTokenDuration time.Duration) error {
 	accessToken, err := GenerateAccessToken(userName, userID, mode, secret)
 	if err != nil {
 		return errs.Wrap(err, "failed to generate access token")
 	}
 	// We generate here a new refresh token and saving it to the cookie.
-	refreshToken, err := GenerateRefreshToken(userName, userID, mode, secret)
+	refreshToken, err := GenerateRefreshToken(userName, userID, mode, secret, refreshTokenDuration)
 	if err != nil {
 		return errs.Wrap(err, "failed to generate refresh token")
 	}
@@ -337,8 +339,8 @@ func GenerateAccessToken(userName string, userID int, mode common.ReleaseMode, s
 }
 
 // GenerateRefreshToken generates a refresh token for web.
-func GenerateRefreshToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
-	expirationTime := time.Now().Add(DefaultRefreshTokenDuration)
+func GenerateRefreshToken(userName string, userID int, mode common.ReleaseMode, secret string, refreshTokenDuration time.Duration) (string, error) {
+	expirationTime := time.Now().Add(refreshTokenDuration)
 	return generateToken(userName, userID, fmt.Sprintf(RefreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 

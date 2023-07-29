@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
@@ -167,6 +168,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		if payload.RefreshTokenDuration != nil && payload.RefreshTokenDuration.AsDuration() < time.Hour {
+			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceApproval:

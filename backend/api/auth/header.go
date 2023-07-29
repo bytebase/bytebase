@@ -13,7 +13,8 @@ import (
 
 // GatewayResponseModifier is the response modifier for grpc gateway.
 type GatewayResponseModifier struct {
-	ExternalURL string
+	ExternalURL          string
+	RefreshTokenDuration time.Duration
 }
 
 // Modify is the mux option for modifying response header.
