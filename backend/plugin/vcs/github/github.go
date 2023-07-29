@@ -629,6 +629,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
 
+	// TODO(zp): should check non-200 return value?
 	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, "failed to read file meta from URL %s", url)
 	} else if code >= 300 {

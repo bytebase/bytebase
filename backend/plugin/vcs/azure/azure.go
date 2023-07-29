@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -278,7 +279,7 @@ func GetChangesByCommit(ctx context.Context, oauthCtx common.OauthContext, exter
 		}
 	}
 
-	return changes, nil
+	return &result, nil
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -647,18 +648,269 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 }
 
 // CreateFile creates a file at given path in the repository.
-func (*Provider) CreateFile(_ context.Context, _ common.OauthContext, _, _, _ string, _ vcs.FileCommitCreate) error {
-	return errors.New("not implemented")
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	return p.createOrUpdateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate, true)
 }
 
 // OverwriteFile overwrites an existing file at given path in the repository.
 func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
-	return p.CreateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate)
+	return p.createOrUpdateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate, false)
+}
+
+func (p *Provider) getLatestCommitIDOnBranch(ctx context.Context, oauthCtx common.OauthContext, repositoryID, branchName string) (string, error) {
+	parts := strings.Split(repositoryID, "/")
+	if len(parts) != 3 {
+		return "", errors.Errorf("invalid repository ID %q", repositoryID)
+	}
+	organizationName, repositoryID := parts[0], parts[2]
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	values.Set("searchCriteria.itemVersion.version", branchName)
+
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/commits?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), values.Encode())
+	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return "", errors.Wrapf(err, "GET %s", url)
+	}
+	if code != http.StatusOK {
+		return "", errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
+	}
+
+	type getCommitsOnBranchResponseValue struct {
+		CommitID string `json:"commitId"`
+	}
+	type getCommitsOnBranchResponse struct {
+		Value []getCommitsOnBranchResponseValue `json:"value"`
+	}
+
+	g := new(getCommitsOnBranchResponse)
+	if err := json.Unmarshal([]byte(body), g); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal get commits on branch response body, code %v", code)
+	}
+
+	return g.Value[0].CommitID, nil
+}
+
+func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate, create bool) error {
+	parts := strings.Split(repositoryID, "/")
+	if len(parts) != 3 {
+		return errors.Errorf("invalid repository ID %q", repositoryID)
+	}
+	organizationName, exteralRepositoryID := parts[0], parts[2]
+
+	changeType := "edit"
+	if create {
+		changeType = "add"
+	}
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/pushes?%s", url.PathEscape(organizationName), url.PathEscape(exteralRepositoryID), values.Encode())
+
+	type createFileReqeustCommitChangesItem struct {
+		Path string `json:"path"`
+	}
+	type createFileReqeustCommitChangesNewContent struct {
+		Content     string `json:"content"`
+		ContentType string `json:"contentType"`
+	}
+	type createFileReqeustCommitChanges struct {
+		ChangeType string                                   `json:"changeType"`
+		Item       createFileReqeustCommitChangesItem       `json:"item"`
+		NewContent createFileReqeustCommitChangesNewContent `json:"newContent"`
+	}
+	type createFileReqeustCommitAuthor struct {
+		Date  string `json:"date"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+	type createFileReqeustCommit struct {
+		Comment   string                           `json:"comment"`
+		Changes   []createFileReqeustCommitChanges `json:"changes"`
+		Author    createFileReqeustCommitAuthor    `json:"author"`
+		Committer createFileReqeustCommitAuthor    `json:"committer"`
+	}
+	type createFileRequestRefUpdates struct {
+		Name        string `json:"name"`
+		OldObjectID string `json:"oldObjectId"`
+	}
+	type createFileRequest struct {
+		RefUpdates []createFileRequestRefUpdates `json:"refUpdates"`
+		Commits    []createFileReqeustCommit     `json:"commits"`
+	}
+
+	for i := 0; i < 3; i++ {
+		branchCommit, err := p.getLatestCommitIDOnBranch(ctx, oauthCtx, repositoryID, fileCommitCreate.Branch)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get latest commit ID on branch %q", fileCommitCreate.Branch)
+		}
+
+		requestBody := &createFileRequest{
+			RefUpdates: []createFileRequestRefUpdates{
+				{
+					Name:        fmt.Sprintf("refs/heads/%s", fileCommitCreate.Branch),
+					OldObjectID: branchCommit,
+				},
+			},
+			Commits: []createFileReqeustCommit{
+				{
+					Comment: fileCommitCreate.CommitMessage,
+					Changes: []createFileReqeustCommitChanges{
+						{
+							ChangeType: changeType,
+							Item: createFileReqeustCommitChangesItem{
+								Path: filePath,
+							},
+							NewContent: createFileReqeustCommitChangesNewContent{
+								Content:     fileCommitCreate.Content,
+								ContentType: "rawtext",
+							},
+						},
+					},
+				},
+			},
+		}
+		if fileCommitCreate.AuthorName != "" && fileCommitCreate.AuthorEmail != "" {
+			requestBody.Commits[0].Author = createFileReqeustCommitAuthor{
+				Date:  time.Now().Format(time.RFC3339),
+				Name:  fileCommitCreate.AuthorName,
+				Email: fileCommitCreate.AuthorEmail,
+			}
+			requestBody.Commits[0].Committer = createFileReqeustCommitAuthor{
+				Date:  time.Now().Format(time.RFC3339),
+				Name:  fileCommitCreate.AuthorName,
+				Email: fileCommitCreate.AuthorEmail,
+			}
+		}
+
+		marshalBody, err := json.Marshal(requestBody)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal create file request body, request body: %+v", requestBody)
+		}
+		code, _, body, err := oauth.Post(ctx, p.client, url, &oauthCtx.AccessToken, bytes.NewReader(marshalBody), tokenRefresher(
+			oauthContext{
+				RefreshToken: oauthCtx.RefreshToken,
+				ClientSecret: oauthCtx.ClientSecret,
+				RedirectURL:  oauthCtx.RedirectURL,
+			},
+			oauthCtx.Refresher,
+		))
+		if err != nil {
+			return errors.Wrapf(err, "POST %s", url)
+		}
+		if code == http.StatusBadRequest {
+			log.Info("Failed to create file due to commit conflict, retrying", zap.String("url", url), zap.String("body", string(body)))
+			continue
+		}
+		if code != http.StatusCreated {
+			return errors.Errorf("non-201 POST %s status code %d with body %q", url, code, string(body))
+		}
+
+		return nil
+	}
+
+	return errors.Errorf("failed to create file after 3 retries")
 }
 
 // ReadFileMeta reads the metadata of the given file in the repository.
-func (*Provider) ReadFileMeta(_ context.Context, _ common.OauthContext, _, _, _, _ string) (*vcs.FileMeta, error) {
-	return nil, errors.New("not implemented")
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
+	parts := strings.Split(repositoryID, "/")
+	if len(parts) != 3 {
+		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
+	}
+	organizationName, repositoryID := parts[0], parts[2]
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	values.Set("scopePath", filePath)
+	values.Set("$format", "json")
+	itemsURL := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/items?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), values.Encode())
+
+	type fileMetaResponseValue struct {
+		ObjectID string `json:"objectId"`
+		CommitID string `json:"commitId"`
+		Path     string `json:"path"`
+		URL      string `json:"url"`
+	}
+	type fileMetaResponse struct {
+		Value []fileMetaResponseValue `json:"value"`
+	}
+
+	code, _, body, err := oauth.Get(ctx, p.client, itemsURL, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", itemsURL)
+	}
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to read file meta from URL %s", itemsURL)
+	}
+	if code != http.StatusOK {
+		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", itemsURL, code, string(body))
+	}
+
+	r := new(fileMetaResponse)
+	if err := json.Unmarshal([]byte(body), r); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal get file meta response body, code %v", code)
+	}
+
+	// Valite Presumption: The response should only contain one file meta.
+	if len(r.Value) != 1 {
+		return nil, errors.Wrapf(err, fmt.Sprintf("expect to get one file meta, but got %d, response: %+v", len(r.Value), r))
+	}
+
+	values = &url.Values{}
+	values.Set("api-version", "7.0")
+	values.Set("$format", "json")
+	blobURL := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/blobs/%s?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), url.PathEscape(r.Value[0].ObjectID), values.Encode())
+
+	type blobsResponse struct {
+		Size int64 `json:"size"`
+	}
+
+	code, _, body, err = oauth.Get(ctx, p.client, blobURL, &oauthCtx.AccessToken, tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", blobURL)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to read file size from URL %s", blobURL)
+	}
+	if code != http.StatusOK {
+		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", blobURL, code, string(body))
+	}
+
+	b := new(blobsResponse)
+	if err := json.Unmarshal([]byte(body), b); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal get file meta response body, code %v", code)
+	}
+
+	return &vcs.FileMeta{
+		Name:         filepath.Base(r.Value[0].Path),
+		Path:         r.Value[0].Path,
+		Size:         b.Size,
+		LastCommitID: r.Value[0].CommitID,
+		SHA:          r.Value[0].ObjectID,
+	}, nil
 }
 
 // ReadFileContent reads the content of the given file in the repository.
