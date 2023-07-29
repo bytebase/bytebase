@@ -42,7 +42,7 @@ func GenerateTokensAndSetCookies(c echo.Context, user *store.UserMessage, mode c
 		return pkgerrors.Wrap(err, "failed to generate access token")
 	}
 
-	cookieExp := time.Now().Add(auth.CookieExpDuration)
+	cookieExp := time.Now().Add(auth.DefaultRefreshTokenDuration - 1*time.Minute)
 	setTokenCookie(c, auth.AccessTokenCookieName, accessToken, cookieExp)
 	setUserCookie(c, user.ID, cookieExp)
 
@@ -166,7 +166,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 				))
 		}
 
-		generateToken := time.Until(claims.ExpiresAt.Time) < auth.RefreshThresholdDuration
+		generateToken := false
 		if err != nil {
 			var ve *jwt.ValidationError
 			if errors.As(err, &ve) {
