@@ -166,7 +166,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 				))
 		}
 
-		generateToken := time.Until(claims.ExpiresAt.Time) < auth.RefreshThresholdDuration
+		generateToken := false
 		if err != nil {
 			var ve *jwt.ValidationError
 			if errors.As(err, &ve) {
