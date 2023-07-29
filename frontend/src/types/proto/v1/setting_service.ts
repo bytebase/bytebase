@@ -1,6 +1,7 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
@@ -286,6 +287,8 @@ export interface WorkspaceProfileSetting {
   outboundIpList: string[];
   /** The webhook URL for the GitOps workflow. */
   gitopsWebhookUrl: string;
+  /** The duration for refresh token. */
+  refreshTokenDuration?: Duration | undefined;
 }
 
 export interface WorkspaceApprovalSetting {
@@ -1438,7 +1441,14 @@ export const AgentPluginSetting = {
 };
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
-  return { externalUrl: "", disallowSignup: false, require2fa: false, outboundIpList: [], gitopsWebhookUrl: "" };
+  return {
+    externalUrl: "",
+    disallowSignup: false,
+    require2fa: false,
+    outboundIpList: [],
+    gitopsWebhookUrl: "",
+    refreshTokenDuration: undefined,
+  };
 }
 
 export const WorkspaceProfileSetting = {
@@ -1457,6 +1467,9 @@ export const WorkspaceProfileSetting = {
     }
     if (message.gitopsWebhookUrl !== "") {
       writer.uint32(42).string(message.gitopsWebhookUrl);
+    }
+    if (message.refreshTokenDuration !== undefined) {
+      Duration.encode(message.refreshTokenDuration, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1503,6 +1516,13 @@ export const WorkspaceProfileSetting = {
 
           message.gitopsWebhookUrl = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.refreshTokenDuration = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1519,6 +1539,9 @@ export const WorkspaceProfileSetting = {
       require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
       outboundIpList: Array.isArray(object?.outboundIpList) ? object.outboundIpList.map((e: any) => String(e)) : [],
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
+      refreshTokenDuration: isSet(object.refreshTokenDuration)
+        ? Duration.fromJSON(object.refreshTokenDuration)
+        : undefined,
     };
   },
 
@@ -1533,6 +1556,9 @@ export const WorkspaceProfileSetting = {
       obj.outboundIpList = [];
     }
     message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
+    message.refreshTokenDuration !== undefined && (obj.refreshTokenDuration = message.refreshTokenDuration
+      ? Duration.toJSON(message.refreshTokenDuration)
+      : undefined);
     return obj;
   },
 
@@ -1547,6 +1573,9 @@ export const WorkspaceProfileSetting = {
     message.require2fa = object.require2fa ?? false;
     message.outboundIpList = object.outboundIpList?.map((e) => e) || [];
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
+    message.refreshTokenDuration = (object.refreshTokenDuration !== undefined && object.refreshTokenDuration !== null)
+      ? Duration.fromPartial(object.refreshTokenDuration)
+      : undefined;
     return message;
   },
 };
