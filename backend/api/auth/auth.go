@@ -36,16 +36,9 @@ const (
 	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
 	apiTokenDuration        = 1 * time.Hour
 	accessTokenDuration     = 1 * time.Hour
-	refreshTokenDuration    = 7 * 24 * time.Hour
-	// RefreshThresholdDuration is the threshold duration for refreshing token.
-	RefreshThresholdDuration = 0 * time.Hour
+	// DefaultRefreshTokenDuration is the default refresh token expiration duration.
+	DefaultRefreshTokenDuration = 7 * 24 * time.Hour
 
-	// CookieExpDuration expires slightly earlier than the jwt expiration. Client would be logged out if the user
-	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
-	// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
-	// 1. The access token is about to expire in <<refreshThresholdDuration>>
-	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
-	CookieExpDuration = refreshTokenDuration - 1*time.Minute
 	// AccessTokenCookieName is the cookie name of access token.
 	AccessTokenCookieName = "access-token"
 	// RefreshTokenCookieName is the cookie name of refresh token.
@@ -174,9 +167,6 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 			claims.Audience,
 			fmt.Sprintf(AccessTokenAudienceFmt, in.mode),
 		)
-	}
-	if time.Until(claims.ExpiresAt.Time) < RefreshThresholdDuration {
-		generateToken = true
 	}
 
 	principalID, err := strconv.Atoi(claims.Subject)
@@ -348,7 +338,7 @@ func GenerateAccessToken(userName string, userID int, mode common.ReleaseMode, s
 
 // GenerateRefreshToken generates a refresh token for web.
 func GenerateRefreshToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
-	expirationTime := time.Now().Add(refreshTokenDuration)
+	expirationTime := time.Now().Add(DefaultRefreshTokenDuration)
 	return generateToken(userName, userID, fmt.Sprintf(RefreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
