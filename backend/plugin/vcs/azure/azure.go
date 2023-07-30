@@ -539,7 +539,6 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauth
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/account/accounts/list?view=azure-devops-rest-7.0&tabs=HTTP
 func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx common.OauthContext, memberID string) ([]string, error) {
-	log.Info("Token: ", zap.String("token", oauthCtx.AccessToken))
 	urlParams := &url.Values{}
 	urlParams.Set("memberId", memberID)
 	urlParams.Set("api-version", "7.0")
