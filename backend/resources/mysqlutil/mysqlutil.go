@@ -53,7 +53,7 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 	default:
 		return "", "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
 	}
-	return tarName, strings.TrimSuffix(tarName, "tar.gz"), nil
+	return tarName, strings.TrimSuffix(tarName, ".tar.gz"), nil
 }
 
 // Install will extract the mysqlutil tar in resourceDir.
