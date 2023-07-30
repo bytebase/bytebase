@@ -2,10 +2,8 @@
 package mysqlutil
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -39,29 +37,6 @@ func GetPath(binName binaryName, binDir string) string {
 		return filepath.Join(binDir, "mysqldump")
 	}
 	return "UNKNOWN_BINARY"
-}
-
-// getExecutableVersion returns the raw output of "binName -V".
-func getExecutableVersion(binName binaryName, binDir string) (string, error) {
-	var cmd *exec.Cmd
-	var v bytes.Buffer
-	switch binName {
-	case MySQL:
-		cmd = exec.Command(GetPath(MySQL, binDir), "-V")
-	case MySQLBinlog:
-		cmd = exec.Command(GetPath(MySQLBinlog, binDir), "-V")
-	case MySQLDump:
-		cmd = exec.Command(GetPath(MySQLDump, binDir), "-V")
-	default:
-		return "", errors.Errorf("unknown binary name: %s", binName)
-	}
-
-	cmd.Stdout = &v
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return "", err
-	}
-	return v.String(), nil
 }
 
 func getTarNameAndVersion() (tarname string, version string, err error) {
