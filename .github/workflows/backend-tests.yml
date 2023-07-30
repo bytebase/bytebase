@@ -28,7 +28,7 @@ jobs:
           git diff --exit-code
       - name: Install dependencies
         run: |
-          touch ./backend/resources/mysql/mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
+          touch ./backend/resources/mysql/mysql-8.0.33-linux-glibc2.17-x86_64-minimal.tar.xz
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
