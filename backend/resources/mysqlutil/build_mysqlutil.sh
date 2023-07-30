@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 OS=$2
 ARCH=$3
@@ -16,3 +17,4 @@ case "${OS}" in
         tar cvzf ../${OUT_PREFIX}-${OS}-${ARCH}.tar.gz bin/mysqlbinlog bin/mysqldump bin/mysql lib/libcrypto* lib/libssl*
         ;;
 esac
+rm -rf $(pwd)
