@@ -1126,7 +1126,7 @@ type CommitsInPushValue struct {
 	RemoteURL string `json:"remoteUrl"`
 }
 
-// CommitInPush is the commit in the push.
+// CommitsInPush is the commits in the push.
 type CommitsInPush struct {
 	Value []CommitsInPushValue `json:"value"`
 }
