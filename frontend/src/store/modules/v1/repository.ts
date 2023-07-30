@@ -56,8 +56,6 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     const repo = await getOrFetchRepositoryByProject(project);
     let gitops: ProjectGitOpsInfo;
 
-    console.log("upsertRepository", repo, gitopsInfo);
-
     if (!repo) {
       gitops = await projectServiceClient.updateProjectGitOpsInfo({
         projectGitopsInfo: gitopsInfo,
