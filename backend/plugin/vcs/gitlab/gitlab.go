@@ -314,46 +314,6 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	return repos, len(repos) >= apiPageSize, nil
 }
 
-// fetchUserInfoImpl fetches user information from the given resourceURI, which
-// should be either "user" or "users/{userID}".
-func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
-	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "GET")
-	}
-
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to read user info from URL %s", url)
-	} else if code >= 300 {
-		return nil, errors.Errorf("failed to read user info from URL %s, status code: %d, body: %s",
-			url,
-			code,
-			body,
-		)
-	}
-
-	var userInfo vcs.UserInfo
-	if err := json.Unmarshal([]byte(body), &userInfo); err != nil {
-		return nil, errors.Wrap(err, "unmarshal")
-	}
-	return &userInfo, err
-}
-
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)

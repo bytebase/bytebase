@@ -88,11 +88,14 @@ type WebhookCreateOrUpdate struct {
 	PublisherInputs  WebhookCreatePublisherInputs `json:"publisherInputs"`
 }
 
+// CommitAuthor represents a Azure DevOps commit author.
 type CommitAuthor struct {
 	Name  string    `json:"name"`
 	Email string    `json:"email"`
 	Date  time.Time `json:"date"`
 }
+
+// Commit represents a Azure DevOps commit.
 type Commit struct {
 	CommitID string       `json:"commitId"`
 	Author   CommitAuthor `json:"author"`
@@ -124,6 +127,7 @@ type ServiceHookCodePushEventResourcePushedBy struct {
 	UniqueName  string `json:"uniqueName"`
 }
 
+// ServiceHookCodePushEventResourceRepository represents a Azure DevOps service hook code push event resource repository.
 type ServiceHookCodePushEventResourceRepository struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
@@ -144,23 +148,6 @@ type ServiceHookCodePushEvent struct {
 	EventType string                           `json:"eventType"`
 	Message   ServiceHookCodePushEventMessage  `json:"message"`
 	Resource  ServiceHookCodePushEventResource `json:"resource"`
-}
-
-func (e *ServiceHookCodePushEvent) ToVCS(organizationName, repositoryID string) vcs.PushEvent {
-	var commitList []vcs.Commit
-	for _, commit := range e.Resource.Commits {
-		commitList = append(commitList, vcs.Commit{
-			ID:          commit.CommitID,
-			Title:       commit.Comment,
-			Message:     commit.Comment,
-			CreatedTs:   commit.Author.Date.Unix(),
-			AuthorName:  commit.Author.Name,
-			AuthorEmail: commit.Author.Email,
-			URL:         fmt.Sprintf("https://dev.azure.com/%s/%s/_git/%s/commit/%s", organizationName, repositoryID, e.Resource.Repository.Name, commit.CommitID),
-			AddedList:   []string{},
-		})
-	}
-	return vcs.PushEvent{}
 }
 
 // toVCSOAuthToken converts the response to *vcs.OAuthToken.
@@ -220,16 +207,19 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 	return oauthResp.toVCSOAuthToken()
 }
 
+// ChangesResponseChangeItem represents a Azure DevOps changes response change item.
 type ChangesResponseChangeItem struct {
 	GitObjectType string `json:"gitObjectType"`
 	Path          string `json:"path"`
 }
 
+// ChangesResponseChange represents a Azure DevOps changes response change.
 type ChangesResponseChange struct {
 	Item       ChangesResponseChangeItem `json:"item"`
 	ChangeType string                    `json:"changeType"`
 }
 
+// ChangesResponse represents a Azure DevOps changes response.
 type ChangesResponse struct {
 	Changes []ChangesResponseChange `json:"changes"`
 }
@@ -346,7 +336,7 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 }
 
 // getPaginatedDiffFileList gets the diff file list between two commits with pagination.
-func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, beforeCommit string, afterCommit string, page int) ([]vcs.FileDiff, bool, error) {
+func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common.OauthContext, _ string, repositoryID string, beforeCommit string, afterCommit string, page int) ([]vcs.FileDiff, bool, error) {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
 		return nil, false, errors.Errorf("invalid repository ID %q", repositoryID)
@@ -427,7 +417,7 @@ func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common
 // to get all projects.
 // The request included in this function requires the following scopes:
 // vso.profile, vso.project.
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, _ string) ([]*vcs.Repository, error) {
 	publicAlias, err := p.getAuthenticatedProfilePublicAlias(ctx, oauthCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get authenticated profile public alias")
@@ -594,7 +584,7 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx comm
 // FetchRepositoryFileList fetches the all files from the given repository tree recursively.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/trees/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, _ string, repositoryID string, ref string, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
 		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
