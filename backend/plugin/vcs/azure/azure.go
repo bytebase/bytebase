@@ -434,14 +434,13 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 	type listRepositoriesResponseValueProject struct {
 		ID    string `json:"id"`
 		Name  string `json:"name"`
-		Url   string `json:"url"`
 		State string `json:"state"`
 	}
 
 	type listRepositoriesResponseValue struct {
 		ID      string                               `json:"id"`
 		Name    string                               `json:"name"`
-		Url     string                               `json:"url"`
+		URL     string                               `json:"url"`
 		Project listRepositoriesResponseValueProject `json:"project"`
 	}
 	type listRepositoriesResponse struct {
@@ -483,7 +482,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 					ID:       fmt.Sprintf("%s/%s/%s", organization, r.Project.ID, r.ID),
 					Name:     r.Name,
 					FullPath: fmt.Sprintf("%s/%s/%s", organization, r.Project.Name, r.Name),
-					WebURL:   r.Url,
+					WebURL:   r.URL,
 				})
 			}
 			return nil
@@ -536,10 +535,10 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauth
 // listOrganizationsForMember lists all organization for a given member.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/account/accounts/list?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx common.OauthContext, memberId string) ([]string, error) {
+func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx common.OauthContext, memberID string) ([]string, error) {
 	log.Info("Token: ", zap.String("token", oauthCtx.AccessToken))
 	urlParams := &url.Values{}
-	urlParams.Set("memberId", memberId)
+	urlParams.Set("memberId", memberID)
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/accounts?%s", urlParams.Encode())
 
@@ -856,7 +855,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 		return nil, errors.Wrapf(err, "failed to unmarshal get file meta response body, code %v", code)
 	}
 
-	// Valite Presumption: The response should only contain one file meta.
+	// Validate Presumption: The response should only contain one file meta.
 	if len(r.Value) != 1 {
 		return nil, errors.Wrapf(err, fmt.Sprintf("expect to get one file meta, but got %d, response: %+v", len(r.Value), r))
 	}

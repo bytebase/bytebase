@@ -39,7 +39,6 @@ import (
 
 	// Register azure plugin.
 	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
-	_ "github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
