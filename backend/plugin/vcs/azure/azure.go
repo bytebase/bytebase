@@ -417,6 +417,7 @@ func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common
 // to get all projects.
 // The request included in this function requires the following scopes:
 // vso.profile, vso.project.
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/repositories/list?view=azure-devops-rest-7.0&tabs=HTTP
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, _ string) ([]*vcs.Repository, error) {
 	publicAlias, err := p.getAuthenticatedProfilePublicAlias(ctx, oauthCtx)
 	if err != nil {
@@ -438,10 +439,10 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 	}
 
 	type listRepositoriesResponseValue struct {
-		ID      string                               `json:"id"`
-		Name    string                               `json:"name"`
-		URL     string                               `json:"url"`
-		Project listRepositoriesResponseValueProject `json:"project"`
+		ID        string                               `json:"id"`
+		Name      string                               `json:"name"`
+		RemoteURL string                               `json:"remoteUrl"`
+		Project   listRepositoriesResponseValueProject `json:"project"`
 	}
 	type listRepositoriesResponse struct {
 		Count int                             `json:"count"`
@@ -482,7 +483,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 					ID:       fmt.Sprintf("%s/%s/%s", organization, r.Project.ID, r.ID),
 					Name:     r.Name,
 					FullPath: fmt.Sprintf("%s/%s/%s", organization, r.Project.Name, r.Name),
-					WebURL:   r.URL,
+					WebURL:   r.RemoteURL,
 				})
 			}
 			return nil
