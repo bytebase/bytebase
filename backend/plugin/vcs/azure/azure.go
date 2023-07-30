@@ -815,6 +815,10 @@ func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.Oauth
 }
 
 // ReadFileMeta reads the metadata of the given file in the repository.
+//
+// Docs:
+// - https://learn.microsoft.com/en-us/rest/api/azure/devops/git/items/get?view=azure-devops-rest-7.0&tabs=HTTP
+// - https://learn.microsoft.com/en-us/rest/api/azure/devops/git/blobs/get-blob?view=azure-devops-rest-7.0&tabs=HTTP
 func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
@@ -825,6 +829,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 	values.Set("api-version", "7.0")
 	values.Set("scopePath", filePath)
 	values.Set("$format", "json")
+	values.Set("versionDescriptor.version", ref)
 	itemsURL := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/items?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), values.Encode())
 
 	type fileMetaResponseValue struct {
