@@ -1,4 +1,5 @@
 #!/bin/bash
+
 ckmd5() {
     if [[ $(uname) = Darwin ]]; then
         test $(md5 -q $1) = $2
