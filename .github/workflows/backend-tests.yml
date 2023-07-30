@@ -10,7 +10,7 @@ on:
 
 jobs:
   golangci-lint:
-    runs-on: macos-latest
+    runs-on: self-hosted
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -26,15 +26,6 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code
-      - name: Cache MySQL
-        uses: actions/cache@v3
-        with:
-          path: |
-            ./backend/resources/mysql/*.tar.gz
-            ./backend/resources/mysql/*.tar.xz
-          key: ${{ runner.OS }}-build-mysql-cache
-      - name: Install dependencies
-        run: go generate -tags mysql ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
