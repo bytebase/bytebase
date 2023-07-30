@@ -95,12 +95,6 @@ type CommitAuthor struct {
 	Date  time.Time `json:"date"`
 }
 
-// Commit represents a Azure DevOps commit.
-type Commit struct {
-	CommitID string       `json:"commitId"`
-	Author   CommitAuthor `json:"author"`
-}
-
 // ServiceHookCodePushEventMessage represents a Azure DevOps service hook code push event message.
 type ServiceHookCodePushEventMessage struct {
 	Text string `json:"text"`
@@ -139,6 +133,7 @@ type ServiceHookCodePushEventResource struct {
 	Repository ServiceHookCodePushEventResourceRepository `json:"repository"`
 	RefUpdates []ServiceHookCodePushEventRefUpdates       `json:"refUpdates"`
 	PushedBy   ServiceHookCodePushEventResourcePushedBy   `json:"pushedBy"`
+	PushID     uint64                                     `json:"pushId"`
 }
 
 // ServiceHookCodePushEvent represents a Azure DevOps service hook code push event.
@@ -303,7 +298,13 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
 
-	commit := new(Commit)
+	type fetchCommitByIDResponse struct {
+		CommitID  string       `json:"commitId"`
+		Author    CommitAuthor `json:"author"`
+		RemoteURL string       `json:"remoteUrl"`
+	}
+
+	commit := new(fetchCommitByIDResponse)
 	if err := json.Unmarshal([]byte(body), commit); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal body")
 	}
@@ -312,6 +313,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		ID:         commit.CommitID,
 		AuthorName: commit.Author.Name,
 		CreatedTs:  commit.Author.Date.Unix(),
+		URL:        commit.RemoteURL,
 	}, nil
 }
 
@@ -1108,6 +1110,63 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	return nil
+}
+
+// CommitsInPushValue is the commit in the push.
+type CommitsInPushValue struct {
+	CommitID  string `json:"commitId"`
+	RemoteURL string `json:"remoteUrl"`
+}
+
+// CommitInPush is the commit in the push.
+type CommitsInPush struct {
+	Value []CommitsInPushValue `json:"value"`
+}
+
+// GetPushCommitsByPushID gets the commits in the push by batch, it is useful when the push contains a lot of commits.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-push-commits?view=azure-devops-rest-7.0&tabs=HTTP
+func GetPushCommitsByPushID(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, pushID uint64) (*CommitsInPush, error) {
+	parts := strings.Split(repositoryID, "/")
+	if len(parts) != 3 {
+		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
+	}
+	organizationName, repositoryID := parts[0], parts[2]
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	values.Set("pushId", fmt.Sprintf("%d", pushID))
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/commits?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), values.Encode())
+
+	client := &http.Client{}
+
+	code, _, body, err := oauth.Get(
+		ctx,
+		client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				RefreshToken: oauthCtx.RefreshToken,
+				ClientSecret: oauthCtx.ClientSecret,
+				RedirectURL:  oauthCtx.RedirectURL,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get push commits")
+	}
+	if code != http.StatusOK {
+		return nil, errors.Errorf("failed to get push commits, code: %v, body: %s", code, string(body))
+	}
+
+	r := new(CommitsInPush)
+	if err := json.Unmarshal([]byte(body), r); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal get push commits response body, code %v", code)
+	}
+
+	return r, nil
 }
 
 // oauthContext is the request context for OAuth.

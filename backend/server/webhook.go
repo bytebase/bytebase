@@ -452,6 +452,30 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			})
 		}
 
+		// Backfill web url for commits.
+		if pushEvent.Resource.PushID != 0 {
+			commitsInPush, err := azure.GetPushCommitsByPushID(ctx, common.OauthContext{
+				ClientID:     repositoryList[0].vcs.ApplicationID,
+				ClientSecret: repositoryList[0].vcs.Secret,
+				AccessToken:  repositoryList[0].repository.AccessToken,
+				RefreshToken: repositoryList[0].repository.RefreshToken,
+				Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
+			}, repositoryList[0].repository.ExternalID, pushEvent.Resource.PushID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get push commits by push id %d", pushEvent.Resource.PushID)).SetInternal(err)
+			}
+			// Convert values to map from commitID to remote url.
+			commitID2Value := make(map[string]string)
+			for _, value := range commitsInPush.Value {
+				commitID2Value[value.CommitID] = value.RemoteURL
+			}
+			for i := range backfillCommits {
+				if remoteURL, ok := commitID2Value[backfillCommits[i].ID]; ok {
+					backfillCommits[i].URL = remoteURL
+				}
+			}
+		}
+
 		baseVCSPushEvent := vcs.PushEvent{
 			VCSType:            vcs.AzureDevOps,
 			Ref:                pushEvent.Resource.RefUpdates[0].Name,
