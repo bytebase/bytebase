@@ -8,7 +8,7 @@ import (
 )
 
 // InstanceMaximumConnectionNumber is the maximum number of connections outstanding per instance.
-const InstanceMaximumConnectionNumber = 20
+const InstanceMaximumConnectionNumber = 5
 
 // State is the state for all in-memory states within the server.
 type State struct {
