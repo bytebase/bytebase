@@ -429,7 +429,6 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list organizations for member")
 	}
-	log.Info("Authenticated user organizations", zap.Strings("organizations", organizations))
 
 	var result []*vcs.Repository
 
