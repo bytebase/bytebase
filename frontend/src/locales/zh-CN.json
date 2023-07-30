@@ -353,7 +353,8 @@
     },
     "execution-time": "执行时间",
     "run-checks": "运行检查",
-    "run-checks-in-current-stage": "运行当前阶段的所有检查"
+    "run-checks-in-current-stage": "运行当前阶段的所有检查",
+    "action-failed-in-current-stage": "{action}当前阶段失败的任务"
   },
   "banner": {
     "update-license": "更新证书",
