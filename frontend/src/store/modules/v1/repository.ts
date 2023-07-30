@@ -60,6 +60,7 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
         allowMissing: true,
       });
     } else {
+      gitopsInfo.vcsUid = repo.vcsUid;
       const updateMask = getUpdateMaskForRepository(repo, gitopsInfo);
       if (updateMask.length === 0) {
         return repo;

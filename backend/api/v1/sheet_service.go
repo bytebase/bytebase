@@ -476,8 +476,17 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("VCS not found for sync sheet: %d", repo.VCSUID))
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
+
 	basePath := filepath.Dir(repo.SheetPathTemplate)
 	// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
+	// TODO(zp): We may need a need VCS interface to get fetch repository file list for a branch instead of a SHA1.
 	fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -485,6 +494,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repo.ExternalID,
@@ -511,6 +521,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
@@ -528,6 +539,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
@@ -545,6 +557,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
