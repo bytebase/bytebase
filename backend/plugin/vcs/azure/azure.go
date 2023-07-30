@@ -559,7 +559,6 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx comm
 		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
 
-	log.Info("List organizations for member response", zap.String("body", string(body)))
 
 	type accountsValue struct {
 		AccountName string `json:"accountName"`
