@@ -4,7 +4,7 @@
       v-for="(transition, index) in taskStatusTransitionList"
       :key="index"
       data-label="bb-issue-status-transition-button"
-      default-action-key="ROLLOUT-STAGE"
+      :default-action-key="`${transition.type}-STAGE`"
       :disabled="!allowApplyTaskTransition(transition)"
       :action-list="getButtonActionListForTransition(transition)"
       @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
