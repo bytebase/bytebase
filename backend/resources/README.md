@@ -33,13 +33,13 @@ macos13-x86_64 used for MacOS Intel processor: https://cdn.mysql.com/archives/my
 
 We embed mysqlutil for PITR. MySQL does not provide separate mysql, mysqldump and mysqlbinlog binaries, and we need to extract our files from the MySQL distribution manually.
 
-linux-glibc2.17-x86_64 used for Linux: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.32-linux-glibc2.17-x86_64-minimal.tar.xz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/private/libcrypto.so.1.1 and lib/private/libssl.so.1.1.
+linux-glibc2.17-x86_64 used for Linux: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.33-linux-glibc2.17-x86_64-minimal.tar.xz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/private/libcrypto.so.1.1 and lib/private/libssl.so.1.1.
 
 linux-glibc2.17-aarch64 used for Linux amd64: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.33-linux-glibc2.17-aarch64-minimal.tar.xz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/private/libcrypto.so.1.1 and lib/private/libssl.so.1.1.
 
-macos13-arm64 used for MacOS Apple Silicon: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.32-macos13-arm64.tar.gz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/libcrypto.1.1.dylib and lib/libssl.1.1.dylib.
+macos13-arm64 used for MacOS Apple Silicon: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.33-macos13-arm64.tar.gz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/libcrypto.1.1.dylib and lib/libssl.1.1.dylib.
 
-macos13-x86_64 used for MacOS Intel Silicon: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.32-macos13-x86_64.tar.gz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/libcrypto.1.1.dylib and lib/libssl.1.1.dylib.
+macos13-x86_64 used for MacOS Intel Silicon: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.33-macos13-x86_64.tar.gz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/libcrypto.1.1.dylib and lib/libssl.1.1.dylib.
 
 ### mongoutil
 
