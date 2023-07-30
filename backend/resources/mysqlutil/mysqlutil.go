@@ -67,12 +67,14 @@ func getExecutableVersion(binName binaryName, binDir string) (string, error) {
 func getTarNameAndVersion() (tarname string, version string, err error) {
 	var tarName string
 	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
-		tarName = "mysqlutil-8.0.28-macos11-arm64.tar.gz"
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "mysqlutil-8.0.28-macos11-x86_64.tar.gz"
+		tarName = "mysqlutil-8.0.32-macos11-x86_64.tar.gz"
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+		tarName = "mysqlutil-8.0.32-macos11-arm64.tar.gz"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		tarName = "mysqlutil-8.0.28-linux-glibc2.17-x86_64.tar.gz"
+		tarName = "mysqlutil-8.0.32-linux-glibc2.17-x86_64-minimal.tar.gz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		tarName = "mysqlutil-8.0.32-linux-glibc2.17-aarch64.tar.gz"
 	default:
 		return "", "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
 	}
