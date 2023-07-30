@@ -356,7 +356,8 @@
     },
     "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
-    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual"
+    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual",
+    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual"
   },
   "banner": {
     "update-license": "Actualizar licencia",
