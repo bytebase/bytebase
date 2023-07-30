@@ -158,7 +158,6 @@ func (o oauthResponse) toVCSOAuthToken() (*vcs.OAuthToken, error) {
 		CreatedAt:    time.Now().Unix(),
 		ExpiresTs:    time.Now().Add(time.Duration(expiresIn) * time.Second).Unix(),
 	}
-	log.Debug("OAuth Token", zap.Any("oauthToken", oauthToken))
 	return oauthToken, nil
 }
 
