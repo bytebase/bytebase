@@ -437,7 +437,6 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 		Name  string `json:"name"`
 		State string `json:"state"`
 	}
-
 	type listRepositoriesResponseValue struct {
 		ID        string                               `json:"id"`
 		Name      string                               `json:"name"`
@@ -505,10 +504,9 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/profile/profiles/get?view=azure-devops-rest-7.0&tabs=HTTP
 func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauthCtx common.OauthContext) (string, error) {
-	url := "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.0"
-	type profileAlias struct {
-		PublicAlias string `json:"publicAlias"`
-	}
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/profile/profiles/me?%s", values.Encode())
 
 	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
 		oauthContext{
@@ -523,6 +521,10 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauth
 	}
 	if code != http.StatusOK {
 		return "", errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
+	}
+
+	type profileAlias struct {
+		PublicAlias string `json:"publicAlias"`
 	}
 
 	r := new(profileAlias)
