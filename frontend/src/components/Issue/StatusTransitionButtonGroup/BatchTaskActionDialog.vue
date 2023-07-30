@@ -38,11 +38,13 @@ const { t } = useI18n();
 const issueLogic = useIssueLogic();
 const issue = issueLogic.issue as Ref<Issue>;
 
-const title = computed(() => {
-  return t("task.skip-failed-in-current-stage");
-});
-
 const okText = computed(() => {
   return t(props.transition.buttonName);
+});
+
+const title = computed(() => {
+  return t("task.action-failed-in-current-stage", {
+    action: okText.value,
+  });
 });
 </script>

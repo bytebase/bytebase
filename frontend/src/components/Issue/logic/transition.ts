@@ -88,11 +88,11 @@ export const useIssueTransitionLogic = (issue: Ref<LegacyIssue>) => {
       case "CANCELED":
         return [];
       case "OPEN": {
+        const stageStatusTransitionList: StageStatusTransition[] = [];
         if (isAllowedToApplyTaskTransition.value) {
-          // Only "Approve" can be applied to current stage by now.
-          const ROLLOUT = TASK_STATUS_TRANSITION_LIST.get("ROLLOUT")!;
           const currentStage = activeStage(issue.pipeline as Pipeline);
-
+          // "Rollout" and "Retry" can be applied to current stage.
+          const ROLLOUT = TASK_STATUS_TRANSITION_LIST.get("ROLLOUT")!;
           const pendingApprovalTaskList = currentStage.taskList.filter(
             (task) => {
               return (
@@ -101,15 +101,27 @@ export const useIssueTransitionLogic = (issue: Ref<LegacyIssue>) => {
               );
             }
           );
-
-          // Allowing "Approve" a stage when it has TWO OR MORE tasks
+          // Allowing "Rollout" a stage when it has TWO OR MORE tasks
           // are "PENDING_APPROVAL" (including the "activeTask" itself)
           if (pendingApprovalTaskList.length >= 2) {
-            return [ROLLOUT];
+            stageStatusTransitionList.push(ROLLOUT);
+          }
+
+          const RETRY = TASK_STATUS_TRANSITION_LIST.get("RETRY")!;
+          const failedTaskList = currentStage.taskList.filter((task) => {
+            return (
+              task.status === "FAILED" &&
+              allowApplyTaskStatusTransition(task, RETRY.to)
+            );
+          });
+          // Allowing "Retry" a stage when it has TWO OR MORE tasks
+          // are "FAILED" (including the "activeTask" itself)
+          if (failedTaskList.length >= 2) {
+            stageStatusTransitionList.push(RETRY);
           }
         }
 
-        return [];
+        return stageStatusTransitionList;
       }
     }
     console.assert(false, "Should never reach this line");
