@@ -303,6 +303,8 @@ const doUpdate = () => {
       authorizeUrl = `https://github.com/login/oauth/authorize`;
     } else if (vcs.value.type === ExternalVersionControl_Type.BITBUCKET) {
       authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
+    } else if (vcs.value.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+      authorizeUrl = "https://app.vssps.visualstudio.com/oauth2/authorize";
     }
     const newWindow = openWindowForOAuth(
       authorizeUrl,
