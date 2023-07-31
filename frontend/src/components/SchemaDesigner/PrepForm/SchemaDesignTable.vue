@@ -9,13 +9,16 @@
     >
       <template #item="{ item: schemaDesign }: { item: SchemaDesign }">
         <div class="bb-grid-cell">
-          {{ schemaDesign.title }}
+          <div class="flex flex-row justify-start items-center">
+            <EngineIcon
+              class="mr-2"
+              :engine="getFormatedValue(schemaDesign).engine"
+            />
+            <span>{{ schemaDesign.title }}</span>
+          </div>
         </div>
         <div class="bb-grid-cell">
           {{ getFormatedValue(schemaDesign).project }}
-        </div>
-        <div class="bb-grid-cell">
-          {{ engineNameV1(getFormatedValue(schemaDesign).engine) }}
         </div>
         <div class="bb-grid-cell">
           {{ getFormatedValue(schemaDesign).creator }}
@@ -42,7 +45,7 @@ import { BBGridColumn } from "@/bbkit";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { useProjectV1Store, useUserStore } from "@/store";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { engineNameV1, projectV1Name } from "@/utils";
+import { projectV1Name } from "@/utils";
 
 const emit = defineEmits<{
   (event: "click", schemaDesign: SchemaDesign): void;
@@ -60,10 +63,6 @@ const COLUMN_LIST = computed(() => {
     { title: t("common.name"), width: "1fr" },
     {
       title: t("common.project"),
-      width: "1fr",
-    },
-    {
-      title: t("database.engine"),
       width: "1fr",
     },
     { title: t("common.creator"), width: "minmax(auto, 10rem)" },
