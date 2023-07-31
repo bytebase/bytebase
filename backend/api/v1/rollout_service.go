@@ -1262,6 +1262,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if sheet == nil {
 					return nil, status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 				}
+				// TODO(p0ny): update schema version
 				if _, err := s.store.UpdateTaskV2(ctx, &api.TaskPatch{
 					ID:        task.ID,
 					UpdaterID: updaterID,
