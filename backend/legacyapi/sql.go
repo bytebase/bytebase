@@ -11,7 +11,7 @@ type SQLSyncSchema struct {
 }
 
 // SQLExecute is the API message for execute SQL.
-// For now, we only support readonly / SELECT.
+// We only support readonly / SELECT.
 type SQLExecute struct {
 	InstanceID int `jsonapi:"attr,instanceId"`
 	// For engines such as MySQL, databaseName can be empty.
