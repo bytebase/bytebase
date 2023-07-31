@@ -551,6 +551,12 @@
           "self": "GitOps Webhook URL",
           "description": "用于 GitOps 中第三方服务向 Bytebase 发送 Webhook 的 URL。"
         },
+        "sign-in-frequency": {
+          "self": "登录频率",
+          "description": "登录频率指定用户必须再次登录的间隔。",
+          "hours": "小时",
+          "days": "天数"
+        },
         "config-updated": "配置已更新",
         "plugin": {
           "openai": {
@@ -2120,6 +2126,10 @@
       "bb-feature-schema-template": {
         "title": "Schema 模板",
         "desc": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+      },
+      "bb-feature-secure-token": {
+        "title": "登录频率",
+        "desc": "登录频率指定用户必须再次登录的间隔。"
       }
     },
     "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
