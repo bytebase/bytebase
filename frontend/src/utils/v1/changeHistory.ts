@@ -3,7 +3,7 @@ import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "./database";
 
 export const extractChangeHistoryUID = (name: string) => {
-  const pattern = /(?:^|\/)changeHistories\/([^/]+)(?:$|\/)/;
+  const pattern = /(?:^|\/)(?:changeHistories|migrations)\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
 };
