@@ -1006,6 +1006,21 @@ message ListChangeHistoriesRequest {
   string page_token = 3;
 
   ChangeHistoryView view = 4;
+
+  // The filter of the change histories.
+  // Follow the CEL syntax.
+  // currently, we have three attributes for CEL:
+  // - resource.database
+  // - resource.schema
+  // - resource.table
+  // examples:
+  //  if you want to filter by databases, you should use:
+  //    resource.database in ["db1", "db2"]
+  //   even if you only want to filter by one database, you should use the array syntax.
+  //   if you want to filter by tables, you should use:
+  //    resource.database = "db1" && resource.schema = "" && resource.table in ["table1", "table2"]
+  //   Empty schema name is for no schema database engines, such as MySQL.
+  string filter = 5;
 }
 
 message ListChangeHistoriesResponse {

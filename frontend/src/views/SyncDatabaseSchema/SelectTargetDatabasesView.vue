@@ -5,7 +5,9 @@
     <div class="w-full flex flex-row gap-8">
       <span>{{ $t("database.sync-schema.source-schema") }}</span>
       <template
-        v-if="sourceSchemaType === 'DATABASE_SCHEMA' && databaseSourceSchema"
+        v-if="
+          sourceSchemaType === 'SCHEMA_HISTORY_VERSION' && databaseSourceSchema
+        "
       >
         <div class="space-y-2">
           <div>
@@ -279,14 +281,14 @@ const databaseDiffCache = reactive<
 
 const { project } = useProjectV1ByUID(props.projectId);
 const sourceDatabaseSchema = computed(() => {
-  if (props.sourceSchemaType === "DATABASE_SCHEMA") {
+  if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return props.databaseSourceSchema?.changeHistory.schema || "";
   } else {
     return props.schemaDesign?.schema || "";
   }
 });
 const engine = computed(() => {
-  if (props.sourceSchemaType === "DATABASE_SCHEMA") {
+  if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return databaseStore.getDatabaseByUID(
       props.databaseSourceSchema!.databaseId
     ).instanceEntity.engine;

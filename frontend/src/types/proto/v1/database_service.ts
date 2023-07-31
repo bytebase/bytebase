@@ -1235,6 +1235,22 @@ export interface ListChangeHistoriesRequest {
    */
   pageToken: string;
   view: ChangeHistoryView;
+  /**
+   * The filter of the change histories.
+   * Follow the CEL syntax.
+   * currently, we have three attributes for CEL:
+   * - resource.database
+   * - resource.schema
+   * - resource.table
+   * examples:
+   *  if you want to filter by databases, you should use:
+   *    resource.database in ["db1", "db2"]
+   *   even if you only want to filter by one database, you should use the array syntax.
+   *   if you want to filter by tables, you should use:
+   *    resource.database = "db1" && resource.schema = "" && resource.table in ["table1", "table2"]
+   *   Empty schema name is for no schema database engines, such as MySQL.
+   */
+  filter: string;
 }
 
 export interface ListChangeHistoriesResponse {
@@ -6449,7 +6465,7 @@ export const ChangedResourceTable = {
 };
 
 function createBaseListChangeHistoriesRequest(): ListChangeHistoriesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", view: 0 };
+  return { parent: "", pageSize: 0, pageToken: "", view: 0, filter: "" };
 }
 
 export const ListChangeHistoriesRequest = {
@@ -6465,6 +6481,9 @@ export const ListChangeHistoriesRequest = {
     }
     if (message.view !== 0) {
       writer.uint32(32).int32(message.view);
+    }
+    if (message.filter !== "") {
+      writer.uint32(42).string(message.filter);
     }
     return writer;
   },
@@ -6504,6 +6523,13 @@ export const ListChangeHistoriesRequest = {
 
           message.view = reader.int32() as any;
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6519,6 +6545,7 @@ export const ListChangeHistoriesRequest = {
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
       view: isSet(object.view) ? changeHistoryViewFromJSON(object.view) : 0,
+      filter: isSet(object.filter) ? String(object.filter) : "",
     };
   },
 
@@ -6528,6 +6555,7 @@ export const ListChangeHistoriesRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     message.view !== undefined && (obj.view = changeHistoryViewToJSON(message.view));
+    message.filter !== undefined && (obj.filter = message.filter);
     return obj;
   },
 
@@ -6541,6 +6569,7 @@ export const ListChangeHistoriesRequest = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.view = object.view ?? 0;
+    message.filter = object.filter ?? "";
     return message;
   },
 };
