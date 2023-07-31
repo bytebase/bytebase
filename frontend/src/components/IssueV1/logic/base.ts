@@ -1,6 +1,5 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import Emittery from "emittery";
 import { first } from "lodash-es";
 
 import { IssueContext, IssuePhase } from "./context";
@@ -28,12 +27,11 @@ export const nextUID = () => {
 };
 
 export const useBaseIssueContext = (
-  context: Pick<IssueContext, "isCreating" | "ready" | "issue">
+  context: Pick<IssueContext, "isCreating" | "ready" | "issue" | "events">
 ): Partial<IssueContext> => {
-  const { isCreating, issue } = context;
+  const { isCreating, issue, events } = context;
   const route = useRoute();
   const router = useRouter();
-  const events: IssueContext["events"] = new Emittery();
 
   const rollout = computed(() => issue.value.rolloutEntity);
   const project = computed(() => issue.value.projectEntity);

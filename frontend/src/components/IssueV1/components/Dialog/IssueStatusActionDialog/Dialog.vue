@@ -8,7 +8,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { IssueStatusAction } from "@/components/IssueV1/logic";
+import { IssueStatusAction, useIssueContext } from "@/components/IssueV1/logic";
 import CommonDialog from "../CommonDialog.vue";
 import Form from "./Form.vue";
 
@@ -27,6 +27,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
+const { events } = useIssueContext();
 
 const title = computed(() => {
   const { action } = props;
@@ -42,11 +43,6 @@ const title = computed(() => {
   return "";
 });
 
-// const cleanup = () => {
-//   isTransiting.value = false;
-//   emit("cancel");
-// };
-
 const handleConfirm = async (
   action: IssueStatusAction,
   comment: string | undefined
@@ -56,7 +52,11 @@ const handleConfirm = async (
   try {
     await new Promise((r) => setTimeout(r, 1000));
 
-    alert(`confirm issue status action, action=${action}, comment=${comment}`);
+    alert(
+      `confirm issue status action, action=${action}, comment=${comment}\n(not implemented yet)`
+    );
+    // notify the issue logic to update issue status
+    events.emit("status-changed", { eager: true });
   } finally {
     state.loading = false;
     emit("close");

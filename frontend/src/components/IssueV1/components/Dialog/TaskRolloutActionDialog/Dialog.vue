@@ -41,7 +41,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
-const { issue } = useIssueContext();
+const { issue, events } = useIssueContext();
 
 const title = computed(() => {
   const action = taskRolloutActionDisplayName(props.action);
@@ -78,6 +78,9 @@ const handleConfirm = async (
       style: "SUCCESS",
       title: title.value,
     });
+
+    // notify the issue logic to update issue status
+    events.emit("status-changed", { eager: true });
   } finally {
     state.loading = false;
     emit("close");

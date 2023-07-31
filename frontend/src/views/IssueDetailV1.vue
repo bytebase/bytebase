@@ -13,17 +13,22 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
+import Emittery from "emittery";
 import { useTitle } from "@vueuse/core";
+
 import { UNKNOWN_ID } from "@/types";
 import {
   IssueDetailPage,
+  IssueEvents,
   provideIssueContext,
   useBaseIssueContext,
   useInitializeIssue,
 } from "@/components/IssueV1";
+import { uidFromSlug } from "@/utils";
+import { experimentalFetchIssueByUID } from "@/store";
+import { useProgressivePoll } from "@/composables/useProgressivePoll";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -48,6 +53,47 @@ const { isCreating, issue, isInitializing } = useInitializeIssue(issueSlug);
 const ready = computed(() => {
   return !isInitializing.value && !!issue.value;
 });
+const events: IssueEvents = new Emittery();
+
+const pollIssue = () => {
+  if (!isCreating.value && ready.value) {
+    const uid = uidFromSlug(issueSlug.value);
+
+    experimentalFetchIssueByUID(uid).then(
+      (updatedIssue) => (issue.value = updatedIssue)
+    );
+  }
+};
+
+const poller = useProgressivePoll(pollIssue, {
+  interval: {
+    min: 500,
+    max: 10000,
+    growth: 2,
+    jitter: 500,
+  },
+});
+
+watch(
+  [isCreating, ready],
+  () => {
+    if (!isCreating.value && ready.value) {
+      poller.start();
+    } else {
+      poller.stop();
+    }
+  },
+  {
+    immediate: true,
+  }
+);
+
+events.on("status-changed", ({ eager }) => {
+  if (eager) {
+    pollIssue();
+    poller.restart();
+  }
+});
 
 provideIssueContext(
   {
@@ -57,6 +103,7 @@ provideIssueContext(
       isCreating,
       ready,
       issue,
+      events,
     }),
   },
   true /* root */
