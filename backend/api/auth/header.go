@@ -24,13 +24,13 @@ func (m *GatewayResponseModifier) Modify(ctx context.Context, response http.Resp
 		return errors.Errorf("failed to get ServerMetadata from context in the gateway response modifier")
 	}
 	isHTTPS := strings.HasPrefix(m.ExternalURL, "https")
-	processMetadata(md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, true /* httpOnly */, isHTTPS, response)
-	processMetadata(md, GatewayMetadataRefreshTokenKey, RefreshTokenCookieName, true /* httpOnly */, isHTTPS, response)
-	processMetadata(md, GatewayMetadataUserIDKey, UserIDCookieName, false /* httpOnly */, isHTTPS, response)
+	m.processMetadata(md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, true /* httpOnly */, isHTTPS, response)
+	m.processMetadata(md, GatewayMetadataRefreshTokenKey, RefreshTokenCookieName, true /* httpOnly */, isHTTPS, response)
+	m.processMetadata(md, GatewayMetadataUserIDKey, UserIDCookieName, false /* httpOnly */, isHTTPS, response)
 	return nil
 }
 
-func processMetadata(md runtime.ServerMetadata, metadataKey, cookieName string, httpOnly, isHTTPS bool, response http.ResponseWriter) {
+func (m *GatewayResponseModifier) processMetadata(md runtime.ServerMetadata, metadataKey, cookieName string, httpOnly, isHTTPS bool, response http.ResponseWriter) {
 	values := md.HeaderMD.Get(metadataKey)
 	if len(values) == 0 {
 		return
@@ -58,7 +58,7 @@ func processMetadata(md runtime.ServerMetadata, metadataKey, cookieName string, 
 			// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
 			// 1. The access token is about to expire in <<refreshThresholdDuration>>
 			// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
-			Expires: time.Now().Add(DefaultRefreshTokenDuration - 1*time.Minute),
+			Expires: time.Now().Add(m.RefreshTokenDuration - 1*time.Minute),
 			Path:    "/",
 			// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 			HttpOnly: httpOnly,
