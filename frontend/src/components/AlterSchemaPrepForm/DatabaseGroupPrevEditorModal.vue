@@ -84,7 +84,7 @@ import { useDBGroupStore, useNotificationStore, useIssueStore } from "@/store";
 import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
-const MAX_UPLOAD_FILE_SIZE_MB = 1;
+const MAX_UPLOAD_FILE_SIZE_MB = 100;
 
 interface LocalState {
   editStatement: string;

@@ -155,7 +155,7 @@ import GhostDialog from "./GhostDialog.vue";
 import { Engine } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
 
-const MAX_UPLOAD_FILE_SIZE_MB = 1;
+const MAX_UPLOAD_FILE_SIZE_MB = 100;
 
 type TabType = "raw-sql" | "schema-editor";
 
