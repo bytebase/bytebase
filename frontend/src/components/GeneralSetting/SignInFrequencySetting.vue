@@ -11,6 +11,7 @@
         :disabled="!allowEdit"
         :min="1"
         :max="state.timeFormat === 'HOURS' ? 23 : undefined"
+        :precision="0"
       />
       <NRadioGroup v-model:value="state.timeFormat" :disabled="!allowEdit">
         <NRadio :value="'HOURS'" :label="'Hour(s)'" />
