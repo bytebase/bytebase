@@ -555,6 +555,12 @@
           "self": "GitOps Webhook URL",
           "description": "The URL used for sending GitOps webhooks to the Bytebase instance."
         },
+        "sign-in-frequency": {
+          "self": "Sign-in frequency",
+          "description": "Sign-in frequency is the period before a user must sign in again.",
+          "hours": "Hour(s)",
+          "days": "Day(s)"
+        },
         "config-updated": "Configuration is updated",
         "plugin": {
           "openai": {
@@ -2127,6 +2133,10 @@
       "bb-feature-schema-template": {
         "title": "Schema Template",
         "desc": "Pre-define the field template, then apply the template during the schema change."
+      },
+      "bb-feature-secure-token": {
+        "title": "Sign-in frequency",
+        "desc": "Sign-in frequency is the period before a user must sign in again."
       }
     }
   },
