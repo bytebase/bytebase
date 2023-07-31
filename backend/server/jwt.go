@@ -35,14 +35,14 @@ func getPrincipalIDContextKey() string {
 	return principalIDContextKey
 }
 
-// GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
-func GenerateTokensAndSetCookies(c echo.Context, user *store.UserMessage, mode common.ReleaseMode, secret string, refreshTokenDuration time.Duration) error {
+// generateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
+func generateTokensAndSetCookies(c echo.Context, user *store.UserMessage, mode common.ReleaseMode, secret string, refreshTokenDuration time.Duration) error {
 	accessToken, err := auth.GenerateAccessToken(user.Name, user.ID, mode, secret)
 	if err != nil {
 		return pkgerrors.Wrap(err, "failed to generate access token")
 	}
 
-	cookieExp := time.Now().Add(auth.DefaultRefreshTokenDuration - 1*time.Minute)
+	cookieExp := time.Now().Add(refreshTokenDuration - 1*time.Minute)
 	setTokenCookie(c, auth.AccessTokenCookieName, accessToken, cookieExp)
 	setUserCookie(c, user.ID, cookieExp)
 
@@ -235,7 +235,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 
 					// If we have a valid refresh token, we will generate new access token and refresh token
 					if refreshToken != nil && refreshToken.Valid {
-						if err := GenerateTokensAndSetCookies(c, user, mode, secret, refreshTokenDuration); err != nil {
+						if err := generateTokensAndSetCookies(c, user, mode, secret, refreshTokenDuration); err != nil {
 							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalID)).SetInternal(err)
 						}
 					}
