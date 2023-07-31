@@ -59,12 +59,14 @@
     </BBModal>
   </div> -->
 
-  <div v-if="planCheckRunList.length > 0" class="flex items-start space-x-4">
+  <div v-if="planCheckRunList.length > 0" class="flex items-start gap-x-4">
     <div class="textlabel h-[26px] inline-flex items-center">
       {{ $t("task.task-checks") }}
     </div>
 
     <PlanCheckBadgeBar :plan-check-run-list="planCheckRunList" />
+
+    <RunButton />
   </div>
 </template>
 
@@ -76,6 +78,7 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
+import RunButton from "./RunButton.vue";
 
 const { issue, selectedTask } = useIssueContext();
 

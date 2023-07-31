@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="issue-debug">
     <div>type: {{ type }}</div>
     <div>count in type: {{ planCheckRunList.length }}</div>
     <div>latest: {{ latestPlanCheckRun.name }}</div>

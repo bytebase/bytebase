@@ -9,7 +9,9 @@
     </div>
   </div>
 
-  <PlanCheckBar v-if="!isCreating" />
+  <div v-if="!isCreating" class="px-4 py-2">
+    <PlanCheckBar />
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -30,7 +32,7 @@ const runPlanChecks = async () => {
     });
     console.log("runPlanChecks response", response);
   } catch (ex) {
-    debugger;
+    // debugger;
   }
 };
 </script>
