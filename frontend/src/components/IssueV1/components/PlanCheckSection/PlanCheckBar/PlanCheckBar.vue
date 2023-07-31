@@ -59,7 +59,7 @@
     </BBModal>
   </div> -->
 
-  <div v-if="planCheckRunList.length > 0" class="flex items-start gap-x-4">
+  <div class="flex items-start gap-x-4 px-4 py-2">
     <div class="textlabel h-[26px] inline-flex items-center">
       {{ $t("task.task-checks") }}
     </div>

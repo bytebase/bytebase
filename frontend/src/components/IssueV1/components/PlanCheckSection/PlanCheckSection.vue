@@ -9,9 +9,7 @@
     </div>
   </div>
 
-  <div v-if="!isCreating" class="px-4 py-2">
-    <PlanCheckBar />
-  </div>
+  <PlanCheckBar v-if="!isCreating" />
 </template>
 
 <script lang="ts" setup>
@@ -19,6 +17,7 @@ import { NButton } from "naive-ui";
 
 import { rolloutServiceClient } from "@/grpcweb";
 import { useIssueContext } from "../../logic";
+import PlanCheckBar from "./PlanCheckBar";
 
 const { isCreating, issue } = useIssueContext();
 
