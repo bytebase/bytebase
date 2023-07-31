@@ -102,19 +102,19 @@ func Install(resourceDir string) (string, error) {
 	switch {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
 		tarName = "mysql-8.0.33-macos13-x86_64.tar.gz"
-		version = "mysql-8.0.33-darwin-amd64"
+		version = "mysql-8.0.33-macos13-x86_64"
 		extractFn = utils.ExtractTarGz
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		tarName = "mysql-8.0.33-macos13-arm64.tar.gz"
-		version = "mysql-8.0.33-darwin-arm64"
+		version = "mysql-8.0.33-macos13-arm64"
 		extractFn = utils.ExtractTarGz
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		tarName = "mysql-8.0.33-linux-glibc2.17-x86_64-minimal.tar.xz"
-		version = "mysql-8.0.33-linux-amd64"
+		version = "mysql-8.0.33-linux-glibc2.17-x86_64-minimal"
 		extractFn = utils.ExtractTarXz
 	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
 		tarName = "mysql-8.0.33-linux-glibc2.17-aarch64.tar.gz"
-		version = "mysql-8.0.33-linux-arm64"
+		version = "mysql-8.0.33-linux-glibc2.17-aarch64"
 		extractFn = utils.ExtractTarXz
 	default:
 		return "", errors.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
