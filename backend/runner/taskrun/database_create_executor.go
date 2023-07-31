@@ -43,6 +43,7 @@ type DatabaseCreateExecutor struct {
 var cannotCreateDatabase = map[db.Type]bool{
 	db.Redis:  true,
 	db.Oracle: true,
+	db.DM:     true,
 }
 
 // RunOnce will run the database create task executor once.
@@ -133,6 +134,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		}
 	case db.Oracle:
 		return true, nil, errors.Errorf("Do not support creating databases for Oracle")
+	case db.DM:
+		return true, nil, errors.Errorf("Do not support creating databases for DM")
 	default:
 		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {

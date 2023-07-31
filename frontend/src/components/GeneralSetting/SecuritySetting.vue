@@ -88,6 +88,7 @@
           {{ $t("settings.general.workspace.require-2fa.description") }}
         </div>
       </div>
+      <SignInFrequencySetting />
     </div>
   </div>
 
@@ -112,6 +113,7 @@ import { hasWorkspacePermissionV1 } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { FeatureType } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {
   featureNameForModal?: FeatureType;

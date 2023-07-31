@@ -22,7 +22,7 @@ INSERT INTO "public"."policy" ("id", "row_status", "creator_id", "created_ts", "
 
 INSERT INTO "public"."instance" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "environment_id", "name", "engine", "engine_version", "external_link", "resource_id") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 'Sample Test instance', 'POSTGRES', '14.3', '', 'sample-test-mysql'),
-(102, 'NORMAL', 101, 1657272848, 1, 1657272850, 101, 'DEMO', 'MYSQL', '8.0.28', '', 'demo-test-mysql');
+(102, 'NORMAL', 101, 1657272848, 1, 1657272850, 101, 'DEMO', 'MYSQL', '8.0.33', '', 'demo-test-mysql');
 
 INSERT INTO "public"."instance_user" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "instance_id", "name", "grant") VALUES
 (101, 'NORMAL', 1, 1657272852, 1, 1657274591, 102, '''admin''@''%''', 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, PROCESS, REFERENCES, INDEX, ALTER, SHOW DATABASES, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO `admin`@`%` WITH GRANT OPTION'),

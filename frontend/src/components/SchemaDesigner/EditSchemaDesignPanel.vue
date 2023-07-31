@@ -30,6 +30,7 @@
                     $t("common.edit")
                   }}</NButton>
                   <NButton
+                    v-if="!viewMode"
                     type="primary"
                     @click="handleApplySchemaDesignClick"
                     >{{ $t("schema-designer.apply-to-database") }}</NButton
@@ -77,7 +78,27 @@
           :engine="schemaDesign.engine"
           :schema-design="schemaDesign"
         />
+        <div>
+          <BBButtonConfirm
+            :style="'DELETE'"
+            :button-text="$t('schema-designer.delete-this-design')"
+            :require-confirm="true"
+            @confirm="deleteSchemaDesign"
+          />
+        </div>
       </div>
+
+      <template v-if="viewMode" #footer>
+        <div class="flex-1 flex items-center justify-between">
+          <div></div>
+
+          <div class="flex items-center justify-end gap-x-3">
+            <NButton @click.prevent="emit('dismiss')">
+              {{ $t("common.close") }}
+            </NButton>
+          </div>
+        </div>
+      </template>
     </NDrawerContent>
   </NDrawer>
 </template>
@@ -104,6 +125,7 @@ interface LocalState {
 
 const props = defineProps<{
   schemaDesignName: string;
+  viewMode?: boolean;
 }>();
 const emit = defineEmits(["dismiss"]);
 
@@ -210,5 +232,10 @@ const handleApplySchemaDesignClick = () => {
       schemaDesignName: schemaDesign.value.name,
     },
   });
+};
+
+const deleteSchemaDesign = async () => {
+  await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
+  emit("dismiss");
 };
 </script>

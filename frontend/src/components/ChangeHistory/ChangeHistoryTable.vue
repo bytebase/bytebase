@@ -11,13 +11,12 @@
   >
     <template #header>
       <template v-if="mode == 'DATABASE'">
-        <BBTableHeaderCell class="w-12" :left-padding="4">
+        <BBTableHeaderCell class="w-12" :left-padding="4" @click.stop="">
           <NCheckbox
             v-if="historySectionList.length > 0"
             :checked="allSelectionState.checked"
             :indeterminate="allSelectionState.indeterminate"
             @update:checked="toggleAllChangeHistorySelection"
-            @click.stop=""
           />
         </BBTableHeaderCell>
         <BBTableHeaderCell class="w-8" :title="columnList[1].title" />
@@ -48,7 +47,7 @@
         v-if="mode == 'DATABASE'"
         class="table-cell"
         :left-padding="4"
-        @click.stop="handleToggleChangeHistorySelected(history)"
+        @click.stop=""
       >
         <NCheckbox
           :disabled="!allowToSelectChangeHistory(history)"
@@ -123,6 +122,7 @@ import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 import {
   ChangeHistory,
   changeHistory_SourceToJSON,
+  ChangeHistory_Status,
   ChangeHistory_Type,
   changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
@@ -255,10 +255,11 @@ const toggleAllChangeHistorySelection = (): void => {
 
 const allowToSelectChangeHistory = (history: ChangeHistory) => {
   return (
-    history.type === ChangeHistory_Type.BASELINE ||
-    history.type === ChangeHistory_Type.MIGRATE ||
-    history.type === ChangeHistory_Type.MIGRATE_SDL ||
-    history.type === ChangeHistory_Type.DATA
+    history.status === ChangeHistory_Status.DONE &&
+    (history.type === ChangeHistory_Type.BASELINE ||
+      history.type === ChangeHistory_Type.MIGRATE ||
+      history.type === ChangeHistory_Type.MIGRATE_SDL ||
+      history.type === ChangeHistory_Type.DATA)
   );
 };
 

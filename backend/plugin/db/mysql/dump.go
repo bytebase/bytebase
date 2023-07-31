@@ -212,8 +212,15 @@ func dumpTxn(txn *sql.Tx, dbType db.Type, database string, out io.Writer, schema
 		if tbl.TableType != viewTableType {
 			continue
 		}
-		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
-			return err
+		if tbl.InvalidView != "" {
+			// We will write the invalid view error string to schema.
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", fmt.Sprintf(viewStmtFmt, tbl.Name, fmt.Sprintf("-- %s", tbl.InvalidView)))); err != nil {
+				return err
+			}
+		} else {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
+				return err
+			}
 		}
 	}
 	// Construct tables.
@@ -376,6 +383,8 @@ type TableSchema struct {
 	TableType   string
 	Statement   string
 	ViewColumns []string
+	// InvalidView is the error message indicating an invalid view object.
+	InvalidView string
 }
 
 // routineSchema describes the schema of a function or procedure (routine).
@@ -436,9 +445,10 @@ func getTablesTx(txn *sql.Tx, dbType db.Type, dbName string) ([]*TableSchema, er
 		if tbl.TableType == viewTableType {
 			viewColumns, err := getViewColumns(txn, dbName, tbl.Name)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to call getViewColumns(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
+				tbl.InvalidView = err.Error()
+			} else {
+				tbl.ViewColumns = viewColumns
 			}
-			tbl.ViewColumns = viewColumns
 		}
 	}
 	return tables, nil

@@ -10,8 +10,8 @@ on:
 
 jobs:
   golangci-lint:
-    runs-on: macos-latest
-    timeout-minutes: 20
+    runs-on: self-hosted
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -20,8 +20,6 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.20.1
-          check-latest: true
-          cache: true
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
@@ -48,7 +46,7 @@ jobs:
         release-tags:
           - "mysql"
     runs-on: self-hosted
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -57,8 +55,6 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.20.1
-          check-latest: true
-          cache: true
       - name: Cache MySQL
         uses: actions/cache@v3
         with:

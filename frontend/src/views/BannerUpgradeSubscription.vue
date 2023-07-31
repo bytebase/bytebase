@@ -152,6 +152,12 @@ watch(
     if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
       set.add("bb.feature.2fa");
     }
+    if (
+      (settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds ||
+        0) === 0
+    ) {
+      set.add("bb.feature.secure-token");
+    }
     const openAIKeySetting = settingV1Store.getSettingByName(
       "bb.plugin.openai.key"
     );

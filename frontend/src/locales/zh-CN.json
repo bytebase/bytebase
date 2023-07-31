@@ -353,7 +353,8 @@
     },
     "execution-time": "执行时间",
     "run-checks": "运行检查",
-    "run-checks-in-current-stage": "运行当前阶段的所有检查"
+    "run-checks-in-current-stage": "运行当前阶段的所有检查",
+    "action-failed-in-current-stage": "{action}当前阶段失败的任务"
   },
   "banner": {
     "update-license": "更新证书",
@@ -549,6 +550,12 @@
         "gitops-webhook-url": {
           "self": "GitOps Webhook URL",
           "description": "用于 GitOps 中第三方服务向 Bytebase 发送 Webhook 的 URL。"
+        },
+        "sign-in-frequency": {
+          "self": "登录频率",
+          "description": "登录频率指定用户必须再次登录的间隔。",
+          "hours": "小时",
+          "days": "天数"
         },
         "config-updated": "配置已更新",
         "plugin": {
@@ -2119,6 +2126,10 @@
       "bb-feature-schema-template": {
         "title": "Schema 模板",
         "desc": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+      },
+      "bb-feature-secure-token": {
+        "title": "登录频率",
+        "desc": "登录频率指定用户必须再次登录的间隔。"
       }
     },
     "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
@@ -2713,6 +2724,7 @@
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用 Schema 设计",
+    "delete-this-design": "删除这个设计",
     "select-database-placeholder": "选择数据库 (仅限 MySQL)",
     "message": {
       "created-succeed": "Schema 设计创建成功",

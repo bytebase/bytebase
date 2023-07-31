@@ -70,6 +70,7 @@ import {
   isDatabaseRelatedIssueType,
   isGrantRequestIssueType,
   StageStatusTransition,
+  TASK_STATUS_TRANSITION_LIST,
   TaskStatusTransition,
 } from "@/utils";
 import type {
@@ -104,6 +105,7 @@ const {
   template: issueTemplate,
   activeTaskOfPipeline,
   doCreate,
+  allowApplyTaskStatusTransition,
 } = useIssueLogic();
 
 const onGoingIssueStatusTransition = ref<{
@@ -149,6 +151,26 @@ const issueStatusTransitionActionList = computed(() => {
     }
   }
   return actionList;
+});
+
+const retryableTaskList = computed(() => {
+  if (create.value) return [];
+
+  const issueEntity = issue.value as Issue;
+  if (issueEntity.status !== "OPEN") {
+    return [];
+  }
+  if (!isDatabaseRelatedIssueType(issueEntity.type)) {
+    return [];
+  }
+
+  const currentStage = activeStage(issueEntity.pipeline!);
+  const RETRY = TASK_STATUS_TRANSITION_LIST.get("RETRY")!;
+  return currentStage.taskList.filter((task) => {
+    return (
+      task.status === "FAILED" && allowApplyTaskStatusTransition(task, RETRY.to)
+    );
+  });
 });
 
 const skippableTaskList = computed(() => {
@@ -210,6 +232,17 @@ const tryStartStageOrTaskStatusTransition = (
   transition: TaskStatusTransition | StageStatusTransition,
   mode: "STAGE" | "TASK"
 ) => {
+  if (transition.type === "RETRY" && mode === "STAGE") {
+    // RETRYing current stage won't use stage status transition API endpoint.
+    // Use batch task status transition instead.
+    const taskList = retryableTaskList.value;
+    onGoingBatchTaskStatusTransition.value = {
+      transition,
+      taskList,
+    };
+    return;
+  }
+
   onGoingTaskOrStageStatusTransition.value = {
     mode,
     transition,

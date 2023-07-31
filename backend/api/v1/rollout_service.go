@@ -668,8 +668,8 @@ func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	return &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),
-		Creator:       fmt.Sprintf("user:%s", taskRun.Creator.Email),
-		Updater:       fmt.Sprintf("user:%s", taskRun.Updater.Email),
+		Creator:       fmt.Sprintf("user/%s", taskRun.Creator.Email),
+		Updater:       fmt.Sprintf("user/%s", taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
 		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
 		Title:         taskRun.Name,
@@ -1262,6 +1262,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if sheet == nil {
 					return nil, status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 				}
+				// TODO(p0ny): update schema version
 				if _, err := s.store.UpdateTaskV2(ctx, &api.TaskPatch{
 					ID:        task.ID,
 					UpdaterID: updaterID,
@@ -1586,8 +1587,9 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
@@ -1604,7 +1606,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
 		payload := api.TaskDatabaseSchemaBaselinePayload{
 			SpecID:        spec.Id,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -1634,7 +1636,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:  nil,
 		}
 		bytes, err := json.Marshal(payload)
@@ -1665,7 +1667,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:  nil,
 		}
 		bytes, err := json.Marshal(payload)
@@ -1752,7 +1754,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseDataUpdatePayload{
 			SpecID:            spec.Id,
 			SheetID:           sheetID,
-			SchemaVersion:     c.SchemaVersion,
+			SchemaVersion:     getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:      nil,
 			RollbackEnabled:   c.RollbackEnabled,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
@@ -1805,8 +1807,9 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
@@ -1856,9 +1859,14 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
 			}
+			backupInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &backupInstanceID})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get instance %q", backupInstanceID)
+			}
 			backupDatabase, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &backupInstanceID,
-				DatabaseName: &backupDatabaseName,
+				InstanceID:          &backupInstanceID,
+				DatabaseName:        &backupDatabaseName,
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(backupInstance),
 			})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get database %q", backupDatabaseName)
@@ -1912,9 +1920,14 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
 			}
+			backupInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &backupInstanceID})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get instance %q", backupInstanceID)
+			}
 			backupDatabase, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &backupInstanceID,
-				DatabaseName: &backupDatabaseName,
+				InstanceID:          &backupInstanceID,
+				DatabaseName:        &backupDatabaseName,
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(backupInstance),
 			})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get database %q", backupDatabaseName)
@@ -2437,4 +2450,11 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 
 func getResourceNameForSheet(project *store.ProjectMessage, sheetUID int) string {
 	return fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheetUID)
+}
+
+func getOrDefaultSchemaVersion(v string) string {
+	if v != "" {
+		return v
+	}
+	return common.DefaultMigrationVersion()
 }

@@ -6,7 +6,8 @@
     "oracle": "Oracle",
     "oceanbase": "OceanBase",
     "snowflake": "Snowflake",
-    "mssql": "SQL Server"
+    "mssql": "SQL Server",
+    "dm":"DM"
   },
   "category": {
     "engine": "Engine",

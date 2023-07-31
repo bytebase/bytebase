@@ -73,6 +73,12 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     await fetchSchemaDesignByName(name, silent);
     return getSchemaDesignByName(name);
   };
+  const deleteSchemaDesign = async (name: string) => {
+    await schemaDesignServiceClient.deleteSchemaDesign({
+      name,
+    });
+    schemaDesignMapByName.delete(name);
+  };
 
   // Util functions
   const parseSchemaString = async (
@@ -105,6 +111,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     getOrFetchSchemaDesignByName,
     getSchemaDesignByName,
     parseSchemaString,
+    deleteSchemaDesign,
   };
 });
 

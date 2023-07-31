@@ -36,18 +36,18 @@ func getPrincipalIDContextKey() string {
 }
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
-func GenerateTokensAndSetCookies(c echo.Context, user *store.UserMessage, mode common.ReleaseMode, secret string) error {
+func GenerateTokensAndSetCookies(c echo.Context, user *store.UserMessage, mode common.ReleaseMode, secret string, refreshTokenDuration time.Duration) error {
 	accessToken, err := auth.GenerateAccessToken(user.Name, user.ID, mode, secret)
 	if err != nil {
 		return pkgerrors.Wrap(err, "failed to generate access token")
 	}
 
-	cookieExp := time.Now().Add(auth.CookieExpDuration)
+	cookieExp := time.Now().Add(auth.DefaultRefreshTokenDuration - 1*time.Minute)
 	setTokenCookie(c, auth.AccessTokenCookieName, accessToken, cookieExp)
 	setUserCookie(c, user.ID, cookieExp)
 
 	// We generate here a new refresh token and saving it to the cookie.
-	refreshToken, err := auth.GenerateRefreshToken(user.Name, user.ID, mode, secret)
+	refreshToken, err := auth.GenerateRefreshToken(user.Name, user.ID, mode, secret, refreshTokenDuration)
 	if err != nil {
 		return pkgerrors.Wrap(err, "failed to generate refresh token")
 	}
@@ -119,7 +119,7 @@ func findAccessToken(c echo.Context) (string, error) {
 // JWTMiddleware validates the access token.
 // If the access token is about to expire or has expired and the request has a valid refresh token, it
 // will try to generate new access token and refresh token.
-func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string) echo.HandlerFunc {
+func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string, refreshTokenDuration time.Duration) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
 
@@ -166,7 +166,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 				))
 		}
 
-		generateToken := time.Until(claims.ExpiresAt.Time) < auth.RefreshThresholdDuration
+		generateToken := false
 		if err != nil {
 			var ve *jwt.ValidationError
 			if errors.As(err, &ve) {
@@ -235,7 +235,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 
 					// If we have a valid refresh token, we will generate new access token and refresh token
 					if refreshToken != nil && refreshToken.Valid {
-						if err := GenerateTokensAndSetCookies(c, user, mode, secret); err != nil {
+						if err := GenerateTokensAndSetCookies(c, user, mode, secret, refreshTokenDuration); err != nil {
 							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalID)).SetInternal(err)
 						}
 					}

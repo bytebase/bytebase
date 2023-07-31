@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
@@ -196,6 +197,9 @@ message WorkspaceProfileSetting {
 
   // The webhook URL for the GitOps workflow.
   string gitops_webhook_url = 5;
+
+  // The duration for refresh token.
+  google.protobuf.Duration refresh_token_duration = 6;
 }
 
 message WorkspaceApprovalSetting {
@@ -232,7 +236,15 @@ message SchemaTemplateSetting {
 
   repeated FieldTemplate field_templates = 1;
 
-  // TODO: support table_templates
+  message ColumnType {
+    Engine engine = 1;
+
+    bool enabled = 2;
+
+    repeated string types = 3;
+  }
+
+  repeated ColumnType column_types = 2;
 }
 
 message WorkspaceTrialSetting {

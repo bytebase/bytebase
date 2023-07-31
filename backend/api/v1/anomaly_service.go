@@ -82,9 +82,14 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s": %v`, resources[0], err.Error())
 				}
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &insID})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get instance %s", insID)
+				}
 				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:   &insID,
-					DatabaseName: &dbName,
+					InstanceID:          &insID,
+					DatabaseName:        &dbName,
+					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, err.Error())

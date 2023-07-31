@@ -25,13 +25,16 @@
           <NRadio :checked="schemaDesign.name === selectedSchemaDesign?.name" />
         </div>
         <div class="bb-grid-cell">
-          {{ schemaDesign.title }}
+          <div class="flex flex-row justify-start items-center">
+            <EngineIcon
+              class="mr-2"
+              :engine="getFormatedValue(schemaDesign).engine"
+            />
+            <span>{{ schemaDesign.title }}</span>
+          </div>
         </div>
         <div class="bb-grid-cell">
           {{ getFormatedValue(schemaDesign).project }}
-        </div>
-        <div class="bb-grid-cell">
-          {{ engineNameV1(getFormatedValue(schemaDesign).engine) }}
         </div>
         <div class="bb-grid-cell">
           {{ getFormatedValue(schemaDesign).creator }}
@@ -46,7 +49,10 @@
           />
         </div>
         <div class="bb-grid-cell">
-          <NButton size="small" @click="state.showEditPanel = true">
+          <NButton
+            size="small"
+            @click.stop="handleViewSchemaDesign(schemaDesign)"
+          >
             {{ $t("common.view") }}
           </NButton>
         </div>
@@ -68,6 +74,7 @@
   <EditSchemaDesignPanel
     v-if="state.showEditPanel && selectedSchemaDesign"
     :schema-design-name="selectedSchemaDesign.name"
+    :view-mode="true"
     @dismiss="state.showEditPanel = false"
   />
 </template>
@@ -81,7 +88,7 @@ import { BBGridColumn } from "@/bbkit";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { useProjectV1Store, useUserStore } from "@/store";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { engineNameV1, projectV1Name } from "@/utils";
+import { projectV1Name } from "@/utils";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import { NRadio } from "naive-ui";
 import CreateSchemaDesignPanel from "@/components/SchemaDesigner/CreateSchemaDesignPanel.vue";
@@ -119,10 +126,6 @@ const COLUMN_LIST = computed(() => {
       title: t("common.project"),
       width: "1fr",
     },
-    {
-      title: t("database.engine"),
-      width: "1fr",
-    },
     { title: t("common.creator"), width: "1fr" },
     { title: t("common.updater"), width: "1fr" },
     { title: t("common.updated-at"), width: "1fr" },
@@ -155,5 +158,10 @@ const getFormatedValue = (schemaDesign: SchemaDesign) => {
 const clickSchemaDesign = (schemaDesign: SchemaDesign) => {
   selectedSchemaDesign.value = schemaDesign;
   emit("select", schemaDesign);
+};
+
+const handleViewSchemaDesign = (schemaDesign: SchemaDesign) => {
+  clickSchemaDesign(schemaDesign);
+  state.showEditPanel = true;
 };
 </script>

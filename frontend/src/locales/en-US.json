@@ -357,7 +357,8 @@
     },
     "execution-time": "Execution time",
     "run-checks": "Run checks",
-    "run-checks-in-current-stage": "Run checks in current stage"
+    "run-checks-in-current-stage": "Run checks in current stage",
+    "action-failed-in-current-stage": "{action} failed tasks in current stage"
   },
   "banner": {
     "update-license": "Update license",
@@ -553,6 +554,12 @@
         "gitops-webhook-url": {
           "self": "GitOps Webhook URL",
           "description": "The URL used for sending GitOps webhooks to the Bytebase instance."
+        },
+        "sign-in-frequency": {
+          "self": "Sign-in frequency",
+          "description": "Sign-in frequency is the period before a user must sign in again.",
+          "hours": "Hour(s)",
+          "days": "Day(s)"
         },
         "config-updated": "Configuration is updated",
         "plugin": {
@@ -2126,6 +2133,10 @@
       "bb-feature-schema-template": {
         "title": "Schema Template",
         "desc": "Pre-define the field template, then apply the template during the schema change."
+      },
+      "bb-feature-secure-token": {
+        "title": "Sign-in frequency",
+        "desc": "Sign-in frequency is the period before a user must sign in again."
       }
     }
   },
@@ -2722,6 +2733,7 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply to database",
+    "delete-this-design": "Delete this design",
     "select-database-placeholder": "Select a database (MySQL only)",
     "message": {
       "created-succeed": "Schema design created successfully",
