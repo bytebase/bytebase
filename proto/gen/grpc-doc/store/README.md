@@ -79,10 +79,10 @@
     - [VcsType](#bytebase-store-VcsType)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
-    - [ChangeResourceDatabase](#bytebase-store-ChangeResourceDatabase)
-    - [ChangeResourceSchema](#bytebase-store-ChangeResourceSchema)
-    - [ChangeResourceTable](#bytebase-store-ChangeResourceTable)
-    - [ChangeResources](#bytebase-store-ChangeResources)
+    - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
+    - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
+    - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
+    - [ChangedResources](#bytebase-store-ChangedResources)
     - [InstanceChangeHistoryPayload](#bytebase-store-InstanceChangeHistoryPayload)
   
 - [store/issue.proto](#store_issue-proto)
@@ -1239,41 +1239,41 @@ InstanceOptions is the option for instances.
 
 
 
-<a name="bytebase-store-ChangeResourceDatabase"></a>
+<a name="bytebase-store-ChangedResourceDatabase"></a>
 
-### ChangeResourceDatabase
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [ChangeResourceSchema](#bytebase-store-ChangeResourceSchema) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ChangeResourceSchema"></a>
-
-### ChangeResourceSchema
+### ChangedResourceDatabase
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| tables | [ChangeResourceTable](#bytebase-store-ChangeResourceTable) | repeated |  |
+| schemas | [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-store-ChangeResourceTable"></a>
+<a name="bytebase-store-ChangedResourceSchema"></a>
 
-### ChangeResourceTable
+### ChangedResourceSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [ChangedResourceTable](#bytebase-store-ChangedResourceTable) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceTable"></a>
+
+### ChangedResourceTable
 
 
 
@@ -1286,15 +1286,15 @@ InstanceOptions is the option for instances.
 
 
 
-<a name="bytebase-store-ChangeResources"></a>
+<a name="bytebase-store-ChangedResources"></a>
 
-### ChangeResources
+### ChangedResources
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| databases | [ChangeResourceDatabase](#bytebase-store-ChangeResourceDatabase) | repeated |  |
+| databases | [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase) | repeated |  |
 
 
 
@@ -1310,7 +1310,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | push_event | [PushEvent](#bytebase-store-PushEvent) |  |  |
-| change_resources | [ChangeResources](#bytebase-store-ChangeResources) |  |  |
+| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
 
 

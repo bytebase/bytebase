@@ -1040,7 +1040,7 @@ export interface ChangeHistory {
   /** Format: projects/{project}/issues/{issue} */
   issue: string;
   pushEvent?: PushEvent | undefined;
-  changeResources?: ChangeResources | undefined;
+  changedResources?: ChangedResources | undefined;
 }
 
 export enum ChangeHistory_Source {
@@ -1196,21 +1196,21 @@ export function changeHistory_StatusToJSON(object: ChangeHistory_Status): string
   }
 }
 
-export interface ChangeResources {
-  databases: ChangeResourceDatabase[];
+export interface ChangedResources {
+  databases: ChangedResourceDatabase[];
 }
 
-export interface ChangeResourceDatabase {
+export interface ChangedResourceDatabase {
   name: string;
-  schemas: ChangeResourceSchema[];
+  schemas: ChangedResourceSchema[];
 }
 
-export interface ChangeResourceSchema {
+export interface ChangedResourceSchema {
   name: string;
-  tables: ChangeResourceTable[];
+  tables: ChangedResourceTable[];
 }
 
-export interface ChangeResourceTable {
+export interface ChangedResourceTable {
   name: string;
 }
 
@@ -5877,7 +5877,7 @@ function createBaseChangeHistory(): ChangeHistory {
     executionDuration: undefined,
     issue: "",
     pushEvent: undefined,
-    changeResources: undefined,
+    changedResources: undefined,
   };
 }
 
@@ -5937,8 +5937,8 @@ export const ChangeHistory = {
     if (message.pushEvent !== undefined) {
       PushEvent.encode(message.pushEvent, writer.uint32(146).fork()).ldelim();
     }
-    if (message.changeResources !== undefined) {
-      ChangeResources.encode(message.changeResources, writer.uint32(154).fork()).ldelim();
+    if (message.changedResources !== undefined) {
+      ChangedResources.encode(message.changedResources, writer.uint32(154).fork()).ldelim();
     }
     return writer;
   },
@@ -6081,7 +6081,7 @@ export const ChangeHistory = {
             break;
           }
 
-          message.changeResources = ChangeResources.decode(reader, reader.uint32());
+          message.changedResources = ChangedResources.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6112,7 +6112,7 @@ export const ChangeHistory = {
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
       issue: isSet(object.issue) ? String(object.issue) : "",
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
-      changeResources: isSet(object.changeResources) ? ChangeResources.fromJSON(object.changeResources) : undefined,
+      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
   },
 
@@ -6138,8 +6138,8 @@ export const ChangeHistory = {
     message.issue !== undefined && (obj.issue = message.issue);
     message.pushEvent !== undefined &&
       (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
-    message.changeResources !== undefined &&
-      (obj.changeResources = message.changeResources ? ChangeResources.toJSON(message.changeResources) : undefined);
+    message.changedResources !== undefined &&
+      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
     return obj;
   },
 
@@ -6171,29 +6171,29 @@ export const ChangeHistory = {
     message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
       ? PushEvent.fromPartial(object.pushEvent)
       : undefined;
-    message.changeResources = (object.changeResources !== undefined && object.changeResources !== null)
-      ? ChangeResources.fromPartial(object.changeResources)
+    message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
+      ? ChangedResources.fromPartial(object.changedResources)
       : undefined;
     return message;
   },
 };
 
-function createBaseChangeResources(): ChangeResources {
+function createBaseChangedResources(): ChangedResources {
   return { databases: [] };
 }
 
-export const ChangeResources = {
-  encode(message: ChangeResources, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ChangedResources = {
+  encode(message: ChangedResources, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.databases) {
-      ChangeResourceDatabase.encode(v!, writer.uint32(10).fork()).ldelim();
+      ChangedResourceDatabase.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ChangeResources {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangedResources {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseChangeResources();
+    const message = createBaseChangedResources();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -6202,7 +6202,7 @@ export const ChangeResources = {
             break;
           }
 
-          message.databases.push(ChangeResourceDatabase.decode(reader, reader.uint32()));
+          message.databases.push(ChangedResourceDatabase.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6213,54 +6213,54 @@ export const ChangeResources = {
     return message;
   },
 
-  fromJSON(object: any): ChangeResources {
+  fromJSON(object: any): ChangedResources {
     return {
       databases: Array.isArray(object?.databases)
-        ? object.databases.map((e: any) => ChangeResourceDatabase.fromJSON(e))
+        ? object.databases.map((e: any) => ChangedResourceDatabase.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: ChangeResources): unknown {
+  toJSON(message: ChangedResources): unknown {
     const obj: any = {};
     if (message.databases) {
-      obj.databases = message.databases.map((e) => e ? ChangeResourceDatabase.toJSON(e) : undefined);
+      obj.databases = message.databases.map((e) => e ? ChangedResourceDatabase.toJSON(e) : undefined);
     } else {
       obj.databases = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<ChangeResources>): ChangeResources {
-    return ChangeResources.fromPartial(base ?? {});
+  create(base?: DeepPartial<ChangedResources>): ChangedResources {
+    return ChangedResources.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ChangeResources>): ChangeResources {
-    const message = createBaseChangeResources();
-    message.databases = object.databases?.map((e) => ChangeResourceDatabase.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<ChangedResources>): ChangedResources {
+    const message = createBaseChangedResources();
+    message.databases = object.databases?.map((e) => ChangedResourceDatabase.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseChangeResourceDatabase(): ChangeResourceDatabase {
+function createBaseChangedResourceDatabase(): ChangedResourceDatabase {
   return { name: "", schemas: [] };
 }
 
-export const ChangeResourceDatabase = {
-  encode(message: ChangeResourceDatabase, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ChangedResourceDatabase = {
+  encode(message: ChangedResourceDatabase, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     for (const v of message.schemas) {
-      ChangeResourceSchema.encode(v!, writer.uint32(18).fork()).ldelim();
+      ChangedResourceSchema.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ChangeResourceDatabase {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangedResourceDatabase {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseChangeResourceDatabase();
+    const message = createBaseChangedResourceDatabase();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -6276,7 +6276,7 @@ export const ChangeResourceDatabase = {
             break;
           }
 
-          message.schemas.push(ChangeResourceSchema.decode(reader, reader.uint32()));
+          message.schemas.push(ChangedResourceSchema.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6287,55 +6287,55 @@ export const ChangeResourceDatabase = {
     return message;
   },
 
-  fromJSON(object: any): ChangeResourceDatabase {
+  fromJSON(object: any): ChangedResourceDatabase {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      schemas: Array.isArray(object?.schemas) ? object.schemas.map((e: any) => ChangeResourceSchema.fromJSON(e)) : [],
+      schemas: Array.isArray(object?.schemas) ? object.schemas.map((e: any) => ChangedResourceSchema.fromJSON(e)) : [],
     };
   },
 
-  toJSON(message: ChangeResourceDatabase): unknown {
+  toJSON(message: ChangedResourceDatabase): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.schemas) {
-      obj.schemas = message.schemas.map((e) => e ? ChangeResourceSchema.toJSON(e) : undefined);
+      obj.schemas = message.schemas.map((e) => e ? ChangedResourceSchema.toJSON(e) : undefined);
     } else {
       obj.schemas = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<ChangeResourceDatabase>): ChangeResourceDatabase {
-    return ChangeResourceDatabase.fromPartial(base ?? {});
+  create(base?: DeepPartial<ChangedResourceDatabase>): ChangedResourceDatabase {
+    return ChangedResourceDatabase.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ChangeResourceDatabase>): ChangeResourceDatabase {
-    const message = createBaseChangeResourceDatabase();
+  fromPartial(object: DeepPartial<ChangedResourceDatabase>): ChangedResourceDatabase {
+    const message = createBaseChangedResourceDatabase();
     message.name = object.name ?? "";
-    message.schemas = object.schemas?.map((e) => ChangeResourceSchema.fromPartial(e)) || [];
+    message.schemas = object.schemas?.map((e) => ChangedResourceSchema.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseChangeResourceSchema(): ChangeResourceSchema {
+function createBaseChangedResourceSchema(): ChangedResourceSchema {
   return { name: "", tables: [] };
 }
 
-export const ChangeResourceSchema = {
-  encode(message: ChangeResourceSchema, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ChangedResourceSchema = {
+  encode(message: ChangedResourceSchema, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     for (const v of message.tables) {
-      ChangeResourceTable.encode(v!, writer.uint32(18).fork()).ldelim();
+      ChangedResourceTable.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ChangeResourceSchema {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangedResourceSchema {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseChangeResourceSchema();
+    const message = createBaseChangedResourceSchema();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -6351,7 +6351,7 @@ export const ChangeResourceSchema = {
             break;
           }
 
-          message.tables.push(ChangeResourceTable.decode(reader, reader.uint32()));
+          message.tables.push(ChangedResourceTable.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6362,52 +6362,52 @@ export const ChangeResourceSchema = {
     return message;
   },
 
-  fromJSON(object: any): ChangeResourceSchema {
+  fromJSON(object: any): ChangedResourceSchema {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      tables: Array.isArray(object?.tables) ? object.tables.map((e: any) => ChangeResourceTable.fromJSON(e)) : [],
+      tables: Array.isArray(object?.tables) ? object.tables.map((e: any) => ChangedResourceTable.fromJSON(e)) : [],
     };
   },
 
-  toJSON(message: ChangeResourceSchema): unknown {
+  toJSON(message: ChangedResourceSchema): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.tables) {
-      obj.tables = message.tables.map((e) => e ? ChangeResourceTable.toJSON(e) : undefined);
+      obj.tables = message.tables.map((e) => e ? ChangedResourceTable.toJSON(e) : undefined);
     } else {
       obj.tables = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<ChangeResourceSchema>): ChangeResourceSchema {
-    return ChangeResourceSchema.fromPartial(base ?? {});
+  create(base?: DeepPartial<ChangedResourceSchema>): ChangedResourceSchema {
+    return ChangedResourceSchema.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ChangeResourceSchema>): ChangeResourceSchema {
-    const message = createBaseChangeResourceSchema();
+  fromPartial(object: DeepPartial<ChangedResourceSchema>): ChangedResourceSchema {
+    const message = createBaseChangedResourceSchema();
     message.name = object.name ?? "";
-    message.tables = object.tables?.map((e) => ChangeResourceTable.fromPartial(e)) || [];
+    message.tables = object.tables?.map((e) => ChangedResourceTable.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseChangeResourceTable(): ChangeResourceTable {
+function createBaseChangedResourceTable(): ChangedResourceTable {
   return { name: "" };
 }
 
-export const ChangeResourceTable = {
-  encode(message: ChangeResourceTable, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ChangedResourceTable = {
+  encode(message: ChangedResourceTable, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ChangeResourceTable {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangedResourceTable {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseChangeResourceTable();
+    const message = createBaseChangedResourceTable();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -6427,22 +6427,22 @@ export const ChangeResourceTable = {
     return message;
   },
 
-  fromJSON(object: any): ChangeResourceTable {
+  fromJSON(object: any): ChangedResourceTable {
     return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
-  toJSON(message: ChangeResourceTable): unknown {
+  toJSON(message: ChangedResourceTable): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
-  create(base?: DeepPartial<ChangeResourceTable>): ChangeResourceTable {
-    return ChangeResourceTable.fromPartial(base ?? {});
+  create(base?: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
+    return ChangedResourceTable.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ChangeResourceTable>): ChangeResourceTable {
-    const message = createBaseChangeResourceTable();
+  fromPartial(object: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
+    const message = createBaseChangedResourceTable();
     message.name = object.name ?? "";
     return message;
   },

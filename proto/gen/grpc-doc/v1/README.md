@@ -135,10 +135,10 @@
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [ChangeHistory](#bytebase-v1-ChangeHistory)
-    - [ChangeResourceDatabase](#bytebase-v1-ChangeResourceDatabase)
-    - [ChangeResourceSchema](#bytebase-v1-ChangeResourceSchema)
-    - [ChangeResourceTable](#bytebase-v1-ChangeResourceTable)
-    - [ChangeResources](#bytebase-v1-ChangeResources)
+    - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
+    - [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema)
+    - [ChangedResourceTable](#bytebase-v1-ChangedResourceTable)
+    - [ChangedResources](#bytebase-v1-ChangedResources)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
     - [CreateBackupRequest](#bytebase-v1-CreateBackupRequest)
     - [Database](#bytebase-v1-Database)
@@ -2450,48 +2450,48 @@ Default (empty): Disable automatic backup. |
 | execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 | issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
 | push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
-| change_resources | [ChangeResources](#bytebase-v1-ChangeResources) |  |  |
+| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-ChangeResourceDatabase"></a>
+<a name="bytebase-v1-ChangedResourceDatabase"></a>
 
-### ChangeResourceDatabase
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [ChangeResourceSchema](#bytebase-v1-ChangeResourceSchema) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangeResourceSchema"></a>
-
-### ChangeResourceSchema
+### ChangedResourceDatabase
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| tables | [ChangeResourceTable](#bytebase-v1-ChangeResourceTable) | repeated |  |
+| schemas | [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-v1-ChangeResourceTable"></a>
+<a name="bytebase-v1-ChangedResourceSchema"></a>
 
-### ChangeResourceTable
+### ChangedResourceSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [ChangedResourceTable](#bytebase-v1-ChangedResourceTable) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangedResourceTable"></a>
+
+### ChangedResourceTable
 
 
 
@@ -2504,15 +2504,15 @@ Default (empty): Disable automatic backup. |
 
 
 
-<a name="bytebase-v1-ChangeResources"></a>
+<a name="bytebase-v1-ChangedResources"></a>
 
-### ChangeResources
+### ChangedResources
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| databases | [ChangeResourceDatabase](#bytebase-v1-ChangeResourceDatabase) | repeated |  |
+| databases | [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase) | repeated |  |
 
 
 
