@@ -668,8 +668,8 @@ func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	return &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),
-		Creator:       fmt.Sprintf("user:%s", taskRun.Creator.Email),
-		Updater:       fmt.Sprintf("user:%s", taskRun.Updater.Email),
+		Creator:       fmt.Sprintf("user/%s", taskRun.Creator.Email),
+		Updater:       fmt.Sprintf("user/%s", taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
 		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
 		Title:         taskRun.Name,
