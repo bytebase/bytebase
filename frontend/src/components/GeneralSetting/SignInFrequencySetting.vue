@@ -28,13 +28,32 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { computed, reactive, onMounted, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NInputNumber, NRadioGroup, NRadio } from "naive-ui";
 import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { FeatureType } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+
+const getInitialState = (): LocalState => {
+  const defaultState: LocalState = {
+    inputValue: 7,
+    timeFormat: "DAYS",
+  };
+  const seconds =
+    settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds;
+  if (seconds && seconds > 0) {
+    if (seconds < 60 * 60 * 24) {
+      defaultState.inputValue = Math.floor(seconds / (60 * 60)) || 1;
+      defaultState.timeFormat = "HOURS";
+    } else {
+      defaultState.inputValue = Math.floor(seconds / (60 * 60 * 24)) || 1;
+      defaultState.timeFormat = "DAYS";
+    }
+  }
+  return defaultState;
+};
 
 interface LocalState {
   inputValue: number;
@@ -45,10 +64,7 @@ interface LocalState {
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
-const state = reactive<LocalState>({
-  inputValue: 7,
-  timeFormat: "DAYS",
-});
+const state = reactive<LocalState>(getInitialState());
 
 // TODO(steven): update feature name.
 const hasSecureTokenFeature = featureToRef("bb.feature.secure-token");
@@ -58,20 +74,6 @@ const allowEdit = computed((): boolean => {
     "bb.permission.workspace.manage-general",
     currentUserV1.value.userRole
   );
-});
-
-onMounted(() => {
-  const seconds =
-    settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds;
-  if (seconds && seconds > 0) {
-    if (seconds < 60 * 60 * 24) {
-      state.inputValue = Math.floor(seconds / (60 * 60)) || 1;
-      state.timeFormat = "HOURS";
-    } else {
-      state.inputValue = Math.floor(seconds / (60 * 60 * 24)) || 1;
-      state.timeFormat = "DAYS";
-    }
-  }
 });
 
 const handleFrequencySettingChange = useDebounceFn(async () => {
@@ -93,6 +95,15 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
     title: t("settings.general.workspace.config-updated"),
   });
 }, 2000);
+
+watch(
+  () => [state.timeFormat],
+  () => {
+    if (state.timeFormat === "HOURS" && state.inputValue > 23) {
+      state.inputValue = 23;
+    }
+  }
+);
 
 watch(
   () => [state.inputValue, state.timeFormat],
