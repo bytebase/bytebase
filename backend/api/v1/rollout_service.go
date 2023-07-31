@@ -1262,6 +1262,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if sheet == nil {
 					return nil, status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 				}
+				// TODO(p0ny): update schema version
 				if _, err := s.store.UpdateTaskV2(ctx, &api.TaskPatch{
 					ID:        task.ID,
 					UpdaterID: updaterID,
@@ -1605,7 +1606,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
 		payload := api.TaskDatabaseSchemaBaselinePayload{
 			SpecID:        spec.Id,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -1635,7 +1636,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:  nil,
 		}
 		bytes, err := json.Marshal(payload)
@@ -1666,7 +1667,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:  nil,
 		}
 		bytes, err := json.Marshal(payload)
@@ -1753,7 +1754,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseDataUpdatePayload{
 			SpecID:            spec.Id,
 			SheetID:           sheetID,
-			SchemaVersion:     c.SchemaVersion,
+			SchemaVersion:     getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:      nil,
 			RollbackEnabled:   c.RollbackEnabled,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
@@ -2449,4 +2450,11 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 
 func getResourceNameForSheet(project *store.ProjectMessage, sheetUID int) string {
 	return fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheetUID)
+}
+
+func getOrDefaultSchemaVersion(v string) string {
+	if v != "" {
+		return v
+	}
+	return common.DefaultMigrationVersion()
 }
