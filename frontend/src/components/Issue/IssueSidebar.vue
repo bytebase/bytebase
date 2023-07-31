@@ -176,11 +176,16 @@
             }
           "
         >
-          <div class="flex items-center">
+          <div class="flex items-center gap-x-1">
             <span>{{ databaseName }}</span>
+            <router-link
+              :to="`/environment/${environmentV1Slug(environment)}`"
+              class="col-span-2 text-sm font-medium text-main hover:underline"
+            >
+              ({{ environmentV1Name(environment) }})
+            </router-link>
             <SQLEditorButtonV1
               v-if="databaseEntity"
-              class="ml-1"
               :database="databaseEntity"
             />
           </div>
@@ -192,25 +197,24 @@
         <span class="mr-1">{{ $t("common.instance") }}</span>
         <InstanceV1EngineIcon :instance="instance" />
       </h2>
-      <router-link
-        v-if="allowManageInstance"
-        :to="`/instance/${instanceV1Slug(instance)}`"
-        class="col-span-2 text-sm font-medium text-main hover:underline"
-      >
-        {{ instanceV1Name(instance) }}
-      </router-link>
-      <span v-else class="col-span-2 text-sm font-medium text-main">
-        {{ instanceV1Name(instance) }}
-      </span>
-
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.environment") }}
-      </h2>
-      <EnvironmentV1Name
-        :environment="environment"
-        :link="true"
-        class="col-span-2 !text-sm !font-medium !text-main !hover:underline flex items-center"
-      />
+      <div class="flex gap-x-1">
+        <router-link
+          v-if="allowManageInstance"
+          :to="`/instance/${instanceV1Slug(instance)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          {{ instanceV1Name(instance) }}
+        </router-link>
+        <span v-else class="col-span-2 text-sm font-medium text-main">
+          {{ instanceV1Name(instance) }}
+        </span>
+        <router-link
+          :to="`/environment/${environmentV1Slug(environment)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          ({{ environmentV1Name(environment) }})
+        </router-link>
+      </div>
 
       <template v-for="label in visibleLabelList" :key="label.key">
         <h2
@@ -303,7 +307,7 @@ import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import TaskRollbackView from "./rollback/TaskRollbackView.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import { InputField } from "@/plugins";
 import {
   ComposedDatabase,
@@ -326,6 +330,8 @@ import {
   extractUserUID,
   instanceV1Slug,
   instanceV1Name,
+  environmentV1Slug,
+  environmentV1Name,
   databaseV1Slug,
 } from "@/utils";
 import {
