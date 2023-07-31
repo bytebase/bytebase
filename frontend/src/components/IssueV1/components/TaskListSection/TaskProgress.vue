@@ -5,6 +5,7 @@
     :class="task.status === Task_Status.DONE ? 'text-success' : 'text-info'"
     :thickness="3"
   >
+    <!-- eslint-disable vue/no-template-shadow -->
     <template #default="{ percent }">
       <span v-if="task.status !== Task_Status.DONE" class="text-xs">
         {{ percent }}%
