@@ -50,6 +50,7 @@ const state = reactive<LocalState>({
   timeFormat: "DAYS",
 });
 
+// TODO(steven): update feature name.
 const hasSecureTokenFeature = featureToRef("bb.feature.secure-token");
 
 const allowEdit = computed((): boolean => {
