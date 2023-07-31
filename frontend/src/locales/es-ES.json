@@ -575,6 +575,12 @@
         "gitops-webhook-url": {
           "self": "URL del webhook GitOps",
           "description": "La URL utilizada para enviar webhooks de GitOps a la instancia de Bytebase."
+        },
+        "sign-in-frequency": {
+          "self": "Frecuencia de inicio de sesión",
+          "description": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente.",
+          "hours": "Horas",
+          "days": "Días"
         }
       }
     },
@@ -2131,6 +2137,10 @@
       "bb-feature-schema-template": {
         "title": "Plantilla de esquema",
         "desc": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
+      },
+      "bb-feature-secure-token": {
+        "title": "Frecuencia de inicio de sesión",
+        "desc": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente."
       }
     }
   },
