@@ -23,6 +23,7 @@ import {
   Plan_Spec,
   Plan_Step,
   Stage,
+  Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { rolloutServiceClient } from "@/grpcweb";
@@ -311,6 +312,10 @@ const prepareDatabaseListByProject = async (project: string) => {
 
 export const isValidStage = (stage: Stage): boolean => {
   for (const task of stage.tasks) {
+    if (task.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
+      continue;
+    }
+
     if (TaskTypeListWithStatement.includes(task.type)) {
       const sheetName = sheetNameOfTaskV1(task);
       const sheet = getLocalSheetByName(sheetName);
