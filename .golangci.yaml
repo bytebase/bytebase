@@ -34,7 +34,7 @@ issues:
     - Exit(.*)_(.*)
 
 run:
-  timeout: 20m
+  timeout: 30m
   build-tags:
     - mysql
   skip-dirs:
