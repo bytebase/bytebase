@@ -42,7 +42,7 @@ func GenerateTokensAndSetCookies(c echo.Context, user *store.UserMessage, mode c
 		return pkgerrors.Wrap(err, "failed to generate access token")
 	}
 
-	cookieExp := time.Now().Add(auth.DefaultRefreshTokenDuration - 1*time.Minute)
+	cookieExp := time.Now().Add(refreshTokenDuration - 1*time.Minute)
 	setTokenCookie(c, auth.AccessTokenCookieName, accessToken, cookieExp)
 	setUserCookie(c, user.ID, cookieExp)
 
