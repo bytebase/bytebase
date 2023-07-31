@@ -290,7 +290,7 @@ const shouldShowEditButton = computed(() => {
   //   return false;
   // }
 
-  return true;
+  return false; // UpdatePlan is not implemented
 });
 
 const allowApplyTaskStateToOthers = computed(() => {
