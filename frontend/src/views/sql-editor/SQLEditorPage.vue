@@ -133,7 +133,7 @@ import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import { useWindowSize } from "@vueuse/core";
 import { InstanceV1Name } from "@/components/v2";
-import { provideSheetPanelContext } from "./TabList/SheetPanel/common";
+import { provideSheetPanelContext } from "./SheetPanel/common";
 
 type LocalState = {
   sidebarExpanded: boolean;

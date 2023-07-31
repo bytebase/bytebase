@@ -2148,7 +2148,11 @@
     },
     "linked-issue": "Linked issue",
     "from-issue-warning": "The sheet comes from issue {issue} in read-only mode. {oversize}",
-    "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. "
+    "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. ",
+    "sheets": "Sheets",
+    "mine": "Mine",
+    "shared": "Shared",
+    "search-sheets": "Search Sheets"
   },
   "engine": {
     "mysql": "MySQL",

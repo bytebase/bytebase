@@ -66,8 +66,8 @@ import { TabMode } from "@/types";
 import { useTabStore } from "@/store";
 import { Drawer, DrawerContent } from "@/components/v2";
 import TabItem from "./TabItem";
-import SheetPanel from "./SheetPanel";
-import { useSheetPanelContext } from "./SheetPanel/common";
+import SheetPanel from "../SheetPanel";
+import { useSheetPanelContext } from "../SheetPanel/common";
 
 type LocalState = {
   dragging: boolean;

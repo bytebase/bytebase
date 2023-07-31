@@ -1,55 +1,74 @@
 <template>
   <div class="aside-panel h-full">
-    <n-tabs v-model:value="tab" type="segment" class="h-full">
-      <n-tab-pane name="projects" :tab="$t('common.projects')">
-        <Splitpanes
-          horizontal
-          class="default-theme"
-          :dbl-click-splitter="false"
-        >
-          <Pane>
-            <DatabaseTree
-              key="sql-editor-database-tree"
-              v-model:search-pattern="searchPattern"
-              @alter-schema="$emit('alter-schema', $event)"
-            />
-          </Pane>
-          <Pane v-if="showSchemaPanel" :size="40">
-            <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
-          </Pane>
-        </Splitpanes>
-      </n-tab-pane>
-      <n-tab-pane
-        v-if="hasInstanceView"
-        name="instances"
-        :tab="$t('common.instances')"
-      >
-        <Splitpanes
-          horizontal
-          class="default-theme"
-          :dbl-click-splitter="false"
-        >
-          <Pane>
-            <DatabaseTree
-              key="sql-editor-database-tree"
-              v-model:search-pattern="searchPattern"
-              @alter-schema="$emit('alter-schema', $event)"
-            />
-          </Pane>
-          <Pane v-if="showSchemaPanel" :size="40">
-            <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
-          </Pane>
-        </Splitpanes>
-      </n-tab-pane>
-      <n-tab-pane name="history" :tab="$t('common.history')">
-        <QueryHistoryContainer />
-      </n-tab-pane>
-    </n-tabs>
+    <NTabs v-model:value="mainTab" class="h-full" :tabs-padding="8">
+      <NTabPane name="databases" :tab="$t('common.databases')">
+        <NTabs v-model:value="databaseTab" type="segment" class="h-full">
+          <NTabPane name="projects" :tab="$t('common.projects')">
+            <Splitpanes
+              horizontal
+              class="default-theme"
+              :dbl-click-splitter="false"
+            >
+              <Pane>
+                <DatabaseTree
+                  key="sql-editor-database-tree"
+                  v-model:search-pattern="searchPattern"
+                  @alter-schema="$emit('alter-schema', $event)"
+                />
+              </Pane>
+              <Pane v-if="showSchemaPanel" :size="40">
+                <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
+              </Pane>
+            </Splitpanes>
+          </NTabPane>
+          <NTabPane
+            v-if="hasInstanceView"
+            name="instances"
+            :tab="$t('common.instances')"
+          >
+            <Splitpanes
+              horizontal
+              class="default-theme"
+              :dbl-click-splitter="false"
+            >
+              <Pane>
+                <DatabaseTree
+                  key="sql-editor-database-tree"
+                  v-model:search-pattern="searchPattern"
+                  @alter-schema="$emit('alter-schema', $event)"
+                />
+              </Pane>
+              <Pane v-if="showSchemaPanel" :size="40">
+                <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
+              </Pane>
+            </Splitpanes>
+          </NTabPane>
+          <NTabPane name="history" :tab="$t('common.history')">
+            <QueryHistoryContainer />
+          </NTabPane>
+        </NTabs>
+      </NTabPane>
+      <NTabPane name="sheets" :tab="$t('sheet.sheets')">
+        <NTabs v-model:value="sheetTab" type="segment" class="h-full">
+          <NTabPane name="my" :tab="$t('sheet.mine')">
+            <SheetList view="my" />
+          </NTabPane>
+          <NTabPane name="shared" :tab="$t('sheet.shared')">
+            <SheetList view="shared" />
+          </NTabPane>
+          <NTabPane name="starred" :tab="$t('sheet.starred')">
+            <SheetList view="starred" />
+          </NTabPane>
+        </NTabs>
+      </NTabPane>
+    </NTabs>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref, watchEffect } from "vue";
+import { NTabs, NTabPane } from "naive-ui";
+import { Splitpanes, Pane } from "splitpanes";
 
 import {
   useConnectionTreeStore,
@@ -60,10 +79,10 @@ import {
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SchemaPanel from "./SchemaPanel/";
-import { Splitpanes, Pane } from "splitpanes";
 import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { Engine } from "@/types/proto/v1/common";
+import SheetList from "./SheetList";
 
 defineEmits<{
   (
@@ -77,11 +96,13 @@ const tabStore = useTabStore();
 const connectionTreeStore = useConnectionTreeStore();
 const searchPattern = ref("");
 
-const tab = ref<"projects" | "instances" | "history">(
+const mainTab = ref<"databases" | "sheets">("databases");
+const databaseTab = ref<"projects" | "instances" | "history">(
   connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE
     ? "instances"
     : "projects"
 );
+const sheetTab = ref<"my" | "shared" | "starred">("my");
 
 const hasInstanceView = computed((): boolean => {
   return hasWorkspacePermissionV1(
@@ -103,10 +124,10 @@ const showSchemaPanel = computed(() => {
 });
 
 watchEffect(() => {
-  if (tab.value === "projects") {
+  if (databaseTab.value === "projects") {
     connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
   }
-  if (tab.value === "instances") {
+  if (databaseTab.value === "instances") {
     connectionTreeStore.tree.mode = ConnectionTreeMode.INSTANCE;
   }
 });

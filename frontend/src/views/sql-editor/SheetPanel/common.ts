@@ -1,8 +1,21 @@
 import { InjectionKey, Ref, inject, provide, ref } from "vue";
-import { useSheetV1Store } from "@/store";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import { getSheetIssueBacktracePayloadV1 } from "@/utils";
+import { t } from "@/plugins/i18n";
 import Emittery from "emittery";
+
+import {
+  pushNotification,
+  useInstanceV1Store,
+  useSheetV1Store,
+  useTabStore,
+} from "@/store";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import {
+  emptyConnection,
+  getSheetIssueBacktracePayloadV1,
+  isSheetReadableV1,
+} from "@/utils";
+import { UNKNOWN_ID } from "@/types";
+import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
 
 export const SheetViewModeList = ["my", "shared", "starred"] as const;
 export type SheetViewMode = typeof SheetViewModeList[number];
@@ -99,4 +112,53 @@ export const provideSheetPanelContext = () => {
   });
 
   provide(KEY, context);
+};
+
+export const openSheet = async (sheet: Sheet) => {
+  const tabStore = useTabStore();
+  const openingSheetTab = tabStore.tabList.find(
+    (tab) => tab.sheetName == sheet.name
+  );
+
+  if (!isSheetReadableV1(sheet)) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.access-denied"),
+    });
+    return false;
+  }
+  if (openingSheetTab) {
+    // Switch to a sheet tab if it's open already.
+    tabStore.setCurrentTabId(openingSheetTab.id);
+  } else {
+    // Open the sheet in a "temp" tab otherwise.
+    tabStore.selectOrAddTempTab();
+  }
+
+  let insId = String(UNKNOWN_ID);
+  let dbId = String(UNKNOWN_ID);
+  if (sheet.database) {
+    const [instanceName, databaseId] = getInstanceAndDatabaseId(sheet.database);
+    const ins = await useInstanceV1Store().getOrFetchInstanceByName(
+      `instances/${instanceName}`
+    );
+    insId = ins.uid;
+    dbId = databaseId;
+  }
+
+  tabStore.updateCurrentTab({
+    sheetName: sheet.name,
+    name: sheet.title,
+    statement: new TextDecoder().decode(sheet.content),
+    isSaved: true,
+    connection: {
+      ...emptyConnection(),
+      // TODO: legacy instance id.
+      instanceId: insId,
+      databaseId: dbId,
+    },
+  });
+
+  return true;
 };
