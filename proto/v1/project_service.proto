@@ -400,7 +400,7 @@ message Project {
 
   repeated Webhook webhooks = 11;
 
-  string data_category_config_id = 12;
+  string data_classification_config_id = 12;
 }
 
 enum Workflow {

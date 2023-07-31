@@ -632,6 +632,27 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
+	createActivityPayload := api.ActivityIssueCreatePayload{
+		IssueName: issue.Title,
+	}
+
+	bytes, err := json.Marshal(createActivityPayload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
+	}
+	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: issue,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+
 	// Composed the issue.
 	composedIssue := &api.Issue{
 		ID:                    issue.UID,
@@ -1737,7 +1758,7 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
 	case db.Spanner:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
-	case db.Oracle:
+	case db.Oracle, db.DM:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	case db.Redshift:
 		options := make(map[string]string)

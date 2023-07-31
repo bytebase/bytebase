@@ -9,6 +9,7 @@
         <SingleResultViewV1
           :params="executeParams"
           :result="resultSet.results[0]"
+          :set-index="0"
         />
       </template>
       <template v-else-if="viewMode === 'MULTI-RESULT'">
@@ -23,7 +24,11 @@
             :name="tabName(result, i)"
             class="flex-1 flex flex-col overflow-hidden"
           >
-            <SingleResultViewV1 :params="executeParams" :result="result" />
+            <SingleResultViewV1
+              :params="executeParams"
+              :result="result"
+              :set-index="i"
+            />
           </NTabPane>
         </NTabs>
       </template>
@@ -55,22 +60,33 @@
         {{ $t("sql-editor.table-empty-placeholder") }}
       </template>
     </div>
+
+    <Drawer
+      v-model:show="detail.show"
+      :close-on-esc="true"
+      :trap-focus="true"
+      @close="detail.show = false"
+    >
+      <DetailPanel v-if="detail.show" :result-set="resultSet" />
+    </Drawer>
   </NConfigProvider>
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, toRef } from "vue";
+import { computed, PropType, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
 import { Status } from "nice-grpc-common";
 
 import { darkThemeOverrides } from "@/../naive-ui.config";
+import { Drawer } from "@/components/v2";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
 import EmptyView from "./EmptyView.vue";
 import { ExecuteConfig, ExecuteOption, SQLResultSetV1 } from "@/types";
-import { provideSQLResultViewContext } from "./context";
+import { provideSQLResultViewContext, SQLResultViewContext } from "./context";
 import ErrorView from "./ErrorView.vue";
 import RequestQueryButton from "./RequestQueryButton.vue";
+import DetailPanel from "./DetailPanel.vue";
 import { QueryResult } from "@/types/proto/v1/sql_service";
 import {
   useCurrentUserV1,
@@ -109,6 +125,13 @@ const props = defineProps({
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const connection = computed(() => useTabStore().currentTab.connection);
+const keyword = ref("");
+const detail: SQLResultViewContext["detail"] = ref({
+  show: false,
+  set: 0,
+  row: 0,
+  col: 0,
+});
 
 const viewMode = computed((): ViewMode => {
   const { resultSet } = props;
@@ -173,5 +196,7 @@ const disallowCopyingData = computed(() => {
 provideSQLResultViewContext({
   dark: toRef(props, "dark"),
   disallowCopyingData,
+  keyword,
+  detail,
 });
 </script>

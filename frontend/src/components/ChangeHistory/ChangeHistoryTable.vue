@@ -48,12 +48,12 @@
         v-if="mode == 'DATABASE'"
         class="table-cell"
         :left-padding="4"
-        @click.stop="handleToggleChangeHistorySelected(history)"
       >
         <NCheckbox
           :disabled="!allowToSelectChangeHistory(history)"
           :checked="selectedChangeHistoryNameList?.includes(history.name)"
           @update:checked="handleToggleChangeHistorySelected(history)"
+          @click.stop=""
         />
       </BBTableCell>
       <BBTableCell :left-padding="mode !== 'DATABASE' && 4">

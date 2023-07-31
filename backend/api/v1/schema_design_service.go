@@ -125,6 +125,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	}
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	schemaDesign := request.SchemaDesign
+	sanitizeSchemaDesignSchemaMetadata(schemaDesign)
 	if err := checkDatabaseMetadata(schemaDesign.Engine, schemaDesign.SchemaMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design: %v", err))
 	}
@@ -141,6 +142,11 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		// Expected format: "instances/{instance}/database/{database}"
 		find.InstanceID = &instanceID
 		find.DatabaseName = &databaseName
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
@@ -242,6 +248,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		sheetUpdate.Name = &schemaDesign.Title
 	}
 	if slices.Contains(request.UpdateMask.Paths, "schema") {
+		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
 		schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		if err != nil {
 			return nil, err
@@ -405,11 +412,52 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 }
 
 func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) (*v1pb.DatabaseMetadata, error) {
-	switch engine {
-	case v1pb.Engine_MYSQL:
-		return parseMySQLSchemaStringToDatabaseMetadata(schema)
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+	dbSchema, err := func() (*v1pb.DatabaseMetadata, error) {
+		switch engine {
+		case v1pb.Engine_MYSQL:
+			return parseMySQLSchemaStringToDatabaseMetadata(schema)
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+		}
+	}()
+	if err != nil {
+		return nil, err
+	}
+	setClassificationAndUserCommentFromComment(dbSchema)
+	return dbSchema, nil
+}
+
+func sanitizeSchemaDesignSchemaMetadata(design *v1pb.SchemaDesign) {
+	if dbSchema := design.GetBaselineSchemaMetadata(); dbSchema != nil {
+		for _, schema := range dbSchema.Schemas {
+			for _, table := range schema.Tables {
+				table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
+				for _, col := range table.Columns {
+					col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
+				}
+			}
+		}
+	}
+	if dbSchema := design.GetSchemaMetadata(); dbSchema != nil {
+		for _, schema := range dbSchema.Schemas {
+			for _, table := range schema.Tables {
+				table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
+				for _, col := range table.Columns {
+					col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
+				}
+			}
+		}
+	}
+}
+
+func setClassificationAndUserCommentFromComment(dbSchema *v1pb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
+			for _, col := range table.Columns {
+				col.Classification, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
+			}
+		}
 	}
 }
 
@@ -1227,7 +1275,7 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 			case "DEFAULT":
 				defaultExists = true
 			case "COMMENT":
-				defaultExists = true
+				commentExists = true
 			}
 		} else if attr.NullLiteral() != nil {
 			nullExists = true

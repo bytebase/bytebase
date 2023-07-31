@@ -8,6 +8,7 @@ import { Environment } from "@/types/proto/v1/environment_service";
 import { ComposedInstance } from "@/types";
 import { useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { isDev } from "../util";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -74,6 +75,7 @@ export const sortInstanceV1ListByEnvironmentV1 = <T extends Instance>(
 };
 
 export const supportedEngineV1List = () => {
+  const { locale } = useI18n();
   const engines: Engine[] = [
     Engine.MYSQL,
     Engine.POSTGRES,
@@ -89,6 +91,11 @@ export const supportedEngineV1List = () => {
     Engine.MSSQL,
     Engine.REDSHIFT,
   ];
+  if (locale.value === "zh-CN") {
+    if (isDev()) {
+      engines.push(Engine.DM);
+    }
+  }
   return engines;
 };
 
@@ -138,6 +145,7 @@ export const instanceV1HasCreateDatabase = (
   const engine = engineOfInstanceV1(instanceOrEngine);
   if (engine === Engine.REDIS) return false;
   if (engine === Engine.ORACLE) return false;
+  if (engine === Engine.DM) return false;
   return true;
 };
 
@@ -163,6 +171,7 @@ export const instanceV1HasSSL = (
     Engine.ORACLE,
     Engine.MARIADB,
     Engine.OCEANBASE,
+    Engine.DM,
   ].includes(engine);
 };
 
@@ -229,6 +238,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "MariaDB";
     case Engine.OCEANBASE:
       return "OceanBase";
+    case Engine.DM:
+      return "DM";
   }
   return "";
 };

@@ -44,6 +44,14 @@ const tabState = ref<SchemaDesignerTabState>({
   tabMap: new Map(),
 });
 
+const rebuildEditingState = () => {
+  editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
+  originalSchemas.value = cloneDeep(editableSchemas.value);
+  tabState.value = {
+    tabMap: new Map(),
+  };
+};
+
 provideSchemaDesignerContext({
   readonly: readonly,
   baselineMetadata: baselineMetadata,
@@ -79,11 +87,7 @@ watch(
     // * change baseline schema.
     // * change selected schema design.
     if (!isEqual(value, oldValue)) {
-      editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
-      originalSchemas.value = cloneDeep(editableSchemas.value);
-      tabState.value = {
-        tabMap: new Map(),
-      };
+      rebuildEditingState();
     }
   },
   {
@@ -96,6 +100,7 @@ defineExpose({
   metadata,
   baselineMetadata,
   editableSchemas,
+  rebuildEditingState,
 });
 </script>
 

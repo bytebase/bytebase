@@ -133,6 +133,7 @@ import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import { useWindowSize } from "@vueuse/core";
 import { InstanceV1Name } from "@/components/v2";
+import { provideSheetPanelContext } from "./TabList/SheetPanel/common";
 
 type LocalState = {
   sidebarExpanded: boolean;
@@ -216,6 +217,9 @@ const handleAlterSchema = async (params: {
     window.open(url, "_blank");
   }
 };
+
+// provide context for SheetPanel
+provideSheetPanelContext();
 </script>
 
 <style>
@@ -255,6 +259,6 @@ const handleAlterSchema = async (params: {
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
 
-  @apply flex-1 overflow-hidden flex flex-col;
+  @apply flex-1 overflow-hidden flex flex-col pt-2;
 }
 </style>

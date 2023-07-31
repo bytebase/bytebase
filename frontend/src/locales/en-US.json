@@ -362,7 +362,8 @@
     "database-create": {
       "pending": "(pending create)",
       "created": "(created)"
-    }
+    },
+    "action-failed-in-current-stage": "{action} failed tasks in current stage"
   },
   "banner": {
     "update-license": "Update license",
@@ -510,7 +511,16 @@
         "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
         "identifier": "Bytebase user identifier",
         "display-name": "Bytebase user display name",
-        "email": "Bytebase user email"
+        "email": "Bytebase user email",
+        "auth-style": {
+          "self": "Auth style",
+          "in-params": {
+            "self": "In params"
+          },
+          "in-header": {
+            "self": "In header"
+          }
+        }
       },
       "copy-redirect-url": "Redirect URL copied to clipboard."
     },
@@ -1239,9 +1249,11 @@
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a specified schema version of one database to others.",
+      "schema-history-version": "Schema History Version",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "select-project": "Select project",
+      "select-database-placeholder": "Select database (MySQL, PostgreSQL only)",
       "source-database": "Source database",
       "source-schema": "Source schema",
       "schema-version": {
@@ -1771,7 +1783,6 @@
       "sheet-is-read-only": "The shared sheet is read-only."
     },
     "view-all-tabs": "View all Tabs",
-    "sheet": "Sheet",
     "sheets": "Sheets",
     "connection-holder": "Click nodes on the left panel to get started",
     "link-access": "Link access",
@@ -1806,7 +1817,11 @@
     "clear-screen": "Clear screen",
     "query-time": "Query time",
     "request-query": "Request Query",
-    "connection-lost": "Connection lost. Will try to reconnect when executing next query."
+    "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
+    "sheet": {
+      "choose-sheet": "Choose Sheet",
+      "self": "Sheet"
+    }
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2702,6 +2717,7 @@
   "schema-designer": {
     "self": "Schema Designer",
     "new-design": "New Design",
+    "select-design": "Select a schema design",
     "quick-action": "Design Schema",
     "schema-design": "Schema Design",
     "schema-design-list": "Schema Design List",
@@ -2712,6 +2728,8 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply to database",
+    "delete-this-design": "Delete this design",
+    "select-database-placeholder": "Select a database (MySQL only)",
     "message": {
       "created-succeed": "Schema design created successfully",
       "updated-succeed": "Schema design updated successfully"

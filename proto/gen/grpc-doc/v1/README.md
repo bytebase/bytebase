@@ -515,9 +515,9 @@
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
-    - [DataCategorySetting](#bytebase-v1-DataCategorySetting)
-    - [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig)
-    - [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry)
+    - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
+    - [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig)
+    - [DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry)
     - [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
@@ -526,6 +526,7 @@
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
+    - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
@@ -2466,8 +2467,8 @@ ColumnMetadata is the metadata for columns.
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
 | collation | [string](#string) |  | The collation is the collation of a column. |
-| comment | [string](#string) |  | The comment is the comment of a column. category and user_comment is parsed from the comment. |
-| category | [string](#string) |  | The category is the category of a column parsed from the comment. |
+| comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
+| classification | [string](#string) |  | The classification is the classification of a column parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
 
 
@@ -3129,8 +3130,8 @@ TableMetadata is the metadata for tables.
 | index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
 | data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
 | create_options | [string](#string) |  | The create_options is the create option of a table. |
-| comment | [string](#string) |  | The comment is the comment of a table. category and user_comment is parsed from the comment. |
-| category | [string](#string) |  | The category is the category of a table parsed from the comment. |
+| comment | [string](#string) |  | The comment is the comment of a table. classification and user_comment is parsed from the comment. |
+| classification | [string](#string) |  | The classification is the classification of a table parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 
@@ -5988,7 +5989,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | db_name_template | [string](#string) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
-| data_category_config_id | [string](#string) |  |  |
+| data_classification_config_id | [string](#string) |  |  |
 
 
 
@@ -7538,10 +7539,10 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun} |
+| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| creator | [string](#string) |  | Format: user:hello@world.com |
-| updater | [string](#string) |  | Format: user:hello@world.com |
+| creator | [string](#string) |  | Format: user/hello@world.com |
+| updater | [string](#string) |  | Format: user/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | title | [string](#string) |  |  |
@@ -8179,24 +8180,24 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 
 
 
-<a name="bytebase-v1-DataCategorySetting"></a>
+<a name="bytebase-v1-DataClassificationSetting"></a>
 
-### DataCategorySetting
+### DataClassificationSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| configs | [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig) | repeated |  |
+| configs | [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-v1-DataCategorySetting-DataCategoryConfig"></a>
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig"></a>
 
-### DataCategorySetting.DataCategoryConfig
+### DataClassificationSetting.DataClassificationConfig
 Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
 
 
@@ -8204,7 +8205,7 @@ Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
-| category_level | [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry) | repeated | Maps category to level.
+| classification_level | [DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry) | repeated | Maps classification to level.
 
 TODO(ed): store the actual config. |
 
@@ -8213,9 +8214,9 @@ TODO(ed): store the actual config. |
 
 
 
-<a name="bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry"></a>
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry"></a>
 
-### DataCategorySetting.DataCategoryConfig.CategoryLevelEntry
+### DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry
 
 
 
@@ -8359,6 +8360,24 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate) | repeated |  |
+| column_types | [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaTemplateSetting-ColumnType"></a>
+
+### SchemaTemplateSetting.ColumnType
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| enabled | [bool](#bool) |  |  |
+| types | [string](#string) | repeated |  |
 
 
 
@@ -8486,6 +8505,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
 | gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
+| refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. |
 
 
 

@@ -161,11 +161,11 @@ message TableMetadata {
   string create_options = 10;
 
   // The comment is the comment of a table.
-  // category and user_comment is parsed from the comment.
+  // classification and user_comment is parsed from the comment.
   string comment = 11;
 
-  // The category is the category of a table parsed from the comment.
-  string category = 13;
+  // The classification is the classification of a table parsed from the comment.
+  string classification = 13;
 
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 14;
@@ -198,11 +198,11 @@ message ColumnMetadata {
   string collation = 7;
 
   // The comment is the comment of a column.
-  // category and user_comment is parsed from the comment.
+  // classification and user_comment is parsed from the comment.
   string comment = 8;
 
-  // The category is the category of a table parsed from the comment.
-  string category = 9;
+  // The classification is the classification of a table parsed from the comment.
+  string classification = 9;
 
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 10;

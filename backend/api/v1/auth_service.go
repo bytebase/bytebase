@@ -8,6 +8,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/nyaruka/phonenumbers"
 	"github.com/pquerna/otp/totp"
@@ -37,23 +38,25 @@ import (
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
-	store          *store.Store
-	secret         string
-	licenseService enterpriseAPI.LicenseService
-	metricReporter *metricreport.Reporter
-	profile        *config.Profile
-	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
+	store                *store.Store
+	secret               string
+	refreshTokenDuration time.Duration
+	licenseService       enterpriseAPI.LicenseService
+	metricReporter       *metricreport.Reporter
+	profile              *config.Profile
+	postCreateUser       func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
+func NewAuthService(store *store.Store, secret string, refreshTokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
-		store:          store,
-		secret:         secret,
-		licenseService: licenseService,
-		metricReporter: metricReporter,
-		profile:        profile,
-		postCreateUser: postCreateUser,
+		store:                store,
+		secret:               secret,
+		refreshTokenDuration: refreshTokenDuration,
+		licenseService:       licenseService,
+		metricReporter:       metricReporter,
+		profile:              profile,
+		postCreateUser:       postCreateUser,
 	}
 }
 
@@ -593,7 +596,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}
 		accessToken = token
 		if request.Web {
-			refreshToken, err = auth.GenerateRefreshToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
+			refreshToken, err = auth.GenerateRefreshToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, s.refreshTokenDuration)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 			}

@@ -1343,7 +1343,8 @@ router.beforeEach((to, from, next) => {
     to.name?.toString().startsWith("sheets") ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.gitops.detail" &&
-      to.name?.toString() != "setting.workspace.sql-review.detail")
+      to.name?.toString() != "setting.workspace.sql-review.detail" &&
+      to.name?.toString() != "setting.workspace.sso.detail")
   ) {
     next();
     return;
@@ -1390,6 +1391,7 @@ router.beforeEach((to, from, next) => {
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
+  const ssoName = routerSlug.ssoName;
   const sqlReviewPolicySlug = routerSlug.sqlReviewPolicySlug;
 
   if (principalId) {
@@ -1567,6 +1569,14 @@ router.beforeEach((to, from, next) => {
     const sheetName = sheetNameFromSlug(sheetSlug);
     useSheetV1Store()
       .fetchSheetByName(sheetName)
+      .then(() => next())
+      .catch(() => next());
+    return;
+  }
+
+  if (ssoName) {
+    useIdentityProviderStore()
+      .getOrFetchIdentityProviderByName(unescape(ssoName))
       .then(() => next())
       .catch(() => next());
     return;

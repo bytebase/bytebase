@@ -157,6 +157,11 @@ func (e oauthError) Error() string {
 // When it's error like 404, GitLab API doesn't return it as error so we keep
 // the similar behavior and let caller check the response status code.
 func getOAuthErrorDetails(code int, body []byte) error {
+	// Special case for Azure DevOps OAuth error.
+	if code == http.StatusNonAuthoritativeInfo && bytes.Contains(body, []byte("Azure DevOps Services | Sign In")) {
+		return &oauthError{}
+	}
+
 	if 200 <= code && code < 300 {
 		return nil
 	}

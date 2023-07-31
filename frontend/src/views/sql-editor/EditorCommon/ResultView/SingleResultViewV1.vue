@@ -6,11 +6,12 @@
       <div class="flex flex-row justify-start items-center mr-2 shrink-0">
         <NInput
           v-if="showSearchFeature"
-          v-model:value="state.search"
+          :value="state.search"
           class="!max-w-[10rem]"
           size="small"
           type="text"
           :placeholder="t('sql-editor.search-results')"
+          @update:value="debouncedUpdateKeyword"
         >
           <template #prefix>
             <heroicons-outline:search class="h-5 w-5 text-gray-300" />
@@ -32,8 +33,8 @@
           v-if="showPagination"
           :simple="true"
           :item-count="table.getCoreRowModel().rows.length"
-          :page="table.getState().pagination.pageIndex + 1"
-          :page-size="table.getState().pagination.pageSize"
+          :page="pageIndex + 1"
+          :page-size="pageSize"
           @update-page="handleChangePage"
         />
         <NButton
@@ -75,7 +76,8 @@
         :data="data"
         :masked="props.result.masked"
         :sensitive="props.result.sensitive"
-        :keyword="state.search"
+        :set-index="setIndex"
+        :offset="pageIndex * pageSize"
       />
     </div>
 
@@ -118,9 +120,9 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref } from "vue";
-import { NPagination } from "naive-ui";
+import { NInput, NPagination } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { debouncedRef } from "@vueuse/core";
+import { useDebounceFn } from "@vueuse/core";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -181,6 +183,7 @@ const props = defineProps<{
     option?: Partial<ExecuteOption> | undefined;
   };
   result: QueryResult;
+  setIndex: number;
 }>();
 
 const state = reactive<LocalState>({
@@ -188,7 +191,7 @@ const state = reactive<LocalState>({
   showRequestExportPanel: false,
 });
 
-const { dark } = useSQLResultViewContext();
+const { dark, keyword } = useSQLResultViewContext();
 
 const { t } = useI18n();
 const tabStore = useTabStore();
@@ -271,10 +274,9 @@ const allowToExportData = computed(() => {
 });
 
 // use a debounced value to improve performance when typing rapidly
-const keyword = debouncedRef(
-  computed(() => state.search),
-  200
-);
+const debouncedUpdateKeyword = useDebounceFn((value: string) => {
+  keyword.value = value;
+}, 200);
 
 const columns = computed(() => {
   const columns = props.result.columnNames;
@@ -316,6 +318,13 @@ const table = useVueTable<string[]>({
 });
 
 table.setPageSize(DEFAULT_PAGE_SIZE);
+
+const pageIndex = computed(() => {
+  return table.getState().pagination.pageIndex;
+});
+const pageSize = computed(() => {
+  return table.getState().pagination.pageSize;
+});
 
 const exportDropdownOptions = computed(() => [
   {

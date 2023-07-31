@@ -205,9 +205,14 @@ type UpsertSlowLogMessage struct {
 func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage) error {
 	var databaseUID sql.NullInt32
 	if upsert.DatabaseName != "" {
+		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: upsert.InstanceID})
+		if err != nil {
+			return err
+		}
 		database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{
-			InstanceID:   upsert.InstanceID,
-			DatabaseName: &upsert.DatabaseName,
+			InstanceID:          upsert.InstanceID,
+			DatabaseName:        &upsert.DatabaseName,
+			IgnoreCaseSensitive: IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
 			return err

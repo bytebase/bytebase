@@ -7,12 +7,9 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -282,39 +279,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotImplemented, common.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
-		}
-
-		// re-find the approval template
-		// it's ok if we failed
-		if taskStatusPatch.Status == api.TaskPendingApproval {
-			if err := func() error {
-				issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", task.PipelineID)).SetInternal(err)
-				}
-				payload := &storepb.IssuePayload{}
-				if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal").SetInternal(err)
-				}
-				payload.Approval = &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: false,
-				}
-				payloadBytes, err := protojson.Marshal(payload)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
-				}
-				payloadStr := string(payloadBytes)
-				issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-					Payload: &payloadStr,
-				}, api.SystemBotID)
-				if err != nil {
-					return errors.Wrap(err, "failed to update issue payload")
-				}
-				s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-				return nil
-			}(); err != nil {
-				log.Error("Failed to trigger re-finding the approval template", zap.Error(err))
-			}
 		}
 
 		composedTask, err := s.store.GetTaskByID(ctx, task.ID)

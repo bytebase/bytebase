@@ -11,14 +11,14 @@
       :closable="true"
     >
       <div
-        class="space-y-3 py-1 w-[calc(100vw-8rem)] sm:w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+        class="space-y-3 py-1 w-[calc(100vw-24rem)] min-w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
       >
         <div class="w-full flex flex-row justify-start items-center">
           <span class="flex w-40 items-center text-sm">{{
             $t("common.name")
           }}</span>
           <BBTextField
-            class="w-60 !py-1.5"
+            class="w-60 !py-1.5 text-sm"
             :value="state.schemaDesignName"
             :placeholder="$t('schema-designer.schema-design')"
             @input="
@@ -63,7 +63,7 @@
 </template>
 
 <script lang="ts" setup>
-import { isUndefined, uniqueId } from "lodash-es";
+import { cloneDeep, isUndefined, uniqueId } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -204,8 +204,10 @@ const handleConfirm = async () => {
 
   const metadata = mergeSchemaEditToMetadata(
     designerState.editableSchemas,
-    state.schemaDesign.baselineSchemaMetadata ||
-      DatabaseMetadata.fromPartial({})
+    cloneDeep(
+      state.schemaDesign.baselineSchemaMetadata ||
+        DatabaseMetadata.fromPartial({})
+    )
   );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
   const schemaVersion =

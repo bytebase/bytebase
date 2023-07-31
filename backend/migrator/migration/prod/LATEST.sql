@@ -332,7 +332,8 @@ CREATE TABLE instance (
     resource_id TEXT NOT NULL,
     -- activation should set to be TRUE if users assign license to this instance.
     activation BOOLEAN NOT NULL DEFAULT false,
-    options JSONB NOT NULL DEFAULT '{}'
+    options JSONB NOT NULL DEFAULT '{}',
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
@@ -922,7 +923,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET')),
+    type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
@@ -1135,7 +1136,7 @@ CREATE TABLE sheet (
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
     visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE',
-    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
+    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
     type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL',
     payload JSONB NOT NULL DEFAULT '{}'
 );

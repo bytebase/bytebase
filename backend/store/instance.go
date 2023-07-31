@@ -104,6 +104,7 @@ type InstanceMessage struct {
 	UID           int
 	Deleted       bool
 	EngineVersion string
+	Metadata      *storepb.InstanceMetadata
 }
 
 // UpdateInstanceMessage is the message for updating an instance.
@@ -115,6 +116,7 @@ type UpdateInstanceMessage struct {
 	EngineVersion *string
 	Activation    *bool
 	Options       *storepb.InstanceOptions
+	Metadata      *storepb.InstanceMetadata
 
 	// Output only.
 	UpdaterID     int
@@ -228,6 +230,11 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		return nil, err
 	}
 
+	metadataBytes, err := protojson.Marshal(instanceCreate.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			INSERT INTO instance (
@@ -239,9 +246,10 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				engine,
 				external_link,
 				activation,
-				options
+				options,
+				metadata
 			)
-			SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9
+			SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			%s
 			RETURNING id
 		`, where),
@@ -254,6 +262,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		instanceCreate.ExternalLink,
 		instanceCreate.Activation,
 		optionBytes,
+		metadataBytes,
 	).Scan(&instanceID); err != nil {
 		return nil, err
 	}
@@ -288,6 +297,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		DataSources:   dataSources,
 		Activation:    instanceCreate.Activation,
 		Options:       instanceCreate.Options,
+		Metadata:      instanceCreate.Metadata,
 	}
 	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
@@ -332,6 +342,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if v := patch.Options; v != nil {
 		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, v)
 	}
+	if v := patch.Metadata; v != nil {
+		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, v)
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -369,10 +382,11 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				external_link,
 				activation,
 				row_status,
-				options
+				options,
+				metadata
 		`, strings.Join(where, " AND "))
 	var rowStatus string
-	var options []byte
+	var options, metadata []byte
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&instance.UID,
 		&instance.ResourceID,
@@ -383,6 +397,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&instance.Activation,
 		&rowStatus,
 		&options,
+		&metadata,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -423,6 +438,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	instance.Options = &instanceOptions
 
+	var instanceMetadata storepb.InstanceMetadata
+	if err := protojson.Unmarshal(metadata, &instanceMetadata); err != nil {
+		return nil, err
+	}
+	instance.Metadata = &instanceMetadata
+
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -459,7 +480,8 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			external_link,
 			activation,
 			instance.row_status AS row_status,
-			instance.options AS options
+			instance.options AS options,
+			instance.metadata AS metadata
 		FROM instance
 		LEFT JOIN environment ON environment.id = instance.environment_id
 		WHERE `+strings.Join(where, " AND "),
@@ -472,7 +494,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	for rows.Next() {
 		var instanceMessage InstanceMessage
 		var rowStatus string
-		var options []byte
+		var options, metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.EnvironmentID,
 			&instanceMessage.UID,
@@ -484,6 +506,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			&instanceMessage.Activation,
 			&rowStatus,
 			&options,
+			&metadata,
 		); err != nil {
 			return nil, err
 		}
@@ -493,6 +516,11 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			return nil, err
 		}
 		instanceMessage.Options = &instanceOptions
+		var instanceMetadata storepb.InstanceMetadata
+		if err := protojson.Unmarshal(metadata, &instanceMetadata); err != nil {
+			return nil, err
+		}
+		instanceMessage.Metadata = &instanceMetadata
 		instanceMessages = append(instanceMessages, &instanceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -579,4 +607,16 @@ func validateDataSourceList(dataSources []*DataSourceMessage) error {
 		return status.Errorf(codes.InvalidArgument, "missing required data source type %s", api.Admin)
 	}
 	return nil
+}
+
+// IgnoreDatabaseAndTableCaseSensitive returns true if the engine ignores database and table case sensitive.
+func IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
+	switch instance.Engine {
+	case db.TiDB:
+		return true
+	case db.MySQL, db.MariaDB:
+		return instance.Metadata != nil && instance.Metadata.MysqlLowerCaseTableNames != 0
+	default:
+		return false
+	}
 }

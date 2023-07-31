@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/api/expr/v1alpha1/syntax.proto";
+import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
 import "store/common.proto";
@@ -29,6 +30,9 @@ message WorkspaceProfileSetting {
 
   // The webhook URL for the GitOps workflow.
   string gitops_webhook_url = 5;
+
+  // The duration for refresh token.
+  google.protobuf.Duration refresh_token_duration = 6;
 }
 
 message AgentPluginSetting {
@@ -113,5 +117,13 @@ message SchemaTemplateSetting {
 
   repeated FieldTemplate field_templates = 1;
 
-  // TODO: support table_templates
+  message ColumnType {
+    Engine engine = 1;
+
+    bool enabled = 2;
+
+    repeated string types = 3;
+  }
+
+  repeated ColumnType column_types = 2;
 }

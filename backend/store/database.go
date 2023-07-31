@@ -157,6 +157,9 @@ type FindDatabaseMessage struct {
 
 	// TODO(d): deprecate this field when we migrate all datasource to v1 store.
 	IncludeAllDatabase bool
+
+	// IgnoreCaseSensitive is used to ignore case sensitive when finding database.
+	IgnoreCaseSensitive bool
 }
 
 // GetDatabaseV2 gets a database.
@@ -588,7 +591,11 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseName; v != nil {
-		where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
+		if find.IgnoreCaseSensitive {
+			where, args = append(where, fmt.Sprintf("LOWER(db.name) = LOWER($%d)", len(args)+1)), append(args, *v)
+		} else {
+			where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
+		}
 	}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
