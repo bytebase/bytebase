@@ -8,4 +8,26 @@ option go_package = "generated-go/store";
 
 message InstanceChangeHistoryPayload {
   PushEvent push_event = 1;
+
+  ChangedResources changed_resources = 2;
+}
+
+message ChangedResources {
+  repeated ChangedResourceDatabase databases = 1;
+}
+
+message ChangedResourceDatabase {
+  string name = 1;
+
+  repeated ChangedResourceSchema schemas = 2;
+}
+
+message ChangedResourceSchema {
+  string name = 1;
+
+  repeated ChangedResourceTable tables = 2;
+}
+
+message ChangedResourceTable {
+  string name = 1;
 }
