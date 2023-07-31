@@ -123,7 +123,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	targetDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &targetInstance.ResourceID,
 		DatabaseName:        payload.DatabaseName,
-		IgnoreCaseSensitive: exec.store.IgnoreDatabaseAndTableCaseSensitive(targetInstance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(targetInstance),
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, instance.Title)

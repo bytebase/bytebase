@@ -89,7 +89,7 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &insID,
 					DatabaseName:        &dbName,
-					IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, err.Error())

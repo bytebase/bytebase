@@ -11,7 +11,7 @@ import (
 
 // SchemaDiffer is the interface for schema differ.
 type SchemaDiffer interface {
-	SchemaDiff(oldStmt, newStmt string) (string, error)
+	SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error)
 }
 
 var (
@@ -35,12 +35,12 @@ func Register(engineType parser.EngineType, d SchemaDiffer) {
 }
 
 // SchemaDiff returns the schema diff between old and new statements.
-func SchemaDiff(engineType parser.EngineType, oldStmt, newStmt string) (string, error) {
+func SchemaDiff(engineType parser.EngineType, oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
 	differMu.RLock()
 	p, ok := differs[engineType]
 	differMu.RUnlock()
 	if !ok {
 		return "", errors.Errorf("engine: unknown engine type %v", engineType)
 	}
-	return p.SchemaDiff(oldStmt, newStmt)
+	return p.SchemaDiff(oldStmt, newStmt, ignoreCaseSensitive)
 }

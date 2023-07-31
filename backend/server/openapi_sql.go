@@ -116,7 +116,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &request.DatabaseName,
-			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
 			return err
@@ -226,7 +226,7 @@ func schemaDiff(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database engine %s", request.EngineType))
 	}
 
-	diff, err := differ.SchemaDiff(engine, request.SourceSchema, request.TargetSchema)
+	diff, err := differ.SchemaDiff(engine, request.SourceSchema, request.TargetSchema, false /* ignoreCaseSensitive */)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compute diff between source and target schemas").SetInternal(err)
 	}

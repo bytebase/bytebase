@@ -48,7 +48,7 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instanceID,
 			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: s.IgnoreDatabaseAndTableCaseSensitive(instance),
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
