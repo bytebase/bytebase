@@ -25,6 +25,7 @@ import {
   TaskRolloutAction,
   allPlanChecksPassedForTask,
   allowUserToApplyTaskRolloutAction,
+  taskRolloutActionButtonProps,
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
@@ -86,7 +87,7 @@ const actionList = computed(() => {
 
   const text = taskRolloutActionDisplayName(action);
   const actionProps: RolloutButtonAction["props"] = {
-    type: "primary",
+    ...taskRolloutActionButtonProps(action),
     size: "large",
     tag: "div",
     disabled: errors.value.length > 0,

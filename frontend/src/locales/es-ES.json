@@ -362,7 +362,8 @@
       "pending": "(pendiente de crear)",
       "created": "(creado)"
     },
-    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual"
+    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual",
+    "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual"
   },
   "banner": {
     "update-license": "Actualizar licencia",

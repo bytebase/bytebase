@@ -5,6 +5,7 @@ import { getApplicableTaskRolloutActionList } from "./task";
 
 export type StageRolloutAction =
   | "ROLLOUT" // PENDING_APPROVAL -> PENDING
+  | "RETRY" // FAILED -> PENDING_APPROVAL
   | "SKIP"; // ? -> SKIPPED
 
 export const getApplicableStageRolloutActionList = (
@@ -18,6 +19,7 @@ export const getApplicableStageRolloutActionList = (
 
   const applicableActionsMap: Record<StageRolloutAction, Task[]> = {
     ROLLOUT: [],
+    RETRY: [],
     SKIP: [],
   };
   stage.tasks.forEach((task) => {
@@ -29,6 +31,9 @@ export const getApplicableStageRolloutActionList = (
     if (actions.includes("ROLLOUT")) {
       applicableActionsMap.ROLLOUT.push(task);
     }
+    if (actions.includes("RETRY")) {
+      applicableActionsMap.RETRY.push(task);
+    }
     if (actions.includes("SKIP")) {
       applicableActionsMap.SKIP.push(task);
     }
@@ -39,6 +44,12 @@ export const getApplicableStageRolloutActionList = (
     actions.push({
       action: "ROLLOUT",
       tasks: applicableActionsMap.ROLLOUT,
+    });
+  }
+  if (applicableActionsMap.RETRY.length > 1) {
+    actions.push({
+      action: "RETRY",
+      tasks: applicableActionsMap.RETRY,
     });
   }
   if (applicableActionsMap.SKIP.length > 1) {

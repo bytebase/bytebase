@@ -363,7 +363,8 @@
       "pending": "(pending create)",
       "created": "(created)"
     },
-    "action-failed-in-current-stage": "{action} failed tasks in current stage"
+    "action-failed-in-current-stage": "{action} failed tasks in current stage",
+    "action-all-tasks-in-current-stage": "{action} all tasks in current stage"
   },
   "banner": {
     "update-license": "Update license",

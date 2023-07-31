@@ -30,6 +30,12 @@
       :action="ongoingIssueStatusAction.action"
       @close="ongoingIssueStatusAction = undefined"
     />
+    <TaskRolloutActionDialog
+      v-if="ongoingTaskRolloutAction"
+      :action="ongoingTaskRolloutAction.action"
+      :task-list="ongoingTaskRolloutAction.taskList"
+      @close="ongoingTaskRolloutAction = undefined"
+    />
   </div>
 
   <div class="issue-debug">
@@ -43,7 +49,7 @@ import { ref } from "vue";
 import {
   IssueReviewAction,
   IssueStatusAction,
-  stageForTask,
+  TaskRolloutAction,
   useIssueContext,
 } from "./logic";
 import {
@@ -58,8 +64,9 @@ import {
   ActivitySection,
   IssueReviewActionDialog,
   IssueStatusActionDialog,
+  TaskRolloutActionDialog,
 } from "./components";
-import { rolloutServiceClient } from "@/grpcweb";
+import { Task } from "@/types/proto/v1/rollout_service";
 
 const { isCreating, phase, issue, events } = useIssueContext();
 
@@ -68,6 +75,10 @@ const ongoingIssueReviewAction = ref<{
 }>();
 const ongoingIssueStatusAction = ref<{
   action: IssueStatusAction;
+}>();
+const ongoingTaskRolloutAction = ref<{
+  action: TaskRolloutAction;
+  taskList: Task[];
 }>();
 
 events.on("perform-issue-review-action", ({ action }) => {
@@ -83,21 +94,9 @@ events.on("perform-issue-status-action", ({ action }) => {
 });
 
 events.on("perform-task-rollout-action", async ({ action, tasks }) => {
-  alert(
-    `perform task status action: action=${action}, tasks=${tasks.map(
-      (t) => t.uid
-    )}`
-  );
-  const stage = stageForTask(issue.value, tasks[0]);
-  if (!stage) return;
-  try {
-    const response = await rolloutServiceClient.batchRunTasks({
-      parent: stage.name,
-      tasks: tasks.map((task) => task.name),
-    });
-    debugger;
-  } catch (ex) {
-    debugger;
-  }
+  ongoingTaskRolloutAction.value = {
+    action,
+    taskList: tasks,
+  };
 });
 </script>

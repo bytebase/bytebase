@@ -359,7 +359,8 @@
       "pending": "（待创建）",
       "created": "（已创建）"
     },
-    "action-failed-in-current-stage": "{action}当前阶段失败的任务"
+    "action-failed-in-current-stage": "{action}当前阶段失败的任务",
+    "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务"
   },
   "banner": {
     "update-license": "更新证书",
