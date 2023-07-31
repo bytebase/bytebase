@@ -49,13 +49,15 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, err
 	}
 
+	lowerCaseTableNames := 0
 	lowerCaseTableNamesText, err := driver.getServerVariable(ctx, "lower_case_table_names")
 	if err != nil {
-		return nil, err
-	}
-	lowerCaseTableNames, err := strconv.Atoi(lowerCaseTableNamesText)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid lower_case_table_names value: %s", lowerCaseTableNamesText)
+		log.Debug("failed to get lower_case_table_names variable", zap.Error(err))
+	} else {
+		lowerCaseTableNames, err = strconv.Atoi(lowerCaseTableNamesText)
+		if err != nil {
+			log.Debug("failed to parse lower_case_table_names variable", zap.Error(err))
+		}
 	}
 
 	users, err := driver.getInstanceRoles(ctx)
