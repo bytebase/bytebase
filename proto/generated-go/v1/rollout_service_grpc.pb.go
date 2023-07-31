@@ -28,6 +28,7 @@ const (
 	RolloutService_PreviewRollout_FullMethodName      = "/bytebase.v1.RolloutService/PreviewRollout"
 	RolloutService_ListTaskRuns_FullMethodName        = "/bytebase.v1.RolloutService/ListTaskRuns"
 	RolloutService_ListPlanCheckRuns_FullMethodName   = "/bytebase.v1.RolloutService/ListPlanCheckRuns"
+	RolloutService_RunPlanChecks_FullMethodName       = "/bytebase.v1.RolloutService/RunPlanChecks"
 	RolloutService_BatchRunTasks_FullMethodName       = "/bytebase.v1.RolloutService/BatchRunTasks"
 	RolloutService_BatchSkipTasks_FullMethodName      = "/bytebase.v1.RolloutService/BatchSkipTasks"
 	RolloutService_BatchCancelTaskRuns_FullMethodName = "/bytebase.v1.RolloutService/BatchCancelTaskRuns"
@@ -46,6 +47,7 @@ type RolloutServiceClient interface {
 	PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	ListTaskRuns(ctx context.Context, in *ListTaskRunsRequest, opts ...grpc.CallOption) (*ListTaskRunsResponse, error)
 	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
+	RunPlanChecks(ctx context.Context, in *RunPlanChecksRequest, opts ...grpc.CallOption) (*RunPlanChecksResponse, error)
 	BatchRunTasks(ctx context.Context, in *BatchRunTasksRequest, opts ...grpc.CallOption) (*BatchRunTasksResponse, error)
 	BatchSkipTasks(ctx context.Context, in *BatchSkipTasksRequest, opts ...grpc.CallOption) (*BatchSkipTasksResponse, error)
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
@@ -140,6 +142,15 @@ func (c *rolloutServiceClient) ListPlanCheckRuns(ctx context.Context, in *ListPl
 	return out, nil
 }
 
+func (c *rolloutServiceClient) RunPlanChecks(ctx context.Context, in *RunPlanChecksRequest, opts ...grpc.CallOption) (*RunPlanChecksResponse, error) {
+	out := new(RunPlanChecksResponse)
+	err := c.cc.Invoke(ctx, RolloutService_RunPlanChecks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *rolloutServiceClient) BatchRunTasks(ctx context.Context, in *BatchRunTasksRequest, opts ...grpc.CallOption) (*BatchRunTasksResponse, error) {
 	out := new(BatchRunTasksResponse)
 	err := c.cc.Invoke(ctx, RolloutService_BatchRunTasks_FullMethodName, in, out, opts...)
@@ -180,6 +191,7 @@ type RolloutServiceServer interface {
 	PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error)
 	ListTaskRuns(context.Context, *ListTaskRunsRequest) (*ListTaskRunsResponse, error)
 	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
+	RunPlanChecks(context.Context, *RunPlanChecksRequest) (*RunPlanChecksResponse, error)
 	BatchRunTasks(context.Context, *BatchRunTasksRequest) (*BatchRunTasksResponse, error)
 	BatchSkipTasks(context.Context, *BatchSkipTasksRequest) (*BatchSkipTasksResponse, error)
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
@@ -216,6 +228,9 @@ func (UnimplementedRolloutServiceServer) ListTaskRuns(context.Context, *ListTask
 }
 func (UnimplementedRolloutServiceServer) ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPlanCheckRuns not implemented")
+}
+func (UnimplementedRolloutServiceServer) RunPlanChecks(context.Context, *RunPlanChecksRequest) (*RunPlanChecksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RunPlanChecks not implemented")
 }
 func (UnimplementedRolloutServiceServer) BatchRunTasks(context.Context, *BatchRunTasksRequest) (*BatchRunTasksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchRunTasks not implemented")
@@ -401,6 +416,24 @@ func _RolloutService_ListPlanCheckRuns_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RolloutService_RunPlanChecks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RunPlanChecksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).RunPlanChecks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_RunPlanChecks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).RunPlanChecks(ctx, req.(*RunPlanChecksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RolloutService_BatchRunTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BatchRunTasksRequest)
 	if err := dec(in); err != nil {
@@ -497,6 +530,10 @@ var RolloutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPlanCheckRuns",
 			Handler:    _RolloutService_ListPlanCheckRuns_Handler,
+		},
+		{
+			MethodName: "RunPlanChecks",
+			Handler:    _RolloutService_RunPlanChecks_Handler,
 		},
 		{
 			MethodName: "BatchRunTasks",

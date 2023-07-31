@@ -108,11 +108,11 @@ func TestCheckVersionForPITR(t *testing.T) {
 			err:     true,
 		},
 		{
-			version: "8.0.28",
+			version: "8.0.33",
 			err:     false,
 		},
 		{
-			version: "8.0.28-debug",
+			version: "8.0.33-debug",
 			err:     false,
 		},
 		{
@@ -455,7 +455,7 @@ func TestParseBinlogEventTsInLine(t *testing.T) {
 	}{
 		// normal case
 		{
-			line:    "#220620 13:23:55 server id 1  end_log_pos 126 CRC32 0x9a60fe57 	Start: binlog v 4, server v 8.0.28 created 220620 13:23:55 at startup",
+			line:    "#220620 13:23:55 server id 1  end_log_pos 126 CRC32 0x9a60fe57 	Start: binlog v 4, server v 8.0.33 created 220620 13:23:55 at startup",
 			eventTs: time.Date(2022, 6, 20, 13, 23, 55, 0, time.Local).Unix(),
 			found:   true,
 			err:     false,
@@ -469,7 +469,7 @@ func TestParseBinlogEventTsInLine(t *testing.T) {
 		},
 		// fake event with "end_log_pos 0"
 		{
-			line:    "#220609 11:59:57 server id 1  end_log_pos 0 CRC32 0x031d41f6 	Start: binlog v 4, server v 8.0.28 created 220609 11:59:57",
+			line:    "#220609 11:59:57 server id 1  end_log_pos 0 CRC32 0x031d41f6 	Start: binlog v 4, server v 8.0.33 created 220609 11:59:57",
 			eventTs: 0,
 			found:   false,
 			err:     false,
@@ -483,7 +483,7 @@ func TestParseBinlogEventTsInLine(t *testing.T) {
 		},
 		// parse time error
 		{
-			line:    "#220620 99:99:99 server id 1  end_log_pos 126 CRC32 0x9a60fe57 	Start: binlog v 4, server v 8.0.28 created 220620 13:23:55 at startup",
+			line:    "#220620 99:99:99 server id 1  end_log_pos 126 CRC32 0x9a60fe57 	Start: binlog v 4, server v 8.0.33 created 220620 13:23:55 at startup",
 			eventTs: 0,
 			found:   false,
 			err:     true,

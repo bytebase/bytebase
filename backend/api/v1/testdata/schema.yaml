@@ -11,90 +11,100 @@
   metadata:
     name: ""
     schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 0
-                  default:
-                    value: "1"
-                  nullable: true
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: abcdefg
-                - name: b
-                  position: 0
-                  default:
-                    value: '''NULL'''
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                    - b
-                  type: ""
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              foreignkeys:
-                - name: fk1
-                  columns:
-                    - a
-                  referencedschema: ""
-                  referencedtable: t2
-                  referencedcolumns:
-                    - b
-                  ondelete: ""
-                  onupdate: ""
-                  matchtype: ""
-            - name: t2
-              columns:
-                - name: b
-                  position: 0
-                  default:
-                    value: "NULL"
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - b
-                  type: ""
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables:
+          - name: t
+            columns:
+              - name: a
+                position: 0
+                default:
+                  value: "1"
+                nullable: true
+                type: int
+                characterset: ""
+                collation: ""
+                comment: abcdefg
+                classification: ""
+                usercomment: abcdefg
+              - name: b
+                position: 0
+                default:
+                  value: "'NULL'"
+                nullable: true
+                type: varchar(20)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: PRIMARY
+                expressions:
+                  - a
+                  - b
+                type: ""
+                unique: true
+                primary: true
+                visible: true
+                comment: ""
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys:
+              - name: fk1
+                columns:
+                  - a
+                referencedschema: ""
+                referencedtable: t2
+                referencedcolumns:
+                  - b
+                ondelete: ""
+                onupdate: ""
+                matchtype: ""
+          - name: t2
+            columns:
+              - name: b
+                position: 0
+                default:
+                  value: "NULL"
+                nullable: false
+                type: int
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: PRIMARY
+                expressions:
+                  - b
+                type: ""
+                unique: true
+                primary: true
+                visible: true
+                comment: ""
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []

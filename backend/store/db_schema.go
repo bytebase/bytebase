@@ -19,13 +19,52 @@ type DBSchema struct {
 }
 
 // TableExists checks if the table exists.
-func (s *DBSchema) TableExists(schemaName string, tableName string) bool {
+func (s *DBSchema) TableExists(schemaName string, tableName string, ignoreCaseSensitive bool) bool {
+	if ignoreCaseSensitive {
+		schemaName = strings.ToLower(schemaName)
+		tableName = strings.ToLower(tableName)
+	}
 	for _, schema := range s.Metadata.Schemas {
-		if schema.Name != schemaName {
+		currentSchemaName := schema.Name
+		if ignoreCaseSensitive {
+			currentSchemaName = strings.ToLower(currentSchemaName)
+		}
+		if currentSchemaName != schemaName {
 			continue
 		}
 		for _, table := range schema.Tables {
-			if table.Name == tableName {
+			currentTableName := table.Name
+			if ignoreCaseSensitive {
+				currentTableName = strings.ToLower(currentTableName)
+			}
+			if currentTableName == tableName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ViewExists checks if the view exists.
+func (s *DBSchema) ViewExists(schemaName string, name string, ignoreCaseSensitive bool) bool {
+	if ignoreCaseSensitive {
+		schemaName = strings.ToLower(schemaName)
+		name = strings.ToLower(name)
+	}
+	for _, schema := range s.Metadata.Schemas {
+		currentSchemaName := schema.Name
+		if ignoreCaseSensitive {
+			currentSchemaName = strings.ToLower(currentSchemaName)
+		}
+		if currentSchemaName != schemaName {
+			continue
+		}
+		for _, view := range schema.Views {
+			currentViewName := view.Name
+			if ignoreCaseSensitive {
+				currentViewName = strings.ToLower(currentViewName)
+			}
+			if currentViewName == name {
 				return true
 			}
 		}

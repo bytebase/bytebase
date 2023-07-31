@@ -34,18 +34,11 @@ const (
 	RefreshTokenAudienceFmt = "bb.user.refresh.%s"
 	// MFATempTokenAudienceFmt is the format of the MFA temp token audience.
 	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
-	apiTokenDuration        = 2 * time.Hour
-	accessTokenDuration     = 8 * time.Hour
-	refreshTokenDuration    = 7 * 24 * time.Hour
-	// RefreshThresholdDuration is the threshold duration for refreshing token.
-	RefreshThresholdDuration = 1 * time.Hour
+	apiTokenDuration        = 1 * time.Hour
+	accessTokenDuration     = 1 * time.Hour
+	// DefaultRefreshTokenDuration is the default refresh token expiration duration.
+	DefaultRefreshTokenDuration = 7 * 24 * time.Hour
 
-	// CookieExpDuration expires slightly earlier than the jwt expiration. Client would be logged out if the user
-	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
-	// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
-	// 1. The access token is about to expire in <<refreshThresholdDuration>>
-	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
-	CookieExpDuration = refreshTokenDuration - 1*time.Minute
 	// AccessTokenCookieName is the cookie name of access token.
 	AccessTokenCookieName = "access-token"
 	// RefreshTokenCookieName is the cookie name of refresh token.
@@ -63,19 +56,21 @@ const (
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.
 type APIAuthInterceptor struct {
-	store          *store.Store
-	secret         string
-	licenseService enterpriseAPI.LicenseService
-	mode           common.ReleaseMode
+	store                *store.Store
+	secret               string
+	refreshTokenDuration time.Duration
+	licenseService       enterpriseAPI.LicenseService
+	mode                 common.ReleaseMode
 }
 
 // New returns a new API auth interceptor.
-func New(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, mode common.ReleaseMode) *APIAuthInterceptor {
+func New(store *store.Store, secret string, refreshTokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, mode common.ReleaseMode) *APIAuthInterceptor {
 	return &APIAuthInterceptor{
-		store:          store,
-		secret:         secret,
-		licenseService: licenseService,
-		mode:           mode,
+		store:                store,
+		secret:               secret,
+		refreshTokenDuration: refreshTokenDuration,
+		licenseService:       licenseService,
+		mode:                 mode,
 	}
 }
 
@@ -175,9 +170,6 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 			fmt.Sprintf(AccessTokenAudienceFmt, in.mode),
 		)
 	}
-	if time.Until(claims.ExpiresAt.Time) < RefreshThresholdDuration {
-		generateToken = true
-	}
 
 	principalID, err := strconv.Atoi(claims.Subject)
 	if err != nil {
@@ -226,7 +218,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 
 			// If we have a valid refresh token, we will generate new access token and refresh token
 			if refreshToken != nil && refreshToken.Valid {
-				if err := generateTokensAndSetCookies(ctx, user.Name, user.ID, in.mode, in.secret); err != nil {
+				if err := generateTokensAndSetCookies(ctx, user.Name, user.ID, in.mode, in.secret, in.refreshTokenDuration); err != nil {
 					return errs.Wrapf(err, "failed to regenerate token")
 				}
 			}
@@ -313,13 +305,13 @@ type claimsMessage struct {
 }
 
 // generateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
-func generateTokensAndSetCookies(ctx context.Context, userName string, userID int, mode common.ReleaseMode, secret string) error {
+func generateTokensAndSetCookies(ctx context.Context, userName string, userID int, mode common.ReleaseMode, secret string, refreshTokenDuration time.Duration) error {
 	accessToken, err := GenerateAccessToken(userName, userID, mode, secret)
 	if err != nil {
 		return errs.Wrap(err, "failed to generate access token")
 	}
 	// We generate here a new refresh token and saving it to the cookie.
-	refreshToken, err := GenerateRefreshToken(userName, userID, mode, secret)
+	refreshToken, err := GenerateRefreshToken(userName, userID, mode, secret, refreshTokenDuration)
 	if err != nil {
 		return errs.Wrap(err, "failed to generate refresh token")
 	}
@@ -347,7 +339,7 @@ func GenerateAccessToken(userName string, userID int, mode common.ReleaseMode, s
 }
 
 // GenerateRefreshToken generates a refresh token for web.
-func GenerateRefreshToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
+func GenerateRefreshToken(userName string, userID int, mode common.ReleaseMode, secret string, refreshTokenDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(refreshTokenDuration)
 	return generateToken(userName, userID, fmt.Sprintf(RefreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }

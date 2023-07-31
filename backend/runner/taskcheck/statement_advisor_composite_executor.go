@@ -56,12 +56,12 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	if database == nil {
 		return nil, errors.Errorf("database %v not found", *task.DatabaseID)
 	}
-	environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
+	environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 	if err != nil {
 		return nil, err
 	}
 	if environment == nil {
-		return nil, errors.Errorf("environment %q not found", database.EnvironmentID)
+		return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
 	}
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
@@ -178,6 +178,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 			Title:     advice.Title,
 			Content:   advice.Content,
 			Line:      advice.Line,
+			Column:    advice.Column,
 			Details:   advice.Details,
 		})
 	}
@@ -190,6 +191,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 			Title:     "OK",
 			Content:   "",
 			Line:      0,
+			Column:    0,
 			Details:   "",
 		})
 	}

@@ -10,7 +10,7 @@
       :instance="instance"
     />
 
-    <span>{{ instanceV1Name(instance) }}</span>
+    <span class="line-clamp-1">{{ instanceV1Name(instance) }}</span>
 
     <InstanceV1EngineIcon
       v-if="icon && iconPosition === 'suffix'"

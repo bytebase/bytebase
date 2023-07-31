@@ -72,6 +72,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -108,6 +109,8 @@ import (
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	// Register dm driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
 
 	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"
@@ -152,6 +155,7 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *taskrun.Scheduler
 	TaskCheckScheduler *taskcheck.Scheduler
+	PlanCheckScheduler *plancheck.Scheduler
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
 	SlowQuerySyncer    *slowquerysync.Syncer
@@ -349,6 +353,26 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	s.secret = config.secret
 
+	workspaceProfileSettingName := api.SettingWorkspaceProfile
+	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
+	if err != nil {
+		return nil, err
+	}
+	refreshTokenDuration := auth.DefaultRefreshTokenDuration
+	externalURL := ""
+	if setting != nil {
+		settingValue := new(storepb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
+			return nil, err
+		}
+		if settingValue.ExternalUrl != "" {
+			externalURL = settingValue.ExternalUrl
+		}
+		if settingValue.RefreshTokenDuration != nil && settingValue.RefreshTokenDuration.Seconds > 0 {
+			refreshTokenDuration = settingValue.RefreshTokenDuration.AsDuration()
+		}
+	}
+
 	s.ActivityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 	e := echo.New()
@@ -465,6 +489,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		statementAffectedRowsExecutor := taskcheck.NewStatementAffectedRowsReportExecutor(storeInstance, s.dbFactory)
 		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAffectedRowsReport, statementAffectedRowsExecutor)
 
+		{
+			s.PlanCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
+			databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
+			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
+		}
+
 		// Anomaly scanner
 		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
@@ -496,7 +526,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	apiGroup := e.Group(internalAPIPrefix)
 	// API JWT authentication middleware.
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret)
+		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret, refreshTokenDuration)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -523,7 +553,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	})
 
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
+	authProvider := auth.New(s.store, s.secret, refreshTokenDuration, s.licenseService, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
 	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing)
 	onPanic := func(p any) error {
@@ -554,7 +584,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.licenseService, s.MetricReporter, &profile,
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, refreshTokenDuration, s.licenseService, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 			if s.profile.TestOnlySkipOnboardingData {
 				return nil
@@ -595,7 +625,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
 	v1pb.RegisterIssueServiceServer(s.grpcServer, v1.NewIssueService(s.store, s.ActivityManager, s.TaskScheduler, s.TaskCheckScheduler, s.RelayRunner, s.stateCfg))
-	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.stateCfg, s.ActivityManager))
+	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
 	v1pb.RegisterSchemaDesignServiceServer(s.grpcServer, v1.NewSchemaDesignService(s.store, s.licenseService))
@@ -614,21 +644,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
 	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{}
-	workspaceProfileSettingName := api.SettingWorkspaceProfile
-	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
-	if err != nil {
-		return nil, err
-	}
-	if setting != nil {
-		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
-			return nil, err
-		}
-		if settingValue.ExternalUrl != "" {
-			gatewayModifier.ExternalURL = settingValue.ExternalUrl
-		}
-	}
+	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL}
 	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
@@ -947,6 +963,11 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 		s.runnerWG.Add(1)
 		go s.MetricReporter.Run(ctx, &s.runnerWG)
+
+		if s.profile.Mode == common.ReleaseModeDev {
+			s.runnerWG.Add(1)
+			go s.PlanCheckScheduler.Run(ctx, &s.runnerWG)
+		}
 	}
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
@@ -1133,8 +1154,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 
 	dbName := postgres.SampleDatabase
 	testDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &testInstance.ResourceID,
-		DatabaseName: &dbName,
+		InstanceID:          &testInstance.ResourceID,
+		DatabaseName:        &dbName,
+		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(testInstance),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find test onboarding instance")
@@ -1188,8 +1210,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 
 	dbName = postgres.SampleDatabase
 	prodDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &prodInstance.ResourceID,
-		DatabaseName: &dbName,
+		InstanceID:          &prodInstance.ResourceID,
+		DatabaseName:        &dbName,
+		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(prodInstance),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find prod onboarding instance")

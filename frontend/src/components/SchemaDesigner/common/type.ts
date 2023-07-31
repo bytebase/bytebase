@@ -24,14 +24,12 @@ export interface SchemaDesignerTabState {
 }
 
 export interface SchemaDesignerContext {
-  readonly: boolean;
-  baselineMetadata: DatabaseMetadata;
-  engine: Engine;
-
+  readonly: Ref<boolean>;
+  baselineMetadata: Ref<DatabaseMetadata>;
+  engine: Ref<Engine>;
   metadata: Ref<DatabaseMetadata>;
   tabState: Ref<SchemaDesignerTabState>;
-
-  originalSchemas: Schema[];
+  originalSchemas: Ref<Schema[]>;
   editableSchemas: Ref<Schema[]>;
 
   // Tab related functions.

@@ -1,6 +1,8 @@
 <template>
-  <div class="flex box-border text-gray-500 text-sm border-b">
-    <div class="relative flex flex-nowrap overflow-hidden">
+  <div
+    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2"
+  >
+    <div class="relative flex flex-1 flex-nowrap overflow-hidden">
       <Draggable
         id="tab-list"
         ref="tabListRef"
@@ -29,26 +31,43 @@
           />
         </template>
       </Draggable>
+
+      <button class="px-1" @click="handleAddTab">
+        <heroicons-solid:plus
+          class="h-6 w-6 p-1 hover:bg-gray-200 rounded-md"
+        />
+      </button>
     </div>
 
-    <button class="px-1" @click="handleAddTab">
-      <heroicons-solid:plus class="h-6 w-6 p-1 hover:bg-gray-200 rounded-md" />
-    </button>
+    <div class="pb-1">
+      <NButton size="small" @click="showSheetPanel = true">
+        {{ $t("sql-editor.sheet.choose-sheet") }}
+      </NButton>
+    </div>
+
+    <Drawer v-model:show="showSheetPanel">
+      <DrawerContent :title="$t('sql-editor.sheet.self')">
+        <SheetPanel @close="showSheetPanel = false" />
+      </DrawerContent>
+    </Drawer>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useDialog } from "naive-ui";
+import { useDialog, NButton } from "naive-ui";
 import Draggable from "vuedraggable";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { useResizeObserver } from "@vueuse/core";
 
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import { useTabStore } from "@/store";
+import { Drawer, DrawerContent } from "@/components/v2";
 import TabItem from "./TabItem";
-import { useResizeObserver } from "@vueuse/core";
+import SheetPanel from "./SheetPanel";
+import { useSheetPanelContext } from "./SheetPanel/common";
 
 type LocalState = {
   dragging: boolean;
@@ -65,6 +84,7 @@ const state = reactive<LocalState>({
   hoverTabId: "",
 });
 
+const { showPanel: showSheetPanel } = useSheetPanelContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 
 const scrollState = reactive({
@@ -186,6 +206,6 @@ onMounted(() => recalculateScrollState());
 }
 
 .tab-list {
-  @apply flex flex-nowrap overflow-x-auto w-full hide-scrollbar;
+  @apply flex flex-nowrap overflow-x-auto max-w-full hide-scrollbar;
 }
 </style>

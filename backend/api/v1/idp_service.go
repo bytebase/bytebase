@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/pkg/errors"
-
+	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
@@ -260,6 +260,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 				ClientSecret:  identityProviderConfig.GetOidcConfig().ClientSecret,
 				FieldMapping:  identityProviderConfig.GetOidcConfig().FieldMapping,
 				SkipTLSVerify: identityProviderConfig.GetOidcConfig().SkipTlsVerify,
+				AuthStyle:     identityProviderConfig.GetOidcConfig().GetAuthStyle(),
 			})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
@@ -280,7 +281,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 }
 
 func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context, name string) (*store.IdentityProviderMessage, error) {
-	identityProviderID, err := getIdentityProviderID(name)
+	identityProviderID, err := common.GetIdentityProviderID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -302,7 +303,7 @@ func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) 
 	identityProviderType := v1pb.IdentityProviderType(identityProvider.Type)
 	config := convertIdentityProviderConfigFromStore(identityProvider.Config)
 	return &v1pb.IdentityProvider{
-		Name:   fmt.Sprintf("%s%s", identityProviderNamePrefix, identityProvider.ResourceID),
+		Name:   fmt.Sprintf("%s%s", common.IdentityProviderNamePrefix, identityProvider.ResourceID),
 		Uid:    fmt.Sprintf("%d", identityProvider.UID),
 		State:  convertDeletedToState(identityProvider.Deleted),
 		Title:  identityProvider.Title,
@@ -330,6 +331,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					Scopes:        v.Scopes,
 					FieldMapping:  &fieldMapping,
 					SkipTlsVerify: v.SkipTlsVerify,
+					AuthStyle:     v1pb.OAuth2AuthStyle(v.AuthStyle),
 				},
 			},
 		}
@@ -348,6 +350,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					Scopes:        oidc.DefaultScopes,
 					FieldMapping:  &fieldMapping,
 					SkipTlsVerify: v.SkipTlsVerify,
+					AuthStyle:     v1pb.OAuth2AuthStyle(v.AuthStyle),
 				},
 			},
 		}
@@ -373,6 +376,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 					Scopes:        v.Scopes,
 					FieldMapping:  &fieldMapping,
 					SkipTlsVerify: v.SkipTlsVerify,
+					AuthStyle:     storepb.OAuth2AuthStyle(v.AuthStyle),
 				},
 			},
 		}
@@ -390,6 +394,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 					ClientSecret:  v.ClientSecret,
 					FieldMapping:  &fieldMapping,
 					SkipTlsVerify: v.SkipTlsVerify,
+					AuthStyle:     storepb.OAuth2AuthStyle(v.AuthStyle),
 				},
 			},
 		}

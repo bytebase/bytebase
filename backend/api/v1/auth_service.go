@@ -8,7 +8,10 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/nyaruka/phonenumbers"
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
@@ -16,10 +19,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/pquerna/otp/totp"
-
-	"github.com/nyaruka/phonenumbers"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -39,29 +38,31 @@ import (
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
-	store          *store.Store
-	secret         string
-	licenseService enterpriseAPI.LicenseService
-	metricReporter *metricreport.Reporter
-	profile        *config.Profile
-	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
+	store                *store.Store
+	secret               string
+	refreshTokenDuration time.Duration
+	licenseService       enterpriseAPI.LicenseService
+	metricReporter       *metricreport.Reporter
+	profile              *config.Profile
+	postCreateUser       func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
+func NewAuthService(store *store.Store, secret string, refreshTokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
-		store:          store,
-		secret:         secret,
-		licenseService: licenseService,
-		metricReporter: metricReporter,
-		profile:        profile,
-		postCreateUser: postCreateUser,
+		store:                store,
+		secret:               secret,
+		refreshTokenDuration: refreshTokenDuration,
+		licenseService:       licenseService,
+		metricReporter:       metricReporter,
+		profile:              profile,
+		postCreateUser:       postCreateUser,
 	}
 }
 
 // GetUser gets a user.
 func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest) (*v1pb.User, error) {
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -244,7 +245,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	userID, err := getUserID(request.User.Name)
+	userID, err := common.GetUserID(request.User.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -403,7 +404,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 // DeleteUser deletes a user.
 func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRequest) (*emptypb.Empty, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -432,7 +433,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 // UndeleteUser undeletes a user.
 func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUserRequest) (*v1pb.User, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -480,7 +481,7 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	}
 
 	convertedUser := &v1pb.User{
-		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
+		Name:     fmt.Sprintf("%s%d", common.UserNamePrefix, user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Phone:    user.Phone,
@@ -595,7 +596,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}
 		accessToken = token
 		if request.Web {
-			refreshToken, err = auth.GenerateRefreshToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
+			refreshToken, err = auth.GenerateRefreshToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, s.refreshTokenDuration)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 			}
@@ -664,7 +665,7 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 }
 
 func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	idpID, err := getIdentityProviderID(request.IdpName)
+	idpID, err := common.GetIdentityProviderID(request.IdpName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get identity provider ID: %v", err)
 	}
@@ -718,6 +719,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 				ClientSecret:  idp.Config.GetOidcConfig().ClientSecret,
 				FieldMapping:  idp.Config.GetOidcConfig().FieldMapping,
 				SkipTLSVerify: idp.Config.GetOidcConfig().SkipTlsVerify,
+				AuthStyle:     idp.Config.GetOidcConfig().GetAuthStyle(),
 			},
 		)
 		if err != nil {

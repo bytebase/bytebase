@@ -283,6 +283,16 @@ export interface Database {
   project: string;
   /** The version of database schema. */
   schemaVersion: string;
+  /**
+   * The environment resource.
+   * Format: environments/prod where prod is the environment resource ID.
+   */
+  environment: string;
+  /**
+   * The effective environment based on environment tag above and environment tag on the instance.
+   * Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview.
+   */
+  effectiveEnvironment: string;
   /** Labels will be used for deployment and policy control. */
   labels: { [key: string]: string };
 }
@@ -349,8 +359,15 @@ export interface TableMetadata {
   dataFree: number;
   /** The create_options is the create option of a table. */
   createOptions: string;
-  /** The comment is the comment of a table. */
+  /**
+   * The comment is the comment of a table.
+   * classification and user_comment is parsed from the comment.
+   */
   comment: string;
+  /** The classification is the classification of a table parsed from the comment. */
+  classification: string;
+  /** The user_comment is the user comment of a table parsed from the comment. */
+  userComment: string;
   /** The foreign_keys is the list of foreign keys in a table. */
   foreignKeys: ForeignKeyMetadata[];
 }
@@ -373,8 +390,15 @@ export interface ColumnMetadata {
   characterSet: string;
   /** The collation is the collation of a column. */
   collation: string;
-  /** The comment is the comment of a column. */
+  /**
+   * The comment is the comment of a column.
+   * classification and user_comment is parsed from the comment.
+   */
   comment: string;
+  /** The classification is the classification of a column parsed from the comment. */
+  classification: string;
+  /** The user_comment is the user comment of a column parsed from the comment. */
+  userComment: string;
 }
 
 /** ViewMetadata is the metadata for views. */
@@ -2402,7 +2426,17 @@ export const ListBackupsResponse = {
 };
 
 function createBaseDatabase(): Database {
-  return { name: "", uid: "", syncState: 0, successfulSyncTime: undefined, project: "", schemaVersion: "", labels: {} };
+  return {
+    name: "",
+    uid: "",
+    syncState: 0,
+    successfulSyncTime: undefined,
+    project: "",
+    schemaVersion: "",
+    environment: "",
+    effectiveEnvironment: "",
+    labels: {},
+  };
 }
 
 export const Database = {
@@ -2425,8 +2459,14 @@ export const Database = {
     if (message.schemaVersion !== "") {
       writer.uint32(50).string(message.schemaVersion);
     }
+    if (message.environment !== "") {
+      writer.uint32(58).string(message.environment);
+    }
+    if (message.effectiveEnvironment !== "") {
+      writer.uint32(66).string(message.effectiveEnvironment);
+    }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
+      Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
     });
     return writer;
   },
@@ -2485,9 +2525,23 @@ export const Database = {
             break;
           }
 
-          const entry7 = Database_LabelsEntry.decode(reader, reader.uint32());
-          if (entry7.value !== undefined) {
-            message.labels[entry7.key] = entry7.value;
+          message.environment = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.effectiveEnvironment = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          const entry9 = Database_LabelsEntry.decode(reader, reader.uint32());
+          if (entry9.value !== undefined) {
+            message.labels[entry9.key] = entry9.value;
           }
           continue;
       }
@@ -2507,6 +2561,8 @@ export const Database = {
       successfulSyncTime: isSet(object.successfulSyncTime) ? fromJsonTimestamp(object.successfulSyncTime) : undefined,
       project: isSet(object.project) ? String(object.project) : "",
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
+      effectiveEnvironment: isSet(object.effectiveEnvironment) ? String(object.effectiveEnvironment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -2524,6 +2580,8 @@ export const Database = {
     message.successfulSyncTime !== undefined && (obj.successfulSyncTime = message.successfulSyncTime.toISOString());
     message.project !== undefined && (obj.project = message.project);
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.environment !== undefined && (obj.environment = message.environment);
+    message.effectiveEnvironment !== undefined && (obj.effectiveEnvironment = message.effectiveEnvironment);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -2545,6 +2603,8 @@ export const Database = {
     message.successfulSyncTime = object.successfulSyncTime ?? undefined;
     message.project = object.project ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
+    message.environment = object.environment ?? "";
+    message.effectiveEnvironment = object.effectiveEnvironment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);
@@ -2899,6 +2959,8 @@ function createBaseTableMetadata(): TableMetadata {
     dataFree: 0,
     createOptions: "",
     comment: "",
+    classification: "",
+    userComment: "",
     foreignKeys: [],
   };
 }
@@ -2937,6 +2999,12 @@ export const TableMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
+    }
+    if (message.classification !== "") {
+      writer.uint32(106).string(message.classification);
+    }
+    if (message.userComment !== "") {
+      writer.uint32(114).string(message.userComment);
     }
     for (const v of message.foreignKeys) {
       ForeignKeyMetadata.encode(v!, writer.uint32(98).fork()).ldelim();
@@ -3028,6 +3096,20 @@ export const TableMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.classification = reader.string();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.userComment = reader.string();
+          continue;
         case 12:
           if (tag !== 98) {
             break;
@@ -3057,6 +3139,8 @@ export const TableMetadata = {
       dataFree: isSet(object.dataFree) ? Number(object.dataFree) : 0,
       createOptions: isSet(object.createOptions) ? String(object.createOptions) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      classification: isSet(object.classification) ? String(object.classification) : "",
+      userComment: isSet(object.userComment) ? String(object.userComment) : "",
       foreignKeys: Array.isArray(object?.foreignKeys)
         ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
         : [],
@@ -3084,6 +3168,8 @@ export const TableMetadata = {
     message.dataFree !== undefined && (obj.dataFree = Math.round(message.dataFree));
     message.createOptions !== undefined && (obj.createOptions = message.createOptions);
     message.comment !== undefined && (obj.comment = message.comment);
+    message.classification !== undefined && (obj.classification = message.classification);
+    message.userComment !== undefined && (obj.userComment = message.userComment);
     if (message.foreignKeys) {
       obj.foreignKeys = message.foreignKeys.map((e) => e ? ForeignKeyMetadata.toJSON(e) : undefined);
     } else {
@@ -3109,6 +3195,8 @@ export const TableMetadata = {
     message.dataFree = object.dataFree ?? 0;
     message.createOptions = object.createOptions ?? "";
     message.comment = object.comment ?? "";
+    message.classification = object.classification ?? "";
+    message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     return message;
   },
@@ -3124,6 +3212,8 @@ function createBaseColumnMetadata(): ColumnMetadata {
     characterSet: "",
     collation: "",
     comment: "",
+    classification: "",
+    userComment: "",
   };
 }
 
@@ -3152,6 +3242,12 @@ export const ColumnMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(66).string(message.comment);
+    }
+    if (message.classification !== "") {
+      writer.uint32(74).string(message.classification);
+    }
+    if (message.userComment !== "") {
+      writer.uint32(82).string(message.userComment);
     }
     return writer;
   },
@@ -3219,6 +3315,20 @@ export const ColumnMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.classification = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.userComment = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3238,6 +3348,8 @@ export const ColumnMetadata = {
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
       collation: isSet(object.collation) ? String(object.collation) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      classification: isSet(object.classification) ? String(object.classification) : "",
+      userComment: isSet(object.userComment) ? String(object.userComment) : "",
     };
   },
 
@@ -3251,6 +3363,8 @@ export const ColumnMetadata = {
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
     message.collation !== undefined && (obj.collation = message.collation);
     message.comment !== undefined && (obj.comment = message.comment);
+    message.classification !== undefined && (obj.classification = message.classification);
+    message.userComment !== undefined && (obj.userComment = message.userComment);
     return obj;
   },
 
@@ -3268,6 +3382,8 @@ export const ColumnMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";
+    message.classification = object.classification ?? "";
+    message.userComment = object.userComment ?? "";
     return message;
   },
 };

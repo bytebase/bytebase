@@ -11,6 +11,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // TokenRefresher is a function to refresh the OAuth token and assign back to
@@ -119,6 +122,9 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 		if err != nil {
 			return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
 		}
+		if err := resp.Body.Close(); err != nil {
+			log.Warn("failed to close resp body", zap.Error(err))
+		}
 
 		if err = getOAuthErrorDetails(resp.StatusCode, body); err != nil {
 			if _, ok := err.(*oauthError); ok {
@@ -151,6 +157,11 @@ func (e oauthError) Error() string {
 // When it's error like 404, GitLab API doesn't return it as error so we keep
 // the similar behavior and let caller check the response status code.
 func getOAuthErrorDetails(code int, body []byte) error {
+	// Special case for Azure DevOps OAuth error.
+	if code == http.StatusNonAuthoritativeInfo && bytes.Contains(body, []byte("Azure DevOps Services | Sign In")) {
+		return &oauthError{}
+	}
+
 	if 200 <= code && code < 300 {
 		return nil
 	}

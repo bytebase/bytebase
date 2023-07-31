@@ -53,6 +53,8 @@ const (
 	Redshift Type = "REDSHIFT"
 	// MariaDB is the database type for MariaDB.
 	MariaDB Type = "MARIADB"
+	// DM is the database type for DM.
+	DM Type = "DM"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
@@ -76,6 +78,7 @@ type InstanceMetadata struct {
 	InstanceRoles []*storepb.InstanceRoleMetadata
 	// Simplified database metadata.
 	Databases []*storepb.DatabaseMetadata
+	Metadata  *storepb.InstanceMetadata
 }
 
 // TableKey is the map key for table metadata.
@@ -506,10 +509,8 @@ type Driver interface {
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, createDatabase bool, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
-	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
-	// Used for execute readonly SELECT statement
 	// TODO(rebelice): remove QueryConn and rename QueryConn2 to QueryConn when legacy code is removed.
-	QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
+	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
 	// RunStatement will execute the statement and return the result, for both SELECT and non-SELECT statements.
 	RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error)
 
@@ -624,7 +625,10 @@ const (
 
 // SensitiveSchemaInfo is the schema info using to extract sensitive fields.
 type SensitiveSchemaInfo struct {
-	DatabaseList []DatabaseSchema
+	// IgnoreCaseSensitive is the flag to ignore case sensitive.
+	// IMPORTANT: This flag is ONLY for database names, table names and view names in MySQL-like database.
+	IgnoreCaseSensitive bool
+	DatabaseList        []DatabaseSchema
 }
 
 // DatabaseSchema is the database schema using to extract sensitive fields.

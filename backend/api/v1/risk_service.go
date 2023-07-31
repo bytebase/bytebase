@@ -32,7 +32,7 @@ func NewRiskService(store *store.Store, licenseService enterpriseAPI.LicenseServ
 
 func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 	return &v1pb.Risk{
-		Name:      fmt.Sprintf("%s%v", riskPrefix, risk.ID),
+		Name:      fmt.Sprintf("%s%v", common.RiskPrefix, risk.ID),
 		Uid:       fmt.Sprintf("%v", risk.ID),
 		Source:    convertToSource(risk.Source),
 		Title:     risk.Name,
@@ -92,7 +92,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	riskID, err := getRiskID(request.Risk.Name)
+	riskID, err := common.GetRiskID(request.Risk.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -135,7 +135,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 // DeleteRisk deletes a risk.
 func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRequest) (*emptypb.Empty, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	riskID, err := getRiskID(request.Name)
+	riskID, err := common.GetRiskID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}

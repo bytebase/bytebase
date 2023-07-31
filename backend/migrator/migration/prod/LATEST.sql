@@ -324,7 +324,7 @@ CREATE TABLE instance (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    environment_id INTEGER NOT NULL REFERENCES environment (id),
+    environment_id INTEGER REFERENCES environment (id),
     name TEXT NOT NULL,
     engine TEXT NOT NULL,
     engine_version TEXT NOT NULL DEFAULT '',
@@ -332,7 +332,8 @@ CREATE TABLE instance (
     resource_id TEXT NOT NULL,
     -- activation should set to be TRUE if users assign license to this instance.
     activation BOOLEAN NOT NULL DEFAULT false,
-    options JSONB NOT NULL DEFAULT '{}'
+    options JSONB NOT NULL DEFAULT '{}',
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
@@ -379,6 +380,7 @@ CREATE TABLE db (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    environment_id INTEGER REFERENCES environment (id),
     -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
     source_backup_id INTEGER,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
@@ -710,6 +712,31 @@ BEFORE
 UPDATE
     ON plan FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
+
+CREATE TABLE plan_check_run (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    plan_id BIGINT NOT NULL REFERENCES plan (id),
+    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.plan-check.%'),
+    config JSONB NOT NULL DEFAULT '{}',
+    result JSONB NOT NULL DEFAULT '{}',
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_plan_check_run_plan_id ON plan_check_run (plan_id);
+
+ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
+
+CREATE TRIGGER update_plan_check_run_updated_ts
+BEFORE
+UPDATE
+    ON plan_check_run FOR EACH ROW
+EXECUTE FUNCTION trigger_update_updated_ts();
+
 -- Plan related END
 -----------------------
 -- issue
@@ -896,7 +923,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET')),
+    type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
@@ -1109,7 +1136,7 @@ CREATE TABLE sheet (
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
     visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE',
-    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
+    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
     type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL',
     payload JSONB NOT NULL DEFAULT '{}'
 );

@@ -32,6 +32,7 @@
         :engine-type-list="allowedEngineTypeList"
         :sync-status="'OK'"
         :customize-item="true"
+        :placeholder="$t('schema-designer.select-database-placeholder')"
         @select-database-id="handleDatabaseSelect"
       >
         <template #customizeItem="{ database: db }">
@@ -110,6 +111,7 @@ import {
 import { head, isNull, isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
+import { InstanceV1EngineIcon } from "@/components/v2";
 
 interface BaselineSchema {
   projectId?: string;

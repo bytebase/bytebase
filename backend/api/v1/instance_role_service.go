@@ -34,7 +34,7 @@ func NewInstanceRoleService(store *store.Store, dbFactory *dbfactory.DBFactory) 
 
 // GetInstanceRole gets an role.
 func (s *InstanceRoleService) GetInstanceRole(ctx context.Context, request *v1pb.GetInstanceRoleRequest) (*v1pb.InstanceRole, error) {
-	instanceID, roleName, err := getInstanceRoleID(request.Name)
+	instanceID, roleName, err := common.GetInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -70,7 +70,7 @@ func (s *InstanceRoleService) GetInstanceRole(ctx context.Context, request *v1pb
 
 // ListInstanceRoles lists all roles in an instance.
 func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1pb.ListInstanceRolesRequest) (*v1pb.ListInstanceRolesResponse, error) {
-	instanceID, err := getInstanceID(request.Parent)
+	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -126,7 +126,7 @@ func (s *InstanceRoleService) CreateInstanceRole(ctx context.Context, request *v
 	if request.Role == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "role must be set")
 	}
-	instanceID, err := getInstanceID(request.Parent)
+	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -179,7 +179,7 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instanceID, roleName, err := getInstanceRoleID(request.Role.Name)
+	instanceID, roleName, err := common.GetInstanceRoleID(request.Role.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -239,7 +239,7 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 
 // DeleteInstanceRole deletes an role.
 func (s *InstanceRoleService) DeleteInstanceRole(ctx context.Context, request *v1pb.DeleteInstanceRoleRequest) (*emptypb.Empty, error) {
-	instanceID, roleName, err := getInstanceRoleID(request.Name)
+	instanceID, roleName, err := common.GetInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}

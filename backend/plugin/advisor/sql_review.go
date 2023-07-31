@@ -517,6 +517,7 @@ func mssqlSyntaxCheck(statement string) (any, []Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
 				},
 			}
 		}
@@ -545,6 +546,7 @@ func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
 				},
 			}
 		}
@@ -573,6 +575,7 @@ func oracleSyntaxCheck(statement string) (any, []Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
 				},
 			}
 		}
@@ -680,6 +683,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 							Title:   SyntaxErrorTitle,
 							Content: syntaxErr.Message,
 							Line:    syntaxErr.Line,
+							Column:  syntaxErr.Column,
 						},
 					}
 				}
@@ -1096,6 +1100,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLMigrationCompatibility, nil
 		case db.Snowflake:
 			return SnowflakeMigrationCompatibility, nil
+		case db.MSSQL:
+			return MSSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
@@ -1182,6 +1188,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleColumnRequirement, nil
 		case db.Snowflake:
 			return SnowflakeColumnRequirement, nil
+		case db.MSSQL:
+			return MSSQLColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
@@ -1311,6 +1319,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleTableNoFK, nil
 		case db.Snowflake:
 			return SnowflakeTableNoFK, nil
+		case db.MSSQL:
+			return MSSQLTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {

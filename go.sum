@@ -14,6 +14,8 @@ cloud.google.com/go/spanner v1.47.0 h1:aqiMP8dhsEXgn9K5EZBWxPG7dxIiyM2VaikqeU4it
 cloud.google.com/go/spanner v1.47.0/go.mod h1:IXsJwVW2j4UKs0eYDqodab6HgGuA1bViSqW4uH9lfUI=
 cloud.google.com/go/storage v1.30.1 h1:uOdMxAs8HExqBlnLtnQyP0YkvbiDpdGShGKtx6U/oNM=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
+gitee.com/chunanyong/dm v1.8.12 h1:WupbFZL0MRNIIiCPaLDHgFi5jkdkjzjPReuWPaInGwk=
+gitee.com/chunanyong/dm v1.8.12/go.mod h1:EPRJnuPFgbyOFgJ0TRYCTGzhq+ZT4wdyaj/GW/LLcNg=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 h1:/vQbFIOMbk2FiG/kXiLl8BRyzTWDw7gX/Hz7Dd5eDMs=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4/go.mod h1:hN7oaIRCjzsZ2dE+yG5k+rsdt3qcwykqK6HVGcKwsw4=
 github.com/99designs/keyring v1.2.2 h1:pZd3neh/EmUzWONb35LxQfvuY7kiSXAq3HQd97+XBn0=
@@ -139,6 +141,8 @@ github.com/bsm/ginkgo/v2 v2.7.0 h1:ItPMPH90RbmZJt5GtkcNvIRuGEdwlBItdNVoyzaNQao=
 github.com/bsm/gomega v1.26.0 h1:LhQm+AFcgV2M0WyKroMASzAzCAJVpAxQXv4SaI9a69Y=
 github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651 h1:NpoTuRY6Ckj37zTlEax/UTfvHCOdanI5/5dVCarOD18=
 github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651/go.mod h1:/HsnX0+34LXVz3MxtZoW15GiwEOXz/PrEhutjb3icfE=
+github.com/bytebase/mongo-parser v0.0.0-20230726155532-29863b4ce95d h1:x1HUOFpNprINYsQq/HCuQ7eW3GvnIsjBEPBdwTaXkNY=
+github.com/bytebase/mongo-parser v0.0.0-20230726155532-29863b4ce95d/go.mod h1:m6o2Nl28jGHWCxbraY4zd9WgLRK+kWbOEmvwg5Zti2U=
 github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da h1:DlK8ipp+tzhEPNBmOLG0wBhM+cYX3leGTh+8lomML2U=
 github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
 github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7 h1:RDN6UnjTq4HR4LKrN8Yav4XfwUoGRjTocvWmzGr6Usc=

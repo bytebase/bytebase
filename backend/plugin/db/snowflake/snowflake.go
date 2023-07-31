@@ -259,13 +259,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, _ d
 	return rowsAffected, nil
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	return util.Query(ctx, db.Snowflake, conn, statement, queryContext)
-}
-
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// TODO(rebelice): support multiple queries in a single statement.
 	var results []*v1pb.QueryResult
 
@@ -301,7 +296,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.Snowflake, conn, stmt, queryContext)
+	result, err := util.Query(ctx, db.Snowflake, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

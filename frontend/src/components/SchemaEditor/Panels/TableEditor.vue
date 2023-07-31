@@ -283,7 +283,7 @@
   >
     <DrawerContent :title="$t('schema-template.field-template')">
       <div class="w-[46rem]">
-        <SettingWorkspaceSchemaTemplate
+        <FieldTemplates
           :engine="databaseEngine"
           @apply="handleApplyColumnTemplate"
         />
@@ -329,7 +329,7 @@ import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { Engine } from "@/types/proto/v1/common";
 import { Drawer, DrawerContent } from "@/components/v2";
-import SettingWorkspaceSchemaTemplate from "../../../views/SettingWorkspaceSchemaTemplate.vue";
+import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 
 type SubtabType = "column-list" | "raw-sql";

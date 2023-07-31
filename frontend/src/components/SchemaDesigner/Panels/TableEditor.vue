@@ -20,7 +20,7 @@
         <NInput
           v-if="state.selectedSubtab === 'column-list'"
           v-model:value="searchPattern"
-          class="!w-48 mr-3"
+          class="!w-48"
           :placeholder="$t('schema-editor.search-column')"
         >
           <template #prefix>
@@ -284,6 +284,7 @@ import {
   TableTabContext,
   useSchemaDesignerContext,
 } from "../common";
+import { isColumnChanged } from "../utils/column";
 
 type SubtabType = "column-list" | "raw-sql";
 
@@ -374,7 +375,7 @@ const columnHeaderList = computed(() => {
 });
 
 const dataTypeOptions = computed(() => {
-  return getDataTypeSuggestionList(engine).map((dataType) => {
+  return getDataTypeSuggestionList(engine.value).map((dataType) => {
     return {
       label: dataType,
       key: dataType,
@@ -387,6 +388,14 @@ const getColumnItemComputedClassList = (column: Column) => {
     return ["text-red-700", "cursor-not-allowed", "!bg-red-50", "opacity-70"];
   } else if (column.status === "created") {
     return ["text-green-700", "!bg-green-50"];
+  } else if (
+    isColumnChanged(
+      currentTab.value.schemaId,
+      currentTab.value.tableId,
+      column.id
+    )
+  ) {
+    return ["text-yellow-700", "!bg-yellow-50"];
   }
   return [];
 };
@@ -440,7 +449,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   const referColumn = referencedTable.columnList.find(
     (column) => column.id === fk.referencedColumnIdList[index]
   );
-  if (engine === Engine.MYSQL) {
+  if (engine.value === Engine.MYSQL) {
     return `${referencedTable.name}(${referColumn?.name})`;
   } else {
     return `${referencedSchema?.name}.${referencedTable.name}(${referColumn?.name})`;
@@ -452,12 +461,12 @@ const isDroppedColumn = (column: Column): boolean => {
 };
 
 const disableChangeTable = computed(() => {
-  return readonly || isDroppedSchema.value || isDroppedTable.value;
+  return readonly.value || isDroppedSchema.value || isDroppedTable.value;
 });
 
 const disableAlterColumn = (column: Column): boolean => {
   return (
-    readonly ||
+    readonly.value ||
     isDroppedSchema.value ||
     isDroppedTable.value ||
     isDroppedColumn(column)

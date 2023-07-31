@@ -205,18 +205,13 @@ type Provider interface {
 	// oauthExchange: api message for exchanging oauth token
 	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*OAuthToken, error)
 
-	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
-	//
-	// oauthCtx: OAuth context to write the file content
-	// instanceURL: VCS instance URL
-	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
 	// Fetch the commit data by id
 	//
 	// oauthCtx: OAuth context to fetch commit
 	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// externalRepositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// commitID: the commit ID
-	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*Commit, error)
+	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, externalRepositoryID, commitID string) (*Commit, error)
 	// Get the diff files list between two commits
 	//
 	// oauthCtx: OAuth context to fetch commit

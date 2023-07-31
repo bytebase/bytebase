@@ -12,6 +12,7 @@ export type FeatureType =
   // Admin & Security
   | "bb.feature.sso"
   | "bb.feature.2fa"
+  | "bb.feature.secure-token"
   | "bb.feature.rbac"
   | "bb.feature.disallow-signup"
   | "bb.feature.watermark"

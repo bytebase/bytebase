@@ -192,7 +192,7 @@ import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
 import { Engine } from "@/types/proto/v1/common";
-import { DatabaseV1Name } from "@/components/v2";
+import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 
 const props = defineProps({
   databaseSlug: {

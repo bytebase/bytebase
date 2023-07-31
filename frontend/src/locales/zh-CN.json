@@ -353,7 +353,8 @@
     },
     "execution-time": "执行时间",
     "run-checks": "运行检查",
-    "run-checks-in-current-stage": "运行当前阶段的所有检查"
+    "run-checks-in-current-stage": "运行当前阶段的所有检查",
+    "action-failed-in-current-stage": "{action}当前阶段失败的任务"
   },
   "banner": {
     "update-license": "更新证书",
@@ -501,7 +502,16 @@
         "connection-security-skip-tls-verify": "跳过自签名证书验证",
         "identifier": "Bytebase 用户的唯一标识符",
         "display-name": "Bytebase 用户的昵称",
-        "email": "Bytebase 用户的 Email"
+        "email": "Bytebase 用户的 Email",
+        "auth-style": {
+          "self": "认证参数传递方式",
+          "in-params": {
+            "self": "通过请求参数"
+          },
+          "in-header": {
+            "self": "通过请求头"
+          }
+        }
       },
       "copy-redirect-url": "Redirect URL 已复制到剪切板。"
     },
@@ -1112,7 +1122,9 @@
     "establish-database-baseline": "建立「{name}」基线",
     "instance-missing-change-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
-    "contact-dba": "请联系您的 DBA 进行配置。"
+    "contact-dba": "请联系您的 DBA 进行配置。",
+    "export": "导出变更历史",
+    "need-to-select-first": "需要先选择变更历史"
   },
   "database": {
     "select": "选择数据库",
@@ -1227,9 +1239,11 @@
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个数据库的指定 Schema 版本同步到其他数据库。",
+      "schema-history-version": "Schema 历史版本",
       "select-source-schema": "选择源数据库",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
+      "select-database-placeholder": "选择数据库 (仅限 MySQL, PostgreSQL)",
       "source-database": "源数据库",
       "source-schema": "源 Schema",
       "schema-version": {
@@ -1757,7 +1771,6 @@
       "sheet-is-read-only": "分享的工作表是只读的，无法编辑。"
     },
     "view-all-tabs": "查看所有标签页",
-    "sheet": "工作表",
     "sheets": "工作表",
     "connection-holder": "点击左侧数据库列表中的节点来建立连接",
     "link-access": "链接访问权限",
@@ -1792,7 +1805,11 @@
     "clear-screen": "清屏",
     "query-time": "查询时间",
     "request-query": "申请查询权限",
-    "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。"
+    "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
+    "sheet": {
+      "choose-sheet": "选择工作表",
+      "self": "工作表"
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2685,6 +2702,8 @@
   },
   "schema-designer": {
     "self": "Schema 设计器",
+    "new-design": "创建 Schema 设计",
+    "select-design": "选择一个 Schema 设计",
     "quick-action": "设计 Schema",
     "schema-design": "Schema 设计",
     "schema-design-list": "Schema 设计列表",
@@ -2695,6 +2714,8 @@
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用 Schema 设计",
+    "delete-this-design": "删除这个设计",
+    "select-database-placeholder": "选择数据库 (仅限 MySQL)",
     "message": {
       "created-succeed": "Schema 设计创建成功",
       "updated-succeed": "Schema 设计更新成功"

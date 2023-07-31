@@ -19,19 +19,19 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	webhookPlugin "github.com/bytebase/bytebase/backend/plugin/webhook"
-	"github.com/bytebase/bytebase/backend/utils"
-
-	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -249,7 +249,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProje
 
 // GetIamPolicy returns the IAM policy for a project.
 func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -273,7 +273,7 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.BatchGetIamPolicyRequest) (*v1pb.BatchGetIamPolicyResponse, error) {
 	resp := &v1pb.BatchGetIamPolicyResponse{}
 	for _, name := range request.Names {
-		projectID, err := getProjectID(name)
+		projectID, err := common.GetProjectID(name)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -298,7 +298,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -356,7 +356,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 
 // GetProjectGitOpsInfo gets the GitOps info for a project.
 func (s *ProjectService) GetProjectGitOpsInfo(ctx context.Context, request *v1pb.GetProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
-	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -372,7 +372,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 	if request.ProjectGitopsInfo == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "project gitops info is missing")
 	}
-	projectName, err := trimSuffix(request.ProjectGitopsInfo.Name, gitOpsInfoSuffix)
+	projectName, err := common.TrimSuffix(request.ProjectGitopsInfo.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -382,6 +382,14 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 	}
 	if project.Deleted {
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
+	}
+
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 
 	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
@@ -414,7 +422,26 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		case "branch_filter":
 			patch.BranchFilter = &request.ProjectGitopsInfo.BranchFilter
 		case "base_directory":
-			baseDir := strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
+			intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
+			}
+			storeVCS, err := s.store.GetExternalVersionControlV2(ctx, intVCSUID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+			}
+			if storeVCS == nil {
+				return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
+			}
+			baseDir := request.ProjectGitopsInfo.BaseDirectory
+			// Azure DevOps base directory should start with /.
+			if storeVCS.Type == vcsPlugin.AzureDevOps {
+				if !strings.HasPrefix(baseDir, "/") {
+					baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
+				}
+			} else {
+				baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
+			}
 			patch.BaseDirectory = &baseDir
 		case "file_path_template":
 			if err := api.ValidateRepositoryFilePathTemplate(request.ProjectGitopsInfo.FilePathTemplate, project.TenantMode); err != nil {
@@ -457,6 +484,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 				repo.RefreshToken,
 				repo.ExternalID,
 				*v,
+				setting.ExternalUrl,
 			)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
@@ -491,7 +519,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 
 // SetupProjectSQLReviewCI sets the SQL review CI for a project.
 func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v1pb.SetupSQLReviewCIRequest) (*v1pb.SetupSQLReviewCIResponse, error) {
-	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -531,7 +559,7 @@ func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v
 
 // UnsetProjectGitOpsInfo deletes the GitOps info for a project.
 func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1pb.UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
-	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -560,6 +588,13 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, `failed to list repository for web url "%s" with error: %v`, repo.WebURL, err.Error())
 	}
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
 	if len(repos) == 0 {
 		// Delete the webhook after we successfully delete the repository.
 		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
@@ -573,6 +608,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
 				Refresher:    refreshTokenNoop(),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
@@ -621,7 +657,7 @@ func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remo
 
 // GetDeploymentConfig returns the deployment config for a project.
 func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.GetDeploymentConfigRequest) (*v1pb.DeploymentConfig, error) {
-	projectID, err := trimSuffixAndGetProjectID(request.Name, deploymentConfigSuffix)
+	projectID, err := common.TrimSuffixAndGetProjectID(request.Name, common.DeploymentConfigSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -651,7 +687,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 	if request.Config == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "deployment config is required")
 	}
-	projectID, err := trimSuffixAndGetProjectID(request.Config.Name, deploymentConfigSuffix)
+	projectID, err := common.TrimSuffixAndGetProjectID(request.Config.Name, common.DeploymentConfigSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -690,7 +726,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -727,7 +763,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 
 // UpdateWebhook updates a webhook.
 func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.UpdateWebhookRequest) (*v1pb.Project, error) {
-	projectID, webhookID, err := getProjectIDWebhookID(request.Webhook.Name)
+	projectID, webhookID, err := common.GetProjectIDWebhookID(request.Webhook.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -827,6 +863,28 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
+	intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
+	}
+	storeVCS, err := s.store.GetExternalVersionControlV2(ctx, intVCSUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+	}
+	if storeVCS == nil {
+		return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
+	}
+
+	baseDir := request.ProjectGitopsInfo.BaseDirectory
+	// Azure DevOps base directory should start with /.
+	if storeVCS.Type == vcsPlugin.AzureDevOps {
+		if !strings.HasPrefix(baseDir, "/") {
+			baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
+		}
+	} else {
+		baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
+	}
+
 	vcsID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
@@ -840,7 +898,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		FullPath:           request.ProjectGitopsInfo.FullPath,
 		WebURL:             request.ProjectGitopsInfo.WebUrl,
 		BranchFilter:       request.ProjectGitopsInfo.BranchFilter,
-		BaseDirectory:      request.ProjectGitopsInfo.BaseDirectory,
+		BaseDirectory:      baseDir,
 		FilePathTemplate:   request.ProjectGitopsInfo.FilePathTemplate,
 		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
 		SheetPathTemplate:  request.ProjectGitopsInfo.SheetPathTemplate,
@@ -889,6 +947,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 			repositoryCreate.RefreshToken,
 			repositoryCreate.ExternalID,
 			repositoryCreate.BranchFilter,
+			setting.ExternalUrl,
 		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", repositoryCreate.BranchFilter, err.Error())
@@ -936,8 +995,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		repositoryCreate.ExternalWebhookID = webhookID
 	}
 
-	// Remove enclosing /
-	repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 	repository, err := s.store.CreateRepositoryV2(ctx, repositoryCreate, ctx.Value(common.PrincipalIDContextKey).(int))
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
@@ -955,6 +1012,10 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 		return nil, err
 	}
 
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
+
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository, vcs)
 	if err != nil {
 		return nil, err
@@ -968,6 +1029,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1002,6 +1064,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1017,6 +1080,13 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 
 // setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
 func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsPlugin.BranchInfo, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
 	branch, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(
 		ctx,
 		common.OauthContext{
@@ -1025,6 +1095,7 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1047,6 +1118,7 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1070,6 +1142,14 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 	fileLastCommitID := ""
 	fileSHA := ""
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
+
 	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
@@ -1078,6 +1158,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1105,6 +1186,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1127,6 +1209,13 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 	branch *vcsPlugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
 	// create or update the .gitlab-ci.yml
 	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
 		content := make(map[string]any)
@@ -1140,6 +1229,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 					AccessToken:  repository.AccessToken,
 					RefreshToken: repository.RefreshToken,
 					Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+					RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 				},
 				vcs.InstanceURL,
 				repository.ExternalID,
@@ -1179,6 +1269,13 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 	fileName string,
 	getNewContent func(meta *vcsPlugin.FileMeta) (string, error),
 ) error {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
 	fileExisted := true
 	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
@@ -1188,6 +1285,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1222,6 +1320,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 				AccessToken:  repository.AccessToken,
 				RefreshToken: repository.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			vcs.InstanceURL,
 			repository.ExternalID,
@@ -1244,6 +1343,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
@@ -1258,7 +1358,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 
 // RemoveWebhook removes a webhook from a given project.
 func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
-	projectID, webhookID, err := getProjectIDWebhookID(request.Webhook.Name)
+	projectID, webhookID, err := common.GetProjectIDWebhookID(request.Webhook.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1314,7 +1414,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
-	projectID, err := getProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1367,7 +1467,7 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	projectResourceID, err := getProjectID(request.Parent)
+	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1423,7 +1523,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
+	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1483,7 +1583,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 
 // DeleteDatabaseGroup deletes a database group.
 func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.DeleteDatabaseGroupRequest) (*emptypb.Empty, error) {
-	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Name)
+	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1519,7 +1619,7 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 
 // ListDatabaseGroups lists database groups.
 func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.ListDatabaseGroupsRequest) (*v1pb.ListDatabaseGroupsResponse, error) {
-	projectResourceID, err := getProjectID(request.Parent)
+	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1576,7 +1676,7 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 
 // GetDatabaseGroup gets a database group.
 func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.GetDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Name)
+	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1610,7 +1710,7 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
+	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1675,7 +1775,7 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
+	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1745,7 +1845,7 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 
 // DeleteSchemaGroup deletes a schema group.
 func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.DeleteSchemaGroupRequest) (*emptypb.Empty, error) {
-	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.Name)
+	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1791,7 +1891,7 @@ func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.De
 
 // ListSchemaGroups lists database groups.
 func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.ListSchemaGroupsRequest) (*v1pb.ListSchemaGroupsResponse, error) {
-	projectResourceID, databaseResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
+	projectResourceID, databaseResourceID, err := common.GetProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1832,7 +1932,7 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 
 // GetSchemaGroup gets a database group.
 func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
-	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.Name)
+	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1885,7 +1985,7 @@ func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 		res, _, err := prog.ContextEval(ctx, map[string]any{
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
-				"environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, database.EnvironmentID),
+				"environment_name": fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID),
 				"instance_id":      database.InstanceID,
 			},
 		})
@@ -1919,18 +2019,18 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 		return nil, err
 	}
 	ret := &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}
 	for _, database := range matches {
 		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+			Name: fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		})
 	}
 	for _, database := range unmatches {
 		ret.UnmatchedDatabases = append(ret.UnmatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+			Name: fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		})
 	}
 	return ret, nil
@@ -1938,7 +2038,7 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 
 func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
 	return &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}
@@ -1950,7 +2050,7 @@ func (s *ProjectService) convertStoreToAPISchemaGroupFull(ctx context.Context, s
 		return nil, err
 	}
 	ret := &v1pb.SchemaGroup{
-		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
+		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID, common.SchemaGroupNamePrefix, schemaGroup.ResourceID),
 		TablePlaceholder: schemaGroup.Placeholder,
 		TableExpr:        schemaGroup.Expression,
 		MatchedTables:    matches,
@@ -2007,7 +2107,7 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 				}
 
 				schemaGroupTable := &v1pb.SchemaGroup_Table{
-					Database: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, matchesDatabase.InstanceID, databaseIDPrefix, matchesDatabase.DatabaseName),
+					Database: fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, matchesDatabase.InstanceID, common.DatabaseIDPrefix, matchesDatabase.DatabaseName),
 					Schema:   schema.Name,
 					Table:    table.Name,
 				}
@@ -2025,7 +2125,7 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 
 func convertStoreToAPISchemaGroupBasic(schemaGroup *store.SchemaGroupMessage, projectResourceID, databaseGroupResourceID string) *v1pb.SchemaGroup {
 	return &v1pb.SchemaGroup{
-		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroupResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
+		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroupResourceID, common.SchemaGroupNamePrefix, schemaGroup.ResourceID),
 		TablePlaceholder: schemaGroup.Placeholder,
 		TableExpr:        schemaGroup.Expression,
 	}
@@ -2244,7 +2344,7 @@ func validateAndConvertToStoreDeploymentSchedule(deployment *v1pb.DeploymentConf
 }
 
 func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
-	projectID, err := getProjectID(name)
+	projectID, err := common.GetProjectID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -2342,11 +2442,11 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 }
 
 func convertToProjectRole(role api.Role) string {
-	return fmt.Sprintf("%s%s", rolePrefix, role)
+	return fmt.Sprintf("%s%s", common.RolePrefix, role)
 }
 
 func convertProjectRole(role string) (api.Role, error) {
-	roleID, err := getRoleID(role)
+	roleID, err := common.GetRoleID(role)
 	if err != nil {
 		return api.Role(""), errors.Wrapf(err, "invalid project role %q", role)
 	}
@@ -2389,7 +2489,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
-			Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, projectMessage.ResourceID, webhookIDPrefix, webhook.ID),
+			Name:              fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectMessage.ResourceID, common.WebhookIDPrefix, webhook.ID),
 			Type:              convertWebhookTypeString(webhook.Type),
 			Title:             webhook.Title,
 			Url:               webhook.URL,
@@ -2398,7 +2498,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 
 	return &v1pb.Project{
-		Name:           fmt.Sprintf("%s%s", projectNamePrefix, projectMessage.ResourceID),
+		Name:           fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
 		Uid:            fmt.Sprintf("%d", projectMessage.UID),
 		State:          convertDeletedToState(projectMessage.Deleted),
 		Title:          projectMessage.Title,
@@ -2694,7 +2794,7 @@ func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
 
 func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {
 	return &v1pb.ProjectGitOpsInfo{
-		Name:               fmt.Sprintf("%s%s/gitOpsInfo", projectNamePrefix, repository.ProjectResourceID),
+		Name:               fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
 		VcsUid:             fmt.Sprintf("%d", repository.VCSUID),
 		Title:              repository.Title,
 		FullPath:           repository.FullPath,
@@ -2714,7 +2814,7 @@ func isBranchNotFound(
 	ctx context.Context,
 	vcs *store.ExternalVersionControlMessage,
 	store *store.Store,
-	webURL, accessToken, refreshToken, externalID, branch string,
+	webURL, accessToken, refreshToken, externalID, branch, externalURL string,
 ) (bool, error) {
 	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
 		common.OauthContext{
@@ -2723,6 +2823,7 @@ func isBranchNotFound(
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
 			Refresher:    utils.RefreshToken(ctx, store, webURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
 		},
 		vcs.InstanceURL, externalID, branch)
 
@@ -2768,6 +2869,33 @@ func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpoi
 			URL:         fmt.Sprintf("%s/hook/bitbucket/%s", gitopsWebhookURL, webhookEndpointID),
 			Active:      true,
 			Events:      []string{"repo:push"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcsPlugin.AzureDevOps:
+		part := strings.Split(externalRepoID, "/")
+		if len(part) != 3 {
+			return "", errors.Errorf("invalid external repo id %q", externalRepoID)
+		}
+		projectID, repositoryID := part[1], part[2]
+
+		webhookPost := azure.WebhookCreateOrUpdate{
+			ConsumerActionID: "httpRequest",
+			ConsumerID:       "webHooks",
+			ConsumerInputs: azure.WebhookCreateConsumerInputs{
+				URL:                  fmt.Sprintf("%s/hook/azure/%s", gitopsWebhookURL, webhookEndpointID),
+				AcceptUntrustedCerts: true,
+			},
+			EventType:   "git.push",
+			PublisherID: "tfs",
+			PublisherInputs: azure.WebhookCreatePublisherInputs{
+				Repository: repositoryID,
+				Branch:     "", /* Any branches */
+				PushedBy:   "", /* Any users */
+				ProjectID:  projectID,
+			},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {

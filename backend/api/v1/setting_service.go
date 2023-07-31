@@ -7,15 +7,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/testing/protocmp"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -25,11 +25,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
 )
 
 // SettingService implements the setting service.
@@ -74,12 +73,10 @@ var whitelistSettings = []api.SettingName{
 	api.SettingSchemaTemplate,
 }
 
-var (
-	//go:embed mail_templates/testmail/template.html
-	//go:embed mail_templates/testmail/statics/logo-full.png
-	//go:embed mail_templates/testmail/statics/banner.png
-	testEmailFs embed.FS
-)
+//go:embed mail_templates/testmail/template.html
+//go:embed mail_templates/testmail/statics/logo-full.png
+//go:embed mail_templates/testmail/statics/banner.png
+var testEmailFs embed.FS
 
 // ListSettings lists all settings.
 func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsRequest) (*v1pb.ListSettingsResponse, error) {
@@ -104,7 +101,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsR
 
 // GetSetting gets the setting by name.
 func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettingRequest) (*v1pb.Setting, error) {
-	settingName, err := getSettingName(request.Name)
+	settingName, err := common.GetSettingName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "setting name is invalid: %v", err)
 	}
@@ -135,7 +132,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 
 // SetSetting set the setting by name.
 func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettingRequest) (*v1pb.Setting, error) {
-	settingName, err := getSettingName(request.Setting.Name)
+	settingName, err := common.GetSettingName(request.Setting.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +169,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
+		if payload.RefreshTokenDuration != nil && payload.RefreshTokenDuration.Seconds > 0 && payload.RefreshTokenDuration.AsDuration() < time.Hour {
+			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
+		}
 		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceApproval:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
@@ -189,7 +189,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			}
 
 			creatorID := 0
-			email, err := getUserEmail(rule.Template.Creator)
+			email, err := common.GetUserEmail(rule.Template.Creator)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to get creator: %v", err))
 			}
@@ -494,7 +494,7 @@ func convertV1PbToStorePb(inputPB, outputPB protoreflect.ProtoMessage) error {
 }
 
 func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *store.SettingMessage) (*v1pb.Setting, error) {
-	settingName := fmt.Sprintf("%s%s", settingNamePrefix, setting.Name)
+	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, setting.Name)
 	switch setting.Name {
 	case api.SettingWorkspaceMailDelivery:
 		storeValue := new(storepb.SMTPMailDeliverySetting)
@@ -584,7 +584,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 			}
 			if creator != nil {
-				template.Creator = fmt.Sprintf("%s%s", userNamePrefix, creator.Email)
+				template.Creator = fmt.Sprintf("%s%s", common.UserNamePrefix, creator.Email)
 			}
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Condition: rule.Condition,
@@ -904,7 +904,7 @@ func convertExternalApprovalSettingNode(o *v1pb.ExternalApprovalSetting_Node) *s
 
 // stripSensitiveData strips the sensitive data like password from the setting.value.
 func stripSensitiveData(setting *v1pb.Setting) (*v1pb.Setting, error) {
-	settingName, err := getSettingName(setting.Name)
+	settingName, err := common.GetSettingName(setting.Name)
 	if err != nil {
 		return nil, err
 	}

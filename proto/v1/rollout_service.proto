@@ -68,6 +68,14 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
   }
 
+  rpc RunPlanChecks(RunPlanChecksRequest) returns (RunPlanChecksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/plans/*}:runPlanChecks"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun",
@@ -299,6 +307,14 @@ message ListPlanCheckRunsResponse {
   string next_page_token = 2;
 }
 
+message RunPlanChecksRequest {
+  // The plan to run plan checks.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RunPlanChecksResponse {}
+
 message BatchRunTasksRequest {
   // The name of the parent of the tasks.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
@@ -342,15 +358,13 @@ message PlanCheckRun {
   enum Type {
     TYPE_UNSPECIFIED = 0;
     DATABASE_STATEMENT_FAKE_ADVISE = 1;
-    DATABASE_STATEMENT_SYNTAX = 2;
-    DATABASE_STATEMENT_COMPATIBILITY = 3;
-    DATABASE_STATEMENT_ADVISE = 4;
-    DATABASE_STATEMENT_TYPE = 5;
-    DATABASE_STATEMENT_TYPE_REPORT = 6;
-    DATABASE_STATEMENT_AFFECTED_ROWS_REPORT = 7;
-    DATABASE_CONNECT = 8;
-    DATABASE_GHOST_SYNC = 9;
-    DATABASE_PITR_MYSQL = 10;
+    DATABASE_STATEMENT_COMPATIBILITY = 2;
+    DATABASE_STATEMENT_ADVISE = 3;
+    DATABASE_STATEMENT_TYPE = 4;
+    DATABASE_STATEMENT_SUMMARY_REPORT = 5;
+    DATABASE_CONNECT = 6;
+    DATABASE_GHOST_SYNC = 7;
+    DATABASE_PITR_MYSQL = 8;
   }
   Type type = 3;
 
@@ -368,28 +382,36 @@ message PlanCheckRun {
   // Format: projects/{project}/sheets/{sheet}
   string sheet = 6;
 
-  string detail = 7;
-  repeated Result results = 8;
+  repeated Result results = 7;
+  // error is set if the Status is FAILED.
+  string error = 8;
 
   message Result {
-    enum Namespace {
-      NAMESPACE_UNSPECIFIED = 0;
-      BYTEBASE = 1;
-      ADVISOR = 2;
-    }
-    Namespace namespace = 1;
-    int64 code = 2;
     enum Status {
       STATUS_UNSPECIFIED = 0;
       ERROR = 1;
       WARNING = 2;
       SUCCESS = 3;
     }
-    Status status = 3;
-    string title = 4;
-    string content = 5;
-    int64 line = 6;
-    string detail = 7;
+    Status status = 1;
+    string title = 2;
+    string content = 3;
+    int64 code = 4;
+
+    oneof report {
+      SqlSummaryReport sql_summary_report = 5;
+      SqlReviewReport sql_review_report = 6;
+    }
+    message SqlSummaryReport {
+      string statement_type = 1;
+      int64 affected_rows = 2;
+    }
+    message SqlReviewReport {
+      int64 line = 1;
+      string detail = 2;
+      // Code from sql review.
+      int64 code = 3;
+    }
   }
 }
 
@@ -623,14 +645,14 @@ message Task {
 }
 
 message TaskRun {
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun}
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Format: user:hello@world.com
+  // Format: user/hello@world.com
   string creator = 3;
-  // Format: user:hello@world.com
+  // Format: user/hello@world.com
   string updater = 4;
   google.protobuf.Timestamp create_time = 5;
   google.protobuf.Timestamp update_time = 6;

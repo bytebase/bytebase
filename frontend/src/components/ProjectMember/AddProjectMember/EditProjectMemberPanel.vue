@@ -33,7 +33,7 @@
             clearable
           />
           <span v-if="!state.expirationTimestamp" class="textinfolabel">{{
-            $t("project.members.role-never-expired")
+            $t("project.members.role-never-expires")
           }}</span>
         </div>
       </div>

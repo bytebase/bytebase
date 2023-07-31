@@ -95,13 +95,14 @@ const handleConfirmButtonClick = async () => {
   table.name = state.tableName;
   const column = ColumnMetadata.fromPartial({});
   column.name = "id";
-  if (engine === Engine.POSTGRES) {
+  if (engine.value === Engine.POSTGRES) {
     column.type = "INTEGER";
   } else {
     column.type = "INT";
   }
   column.comment = "ID";
   const columnEdit = convertColumnMetadataToColumn(column);
+  columnEdit.status = "created";
   const tableEdit = convertTableMetadataToTable(table);
   tableEdit.status = "created";
   tableEdit.columnList.push(columnEdit);

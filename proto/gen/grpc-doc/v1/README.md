@@ -247,6 +247,7 @@
     - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
   
     - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
+    - [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle)
   
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
@@ -452,8 +453,12 @@
     - [Plan.Step](#bytebase-v1-Plan-Step)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
+    - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
+    - [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport)
     - [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest)
     - [Rollout](#bytebase-v1-Rollout)
+    - [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest)
+    - [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse)
     - [Stage](#bytebase-v1-Stage)
     - [Task](#bytebase-v1-Task)
     - [Task.DatabaseBackup](#bytebase-v1-Task-DatabaseBackup)
@@ -467,7 +472,6 @@
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
-    - [PlanCheckRun.Result.Namespace](#bytebase-v1-PlanCheckRun-Result-Namespace)
     - [PlanCheckRun.Result.Status](#bytebase-v1-PlanCheckRun-Result-Status)
     - [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status)
     - [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type)
@@ -511,9 +515,9 @@
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
-    - [DataCategorySetting](#bytebase-v1-DataCategorySetting)
-    - [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig)
-    - [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry)
+    - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
+    - [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig)
+    - [DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry)
     - [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
@@ -522,6 +526,7 @@
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
+    - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
@@ -757,6 +762,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | REDSHIFT | 12 |  |
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
+| DM | 15 |  |
 
 
 
@@ -2461,7 +2467,9 @@ ColumnMetadata is the metadata for columns.
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
 | collation | [string](#string) |  | The collation is the collation of a column. |
-| comment | [string](#string) |  | The comment is the comment of a column. |
+| comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
+| classification | [string](#string) |  | The classification is the classification of a column parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
 
 
 
@@ -2498,6 +2506,8 @@ CreateBackupRequest is the request message for CreateBackup.
 | successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
 | project | [string](#string) |  | The project for a database. Format: projects/{project} |
 | schema_version | [string](#string) |  | The version of database schema. |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| effective_environment | [string](#string) |  | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 
 
@@ -3120,7 +3130,9 @@ TableMetadata is the metadata for tables.
 | index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
 | data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
 | create_options | [string](#string) |  | The create_options is the create option of a table. |
-| comment | [string](#string) |  | The comment is the comment of a table. |
+| comment | [string](#string) |  | The comment is the comment of a table. classification and user_comment is parsed from the comment. |
+| classification | [string](#string) |  | The classification is the classification of a table parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 
 
@@ -4085,6 +4097,7 @@ OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider confi
 | scopes | [string](#string) | repeated |  |
 | field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
+| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  |  |
 
 
 
@@ -4120,6 +4133,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | scopes | [string](#string) | repeated |  |
 | field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
+| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  |  |
 
 
 
@@ -4197,6 +4211,19 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
+
+
+
+<a name="bytebase-v1-OAuth2AuthStyle"></a>
+
+### OAuth2AuthStyle
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OAUTH2_AUTH_STYLE_UNSPECIFIED | 0 |  |
+| IN_PARAMS | 1 | IN_PARAMS sends the &#34;client_id&#34; and &#34;client_secret&#34; in the POST body as application/x-www-form-urlencoded parameters. |
+| IN_HEADER | 2 | IN_HEADER sends the client_id and client_password using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
 
 
  
@@ -5962,7 +5989,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | db_name_template | [string](#string) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
-| data_category_config_id | [string](#string) |  |  |
+| data_classification_config_id | [string](#string) |  |  |
 
 
 
@@ -7214,8 +7241,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
-| detail | [string](#string) |  |  |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
+| error | [string](#string) |  | error is set if the Status is FAILED. |
 
 
 
@@ -7230,13 +7257,45 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| namespace | [PlanCheckRun.Result.Namespace](#bytebase-v1-PlanCheckRun-Result-Namespace) |  |  |
-| code | [int64](#int64) |  |  |
 | status | [PlanCheckRun.Result.Status](#bytebase-v1-PlanCheckRun-Result-Status) |  |  |
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
+| code | [int64](#int64) |  |  |
+| sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
+| sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanCheckRun-Result-SqlReviewReport"></a>
+
+### PlanCheckRun.Result.SqlReviewReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
 | line | [int64](#int64) |  |  |
 | detail | [string](#string) |  |  |
+| code | [int64](#int64) |  | Code from sql review. |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanCheckRun-Result-SqlSummaryReport"></a>
+
+### PlanCheckRun.Result.SqlSummaryReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statement_type | [string](#string) |  |  |
+| affected_rows | [int64](#int64) |  |  |
 
 
 
@@ -7272,6 +7331,31 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | plan | [string](#string) |  | The plan that this rollout is based on. Format: projects/{project}/plans/{plan} |
 | title | [string](#string) |  |  |
 | stages | [Stage](#bytebase-v1-Stage) | repeated | stages and thus tasks of the rollout. |
+
+
+
+
+
+
+<a name="bytebase-v1-RunPlanChecksRequest"></a>
+
+### RunPlanChecksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The plan to run plan checks. Format: projects/{project}/plans/{plan} |
+
+
+
+
+
+
+<a name="bytebase-v1-RunPlanChecksResponse"></a>
+
+### RunPlanChecksResponse
+
 
 
 
@@ -7455,10 +7539,10 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun} |
+| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| creator | [string](#string) |  | Format: user:hello@world.com |
-| updater | [string](#string) |  | Format: user:hello@world.com |
+| creator | [string](#string) |  | Format: user/hello@world.com |
+| updater | [string](#string) |  | Format: user/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | title | [string](#string) |  |  |
@@ -7509,19 +7593,6 @@ Type is the database change type.
 
 
 
-<a name="bytebase-v1-PlanCheckRun-Result-Namespace"></a>
-
-### PlanCheckRun.Result.Namespace
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| NAMESPACE_UNSPECIFIED | 0 |  |
-| BYTEBASE | 1 |  |
-| ADVISOR | 2 |  |
-
-
-
 <a name="bytebase-v1-PlanCheckRun-Result-Status"></a>
 
 ### PlanCheckRun.Result.Status
@@ -7560,15 +7631,13 @@ Type is the database change type.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_STATEMENT_FAKE_ADVISE | 1 |  |
-| DATABASE_STATEMENT_SYNTAX | 2 |  |
-| DATABASE_STATEMENT_COMPATIBILITY | 3 |  |
-| DATABASE_STATEMENT_ADVISE | 4 |  |
-| DATABASE_STATEMENT_TYPE | 5 |  |
-| DATABASE_STATEMENT_TYPE_REPORT | 6 |  |
-| DATABASE_STATEMENT_AFFECTED_ROWS_REPORT | 7 |  |
-| DATABASE_CONNECT | 8 |  |
-| DATABASE_GHOST_SYNC | 9 |  |
-| DATABASE_PITR_MYSQL | 10 |  |
+| DATABASE_STATEMENT_COMPATIBILITY | 2 |  |
+| DATABASE_STATEMENT_ADVISE | 3 |  |
+| DATABASE_STATEMENT_TYPE | 4 |  |
+| DATABASE_STATEMENT_SUMMARY_REPORT | 5 |  |
+| DATABASE_CONNECT | 6 |  |
+| DATABASE_GHOST_SYNC | 7 |  |
+| DATABASE_PITR_MYSQL | 8 |  |
 
 
 
@@ -7663,6 +7732,7 @@ Type is the database change type.
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
+| RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
 | BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) |  |
 | BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) |  |
 | BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) |  |
@@ -8110,24 +8180,24 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 
 
 
-<a name="bytebase-v1-DataCategorySetting"></a>
+<a name="bytebase-v1-DataClassificationSetting"></a>
 
-### DataCategorySetting
+### DataClassificationSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| configs | [DataCategorySetting.DataCategoryConfig](#bytebase-v1-DataCategorySetting-DataCategoryConfig) | repeated |  |
+| configs | [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-v1-DataCategorySetting-DataCategoryConfig"></a>
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig"></a>
 
-### DataCategorySetting.DataCategoryConfig
+### DataClassificationSetting.DataClassificationConfig
 Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
 
 
@@ -8135,7 +8205,7 @@ Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
-| category_level | [DataCategorySetting.DataCategoryConfig.CategoryLevelEntry](#bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry) | repeated | Maps category to level.
+| classification_level | [DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry) | repeated | Maps classification to level.
 
 TODO(ed): store the actual config. |
 
@@ -8144,9 +8214,9 @@ TODO(ed): store the actual config. |
 
 
 
-<a name="bytebase-v1-DataCategorySetting-DataCategoryConfig-CategoryLevelEntry"></a>
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry"></a>
 
-### DataCategorySetting.DataCategoryConfig.CategoryLevelEntry
+### DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry
 
 
 
@@ -8290,6 +8360,24 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate) | repeated |  |
+| column_types | [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaTemplateSetting-ColumnType"></a>
+
+### SchemaTemplateSetting.ColumnType
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| enabled | [bool](#bool) |  |  |
+| types | [string](#string) | repeated |  |
 
 
 
@@ -8417,6 +8505,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
 | gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
+| refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. |
 
 
 

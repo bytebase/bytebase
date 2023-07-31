@@ -52,6 +52,7 @@ import {
   TabContext,
   SchemaDesignerTabType,
 } from "./common";
+import { isTableChanged } from "./utils/table";
 
 const { tabState, getCurrentTab, getTable } = useSchemaDesignerContext();
 const tabsContainerRef = ref();
@@ -79,6 +80,22 @@ watch(
 );
 
 const getTabComputedClassList = (tab: TabContext) => {
+  if (tab.type === SchemaDesignerTabType.TabForTable) {
+    const table = getTable(tab.schemaId, tab.tableId);
+    if (!table) {
+      return [];
+    }
+
+    if (table.status === "dropped") {
+      return ["text-red-700", "line-through"];
+    }
+    if (table.status === "created") {
+      return ["text-green-700"];
+    }
+    if (isTableChanged(tab.schemaId, tab.tableId)) {
+      return ["text-yellow-700"];
+    }
+  }
   return [];
 };
 

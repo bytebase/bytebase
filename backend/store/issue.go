@@ -503,6 +503,7 @@ type IssueMessage struct {
 	Payload       string
 	Subscribers   []*UserMessage
 	PipelineUID   *int
+	PlanUID       *int64
 
 	// The following fields are output only and not used for create().
 	UID         int
@@ -530,12 +531,15 @@ type UpdateIssueMessage struct {
 	NeedAttention *bool
 	Payload       *string
 	Subscribers   *[]*UserMessage
+
+	PipelineUID *int
 }
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
 	UID        *int
 	ProjectUID *int
+	PlanUID    *int64
 	PipelineID *int
 	// Find issues where principalID is either creator, assignee or subscriber.
 	PrincipalID *int
@@ -602,6 +606,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			updater_id,
 			project_id,
 			pipeline_id,
+			plan_id,
 			name,
 			status,
 			type,
@@ -610,7 +615,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			assignee_need_attention,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id, created_ts, updated_ts
 	`
 
@@ -625,6 +630,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		creatorID,
 		create.Project.UID,
 		create.PipelineUID,
+		create.PlanUID,
 		create.Title,
 		create.Status,
 		create.Type,
@@ -664,6 +670,10 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	}
 
 	set, args := []string{"updater_id = $1"}, []any{updaterID}
+
+	if v := patch.PipelineUID; v != nil {
+		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -795,6 +805,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.PlanUID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.ProjectUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.project_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -851,6 +864,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			issue.updated_ts,
 			issue.project_id,
 			issue.pipeline_id,
+			issue.plan_id,
 			issue.name,
 			issue.status,
 			issue.type,
@@ -885,6 +899,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.updatedTs,
 			&issue.projectUID,
 			&pipelineUID,
+			&issue.PlanUID,
 			&issue.Title,
 			&issue.Status,
 			&issue.Type,

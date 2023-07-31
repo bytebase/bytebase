@@ -70,6 +70,7 @@ import ExportDataButton from "./ExportDataButton.vue";
 import { pushNotification, useIssueStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { issueSlug } from "@/utils";
+import { InstanceV1Name } from "@/components/v2";
 
 defineProps<{
   exportRecords: ExportRecord[];

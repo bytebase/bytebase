@@ -8,7 +8,7 @@ import (
 )
 
 // InstanceMaximumConnectionNumber is the maximum number of connections outstanding per instance.
-const InstanceMaximumConnectionNumber = 20
+const InstanceMaximumConnectionNumber = 5
 
 // State is the state for all in-memory states within the server.
 type State struct {
@@ -36,6 +36,8 @@ type State struct {
 	RunningTaskChecks sync.Map // map[taskCheckID]bool
 	// RunningTasks is the set of running tasks.
 	RunningTasks sync.Map // map[taskID]bool
+	// RunningPlanChecks is the set of running plan checks.
+	RunningPlanChecks sync.Map
 	// RunningTasksCancel is the cancel's of running tasks.
 	RunningTasksCancel sync.Map // map[taskID]context.CancelFunc
 	// InstanceOutstandingConnections is the maximum number of connections per instance.

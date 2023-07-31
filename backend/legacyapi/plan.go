@@ -55,6 +55,9 @@ const (
 	Feature2FA FeatureType = "bb.feature.2fa"
 	// FeatureDisallowSignup allows user to change the disallow signup flag.
 	FeatureDisallowSignup FeatureType = "bb.feature.disallow-signup"
+	// FeatureSecureToken allows user to manage authentication token security.
+	FeatureSecureToken FeatureType = "bb.feature.secure-token"
+
 	// FeatureRBAC enables RBAC.
 	//
 	// - Workspace level RBAC
@@ -184,6 +187,8 @@ func (e FeatureType) Name() string {
 		return "2FA"
 	case FeatureDisallowSignup:
 		return "Disallow singup"
+	case FeatureSecureToken:
+		return "Secure token"
 	case FeatureRBAC:
 		return "RBAC"
 	case FeatureWatermark:
@@ -283,6 +288,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSSO:            {false, false, true},
 	Feature2FA:            {false, false, true},
 	FeatureDisallowSignup: {false, false, true},
+	FeatureSecureToken:    {false, false, true},
 	FeatureRBAC:           {true, true, true},
 	FeatureWatermark:      {false, false, true},
 	FeatureAuditLog:       {false, false, true},

@@ -21,12 +21,18 @@
       <template #0>
         <div class="mb-4">
           <NRadioGroup v-model:value="state.sourceSchemaType" class="space-x-4">
-            <NRadio :value="'DATABASE_SCHEMA'" :label="'Database Schema'" />
-            <NRadio :value="'SCHEMA_DESIGN'" :label="'Schema Design'" />
+            <NRadio
+              :value="'SCHEMA_HISTORY_VERSION'"
+              :label="$t('database.sync-schema.schema-history-version')"
+            />
+            <NRadio
+              :value="'SCHEMA_DESIGN'"
+              :label="$t('schema-designer.schema-design')"
+            />
           </NRadioGroup>
         </div>
         <DatabaseSchemaSelector
-          v-if="state.sourceSchemaType === 'DATABASE_SCHEMA'"
+          v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
           :select-state="changeHistorySourceSchemaState"
           @update="handleChangeHistorySchameVersionChanges"
         />
@@ -89,7 +95,7 @@ const schemaDesignStore = useSchemaDesignStore();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
-  sourceSchemaType: "DATABASE_SCHEMA",
+  sourceSchemaType: "SCHEMA_HISTORY_VERSION",
   currentStep: SELECT_SOURCE_SCHEMA,
 });
 const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({});
@@ -97,7 +103,7 @@ const schemaDesignState = reactive<{
   selectedSchemaDesign?: SchemaDesign;
 }>({});
 const projectId = computed(() => {
-  if (state.sourceSchemaType === "DATABASE_SCHEMA") {
+  if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return changeHistorySourceSchemaState.projectId;
   } else {
     if (!schemaDesignState.selectedSchemaDesign) {
@@ -133,7 +139,7 @@ const stepTabList = computed(() => {
 
 const allowNext = computed(() => {
   if (state.currentStep === SELECT_SOURCE_SCHEMA) {
-    if (state.sourceSchemaType === "DATABASE_SCHEMA") {
+    if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
       return (
         isValidId(changeHistorySourceSchemaState.environmentId) &&
         isValidId(changeHistorySourceSchemaState.databaseId) &&

@@ -28,6 +28,7 @@ export const supportedEngineList = () => {
     "MARIADB",
     "MSSQL",
     "REDSHIFT",
+    "DM",
   ];
   return engines;
 };
@@ -136,6 +137,7 @@ export const instanceHasCreateDatabase = (
   const engine = engineOfInstance(instanceOrEngine);
   if (engine === "REDIS") return false;
   if (engine === "ORACLE") return false;
+  if (engine === "DM") return false;
   return true;
 };
 
@@ -161,6 +163,7 @@ export const instanceHasSSL = (
     "ORACLE",
     "MARIADB",
     "OCEANBASE",
+    "DM",
   ].includes(engine);
 };
 

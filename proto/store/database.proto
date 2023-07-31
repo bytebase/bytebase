@@ -161,10 +161,14 @@ message TableMetadata {
   string create_options = 10;
 
   // The comment is the comment of a table.
+  // classification and user_comment is parsed from the comment.
   string comment = 11;
 
-  // The category is the category of a table from the comment.
-  string category = 13;
+  // The classification is the classification of a table parsed from the comment.
+  string classification = 13;
+
+  // The user_comment is the user comment of a table parsed from the comment.
+  string user_comment = 14;
 
   // The foreign_keys is the list of foreign keys in a table.
   repeated ForeignKeyMetadata foreign_keys = 12;
@@ -194,10 +198,14 @@ message ColumnMetadata {
   string collation = 7;
 
   // The comment is the comment of a column.
+  // classification and user_comment is parsed from the comment.
   string comment = 8;
 
-  // The category is the category of a table from the comment.
-  string category = 9;
+  // The classification is the classification of a table parsed from the comment.
+  string classification = 9;
+
+  // The user_comment is the user comment of a table parsed from the comment.
+  string user_comment = 10;
 }
 
 // ViewMetadata is the metadata for views.

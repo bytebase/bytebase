@@ -356,7 +356,8 @@
     },
     "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
-    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual"
+    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual",
+    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual"
   },
   "banner": {
     "update-license": "Actualizar licencia",
@@ -498,13 +499,22 @@
         "scopes-description": "Una lista separada por espacios de ámbitos que se llevarán al acceder a la URL de autenticación",
         "token-url-description": "La dirección API para obtener el token de acceso",
         "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso",
+        "connection-security": "Seguridad de la conexión",
+        "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
         "identifier": "Identificador de usuario Bytebase",
         "display-name": "Nombre de visualización de usuario Bytebase",
         "email": "Correo electrónico de usuario Bytebase",
-        "connection-security": "Seguridad de la conexión",
-        "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados"
+        "auth-style": {
+          "self": "Estilo de autenticación",
+          "in-params": {
+            "self": "En parámetros"
+          },
+          "in-header": {
+            "self": "En encabezado"
+          }
+        }
       },
       "copy-redirect-url": "URL de redireccionamiento copiada al portapapeles."
     },
@@ -1115,7 +1125,9 @@
     "establish-database-baseline": "Establecer línea base de \"{name}\"",
     "instance-missing-change-schema": "Esquema de historial de cambios faltante en la instancia \"{name}\".",
     "instance-bad-connection": "No se pudo conectar la instancia \"{name}\" para recuperar el historial de cambios.",
-    "contact-dba": "Por favor, contacte a su DBA para configurarlo"
+    "contact-dba": "Por favor, contacte a su DBA para configurarlo",
+    "export": "Exportar historial de cambios",
+    "need-to-select-first": "Necesita seleccionar primero el historial de cambios"
   },
   "database": {
     "select": "Seleccionar base de datos",
@@ -1230,9 +1242,11 @@
     "sync-schema": {
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de una versión de esquema específica de una base de datos con otras.",
+      "schema-history-version": "Versión del historial de esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
+      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL)",
       "source-database": "Base de datos de origen",
       "source-schema": "Esquema de origen",
       "schema-version": {
@@ -1762,7 +1776,6 @@
       "sheet-is-read-only": "La hoja compartida es solo de lectura."
     },
     "view-all-tabs": "Ver todas las pestañas",
-    "sheet": "Hoja",
     "sheets": "Hojas",
     "connection-holder": "Haz clic en los nodos del panel izquierdo para comenzar",
     "link-access": "Acceso al enlace",
@@ -1797,7 +1810,11 @@
     "clear-screen": "Limpiar pantalla",
     "query-time": "Tiempo de consulta",
     "request-query": "Solicitar consulta",
-    "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta."
+    "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
+    "sheet": {
+      "choose-sheet": "Elegir hoja",
+      "self": "Hoja"
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2693,6 +2710,8 @@
   },
   "schema-designer": {
     "self": "Diseñador de esquemas",
+    "new-design": "Nuevo Diseño",
+    "select-design": "Seleccionar un diseño de esquema",
     "quick-action": "Diseñar esquema",
     "schema-design": "Esquema diseñar",
     "schema-design-list": "Lista de Diseñar esquema",
@@ -2704,6 +2723,8 @@
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar a la base de datos",
+    "delete-this-design": "Eliminar este diseño",
+    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito"

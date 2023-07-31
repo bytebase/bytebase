@@ -32,6 +32,7 @@
         :engine-type-list="allowedEngineTypeList"
         :sync-status="'OK'"
         :customize-item="true"
+        :placeholder="$t('database.sync-schema.select-database-placeholder')"
         @select-database-id="handleDatabaseSelect"
       >
         <template #customizeItem="{ database: db }">
@@ -46,7 +47,7 @@
       </DatabaseSelect>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0">
+      <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("database.sync-schema.schema-version.self") }}
       </span>
       <div
@@ -128,6 +129,7 @@ import { head, isNull, isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
 import { ChangeHistorySourceSchema } from "./types";
+import { InstanceV1EngineIcon } from "@/components/v2";
 
 const props = defineProps<{
   selectState?: ChangeHistorySourceSchema;

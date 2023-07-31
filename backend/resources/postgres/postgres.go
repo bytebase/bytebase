@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"sort"
 
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -47,36 +46,26 @@ const (
 	SampleDatabase = "employee"
 )
 
-// isPgDump15 returns true if the pg_dump binary is version 15.
-func isPgDump15(pgDumpPath string) (bool, error) {
-	var cmd *exec.Cmd
-	var version bytes.Buffer
-	cmd = exec.Command(pgDumpPath, "-V")
-	cmd.Stdout = &version
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return false, err
-	}
-	pgDump15 := "pg_dump (PostgreSQL) 15.1\n"
-	return pgDump15 == version.String(), nil
-}
-
 // Install will extract the postgres and utility tar in resourceDir.
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
 	var tarName string
-	switch runtime.GOOS {
-	case "darwin":
-		tarName = "postgres-darwin-x86_64.txz"
-	case "linux":
-		tarName = "postgres-linux-x86_64.txz"
+	switch {
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
+		tarName = "postgres-darwin-amd64.txz"
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+		tarName = "postgres-darwin-arm64.txz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
+		tarName = "postgres-linux-amd64.txz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		tarName = "postgres-linux-arm64.txz"
 	default:
-		return "", errors.Errorf("OS %q is not supported", runtime.GOOS)
+		return "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
 	}
+
 	version := strings.TrimSuffix(tarName, ".txz")
 	pgBaseDir := path.Join(resourceDir, version)
 	pgBinDir := path.Join(pgBaseDir, "bin")
-	pgDumpPath := path.Join(pgBinDir, "pg_dump")
 	needInstall := false
 
 	if _, err := os.Stat(pgBaseDir); err != nil {
@@ -85,23 +74,6 @@ func Install(resourceDir string) (string, error) {
 		}
 		// Install if not exist yet.
 		needInstall = true
-	} else {
-		// TODO(zp): remove this when pg_dump 15 is populated to all users.
-		// Bytebase bump the pg_dump version to 15 to support PostgreSQL 15.
-		// We need to reinstall the PostgreSQL resources if md5sum of pg_dump is different.
-		// Check if pg_dump is version 15.
-		isPgDump15, err := isPgDump15(pgDumpPath)
-		if err != nil {
-			return "", err
-		}
-		if !isPgDump15 {
-			needInstall = true
-			// Reinstall if pg_dump is not version 15.
-			log.Info("Remove old postgres binary before installing new pg_dump...")
-			if err := os.RemoveAll(pgBaseDir); err != nil {
-				return "", errors.Wrapf(err, "failed to remove postgres binary base directory %q", pgBaseDir)
-			}
-		}
 	}
 	if needInstall {
 		log.Info("Installing PostgreSQL utilities...")

@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -175,13 +176,29 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil, err
 	}
 
+	updateInstance := (*store.UpdateInstanceMessage)(nil)
 	if instanceMeta.Version != instance.EngineVersion {
-		if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		updateInstance = &store.UpdateInstanceMessage{
 			UpdaterID:     api.SystemBotID,
 			EnvironmentID: instance.EnvironmentID,
 			ResourceID:    instance.ResourceID,
 			EngineVersion: &instanceMeta.Version,
-		}, -1); err != nil {
+		}
+	}
+	if !cmp.Equal(instanceMeta.Metadata, instance.Metadata, protocmp.Transform()) {
+		if updateInstance == nil {
+			updateInstance = &store.UpdateInstanceMessage{
+				UpdaterID:     api.SystemBotID,
+				EnvironmentID: instance.EnvironmentID,
+				ResourceID:    instance.ResourceID,
+				Metadata:      instanceMeta.Metadata,
+			}
+		} else {
+			updateInstance.Metadata = instanceMeta.Metadata
+		}
+	}
+	if updateInstance != nil {
+		if _, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1); err != nil {
 			return nil, err
 		}
 	}
@@ -212,11 +229,10 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		if !exist {
 			// Create the database in the default project.
 			if err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
-				EnvironmentID: instance.EnvironmentID,
-				InstanceID:    instance.ResourceID,
-				DatabaseName:  databaseMetadata.Name,
-				DataShare:     databaseMetadata.Datashare,
-				ServiceName:   databaseMetadata.ServiceName,
+				InstanceID:   instance.ResourceID,
+				DatabaseName: databaseMetadata.Name,
+				DataShare:    databaseMetadata.Datashare,
+				ServiceName:  databaseMetadata.ServiceName,
 			}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}
@@ -269,6 +285,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if err != nil {
 		return err
 	}
+	setClassificationAndUserCommentFromComment(databaseMetadata)
 
 	var patchSchemaVersion *string
 	if force {
@@ -292,7 +309,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		SchemaVersion:        patchSchemaVersion,
 		ServiceName:          &database.ServiceName,
 	}, api.SystemBotID); err != nil {
-		return errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
@@ -337,4 +354,15 @@ func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {
 	return cmp.Equal(x, y, protocmp.Transform(),
 		protocmp.IgnoreFields(&storepb.TableMetadata{}, "row_count", "data_size", "index_size", "data_free"),
 	)
+}
+
+func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
+			for _, col := range table.Columns {
+				col.Classification, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
+			}
+		}
+	}
 }

@@ -70,6 +70,56 @@ func (x *InstanceOptions) GetSchemaTenantMode() bool {
 	return false
 }
 
+// InstanceMetadata is the metadata for instances.
+type InstanceMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The lower_case_table_names config for MySQL instances.
+	// It is used to determine whether the table names and database names are case sensitive.
+	MysqlLowerCaseTableNames int32 `protobuf:"varint,1,opt,name=mysql_lower_case_table_names,json=mysqlLowerCaseTableNames,proto3" json:"mysql_lower_case_table_names,omitempty"`
+}
+
+func (x *InstanceMetadata) Reset() {
+	*x = InstanceMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_instance_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InstanceMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstanceMetadata) ProtoMessage() {}
+
+func (x *InstanceMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_store_instance_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstanceMetadata.ProtoReflect.Descriptor instead.
+func (*InstanceMetadata) Descriptor() ([]byte, []int) {
+	return file_store_instance_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *InstanceMetadata) GetMysqlLowerCaseTableNames() int32 {
+	if x != nil {
+		return x.MysqlLowerCaseTableNames
+	}
+	return 0
+}
+
 var File_store_instance_proto protoreflect.FileDescriptor
 
 var file_store_instance_proto_rawDesc = []byte{
@@ -79,9 +129,14 @@ var file_store_instance_proto_rawDesc = []byte{
 	0x63, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x2c, 0x0a, 0x12, 0x73, 0x63, 0x68,
 	0x65, 0x6d, 0x61, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x5f, 0x6d, 0x6f, 0x64, 0x65, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x10, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x54, 0x65, 0x6e,
-	0x61, 0x6e, 0x74, 0x4d, 0x6f, 0x64, 0x65, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72,
-	0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x6e, 0x74, 0x4d, 0x6f, 0x64, 0x65, 0x22, 0x52, 0x0a, 0x10, 0x49, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x3e, 0x0a, 0x1c, 0x6d,
+	0x79, 0x73, 0x71, 0x6c, 0x5f, 0x6c, 0x6f, 0x77, 0x65, 0x72, 0x5f, 0x63, 0x61, 0x73, 0x65, 0x5f,
+	0x74, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x05, 0x52, 0x18, 0x6d, 0x79, 0x73, 0x71, 0x6c, 0x4c, 0x6f, 0x77, 0x65, 0x72, 0x43, 0x61, 0x73,
+	0x65, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x42, 0x14, 0x5a, 0x12, 0x67,
+	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -96,9 +151,10 @@ func file_store_instance_proto_rawDescGZIP() []byte {
 	return file_store_instance_proto_rawDescData
 }
 
-var file_store_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_store_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_instance_proto_goTypes = []interface{}{
-	(*InstanceOptions)(nil), // 0: bytebase.store.InstanceOptions
+	(*InstanceOptions)(nil),  // 0: bytebase.store.InstanceOptions
+	(*InstanceMetadata)(nil), // 1: bytebase.store.InstanceMetadata
 }
 var file_store_instance_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -126,6 +182,18 @@ func file_store_instance_proto_init() {
 				return nil
 			}
 		}
+		file_store_instance_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*InstanceMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -133,7 +201,7 @@ func file_store_instance_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_instance_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

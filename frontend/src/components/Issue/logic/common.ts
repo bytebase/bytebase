@@ -422,6 +422,9 @@ export const isTaskEditable = (task: Task): boolean => {
 
 export const isGroupingChangeIssue = (issue: Issue): boolean => {
   const route = useRoute();
+  if (!route || !route.query) {
+    return false;
+  }
   if (route.query.databaseGroupName && route.query.databaseGroupName !== "") {
     return true;
   }
