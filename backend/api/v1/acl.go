@@ -244,7 +244,7 @@ func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req
 		database, err := in.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instanceID,
 			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: in.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
 			return nil, err

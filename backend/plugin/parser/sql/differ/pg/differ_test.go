@@ -34,7 +34,7 @@ func runDifferTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, test := range tests {
-		diff, err := pgDiffer.SchemaDiff(test.OldSchema, test.NewSchema)
+		diff, err := pgDiffer.SchemaDiff(test.OldSchema, test.NewSchema, false /* ignoreCaseSensitive */)
 		require.NoError(t, err)
 		if record {
 			tests[i].Diff = diff

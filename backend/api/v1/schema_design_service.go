@@ -146,7 +146,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		find.IgnoreCaseSensitive = s.store.IgnoreDatabaseAndTableCaseSensitive(instance)
+		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {

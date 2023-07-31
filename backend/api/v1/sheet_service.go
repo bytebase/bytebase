@@ -95,7 +95,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 			find.UID = &dbUID
 		} else {
 			find.DatabaseName = &databaseName
-			find.IgnoreCaseSensitive = s.store.IgnoreDatabaseAndTableCaseSensitive(instance)
+			find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 		}
 
 		database, err := s.store.GetDatabaseV2(ctx, find)
@@ -602,7 +602,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 					if err != nil {
 						return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to find instance with ID: %s", database.InstanceID))
 					}
-					if !s.store.IgnoreDatabaseAndTableCaseSensitive(instance) && database.DatabaseName != sheetInfo.DatabaseName {
+					if !store.IgnoreDatabaseAndTableCaseSensitive(instance) && database.DatabaseName != sheetInfo.DatabaseName {
 						continue
 					}
 					if database.EffectiveEnvironmentID == sheetInfo.EnvironmentID {
