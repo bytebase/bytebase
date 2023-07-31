@@ -25,7 +25,8 @@ type InstanceChangeHistoryPayload struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PushEvent *PushEvent `protobuf:"bytes,1,opt,name=push_event,json=pushEvent,proto3" json:"push_event,omitempty"`
+	PushEvent       *PushEvent       `protobuf:"bytes,1,opt,name=push_event,json=pushEvent,proto3" json:"push_event,omitempty"`
+	ChangeResources *ChangeResources `protobuf:"bytes,2,opt,name=change_resources,json=changeResources,proto3" json:"change_resources,omitempty"`
 }
 
 func (x *InstanceChangeHistoryPayload) Reset() {
@@ -67,6 +68,217 @@ func (x *InstanceChangeHistoryPayload) GetPushEvent() *PushEvent {
 	return nil
 }
 
+func (x *InstanceChangeHistoryPayload) GetChangeResources() *ChangeResources {
+	if x != nil {
+		return x.ChangeResources
+	}
+	return nil
+}
+
+type ChangeResources struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Databases []*ChangeResourceDatabase `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
+}
+
+func (x *ChangeResources) Reset() {
+	*x = ChangeResources{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_instance_change_history_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ChangeResources) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangeResources) ProtoMessage() {}
+
+func (x *ChangeResources) ProtoReflect() protoreflect.Message {
+	mi := &file_store_instance_change_history_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangeResources.ProtoReflect.Descriptor instead.
+func (*ChangeResources) Descriptor() ([]byte, []int) {
+	return file_store_instance_change_history_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ChangeResources) GetDatabases() []*ChangeResourceDatabase {
+	if x != nil {
+		return x.Databases
+	}
+	return nil
+}
+
+type ChangeResourceDatabase struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name    string                  `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Schemas []*ChangeResourceSchema `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas,omitempty"`
+}
+
+func (x *ChangeResourceDatabase) Reset() {
+	*x = ChangeResourceDatabase{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_instance_change_history_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ChangeResourceDatabase) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangeResourceDatabase) ProtoMessage() {}
+
+func (x *ChangeResourceDatabase) ProtoReflect() protoreflect.Message {
+	mi := &file_store_instance_change_history_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangeResourceDatabase.ProtoReflect.Descriptor instead.
+func (*ChangeResourceDatabase) Descriptor() ([]byte, []int) {
+	return file_store_instance_change_history_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ChangeResourceDatabase) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ChangeResourceDatabase) GetSchemas() []*ChangeResourceSchema {
+	if x != nil {
+		return x.Schemas
+	}
+	return nil
+}
+
+type ChangeResourceSchema struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name   string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Tables []*ChangeResourceTable `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
+}
+
+func (x *ChangeResourceSchema) Reset() {
+	*x = ChangeResourceSchema{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_instance_change_history_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ChangeResourceSchema) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangeResourceSchema) ProtoMessage() {}
+
+func (x *ChangeResourceSchema) ProtoReflect() protoreflect.Message {
+	mi := &file_store_instance_change_history_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangeResourceSchema.ProtoReflect.Descriptor instead.
+func (*ChangeResourceSchema) Descriptor() ([]byte, []int) {
+	return file_store_instance_change_history_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ChangeResourceSchema) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ChangeResourceSchema) GetTables() []*ChangeResourceTable {
+	if x != nil {
+		return x.Tables
+	}
+	return nil
+}
+
+type ChangeResourceTable struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *ChangeResourceTable) Reset() {
+	*x = ChangeResourceTable{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_instance_change_history_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ChangeResourceTable) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangeResourceTable) ProtoMessage() {}
+
+func (x *ChangeResourceTable) ProtoReflect() protoreflect.Message {
+	mi := &file_store_instance_change_history_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangeResourceTable.ProtoReflect.Descriptor instead.
+func (*ChangeResourceTable) Descriptor() ([]byte, []int) {
+	return file_store_instance_change_history_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ChangeResourceTable) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 var File_store_instance_change_history_proto protoreflect.FileDescriptor
 
 var file_store_instance_change_history_proto_rawDesc = []byte{
@@ -74,14 +286,41 @@ var file_store_instance_change_history_proto_rawDesc = []byte{
 	0x5f, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x5f, 0x68, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
 	0x73, 0x74, 0x6f, 0x72, 0x65, 0x1a, 0x0f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x76, 0x63, 0x73,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x58, 0x0a, 0x1c, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e,
-	0x63, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x50,
-	0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x38, 0x0a, 0x0a, 0x70, 0x75, 0x73, 0x68, 0x5f, 0x65,
-	0x76, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x75, 0x73, 0x68,
-	0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x09, 0x70, 0x75, 0x73, 0x68, 0x45, 0x76, 0x65, 0x6e, 0x74,
-	0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f,
-	0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xa4, 0x01, 0x0a, 0x1c, 0x49, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79,
+	0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x38, 0x0a, 0x0a, 0x70, 0x75, 0x73, 0x68, 0x5f,
+	0x65, 0x76, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x75, 0x73,
+	0x68, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x09, 0x70, 0x75, 0x73, 0x68, 0x45, 0x76, 0x65, 0x6e,
+	0x74, 0x12, 0x4a, 0x0a, 0x10, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x5f, 0x72, 0x65, 0x73, 0x6f,
+	0x75, 0x72, 0x63, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x43, 0x68, 0x61,
+	0x6e, 0x67, 0x65, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x52, 0x0f, 0x63, 0x68,
+	0x61, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x22, 0x57, 0x0a,
+	0x0f, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73,
+	0x12, 0x44, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x18, 0x01, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73,
+	0x74, 0x6f, 0x72, 0x65, 0x2e, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x73, 0x6f, 0x75,
+	0x72, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x09, 0x64, 0x61, 0x74,
+	0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x22, 0x6c, 0x0a, 0x16, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65,
+	0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x3e, 0x0a, 0x07, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x73, 0x18,
+	0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x24, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x73,
+	0x6f, 0x75, 0x72, 0x63, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x07, 0x73, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x73, 0x22, 0x67, 0x0a, 0x14, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x65,
+	0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x12, 0x0a, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x12, 0x3b, 0x0a, 0x06, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65,
+	0x54, 0x61, 0x62, 0x6c, 0x65, 0x52, 0x06, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x22, 0x29, 0x0a,
+	0x13, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x54,
+	0x61, 0x62, 0x6c, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65,
+	0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -96,18 +335,26 @@ func file_store_instance_change_history_proto_rawDescGZIP() []byte {
 	return file_store_instance_change_history_proto_rawDescData
 }
 
-var file_store_instance_change_history_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_store_instance_change_history_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_instance_change_history_proto_goTypes = []interface{}{
 	(*InstanceChangeHistoryPayload)(nil), // 0: bytebase.store.InstanceChangeHistoryPayload
-	(*PushEvent)(nil),                    // 1: bytebase.store.PushEvent
+	(*ChangeResources)(nil),              // 1: bytebase.store.ChangeResources
+	(*ChangeResourceDatabase)(nil),       // 2: bytebase.store.ChangeResourceDatabase
+	(*ChangeResourceSchema)(nil),         // 3: bytebase.store.ChangeResourceSchema
+	(*ChangeResourceTable)(nil),          // 4: bytebase.store.ChangeResourceTable
+	(*PushEvent)(nil),                    // 5: bytebase.store.PushEvent
 }
 var file_store_instance_change_history_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.InstanceChangeHistoryPayload.push_event:type_name -> bytebase.store.PushEvent
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	5, // 0: bytebase.store.InstanceChangeHistoryPayload.push_event:type_name -> bytebase.store.PushEvent
+	1, // 1: bytebase.store.InstanceChangeHistoryPayload.change_resources:type_name -> bytebase.store.ChangeResources
+	2, // 2: bytebase.store.ChangeResources.databases:type_name -> bytebase.store.ChangeResourceDatabase
+	3, // 3: bytebase.store.ChangeResourceDatabase.schemas:type_name -> bytebase.store.ChangeResourceSchema
+	4, // 4: bytebase.store.ChangeResourceSchema.tables:type_name -> bytebase.store.ChangeResourceTable
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_instance_change_history_proto_init() }
@@ -129,6 +376,54 @@ func file_store_instance_change_history_proto_init() {
 				return nil
 			}
 		}
+		file_store_instance_change_history_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ChangeResources); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_instance_change_history_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ChangeResourceDatabase); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_instance_change_history_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ChangeResourceSchema); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_instance_change_history_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ChangeResourceTable); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -136,7 +431,7 @@ func file_store_instance_change_history_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_instance_change_history_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

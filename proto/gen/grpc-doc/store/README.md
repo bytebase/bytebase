@@ -79,6 +79,10 @@
     - [VcsType](#bytebase-store-VcsType)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
+    - [ChangeResourceDatabase](#bytebase-store-ChangeResourceDatabase)
+    - [ChangeResourceSchema](#bytebase-store-ChangeResourceSchema)
+    - [ChangeResourceTable](#bytebase-store-ChangeResourceTable)
+    - [ChangeResources](#bytebase-store-ChangeResources)
     - [InstanceChangeHistoryPayload](#bytebase-store-InstanceChangeHistoryPayload)
   
 - [store/issue.proto](#store_issue-proto)
@@ -1235,6 +1239,68 @@ InstanceOptions is the option for instances.
 
 
 
+<a name="bytebase-store-ChangeResourceDatabase"></a>
+
+### ChangeResourceDatabase
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schemas | [ChangeResourceSchema](#bytebase-store-ChangeResourceSchema) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangeResourceSchema"></a>
+
+### ChangeResourceSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [ChangeResourceTable](#bytebase-store-ChangeResourceTable) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangeResourceTable"></a>
+
+### ChangeResourceTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangeResources"></a>
+
+### ChangeResources
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [ChangeResourceDatabase](#bytebase-store-ChangeResourceDatabase) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-store-InstanceChangeHistoryPayload"></a>
 
 ### InstanceChangeHistoryPayload
@@ -1244,6 +1310,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | push_event | [PushEvent](#bytebase-store-PushEvent) |  |  |
+| change_resources | [ChangeResources](#bytebase-store-ChangeResources) |  |  |
 
 
 

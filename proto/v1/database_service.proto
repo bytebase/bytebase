@@ -956,6 +956,28 @@ message ChangeHistory {
   string issue = 17;
 
   PushEvent push_event = 18;
+
+  ChangeResources change_resources = 19;
+}
+
+message ChangeResources {
+  repeated ChangeResourceDatabase databases = 1;
+}
+
+message ChangeResourceDatabase {
+  string name = 1;
+
+  repeated ChangeResourceSchema schemas = 2;
+}
+
+message ChangeResourceSchema {
+  string name = 1;
+
+  repeated ChangeResourceTable tables = 2;
+}
+
+message ChangeResourceTable {
+  string name = 1;
 }
 
 enum ChangeHistoryView {

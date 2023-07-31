@@ -135,6 +135,10 @@
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [ChangeHistory](#bytebase-v1-ChangeHistory)
+    - [ChangeResourceDatabase](#bytebase-v1-ChangeResourceDatabase)
+    - [ChangeResourceSchema](#bytebase-v1-ChangeResourceSchema)
+    - [ChangeResourceTable](#bytebase-v1-ChangeResourceTable)
+    - [ChangeResources](#bytebase-v1-ChangeResources)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
     - [CreateBackupRequest](#bytebase-v1-CreateBackupRequest)
     - [Database](#bytebase-v1-Database)
@@ -2446,6 +2450,69 @@ Default (empty): Disable automatic backup. |
 | execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 | issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
 | push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
+| change_resources | [ChangeResources](#bytebase-v1-ChangeResources) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangeResourceDatabase"></a>
+
+### ChangeResourceDatabase
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schemas | [ChangeResourceSchema](#bytebase-v1-ChangeResourceSchema) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangeResourceSchema"></a>
+
+### ChangeResourceSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [ChangeResourceTable](#bytebase-v1-ChangeResourceTable) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangeResourceTable"></a>
+
+### ChangeResourceTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangeResources"></a>
+
+### ChangeResources
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [ChangeResourceDatabase](#bytebase-v1-ChangeResourceDatabase) | repeated |  |
 
 
 
