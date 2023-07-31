@@ -66,7 +66,7 @@
 
     <PlanCheckBadgeBar :plan-check-run-list="planCheckRunList" />
 
-    <RunButton />
+    <PlanCheckRunButton @run-checks="runChecks" />
   </div>
 </template>
 
@@ -78,13 +78,24 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
-import RunButton from "./RunButton.vue";
+import PlanCheckRunButton from "./PlanCheckRunButton.vue";
+import { Task } from "@/types/proto/v1/rollout_service";
+import { rolloutServiceClient } from "@/grpcweb";
 
 const { issue, selectedTask } = useIssueContext();
 
 const planCheckRunList = computed(() => {
   return planCheckRunListForTask(issue.value, selectedTask.value);
 });
+
+const runChecks = (taskList: Task[]) => {
+  rolloutServiceClient.runPlanChecks({
+    name: issue.value.plan,
+  });
+  alert(
+    `should run checks for tasks: [${taskList.map((t) => t.uid).join(",")}]`
+  );
+};
 // import { computed, defineComponent, PropType, reactive } from "vue";
 // import { useI18n } from "vue-i18n";
 // import { cloneDeep } from "lodash-es";
