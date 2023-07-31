@@ -485,7 +485,7 @@ func getGrantRequestRiskLevel(ctx context.Context, s *store.Store, issue *store.
 				ProjectID:           &issue.Project.ResourceID,
 				InstanceID:          &instanceID,
 				DatabaseName:        &databaseName,
-				IgnoreCaseSensitive: s.IgnoreDatabaseAndTableCaseSensitive(instance),
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 			})
 			if err != nil {
 				return 0, false, errors.Wrap(err, "failed to get database")

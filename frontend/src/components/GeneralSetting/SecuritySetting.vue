@@ -88,31 +88,7 @@
           {{ $t("settings.general.workspace.require-2fa.description") }}
         </div>
       </div>
-      <div class="mb-7 mt-5 lg:mt-0">
-        <label
-          class="flex items-center gap-x-2 tooltip-wrapper"
-          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-        >
-          <NCheckbox
-            :disabled="!allowEdit"
-            :checked="shortRefreshTokenEnabled"
-            @update:checked="handleShortRefreshTokenToggle"
-          />
-          <span class="font-medium">{{
-            "Expire refresh token in 8 hours"
-          }}</span>
-          <FeatureBadge feature="bb.feature.secure-token" />
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
-            {{ $t("settings.general.workspace.only-owner-can-edit") }}
-          </span>
-        </label>
-        <div class="mb-3 text-sm text-gray-400">
-          Expire refresh token in 8 hours
-        </div>
-      </div>
+      <SignInFrequencySetting />
     </div>
   </div>
 
@@ -137,6 +113,7 @@ import { hasWorkspacePermissionV1 } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { FeatureType } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {
   featureNameForModal?: FeatureType;
@@ -150,7 +127,6 @@ const actuatorStore = useActuatorV1Store();
 const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
-const hasSecureTokenFeature = featureToRef("bb.feature.secure-token");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
 
 const allowEdit = computed((): boolean => {
@@ -170,12 +146,6 @@ const disallowSignupEnabled = computed((): boolean => {
 });
 const require2FAEnabled = computed((): boolean => {
   return settingV1Store.workspaceProfileSetting?.require2fa ?? false;
-});
-const shortRefreshTokenEnabled = computed((): boolean => {
-  return (
-    (settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds ||
-      0) > 0
-  );
 });
 
 const handleDisallowSignupToggle = async (on: boolean) => {
@@ -201,22 +171,6 @@ const handleRequire2FAToggle = async (on: boolean) => {
 
   await settingV1Store.updateWorkspaceProfile({
     require2fa: on,
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
-};
-
-const handleShortRefreshTokenToggle = async (on: boolean) => {
-  if (!hasSecureTokenFeature.value) {
-    state.featureNameForModal = "bb.feature.secure-token";
-    return;
-  }
-
-  await settingV1Store.updateWorkspaceProfile({
-    refreshTokenDuration: { seconds: on ? 8 * 60 * 60 : 0, nanos: 0 },
   });
   pushNotification({
     module: "bytebase",
