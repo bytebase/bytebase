@@ -28,15 +28,13 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { computed, reactive } from "vue";
+import { computed, reactive, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NInputNumber, NRadioGroup, NRadio } from "naive-ui";
 import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { FeatureType } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { watch } from "vue";
-import { onMounted } from "vue";
 
 interface LocalState {
   inputValue: number;
