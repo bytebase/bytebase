@@ -51,6 +51,7 @@ import {
   IssueStatusAction,
   TaskRolloutAction,
   useIssueContext,
+  usePollIssue,
 } from "./logic";
 import {
   BannerSection,
@@ -80,6 +81,8 @@ const ongoingTaskRolloutAction = ref<{
   action: TaskRolloutAction;
   taskList: Task[];
 }>();
+
+usePollIssue();
 
 events.on("perform-issue-review-action", ({ action }) => {
   ongoingIssueReviewAction.value = {

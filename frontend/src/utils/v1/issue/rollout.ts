@@ -16,7 +16,7 @@ import {
   Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
-import { issueV1Slug } from "./issue";
+import { flattenTaskV1List, issueV1Slug } from "./issue";
 
 export const extractRolloutUID = (name: string) => {
   const pattern = /(?:^|\/)rollouts\/([^/]+)(?:$|\/)/;
@@ -38,8 +38,8 @@ export const taskV1Slug = (task: Task): string => {
   return [slug(task.title), task.uid].join("-");
 };
 
-export const activeTaskInStageV1 = (stage: Stage): Task => {
-  for (const task of stage.tasks) {
+export const activeTaskInTaskList = (tasks: Task[]): Task => {
+  for (const task of tasks) {
     if (
       task.status === Task_Status.PENDING ||
       task.status === Task_Status.PENDING_APPROVAL ||
@@ -53,18 +53,15 @@ export const activeTaskInStageV1 = (stage: Stage): Task => {
     }
   }
 
-  return last(stage.tasks) ?? emptyTask();
+  return last(tasks) ?? emptyTask();
+};
+
+export const activeTaskInStageV1 = (stage: Stage): Task => {
+  return activeTaskInTaskList(stage.tasks);
 };
 
 export const activeTaskInRollout = (rollout: Rollout): Task => {
-  for (const stage of rollout.stages) {
-    const activeTask = activeTaskInStageV1(stage);
-    if (activeTask && activeTask.name !== EMPTY_TASK_NAME) {
-      return activeTask;
-    }
-  }
-
-  return last(last(rollout.stages)?.tasks ?? []) ?? emptyTask();
+  return activeTaskInTaskList(flattenTaskV1List(rollout));
 };
 
 export const activeStageInRollout = (rollout: Rollout): Stage => {

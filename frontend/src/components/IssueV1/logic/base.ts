@@ -2,7 +2,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { first } from "lodash-es";
 
-import { IssueContext, IssuePhase } from "./context";
+import { IssueContext, IssueEvents, IssuePhase } from "./context";
 import { Stage, Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   activeStageInRollout,
@@ -18,6 +18,7 @@ import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
 import { extractReviewContext } from "./review";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { stageForTask } from "./utils";
+import Emittery from "emittery";
 
 const state = {
   uid: -101,
@@ -27,11 +28,13 @@ export const nextUID = () => {
 };
 
 export const useBaseIssueContext = (
-  context: Pick<IssueContext, "isCreating" | "ready" | "issue" | "events">
+  context: Pick<IssueContext, "isCreating" | "ready" | "issue">
 ): Partial<IssueContext> => {
-  const { isCreating, issue, events } = context;
+  const { isCreating, issue } = context;
   const route = useRoute();
   const router = useRouter();
+
+  const events: IssueEvents = new Emittery();
 
   const rollout = computed(() => issue.value.rolloutEntity);
   const project = computed(() => issue.value.projectEntity);

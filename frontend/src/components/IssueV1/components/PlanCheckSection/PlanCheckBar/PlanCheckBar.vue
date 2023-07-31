@@ -82,7 +82,7 @@ import PlanCheckRunButton from "./PlanCheckRunButton.vue";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { rolloutServiceClient } from "@/grpcweb";
 
-const { issue, selectedTask } = useIssueContext();
+const { issue, selectedTask, events } = useIssueContext();
 
 const planCheckRunList = computed(() => {
   return planCheckRunListForTask(issue.value, selectedTask.value);
@@ -92,7 +92,8 @@ const runChecks = (taskList: Task[]) => {
   rolloutServiceClient.runPlanChecks({
     name: issue.value.plan,
   });
-  alert(
+  events.emit("status-changed", { eager: true });
+  console.log(
     `should run checks for tasks: [${taskList.map((t) => t.uid).join(",")}]`
   );
 };
