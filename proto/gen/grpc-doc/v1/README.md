@@ -2868,6 +2868,7 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 
 When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
+| filter | [string](#string) |  | The filter of the change histories. Follow the CEL syntax. currently, we have three attributes for CEL: - resource.database - resource.schema - resource.table examples: if you want to filter by databases, you should use: resource.database in [&#34;db1&#34;, &#34;db2&#34;] even if you only want to filter by one database, you should use the array syntax. if you want to filter by tables, you should use: resource.database = &#34;db1&#34; &amp;&amp; resource.schema = &#34;&#34; &amp;&amp; resource.table in [&#34;table1&#34;, &#34;table2&#34;] Empty schema name is for no schema database engines, such as MySQL. |
 
 
 
