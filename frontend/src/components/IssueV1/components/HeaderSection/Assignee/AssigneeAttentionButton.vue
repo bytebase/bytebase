@@ -34,16 +34,16 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { NTooltip } from "naive-ui";
 
-import { ComposedIssue } from "@/types";
 import { AppIMSetting_IMType } from "@/types/proto/v1/setting_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName, extractUserUID } from "@/utils";
+import { extractUserResourceName } from "@/utils";
 import {
-  pushNotification,
   useSettingV1Store,
   useCurrentUserV1,
   useIssueStore,
+  useUserStore,
+  pushNotification,
 } from "@/store";
 import { useIssueContext } from "../../../logic";
 
@@ -111,30 +111,29 @@ const notifyAssignee = () => {
   if (!showNotifyAssignee.value) return;
   if (isAssigneeAttentionOn.value) return;
 
-  // TODO
-  // const issueEntity = issue.value as ComposedIssue;
+  useIssueStore()
+    .patchIssue({
+      issueId: Number(issue.value.uid),
+      issuePatch: {
+        assigneeNeedAttention: true,
+      },
+    })
+    .then(() => {
+      const email = extractUserResourceName(issue.value.assignee);
+      const assignee = useUserStore().getUserByEmail(email);
+      const message = externalApprovalSetting.value.enabled
+        ? t("issue.assignee-attention.send-approval-request-successfully", {
+            im: imTypeName.value,
+          })
+        : t("issue.assignee-attention.send-attention-request-successfully", {
+            principal: assignee ? assignee.title : email,
+          });
 
-  // useIssueStore()
-  //   .patchIssue({
-  //     issueId: (issue.value as ComposedIssue).id,
-  //     issuePatch: {
-  //       assigneeNeedAttention: true,
-  //     },
-  //   })
-  //   .then(() => {
-  //     const message = externalApprovalSetting.value.enabled
-  //       ? t("issue.assignee-attention.send-approval-request-successfully", {
-  //           im: imTypeName.value,
-  //         })
-  //       : t("issue.assignee-attention.send-attention-request-successfully", {
-  //           principal: issueEntity.assignee.name,
-  //         });
-
-  //     pushNotification({
-  //       module: "bytebase",
-  //       style: "SUCCESS",
-  //       title: message,
-  //     });
-  //   });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: message,
+      });
+    });
 };
 </script>
