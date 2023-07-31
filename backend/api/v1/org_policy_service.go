@@ -305,7 +305,7 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		database, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instanceID,
 			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())

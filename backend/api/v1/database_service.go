@@ -96,7 +96,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 		}
-		find.IgnoreCaseSensitive = s.store.IgnoreDatabaseAndTableCaseSensitive(instance)
+		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
@@ -202,7 +202,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -299,7 +299,7 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 		}
-		find.IgnoreCaseSensitive = s.store.IgnoreDatabaseAndTableCaseSensitive(instance)
+		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
@@ -336,7 +336,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instanceID,
 			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
@@ -399,7 +399,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -440,7 +440,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -498,7 +498,7 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -535,7 +535,7 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -573,7 +573,7 @@ func (s *DatabaseService) ListBackups(ctx context.Context, request *v1pb.ListBac
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -618,7 +618,7 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -664,7 +664,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -751,7 +751,7 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -971,7 +971,7 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1014,7 +1014,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1114,7 +1114,7 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1174,7 +1174,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		findDatabase.DatabaseName = &databaseName
-		findDatabase.IgnoreCaseSensitive = s.store.IgnoreDatabaseAndTableCaseSensitive(instance)
+		findDatabase.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -1903,7 +1903,7 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	findDatabase := &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	}
 	database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 	if err != nil {
@@ -1946,7 +1946,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 			findDatabase := &store.FindDatabaseMessage{
 				InstanceID:          &database.InstanceID,
 				DatabaseName:        &db,
-				IgnoreCaseSensitive: s.store.IgnoreDatabaseAndTableCaseSensitive(instance),
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 			}
 			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 			if err != nil {

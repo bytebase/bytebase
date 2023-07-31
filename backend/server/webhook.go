@@ -1567,7 +1567,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 		if err != nil {
 			return nil, errors.Wrap(err, "find instance")
 		}
-		if s.store.IgnoreDatabaseAndTableCaseSensitive(instance) || database.DatabaseName == dbName {
+		if store.IgnoreDatabaseAndTableCaseSensitive(instance) || database.DatabaseName == dbName {
 			foundDatabases = append(foundDatabases, database)
 		}
 	}
