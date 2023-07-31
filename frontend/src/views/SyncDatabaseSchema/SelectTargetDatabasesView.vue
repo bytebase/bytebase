@@ -59,7 +59,10 @@
         </div>
         <div>
           <span>{{ $t("schema-designer.schema-design") }} - </span>
-          <span>
+          <span
+            class="normal-link inline-flex items-center"
+            @click="state.showViewSchemaDesignPanel = true"
+          >
             {{ schemaDesign?.title || "Unknown" }}
           </span>
         </div>
@@ -211,6 +214,13 @@
     @close="state.showSelectDatabasePanel = false"
     @update="handleSelectedDatabaseIdListChanged"
   />
+
+  <EditSchemaDesignPanel
+    v-if="state.showViewSchemaDesignPanel && schemaDesign"
+    :schema-design-name="schemaDesign.name"
+    :view-mode="true"
+    @dismiss="state.showViewSchemaDesignPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -235,6 +245,7 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { SourceSchemaType } from "./types";
+import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
 
 interface DatabaseSourceSchema {
   environmentId: string;
@@ -248,6 +259,7 @@ interface LocalState {
   selectedDatabaseId: string | undefined;
   selectedDatabaseIdList: string[];
   showSelectDatabasePanel: boolean;
+  showViewSchemaDesignPanel: boolean;
 }
 
 const props = defineProps<{
@@ -267,6 +279,7 @@ const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
   selectedDatabaseId: undefined,
   selectedDatabaseIdList: [],
+  showViewSchemaDesignPanel: false,
 });
 const databaseSchemaCache = reactive<Record<string, string>>({});
 const databaseDiffCache = reactive<
