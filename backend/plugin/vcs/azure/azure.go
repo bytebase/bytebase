@@ -158,6 +158,7 @@ func (o oauthResponse) toVCSOAuthToken() (*vcs.OAuthToken, error) {
 		CreatedAt:    time.Now().Unix(),
 		ExpiresTs:    time.Now().Add(time.Duration(expiresIn) * time.Second).Unix(),
 	}
+
 	return oauthToken, nil
 }
 
@@ -424,7 +425,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get authenticated profile public alias")
 	}
-	log.Info("Authenticated user public alias", zap.String("publicAlias", publicAlias))
+
 	organizations, err := p.listOrganizationsForMember(ctx, oauthCtx, publicAlias)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list organizations for member")
@@ -464,6 +465,13 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 			if err != nil {
 				return errors.Wrapf(err, "GET %s", url)
 			}
+			// If users do not have permission to list repositories, for example, do not open the switch of
+			// `Third party application access via OAuth` in the organization settings, Azure DevOps will return
+			// 401 Unauthorized.
+			if code == http.StatusUnauthorized {
+				return nil
+			}
+
 			if code != http.StatusOK {
 				return errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 			}
