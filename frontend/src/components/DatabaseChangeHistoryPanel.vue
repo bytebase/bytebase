@@ -92,6 +92,7 @@ import { useChangeHistoryStore } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   ChangeHistory,
+  ChangeHistory_Status,
   ChangeHistory_Type,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
@@ -201,6 +202,10 @@ const handleExportChangeHistory = async () => {
     });
 
     if (changeHistory) {
+      if (changeHistory.status !== ChangeHistory_Status.DONE) {
+        continue;
+      }
+
       if (
         changeHistory.type === ChangeHistory_Type.MIGRATE ||
         changeHistory.type === ChangeHistory_Type.MIGRATE_SDL ||
