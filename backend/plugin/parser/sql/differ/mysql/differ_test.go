@@ -94,7 +94,7 @@ func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase) {
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range testCases {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new, true /* ignoreCaseSensitive */)
 		a.NoError(err)
 		if len(out) > 0 {
 			a.Equal(disableFKCheckStmt, out[:len(disableFKCheckStmt)])

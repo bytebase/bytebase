@@ -610,7 +610,7 @@ func validateDataSourceList(dataSources []*DataSourceMessage) error {
 }
 
 // IgnoreDatabaseAndTableCaseSensitive returns true if the engine ignores database and table case sensitive.
-func (*Store) IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
+func IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
 	switch instance.Engine {
 	case db.TiDB:
 		return true
