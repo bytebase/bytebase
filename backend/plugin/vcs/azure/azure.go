@@ -219,7 +219,7 @@ type ChangesResponse struct {
 	Changes []ChangesResponseChange `json:"changes"`
 }
 
-// GetChangesByCommit gets the changes by commit ID.
+// GetChangesByCommit gets the changes by commit ID, and returns the list of blob files changed in the specify commit.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-changes?view=azure-devops-rest-7.0&tabs=HTTP
 // TODO(zp): We should GET the changes pagenated, otherwise it may hit the Azure DevOps API limit.
