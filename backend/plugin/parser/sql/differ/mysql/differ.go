@@ -562,7 +562,7 @@ type constraintMap map[string]*ast.Constraint
 
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
-func (d *SchemaDiffer) SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
+func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
 	// 1. Preprocessing Stage.
 	// TiDB parser doesn't support some statements like `CREATE EVENT`, so we need to extract them out and diff them based on string compare.
 	oldUnsupportedStmtList, oldSupportedStmt, err := classifyStatement(oldStmt)
@@ -970,7 +970,7 @@ func isIndexEqual(old, new *ast.CreateIndexStmt) bool {
 	// [algorithm_option | lock_option] ...
 
 	// MySQL index names are case insensitive.
-	if strings.ToLower(old.IndexName) != strings.ToLower(new.IndexName) {
+	if !strings.EqualFold(old.IndexName, new.IndexName) {
 		return false
 	}
 	if (old.IndexOption == nil) != (new.IndexOption == nil) {
@@ -1100,7 +1100,7 @@ func isIndexOptionEqual(old, new *ast.IndexOption) bool {
 // isForeignKeyEqual returns true if two foreign keys are the same.
 func isForeignKeyConstraintEqual(old, new *ast.Constraint) bool {
 	// FOREIGN KEY [index_name] (index_col_name,...) reference_definition
-	if strings.ToLower(old.Name) != strings.ToLower(new.Name) {
+	if !strings.EqualFold(old.Name, new.Name) {
 		return false
 	}
 	if !isKeyPartEqual(old.Keys, new.Keys) {
@@ -1170,7 +1170,7 @@ func trimParentheses(expr ast.ExprNode) ast.ExprNode {
 func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 	// check_constraint_definition:
 	// 		[CONSTRAINT [symbol]] CHECK (expr) [[NOT] ENFORCED]
-	if strings.ToLower(old.Name) != strings.ToLower(new.Name) {
+	if !strings.EqualFold(old.Name, new.Name) {
 		return false
 	}
 
