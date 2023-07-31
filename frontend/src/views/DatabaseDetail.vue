@@ -45,7 +45,9 @@
                 >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
               >
               <EnvironmentV1Name
-                :environment="database.instanceEntity.environmentEntity"
+                :environment="
+                  environment || database.instanceEntity.environmentEntity
+                "
                 icon-class="textinfolabel"
               />
             </dd>
@@ -173,7 +175,7 @@
         <DatabaseSlowQueryPanel :database="database" />
       </template>
       <template v-if="selectedTabItem?.hash === 'settings'">
-        <DatabaseSettingsPanel :database="database" />
+        <DatabaseSettingsPanel :database="database" :allow-edit="allowEdit" />
       </template>
     </div>
 
@@ -283,6 +285,7 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useGracefulRequest,
+  useEnvironmentV1Store,
 } from "@/store";
 import {
   EnvironmentV1Name,
@@ -678,4 +681,10 @@ const syncDatabaseSchema = async () => {
     state.syncingSchema = false;
   }
 };
+
+const environment = computed(() => {
+  return useEnvironmentV1Store().getEnvironmentByName(
+    database.value.environment
+  );
+});
 </script>
