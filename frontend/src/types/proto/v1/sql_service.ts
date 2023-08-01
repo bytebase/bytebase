@@ -53,7 +53,7 @@ export interface ExportRequest {
   format: ExportRequest_Format;
   /**
    * The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
-   * The exported data is not anonymized.
+   * The exported data is not masked.
    */
   admin: boolean;
 }

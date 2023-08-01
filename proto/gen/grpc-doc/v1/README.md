@@ -8990,7 +8990,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | format | [ExportRequest.Format](#bytebase-v1-ExportRequest-Format) |  | The export format. |
-| admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not anonymized. |
+| admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not masked. |
 
 
 
