@@ -29,8 +29,8 @@ import {
   allowUserToApplyReviewAction,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { ErrorList } from "@/components/IssueV1/components/common";
 import { useCurrentUserV1 } from "@/store";
-import { ErrorList } from "../common";
 
 const props = defineProps<{
   action: IssueReviewAction;

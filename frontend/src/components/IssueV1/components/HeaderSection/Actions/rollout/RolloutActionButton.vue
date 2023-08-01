@@ -29,7 +29,7 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { ErrorList } from "../common";
+import { ErrorList } from "@/components/IssueV1/components/common";
 import { ContextMenuButton } from "@/components/v2";
 import { RolloutAction, RolloutButtonAction } from "./common";
 

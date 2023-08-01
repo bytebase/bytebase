@@ -56,21 +56,31 @@
           <template v-if="!state.isEditing">
             <template v-if="shouldShowEditButton">
               <!-- for small size sheets, show full featured UI editing button group -->
-              <NButton
-                v-if="!isTaskSheetOversize"
-                size="tiny"
-                @click.prevent="beginEdit"
-              >
-                {{ $t("common.edit") }}
-              </NButton>
-              <!-- for oversized sheets, only allow to upload and overwrite the sheet -->
-              <UploadProgressButton
-                v-else
-                :upload="handleUploadAndOverwrite"
-                size="tiny"
-              >
-                {{ $t("issue.upload-sql") }}
-              </UploadProgressButton>
+              <NTooltip :disabled="denyEditTaskReasons.length === 0">
+                <template #trigger>
+                  <NButton
+                    v-if="!isTaskSheetOversize"
+                    size="tiny"
+                    tag="div"
+                    :disabled="denyEditTaskReasons.length > 0"
+                    @click.prevent="beginEdit"
+                  >
+                    {{ $t("common.edit") }}
+                  </NButton>
+                  <!-- for oversized sheets, only allow to upload and overwrite the sheet -->
+                  <UploadProgressButton
+                    v-else
+                    :upload="handleUploadAndOverwrite"
+                    :disabled="denyEditTaskReasons.length > 0"
+                    size="tiny"
+                  >
+                    {{ $t("issue.upload-sql") }}
+                  </UploadProgressButton>
+                </template>
+                <template #default>
+                  <ErrorList :errors="denyEditTaskReasons" />
+                </template>
+              </NTooltip>
             </template>
           </template>
           <template v-else>
@@ -153,7 +163,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, watch } from "vue";
-import { NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { useRoute } from "vue-router";
 
 import {
@@ -174,8 +184,10 @@ import {
   databaseForTask,
   getLocalSheetByName,
   useIssueContext,
-} from "../../../logic";
-import { hasFeature, useUIStateStore } from "@/store";
+  allowUserToEditStatementForTask,
+} from "@/components/IssueV1/logic";
+import { ErrorList } from "@/components/IssueV1/components/common";
+import { hasFeature, useCurrentUserV1, useUIStateStore } from "@/store";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
@@ -191,6 +203,7 @@ type LocalState = EditState & {
 
 const uiStateStore = useUIStateStore();
 const route = useRoute();
+const currentUser = useCurrentUserV1();
 const { isCreating, issue, selectedTask } = useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 
@@ -269,6 +282,14 @@ const isTaskSheetOversize = computed(() => {
   return getSheetStatement(sheet.value).length < sheet.value.contentSize;
 });
 
+const denyEditTaskReasons = computed(() => {
+  return allowUserToEditStatementForTask(
+    issue.value,
+    selectedTask.value,
+    currentUser.value
+  );
+});
+
 const shouldShowEditButton = computed(() => {
   // Need not to show "Edit" while the issue is still pending create.
   if (isCreating.value) {
@@ -279,18 +300,8 @@ const shouldShowEditButton = computed(() => {
   if (state.isEditing) {
     return false;
   }
-  // If the task or issue's statement is not allowed to be change.
-  // TODO
-  // if (!allowEditStatement.value) {
-  //   return false;
-  // }
-  // Not allowed to change statement while grouping.
-  // TODO
-  // if (isGroupingChangeIssue(issue.value)) {
-  //   return false;
-  // }
 
-  return false; // UpdatePlan is not implemented
+  return true;
 });
 
 const allowApplyTaskStateToOthers = computed(() => {

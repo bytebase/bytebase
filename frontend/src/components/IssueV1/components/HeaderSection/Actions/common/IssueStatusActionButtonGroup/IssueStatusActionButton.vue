@@ -29,7 +29,7 @@ import {
   issueStatusActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import ErrorList from "../ErrorList.vue";
+import { ErrorList } from "@/components/IssueV1/components/common";
 import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{

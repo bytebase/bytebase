@@ -35,9 +35,9 @@ import {
   isValidStage,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { ErrorList } from "@/components/IssueV1/components/common";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { extractSheetUID } from "@/utils";
-import { ErrorList } from "../common";
 import { ComposedIssue } from "@/types";
 import { useRouter } from "vue-router";
 

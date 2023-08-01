@@ -10,6 +10,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { NTooltip } from "naive-ui";
 
 import { ExtraActionOption } from "../types";
@@ -18,8 +19,7 @@ import {
   allowUserToApplyIssueStatusAction,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import ErrorList from "../ErrorList.vue";
-import { computed } from "vue";
+import { ErrorList } from "@/components/IssueV1/components/common";
 import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{
