@@ -23,10 +23,10 @@ export const getLocalSheetByName = (name: string) => {
   if (existed) {
     return existed;
   }
-  const sheet = {
+  const sheet = reactive({
     ...createEmptyLocalSheet(),
     name,
-  };
+  });
   sheetsByName.set(name, sheet);
   return sheet;
 };
