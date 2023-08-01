@@ -409,13 +409,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return c.String(http.StatusOK, "No repository matched")
 		}
 
-		// commitList := make([]vcs.Commit, len(nonBytebaseCommitList))
-		// // Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
-		// // the file diff information by ourselves.
-		// // We will use the previous commit id as the base commit id and the current commit id as the target commit id to
-		// // get the file diff information commit by commit. We use the oldObjectId in resources.refUpdates as the base commit id
-		// // for the first commit.
-		// // NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
+		// Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
+		// the file diff information by ourselves.
+		// We will use the previous commit id as the base commit id and the current commit id as the target commit id to
+		// get the file diff information commit by commit. We use the oldObjectId in resources.refUpdates as the base commit id
+		// for the first commit.
+		// NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
 		backfillCommits := make([]vcs.Commit, 0, len(nonBytebaseCommitList))
 		for _, commit := range nonBytebaseCommitList {
 			changes, err := azure.GetChangesByCommit(ctx, common.OauthContext{

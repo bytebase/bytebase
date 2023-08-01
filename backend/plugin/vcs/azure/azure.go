@@ -701,7 +701,7 @@ func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.Oauth
 	if len(parts) != 3 {
 		return errors.Errorf("invalid repository ID %q", repositoryID)
 	}
-	organizationName, exteralRepositoryID := parts[0], parts[2]
+	organizationName, externalRepositoryID := parts[0], parts[2]
 
 	changeType := "edit"
 	if create {
@@ -710,7 +710,7 @@ func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.Oauth
 
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
-	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/pushes?%s", url.PathEscape(organizationName), url.PathEscape(exteralRepositoryID), values.Encode())
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/pushes?%s", url.PathEscape(organizationName), url.PathEscape(externalRepositoryID), values.Encode())
 
 	type createFileReqeustCommitChangesItem struct {
 		Path string `json:"path"`
