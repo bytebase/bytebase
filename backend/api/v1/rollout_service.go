@@ -1245,16 +1245,16 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if !ok {
 					continue
 				}
-				sheetID, _, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+				_, sheetIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
 				}
-				sheetIDInt, err := strconv.Atoi(sheetID)
+				sheetID, err := strconv.Atoi(sheetIDStr)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 				}
 				sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-					UID: &sheetIDInt,
+					UID: &sheetID,
 				}, api.SystemBotID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
