@@ -246,6 +246,8 @@
   </div>
 
   <Drawer
+    :auto-focus="true"
+    :trap-focus="true"
     :show="state.quickActionType !== undefined"
     @close="state.quickActionType = undefined"
   >
