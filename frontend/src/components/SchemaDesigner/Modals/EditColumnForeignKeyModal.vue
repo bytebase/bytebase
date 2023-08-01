@@ -56,7 +56,7 @@
           class="btn-danger"
           @click="handleRemoveFKButtonClick"
         >
-          Remove
+          {{ $t("common.delete") }}
         </button>
       </div>
       <div class="flex items-center justify-end space-x-2">
