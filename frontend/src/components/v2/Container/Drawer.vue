@@ -2,8 +2,7 @@
   <NDrawer
     width="auto"
     :show="show"
-    :auto-focus="false"
-    :trap-focus="false"
+    :close-on-esc="true"
     @update:show="onUpdateShow"
   >
     <slot />

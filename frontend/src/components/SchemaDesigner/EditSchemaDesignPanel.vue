@@ -78,7 +78,8 @@
           :engine="schemaDesign.engine"
           :schema-design="schemaDesign"
         />
-        <div>
+        <!-- Don't show delete button in view mode. -->
+        <div v-if="!viewMode">
           <BBButtonConfirm
             :style="'DELETE'"
             :button-text="$t('schema-designer.delete-this-design')"
