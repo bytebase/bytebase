@@ -223,7 +223,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
 		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
 		ON CONFLICT (name) DO UPDATE SET ` + strings.Join(updateFields, ", ") + `
-		RETURNING name, value, description`
+		RETURNING name, value, description, created_ts`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -236,6 +236,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 		&setting.Name,
 		&setting.Value,
 		&setting.Description,
+		&setting.CreatedTs,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
@@ -278,12 +279,13 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
 		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
-		RETURNING name, value, description`
+		RETURNING name, value, description, created_ts`
 	var setting SettingMessage
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&setting.Name,
 		&setting.Value,
 		&setting.Description,
+		&setting.CreatedTs,
 	); err != nil {
 		return nil, false, err
 	}
