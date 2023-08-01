@@ -57,7 +57,6 @@ import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import SchemaDesignTable from "./SchemaDesignTable.vue";
 import { DrawerContent } from "@/components/v2";
-import { useEventListener } from "@vueuse/core";
 import CreateSchemaDesignPanel from "../CreateSchemaDesignPanel.vue";
 import EditSchemaDesignPanel from "../EditSchemaDesignPanel.vue";
 
@@ -65,13 +64,6 @@ interface LocalState {
   showCreatePanel: boolean;
   selectedSchemaDesignName?: string;
 }
-
-const emit = defineEmits(["dismiss"]);
-useEventListener("keydown", (e) => {
-  if (e.code == "Escape") {
-    emit("dismiss");
-  }
-});
 
 const { schemaDesignList, ready } = useSchemaDesignList();
 const state = reactive<LocalState>({
