@@ -274,6 +274,10 @@ func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAP
 		if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse trial license")
 		}
+		data.InstanceCount = enterpriseAPI.InstanceLimitForTrial
+		if time.Now().AddDate(0, 0, -enterpriseAPI.TrialDaysLimit).Unix() >= setting.CreatedTs {
+			return nil, nil
+		}
 		return &data, nil
 	}
 
