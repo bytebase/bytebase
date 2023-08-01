@@ -51,7 +51,7 @@
           :project-id="projectId!"
           :source-schema-type="state.sourceSchemaType"
           :database-source-schema="(changeHistorySourceSchemaState as any)"
-          :schema-design="schemaDesignState.selectedSchemaDesign"
+          :schema-design-name="schemaDesignState.selectedSchemaDesign?.name"
         />
       </template>
     </BBStepTab>
