@@ -3,7 +3,6 @@ set -e
 
 OUT_PREFIX="mysqlutil-8.0.33"
 pack(){
-    echo $1
     tar xvf $1
     FILENAME=$(basename $1)
     FILENAME_NOEXT="${FILENAME%.*.*}"
