@@ -17,7 +17,7 @@ type trial struct {
 	expectInstanceCount int32
 	plan                v1pb.PlanType
 	expectPlan          v1pb.PlanType
-	Days                int32
+	days                int32
 }
 
 func TestSubscription(t *testing.T) {
@@ -42,11 +42,11 @@ func TestSubscription(t *testing.T) {
 	trialList := []trial{
 		{
 			// Test trial the TEAM plan.
-			instanceCount:       20,
-			expectInstanceCount: 20,
+			instanceCount:       10,
+			expectInstanceCount: 10,
 			plan:                v1pb.PlanType_ENTERPRISE,
 			expectPlan:          v1pb.PlanType_ENTERPRISE,
-			Days:                7,
+			days:                7,
 		},
 	}
 
@@ -54,7 +54,7 @@ func TestSubscription(t *testing.T) {
 		err = ctl.trialPlan(&v1pb.TrialSubscription{
 			InstanceCount: trial.instanceCount,
 			Plan:          trial.plan,
-			Days:          trial.Days,
+			Days:          trial.days,
 		})
 		a.NoError(err)
 
