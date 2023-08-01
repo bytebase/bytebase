@@ -644,7 +644,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
 	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL}
+	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, RefreshTokenDuration: refreshTokenDuration}
 	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err

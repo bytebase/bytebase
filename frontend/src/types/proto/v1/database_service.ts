@@ -1040,6 +1040,7 @@ export interface ChangeHistory {
   /** Format: projects/{project}/issues/{issue} */
   issue: string;
   pushEvent?: PushEvent | undefined;
+  changedResources?: ChangedResources | undefined;
 }
 
 export enum ChangeHistory_Source {
@@ -1195,6 +1196,24 @@ export function changeHistory_StatusToJSON(object: ChangeHistory_Status): string
   }
 }
 
+export interface ChangedResources {
+  databases: ChangedResourceDatabase[];
+}
+
+export interface ChangedResourceDatabase {
+  name: string;
+  schemas: ChangedResourceSchema[];
+}
+
+export interface ChangedResourceSchema {
+  name: string;
+  tables: ChangedResourceTable[];
+}
+
+export interface ChangedResourceTable {
+  name: string;
+}
+
 export interface ListChangeHistoriesRequest {
   /**
    * The parent of the change histories.
@@ -1216,6 +1235,22 @@ export interface ListChangeHistoriesRequest {
    */
   pageToken: string;
   view: ChangeHistoryView;
+  /**
+   * The filter of the change histories.
+   * Follow the CEL syntax.
+   * currently, we have three attributes for CEL:
+   * - resource.database
+   * - resource.schema
+   * - resource.table
+   * examples:
+   *  if you want to filter by databases, you should use:
+   *    resource.database in ["db1", "db2"]
+   *   even if you only want to filter by one database, you should use the array syntax.
+   *   if you want to filter by tables, you should use:
+   *    resource.database = "db1" && resource.schema = "" && resource.table in ["table1", "table2"]
+   *   Empty schema name is for no schema database engines, such as MySQL.
+   */
+  filter: string;
 }
 
 export interface ListChangeHistoriesResponse {
@@ -5858,6 +5893,7 @@ function createBaseChangeHistory(): ChangeHistory {
     executionDuration: undefined,
     issue: "",
     pushEvent: undefined,
+    changedResources: undefined,
   };
 }
 
@@ -5916,6 +5952,9 @@ export const ChangeHistory = {
     }
     if (message.pushEvent !== undefined) {
       PushEvent.encode(message.pushEvent, writer.uint32(146).fork()).ldelim();
+    }
+    if (message.changedResources !== undefined) {
+      ChangedResources.encode(message.changedResources, writer.uint32(154).fork()).ldelim();
     }
     return writer;
   },
@@ -6053,6 +6092,13 @@ export const ChangeHistory = {
 
           message.pushEvent = PushEvent.decode(reader, reader.uint32());
           continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.changedResources = ChangedResources.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6082,6 +6128,7 @@ export const ChangeHistory = {
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
       issue: isSet(object.issue) ? String(object.issue) : "",
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
+      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
   },
 
@@ -6107,6 +6154,8 @@ export const ChangeHistory = {
     message.issue !== undefined && (obj.issue = message.issue);
     message.pushEvent !== undefined &&
       (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
+    message.changedResources !== undefined &&
+      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
     return obj;
   },
 
@@ -6138,12 +6187,285 @@ export const ChangeHistory = {
     message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
       ? PushEvent.fromPartial(object.pushEvent)
       : undefined;
+    message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
+      ? ChangedResources.fromPartial(object.changedResources)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseChangedResources(): ChangedResources {
+  return { databases: [] };
+}
+
+export const ChangedResources = {
+  encode(message: ChangedResources, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.databases) {
+      ChangedResourceDatabase.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangedResources {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChangedResources();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databases.push(ChangedResourceDatabase.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChangedResources {
+    return {
+      databases: Array.isArray(object?.databases)
+        ? object.databases.map((e: any) => ChangedResourceDatabase.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ChangedResources): unknown {
+    const obj: any = {};
+    if (message.databases) {
+      obj.databases = message.databases.map((e) => e ? ChangedResourceDatabase.toJSON(e) : undefined);
+    } else {
+      obj.databases = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ChangedResources>): ChangedResources {
+    return ChangedResources.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ChangedResources>): ChangedResources {
+    const message = createBaseChangedResources();
+    message.databases = object.databases?.map((e) => ChangedResourceDatabase.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseChangedResourceDatabase(): ChangedResourceDatabase {
+  return { name: "", schemas: [] };
+}
+
+export const ChangedResourceDatabase = {
+  encode(message: ChangedResourceDatabase, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.schemas) {
+      ChangedResourceSchema.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangedResourceDatabase {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChangedResourceDatabase();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schemas.push(ChangedResourceSchema.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChangedResourceDatabase {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      schemas: Array.isArray(object?.schemas) ? object.schemas.map((e: any) => ChangedResourceSchema.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ChangedResourceDatabase): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.schemas) {
+      obj.schemas = message.schemas.map((e) => e ? ChangedResourceSchema.toJSON(e) : undefined);
+    } else {
+      obj.schemas = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ChangedResourceDatabase>): ChangedResourceDatabase {
+    return ChangedResourceDatabase.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ChangedResourceDatabase>): ChangedResourceDatabase {
+    const message = createBaseChangedResourceDatabase();
+    message.name = object.name ?? "";
+    message.schemas = object.schemas?.map((e) => ChangedResourceSchema.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseChangedResourceSchema(): ChangedResourceSchema {
+  return { name: "", tables: [] };
+}
+
+export const ChangedResourceSchema = {
+  encode(message: ChangedResourceSchema, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.tables) {
+      ChangedResourceTable.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangedResourceSchema {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChangedResourceSchema();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tables.push(ChangedResourceTable.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChangedResourceSchema {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      tables: Array.isArray(object?.tables) ? object.tables.map((e: any) => ChangedResourceTable.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ChangedResourceSchema): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.tables) {
+      obj.tables = message.tables.map((e) => e ? ChangedResourceTable.toJSON(e) : undefined);
+    } else {
+      obj.tables = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ChangedResourceSchema>): ChangedResourceSchema {
+    return ChangedResourceSchema.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ChangedResourceSchema>): ChangedResourceSchema {
+    const message = createBaseChangedResourceSchema();
+    message.name = object.name ?? "";
+    message.tables = object.tables?.map((e) => ChangedResourceTable.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseChangedResourceTable(): ChangedResourceTable {
+  return { name: "" };
+}
+
+export const ChangedResourceTable = {
+  encode(message: ChangedResourceTable, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangedResourceTable {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChangedResourceTable();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChangedResourceTable {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: ChangedResourceTable): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
+    return ChangedResourceTable.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
+    const message = createBaseChangedResourceTable();
+    message.name = object.name ?? "";
     return message;
   },
 };
 
 function createBaseListChangeHistoriesRequest(): ListChangeHistoriesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", view: 0 };
+  return { parent: "", pageSize: 0, pageToken: "", view: 0, filter: "" };
 }
 
 export const ListChangeHistoriesRequest = {
@@ -6159,6 +6481,9 @@ export const ListChangeHistoriesRequest = {
     }
     if (message.view !== 0) {
       writer.uint32(32).int32(message.view);
+    }
+    if (message.filter !== "") {
+      writer.uint32(42).string(message.filter);
     }
     return writer;
   },
@@ -6198,6 +6523,13 @@ export const ListChangeHistoriesRequest = {
 
           message.view = reader.int32() as any;
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6213,6 +6545,7 @@ export const ListChangeHistoriesRequest = {
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
       view: isSet(object.view) ? changeHistoryViewFromJSON(object.view) : 0,
+      filter: isSet(object.filter) ? String(object.filter) : "",
     };
   },
 
@@ -6222,6 +6555,7 @@ export const ListChangeHistoriesRequest = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     message.view !== undefined && (obj.view = changeHistoryViewToJSON(message.view));
+    message.filter !== undefined && (obj.filter = message.filter);
     return obj;
   },
 
@@ -6235,6 +6569,7 @@ export const ListChangeHistoriesRequest = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.view = object.view ?? 0;
+    message.filter = object.filter ?? "";
     return message;
   },
 };

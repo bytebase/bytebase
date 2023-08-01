@@ -36,6 +36,13 @@
       </NTooltip>
     </div>
   </div>
+  <div v-if="showEnvironmentColumn" class="bb-grid-cell">
+    <EnvironmentV1Name
+      :environment="environment ?? database.instanceEntity.environmentEntity"
+      :link="false"
+      tag="div"
+    />
+  </div>
   <div v-if="showSchemaVersionColumn" class="hidden lg:bb-grid-cell">
     {{ database.schemaVersion }}
   </div>
@@ -79,13 +86,6 @@
         </template>
       </div>
     </div>
-  </div>
-  <div v-if="showEnvironmentColumn" class="bb-grid-cell">
-    <EnvironmentV1Name
-      :environment="database.instanceEntity.environmentEntity"
-      :link="false"
-      tag="div"
-    />
   </div>
   <div v-if="showInstanceColumn" class="bb-grid-cell">
     <InstanceV1Name
@@ -139,13 +139,15 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
 import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import { isPITRDatabaseV1 } from "@/utils";
 import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
+import { useEnvironmentV1Store } from "@/store";
 
-defineProps<{
+const props = defineProps<{
   database: ComposedDatabase;
   mode: string;
   showSelectionColumn: boolean;
@@ -159,4 +161,10 @@ defineProps<{
 }>();
 
 defineEmits(["goto-sql-editor-failed"]);
+
+const environment = computed(() => {
+  return useEnvironmentV1Store().getEnvironmentByName(
+    props.database.environment
+  );
+});
 </script>

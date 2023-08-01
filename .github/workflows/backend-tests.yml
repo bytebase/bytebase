@@ -10,8 +10,8 @@ on:
 
 jobs:
   golangci-lint:
-    runs-on: self-hosted
-    timeout-minutes: 20
+    runs-on: [self-hosted, golangci]
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -36,7 +36,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.52.2
+          version: v1.53.3
           args: --verbose --timeout 20m --max-same-issues=30
           skip-cache: true
 
@@ -46,7 +46,7 @@ jobs:
         release-tags:
           - "mysql"
     runs-on: self-hosted
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v3
