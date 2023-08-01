@@ -161,6 +161,7 @@ import { computed, h, reactive, watch } from "vue";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { cloneDeep } from "lodash-es";
 
 import {
   SQLDialect,
@@ -185,9 +186,17 @@ import {
   stageForTask,
   isTaskEditable,
   specForTask,
+  createEmptyLocalSheet,
 } from "@/components/IssueV1/logic";
 import { ErrorList } from "@/components/IssueV1/components/common";
-import { hasFeature, useCurrentUserV1, useUIStateStore } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useCurrentUserV1,
+  useSheetV1Store,
+  useUIStateStore,
+} from "@/store";
+import { rolloutServiceClient } from "@/grpcweb";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
@@ -195,7 +204,6 @@ import { EditState, useTempEditState } from "./useTempEditState";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
 import { readFileAsync } from "./utils";
-import { uniqBy } from "lodash-es";
 
 type LocalState = EditState & {
   showFeatureModal: boolean;
@@ -206,7 +214,7 @@ const { t } = useI18n();
 const uiStateStore = useUIStateStore();
 const route = useRoute();
 const currentUser = useCurrentUserV1();
-const { isCreating, issue, selectedTask } = useIssueContext();
+const { events, isCreating, issue, selectedTask } = useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 
@@ -491,7 +499,6 @@ const updateStatement = async (statement: string) => {
   // Find the target editing task(s)
   // default to selectedTask
   // also ask whether to apply the change to all tasks in the stage.
-
   const { target, tasks } = await chooseUpdateStatementTarget();
 
   console.log(`targets: (${target}) ${tasks.map((t) => t.uid).join(",")}`);
@@ -503,10 +510,49 @@ const updateStatement = async (statement: string) => {
       specs.push(spec);
     }
   });
-  const uniqSpecs = uniqBy(specs, (spec) => spec.id);
+  const uniqSpecIds = new Set(specs.map((s) => s.id));
 
-  console.log(`specs`);
-  console.log(uniqSpecs);
+  console.log(`uniqSpecIds`, uniqSpecIds);
+
+  const planPatch = cloneDeep(issue.value.planEntity);
+  if (!planPatch) return;
+  const specsToPatch = planPatch.steps
+    .flatMap((step) => step.specs)
+    .filter((spec) => uniqSpecIds.has(spec.id));
+
+  const sheet = {
+    ...createEmptyLocalSheet(),
+    title: issue.value.title,
+  };
+  setSheetStatement(sheet, statement);
+  const createdSheet = await useSheetV1Store().createSheet(
+    issue.value.project,
+    sheet
+  );
+
+  for (let i = 0; i < specsToPatch.length; i++) {
+    const spec = specsToPatch[i];
+    const config = spec.changeDatabaseConfig;
+    if (!config) continue;
+    config.sheet = createdSheet.name;
+  }
+
+  console.log(JSON.stringify(planPatch, null, "  "));
+
+  const updatedPlan = await rolloutServiceClient.updatePlan({
+    plan: planPatch,
+    updateMask: ["steps"],
+  });
+
+  issue.value.planEntity = updatedPlan;
+
+  events.emit("status-changed", { eager: true });
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
 };
 
 const handleStatementChange = (value: string) => {
