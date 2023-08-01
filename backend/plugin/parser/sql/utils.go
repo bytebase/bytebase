@@ -60,7 +60,7 @@ func (r SchemaResource) Pretty() string {
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+func ExtractChangedResources(engineType EngineType, currentDatabase string, _ string, sql string) ([]SchemaResource, error) {
 	switch engineType {
 	case MySQL, MariaDB, OceanBase:
 		return extractMySQLChangedResources(currentDatabase, sql)
