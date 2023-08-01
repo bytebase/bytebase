@@ -64,6 +64,7 @@ export const mergeSchemaEditToMetadata = (
               column.type = columnEdit.type;
               column.nullable = columnEdit.nullable;
               column.comment = columnEdit.comment;
+              column.userComment = columnEdit.userComment;
               column.default = columnEdit.default;
             }
           }
@@ -169,6 +170,7 @@ const transformSchemaEditToMetadata = (schemaEdit: Schema): SchemaMetadata => {
           nullable: column.nullable,
           default: column.default,
           comment: column.comment,
+          userComment: column.userComment,
         })
       );
     }
@@ -214,6 +216,7 @@ const transformTableEditToMetadata = (tableEdit: Table): TableMetadata => {
         nullable: column.nullable,
         default: column.default,
         comment: column.comment,
+        userComment: column.userComment,
       })
     );
   }
@@ -247,5 +250,6 @@ const transformColumnEditToMetadata = (columnEdit: Column): ColumnMetadata => {
     nullable: columnEdit.nullable,
     default: columnEdit.default,
     comment: columnEdit.comment,
+    userComment: columnEdit.userComment,
   });
 };
