@@ -527,8 +527,8 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 // ReadFileMeta reads the metadata of the given file in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#file-meta-data
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?format=meta", p.APIURL(instanceURL), repositoryID, url.PathEscape(ref), url.PathEscape(filePath))
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?format=meta", p.APIURL(instanceURL), repositoryID, url.PathEscape(refInfo.RefName), url.PathEscape(filePath))
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -579,8 +579,8 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#raw-file-contents
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(ref), url.PathEscape(filePath))
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(refInfo.RefName), url.PathEscape(filePath))
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
