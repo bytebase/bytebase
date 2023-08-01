@@ -826,7 +826,16 @@
       "export-method": "Export method",
       "please-select-database-first": "Please select database first"
     },
-    "review-sent-back": "Review sent back"
+    "review-sent-back": "Review sent back",
+    "update-statement": {
+      "self": "Update {type}",
+      "apply-current-change-to": "Apply current change to",
+      "target": {
+        "selected-task": "Selected task",
+        "selected-stage": "Selected stage",
+        "all-tasks": "All tasks"
+      }
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",

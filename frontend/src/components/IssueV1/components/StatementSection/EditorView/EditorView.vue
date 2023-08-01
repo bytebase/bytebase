@@ -6,12 +6,7 @@
           <span
             :class="isEmpty(state.statement) ? 'text-red-600' : 'text-control'"
           >
-            <template v-if="language === 'sql'">
-              {{ $t("common.sql") }}
-            </template>
-            <template v-else>
-              {{ $t("common.statement") }}
-            </template>
+            {{ statementTitle }}
           </span>
           <span v-if="isCreating" class="text-red-600">*</span>
           <NButton
@@ -162,9 +157,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
-import { NButton, NTooltip } from "naive-ui";
+import { computed, h, reactive, watch } from "vue";
+import { NButton, NTooltip, useDialog } from "naive-ui";
 import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 
 import {
   SQLDialect,
@@ -172,8 +168,9 @@ import {
   dialectOfEngineV1,
 } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Plan_Spec, Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
+  defer,
   flattenTaskV1List,
   getSheetStatement,
   setSheetStatement,
@@ -185,6 +182,9 @@ import {
   getLocalSheetByName,
   useIssueContext,
   allowUserToEditStatementForTask,
+  stageForTask,
+  isTaskEditable,
+  specForTask,
 } from "@/components/IssueV1/logic";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import { hasFeature, useCurrentUserV1, useUIStateStore } from "@/store";
@@ -195,17 +195,20 @@ import { EditState, useTempEditState } from "./useTempEditState";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
 import { readFileAsync } from "./utils";
+import { uniqBy } from "lodash-es";
 
 type LocalState = EditState & {
   showFeatureModal: boolean;
   isUploadingFile: boolean;
 };
 
+const { t } = useI18n();
 const uiStateStore = useUIStateStore();
 const route = useRoute();
 const currentUser = useCurrentUserV1();
 const { isCreating, issue, selectedTask } = useIssueContext();
 const project = computed(() => issue.value.projectEntity);
+const dialog = useDialog();
 
 const state = reactive<LocalState>({
   isEditing: false,
@@ -226,6 +229,9 @@ const language = useInstanceV1EditorLanguage(
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
   return dialectOfEngineV1(db.instanceEntity.engine);
+});
+const statementTitle = computed(() => {
+  return language.value === "sql" ? t("common.sql") : t("common.statement");
 });
 const { markers } = useSQLAdviceMarkers();
 
@@ -345,9 +351,7 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     // TODO
-    // find the task related plan/step/spec
-    // create a new sheet
-    // update sheet id in the spec
+    await updateStatement(state.statement);
     resetTempEditState();
     await new Promise((r) => setTimeout(r, 500));
   } finally {
@@ -358,6 +362,84 @@ const saveEdit = async () => {
 const cancelEdit = () => {
   state.statement = sheetStatement.value;
   state.isEditing = false;
+};
+
+const chooseUpdateStatementTarget = () => {
+  type Target = "TASK" | "STAGE" | "ALL";
+  const d = defer<{ target: Target; tasks: Task[] }>();
+
+  const targets: Record<Target, Task[]> = {
+    TASK: [selectedTask.value],
+    STAGE: (stageForTask(issue.value, selectedTask.value)?.tasks ?? []).filter(
+      (task) => isTaskEditable(issue.value, task)
+    ),
+    ALL: flattenTaskV1List(issue.value.rolloutEntity).filter((task) => {
+      return isTaskEditable(issue.value, task);
+    }),
+  };
+
+  if (targets.STAGE.length === 1 && targets.ALL.length === 1) {
+    d.resolve({ target: "TASK", tasks: targets.TASK });
+    return d.promise;
+  }
+
+  const $d = dialog.create({
+    title: t("issue.update-statement.self", { type: statementTitle.value }),
+    content: t("issue.update-statement.apply-current-change-to"),
+    type: "info",
+    autoFocus: false,
+    closable: false,
+    maskClosable: false,
+    closeOnEsc: false,
+    showIcon: false,
+    action: () => {
+      const finish = (target: Target) => {
+        d.resolve({ target, tasks: targets[target] });
+        $d.destroy();
+      };
+
+      const TASK = h(
+        NButton,
+        { size: "small", onClick: () => finish("TASK") },
+        {
+          default: () => t("issue.update-statement.target.selected-task"),
+        }
+      );
+      const buttons = [TASK];
+      if (targets.STAGE.length > 1) {
+        // More than one editable tasks in stage
+        // Add "Selected stage" option
+        const STAGE = h(
+          NButton,
+          { size: "small", onClick: () => finish("STAGE") },
+          {
+            default: () => t("issue.update-statement.target.selected-stage"),
+          }
+        );
+        buttons.push(STAGE);
+      }
+      if (targets.ALL.length > targets.STAGE.length) {
+        // More editable tasks in other stages
+        // Add "All tasks" option
+        const ALL = h(
+          NButton,
+          { size: "small", onClick: () => finish("ALL") },
+          {
+            default: () => t("issue.update-statement.target.all-tasks"),
+          }
+        );
+        buttons.push(ALL);
+      }
+
+      return h(
+        "div",
+        { class: "flex items-center justify-end gap-x-2" },
+        buttons
+      );
+    },
+  });
+
+  return d.promise;
 };
 
 const handleUploadAndOverwrite = async () => {
@@ -375,7 +457,6 @@ const handleUploadAndOverwrite = async () => {
 const handleUploadFile = async (event: Event) => {
   try {
     state.isUploadingFile = true;
-    // TODO
     const { filename, content: statement } = await readFileAsync(event, 100);
     handleStatementChange(statement);
     if (sheet.value) {
@@ -400,6 +481,32 @@ const applyTaskStateToOthers = async () => {
     const sheet = getLocalSheetByName(sheetName);
     setSheetStatement(sheet, state.statement);
   }
+};
+
+const updateStatement = async (statement: string) => {
+  // - find the task related plan/step/spec
+  // - create a new sheet
+  // - update sheet id in the spec
+
+  // Find the target editing task(s)
+  // default to selectedTask
+  // also ask whether to apply the change to all tasks in the stage.
+
+  const { target, tasks } = await chooseUpdateStatementTarget();
+
+  console.log(`targets: (${target}) ${tasks.map((t) => t.uid).join(",")}`);
+
+  const specs: Plan_Spec[] = [];
+  tasks.forEach((task) => {
+    const spec = specForTask(issue.value, task);
+    if (spec) {
+      specs.push(spec);
+    }
+  });
+  const uniqSpecs = uniqBy(specs, (spec) => spec.id);
+
+  console.log(`specs`);
+  console.log(uniqSpecs);
 };
 
 const handleStatementChange = (value: string) => {
