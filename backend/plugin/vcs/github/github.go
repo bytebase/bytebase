@@ -603,8 +603,8 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 // ReadFileMeta reads the metadata of the given file in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	lastCommitID, err := p.getLastCommitID(ctx, oauthCtx, instanceURL, repositoryID, ref)
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
+	lastCommitID, err := p.getLastCommitID(ctx, oauthCtx, instanceURL, repositoryID, refInfo.RefName)
 	if err != nil {
 		return nil, errors.Wrap(err, "get last commit ID")
 	}
@@ -708,8 +708,8 @@ func (p *Provider) getLastCommitID(ctx context.Context, oauthCtx common.OauthCon
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), ref)
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), refInfo.RefName)
 	code, _, body, err := oauth.GetWithHeader(
 		ctx,
 		p.client,
