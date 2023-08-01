@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center h-[30px]">
+  <div class="flex items-center">
     <RollbackSwitch />
   </div>
 </template>
