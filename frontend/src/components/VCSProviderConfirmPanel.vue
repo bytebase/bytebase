@@ -51,6 +51,15 @@
             </div>
           </div>
           <div
+            v-else-if="config.uiType == 'AZURE_DEVOPS'"
+            class="flex flex-row items-center space-x-2"
+          >
+            <img class="h-6 w-auto" src="../assets/azure-devops-logo.svg" />
+            <div class="whitespace-nowrap">
+              {{ $t("gitops.setting.add-git-provider.azure-devops-service") }}
+            </div>
+          </div>
+          <div
             v-else-if="config.uiType == 'BITBUCKET_ORG'"
             class="flex flex-row items-center space-x-2"
           >
@@ -87,7 +96,7 @@
         <dt class="text-sm font-medium text-control-light text-right">
           Secret
         </dt>
-        <dd class="col-start-2 col-span-3 text-sm text-main">
+        <dd class="col-start-2 col-span-3 text-sm text-main break-all">
           {{ config.secret }}
         </dd>
       </div>

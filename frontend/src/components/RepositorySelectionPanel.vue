@@ -122,6 +122,10 @@ const attentionText = computed((): string => {
     return "repository.select-repository-attention-github";
   } else if (props.config.vcs.type === ExternalVersionControl_Type.BITBUCKET) {
     return "repository.select-repository-attention-bitbucket";
+  } else if (
+    props.config.vcs.type === ExternalVersionControl_Type.AZURE_DEVOPS
+  ) {
+    return "repository.select-repository-attention-azure-devops";
   }
   return "";
 });
