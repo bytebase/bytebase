@@ -406,7 +406,7 @@
       "subscription": "Suscripción",
       "labels": "Etiquetas",
       "debug-log": "Registro de Depuración",
-      "sensitive-data": "Anonimización de Datos",
+      "sensitive-data": "Enmascaramiento de Datos",
       "access-control": "Control de Acceso a Datos",
       "audit-log": "Registro de auditoría",
       "custom-roles": "Roles personalizados",
