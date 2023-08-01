@@ -371,10 +371,10 @@ const chooseUpdateStatementTarget = () => {
   const targets: Record<Target, Task[]> = {
     TASK: [selectedTask.value],
     STAGE: (stageForTask(issue.value, selectedTask.value)?.tasks ?? []).filter(
-      (task) => isTaskEditable(issue.value, task)
+      (task) => isTaskEditable(issue.value, task).length === 0
     ),
     ALL: flattenTaskV1List(issue.value.rolloutEntity).filter((task) => {
-      return isTaskEditable(issue.value, task);
+      return isTaskEditable(issue.value, task).length === 0;
     }),
   };
 

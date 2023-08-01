@@ -58,7 +58,7 @@ export const allowUserToEditStatementForTask = (
 
   if (issue.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
     const tasks = flattenTaskV1List(issue.rolloutEntity);
-    if (!tasks.every((task) => isTaskEditable(issue, task))) {
+    if (!tasks.every((task) => isTaskEditable(issue, task).length === 0)) {
       denyReasons.push("Some of the tasks are not editable in batch mode");
     }
   }
