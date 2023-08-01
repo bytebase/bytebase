@@ -14,6 +14,7 @@ export interface Column {
   type: string;
   nullable: boolean;
   comment: string;
+  userComment: string;
   default?: string;
   status: AtomResourceStatus;
 }
@@ -65,6 +66,7 @@ export const convertColumnMetadataToColumn = (
     type: columnMetadata.type,
     nullable: columnMetadata.nullable,
     comment: columnMetadata.comment,
+    userComment: columnMetadata.userComment,
     default: columnMetadata.default,
     status: "normal",
   };
