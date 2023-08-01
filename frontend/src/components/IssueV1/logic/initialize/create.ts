@@ -319,7 +319,7 @@ export const isValidStage = (stage: Stage): boolean => {
     if (TaskTypeListWithStatement.includes(task.type)) {
       const sheetName = sheetNameOfTaskV1(task);
       const sheet = getLocalSheetByName(sheetName);
-      if (!getSheetStatement(sheet)) {
+      if (getSheetStatement(sheet).length === 0) {
         return false;
       }
     }
