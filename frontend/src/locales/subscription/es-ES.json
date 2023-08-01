@@ -57,6 +57,8 @@
         "user-unlimited": "Ilimitado",
         "instance-count": "Cantidad de instancias",
         "instance-customized": "Personalizado",
+        "instance-maximum-10": "Hasta 10",
+        "instance-maximum-10-tooltip": "Máximo 10. Hable con nosotros para conocer los precios si sus instancias superan el límite.",
         "instance-maximum-20": "Hasta 20",
         "instance-maximum-20-tooltip": "Máximo 20. Hable con nosotros para conocer los precios si sus instancias superan el límite.",
         "instance-unlimited": "Ilimitado",
