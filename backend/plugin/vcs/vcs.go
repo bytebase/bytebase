@@ -36,6 +36,24 @@ const (
 	BytebaseAuthorEmail = "support@bytebase.com"
 )
 
+// RefType is the type of a ref.
+type RefType string
+
+const (
+	// RefTypeBranch is the branch ref type.
+	RefTypeBranch RefType = "branch"
+	// RefTypeTag is the tag ref type.
+	RefTypeTag RefType = "tag"
+	// RefTypeCommit is the commit ref type.
+	RefTypeCommit RefType = "commit"
+)
+
+// RefInfo is the API message for a VCS ref.
+type RefInfo struct {
+	RefType RefType
+	RefName string
+}
+
 // OAuthToken is the API message for OAuthToken.
 type OAuthToken struct {
 	AccessToken  string `json:"access_token" `
@@ -255,7 +273,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*FileMeta, error)
+	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (*FileMeta, error)
 	// Reads the file content
 	//
 	// oauthCtx: OAuth context to read the file content
@@ -263,7 +281,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
+	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (string, error)
 	// GetBranch gets the given branch in the repository.
 	//
 	// oauthCtx: OAuth context to create the webhook

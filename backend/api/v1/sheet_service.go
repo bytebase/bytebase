@@ -526,7 +526,10 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			vcs.InstanceURL,
 			repo.ExternalID,
 			file.Path,
-			repo.BranchFilter,
+			vcsPlugin.RefInfo{
+				RefType: vcsPlugin.RefTypeBranch,
+				RefName: repo.BranchFilter,
+			},
 		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to fetch file content from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter))
@@ -544,7 +547,10 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			vcs.InstanceURL,
 			repo.ExternalID,
 			file.Path,
-			repo.BranchFilter,
+			vcsPlugin.RefInfo{
+				RefType: vcsPlugin.RefTypeBranch,
+				RefName: repo.BranchFilter,
+			},
 		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter))
