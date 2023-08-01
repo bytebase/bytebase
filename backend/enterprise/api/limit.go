@@ -14,7 +14,7 @@ var planConfigStr string
 const (
 	// InstanceLimitForTrial is the instance count limit for trialing.
 	InstanceLimitForTrial = 10
-	// TrialDaysLimit is the expriation limit for trialing.
+	// TrialDaysLimit is the expiration limit for trialing.
 	TrialDaysLimit = 14
 )
 
