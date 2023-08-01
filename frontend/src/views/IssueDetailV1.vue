@@ -74,64 +74,10 @@ const documentTitle = computed(() => {
   return t("common.loading");
 });
 useTitle(documentTitle);
-
-// const tryCreate = async () => {
-//   const projectResource = "projects/project-d2a1c91c";
-//   const databaseResource = "instances/instance-36d77ff4/databases/employee";
-//   const sheetResource = "projects/project-d2a1c91c/sheets/1424";
-//   try {
-//     const config = Plan_ChangeDatabaseConfig.fromJSON({
-//       target: databaseResource,
-//       sheet: sheetResource,
-//       type: Plan_ChangeDatabaseConfig_Type.DATA,
-//     });
-//     const spec = Plan_Spec.fromJSON({
-//       changeDatabaseConfig: config,
-//     });
-//     const step = Plan_Step.fromJSON({
-//       specs: [spec],
-//     });
-//     const plan = Plan.fromJSON({
-//       steps: [step],
-//     });
-//     // const plan = await rolloutServiceClient.createPlan({
-//     //   parent: projectResource,
-//     //   plan: {
-//     //     steps: [step],
-//     //   },
-//     // });
-//     const rollout = await rolloutServiceClient.previewRollout({
-//       project: projectResource,
-//       plan,
-//     });
-//     console.log("plan", plan);
-//     console.log("rollout", rollout);
-//     // const issue = await issueServiceClient.createIssue({
-//     //   parent: projectResource,
-//     //   review: {
-//     //     assignee: "users/lj@bytebase.com",
-//     //     plan: plan.name,
-//     //   },
-//     // });
-//     // console.log(issue);
-//     // const plan = Plan.fromJSON({
-//     //   steps: [step],
-//     // });
-//     // await issueServiceClient.createIssue({
-//     //   parent,
-//     //   review: {
-//     //     assignee: "users/lj@bytebase.com",
-//     //     'plan'
-//     //   },
-//     // });
-//   } catch (err) {
-//     console.log("error", err);
-//   }
-// };
 </script>
 
 <style lang="postcss">
 .issue-debug {
-  @apply bg-red-200/50 font-mono text-xs;
+  @apply hidden bg-red-200/50 font-mono text-xs;
 }
 </style>
