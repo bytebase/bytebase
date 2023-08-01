@@ -1384,12 +1384,12 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb
 				return nil, errors.Wrap(err, "failed to get task creates from spec")
 			}
 
-			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
 			offset := len(stageCreate.TaskList)
 			for i := range taskIndexDAGCreates {
 				taskIndexDAGCreates[i].FromIndex += offset
 				taskIndexDAGCreates[i].ToIndex += offset
 			}
+			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
 			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
 
