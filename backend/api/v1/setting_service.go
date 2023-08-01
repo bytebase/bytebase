@@ -859,9 +859,10 @@ func convertToExternalApprovalSettingNode(o *storepb.ExternalApprovalSetting_Nod
 }
 
 func convertToSchemaTemplateSetting(s *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
-	v1Templates := []*v1pb.SchemaTemplateSetting_FieldTemplate{}
+	v1FieldTemplates := []*v1pb.SchemaTemplateSetting_FieldTemplate{}
+	v1ColumnTypes := []*v1pb.SchemaTemplateSetting_ColumnType{}
 	for _, template := range s.FieldTemplates {
-		v1Templates = append(v1Templates, &v1pb.SchemaTemplateSetting_FieldTemplate{
+		v1FieldTemplates = append(v1FieldTemplates, &v1pb.SchemaTemplateSetting_FieldTemplate{
 			Id:       template.Id,
 			Engine:   v1pb.Engine(template.Engine),
 			Category: template.Category,
@@ -874,9 +875,17 @@ func convertToSchemaTemplateSetting(s *storepb.SchemaTemplateSetting) *v1pb.Sche
 			},
 		})
 	}
+	for _, columnType := range s.ColumnTypes {
+		v1ColumnTypes = append(v1ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
+			Engine:  v1pb.Engine(columnType.Engine),
+			Enabled: columnType.Enabled,
+			Types:   columnType.Types,
+		})
+	}
 
 	return &v1pb.SchemaTemplateSetting{
-		FieldTemplates: v1Templates,
+		FieldTemplates: v1FieldTemplates,
+		ColumnTypes:    v1ColumnTypes,
 	}
 }
 

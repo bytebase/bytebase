@@ -32,9 +32,6 @@ export const useSettingV1Store = defineStore("setting_v1", {
     },
   },
   actions: {
-    getSettingByName(name: SettingName) {
-      return this.settingMapByName.get(`${settingNamePrefix}${name}`);
-    },
     async fetchSettingByName(name: SettingName, silent = false) {
       const setting = await settingServiceClient.getSetting(
         {
@@ -46,6 +43,16 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
       this.settingMapByName.set(setting.name, setting);
       return setting;
+    },
+    getOrFetchSettingByName(name: SettingName) {
+      const setting = this.getSettingByName(name);
+      if (setting) {
+        return setting;
+      }
+      return this.fetchSettingByName(name);
+    },
+    getSettingByName(name: SettingName) {
+      return this.settingMapByName.get(`${settingNamePrefix}${name}`);
     },
     async fetchSettingList() {
       const { settings } = await settingServiceClient.listSettings({});
