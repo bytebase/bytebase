@@ -282,7 +282,7 @@
     @close="state.showSchemaTemplateDrawer = false"
   >
     <DrawerContent :title="$t('schema-template.field-template')">
-      <div class="w-[46rem]">
+      <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <FieldTemplates
           :engine="databaseEngine"
           @apply="handleApplyColumnTemplate"
@@ -629,6 +629,7 @@ const handleApplyColumnTemplate = (
     type: template.column.type,
     nullable: template.column.nullable,
     comment: template.column.comment,
+    userComment: template.column.userComment,
     default: template.column.default,
     status: "created",
   };

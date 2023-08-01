@@ -1245,16 +1245,16 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if !ok {
 					continue
 				}
-				sheetID, _, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+				_, sheetIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
 				}
-				sheetIDInt, err := strconv.Atoi(sheetID)
+				sheetID, err := strconv.Atoi(sheetIDStr)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 				}
 				sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-					UID: &sheetIDInt,
+					UID: &sheetID,
 				}, api.SystemBotID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
@@ -1314,7 +1314,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 		for _, spec := range step.Specs {
 			if _, ok := newSpecs[spec.Id]; !ok {
 				removed = append(removed, spec)
-				break
 			}
 		}
 	}
@@ -1322,7 +1321,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 		for _, spec := range step.Specs {
 			if _, ok := oldSpecs[spec.Id]; !ok {
 				added = append(added, spec)
-				break
 			}
 		}
 	}
@@ -1331,7 +1329,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 			if oldSpec, ok := oldSpecs[spec.Id]; ok {
 				if isSpecSheetUpdated(oldSpec, spec) {
 					updated = append(updated, spec)
-					break
 				}
 			}
 		}
@@ -1384,12 +1381,12 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb
 				return nil, errors.Wrap(err, "failed to get task creates from spec")
 			}
 
-			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
 			offset := len(stageCreate.TaskList)
 			for i := range taskIndexDAGCreates {
 				taskIndexDAGCreates[i].FromIndex += offset
 				taskIndexDAGCreates[i].ToIndex += offset
 			}
+			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
 			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
 
