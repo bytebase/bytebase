@@ -285,7 +285,7 @@ type ExportRequest struct {
 	// The export format.
 	Format ExportRequest_Format `protobuf:"varint,5,opt,name=format,proto3,enum=bytebase.v1.ExportRequest_Format" json:"format,omitempty"`
 	// The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
-	// The exported data is not anonymized.
+	// The exported data is not masked.
 	Admin bool `protobuf:"varint,6,opt,name=admin,proto3" json:"admin,omitempty"`
 }
 
