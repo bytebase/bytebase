@@ -2,10 +2,8 @@
 package mysqlutil
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -41,42 +39,21 @@ func GetPath(binName binaryName, binDir string) string {
 	return "UNKNOWN_BINARY"
 }
 
-// getExecutableVersion returns the raw output of "binName -V".
-func getExecutableVersion(binName binaryName, binDir string) (string, error) {
-	var cmd *exec.Cmd
-	var v bytes.Buffer
-	switch binName {
-	case MySQL:
-		cmd = exec.Command(GetPath(MySQL, binDir), "-V")
-	case MySQLBinlog:
-		cmd = exec.Command(GetPath(MySQLBinlog, binDir), "-V")
-	case MySQLDump:
-		cmd = exec.Command(GetPath(MySQLDump, binDir), "-V")
-	default:
-		return "", errors.Errorf("unknown binary name: %s", binName)
-	}
-
-	cmd.Stdout = &v
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return "", err
-	}
-	return v.String(), nil
-}
-
 func getTarNameAndVersion() (tarname string, version string, err error) {
 	var tarName string
 	switch {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
-		tarName = "mysqlutil-8.0.28-macos11-arm64.tar.gz"
+		tarName = "mysqlutil-8.0.33-darwin-arm64.tar.gz"
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "mysqlutil-8.0.28-macos11-x86_64.tar.gz"
+		tarName = "mysqlutil-8.0.33-darwin-amd64.tar.gz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		tarName = "mysqlutil-8.0.33-linux-arm64.tar.gz"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		tarName = "mysqlutil-8.0.28-linux-glibc2.17-x86_64.tar.gz"
+		tarName = "mysqlutil-8.0.33-linux-amd64.tar.gz"
 	default:
 		return "", "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
 	}
-	return tarName, strings.TrimSuffix(tarName, "tar.gz"), nil
+	return tarName, strings.TrimSuffix(tarName, ".tar.gz"), nil
 }
 
 // Install will extract the mysqlutil tar in resourceDir.
