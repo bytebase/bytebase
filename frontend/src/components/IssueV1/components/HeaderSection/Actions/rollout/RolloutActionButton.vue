@@ -49,7 +49,7 @@ const { issue, activeTask } = useIssueContext();
 const errors = asyncComputed(async () => {
   const errors: string[] = [];
   if (!allPlanChecksPassedForTask(issue.value, activeTask.value)) {
-    // errors.push("Some checks failed.");
+    errors.push("Some checks failed");
   }
   if (
     !(await allowUserToApplyTaskRolloutAction(

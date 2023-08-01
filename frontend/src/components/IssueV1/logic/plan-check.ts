@@ -5,6 +5,7 @@ import {
   PlanCheckRun_Status,
   PlanCheckRun_Type,
   Task,
+  Task_Status,
 } from "@/types/proto/v1/rollout_service";
 import { groupBy, maxBy } from "lodash-es";
 import { databaseForTask } from ".";
@@ -39,6 +40,18 @@ export const planCheckRunResultStatus = (checkRun: PlanCheckRun) => {
     }
   }
   return status;
+};
+
+export const planCheckStatusForTask = (issue: ComposedIssue, task: Task) => {
+  if (
+    task.status === Task_Status.PENDING ||
+    task.status === Task_Status.PENDING_APPROVAL
+  ) {
+    const summary = planCheckRunSummaryForTask(issue, task);
+    if (summary.errorCount > 0) return PlanCheckRun_Result_Status.ERROR;
+    if (summary.warnCount > 0) return PlanCheckRun_Result_Status.WARNING;
+  }
+  return undefined;
 };
 
 export type PlanCheckRunSummary = {

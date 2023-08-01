@@ -64,7 +64,7 @@
 import { computed } from "vue";
 
 import { SkipIcon } from "@/components/Icon";
-import { useIssueContext } from "../logic";
+import { planCheckStatusForTask, useIssueContext } from "../logic";
 import {
   PlanCheckRun_Result_Status,
   Task,
@@ -78,15 +78,14 @@ const props = defineProps<{
   ignorePlanCheckStatus?: boolean;
 }>();
 
-const { isCreating } = useIssueContext();
+const { isCreating, issue } = useIssueContext();
 
-const planCheckStatus = computed((): PlanCheckRun_Result_Status | undefined => {
+const planCheckStatus = computed(() => {
   if (props.ignorePlanCheckStatus) return undefined;
   if (isCreating.value) return undefined;
   if (!props.task) return undefined;
 
-  //     return checkStatusOfTask(task);
-  return undefined; // todo
+  return planCheckStatusForTask(issue.value, props.task);
 });
 
 const classes = computed((): string => {
