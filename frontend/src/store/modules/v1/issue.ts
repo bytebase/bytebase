@@ -99,6 +99,16 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     await setIssueIssue(legacyIssue, issue);
   };
 
+  const regenerateReviewV1 = async (name: string) => {
+    await issueServiceClient.updateIssue({
+      issue: {
+        name,
+        approvalFindingDone: false,
+      },
+      updateMask: ["approval_finding_done"],
+    });
+  };
+
   const createIssueComment = async ({
     issueId,
     comment,
@@ -145,6 +155,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     rejectIssue,
     requestIssue,
     regenerateReview,
+    regenerateReviewV1,
     createIssueComment,
     updateIssueComment,
   };

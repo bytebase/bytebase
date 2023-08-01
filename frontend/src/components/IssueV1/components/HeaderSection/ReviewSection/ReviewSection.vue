@@ -58,17 +58,18 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
+import { NTooltip } from "naive-ui";
 
 import { isGrantRequestIssue } from "@/utils";
+import { useIssueV1Store } from "@/store";
 import {
   databaseForTask,
   useIssueContext,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1";
 import Timeline from "./Timeline.vue";
-import { NTooltip } from "naive-ui";
 
-const { issue, reviewContext, selectedTask } = useIssueContext();
+const { issue, events, reviewContext, selectedTask } = useIssueContext();
 const { ready, error } = reviewContext;
 const selectedDatabase = computed(() =>
   databaseForTask(issue.value, selectedTask.value)
@@ -80,9 +81,8 @@ const retrying = ref(false);
 const retryFindingApprovalFlow = async () => {
   retrying.value = true;
   try {
-    // await store.regenerateReview(issue.value);
-    // TODO
-    await new Promise((r) => setTimeout(r, 500));
+    await useIssueV1Store().regenerateReviewV1(issue.value.name);
+    events.emit("status-changed", { eager: true });
   } finally {
     retrying.value = false;
   }
