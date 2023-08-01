@@ -86,7 +86,7 @@ message ExportRequest {
   Format format = 5;
 
   // The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
-  // The exported data is not anonymized.
+  // The exported data is not masked.
   bool admin = 6;
 }
 
