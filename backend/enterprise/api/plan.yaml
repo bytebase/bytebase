@@ -62,8 +62,8 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeSeatCount: 20
-    freeInstanceCount: 20
-    maximumInstanceCount: 20
+    freeInstanceCount: 10
+    maximumInstanceCount: 10
     maximumSeatCount: 20
     maximumTaskCount: -1
     maximumEnvironmentCount: -1
@@ -74,7 +74,7 @@ planList:
       - type: user-count
         content: user-maximum-20
       - type: instance-count
-        content: instance-maximum-20
+        content: instance-maximum-10
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
