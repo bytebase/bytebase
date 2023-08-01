@@ -34,6 +34,7 @@ type SettingMessage struct {
 	Name        api.SettingName
 	Value       string
 	Description string
+	CreatedTs   int64
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
@@ -323,7 +324,8 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 		SELECT
 			name,
 			value,
-			description
+			description,
+			created_ts
 		FROM setting
 		WHERE `+strings.Join(where, " AND "), args...)
 	if err != nil {
@@ -338,6 +340,7 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 			&settingMessage.Name,
 			&settingMessage.Value,
 			&settingMessage.Description,
+			&settingMessage.CreatedTs,
 		); err != nil {
 			return nil, err
 		}
