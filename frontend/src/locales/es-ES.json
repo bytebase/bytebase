@@ -1392,7 +1392,8 @@
     "select-repository-attention-github": "Bytebase solo enumera los repositorios de GitHub en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
     "select-repository-attention-bitbucket": "Bytebase solo enumera los repositorios de Bitbucket en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
     "select-repository-search": "Buscar repositorio",
-    "linked": "Repositorios vinculados"
+    "linked": "Repositorios vinculados",
+    "select-repository-attention-azure-devops": "Bytebase solo enumera los repositorios de Azure DevOps en la organización a la que se otorga acceso a aplicaciones de terceros a través de OAuth. \nSi no ve el repositorio que desea, vaya a Organización -> Configuración de la organización -> Políticas para habilitar el acceso a aplicaciones de terceros."
   },
   "workflow": {
     "current-workflow": "Flujo de trabajo actual",
@@ -1641,7 +1642,8 @@
           "confirm-info": "Confirmar la información",
           "confirm-description": "Después de la creación, este proveedor de Git se puede elegir en la pestaña \"GitOps\" del panel del proyecto por el propietario del proyecto."
         },
-        "github-self-host-ee": "Autohospedado de GitHub Enterprise Edition (EE)"
+        "github-self-host-ee": "Autohospedado de GitHub Enterprise Edition (EE)",
+        "azure-devops-service": "Servicio Azure DevOps"
       },
       "git-provider": {
         "gitlab-self-host-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada en toda la instancia.",
