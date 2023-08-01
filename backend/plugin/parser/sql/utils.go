@@ -59,6 +59,19 @@ func (r SchemaResource) Pretty() string {
 	return strings.Join(list, ".")
 }
 
+// ExtractChangedResources extracts the changed resources from the SQL.
+func ExtractChangedResources(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+	switch engineType {
+	case MySQL, MariaDB, OceanBase:
+		return extractMySQLChangedResources(currentDatabase, sql)
+	default:
+		if currentDatabase == "" {
+			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
+		}
+		return nil, errors.Errorf("engine type %q is not supported", engineType)
+	}
+}
+
 // ExtractResourceList extracts the resource list from the SQL.
 func ExtractResourceList(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
 	switch engineType {
