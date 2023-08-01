@@ -219,7 +219,7 @@ type ChangesResponse struct {
 	Changes []ChangesResponseChange `json:"changes"`
 }
 
-// GetChangesByCommit gets the changes by commit ID.
+// GetChangesByCommit gets the changes by commit ID, and returns the list of blob files changed in the specify commit.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-changes?view=azure-devops-rest-7.0&tabs=HTTP
 // TODO(zp): We should GET the changes pagenated, otherwise it may hit the Azure DevOps API limit.
@@ -701,7 +701,7 @@ func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.Oauth
 	if len(parts) != 3 {
 		return errors.Errorf("invalid repository ID %q", repositoryID)
 	}
-	organizationName, exteralRepositoryID := parts[0], parts[2]
+	organizationName, externalRepositoryID := parts[0], parts[2]
 
 	changeType := "edit"
 	if create {
@@ -710,7 +710,7 @@ func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.Oauth
 
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
-	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/pushes?%s", url.PathEscape(organizationName), url.PathEscape(exteralRepositoryID), values.Encode())
+	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/pushes?%s", url.PathEscape(organizationName), url.PathEscape(externalRepositoryID), values.Encode())
 
 	type createFileReqeustCommitChangesItem struct {
 		Path string `json:"path"`
@@ -822,7 +822,7 @@ func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.Oauth
 // Docs:
 // - https://learn.microsoft.com/en-us/rest/api/azure/devops/git/items/get?view=azure-devops-rest-7.0&tabs=HTTP
 // - https://learn.microsoft.com/en-us/rest/api/azure/devops/git/blobs/get-blob?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
 		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
@@ -832,7 +832,20 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 	values.Set("api-version", "7.0")
 	values.Set("scopePath", filePath)
 	values.Set("$format", "json")
-	values.Set("versionDescriptor.version", ref)
+	var refType string
+	switch refInfo.RefType {
+	case vcs.RefTypeBranch:
+		refType = "branch"
+	case vcs.RefTypeTag:
+		refType = "tag"
+	case vcs.RefTypeCommit:
+		refType = "commit"
+	default:
+		return nil, errors.Errorf("invalid ref type %q", refInfo.RefType)
+	}
+	values.Set("versionDescriptor.versionType", refType)
+	values.Set("versionDescriptor.version", refInfo.RefName)
+
 	itemsURL := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/items?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), values.Encode())
 
 	type fileMetaResponseValue struct {
@@ -918,7 +931,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/items/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, _ string, repositoryID string, filePath string, ref string) (string, error) {
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, _ string, repositoryID string, filePath string, refInfo vcs.RefInfo) (string, error) {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
 		return "", errors.Errorf("invalid repository ID %q", repositoryID)
@@ -930,7 +943,19 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	values.Set("resolveLfs", "true")
 	values.Set("includeContent", "true")
 	values.Set("path", filePath)
-	values.Set("versionDescriptor.version", ref)
+	var refType string
+	switch refInfo.RefType {
+	case vcs.RefTypeBranch:
+		refType = "branch"
+	case vcs.RefTypeTag:
+		refType = "tag"
+	case vcs.RefTypeCommit:
+		refType = "commit"
+	default:
+		return "", errors.Errorf("invalid ref type %q", refInfo.RefType)
+	}
+	values.Set("versionDescriptor.versionType", refType)
+	values.Set("versionDescriptor.version", refInfo.RefName)
 	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories/%s/items?%s", url.PathEscape(organizationName), url.PathEscape(repositoryID), values.Encode())
 
 	code, _, body, err := oauth.Get(ctx, p.client, url, &oauthCtx.AccessToken, tokenRefresher(
