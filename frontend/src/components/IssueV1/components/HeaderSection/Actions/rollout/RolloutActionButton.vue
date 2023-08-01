@@ -59,7 +59,7 @@ const errors = asyncComputed(async () => {
       props.action
     ))
   ) {
-    errors.push("You are not assignee of this issue.");
+    errors.push("You are not the assignee of this issue");
   }
   return errors;
 }, []);
