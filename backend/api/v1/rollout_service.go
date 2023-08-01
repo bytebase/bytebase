@@ -1314,7 +1314,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 		for _, spec := range step.Specs {
 			if _, ok := newSpecs[spec.Id]; !ok {
 				removed = append(removed, spec)
-				break
 			}
 		}
 	}
@@ -1322,7 +1321,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 		for _, spec := range step.Specs {
 			if _, ok := oldSpecs[spec.Id]; !ok {
 				added = append(added, spec)
-				break
 			}
 		}
 	}
@@ -1331,7 +1329,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 			if oldSpec, ok := oldSpecs[spec.Id]; ok {
 				if isSpecSheetUpdated(oldSpec, spec) {
 					updated = append(updated, spec)
-					break
 				}
 			}
 		}
