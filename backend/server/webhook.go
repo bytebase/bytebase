@@ -409,13 +409,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return c.String(http.StatusOK, "No repository matched")
 		}
 
-		// commitList := make([]vcs.Commit, len(nonBytebaseCommitList))
-		// // Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
-		// // the file diff information by ourselves.
-		// // We will use the previous commit id as the base commit id and the current commit id as the target commit id to
-		// // get the file diff information commit by commit. We use the oldObjectId in resources.refUpdates as the base commit id
-		// // for the first commit.
-		// // NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
+		// Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
+		// the file diff information by ourselves.
+		// We will use the previous commit id as the base commit id and the current commit id as the target commit id to
+		// get the file diff information commit by commit. We use the oldObjectId in resources.refUpdates as the base commit id
+		// for the first commit.
+		// NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
 		backfillCommits := make([]vcs.Commit, 0, len(nonBytebaseCommitList))
 		for _, commit := range nonBytebaseCommitList {
 			changes, err := azure.GetChangesByCommit(ctx, common.OauthContext{
@@ -613,7 +612,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					repo.vcs.InstanceURL,
 					repo.repository.ExternalID,
 					prFile.Path,
-					prFile.LastCommitID,
+					vcs.RefInfo{
+						RefType: vcs.RefTypeCommit,
+						RefName: prFile.LastCommitID,
+					},
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read file content").SetInternal(err)
@@ -898,7 +900,10 @@ func (s *Server) sqlAdviceForFile(
 		fileInfo.repoInfo.vcs.InstanceURL,
 		fileInfo.repoInfo.repository.ExternalID,
 		fileInfo.item.FileName,
-		fileInfo.item.Commit.ID,
+		vcs.RefInfo{
+			RefType: vcs.RefTypeCommit,
+			RefName: fileInfo.item.Commit.ID,
+		},
 	)
 	if err != nil {
 		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", fileInfo.item.FileName, err)
@@ -1671,7 +1676,10 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 		externalVCS.InstanceURL,
 		repo.ExternalID,
 		file,
-		pushEvent.CommitList[len(pushEvent.CommitList)-1].ID,
+		vcs.RefInfo{
+			RefType: vcs.RefTypeCommit,
+			RefName: pushEvent.CommitList[0].ID,
+		},
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "read content")
@@ -2290,7 +2298,10 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *re
 					repoInfo.vcs.InstanceURL,
 					repoInfo.repository.ExternalID,
 					file.Path,
-					commitID,
+					vcs.RefInfo{
+						RefType: vcs.RefTypeCommit,
+						RefName: commitID,
+					},
 				)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to read file content for repository %q commitID %q file %q", repoInfo.repository.WebURL, commitID, file.Path)
