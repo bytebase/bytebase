@@ -612,7 +612,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					repo.vcs.InstanceURL,
 					repo.repository.ExternalID,
 					prFile.Path,
-					prFile.LastCommitID,
+					vcs.RefInfo{
+						RefType: vcs.RefTypeCommit,
+						RefName: prFile.LastCommitID,
+					},
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read file content").SetInternal(err)
@@ -897,7 +900,10 @@ func (s *Server) sqlAdviceForFile(
 		fileInfo.repoInfo.vcs.InstanceURL,
 		fileInfo.repoInfo.repository.ExternalID,
 		fileInfo.item.FileName,
-		fileInfo.item.Commit.ID,
+		vcs.RefInfo{
+			RefType: vcs.RefTypeCommit,
+			RefName: fileInfo.item.Commit.ID,
+		},
 	)
 	if err != nil {
 		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", fileInfo.item.FileName, err)
@@ -1670,7 +1676,10 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 		externalVCS.InstanceURL,
 		repo.ExternalID,
 		file,
-		pushEvent.CommitList[len(pushEvent.CommitList)-1].ID,
+		vcs.RefInfo{
+			RefType: vcs.RefTypeCommit,
+			RefName: pushEvent.CommitList[0].ID,
+		},
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "read content")
@@ -2289,7 +2298,10 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *re
 					repoInfo.vcs.InstanceURL,
 					repoInfo.repository.ExternalID,
 					file.Path,
-					commitID,
+					vcs.RefInfo{
+						RefType: vcs.RefTypeCommit,
+						RefName: commitID,
+					},
 				)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to read file content for repository %q commitID %q file %q", repoInfo.repository.WebURL, commitID, file.Path)
