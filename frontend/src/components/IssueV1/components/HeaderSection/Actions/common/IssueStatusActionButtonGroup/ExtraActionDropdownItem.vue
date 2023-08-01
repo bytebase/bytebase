@@ -40,7 +40,7 @@ const errors = computed(() => {
         action as IssueStatusAction
       )
     ) {
-      errors.push("You are not allowed to perform this action.");
+      errors.push("You are not allowed to perform this action");
     }
   }
   return errors;

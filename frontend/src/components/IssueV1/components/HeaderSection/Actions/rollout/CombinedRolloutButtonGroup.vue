@@ -36,21 +36,25 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { asyncComputed } from "@vueuse/core";
 
 import {
   PrimaryTaskRolloutActionList,
   TaskRolloutAction,
+  allowUserToApplyTaskRolloutAction,
   getApplicableIssueStatusActionList,
   getApplicableStageRolloutActionList,
   getApplicableTaskRolloutActionList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { Task } from "@/types/proto/v1/rollout_service";
+import { useCurrentUserV1 } from "@/store";
 import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
 import { RolloutAction } from "./common";
-import { Task } from "@/types/proto/v1/rollout_service";
 
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
 const { issue, activeStage, activeTask, events } = useIssueContext();
 
 const issueStatusActionList = computed(() => {
@@ -75,6 +79,24 @@ const primaryTaskRolloutActionList = computed(() => {
   );
 });
 
+const allowUserToSkipTask = asyncComputed(async () => {
+  const skip = stageRolloutActionList.value.find(
+    (item) => item.action === "SKIP"
+  );
+  if (!skip) return false;
+  const allowed = await Promise.all(
+    skip.tasks.map((task) =>
+      allowUserToApplyTaskRolloutAction(
+        issue.value,
+        task,
+        currentUser.value,
+        "SKIP"
+      )
+    )
+  );
+  return allowed.every((allow) => allow);
+});
+
 const extraActionList = computed(() => {
   const list: ExtraActionOption[] = [];
   const skip = stageRolloutActionList.value.find(
@@ -87,6 +109,7 @@ const extraActionList = computed(() => {
       type: "TASK-BATCH",
       action: "SKIP",
       target: skip.tasks,
+      disabled: !allowUserToSkipTask.value,
     });
   }
   return list;

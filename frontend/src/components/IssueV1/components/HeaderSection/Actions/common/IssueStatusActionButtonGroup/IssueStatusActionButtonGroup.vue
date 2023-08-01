@@ -14,7 +14,7 @@
       trigger="click"
       placement="bottom-end"
       :options="extraActionList"
-      :render-label="renderDropdownOptionLabel"
+      :render-option="renderDropdownOption"
       @select="handleDropdownSelect"
     >
       <NButton :quaternary="true" size="large" style="--n-padding: 0 4px">
@@ -28,7 +28,7 @@
     trigger="click"
     placement="bottom-end"
     :options="mergedDropdownActionList"
-    :render-label="renderDropdownOptionLabel"
+    :render-option="renderDropdownOption"
     @select="handleDropdownSelect"
   >
     <NButton :quaternary="true" size="large" style="--n-padding: 0 4px">
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h } from "vue";
+import { VNode, computed, h } from "vue";
 import { NButton, NDropdown, DropdownOption } from "naive-ui";
 
 import { Task } from "@/types/proto/v1/rollout_service";
@@ -51,8 +51,8 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import IssueStatusActionButton from "./IssueStatusActionButton.vue";
-import ExtraActionDropdownItem from "./ExtraActionDropdownItem.vue";
 import { useCurrentUserV1 } from "@/store";
+import { DropdownItemWithErrorList } from "@/components/IssueV1/components/common";
 
 const props = defineProps<{
   displayMode: "BUTTON" | "DROPDOWN";
@@ -79,6 +79,7 @@ const issueStatusActionDropdownOptions = computed(() => {
     };
   });
 });
+
 const mergedDropdownActionList = computed(() => {
   if (issueStatusActionDropdownOptions.value.length > 0) {
     // When there are something to do with tasks, they will be shown as big
@@ -96,9 +97,26 @@ const mergedDropdownActionList = computed(() => {
   }
 });
 
-const renderDropdownOptionLabel = (dropdownOption: DropdownOption) => {
-  const option = dropdownOption as ExtraActionOption;
-  return h(ExtraActionDropdownItem, { option });
+const renderDropdownOption = ({
+  node,
+  option,
+}: {
+  node: VNode;
+  option: DropdownOption;
+}) => {
+  const errors = option.disabled
+    ? ["You are not allowed to perform this action"]
+    : [];
+  return h(
+    DropdownItemWithErrorList,
+    {
+      errors,
+      placement: "left",
+    },
+    {
+      default: () => node,
+    }
+  );
 };
 
 const handleDropdownSelect = (key: string, dropdownOption: DropdownOption) => {

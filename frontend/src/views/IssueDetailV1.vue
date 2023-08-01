@@ -132,6 +132,6 @@ useTitle(documentTitle);
 
 <style lang="postcss">
 .issue-debug {
-  @apply hidden bg-red-200/50 font-mono text-xs;
+  @apply bg-red-200/50 font-mono text-xs;
 }
 </style>
