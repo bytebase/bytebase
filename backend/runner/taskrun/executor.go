@@ -605,7 +605,10 @@ func writeBackLatestSchema(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		latestSchemaFile,
-		writebackBranch,
+		vcsPlugin.RefInfo{
+			RefType: vcsPlugin.RefTypeBranch,
+			RefName: writebackBranch,
+		},
 	)
 
 	createSchemaFile := false
@@ -731,7 +734,10 @@ func writeBackLatestSchema(
 		vcs2.InstanceURL,
 		repo2.ExternalID,
 		latestSchemaFile,
-		writebackBranch,
+		vcsPlugin.RefInfo{
+			RefType: vcsPlugin.RefTypeBranch,
+			RefName: writebackBranch,
+		},
 	)
 
 	if err != nil {
