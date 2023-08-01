@@ -2,5 +2,5 @@ package mongoutil
 
 import "embed"
 
-//go:embed mongoutil-linux-x86_64.txz
+//go:embed mongoutil-1.6.1-linux-amd64.txz
 var resources embed.FS
