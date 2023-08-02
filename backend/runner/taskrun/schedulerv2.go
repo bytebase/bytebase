@@ -87,8 +87,8 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 }
 
 func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
-	// TODO(p0ny): check if the task CAN BE rollout
-	taskIDs, err := s.store.ListTasksWithZeroTaskRun(ctx)
+	// TODO(p0ny): check if the task can be rolled out.
+	taskIDs, err := s.store.ListTasksWithNoTaskRun(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list tasks with zero task run")
 	}
