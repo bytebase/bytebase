@@ -423,6 +423,12 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
+	for _, ds := range instance.DataSources {
+		if ds.ID == request.DataSource.Id {
+			return nil, status.Errorf(codes.NotFound, "data source already exists with the same name")
+		}
+	}
+
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
