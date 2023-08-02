@@ -137,7 +137,6 @@ const hasFeature = featureToRef("bb.feature.schema-template");
 const hasPermission = useWorkspacePermissionV1(
   "bb.permission.workspace.manage-general"
 );
-const fieldTemplates = ref<SchemaTemplateSetting_FieldTemplate[]>([]);
 const columnTypeTemplateForMySQL = ref(
   SchemaTemplateSetting_ColumnType.fromPartial({
     engine: Engine.MYSQL,
@@ -174,12 +173,8 @@ const getOrFetchSchemaTemplate = async () => {
 };
 
 onMounted(async () => {
-  const {
-    fieldTemplates: originFieldTemplates,
-    mysqlColumnTypes,
-    postgresqlColumnTypes,
-  } = await getOrFetchSchemaTemplate();
-  fieldTemplates.value = originFieldTemplates;
+  const { mysqlColumnTypes, postgresqlColumnTypes } =
+    await getOrFetchSchemaTemplate();
   if (mysqlColumnTypes) {
     columnTypeTemplateForMySQL.value = cloneDeep(mysqlColumnTypes);
   }
@@ -237,7 +232,7 @@ const handleMySQLTypesChange = useDebounceFn(async () => {
     return;
   }
 
-  const { mysqlColumnTypes } = await getOrFetchSchemaTemplate();
+  const { fieldTemplates, mysqlColumnTypes } = await getOrFetchSchemaTemplate();
   if (isEqual(columnTypeTemplateForMySQL.value, mysqlColumnTypes)) {
     return;
   }
@@ -254,9 +249,13 @@ const handleMySQLTypesChange = useDebounceFn(async () => {
     return;
   }
 
+  const mysqlFieldTemplates = uniq(
+    fieldTemplates.filter(
+      (item) => item.engine === Engine.MYSQL && item.column?.type
+    )
+  );
   const fieldTemplateTypesOfMySQL = uniq(
-    fieldTemplates.value
-      .filter((item) => item.engine === Engine.MYSQL && item.column?.type)
+    mysqlFieldTemplates
       .map((item) => (item.column?.type || "") as string)
       .filter(Boolean)
   );
@@ -264,7 +263,7 @@ const handleMySQLTypesChange = useDebounceFn(async () => {
     (item) => !columnTypeTemplateForMySQL.value.types.includes(item)
   );
   if (uncoveredTypes.length > 0) {
-    unmatchedFieldTemplates.value = fieldTemplates.value.filter((item) =>
+    unmatchedFieldTemplates.value = mysqlFieldTemplates.filter((item) =>
       uncoveredTypes.includes(item.column?.type || "")
     );
     return;
@@ -319,7 +318,8 @@ const handlePostgreSQLTypesChange = useDebounceFn(async () => {
     return;
   }
 
-  const { postgresqlColumnTypes } = await getOrFetchSchemaTemplate();
+  const { fieldTemplates, postgresqlColumnTypes } =
+    await getOrFetchSchemaTemplate();
   if (isEqual(columnTypeTemplateForPostgreSQL.value, postgresqlColumnTypes)) {
     return;
   }
@@ -336,9 +336,13 @@ const handlePostgreSQLTypesChange = useDebounceFn(async () => {
     return;
   }
 
+  const postgresFieldTemplates = uniq(
+    fieldTemplates.filter(
+      (item) => item.engine === Engine.POSTGRES && item.column?.type
+    )
+  );
   const fieldTemplateTypesOfPostgreSQL = uniq(
-    fieldTemplates.value
-      .filter((item) => item.engine === Engine.POSTGRES && item.column?.type)
+    postgresFieldTemplates
       .map((item) => (item.column?.type || "") as string)
       .filter(Boolean)
   );
@@ -346,7 +350,7 @@ const handlePostgreSQLTypesChange = useDebounceFn(async () => {
     (item) => !columnTypeTemplateForPostgreSQL.value.types.includes(item)
   );
   if (uncoveredTypes.length > 0) {
-    unmatchedFieldTemplates.value = fieldTemplates.value.filter((item) =>
+    unmatchedFieldTemplates.value = postgresFieldTemplates.filter((item) =>
       uncoveredTypes.includes(item.column?.type || "")
     );
     return;
