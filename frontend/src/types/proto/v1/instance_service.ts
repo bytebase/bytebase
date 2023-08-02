@@ -233,7 +233,7 @@ export interface Instance {
 }
 
 export interface DataSource {
-  title: string;
+  id: string;
   type: DataSourceType;
   username: string;
   password: string;
@@ -1454,7 +1454,7 @@ export const Instance = {
 
 function createBaseDataSource(): DataSource {
   return {
-    title: "",
+    id: "",
     type: 0,
     username: "",
     password: "",
@@ -1478,8 +1478,8 @@ function createBaseDataSource(): DataSource {
 
 export const DataSource = {
   encode(message: DataSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
     }
     if (message.type !== 0) {
       writer.uint32(16).int32(message.type);
@@ -1550,7 +1550,7 @@ export const DataSource = {
             break;
           }
 
-          message.title = reader.string();
+          message.id = reader.string();
           continue;
         case 2:
           if (tag !== 16) {
@@ -1689,7 +1689,7 @@ export const DataSource = {
 
   fromJSON(object: any): DataSource {
     return {
-      title: isSet(object.title) ? String(object.title) : "",
+      id: isSet(object.id) ? String(object.id) : "",
       type: isSet(object.type) ? dataSourceTypeFromJSON(object.type) : 0,
       username: isSet(object.username) ? String(object.username) : "",
       password: isSet(object.password) ? String(object.password) : "",
@@ -1713,7 +1713,7 @@ export const DataSource = {
 
   toJSON(message: DataSource): unknown {
     const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
+    message.id !== undefined && (obj.id = message.id);
     message.type !== undefined && (obj.type = dataSourceTypeToJSON(message.type));
     message.username !== undefined && (obj.username = message.username);
     message.password !== undefined && (obj.password = message.password);
@@ -1741,7 +1741,7 @@ export const DataSource = {
 
   fromPartial(object: DeepPartial<DataSource>): DataSource {
     const message = createBaseDataSource();
-    message.title = object.title ?? "";
+    message.id = object.id ?? "";
     message.type = object.type ?? 0;
     message.username = object.username ?? "";
     message.password = object.password ?? "";
