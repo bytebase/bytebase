@@ -4389,18 +4389,30 @@ type ListChangeHistoriesRequest struct {
 	View      ChangeHistoryView `protobuf:"varint,4,opt,name=view,proto3,enum=bytebase.v1.ChangeHistoryView" json:"view,omitempty"`
 	// The filter of the change histories.
 	// Follow the CEL syntax.
-	// currently, we have three attributes for CEL:
-	// - resource.database
-	// - resource.schema
-	// - resource.table
-	// examples:
+	// currently, we have one function for CEL:
+	// - tableExists(database, schema, table): return true if the table exists in changed resources.
 	//
-	//	if you want to filter by databases, you should use:
-	//	  resource.database in ["db1", "db2"]
-	//	 even if you only want to filter by one database, you should use the array syntax.
-	//	 if you want to filter by tables, you should use:
-	//	  resource.database = "db1" && resource.schema = "" && resource.table in ["table1", "table2"]
-	//	 Empty schema name is for no schema database engines, such as MySQL.
+	// examples:
+	// Use
+	//
+	//	tableExists("db", "public", "table1")
+	//
+	// to filter the change histories which have the table "table1" in the schema "public" of the database "db".
+	// For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+	//
+	// Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
+	// In other words, the CEL expression consists of several parts connected by OR operators.
+	// For example, the following expression is valid:
+	// (
+	//
+	//	tableExists("db", "public", "table1") &&
+	//	tableExists("db", "public", "table2")
+	//
+	// ) || (
+	//
+	//	tableExists("db", "public", "table3")
+	//
+	// )
 	Filter string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
 }
 
