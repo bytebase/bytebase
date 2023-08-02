@@ -188,7 +188,7 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 			task_id,
 			name,
 			status
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES ($1, $2, $3, $4, $5)
 	`
 	if _, err := tx.ExecContext(ctx, query,
 		creatorID,

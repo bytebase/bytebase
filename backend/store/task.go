@@ -562,7 +562,6 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 			UpdaterID: patch.UpdaterID,
 			Code:      patch.Code,
 			Result:    patch.Result,
-			Comment:   patch.Comment,
 		}
 		switch patch.Status {
 		case api.TaskDone:
