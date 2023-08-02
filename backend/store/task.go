@@ -627,3 +627,36 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 
 	return updatedTask, nil
 }
+
+// ListTasksWithZeroTaskRun returns tasks that have no task run.
+func (s *Store) ListTasksWithZeroTaskRun(ctx context.Context) ([]int, error) {
+	rows, err := s.db.db.QueryContext(ctx, `
+	SELECT
+		task.id
+	FROM task
+	LEFT JOIN LATERAL
+		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run 
+		ON TRUE
+	WHERE task_run.e IS NULL
+	ORDER BY task.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int
+
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
