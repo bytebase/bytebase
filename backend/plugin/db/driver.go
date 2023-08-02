@@ -397,9 +397,10 @@ type MigrationHistory struct {
 type MigrationHistoryFind struct {
 	ID *string
 
-	Database *string
-	Source   *MigrationSource
-	Version  *string
+	Database        *string
+	Source          *MigrationSource
+	Version         *string
+	ResourcesFilter *string
 	// If specified, then it will only fetch "Limit" most recent migration histories
 	Limit  *int
 	Offset *int
