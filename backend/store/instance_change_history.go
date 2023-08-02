@@ -334,7 +334,8 @@ type tableMap map[string]*resourceTable
 //
 //	tableExists("db", "public", "table3")
 //
-// ).
+// )
+// .
 func generateResourceFilter(filter string) (string, error) {
 	env, err := cel.NewEnv(
 		cel.Declarations(
