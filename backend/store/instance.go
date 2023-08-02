@@ -616,6 +616,11 @@ func IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
 		return true
 	case db.MySQL, db.MariaDB:
 		return instance.Metadata != nil && instance.Metadata.MysqlLowerCaseTableNames != 0
+	case db.MSSQL:
+		// In fact, SQL Server is possible to create a case-sensitive database and case-insensitive database on one instance.
+		// https://www.webucator.com/article/how-to-check-case-sensitivity-in-sql-server/
+		// But by default, SQL Server is case-insensitive.
+		return false
 	default:
 		return false
 	}

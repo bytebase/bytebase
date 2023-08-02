@@ -1864,6 +1864,76 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			result = append(result, resource)
 		}
 		return result, nil
+	case parser.SQLServer:
+		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		// If there are no read-only data source, fall back to admin data source.
+		if dataSource == nil {
+			dataSource = adminDataSource
+		}
+		if dataSource == nil {
+			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
+		}
+		list, err := parser.ExtractResourceList(engine, databaseName, dataSource.Username, statement)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+		}
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
+		if err != nil {
+			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+				// If database not found, skip.
+				return nil, nil
+			}
+			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+
+		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+		}
+
+		var result []parser.SchemaResource
+		for _, resource := range list {
+			if resource.LinkedServer != "" {
+				continue
+			}
+			if resource.Database != dbSchema.Metadata.Name {
+				// MSSQL allows cross-database query, we should check the corresponding database.
+				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					InstanceID:          &instance.ResourceID,
+					DatabaseName:        &resource.Database,
+					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+				}
+				if resourceDB == nil {
+					continue
+				}
+				resourceDBSchema, err := s.store.GetDBSchema(ctx, resourceDB.UID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+				}
+				if !resourceDBSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
+					!resourceDBSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+					// If table not found, we regard it as a CTE/alias/... and skip.
+					continue
+				}
+				result = append(result, resource)
+				continue
+			}
+			if !dbSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
+				!dbSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+				// If table not found, skip.
+				continue
+			}
+			result = append(result, resource)
+		}
+		return result, nil
 	default:
 		return parser.ExtractResourceList(engine, databaseName, "", statement)
 	}
@@ -1941,6 +2011,9 @@ func (s *SQLService) checkQueryRights(
 
 	databaseMap := make(map[string]bool)
 	for _, resource := range resourceList {
+		if resource.LinkedServer != "" && instance.Engine == db.MSSQL {
+			continue
+		}
 		databaseMap[resource.Database] = true
 	}
 
