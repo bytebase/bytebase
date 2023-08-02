@@ -87,7 +87,7 @@ func TestDataSource(t *testing.T) {
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Type: v1pb.DataSourceType_READ_ONLY,
+			Id:   api.ReadOnlyDataSourceName,
 			Host: "127.0.0.1",
 			Port: "8000",
 		},
@@ -102,7 +102,7 @@ func TestDataSource(t *testing.T) {
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Type: v1pb.DataSourceType_READ_ONLY,
+			Id:   api.ReadOnlyDataSourceName,
 			Host: "127.0.0.1",
 			Port: "8000",
 		},
@@ -114,7 +114,7 @@ func TestDataSource(t *testing.T) {
 
 	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, &v1pb.RemoveDataSourceRequest{
 		Instance:   instance.Name,
-		DataSource: &v1pb.DataSource{Type: v1pb.DataSourceType_READ_ONLY},
+		DataSource: &v1pb.DataSource{Id: api.ReadOnlyDataSourceName},
 	})
 	a.NoError(err)
 }
