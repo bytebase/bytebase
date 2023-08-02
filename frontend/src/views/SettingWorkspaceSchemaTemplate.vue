@@ -1,9 +1,15 @@
 <template>
   <NTabs v-model:value="state.selectedTab" type="line">
-    <NTabPane name="FIELD_TEMPLATE" tab="Field Template">
+    <NTabPane
+      name="FIELD_TEMPLATE"
+      :tab="$t('schema-template.field-template.self')"
+    >
       <FieldTemplates />
     </NTabPane>
-    <NTabPane name="COLUMN_TYPE_RESTRICTION" tab="Column Type Restriction">
+    <NTabPane
+      name="COLUMN_TYPE_RESTRICTION"
+      :tab="$t('schema-template.column-type-restriction.self')"
+    >
       <ColumnTypes />
     </NTabPane>
   </NTabs>
