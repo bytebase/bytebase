@@ -694,7 +694,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		}
 
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
-			Title:    ds.Title,
+			Id:       ds.ID,
 			Type:     dataSourceType,
 			Username: ds.Username,
 			// We don't return the password and SSLs on reads.
@@ -777,7 +777,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 	}
 
 	return &store.DataSourceMessage{
-		Title:                   dataSource.Title,
+		ID:                      dataSource.Id,
 		Type:                    dsType,
 		Username:                dataSource.Username,
 		ObfuscatedPassword:      common.Obfuscate(dataSource.Password, s.secret),

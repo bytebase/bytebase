@@ -14,7 +14,7 @@ import (
 
 // DataSourceMessage is the message for data source.
 type DataSourceMessage struct {
-	Title              string
+	ID                 string
 	Type               api.DataSourceType
 	Username           string
 	ObfuscatedPassword string
@@ -43,7 +43,7 @@ type DataSourceMessage struct {
 // Copy returns a copy of the data source message.
 func (m *DataSourceMessage) Copy() *DataSourceMessage {
 	return &DataSourceMessage{
-		Title:                   m.Title,
+		ID:                      m.ID,
 		Type:                    m.Type,
 		Username:                m.Username,
 		ObfuscatedPassword:      m.ObfuscatedPassword,
@@ -128,7 +128,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		if err := rows.Scan(
 			&dataSourceMessage.UID,
 			&dataSourceMessage.DatabaseID,
-			&dataSourceMessage.Title,
+			&dataSourceMessage.ID,
 			&dataSourceMessage.Type,
 			&dataSourceMessage.Username,
 			&dataSourceMessage.ObfuscatedPassword,
@@ -361,7 +361,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 			database
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-	`, creatorID, creatorID, instanceUID, databaseUID, dataSource.Title,
+	`, creatorID, creatorID, instanceUID, databaseUID, dataSource.ID,
 		dataSource.Type, dataSource.Username, dataSource.ObfuscatedPassword, dataSource.ObfuscatedSslKey,
 		dataSource.ObfuscatedSslCert, dataSource.ObfuscatedSslCa, dataSource.Host, dataSource.Port,
 		protoBytes, dataSource.Database,
