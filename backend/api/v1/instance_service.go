@@ -469,10 +469,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	tp, err := convertDataSourceTp(request.DataSource.Type)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 
 	instance, err := s.getInstanceMessage(ctx, request.Instance)
 	if err != nil {
@@ -482,7 +478,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
-	if tp == api.RO {
+	if request.DataSource.Type == v1pb.DataSourceType_READ_ONLY {
 		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
@@ -492,7 +488,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	var dataSource store.DataSourceMessage
 	found := false
 	for _, ds := range instance.DataSources {
-		if ds.Type == tp {
+		if ds.ID == request.DataSource.Id {
 			dataSource = *ds
 			found = true
 			break
@@ -503,10 +499,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	patch := &store.UpdateDataSourceMessage{
-		UpdaterID:   ctx.Value(common.PrincipalIDContextKey).(int),
-		InstanceUID: instance.UID,
-		Type:        tp,
-		InstanceID:  instance.ResourceID,
+		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
+		InstanceUID:  instance.UID,
+		InstanceID:   instance.ResourceID,
+		DataSourceID: request.DataSource.Id,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -635,7 +631,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
-	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {
+	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
