@@ -65,9 +65,7 @@ type TaskRunStatusPatch struct {
 	// Domain specific fields
 	Status api.TaskRunStatus
 	Code   *common.Code
-	// Records the status detail (e.g. error message on failure)
-	Comment *string
-	Result  *string
+	Result *string
 }
 
 func (taskRun *TaskRunMessage) toTaskRun() *api.TaskRun {
@@ -223,9 +221,6 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 	set, args = append(set, "status = $2"), append(args, patch.Status)
 	if v := patch.Code; v != nil {
 		set, args = append(set, fmt.Sprintf("code = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Comment; v != nil {
-		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Result; v != nil {
 		result := "{}"
