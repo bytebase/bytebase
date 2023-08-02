@@ -378,7 +378,8 @@ const supportSQLReviewCI = computed(() => {
   const { type } = props.vcs;
   return (
     type == ExternalVersionControl_Type.GITHUB ||
-    type === ExternalVersionControl_Type.GITLAB
+    type === ExternalVersionControl_Type.GITLAB ||
+    type === ExternalVersionControl_Type.AZURE_DEVOPS
   );
 });
 
