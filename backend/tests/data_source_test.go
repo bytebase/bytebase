@@ -112,6 +112,20 @@ func TestDataSource(t *testing.T) {
 	})
 	a.NoError(err)
 
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+		Instance: instance.Name,
+		DataSource: &v1pb.DataSource{
+			Id:       "second-read-only-datasource",
+			Type:     v1pb.DataSourceType_READ_ONLY,
+			Username: "ro_ds",
+			Password: "",
+			SslCa:    "",
+			SslCert:  "",
+			SslKey:   "",
+		},
+	})
+	a.NoError(err)
+
 	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, &v1pb.RemoveDataSourceRequest{
 		Instance:   instance.Name,
 		DataSource: &v1pb.DataSource{Id: api.ReadOnlyDataSourceName},
