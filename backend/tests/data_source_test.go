@@ -42,7 +42,7 @@ func TestDataSource(t *testing.T) {
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: prodEnvironment.Name,
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Title: api.AdminDataSourceName, Host: instanceDir}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Id: api.AdminDataSourceName, Host: instanceDir}},
 		},
 	})
 	a.NoError(err)
@@ -52,7 +52,7 @@ func TestDataSource(t *testing.T) {
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Title:    api.ReadOnlyDataSourceName,
+			Id:       api.ReadOnlyDataSourceName,
 			Type:     v1pb.DataSourceType_READ_ONLY,
 			Username: "ro_ds",
 			Password: "",
@@ -67,7 +67,7 @@ func TestDataSource(t *testing.T) {
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Title:    api.ReadOnlyDataSourceName,
+			Id:       api.ReadOnlyDataSourceName,
 			Type:     v1pb.DataSourceType_READ_ONLY,
 			Username: "ro_ds",
 			Password: "",

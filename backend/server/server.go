@@ -1120,7 +1120,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		ExternalLink: "",
 		DataSources: []*store.DataSourceMessage{
 			{
-				Title:              api.AdminDataSourceName,
+				ID:                 api.AdminDataSourceName,
 				Type:               api.Admin,
 				Username:           postgres.SampleUser,
 				ObfuscatedPassword: common.Obfuscate("", s.secret),
@@ -1176,7 +1176,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		ExternalLink: "",
 		DataSources: []*store.DataSourceMessage{
 			{
-				Title:              api.AdminDataSourceName,
+				ID:                 api.AdminDataSourceName,
 				Type:               api.Admin,
 				Username:           postgres.SampleUser,
 				ObfuscatedPassword: common.Obfuscate("", s.secret),

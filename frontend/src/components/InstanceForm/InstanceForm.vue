@@ -1220,7 +1220,7 @@ const handleCreateRODataSource = () => {
 
   const tempDataSource: DataSource = {
     ...emptyDataSource(),
-    title: "Read-only data source",
+    id: "Read-only data source",
     type: DataSourceType.READ_ONLY,
     host: adminDataSource.value.host,
     port: adminDataSource.value.port,
