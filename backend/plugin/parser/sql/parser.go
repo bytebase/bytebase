@@ -34,7 +34,8 @@ const (
 	OceanBase EngineType = "OCEANBASE"
 	// Snowflake is the engine type for Snowflake.
 	Snowflake EngineType = "SNOWFLAKE"
-
+	//  SQLServer is the engine type for SQLServer.
+	SQLServer EngineType = "SQLSERVER"
 	// DeparseIndentString is the string for each indent level.
 	DeparseIndentString = "    "
 )
