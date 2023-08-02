@@ -9,11 +9,11 @@
     :custom-footer="true"
     @click-row="clickTable"
   >
-    <template #body="{ rowData: table }">
-      <BBTableCell v-if="hasSchemaProperty" :left-padding="4" class="w-[10%]">
+    <template #body="{ rowData: table }: { rowData: TableMetadata }">
+      <BBTableCell v-if="hasSchemaProperty" :left-padding="4" class="w-8">
         {{ schemaName }}
       </BBTableCell>
-      <BBTableCell :left-padding="hasSchemaProperty ? 2 : 4">
+      <BBTableCell :left-padding="hasSchemaProperty ? 2 : 4" class="w-16">
         <div class="flex items-center space-x-2">
           <EllipsisText>{{ table.name }}</EllipsisText>
           <BBBadge
@@ -24,17 +24,20 @@
           />
         </div>
       </BBTableCell>
-      <BBTableCell v-if="hasEngineProperty" class="w-[14%]">
+      <BBTableCell v-if="hasEngineProperty" class="w-8">
         {{ table.engine }}
       </BBTableCell>
-      <BBTableCell class="w-[14%]">
+      <BBTableCell class="w-8">
         {{ table.rowCount }}
       </BBTableCell>
-      <BBTableCell class="w-[14%]">
+      <BBTableCell class="w-8">
         {{ bytesToString(table.dataSize) }}
       </BBTableCell>
-      <BBTableCell class="w-[14%]">
+      <BBTableCell class="w-8">
         {{ bytesToString(table.indexSize) }}
+      </BBTableCell>
+      <BBTableCell class="w-16 break-all">
+        {{ table.userComment }}
       </BBTableCell>
     </template>
 
@@ -129,6 +132,9 @@ const columnList = computed(() => {
   const INDEX_SIZE: BBTableColumn = {
     title: t("database.index-size"),
   };
+  const COMMENT: BBTableColumn = {
+    title: t("database.comment"),
+  };
   const columns: BBTableColumn[] = [];
   if (hasSchemaProperty.value) {
     columns.push(SCHEMA);
@@ -137,7 +143,7 @@ const columnList = computed(() => {
   if (hasEngineProperty.value) {
     columns.push(ENGINE);
   }
-  columns.push(ROW_COUNT_EST, DATA_SIZE, INDEX_SIZE);
+  columns.push(ROW_COUNT_EST, DATA_SIZE, INDEX_SIZE, COMMENT);
 
   return columns;
 });
