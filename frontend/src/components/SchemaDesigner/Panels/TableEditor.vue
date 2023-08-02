@@ -101,7 +101,10 @@
             >
               <input
                 v-model="column.type"
-                :disabled="disableAlterColumn(column)"
+                :disabled="
+                  disableAlterColumn(column) ||
+                  schemaTemplateColumnTypes.length > 0
+                "
                 placeholder="column type"
                 class="column-field-input column-type-input !pr-8"
                 type="text"
@@ -109,7 +112,7 @@
               <NDropdown
                 trigger="click"
                 :disabled="disableAlterColumn(column)"
-                :options="dataTypeOptions"
+                :options="columnTypeOptions"
                 @select="(dataType: string) => (column.type = dataType)"
               >
                 <button class="absolute right-5">
@@ -265,7 +268,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { NDropdown } from "naive-ui";
-import { generateUniqueTabId } from "@/store/modules";
+import { generateUniqueTabId, useSettingV1Store } from "@/store/modules";
 import { ColumnMetadata } from "@/types/proto/store/database";
 import {
   Column,
@@ -298,6 +301,7 @@ interface LocalState {
 const { t } = useI18n();
 const { readonly, engine, editableSchemas, getCurrentTab, addTab } =
   useSchemaDesignerContext();
+const settingStore = useSettingV1Store();
 const currentTab = computed(() => getCurrentTab() as TableTabContext);
 const state = reactive<LocalState>({
   selectedSubtab:
@@ -374,7 +378,30 @@ const columnHeaderList = computed(() => {
   ];
 });
 
-const dataTypeOptions = computed(() => {
+const schemaTemplateColumnTypes = computed(() => {
+  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const columnTypes = setting?.value?.schemaTemplateSettingValue?.columnTypes;
+  if (columnTypes && columnTypes.length > 0) {
+    const columnType = columnTypes.find(
+      (columnType) => columnType.engine === engine.value
+    );
+    if (columnType && columnType.enabled) {
+      return columnType.types;
+    }
+  }
+  return [];
+});
+
+const columnTypeOptions = computed(() => {
+  if (schemaTemplateColumnTypes.value.length > 0) {
+    return schemaTemplateColumnTypes.value.map((columnType) => {
+      return {
+        label: columnType,
+        key: columnType,
+      };
+    });
+  }
+
   return getDataTypeSuggestionList(engine.value).map((dataType) => {
     return {
       label: dataType,
