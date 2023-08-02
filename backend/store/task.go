@@ -635,7 +635,7 @@ func (s *Store) ListTasksWithZeroTaskRun(ctx context.Context) ([]int, error) {
 		task.id
 	FROM task
 	LEFT JOIN LATERAL
-		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run 
+		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run
 		ON TRUE
 	WHERE task_run.e IS NULL
 	ORDER BY task.id`)
