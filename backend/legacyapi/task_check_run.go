@@ -89,14 +89,15 @@ const (
 
 // TaskCheckResult is the result of task checks.
 type TaskCheckResult struct {
-	Namespace Namespace       `json:"namespace,omitempty"`
-	Code      int             `json:"code,omitempty"`
-	Status    TaskCheckStatus `json:"status,omitempty"`
-	Title     string          `json:"title,omitempty"`
-	Content   string          `json:"content,omitempty"`
-	Line      int             `json:"line,omitempty"`
-	Column    int             `json:"column"`
-	Details   string          `json:"details,omitempty"`
+	Namespace        Namespace       `json:"namespace,omitempty"`
+	Code             int             `json:"code,omitempty"`
+	Status           TaskCheckStatus `json:"status,omitempty"`
+	Title            string          `json:"title,omitempty"`
+	Content          string          `json:"content,omitempty"`
+	Line             int             `json:"line,omitempty"`
+	Column           int             `json:"column"`
+	Details          string          `json:"details,omitempty"`
+	ChangedResources string          `json:"changedResources,omitempty"`
 }
 
 // TaskCheckRunResultPayload is the result payload of a task check run.

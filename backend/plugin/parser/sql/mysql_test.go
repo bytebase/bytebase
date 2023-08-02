@@ -227,3 +227,57 @@ func TestSplitMySQLStatements(t *testing.T) {
 		}
 	}
 }
+
+func TestExtractMySQLChangedResources(t *testing.T) {
+	tests := []struct {
+		statement string
+		expected  []SchemaResource
+	}{
+		{
+			statement: "CREATE TABLE t1 (c1 INT);",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+			},
+		},
+		{
+			statement: "DROP TABLE t1;",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+			},
+		},
+		{
+			statement: "ALTER TABLE t1 ADD COLUMN c1 INT;",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+			},
+		},
+		{
+			statement: "RENAME TABLE t1 TO t2;",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+				{
+					Database: "db",
+					Table:    "t2",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		resources, err := extractMySQLChangedResources("db", test.statement)
+		require.NoError(t, err)
+		require.Equal(t, test.expected, resources, test.statement)
+	}
+}

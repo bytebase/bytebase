@@ -468,7 +468,7 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 		if columns, ok := columnMap[db.TableKey{Schema: schemaName, Table: view.Name}]; ok {
 			for _, column := range columns {
 				// TODO(zp): We get column by query the INFORMATION_SCHEMA.COLUMNS, which does not contains the view column belongs to which database.
-				// So in the Snowflake, one view column may belongs to different databases, it may cause some confusing behavior in the Data Anonymization.
+				// So in the Snowflake, one view column may belongs to different databases, it may cause some confusing behavior in the Data Masking.
 				view.DependentColumns = append(view.DependentColumns, &storepb.DependentColumn{
 					Schema: schemaName,
 					Table:  view.Name,
