@@ -21,12 +21,9 @@ type TaskRunMessage struct {
 	PipelineUID int
 	Name        string
 	Status      api.TaskRunStatus
-	Type        api.TaskType
 	Code        common.Code
-	Comment     string
 	Result      string
 	ResultProto *storepb.TaskRunResult
-	Payload     string
 
 	// Output only.
 	ID        int
@@ -45,15 +42,6 @@ type FindTaskRunMessage struct {
 	TaskUID     *int
 	StageUID    *int
 	PipelineUID *int
-}
-
-// TaskRunCreate is the API message for creating a task run.
-type TaskRunCreate struct {
-	CreatorID int
-	TaskID    int
-	Name      string
-	Type      api.TaskType
-	Payload   string
 }
 
 // TaskRunFind is the API message for finding task runs.
@@ -77,9 +65,7 @@ type TaskRunStatusPatch struct {
 	// Domain specific fields
 	Status api.TaskRunStatus
 	Code   *common.Code
-	// Records the status detail (e.g. error message on failure)
-	Comment *string
-	Result  *string
+	Result *string
 }
 
 func (taskRun *TaskRunMessage) toTaskRun() *api.TaskRun {
@@ -92,11 +78,11 @@ func (taskRun *TaskRunMessage) toTaskRun() *api.TaskRun {
 		TaskID:    taskRun.TaskUID,
 		Name:      taskRun.Name,
 		Status:    taskRun.Status,
-		Type:      taskRun.Type,
+		Type:      api.TaskGeneral,
 		Code:      taskRun.Code,
-		Comment:   taskRun.Comment,
+		Comment:   "",
 		Result:    taskRun.Result,
-		Payload:   taskRun.Payload,
+		Payload:   "",
 	}
 }
 
@@ -126,11 +112,8 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.task_id,
 			task_run.name,
 			task_run.status,
-			task_run.type,
 			task_run.code,
-			task_run.comment,
 			task_run.result,
-			task_run.payload,
 			task.pipeline_id,
 			task.stage_id,
 			project.resource_id
@@ -158,11 +141,8 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.TaskUID,
 			&taskRun.Name,
 			&taskRun.Status,
-			&taskRun.Type,
 			&taskRun.Code,
-			&taskRun.Comment,
 			&taskRun.Result,
-			&taskRun.Payload,
 			&taskRun.PipelineUID,
 			&taskRun.StageUID,
 			&taskRun.ProjectID,
@@ -201,19 +181,14 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 
 // createTaskRunImpl creates a new taskRun.
 func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, creatorID int) error {
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
 	query := `
 		INSERT INTO task_run (
 			creator_id,
 			updater_id,
 			task_id,
 			name,
-			status,
-			type,
-			payload
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+			status
+		) VALUES ($1, $2, $3, $4, $5)
 	`
 	if _, err := tx.ExecContext(ctx, query,
 		creatorID,
@@ -221,8 +196,6 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 		create.TaskUID,
 		create.Name,
 		api.TaskRunRunning,
-		create.Type,
-		"{}", /* payload */
 	); err != nil {
 		return err
 	}
@@ -249,9 +222,6 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 	if v := patch.Code; v != nil {
 		set, args = append(set, fmt.Sprintf("code = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Comment; v != nil {
-		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.Result; v != nil {
 		result := "{}"
 		if *v != "" {
@@ -269,7 +239,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, status, type, code, comment, result, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, status, code, result
 	`,
 		args...,
 	).Scan(
@@ -281,11 +251,8 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		&taskRun.TaskUID,
 		&taskRun.Name,
 		&taskRun.Status,
-		&taskRun.Type,
 		&taskRun.Code,
-		&taskRun.Comment,
 		&taskRun.Result,
-		&taskRun.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
@@ -346,11 +313,8 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			task_run.task_id,
 			task_run.name,
 			task_run.status,
-			task_run.type,
 			task_run.code,
-			task_run.comment,
 			task_run.result,
-			task_run.payload,
 			task.pipeline_id,
 			task.stage_id
 		FROM task_run
@@ -375,11 +339,8 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			&taskRun.TaskUID,
 			&taskRun.Name,
 			&taskRun.Status,
-			&taskRun.Type,
 			&taskRun.Code,
-			&taskRun.Comment,
 			&taskRun.Result,
-			&taskRun.Payload,
 			&taskRun.PipelineUID,
 			&taskRun.StageUID,
 		); err != nil {
