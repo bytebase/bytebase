@@ -5,26 +5,6 @@ import (
 	"errors"
 )
 
-const (
-	// AdminDataSourceName is the name for administrative data source.
-	AdminDataSourceName = "Admin data source"
-	// ReadOnlyDataSourceName is the name for read-only data source.
-	ReadOnlyDataSourceName = "ReadOnly data source"
-	// UnknownDataSourceName is the name for unknown data source.
-	UnknownDataSourceName = "Unknown data source"
-)
-
-// DataSourceNameFromType maps the name from a data source type.
-func DataSourceNameFromType(dataSourceType DataSourceType) string {
-	switch dataSourceType {
-	case Admin:
-		return AdminDataSourceName
-	case RO:
-		return ReadOnlyDataSourceName
-	}
-	return UnknownDataSourceName
-}
-
 // DataSourceType is the type of data source.
 type DataSourceType string
 
