@@ -1,32 +1,30 @@
 <template>
   <div class="space-y-4">
-    <FeatureAttention
-      feature="bb.feature.encrypted-secrets"
-      :instance="database.instanceEntity"
-    />
-    <div class="textinfolabel">
-      <i18n-t keypath="database.secret.description">
-        <template #guide>
-          <a
-            href="https://www.bytebase.com/docs/change-database/secret?source=console"
-            target="_blank"
-            class="normal-link"
-          >
-            {{ $t("common.detailed-guide") }}</a
-          >
-        </template>
-      </i18n-t>
-    </div>
     <div class="flex items-center">
-      <div class="flex-1 flex items-center">
-        <p class="text-lg font-medium leading-7 text-main flex">
-          {{ $t("database.secret.self") }}
-        </p>
-        <FeatureBadge
-          feature="bb.feature.encrypted-secrets"
-          custom-class="ml-2"
-          :instance="database.instanceEntity"
-        />
+      <div class="flex-1">
+        <div class="flex items-center">
+          <p class="text-lg font-medium leading-7 text-main flex">
+            {{ $t("database.secret.self") }}
+          </p>
+          <FeatureBadge
+            feature="bb.feature.encrypted-secrets"
+            custom-class="ml-2"
+            :instance="database.instanceEntity"
+          />
+        </div>
+        <div class="textinfolabel">
+          <i18n-t keypath="database.secret.description">
+            <template #guide>
+              <a
+                href="https://www.bytebase.com/docs/change-database/secret?source=console"
+                target="_blank"
+                class="normal-link"
+              >
+                {{ $t("common.detailed-guide") }}</a
+              >
+            </template>
+          </i18n-t>
+        </div>
       </div>
       <div class="flex justify-end">
         <NButton type="primary" :disabled="!allowAdmin" @click="showDetail()">
@@ -34,6 +32,10 @@
         </NButton>
       </div>
     </div>
+    <FeatureAttention
+      feature="bb.feature.encrypted-secrets"
+      :instance="database.instanceEntity"
+    />
     <div>
       <BBGrid
         :column-list="COLUMNS"

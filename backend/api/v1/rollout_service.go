@@ -668,8 +668,8 @@ func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	return &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),
-		Creator:       fmt.Sprintf("user:%s", taskRun.Creator.Email),
-		Updater:       fmt.Sprintf("user:%s", taskRun.Updater.Email),
+		Creator:       fmt.Sprintf("user/%s", taskRun.Creator.Email),
+		Updater:       fmt.Sprintf("user/%s", taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
 		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
 		Title:         taskRun.Name,
@@ -1245,16 +1245,16 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if !ok {
 					continue
 				}
-				sheetID, _, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+				_, sheetIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
 				}
-				sheetIDInt, err := strconv.Atoi(sheetID)
+				sheetID, err := strconv.Atoi(sheetIDStr)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 				}
 				sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-					UID: &sheetIDInt,
+					UID: &sheetID,
 				}, api.SystemBotID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
@@ -1262,6 +1262,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if sheet == nil {
 					return nil, status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 				}
+				// TODO(p0ny): update schema version
 				if _, err := s.store.UpdateTaskV2(ctx, &api.TaskPatch{
 					ID:        task.ID,
 					UpdaterID: updaterID,
@@ -1313,7 +1314,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 		for _, spec := range step.Specs {
 			if _, ok := newSpecs[spec.Id]; !ok {
 				removed = append(removed, spec)
-				break
 			}
 		}
 	}
@@ -1321,7 +1321,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 		for _, spec := range step.Specs {
 			if _, ok := oldSpecs[spec.Id]; !ok {
 				added = append(added, spec)
-				break
 			}
 		}
 	}
@@ -1330,7 +1329,6 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 			if oldSpec, ok := oldSpecs[spec.Id]; ok {
 				if isSpecSheetUpdated(oldSpec, spec) {
 					updated = append(updated, spec)
-					break
 				}
 			}
 		}
@@ -1383,12 +1381,12 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb
 				return nil, errors.Wrap(err, "failed to get task creates from spec")
 			}
 
-			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
 			offset := len(stageCreate.TaskList)
 			for i := range taskIndexDAGCreates {
 				taskIndexDAGCreates[i].FromIndex += offset
 				taskIndexDAGCreates[i].ToIndex += offset
 			}
+			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
 			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
 
@@ -1605,7 +1603,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
 		payload := api.TaskDatabaseSchemaBaselinePayload{
 			SpecID:        spec.Id,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -1635,7 +1633,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:  nil,
 		}
 		bytes, err := json.Marshal(payload)
@@ -1666,7 +1664,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:  nil,
 		}
 		bytes, err := json.Marshal(payload)
@@ -1753,7 +1751,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		payload := api.TaskDatabaseDataUpdatePayload{
 			SpecID:            spec.Id,
 			SheetID:           sheetID,
-			SchemaVersion:     c.SchemaVersion,
+			SchemaVersion:     getOrDefaultSchemaVersion(c.SchemaVersion),
 			VCSPushEvent:      nil,
 			RollbackEnabled:   c.RollbackEnabled,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
@@ -2449,4 +2447,11 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 
 func getResourceNameForSheet(project *store.ProjectMessage, sheetUID int) string {
 	return fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheetUID)
+}
+
+func getOrDefaultSchemaVersion(v string) string {
+	if v != "" {
+		return v
+	}
+	return common.DefaultMigrationVersion()
 }

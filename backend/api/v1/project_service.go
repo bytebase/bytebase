@@ -1163,7 +1163,10 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		github.SQLReviewActionFilePath,
-		branch.Name,
+		vcsPlugin.RefInfo{
+			RefType: vcsPlugin.RefTypeBranch,
+			RefName: branch.Name,
+		},
 	)
 	if err != nil {
 		log.Debug(
@@ -1234,7 +1237,10 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 				vcs.InstanceURL,
 				repository.ExternalID,
 				gitlab.CIFilePath,
-				fileMeta.LastCommitID,
+				vcsPlugin.RefInfo{
+					RefType: vcsPlugin.RefTypeCommit,
+					RefName: fileMeta.LastCommitID,
+				},
 			)
 			if err != nil {
 				return "", err
@@ -1290,7 +1296,10 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		fileName,
-		branch.Name,
+		vcsPlugin.RefInfo{
+			RefType: vcsPlugin.RefTypeBranch,
+			RefName: branch.Name,
+		},
 	)
 	if err != nil {
 		log.Debug(

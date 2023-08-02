@@ -34,6 +34,7 @@ type SettingMessage struct {
 	Name        api.SettingName
 	Value       string
 	Description string
+	CreatedTs   int64
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
@@ -222,7 +223,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
 		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
 		ON CONFLICT (name) DO UPDATE SET ` + strings.Join(updateFields, ", ") + `
-		RETURNING name, value, description`
+		RETURNING name, value, description, created_ts`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -235,6 +236,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 		&setting.Name,
 		&setting.Value,
 		&setting.Description,
+		&setting.CreatedTs,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
@@ -277,12 +279,13 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
 		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
-		RETURNING name, value, description`
+		RETURNING name, value, description, created_ts`
 	var setting SettingMessage
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&setting.Name,
 		&setting.Value,
 		&setting.Description,
+		&setting.CreatedTs,
 	); err != nil {
 		return nil, false, err
 	}
@@ -323,7 +326,8 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 		SELECT
 			name,
 			value,
-			description
+			description,
+			created_ts
 		FROM setting
 		WHERE `+strings.Join(where, " AND "), args...)
 	if err != nil {
@@ -338,6 +342,7 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 			&settingMessage.Name,
 			&settingMessage.Value,
 			&settingMessage.Description,
+			&settingMessage.CreatedTs,
 		); err != nil {
 			return nil, err
 		}

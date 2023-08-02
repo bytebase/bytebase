@@ -130,7 +130,7 @@ export const userCountLimit = new Map<PlanType, number>([
 ]);
 
 export const instanceCountLimit = new Map<PlanType, number>([
-  [PlanType.FREE, 20],
+  [PlanType.FREE, 10],
   [PlanType.TEAM, 20],
   [PlanType.ENTERPRISE, Number.MAX_VALUE],
 ]);

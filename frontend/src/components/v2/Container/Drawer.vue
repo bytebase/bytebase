@@ -4,6 +4,8 @@
     :show="show"
     :auto-focus="false"
     :trap-focus="false"
+    :close-on-esc="true"
+    v-bind="$attrs"
     @update:show="onUpdateShow"
   >
     <slot />

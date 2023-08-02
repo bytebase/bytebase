@@ -551,6 +551,12 @@
           "self": "GitOps Webhook URL",
           "description": "用于 GitOps 中第三方服务向 Bytebase 发送 Webhook 的 URL。"
         },
+        "sign-in-frequency": {
+          "self": "登录频率",
+          "description": "登录频率指定用户必须再次登录的间隔。",
+          "hours": "小时",
+          "days": "天数"
+        },
         "config-updated": "配置已更新",
         "plugin": {
           "openai": {
@@ -1366,7 +1372,8 @@
     "select-repository-attention-github": "Bytebase 仅列出您拥有管理员权限的 GitHub 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-attention-bitbucket": "Bytebase 仅列出您拥有管理员权限的 Bitbucket 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-search": "搜索仓库",
-    "linked": "关联的仓库"
+    "linked": "关联的仓库",
+    "select-repository-attention-azure-devops": "Bytebase 仅列出授予第三方应用程序通过 OAuth 访问的组织下的 Azure DevOps 存储库。\n如果您没有看到所需的存储库，请转到组织 -> 组织设置 -> 策略 以启用第三方应用程序访问。"
   },
   "workflow": {
     "current-workflow": "当前工作流",
@@ -1615,7 +1622,8 @@
           "confirm-info": "确认信息",
           "confirm-description": "创建完成后，这个 Git 供应方将出现在项目面板「GitOps」Tab 下，可以被项目所有者选中。"
         },
-        "github-self-host-ee": "自托管 GitHub 企业版 (EE)"
+        "github-self-host-ee": "自托管 GitHub 企业版 (EE)",
+        "azure-devops-service": "Azure DevOps 服务"
       },
       "git-provider": {
         "gitlab-self-host-application-id-label": "注册为 GitLab 实例级 OAuth 应用的应用 ID。",
@@ -2120,6 +2128,10 @@
       "bb-feature-schema-template": {
         "title": "Schema 模板",
         "desc": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+      },
+      "bb-feature-secure-token": {
+        "title": "登录频率",
+        "desc": "登录频率指定用户必须再次登录的间隔。"
       }
     },
     "feature-require-subscription": "{feature} 需要 {requiredPlan}。"

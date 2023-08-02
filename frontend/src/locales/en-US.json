@@ -407,7 +407,7 @@
       "subscription": "Subscription",
       "labels": "Labels",
       "debug-log": "Debug Log",
-      "sensitive-data": "Data Anonymization",
+      "sensitive-data": "Data Masking",
       "access-control": "Data Access Control",
       "audit-log": "Audit Log",
       "custom-roles": "Custom Roles",
@@ -554,6 +554,12 @@
         "gitops-webhook-url": {
           "self": "GitOps Webhook URL",
           "description": "The URL used for sending GitOps webhooks to the Bytebase instance."
+        },
+        "sign-in-frequency": {
+          "self": "Sign-in frequency",
+          "description": "Sign-in frequency is the period before a user must sign in again.",
+          "hours": "Hour(s)",
+          "days": "Day(s)"
         },
         "config-updated": "Configuration is updated",
         "plugin": {
@@ -1372,6 +1378,7 @@
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
     "select-repository-attention-github": "Bytebase only lists GitHub repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
     "select-repository-attention-bitbucket": "Bytebase only lists Bitbucket repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
+    "select-repository-attention-azure-devops": "Bytebase only lists Azure DevOps repositories under the organization which third-party application access via OAuth is granted. If you don't see the repository you want, please go to Organization -> Organization Settings -> Policies to enable third-party application access.", 
     "select-repository-search": "Search repository",
     "linked": "Linked repositories"
   },
@@ -1575,6 +1582,7 @@
         "choose": "Choose Git provider",
         "gitlab-self-host-ce-ee": "Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)",
         "github-self-host-ee": "Self-host GitHub Enterprise Edition (EE)",
+        "azure-devops-service": "Azure DevOps Service",
         "basic-info": {
           "self": "Basic info",
           "gitlab-instance-url": "GitLab instance URL",
@@ -2127,6 +2135,10 @@
       "bb-feature-schema-template": {
         "title": "Schema Template",
         "desc": "Pre-define the field template, then apply the template during the schema change."
+      },
+      "bb-feature-secure-token": {
+        "title": "Sign-in frequency",
+        "desc": "Sign-in frequency is the period before a user must sign in again."
       }
     }
   },

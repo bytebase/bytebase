@@ -7,12 +7,16 @@ import (
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
@@ -91,13 +95,13 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 	case db.Postgres:
 		return reportStatementTypeForPostgres(renderedStatement)
 	case db.MySQL, db.MariaDB, db.OceanBase, db.TiDB:
-		return reportStatementTypeForMySQL(renderedStatement, charset, collation)
+		return reportStatementTypeForMySQL(database.DatabaseName, renderedStatement, charset, collation)
 	default:
 		return nil, errors.New("unsupported db type")
 	}
 }
 
-func reportStatementTypeForMySQL(statement, charset, collation string) ([]api.TaskCheckResult, error) {
+func reportStatementTypeForMySQL(databaseName, statement, charset, collation string) ([]api.TaskCheckResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -153,16 +157,42 @@ func reportStatementTypeForMySQL(statement, charset, collation string) ([]api.Ta
 			continue
 		}
 		sqlType := getStatementTypeFromTidbAstNode(root[0])
+		changedResources, err := getStatementChangedResourcesFromTidbAstNode(databaseName, stmt.Text)
+		if err != nil {
+			log.Error("failed to get statement changed resources", zap.Error(err))
+		}
 		result = append(result, api.TaskCheckResult{
-			Status:    api.TaskCheckStatusSuccess,
-			Namespace: api.BBNamespace,
-			Code:      common.Ok.Int(),
-			Title:     "OK",
-			Content:   sqlType,
+			Status:           api.TaskCheckStatusSuccess,
+			Namespace:        api.BBNamespace,
+			Code:             common.Ok.Int(),
+			Title:            "OK",
+			Content:          sqlType,
+			ChangedResources: string(changedResources),
 		})
 	}
 
 	return result, nil
+}
+
+func getStatementChangedResourcesFromTidbAstNode(currentDatabase, statement string) ([]byte, error) {
+	resources, err := parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
+	if err != nil {
+		return nil, err
+	}
+	meta := storepb.ChangedResources{}
+	// resources is ordered by (db, schema, table)
+	for _, resource := range resources {
+		if len(meta.Databases) == 0 || meta.Databases[len(meta.Databases)-1].Name != resource.Database {
+			meta.Databases = append(meta.Databases, &storepb.ChangedResourceDatabase{Name: resource.Database})
+		}
+		database := meta.Databases[len(meta.Databases)-1]
+		if len(database.Schemas) == 0 || database.Schemas[len(database.Schemas)-1].Name != resource.Schema {
+			database.Schemas = append(database.Schemas, &storepb.ChangedResourceSchema{Name: resource.Schema})
+		}
+		schema := database.Schemas[len(database.Schemas)-1]
+		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{Name: resource.Table})
+	}
+	return protojson.Marshal(&meta)
 }
 
 func reportStatementTypeForPostgres(statement string) ([]api.TaskCheckResult, error) {

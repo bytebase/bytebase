@@ -57,6 +57,8 @@
         "user-unlimited": "无限制",
         "instance-count": "实例数",
         "instance-customized": "自定义",
+        "instance-maximum-10": "不超过 10 个",
+        "instance-maximum-10-tooltip": "最多 10 个实例。请与我们联系以获取超过数量的价格。",
         "instance-maximum-20": "不超过 20 个",
         "instance-maximum-20-tooltip": "最多 20 个实例。请与我们联系以获取超过数量的价格。",
         "instance-unlimited": "无限制",

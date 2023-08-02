@@ -144,7 +144,7 @@
             </div>
             <div class="table-body-item-container">
               <input
-                v-model="column.comment"
+                v-model="column.userComment"
                 :disabled="disableAlterColumn(column)"
                 placeholder="comment"
                 class="column-field-input"
