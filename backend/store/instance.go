@@ -65,7 +65,7 @@ func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) 
 			ID:         ds.UID,
 			InstanceID: instance.UID,
 			DatabaseID: ds.DatabaseID,
-			Name:       ds.Title,
+			Name:       ds.ID,
 			Type:       ds.Type,
 			Username:   ds.Username,
 			Host:       ds.Host,
