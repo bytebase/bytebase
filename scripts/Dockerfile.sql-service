@@ -47,7 +47,7 @@ LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 # Our HEALTHCHECK instruction in dockerfile needs curl.
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl libncurses5
 
 COPY --from=sql /sql-service-build/sql-service /usr/local/bin/
 COPY --from=sql /etc/ssl/certs /etc/ssl/certs

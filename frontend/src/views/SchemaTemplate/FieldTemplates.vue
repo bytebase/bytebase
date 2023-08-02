@@ -7,7 +7,7 @@
     <div class="space-y-4">
       <div class="flex items-center justify-between gap-x-6">
         <div class="flex-1 textinfolabel">
-          {{ $t("schema-template.description") }}
+          {{ $t("schema-template.field-template.description") }}
         </div>
         <div>
           <NButton

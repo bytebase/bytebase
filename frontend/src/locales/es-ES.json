@@ -406,7 +406,7 @@
       "subscription": "Suscripción",
       "labels": "Etiquetas",
       "debug-log": "Registro de Depuración",
-      "sensitive-data": "Anonimización de Datos",
+      "sensitive-data": "Enmascaramiento de Datos",
       "access-control": "Control de Acceso a Datos",
       "audit-log": "Registro de auditoría",
       "custom-roles": "Roles personalizados",
@@ -2640,9 +2640,22 @@
   },
   "schema-template": {
     "self": "Plantilla de esquema",
-    "field-template": "Plantilla de campo",
+    "field-template": {
+      "self": "Plantilla de campo",
+      "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
+    },
+    "column-type-restriction": {
+      "self": "Restricción de tipos de columna",
+      "description": "Para cada motor de base de datos, puede limitar los tipos de columna permitidos.",
+      "allow-all": "Permitir todos los tipos",
+      "allow-limited-types": "Permitir solo algunos tipos",
+      "save-all": "Guardar todo",
+      "messages": {
+        "unable-to-update": "No se puede actualizar la restricción",
+        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos."
+      }
+    },
     "add-field": "Agregar plantilla de campo",
-    "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema.",
     "search-by-name-or-comment": "Buscar por nombre o comentario",
     "form": {
       "category": "Categoría",

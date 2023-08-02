@@ -407,7 +407,7 @@
       "subscription": "Subscription",
       "labels": "Labels",
       "debug-log": "Debug Log",
-      "sensitive-data": "Data Anonymization",
+      "sensitive-data": "Data Masking",
       "access-control": "Data Access Control",
       "audit-log": "Audit Log",
       "custom-roles": "Custom Roles",
@@ -2641,9 +2641,22 @@
   },
   "schema-template": {
     "self": "Schema template",
-    "field-template": "Field Template",
+    "field-template": {
+      "self": "Field Template",
+      "description": "You can pre-define the field template, then apply the template during the schema change."
+    },
+    "column-type-restriction": {
+      "self": "Column Type Restriction",
+      "description": "You can restrict the allowed column types for each database engine.",
+      "allow-all": "Allow all",
+      "allow-limited-types": "Allow limited types",
+      "save-all": "Save all",
+      "messages": {
+        "unable-to-update": "Unable to update restriction",
+        "following-column-types-are-used": "Following column types are still used by field tempalte"
+      }
+    },
     "add-field": "Add field template",
-    "description": "You can pre-define the field template, then apply the template during the schema change.",
     "search-by-name-or-comment": "Search by name or comment",
     "form": {
       "category": "Category",
