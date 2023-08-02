@@ -13,7 +13,11 @@ import { computed, reactive } from "vue";
 
 import { UNKNOWN_ID } from "@/types";
 import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
-import { defaultTabName, getDefaultTabNameFromConnection } from "@/utils";
+import {
+  defaultTabName,
+  extractSheetUID,
+  getDefaultTabNameFromConnection,
+} from "@/utils";
 import SaveSheetForm from "./SaveSheetForm.vue";
 import {
   Sheet_Visibility,
@@ -56,7 +60,7 @@ const doSaveSheet = async (sheetTitle?: string) => {
   const { name, statement, sheetName } = tabStore.currentTab;
   sheetTitle = sheetTitle || name;
 
-  const sheetId = sheetV1Store.getSheetUid(sheetName ?? "");
+  const sheetId = Number(extractSheetUID(sheetName ?? ""));
 
   const conn = tabStore.currentTab.connection;
   const database = await databaseStore.getOrFetchDatabaseByUID(conn.databaseId);
