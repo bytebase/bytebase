@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { Engine } from "@/types/proto/v1/common";
@@ -25,6 +25,7 @@ import AsidePanel from "./AsidePanel.vue";
 import Designer from "./Designer.vue";
 import { Schema, convertSchemaMetadataList } from "@/types";
 import { cloneDeep, isEqual } from "lodash-es";
+import { useSettingV1Store } from "@/store";
 
 const props = defineProps<{
   readonly: boolean;
@@ -32,6 +33,7 @@ const props = defineProps<{
   schemaDesign: SchemaDesign;
 }>();
 
+const settingStore = useSettingV1Store();
 const readonly = ref(props.readonly);
 const engine = ref(props.engine);
 const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
@@ -42,6 +44,11 @@ const baselineMetadata = ref<DatabaseMetadata>(
 );
 const tabState = ref<SchemaDesignerTabState>({
   tabMap: new Map(),
+});
+
+// Prepare schema template contexts.
+onMounted(async () => {
+  await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
 });
 
 const rebuildEditingState = () => {
