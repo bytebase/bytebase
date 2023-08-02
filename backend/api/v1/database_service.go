@@ -702,6 +702,9 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true
 	}
+	if request.Filter != "" {
+		find.ResourcesFilter = &request.Filter
+	}
 	changeHistories, err := s.store.ListInstanceChangeHistory(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
@@ -839,7 +842,43 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 	if h.IssueUID != nil {
 		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.IssuePrefix, *h.IssueUID)
 	}
+	if h.Payload != nil && h.Payload.ChangedResources != nil {
+		v1pbHistory.ChangedResources = convertToChangedResources(h.Payload.ChangedResources)
+	}
 	return v1pbHistory, nil
+}
+
+func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResources {
+	result := &v1pb.ChangedResources{}
+	for _, database := range r.Databases {
+		v1Database := &v1pb.ChangedResourceDatabase{
+			Name:    database.Name,
+			Schemas: []*v1pb.ChangedResourceSchema{},
+		}
+		for _, schema := range database.Schemas {
+			v1Schema := &v1pb.ChangedResourceSchema{
+				Name:   schema.Name,
+				Tables: []*v1pb.ChangedResourceTable{},
+			}
+			for _, table := range schema.Tables {
+				v1Schema.Tables = append(v1Schema.Tables, &v1pb.ChangedResourceTable{
+					Name: table.Name,
+				})
+			}
+			sort.Slice(v1Schema.Tables, func(i, j int) bool {
+				return v1Schema.Tables[i].Name < v1Schema.Tables[j].Name
+			})
+			v1Database.Schemas = append(v1Database.Schemas, v1Schema)
+		}
+		sort.Slice(v1Database.Schemas, func(i, j int) bool {
+			return v1Database.Schemas[i].Name < v1Database.Schemas[j].Name
+		})
+		result.Databases = append(result.Databases, v1Database)
+	}
+	sort.Slice(result.Databases, func(i, j int) bool {
+		return result.Databases[i].Name < result.Databases[j].Name
+	})
+	return result
 }
 
 func convertToPushEvent(e *storepb.PushEvent) *v1pb.PushEvent {
