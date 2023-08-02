@@ -126,6 +126,7 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     getRepositoryByProject,
     getOrFetchRepositoryByProject,
     fetchRepositoryListByVCS,
+    fetchRepositoryByProject,
     getRepositoryListByVCS,
   };
 });
