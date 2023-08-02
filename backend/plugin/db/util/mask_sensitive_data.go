@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v2"
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"

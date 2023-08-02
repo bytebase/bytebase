@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v2"
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 

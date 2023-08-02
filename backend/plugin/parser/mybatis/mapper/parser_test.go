@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	pg_query "github.com/pganalyze/pg_query_go/v2"
+	pg_query "github.com/pganalyze/pg_query_go/v4"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
