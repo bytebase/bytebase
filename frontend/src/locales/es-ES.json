@@ -1344,6 +1344,7 @@
     "sql-review-ci-enable": "Habilitar la revisión de SQL CI",
     "sql-review-ci-enable-gitlab": "Habilitar la revisión de SQL CI a través de GitLab CI",
     "sql-review-ci-enable-github": "Habilitar la revisión de SQL CI a través de la acción de GitHub",
+    "sql-review-ci-enable-azure": "Habilite SQL Review CI a través de Azure DevOps Pipeline",
     "sql-review-ci-description": "Bytebase creará un {pr} para configurar la revisión de SQL CI en su repositorio. En cada {pr}, la política de revisión de SQL basada en el entorno verificará los archivos modificados que coincidan con el \"{pathTemplate}\".",
     "sql-review-ci-setup": "Configurar revisión de SQL CI",
     "sql-review-ci-setup-failed": "Error al configurar la revisión de SQL CI",

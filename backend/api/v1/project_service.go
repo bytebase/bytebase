@@ -1054,6 +1054,10 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, vcs, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
+	case vcsPlugin.AzureDevOps:
+		if err := s.setupVCSSQLReviewCIForAzureDevOps(ctx, repository, vcs, branch, sqlReviewEndpoint); err != nil {
+			return nil, err
+		}
 	}
 
 	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreatePullRequest(
@@ -1264,6 +1268,80 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
 		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
 	})
+}
+
+// setupVCSSQLReviewCIForAzureDevOps will create or update SQL review related files in Azure DevOps to setup SQL review CI.
+func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
+	ctx context.Context,
+	repository *store.RepositoryMessage,
+	vcs *store.ExternalVersionControlMessage,
+	branch *vcsPlugin.BranchInfo,
+	sqlReviewEndpoint string,
+) error {
+	sqlReviewConfig := azure.SetupSQLReviewCI(sqlReviewEndpoint, repository.BranchFilter)
+	fileLastCommitID := ""
+	fileSHA := ""
+
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
+	}
+	if setting.ExternalUrl == "" {
+		return status.Errorf(codes.FailedPrecondition, "external url is required")
+	}
+
+	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+		ctx,
+		common.OauthContext{
+			ClientID:     vcs.ApplicationID,
+			ClientSecret: vcs.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+		},
+		vcs.InstanceURL,
+		repository.ExternalID,
+		azure.SQLReviewPipelineFilePath,
+		vcsPlugin.RefInfo{
+			RefType: vcsPlugin.RefTypeBranch,
+			RefName: branch.Name,
+		},
+	)
+	if err != nil {
+		log.Debug(
+			"Failed to get file meta",
+			zap.String("file", azure.SQLReviewPipelineFilePath),
+			zap.String("last_commit", branch.LastCommitID),
+			zap.Int("code", common.ErrorCode(err).Int()),
+			zap.Error(err),
+		)
+	} else if fileMeta != nil {
+		fileLastCommitID = fileMeta.LastCommitID
+		fileSHA = fileMeta.SHA
+	}
+
+	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
+		ctx,
+		common.OauthContext{
+			ClientID:     vcs.ApplicationID,
+			ClientSecret: vcs.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+		},
+		vcs.InstanceURL,
+		repository.ExternalID,
+		azure.SQLReviewPipelineFilePath,
+		vcsPlugin.FileCommitCreate{
+			Branch:        branch.Name,
+			CommitMessage: sqlReviewInVCSPRTitle,
+			Content:       sqlReviewConfig,
+			LastCommitID:  fileLastCommitID,
+			SHA:           fileSHA,
+		},
+	)
 }
 
 // createOrUpdateVCSSQLReviewFileForGitLab will create or update SQL review file for GitLab CI.
