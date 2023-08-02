@@ -49,6 +49,7 @@
         :show="false"
         @blur="handleMySQLTypesChange"
         @update:value="handleMySQLTypesChange"
+        @input="handleSelectorInput"
       />
     </div>
     <div class="w-full max-w-lg flex flex-col justify-start items-start gap-2">
@@ -91,6 +92,7 @@
         :show="false"
         @blur="handlePostgreSQLTypesChange"
         @update:value="handlePostgreSQLTypesChange"
+        @input="handleSelectorInput"
       />
     </div>
   </div>
@@ -183,6 +185,11 @@ onMounted(async () => {
   }
 });
 
+const handleSelectorInput = (event: InputEvent) => {
+  const inputEl = event.target as HTMLInputElement;
+  inputEl.value = inputEl.value.toUpperCase();
+};
+
 const handleSaveAllUnmatchedFieldTemplates = (
   fieldTemplates: SchemaTemplateSetting_FieldTemplate[]
 ) => {
@@ -228,6 +235,9 @@ const handleMySQLEnabledChange = (event: InputEvent) => {
 // 1. When the column types are deleted and the selector is not focused.
 // 2. When selector is blurred.
 const handleMySQLTypesChange = useDebounceFn(async () => {
+  columnTypeTemplateForMySQL.value.types =
+    columnTypeTemplateForMySQL.value.types.map((item) => item.toUpperCase());
+
   if (typesSelectorRefForMySQL.value?.focused) {
     return;
   }
@@ -314,6 +324,11 @@ const handlePostgreSQLEnabledChange = (event: InputEvent) => {
 };
 
 const handlePostgreSQLTypesChange = useDebounceFn(async () => {
+  columnTypeTemplateForPostgreSQL.value.types =
+    columnTypeTemplateForPostgreSQL.value.types.map((item) =>
+      item.toUpperCase()
+    );
+
   if (typesSelectorRefForPostgreSQL.value?.focused) {
     return;
   }
