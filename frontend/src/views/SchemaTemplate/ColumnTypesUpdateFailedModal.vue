@@ -1,15 +1,18 @@
 <template>
   <BBModal
-    :title="'Unable to update restriction'"
+    :title="
+      $t('schema-template.column-type-restriction.messages.unable-to-update')
+    "
     class="!w-[32rem] !max-w-full"
     @close="emits('close')"
   >
-    <template #header>
-      <div>{{ $t("custom-approval.security-rule.template.view") }}</div>
-    </template>
     <div class="w-full">
       <p class="mt-1 mb-2">
-        {{ "Following column types are still used by field tempalte:" }}
+        {{
+          $t(
+            "schema-template.column-type-restriction.messages.following-column-types-are-used"
+          )
+        }}
       </p>
       <div
         v-for="unmatchedField in unmatchedFieldMap.keys()"
@@ -25,6 +28,18 @@
         </div>
       </div>
     </div>
+    <div class="mt-7 flex justify-end space-x-2">
+      <button type="button" class="btn-normal" @click.prevent="$emit('close')">
+        {{ $t("common.close") }}
+      </button>
+      <button
+        type="button"
+        class="btn-primary"
+        @click="$emit('save-all', props.fieldTemplates)"
+      >
+        {{ $t("schema-template.column-type-restriction.save-all") }}
+      </button>
+    </div>
   </BBModal>
 </template>
 
@@ -38,6 +53,10 @@ const props = defineProps<{
 
 const emits = defineEmits<{
   (event: "close"): void;
+  (
+    event: "save-all",
+    fieldTemplates: SchemaTemplateSetting_FieldTemplate[]
+  ): void;
 }>();
 
 const unmatchedFieldMap = computed(() => {

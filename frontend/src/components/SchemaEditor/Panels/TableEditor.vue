@@ -281,7 +281,7 @@
     :show="state.showSchemaTemplateDrawer"
     @close="state.showSchemaTemplateDrawer = false"
   >
-    <DrawerContent :title="$t('schema-template.field-template')">
+    <DrawerContent :title="$t('schema-template.field-template.self')">
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <FieldTemplates
           :engine="databaseEngine"

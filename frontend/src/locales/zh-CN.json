@@ -2631,9 +2631,22 @@
   },
   "schema-template": {
     "self": "Schema 模板",
-    "field-template": "字段模板",
+    "field-template": {
+      "self": "字段模板",
+      "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+    },
+    "column-type-restriction": {
+      "self": "列类型约束",
+      "description": "在每一个数据库引擎上，您可以限制允许使用的列类型。",
+      "allow-all": "允许所有类型",
+      "allow-limited-types": "只允许部分类型",
+      "save-all": "保存所有",
+      "messages": {
+        "unable-to-update": "无法更新限制",
+        "following-column-types-are-used": "以下列类型仍在字段模板中使用。"
+      }
+    },
     "add-field": "新增字段模板",
-    "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。",
     "search-by-name-or-comment": "根据名称或备注搜索",
     "form": {
       "category": "分类",
