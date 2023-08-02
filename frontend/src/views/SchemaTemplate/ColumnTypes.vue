@@ -90,6 +90,7 @@
         :show-arrow="false"
         :show="false"
         @blur="handlePostgreSQLTypesChange"
+        @update:value="handlePostgreSQLTypesChange"
       />
     </div>
   </div>
