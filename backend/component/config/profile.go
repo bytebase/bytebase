@@ -72,6 +72,9 @@ type Profile struct {
 
 	// LastActiveTs is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTs int64
+
+	// Development flags
+	DevelopmentUseV2Scheduler bool
 }
 
 // UseEmbedDB returns whether to use embedDB.
