@@ -549,7 +549,6 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 			if err := s.createTaskRunImpl(ctx, tx, &TaskRunMessage{
 				TaskUID: task.ID,
 				Name:    fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
-				Type:    task.Type,
 			}, patch.UpdaterID); err != nil {
 				return nil, err
 			}
