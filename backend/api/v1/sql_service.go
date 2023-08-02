@@ -1570,7 +1570,7 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			switch stmt.(type) {
 			case *ast.SelectStmt, *ast.ExplainStmt:
 			default:
-				return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+				return nonSelectSQLError.Err()
 			}
 		}
 	case db.MySQL:
@@ -1581,7 +1581,7 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 		for _, item := range trees {
 			tree := item.Tree
 			if err := parser.MySQLValidateForEditor(tree); err != nil {
-				return status.Errorf(codes.InvalidArgument, err.Error())
+				return nonSelectSQLError.Err()
 			}
 		}
 	case db.TiDB:
@@ -1593,7 +1593,7 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			switch stmt.(type) {
 			case *tidbast.SelectStmt, *tidbast.ExplainStmt:
 			default:
-				return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+				return nonSelectSQLError.Err()
 			}
 		}
 	case db.Oracle, db.DM:
@@ -1605,14 +1605,14 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
 		if err := parser.PLSQLValidateForEditor(tree); err != nil {
-			return status.Errorf(codes.InvalidArgument, err.Error())
+			return nonSelectSQLError.Err()
 		}
 	case db.MongoDB, db.Redis:
 		// Do nothing.
 	default:
 		// TODO(rebelice): support multiple statements here.
 		if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), statement) {
-			return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+			return nonSelectSQLError.Err()
 		}
 	}
 
