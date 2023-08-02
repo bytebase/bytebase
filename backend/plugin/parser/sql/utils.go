@@ -37,6 +37,9 @@ type SchemaResource struct {
 	Database string
 	Schema   string
 	Table    string
+
+	// LinkedServer is the special resource for MSSQL, which can be used to specify the linked server.
+	LinkedServer string
 }
 
 // String implements fmt.Stringer interface.
@@ -88,6 +91,8 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		return extractPostgresResourceList(currentDatabase, "public", sql)
 	case Snowflake:
 		return extractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
+	case MSSQL:
+		return extractMSSQLNormalizedResourceListFromSelectStatement(currentDatabase, "dbo", sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)

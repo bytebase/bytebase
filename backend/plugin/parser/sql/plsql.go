@@ -473,7 +473,7 @@ func PLSQLValidateForEditor(tree antlr.Tree) error {
 	}
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 	if !l.validate {
-		return errors.New("Malformed sql execute request, only support SELECT sql statement")
+		return errors.New("only support SELECT sql statement")
 	}
 	return nil
 }
