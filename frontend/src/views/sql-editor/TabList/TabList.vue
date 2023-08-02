@@ -67,7 +67,7 @@ import { useTabStore } from "@/store";
 import { Drawer, DrawerContent } from "@/components/v2";
 import TabItem from "./TabItem";
 import SheetPanel from "../SheetPanel";
-import { useSheetPanelContext } from "../SheetPanel/common";
+import { useSheetContext } from "../Sheet";
 
 type LocalState = {
   dragging: boolean;
@@ -84,7 +84,7 @@ const state = reactive<LocalState>({
   hoverTabId: "",
 });
 
-const { showPanel: showSheetPanel } = useSheetPanelContext();
+const { showPanel: showSheetPanel } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 
 const scrollState = reactive({

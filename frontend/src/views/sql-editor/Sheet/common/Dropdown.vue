@@ -17,14 +17,14 @@ import { useI18n } from "vue-i18n";
 import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { useSheetPanelContext, type SheetViewMode } from "../common";
-import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
-import { useSheetV1Store, pushNotification } from "@/store";
 import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
+import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
+import { useSheetV1Store, pushNotification } from "@/store";
+import { useSheetContext, type SheetViewMode } from "../";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -34,7 +34,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const sheetV1Store = useSheetV1Store();
 const dialog = useDialog();
-const { events } = useSheetPanelContext();
+const { events } = useSheetContext();
 
 const options = computed(() => {
   const options: DropdownOption[] = [];

@@ -3,7 +3,11 @@ import { computed, ref, unref, watchEffect } from "vue";
 import { isEqual, isUndefined } from "lodash-es";
 
 import { sheetServiceClient } from "@/grpcweb";
-import { Sheet, SheetOrganizer } from "@/types/proto/v1/sheet_service";
+import {
+  Sheet,
+  SheetOrganizer,
+  Sheet_Source,
+} from "@/types/proto/v1/sheet_service";
 import { extractSheetUID, getSheetStatement, isSheetReadableV1 } from "@/utils";
 import { UNKNOWN_ID, MaybeRef } from "@/types";
 import { useCurrentUserV1 } from "../auth";
@@ -20,21 +24,27 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   const sheetsByName = ref(new Map<string, Sheet>());
 
   // Getters
+  const sheetListWithoutIssueArtifact = computed(() => {
+    // Hide those sheets from issue.
+    return Array.from(sheetsByName.value.values()).filter(
+      (sheet) => sheet.source !== Sheet_Source.SOURCE_BYTEBASE_ARTIFACT
+    );
+  });
   const mySheetList = computed(() => {
     const me = useCurrentUserV1();
-    return Array.from(sheetsByName.value.values()).filter((sheet) => {
+    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
       return sheet.creator === `users/${me.value.email}`;
     });
   });
   const sharedSheetList = computed(() => {
     const me = useCurrentUserV1();
-    return Array.from(sheetsByName.value.values()).filter((sheet) => {
+    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
       return sheet.creator !== `users/${me.value.email}`;
     });
   });
   const starredSheetList = computed(() => {
-    return Array.from(sheetsByName.value.values()).filter((sheet) => {
-      sheet.starred;
+    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
+      return sheet.starred;
     });
   });
 
@@ -194,12 +204,20 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
       parent,
     });
   };
-  const upsertSheetOrganizer = async (organizer: Partial<SheetOrganizer>) => {
+  const upsertSheetOrganizer = async (
+    organizer: Pick<SheetOrganizer, "sheet" | "starred">
+  ) => {
     await sheetServiceClient.updateSheetOrganizer({
       organizer,
       // for now we only support change the `starred` field.
       updateMask: ["starred"],
     });
+
+    // Update local sheet values
+    const sheet = getSheetByName(organizer.sheet);
+    if (sheet) {
+      sheet.starred = organizer.starred;
+    }
   };
 
   return {

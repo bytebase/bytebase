@@ -18,14 +18,14 @@
 import { NTabs, NTabPane } from "naive-ui";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { openSheet, useSheetPanelContext } from "./common";
+import { useSheetContext, openSheet } from "../Sheet";
 import SheetTable from "./SheetTable";
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const { view } = useSheetPanelContext();
+const { view } = useSheetContext();
 
 const handleSelectSheet = async (sheet: Sheet) => {
   if (await openSheet(sheet)) {

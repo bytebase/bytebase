@@ -11,6 +11,12 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+  Sheet,
+} from "@/types/proto/v1/sheet_service";
 import { UNKNOWN_ID } from "@/types";
 import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
 import {
@@ -19,13 +25,7 @@ import {
   getDefaultTabNameFromConnection,
 } from "@/utils";
 import SaveSheetForm from "./SaveSheetForm.vue";
-import {
-  Sheet_Visibility,
-  Sheet_Source,
-  Sheet_Type,
-  Sheet,
-} from "@/types/proto/v1/sheet_service";
-import { useSheetPanelContext } from "../SheetPanel/common";
+import { useSheetContext } from "../Sheet";
 
 type LocalState = {
   showModal: boolean;
@@ -34,7 +34,7 @@ type LocalState = {
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sheetV1Store = useSheetV1Store();
-const { events: sheetEvents } = useSheetPanelContext();
+const { events: sheetEvents } = useSheetContext();
 
 const state = reactive<LocalState>({
   showModal: false,

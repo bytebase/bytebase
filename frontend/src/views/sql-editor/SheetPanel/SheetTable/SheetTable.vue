@@ -31,19 +31,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
-import { SheetViewMode, useSheetPanelContextByView } from "../common";
-import Dropdown from "./Dropdown.vue";
+import { SheetViewMode, useSheetContextByView, Dropdown } from "../../Sheet";
 import { extractProjectResourceName } from "@/utils";
 import { useUserStore, useProjectV1Store } from "@/store";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { ProjectV1Name } from "@/components/v2";
-import { onMounted } from "vue";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -57,7 +55,7 @@ const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const userStore = useUserStore();
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
-  useSheetPanelContextByView(props.view);
+  useSheetContextByView(props.view);
 
 const showCreator = computed(() => {
   return props.view === "shared" || props.view === "starred";

@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { NButton, NInput } from "naive-ui";
 import { orderBy } from "lodash-es";
 
@@ -62,17 +62,16 @@ import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   SheetViewMode,
   openSheet,
-  useSheetPanelContextByView,
-} from "@/views/sql-editor/SheetPanel/common";
-import Dropdown from "@/views/sql-editor/SheetPanel/SheetTable/Dropdown.vue";
-import { watch } from "vue";
+  useSheetContextByView,
+} from "@/views/sql-editor/Sheet";
+import { Dropdown } from "@/views/sql-editor/Sheet";
 
 const props = defineProps<{
   view: SheetViewMode;
 }>();
 
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
-  useSheetPanelContextByView(props.view);
+  useSheetContextByView(props.view);
 const keyword = ref("");
 
 const sortedSheetList = computed(() => {

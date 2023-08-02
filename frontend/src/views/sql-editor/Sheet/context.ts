@@ -1,4 +1,4 @@
-import { InjectionKey, Ref, inject, provide, ref } from "vue";
+import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import Emittery from "emittery";
 
@@ -9,48 +9,47 @@ import {
   useTabStore,
 } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import {
-  emptyConnection,
-  getSheetIssueBacktracePayloadV1,
-  isSheetReadableV1,
-} from "@/utils";
+import { emptyConnection, isSheetReadableV1 } from "@/utils";
 import { UNKNOWN_ID } from "@/types";
 import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
+import { SheetViewMode } from "./types";
 
-export const SheetViewModeList = ["my", "shared", "starred"] as const;
-export type SheetViewMode = typeof SheetViewModeList[number];
-
-type SheetPanelEvents = Emittery<{
+type SheetEvents = Emittery<{
   refresh: { views: SheetViewMode[] };
 }>;
 
-const useFetchSheetList = (viewMode: SheetViewMode) => {
+const useSheetListByView = (viewMode: SheetViewMode) => {
   const sheetStore = useSheetV1Store();
 
   const isInitialized = ref(false);
   const isLoading = ref(false);
-  const sheetList = ref<Sheet[]>([]);
+  const sheetList = computed(() => {
+    switch (viewMode) {
+      case "my":
+        return sheetStore.mySheetList;
+      case "shared":
+        return sheetStore.sharedSheetList;
+      case "starred":
+        return sheetStore.starredSheetList;
+    }
+    // Only to make TypeScript happy
+    throw "Should never reach this line";
+  });
 
   const fetchSheetList = async () => {
     isLoading.value = true;
     try {
-      let list: Sheet[] = [];
       switch (viewMode) {
         case "my":
-          list = await sheetStore.fetchMySheetList();
+          await sheetStore.fetchMySheetList();
           break;
         case "shared":
-          list = await sheetStore.fetchSharedSheetList();
+          await sheetStore.fetchSharedSheetList();
           break;
         case "starred":
-          list = await sheetStore.fetchStarredSheetList();
+          await sheetStore.fetchStarredSheetList();
           break;
       }
-
-      // Hide those sheets from issue.
-      sheetList.value = list.filter((sheet) => {
-        return !getSheetIssueBacktracePayloadV1(sheet);
-      });
 
       isInitialized.value = true;
     } finally {
@@ -66,49 +65,48 @@ const useFetchSheetList = (viewMode: SheetViewMode) => {
   };
 };
 
-export type SheetPanelContext = {
+export type SheetContext = {
   showPanel: Ref<boolean>;
   view: Ref<SheetViewMode>;
-  views: Record<SheetViewMode, ReturnType<typeof useFetchSheetList>>;
-  events: SheetPanelEvents;
+  views: Record<SheetViewMode, ReturnType<typeof useSheetListByView>>;
+  events: SheetEvents;
 };
 
-export const KEY = Symbol(
-  "bb.sql-editor.sheet-panel"
-) as InjectionKey<SheetPanelContext>;
+export const KEY = Symbol("bb.sql-editor.sheet") as InjectionKey<SheetContext>;
 
-export const useSheetPanelContext = () => {
+export const useSheetContext = () => {
   return inject(KEY)!;
 };
 
-export const useSheetPanelContextByView = (view: SheetViewMode) => {
-  const context = useSheetPanelContext();
+export const useSheetContextByView = (view: SheetViewMode) => {
+  const context = useSheetContext();
   return context.views[view];
 };
 
-export const provideSheetPanelContext = () => {
-  const context: SheetPanelContext = {
+export const provideSheetContext = () => {
+  const context: SheetContext = {
     showPanel: ref(false),
     view: ref("my"),
     views: {
-      my: useFetchSheetList("my"),
-      shared: useFetchSheetList("shared"),
-      starred: useFetchSheetList("starred"),
+      my: useSheetListByView("my"),
+      shared: useSheetListByView("shared"),
+      starred: useSheetListByView("starred"),
     },
     events: new Emittery(),
   };
 
   context.events.on("refresh", ({ views }) => {
-    views.forEach((view) => {
-      // If the panel is shown and the view is current view, re-fetch immediately.
-      if (context.showPanel.value && view === context.view.value) {
-        context.views[view].fetchSheetList();
-      } else {
-        // Otherwise reset the view status to isInitialized=false
-        context.views[view].isInitialized.value = false;
-        context.views[view].sheetList.value = [];
-      }
-    });
+    console.log("should refresh", views);
+    // views.forEach((view) => {
+    //   // If the panel is shown and the view is current view, re-fetch immediately.
+    //   if (context.showPanel.value && view === context.view.value) {
+    //     context.views[view].fetchSheetList();
+    //   } else {
+    //     // Otherwise reset the view status to isInitialized=false
+    //     context.views[view].isInitialized.value = false;
+    //     context.views[view].sheetList.value = [];
+    //   }
+    // });
   });
 
   provide(KEY, context);
