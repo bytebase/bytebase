@@ -1,8 +1,5 @@
 <template>
   <div class="flex items-center gap-x-3">
-    <div class="textlabel">
-      {{ $t("custom-approval.security-rule.risk.self") }}
-    </div>
     <label
       v-for="item in riskLevelFilterItemList"
       :key="item.value"
