@@ -37,9 +37,8 @@
             class="flex-1 text-sm cursor-pointer"
             @click="handleSheetClick(sheet)"
           >
-            <template v-if="sheet.title">
-              {{ sheet.title }}
-            </template>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <span v-if="sheet.title" v-html="titleHTML(sheet)" />
             <span v-else class="text-control-placeholder">
               {{ $t("sql-editor.untitled-sheet") }}
             </span>
@@ -56,7 +55,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
 import { NButton, NInput } from "naive-ui";
-import { orderBy } from "lodash-es";
+import { escape, orderBy } from "lodash-es";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
@@ -65,6 +64,7 @@ import {
   useSheetContextByView,
 } from "@/views/sql-editor/Sheet";
 import { Dropdown } from "@/views/sql-editor/Sheet";
+import { extractSheetUID, getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -78,6 +78,7 @@ const sortedSheetList = computed(() => {
   return orderBy<Sheet>(
     sheetList.value,
     [
+      (sheet) => (extractSheetUID(sheet.name).startsWith("-") ? 0 : 1), // Unsaved sheets go ahead.
       (sheet) => (sheet.title ? 0 : 1), // Untitled sheets go behind.
       (sheet) => sheet.title,
     ],
@@ -92,6 +93,21 @@ const filteredSheetList = computed(() => {
     sheet.title.toLowerCase().includes(kw)
   );
 });
+
+const titleHTML = (sheet: Sheet) => {
+  const kw = keyword.value.toLowerCase().trim();
+  const { title } = sheet;
+
+  if (!kw) {
+    return escape(title);
+  }
+
+  return getHighlightHTMLByRegExp(
+    escape(title),
+    escape(kw),
+    false /* !caseSensitive */
+  );
+};
 
 const handleSheetClick = (sheet: Sheet) => {
   openSheet(sheet);
