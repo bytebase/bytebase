@@ -398,9 +398,6 @@ func generateResourceFilter(filter string) (string, error) {
 }
 
 type expressionRewriter struct {
-	database string
-	schema   string
-
 	metaMap  databaseMap
 	dnfParts []string
 }
@@ -510,6 +507,8 @@ func (r *expressionRewriter) rewriteExpression(expr *exprpb.Expr) error {
 				name: args[2],
 			}
 		}
+	default:
+		return errors.Errorf("invalid expression: %v", expr)
 	}
 	return nil
 }
