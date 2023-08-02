@@ -112,7 +112,7 @@ export const provideSheetContext = () => {
   provide(KEY, context);
 };
 
-export const openSheet = async (sheet: Sheet) => {
+export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
   const tabStore = useTabStore();
   const openingSheetTab = tabStore.tabList.find(
     (tab) => tab.sheetName == sheet.name
@@ -129,6 +129,8 @@ export const openSheet = async (sheet: Sheet) => {
   if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
     tabStore.setCurrentTabId(openingSheetTab.id);
+  } else if (forceNewTab) {
+    tabStore.addTab({}, true /* beside */);
   } else {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();

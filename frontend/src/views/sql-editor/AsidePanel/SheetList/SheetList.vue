@@ -30,20 +30,20 @@
         </div>
         <div
           v-for="sheet in filteredSheetList"
+          :id="domIDForSheet(sheet)"
           :key="sheet.name"
           class="flex items-start justify-between hover:bg-gray-200 px-2 py-1 gap-x-1"
+          :class="[sheet.name === currentSheet?.name && 'bg-indigo-600/10']"
+          @click="handleSheetClick(sheet, $event)"
         >
-          <div
-            class="flex-1 text-sm cursor-pointer"
-            @click="handleSheetClick(sheet)"
-          >
+          <div class="flex-1 text-sm cursor-pointer pt-0.5">
             <!-- eslint-disable-next-line vue/no-v-html -->
             <span v-if="sheet.title" v-html="titleHTML(sheet)" />
             <span v-else class="text-control-placeholder">
               {{ $t("sql-editor.untitled-sheet") }}
             </span>
           </div>
-          <div>
+          <div @click.stop>
             <Dropdown :sheet="sheet" :view="view" />
           </div>
         </div>
@@ -65,6 +65,11 @@ import {
 } from "@/views/sql-editor/Sheet";
 import { Dropdown } from "@/views/sql-editor/Sheet";
 import { extractSheetUID, getHighlightHTMLByRegExp } from "@/utils";
+import { useSheetAndTabStore } from "@/store";
+import { storeToRefs } from "pinia";
+import scrollIntoView from "scroll-into-view-if-needed";
+import { onMounted } from "vue";
+import { nextTick } from "vue";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -73,6 +78,7 @@ const props = defineProps<{
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 const keyword = ref("");
+const { currentSheet } = storeToRefs(useSheetAndTabStore());
 
 const sortedSheetList = computed(() => {
   return orderBy<Sheet>(
@@ -94,6 +100,10 @@ const filteredSheetList = computed(() => {
   );
 });
 
+const domIDForSheet = (sheet: Sheet) => {
+  return `bb-sheet-list-sheet-${extractSheetUID(sheet.name)}`;
+};
+
 const titleHTML = (sheet: Sheet) => {
   const kw = keyword.value.toLowerCase().trim();
   const { title } = sheet;
@@ -109,17 +119,42 @@ const titleHTML = (sheet: Sheet) => {
   );
 };
 
-const handleSheetClick = (sheet: Sheet) => {
-  openSheet(sheet);
+const handleSheetClick = (sheet: Sheet, e: MouseEvent) => {
+  openSheet(sheet, e.metaKey || e.ctrlKey);
+};
+
+const scrollToSheet = (sheet: Sheet | undefined) => {
+  if (!sheet) return;
+  const id = domIDForSheet(sheet);
+  const elem = document.getElementById(id);
+  if (elem) {
+    scrollIntoView(elem, {
+      scrollMode: "if-needed",
+    });
+  }
 };
 
 watch(
   isInitialized,
-  () => {
+  async () => {
     if (!isInitialized.value) {
-      fetchSheetList();
+      await fetchSheetList();
+      await nextTick();
+      scrollToSheet(currentSheet.value);
     }
   },
   { immediate: true }
 );
+
+watch(
+  () => currentSheet.value?.name,
+  () => {
+    scrollToSheet(currentSheet.value);
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
+  scrollToSheet(currentSheet.value);
+});
 </script>
