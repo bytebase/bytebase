@@ -638,13 +638,10 @@ CREATE TABLE task_run (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
     name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
+    status TEXT NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     code INTEGER NOT NULL DEFAULT 0,
-    comment TEXT NOT NULL DEFAULT '',
     -- result saves the task run result in json format
-    result  JSONB NOT NULL DEFAULT '{}',
-    payload JSONB NOT NULL DEFAULT '{}'
+    result  JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
