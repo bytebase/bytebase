@@ -44,15 +44,6 @@ type FindTaskRunMessage struct {
 	PipelineUID *int
 }
 
-// TaskRunCreate is the API message for creating a task run.
-type TaskRunCreate struct {
-	CreatorID int
-	TaskID    int
-	Name      string
-	Type      api.TaskType
-	Payload   string
-}
-
 // TaskRunFind is the API message for finding task runs.
 type TaskRunFind struct {
 	// Related fields
