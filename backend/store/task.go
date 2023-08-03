@@ -628,7 +628,7 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 	return updatedTask, nil
 }
 
-// ListTasksWithZeroTaskRun returns tasks that have no task run.
+// ListTasksWithNoTaskRun returns tasks that have no task run.
 func (s *Store) ListTasksWithNoTaskRun(ctx context.Context) ([]int, error) {
 	rows, err := s.db.db.QueryContext(ctx, `
 	SELECT
