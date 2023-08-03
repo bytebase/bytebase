@@ -390,6 +390,15 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
 		}
 
+		oauthContext := common.OauthContext{
+			ClientID:     repositoryList[0].vcs.ApplicationID,
+			ClientSecret: repositoryList[0].vcs.Secret,
+			AccessToken:  repositoryList[0].repository.AccessToken,
+			RefreshToken: repositoryList[0].repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+		}
+
 		if len(pushEvent.Resource.Commits) == 0 {
 			// If users merge one branch to our target branch, the commits list is empty in push event.
 			// And we cannot get the commits in range [refUpdates.oldObjectId, refUpdates.newObjectId] from Azure DevOps API.
@@ -397,14 +406,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			// then we need to query the queryPullRequest API to find out if the updateRef.newObjectId
 			// is the last commit of the Pull Request, and then we can use the PullRef.newObjectId API
 			// to find out if it is the last commit of the Pull Request. Request ID to list the corresponding commits.
-			probablePullRequests, err := azure.QueryPullRequest(ctx, common.OauthContext{
-				ClientID:     repositoryList[0].vcs.ApplicationID,
-				ClientSecret: repositoryList[0].vcs.Secret,
-				AccessToken:  repositoryList[0].repository.AccessToken,
-				RefreshToken: repositoryList[0].repository.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			}, repositoryList[0].repository.ExternalID, pushEvent.Resource.RefUpdates[0].NewObjectID)
+			probablePullRequests, err := azure.QueryPullRequest(ctx, oauthContext, repositoryList[0].repository.ExternalID, pushEvent.Resource.RefUpdates[0].NewObjectID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query pull request").SetInternal(err)
 			}
@@ -429,14 +431,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 			// We should backfill the commit list by the commits in the pull request.
 			pullRequest := filterOutPullRequestList[0]
-			commitsInPullRequest, err := azure.GetPullRequestCommits(ctx, common.OauthContext{
-				ClientID:     repositoryList[0].vcs.ApplicationID,
-				ClientSecret: repositoryList[0].vcs.Secret,
-				AccessToken:  repositoryList[0].repository.AccessToken,
-				RefreshToken: repositoryList[0].repository.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			}, repositoryList[0].repository.ExternalID, pullRequest.ID)
+			commitsInPullRequest, err := azure.GetPullRequestCommits(ctx, oauthContext, repositoryList[0].repository.ExternalID, pullRequest.ID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get pull request commits").SetInternal(err)
 			}
@@ -477,14 +472,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		// NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
 		backfillCommits := make([]vcs.Commit, 0, len(nonBytebaseCommitList))
 		for _, commit := range nonBytebaseCommitList {
-			changes, err := azure.GetChangesByCommit(ctx, common.OauthContext{
-				ClientID:     repositoryList[0].vcs.ApplicationID,
-				ClientSecret: repositoryList[0].vcs.Secret,
-				AccessToken:  repositoryList[0].repository.AccessToken,
-				RefreshToken: repositoryList[0].repository.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			}, repositoryList[0].repository.ExternalID, commit.CommitID)
+			changes, err := azure.GetChangesByCommit(ctx, oauthContext, repositoryList[0].repository.ExternalID, commit.CommitID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get changes by commit %q", commit.CommitID)).SetInternal(err)
 			}
@@ -512,16 +500,18 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			})
 		}
 
+		if len(backfillCommits) == 1 && len(backfillCommits[0].AddedList) == 1 && strings.HasSuffix(backfillCommits[0].AddedList[0], azure.SQLReviewPipelineFilePath) {
+			// Setup SQL review pipeline and policy.
+			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.ExternalID, repositoryList[0].repository.BranchFilter); err != nil {
+				log.Error("failed to setup pipeline", zap.Error(err), zap.String("repository", repositoryList[0].repository.ExternalID))
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to setup SQL review pipeline").SetInternal(err)
+			}
+			return c.String(http.StatusOK, "OK")
+		}
+
 		// Backfill web url for commits.
 		if pushEvent.Resource.PushID != 0 {
-			commitsInPush, err := azure.GetPushCommitsByPushID(ctx, common.OauthContext{
-				ClientID:     repositoryList[0].vcs.ApplicationID,
-				ClientSecret: repositoryList[0].vcs.Secret,
-				AccessToken:  repositoryList[0].repository.AccessToken,
-				RefreshToken: repositoryList[0].repository.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			}, repositoryList[0].repository.ExternalID, pushEvent.Resource.PushID)
+			commitsInPush, err := azure.GetPushCommitsByPushID(ctx, oauthContext, repositoryList[0].repository.ExternalID, pushEvent.Resource.PushID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get push commits by push id %d", pushEvent.Resource.PushID)).SetInternal(err)
 			}
