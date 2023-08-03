@@ -4,7 +4,9 @@
             select * from users where id = #{id}
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    select * from users where id = $1;
+  mysql: |
     select * from users where id = ?;
 - xml: |-
     <mapper namespace="com.bytebase.test">
@@ -12,7 +14,9 @@
             select * from users where id = ${id}
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    select * from users where id = $1;
+  mysql: |
     select * from users where id = ?;
 - xml: |-
     <mapper namespace="com.bytebase.test">
@@ -29,7 +33,12 @@
             delete from users where id = ${id}
         </delete>
     </mapper>
-  sql: |
+  postgresql: |
+    select * from users where id = $1;
+    insert into users (id, name) values ($1, $1);
+    update users set name = $1 where id = $1;
+    delete from users where id = $1;
+  mysql: |
     select * from users where id = ?;
     insert into users (id, name) values (?, ?);
     update users set name = ? where id = ?;
@@ -41,5 +50,7 @@
             select * from users where id = #{id}
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    select * from users where id = $1;
+  mysql: |
     select * from users where id = ?;

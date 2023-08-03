@@ -28,6 +28,21 @@ type RestoreContext struct {
 	SQLLastLineToOriginalLineMapping map[int]int
 	// CurrentLastLine is used for internal calculation.
 	CurrentLastLine int
+
+	// RestoreDataNodePlaceholder is the placeholder for restoring data node, it may be different in different engine.
+	// For example, in MySQL, it is "?", in PostgreSQL, it is "$1".
+	RestoreDataNodePlaceholder string
+}
+
+// WithRestoreDataNodePlaceholder set the placeholder for restoring data node.
+// DataNodePlaceholder is the placeholder for restoring data node, it may be different in different engine.
+// For example:
+// MyBatis: #{param}.
+// MySQL: ?.
+// PostgreSQL: $1.
+func (r *RestoreContext) WithRestoreDataNodePlaceholder(placeholder string) *RestoreContext {
+	r.RestoreDataNodePlaceholder = placeholder
+	return r
 }
 
 var (

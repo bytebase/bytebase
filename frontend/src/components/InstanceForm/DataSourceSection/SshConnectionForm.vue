@@ -108,8 +108,8 @@ import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 
 import { Instance } from "@/types/proto/v1/instance_service";
-import DroppableTextarea from "../misc/DroppableTextarea.vue";
 import { useSubscriptionV1Store } from "@/store";
+import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 
 const SshTypes = ["NONE", "TUNNEL", "TUNNEL+PK"] as const;
 
