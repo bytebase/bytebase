@@ -154,6 +154,7 @@ const (
 type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *taskrun.Scheduler
+	TaskSchedulerV2    *taskrun.SchedulerV2
 	TaskCheckScheduler *taskcheck.Scheduler
 	PlanCheckScheduler *plancheck.Scheduler
 	MetricReporter     *metricreport.Reporter
@@ -455,6 +456,20 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile, s.licenseService)
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 
+		if profile.DevelopmentUseV2Scheduler {
+			s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg)
+			s.TaskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
+			s.TaskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
+			s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
+		}
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
@@ -938,8 +953,13 @@ func (s *Server) Run(ctx context.Context, port int) error {
 			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
 		}
 		// runnerWG waits for all goroutines to complete.
-		s.runnerWG.Add(1)
-		go s.TaskScheduler.Run(ctx, &s.runnerWG)
+		if s.profile.DevelopmentUseV2Scheduler {
+			s.runnerWG.Add(1)
+			go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
+		} else {
+			s.runnerWG.Add(1)
+			go s.TaskScheduler.Run(ctx, &s.runnerWG)
+		}
 		s.runnerWG.Add(1)
 		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
