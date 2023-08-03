@@ -96,9 +96,66 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 		return reportStatementTypeForPostgres(renderedStatement)
 	case db.MySQL, db.MariaDB, db.OceanBase, db.TiDB:
 		return reportStatementTypeForMySQL(database.DatabaseName, renderedStatement, charset, collation)
+	case db.Oracle:
+		schema := ""
+		if instance.Options == nil || !instance.Options.SchemaTenantMode {
+			adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+			schema = adminSource.Username
+		} else {
+			schema = database.DatabaseName
+		}
+		return reportStatementTypeForOracle(database.DatabaseName, schema, renderedStatement)
 	default:
 		return nil, errors.New("unsupported db type")
 	}
+}
+
+func reportStatementTypeForOracle(databaseName string, schemaName string, statement string) ([]api.TaskCheckResult, error) {
+	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
+	if err != nil {
+		// nolint:nilerr
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.StatementSyntaxError.Int(),
+				Title:     "Syntax error",
+				Content:   err.Error(),
+			},
+		}, nil
+	}
+
+	var result []api.TaskCheckResult
+
+	for _, stmt := range singleSQLs {
+		if stmt.Empty || stmt.Text == "" {
+			continue
+		}
+
+		// TODO: support report statement type for oracle
+		sqlType := "UNKNOWN"
+		changedResources, err := getChangedResourcesForOracle(databaseName, schemaName, stmt.Text)
+		if err != nil {
+			log.Error("failed to extract changed resources", zap.String("statement", stmt.Text), zap.Error(err))
+		}
+		result = append(result, api.TaskCheckResult{
+			Status:           api.TaskCheckStatusSuccess,
+			Namespace:        api.BBNamespace,
+			Code:             common.Ok.Int(),
+			Title:            "OK",
+			Content:          sqlType,
+			ChangedResources: string(changedResources),
+		})
+	}
+	return result, nil
+}
+
+func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) ([]byte, error) {
+	resources, err := parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
+	if err != nil {
+		return nil, err
+	}
+	return marshalChangedResources(resources)
 }
 
 func reportStatementTypeForMySQL(databaseName, statement, charset, collation string) ([]api.TaskCheckResult, error) {
@@ -157,7 +214,7 @@ func reportStatementTypeForMySQL(databaseName, statement, charset, collation str
 			continue
 		}
 		sqlType := getStatementTypeFromTidbAstNode(root[0])
-		changedResources, err := getStatementChangedResourcesFromTidbAstNode(databaseName, stmt.Text)
+		changedResources, err := getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
 		if err != nil {
 			log.Error("failed to get statement changed resources", zap.Error(err))
 		}
@@ -174,11 +231,7 @@ func reportStatementTypeForMySQL(databaseName, statement, charset, collation str
 	return result, nil
 }
 
-func getStatementChangedResourcesFromTidbAstNode(currentDatabase, statement string) ([]byte, error) {
-	resources, err := parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
-	if err != nil {
-		return nil, err
-	}
+func marshalChangedResources(resources []parser.SchemaResource) ([]byte, error) {
 	meta := storepb.ChangedResources{}
 	// resources is ordered by (db, schema, table)
 	for _, resource := range resources {
@@ -193,6 +246,14 @@ func getStatementChangedResourcesFromTidbAstNode(currentDatabase, statement stri
 		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{Name: resource.Table})
 	}
 	return protojson.Marshal(&meta)
+}
+
+func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]byte, error) {
+	resources, err := parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
+	if err != nil {
+		return nil, err
+	}
+	return marshalChangedResources(resources)
 }
 
 func reportStatementTypeForPostgres(statement string) ([]api.TaskCheckResult, error) {
