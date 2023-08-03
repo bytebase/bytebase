@@ -290,6 +290,10 @@ const changeRoleTooltip = (user: User): string => {
   if (allowChangeRole(user)) {
     return "";
   }
+  // Archived user cannot be changed role, so the tooltip should be empty.
+  if (user.state !== State.ACTIVE) {
+    return "";
+  }
   if (user.name === SYSTEM_BOT_USER_NAME) {
     return t("settings.members.tooltip.cannot-change-role-of-systembot");
   }
