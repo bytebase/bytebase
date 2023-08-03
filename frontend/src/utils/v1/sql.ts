@@ -1,6 +1,10 @@
 import { RowValue } from "@/types/proto/v1/sql_service";
 
 export const extractSQLRowValue = (value: RowValue) => {
+  if (value.nullValue === 0) {
+    return undefined;
+  }
+
   const plainObject = RowValue.toJSON(value) as Record<string, any>;
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
