@@ -39,7 +39,7 @@ type RolloutService struct {
 	store              *store.Store
 	licenseService     enterpriseAPI.LicenseService
 	dbFactory          *dbfactory.DBFactory
-	taskScheduler      *taskrun.Scheduler
+	taskSchedulerV2    *taskrun.SchedulerV2
 	taskCheckScheduler *taskcheck.Scheduler
 	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
@@ -47,12 +47,12 @@ type RolloutService struct {
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskSchedulerV2 *taskrun.SchedulerV2, taskCheckScheduler *taskcheck.Scheduler, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
 	return &RolloutService{
 		store:              store,
 		licenseService:     licenseService,
 		dbFactory:          dbFactory,
-		taskScheduler:      taskScheduler,
+		taskSchedulerV2:    taskSchedulerV2,
 		taskCheckScheduler: taskCheckScheduler,
 		planCheckScheduler: planCheckScheduler,
 		stateCfg:           stateCfg,
@@ -428,14 +428,12 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 
 	stageTasks := map[int][]int{}
 	taskIDsToRunMap := map[int]bool{}
-	taskIDsToRun := []int{}
 	for _, task := range request.Tasks {
 		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		stageTasks[stageID] = append(stageTasks[stageID], taskID)
-		taskIDsToRun = append(taskIDsToRun, taskID)
 		taskIDsToRunMap[taskID] = true
 	}
 	if len(stageTasks) > 1 {
@@ -473,7 +471,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
 	}
 
-	ok, err := s.taskScheduler.CanPrincipalChangeIssueStageTaskStatus(ctx, user, issue, stageToRun.EnvironmentID, api.TaskPending)
+	ok, err := s.taskSchedulerV2.CanUserRunStageTasks(ctx, user, issue, stageToRun.EnvironmentID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -489,19 +487,20 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
 	}
 
-	var tasksToRun []*store.TaskMessage
+	var taskRunCreates []*store.TaskRunMessage
 	for _, task := range stageToRunTasks {
 		if !taskIDsToRunMap[task.ID] {
 			continue
 		}
-		tasksToRun = append(tasksToRun, task)
+		create := &store.TaskRunMessage{
+			TaskUID: task.ID,
+			Name:    fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+		}
+		taskRunCreates = append(taskRunCreates, create)
 	}
 
-	if err := s.store.BatchPatchTaskStatus(ctx, taskIDsToRun, api.TaskPending, principalID); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update task status, error: %v", err)
-	}
-	if err := s.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasksToRun, principalID, issue, stageToRun.Name); err != nil {
-		log.Error("failed to create task status update activity", zap.Error(err))
+	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create pending task runs")
 	}
 
 	return &v1pb.BatchRunTasksResponse{}, nil
