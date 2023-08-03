@@ -144,7 +144,7 @@ type project struct {
 type repository struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
-	// RemoteUrl is the repo url in https://{org name}@dev.azure.com/{org name}/{project name}/_git/{repo name}
+	// RemoteURL is the repo url in https://{org name}@dev.azure.com/{org name}/{project name}/_git/{repo name}
 	// The pipeline ci will use this url, so we need this url
 	RemoteURL string `json:"remoteUrl"`
 	// WebURL is the repo url in https://dev.azure.com/{org name}/{project name}/_git/{repo name}
