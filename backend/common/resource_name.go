@@ -388,7 +388,7 @@ func GetProjectIDRolloutIDStageIDTaskID(name string) (string, int, int, int, err
 	return tokens[0], rolloutID, stageID, taskID, nil
 }
 
-// GetProjectIDRolloutIDStageIDTaskID returns the project ID, rollout ID, stage ID, and task ID from a resource name.
+// GetProjectIDRolloutIDStageIDTaskIDTaskRunID returns the project ID, rollout ID, stage ID, task ID and task run ID from a resource name.
 func GetProjectIDRolloutIDStageIDTaskIDTaskRunID(name string) (string, int, int, int, int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix, TaskRunPrefix)
 	if err != nil {

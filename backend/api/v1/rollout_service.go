@@ -504,6 +504,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	return &v1pb.BatchRunTasksResponse{}, nil
 }
 
+// BatchCancelTaskRuns cancels a list of task runs.
+// TODO(p0ny): forbid cancel noncancellable task runs.
 func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
 	if len(request.TaskRuns) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "task runs cannot be empty")
