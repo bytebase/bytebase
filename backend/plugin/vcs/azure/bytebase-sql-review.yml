@@ -27,32 +27,28 @@ jobs:
             --arg 'webURL' "$BUILD_REPOSITORY_URI" \
             '$ARGS.named')
 
-          response=$(curl --silent --write-out "HTTPSTATUS:%{http_code}" -X POST ${{ variables.api }} \
+          response=$(curl -s --show-error -X POST ${{ variables.api }} \
+            -H "X-SQL-Review-Token: %s" \
             -H "Content-Type: application/json" \
             -d "$request_body")
 
           echo "response: $response"
 
-          http_code=$(echo $response | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
-          body=$(echo $response | sed -e 's/HTTPSTATUS\:.*//g')
-
-          if [[ $http_code != 200 ]]; then
-            echo "Failed to check SQL with response code $http_code and body $body"
-            exit 1
-          fi
-
-          content=$(echo $body | jq -r '.content')
+          content=$(echo $response | jq -r '.content')
           len=$(echo $content | jq '. | length')
           if [[ $len == 0 ]]; then exit 0; fi
 
           msg=$(echo $content | jq -r '.[0]')
           echo $msg >> bytebase-sql-review.xml
 
-          status=$(echo $body | jq -r '.status')
-          if [[ "$status" == "ERROR" ]]; then exit 1; fi
+          result=$(echo $response | jq -r '.status')
+          echo "##vso[task.setvariable variable=status]$result"
         displayName: SQL Review
       - task: PublishTestResults@2
         inputs:
           testResultsFormat: "JUnit"
           testResultsFiles: "**/bytebase-sql-review.xml"
         displayName: Upload artifacts
+      - bash: |
+          if [[ "$STATUS" == "ERROR" ]]; then exit 1; fi
+        displayName: Check SQL Review Result
