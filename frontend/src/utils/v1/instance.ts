@@ -92,9 +92,7 @@ export const supportedEngineV1List = () => {
     Engine.REDSHIFT,
   ];
   if (locale.value === "zh-CN") {
-    if (isDev()) {
-      engines.push(Engine.DM);
-    }
+    engines.push(Engine.DM);
   }
   return engines;
 };
