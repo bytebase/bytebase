@@ -69,7 +69,7 @@ type branchPolicySetting struct {
 	ManualQueueOnly         bool                 `json:"manualQueueOnly"`
 	QueueOnSourceUpdateOnly bool                 `json:"queueOnSourceUpdateOnly"`
 	Scope                   []*branchPolicyScope `json:"scope"`
-	// ValidDuration is the expiration in hours for build artifacts.
+	// ValidDuration is the expiration in minutes for build artifacts.
 	ValidDuration int `json:"validDuration"`
 }
 
@@ -106,19 +106,20 @@ func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, 
 	if len(parts) != 3 {
 		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
 	}
+	organizationName, projectName, repositoryID := parts[0], parts[1], parts[2]
 
 	values := &url.Values{}
 	values.Set("api-version", "7.1-preview.1")
 
 	client := &http.Client{}
-	apiURL := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/pipelines?%s", url.PathEscape(parts[0]), url.PathEscape(parts[1]), values.Encode())
+	apiURL := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/pipelines?%s", url.PathEscape(organizationName), url.PathEscape(projectName), values.Encode())
 	payload := &pipelineCreate{
 		Name: sqlReviewPipelineName,
 		Configuration: &pipelineConfig{
 			Type: "yaml",
 			Path: SQLReviewPipelineFilePath,
 			Repository: &pipelineRepository{
-				ID:   parts[2],
+				ID:   repositoryID,
 				Type: "azureReposGit",
 			},
 		},
@@ -167,12 +168,13 @@ func createSQLReviewBranchPolicy(ctx context.Context, oauthCtx common.OauthConte
 	if len(parts) != 3 {
 		return errors.Errorf("invalid repository ID %q", repositoryID)
 	}
+	organizationName, projectName, repositoryID := parts[0], parts[1], parts[2]
 
 	values := &url.Values{}
 	values.Set("api-version", "7.1-preview.1")
 
 	client := &http.Client{}
-	apiURL := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/policy/configurations?%s", url.PathEscape(parts[0]), url.PathEscape(parts[1]), values.Encode())
+	apiURL := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/policy/configurations?%s", url.PathEscape(organizationName), url.PathEscape(projectName), values.Encode())
 	payload := &branchPolicyCreate{
 		IsBlocking: true,
 		IsDeleted:  false,
@@ -187,7 +189,7 @@ func createSQLReviewBranchPolicy(ctx context.Context, oauthCtx common.OauthConte
 				{
 					MatchKind:    "Exact",
 					RefName:      fmt.Sprintf("refs/heads/%s", branch),
-					RepositoryID: parts[2],
+					RepositoryID: repositoryID,
 				},
 			},
 		},
