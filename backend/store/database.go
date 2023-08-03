@@ -529,7 +529,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	var wheres []string
 	args := []any{project.UID, updaterID}
 	for i, database := range databases {
-		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+2, 2*i+3))
+		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+3, 2*i+4))
 		args = append(args, database.InstanceID, database.DatabaseName)
 	}
 	databaseClause := ""
@@ -539,7 +539,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE db
 			SET project_id = $1, updater_id = $2
-			FROM instance JOIN environment ON instance.environment_id = environment.id
+			FROM instance
 			WHERE db.instance_id = instance.id %s;`, databaseClause),
 		args...,
 	); err != nil {
