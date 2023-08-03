@@ -1526,10 +1526,6 @@ func QueryPullRequest(ctx context.Context, oauthCtx common.OauthContext, reposit
 		return nil, errors.Errorf("failed to query pull request, code: %v, body: %s", code, string(body))
 	}
 
-	type pullRequestQueryResponseQuery struct {
-		Type  string   `json:"type"`
-		Items []string `json:"items"`
-	}
 	type pullRequestQueryResponseMapElem struct {
 		ID            uint64 `json:"pullRequestId"`
 		Status        string `json:"status"`
