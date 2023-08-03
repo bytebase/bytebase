@@ -3,6 +3,7 @@ package taskcheck
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
@@ -95,7 +96,7 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 	case db.Postgres:
 		return reportStatementTypeForPostgres(database.DatabaseName, renderedStatement)
 	case db.MySQL, db.MariaDB, db.OceanBase, db.TiDB:
-		return reportStatementTypeForMySQL(database.DatabaseName, renderedStatement, charset, collation)
+		return reportStatementTypeForMySQL(instance.Engine, database.DatabaseName, renderedStatement, charset, collation)
 	case db.Oracle:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -158,7 +159,7 @@ func getChangedResourcesForOracle(databaseName string, schemaName string, statem
 	return marshalChangedResources(resources)
 }
 
-func reportStatementTypeForMySQL(databaseName, statement, charset, collation string) ([]api.TaskCheckResult, error) {
+func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charset, collation string) ([]api.TaskCheckResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -213,8 +214,13 @@ func reportStatementTypeForMySQL(databaseName, statement, charset, collation str
 			})
 			continue
 		}
-		sqlType := getStatementTypeFromTidbAstNode(root[0])
-		changedResources, err := getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
+		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
+		var changedResources []byte
+		if engine != db.TiDB {
+			changedResources, err = getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
+		} else {
+			changedResources, err = marshalChangedResources(resources)
+		}
 		if err != nil {
 			log.Error("failed to get statement changed resources", zap.Error(err))
 		}
@@ -292,62 +298,108 @@ func reportStatementTypeForPostgres(database, statement string) ([]api.TaskCheck
 	return result, nil
 }
 
-func getStatementTypeFromTidbAstNode(node tidbast.StmtNode) string {
-	switch node.(type) {
+func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (string, []parser.SchemaResource) {
+	var result []parser.SchemaResource
+	switch n := node.(type) {
 	// DDL
 
 	// CREATE
 	case *tidbast.CreateDatabaseStmt:
-		return "CREATE_DATABASE"
+		return "CREATE_DATABASE", result
 	case *tidbast.CreateIndexStmt:
-		return "CREATE_INDEX"
+		return "CREATE_INDEX", result
 	case *tidbast.CreateTableStmt:
-		return "CREATE_TABLE"
+		resource := parser.SchemaResource{
+			Database: n.Table.Schema.L,
+			Table:    n.Table.Name.L,
+		}
+		if resource.Database == "" {
+			resource.Database = database
+		}
+		result = append(result, resource)
+		return "CREATE_TABLE", result
 	case *tidbast.CreateViewStmt:
-		return "CREATE_VIEW"
+		return "CREATE_VIEW", result
 	case *tidbast.CreateSequenceStmt:
-		return "CREATE_SEQUENCE"
+		return "CREATE_SEQUENCE", result
 	case *tidbast.CreatePlacementPolicyStmt:
-		return "CREATE_PLACEMENT_POLICY"
+		return "CREATE_PLACEMENT_POLICY", result
 
 	// DROP
 	case *tidbast.DropIndexStmt:
-		return "DROP_INDEX"
+		return "DROP_INDEX", result
 	case *tidbast.DropTableStmt:
-		return "DROP_TABLE"
+		for _, table := range n.Tables {
+			resource := parser.SchemaResource{
+				Database: table.Schema.L,
+				Table:    table.Name.L,
+			}
+			if resource.Database == "" {
+				resource.Database = database
+			}
+			result = append(result, resource)
+		}
+		return "DROP_TABLE", result
 	case *tidbast.DropSequenceStmt:
-		return "DROP_SEQUENCE"
+		return "DROP_SEQUENCE", result
 	case *tidbast.DropPlacementPolicyStmt:
-		return "DROP_PLACEMENT_POLICY"
+		return "DROP_PLACEMENT_POLICY", result
 	case *tidbast.DropDatabaseStmt:
-		return "DROP_DATABASE"
+		return "DROP_DATABASE", result
 
 	// ALTER
 	case *tidbast.AlterTableStmt:
-		return "ALTER_TABLE"
+		resource := parser.SchemaResource{
+			Database: n.Table.Schema.L,
+			Table:    n.Table.Name.L,
+		}
+		if resource.Database == "" {
+			resource.Database = database
+		}
+		result = append(result, resource)
+		return "ALTER_TABLE", result
 	case *tidbast.AlterSequenceStmt:
-		return "ALTER_SEQUENCE"
+		return "ALTER_SEQUENCE", result
 	case *tidbast.AlterPlacementPolicyStmt:
-		return "ALTER_PLACEMENT_POLICY"
+		return "ALTER_PLACEMENT_POLICY", result
 
 	// TRUNCATE
 	case *tidbast.TruncateTableStmt:
-		return "TRUNCATE"
+		return "TRUNCATE", result
 
 	// RENAME
 	case *tidbast.RenameTableStmt:
-		return "RENAME_TABLE"
+		for _, pair := range n.TableToTables {
+			resource := parser.SchemaResource{
+				Database: pair.OldTable.Schema.L,
+				Table:    pair.OldTable.Name.L,
+			}
+			if resource.Database == "" {
+				resource.Database = database
+			}
+			result = append(result, resource)
+
+			newResource := parser.SchemaResource{
+				Database: pair.NewTable.Schema.L,
+				Table:    pair.NewTable.Name.L,
+			}
+			if newResource.Database == "" {
+				newResource.Database = resource.Database
+			}
+			result = append(result, newResource)
+		}
+		return "RENAME_TABLE", result
 
 	// DML
 
 	case *tidbast.InsertStmt:
-		return "INSERT"
+		return "INSERT", result
 	case *tidbast.DeleteStmt:
-		return "DELETE"
+		return "DELETE", result
 	case *tidbast.UpdateStmt:
-		return "UPDATE"
+		return "UPDATE", result
 	}
-	return "UNKNOWN"
+	return "UNKNOWN", result
 }
 
 func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []parser.SchemaResource) {
