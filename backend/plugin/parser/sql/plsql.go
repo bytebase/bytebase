@@ -669,6 +669,110 @@ func IsOracleKeyword(text string) bool {
 	return oracleKeywords[strings.ToUpper(text)] || oracleReservedWords[strings.ToUpper(text)]
 }
 
+func extractOracleChangedResources(currentDatabase string, currentSchema string, statement string) ([]SchemaResource, error) {
+	tree, _, err := ParsePLSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	l := &plsqlChangedResourceExtractListener{
+		currentDatabase: currentDatabase,
+		currentSchema:   currentSchema,
+		resourceMap:     make(map[string]SchemaResource),
+	}
+
+	var result []SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+type plsqlChangedResourceExtractListener struct {
+	*parser.BasePlSqlParserListener
+
+	currentDatabase string
+	currentSchema   string
+	resourceMap     map[string]SchemaResource
+}
+
+// EnterCreate_table is called when production create_table is entered.
+func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Create_tableContext) {
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   l.currentSchema,
+		Table:    PLSQLNormalizeIdentifierContext(ctx.Table_name().Identifier()),
+	}
+
+	if ctx.Schema_name() != nil {
+		resource.Schema = PLSQLNormalizeIdentifierContext(ctx.Schema_name().Identifier())
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
+// EnterDrop_table is called when production drop_table is entered.
+func (l *plsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_tableContext) {
+	result := []string{PLSQLNormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
+	if ctx.Tableview_name().Id_expression() != nil {
+		result = append(result, PLSQLNormalizeIDExpression(ctx.Tableview_name().Id_expression()))
+	}
+	if len(result) == 1 {
+		result = []string{l.currentSchema, result[0]}
+	}
+
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   result[0],
+		Table:    result[1],
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
+// EnterAlter_table is called when production alter_table is entered.
+func (l *plsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
+	result := []string{PLSQLNormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
+	if ctx.Tableview_name().Id_expression() != nil {
+		result = append(result, PLSQLNormalizeIDExpression(ctx.Tableview_name().Id_expression()))
+	}
+	if len(result) == 1 {
+		result = []string{l.currentSchema, result[0]}
+	}
+
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   result[0],
+		Table:    result[1],
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
+// EnterAlter_table_properties is called when production alter_table_properties is entered.
+func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *parser.Alter_table_propertiesContext) {
+	if ctx.RENAME() == nil {
+		return
+	}
+	result := []string{PLSQLNormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
+	if ctx.Tableview_name().Id_expression() != nil {
+		result = append(result, PLSQLNormalizeIDExpression(ctx.Tableview_name().Id_expression()))
+	}
+	if len(result) == 1 {
+		result = []string{l.currentSchema, result[0]}
+	}
+
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   result[0],
+		Table:    result[1],
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
 func extractOracleResourceList(currentDatabase string, currentSchema string, statement string) ([]SchemaResource, error) {
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
