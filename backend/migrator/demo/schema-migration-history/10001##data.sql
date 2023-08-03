@@ -120,12 +120,12 @@ INSERT INTO "public"."task" ("id", "row_status", "creator_id", "created_ts", "up
 (104, 'NORMAL', 101, 1657272927, 1, 1657272938, 103, 104, 102, 103, 'Update "employee" schema', 'DONE', 'bb.task.database.schema.update', '{"statement": "Alter table\n  employee\nadd\n  column (\n    EduBackgrounds varchar(50) not null,\n    Email varchar(40) not null,\n    PhoneNo varchar(15) not null,\n    Credentials_type char(4) not null,\n    Credentials_No varchar(10) not null,\n    Manager varchar(14),\n    Emergency_name varchar(16) not null,\n    Emergency_phoneNo varchar(15) not null,\n    Address varchar(60) not null\n  )", "migrationType": "MIGRATE", "schemaVersion": "20220708093526"}', 0),
 (105, 'NORMAL', 101, 1657273475, 1, 1657273487, 104, 105, 102, 103, 'Update "employee" schema', 'DONE', 'bb.task.database.schema.update', '{"statement": "alter table\n  employee drop column Address;", "migrationType": "MIGRATE", "schemaVersion": "20220708094434"}', 0);
 
-INSERT INTO "public"."task_run" ("id", "creator_id", "created_ts", "updater_id", "updated_ts", "task_id", "name", "status", "type", "code", "comment", "result") VALUES
-(101, 1, 1657272778, 1, 1657272778, 101, 'Welcome', 'FAILED', 'bb.task.general', 0, '', '{"detail": "Something is not right..."}'),
-(102, 1, 1657272778, 1, 1657272778, 101, 'Welcome', 'RUNNING', 'bb.task.general', 0, 'Let''s give another try', '{}'),
-(103, 1, 1657272893, 1, 1657272902, 103, 'Establish "employee" baseline 1657272892', 'DONE', 'bb.task.database.schema.update', 0, '', '{"detail": "Established baseline version 20220708093449 for database \"employee\".", "version": "20220708093449", "migrationId": 1}'),
-(104, 1, 1657272929, 1, 1657272938, 104, 'Update "employee" schema 1657272928', 'DONE', 'bb.task.database.schema.update', 0, '', '{"detail": "Applied migration version 20220708093526 to database \"employee\".", "version": "20220708093526", "migrationId": 2}'),
-(105, 1, 1657273477, 1, 1657273487, 105, 'Update "employee" schema 1657273476', 'DONE', 'bb.task.database.schema.update', 0, '', '{"detail": "Applied migration version 20220708094434 to database \"employee\".", "version": "20220708094434", "migrationId": 3}');
+INSERT INTO "public"."task_run" ("id", "creator_id", "created_ts", "updater_id", "updated_ts", "task_id", "name", "status", "code", "comment", "result") VALUES
+(101, 1, 1657272778, 1, 1657272778, 101, 'Welcome', 'FAILED', 0, '', '{"detail": "Something is not right..."}'),
+(102, 1, 1657272778, 1, 1657272778, 101, 'Welcome', 'RUNNING', 0, 'Let''s give another try', '{}'),
+(103, 1, 1657272893, 1, 1657272902, 103, 'Establish "employee" baseline 1657272892', 'DONE', 0, '', '{"detail": "Established baseline version 20220708093449 for database \"employee\".", "version": "20220708093449", "migrationId": 1}'),
+(104, 1, 1657272929, 1, 1657272938, 104, 'Update "employee" schema 1657272928', 'DONE', 0, '', '{"detail": "Applied migration version 20220708093526 to database \"employee\".", "version": "20220708093526", "migrationId": 2}'),
+(105, 1, 1657273477, 1, 1657273487, 105, 'Update "employee" schema 1657273476', 'DONE', 0, '', '{"detail": "Applied migration version 20220708094434 to database \"employee\".", "version": "20220708094434", "migrationId": 3}');
 
 INSERT INTO "public"."task_check_run" ("id", "creator_id", "created_ts", "updater_id", "updated_ts", "task_id", "status", "type", "code", "comment", "result", "payload") VALUES
 (101, 1, 1657272890, 1, 1657272892, 103, 'DONE', 'bb.task-check.database.connect', 0, '', '{"resultList": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}'),
