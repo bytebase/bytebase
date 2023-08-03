@@ -839,6 +839,10 @@ func convertParameterMode(mode pgquery.FunctionParameterMode) ast.FunctionParame
 		return ast.FunctionParameterModeInOut
 	case pgquery.FunctionParameterMode_FUNC_PARAM_VARIADIC:
 		return ast.FunctionParameterModeVariadic
+	case pgquery.FunctionParameterMode_FUNC_PARAM_TABLE:
+		return ast.FunctionParameterModeTable
+	case pgquery.FunctionParameterMode_FUNC_PARAM_DEFAULT:
+		return ast.FunctionParameterModeDefault
 	default:
 		return ast.FunctionParameterModeUndefined
 	}
@@ -1053,7 +1057,7 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 		case *pgquery.A_Const_Sval:
 			return &ast.StringDef{Value: val.Sval.Sval}, nil, nil, nil
 		default:
-			return &ast.StringDef{Value: in.AConst.String()}, nil, nil, nil
+			return &ast.UnconvertedExpressionDef{}, nil, nil, nil
 		}
 	case *pgquery.Node_String_:
 		return &ast.StringDef{Value: in.String_.Sval}, nil, nil, nil
@@ -1746,11 +1750,14 @@ func convertDefElemNodeIntegerToBool(defElem *pgquery.DefElem) (bool, error) {
 	if defElem.Arg == nil {
 		return false, nil
 	}
-	interger, ok := defElem.Arg.Node.(*pgquery.Node_Integer)
-	if !ok {
-		return false, parser.NewConvertErrorf("expected integer but found %T", defElem.Arg.Node)
+	switch node := defElem.Arg.Node.(type) {
+	case *pgquery.Node_Integer:
+		return node.Integer.Ival == 1, nil
+	case *pgquery.Node_Boolean:
+		return node.Boolean.Boolval, nil
+	default:
+		return false, parser.NewConvertErrorf("expected integer or boolean but found %T", defElem.Arg.Node)
 	}
-	return interger.Integer.Ival == 1, nil
 }
 
 func convertDefElemNodeIntegerToInt32(defElem *pgquery.DefElem) (*int32, error) {

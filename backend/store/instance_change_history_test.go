@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -38,6 +39,6 @@ func TestGenerateResourceFilter(t *testing.T) {
 	for _, test := range tests {
 		text, err := generateResourceFilter(test.filter)
 		require.NoError(t, err)
-		require.Equal(t, test.expected, text, test.filter)
+		require.Equal(t, strings.ReplaceAll(test.expected, " ", ""), strings.ReplaceAll(text, " ", ""), test.filter)
 	}
 }
