@@ -1,0 +1,56 @@
+<template>
+  <div
+    :id="domIDForItem(item)"
+    class="flex items-start justify-between hover:bg-gray-200 px-2 py-1 gap-x-1"
+    :class="[isCurrentItem && 'bg-indigo-600/10']"
+    @click="$emit('click', item, $event)"
+    @contextmenu="$emit('contextmenu', item, $event)"
+  >
+    <div class="flex-1 text-sm cursor-pointer pt-0.5 break-all">
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <span v-if="item.target.title" v-html="titleHTML(item, keyword)" />
+      <span v-else>
+        {{ $t("sql-editor.untitled-sheet") }}
+      </span>
+    </div>
+    <div class="shrink-0" @click.stop>
+      <Dropdown :sheet="item.target" :view="view" />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { Dropdown } from "@/views/sql-editor/Sheet";
+import { SheetViewMode } from "@/views/sql-editor/Sheet";
+import { MergedItem, SheetItem, domIDForItem, titleHTML } from "./common";
+
+defineProps<{
+  item: SheetItem;
+  isCurrentItem: boolean;
+  view: SheetViewMode;
+  keyword: string;
+}>();
+
+defineEmits<{
+  (event: "click", item: MergedItem, e: MouseEvent): void;
+  (event: "contextmenu", item: MergedItem, e: MouseEvent): void;
+}>();
+
+// const dropdownState = ref({
+//   show: false,
+//   x: 0,
+//   y: 0,
+// });
+
+// const handleRightClick = (e: MouseEvent) => {
+//   e.preventDefault();
+//   dropdownState.value.show = false;
+//   nextTick().then(() => {
+//     dropdownState.value = {
+//       show: true,
+//       x: e.clientX,
+//       y: e.clientY,
+//     };
+//   });
+// };
+</script>

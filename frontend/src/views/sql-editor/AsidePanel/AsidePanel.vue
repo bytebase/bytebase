@@ -54,10 +54,10 @@
             <SheetList view="my" />
           </NTabPane>
           <NTabPane name="shared" :tab="$t('sheet.shared')">
-            <SheetList view="shared" />
+            <SheetList view="shared" @add-tab="sheetTab = 'my'" />
           </NTabPane>
           <NTabPane name="starred" :tab="$t('sheet.starred')">
-            <SheetList view="starred" />
+            <SheetList view="starred" @add-tab="sheetTab = 'my'" />
           </NTabPane>
         </NTabs>
       </NTabPane>

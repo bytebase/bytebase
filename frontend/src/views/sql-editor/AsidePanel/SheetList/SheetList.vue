@@ -11,80 +11,109 @@
           <heroicons-outline:search class="h-5 w-5 text-gray-300" />
         </template>
       </NInput>
-      <NButton quaternary style="--n-padding: 0 8px">
+      <NButton quaternary style="--n-padding: 0 8px" @click="addSheet">
         <template #icon>
           <heroicons:plus />
         </template>
       </NButton>
     </div>
-    <div class="flex-1 flex flex-col gap-y-2 h-full overflow-y-auto">
+    <div
+      class="flex-1 flex flex-col gap-y-2 h-full overflow-y-auto"
+      @scroll="dropdown = undefined"
+    >
+      <div
+        v-if="!isLoading && filteredItemList.length === 0"
+        class="flex flex-col items-center justify-center text-control-placeholder"
+      >
+        <p class="py-8">{{ $t("common.no-data") }}</p>
+      </div>
+      <template v-for="item in filteredItemList">
+        <TabItem
+          v-if="isTabItem(item)"
+          :key="`tab-${item.target.name}`"
+          :item="item"
+          :is-current-item="isCurrentItem(item)"
+          :keyword="keyword"
+          @click="(item, e) => handleItemClick(item, e)"
+        />
+        <SheetItem
+          v-else
+          :key="`sheet-${item.target.name}`"
+          :item="item"
+          :is-current-item="isCurrentItem(item)"
+          :keyword="keyword"
+          :view="view"
+          @click="(item, e) => handleItemClick(item, e)"
+          @contextmenu="(item, e) => handleRightClick(item, e)"
+        />
+      </template>
       <div v-if="isLoading" class="flex flex-col items-center py-8">
         <BBSpin />
       </div>
-      <template v-else>
-        <div
-          v-if="filteredSheetList.length === 0"
-          class="flex flex-col items-center justify-center text-control-placeholder"
-        >
-          <p class="py-8">{{ $t("common.no-data") }}</p>
-        </div>
-        <div
-          v-for="sheet in filteredSheetList"
-          :id="domIDForSheet(sheet)"
-          :key="sheet.name"
-          class="flex items-start justify-between hover:bg-gray-200 px-2 py-1 gap-x-1"
-          :class="[sheet.name === currentSheet?.name && 'bg-indigo-600/10']"
-          @click="handleSheetClick(sheet, $event)"
-        >
-          <div class="flex-1 text-sm cursor-pointer pt-0.5">
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-if="sheet.title" v-html="titleHTML(sheet)" />
-            <span v-else class="text-control-placeholder">
-              {{ $t("sql-editor.untitled-sheet") }}
-            </span>
-          </div>
-          <div @click.stop>
-            <Dropdown :sheet="sheet" :view="view" />
-          </div>
-        </div>
-      </template>
+
+      <Dropdown
+        v-if="dropdown && isSheetItem(dropdown.item)"
+        :sheet="dropdown.item.target"
+        :view="view"
+        :transparent="true"
+        :dropdown-props="{
+          trigger: 'manual',
+          placement: 'bottom-start',
+          show: true,
+          x: dropdown.x,
+          y: dropdown.y,
+          onClickoutside: () => (dropdown = undefined),
+        }"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { NButton, NInput } from "naive-ui";
-import { escape, orderBy } from "lodash-es";
+import { orderBy } from "lodash-es";
+import scrollIntoView from "scroll-into-view-if-needed";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   SheetViewMode,
   openSheet,
   useSheetContextByView,
+  Dropdown,
 } from "@/views/sql-editor/Sheet";
-import { Dropdown } from "@/views/sql-editor/Sheet";
-import { extractSheetUID, getHighlightHTMLByRegExp } from "@/utils";
-import { useSheetAndTabStore } from "@/store";
+import { useSheetAndTabStore, useTabStore } from "@/store";
 import { storeToRefs } from "pinia";
-import scrollIntoView from "scroll-into-view-if-needed";
-import { onMounted } from "vue";
-import { nextTick } from "vue";
+import {
+  DropdownState,
+  MergedItem,
+  domIDForItem,
+  isSheetItem,
+  isTabItem,
+} from "./common";
+import TabItem from "./TabItem.vue";
+import SheetItem from "./SheetItem.vue";
+import { watchEffect } from "vue";
 
 const props = defineProps<{
   view: SheetViewMode;
 }>();
 
+const emit = defineEmits<{
+  (event: "add-tab"): void;
+}>();
+
+const tabStore = useTabStore();
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 const keyword = ref("");
 const { currentSheet } = storeToRefs(useSheetAndTabStore());
+const dropdown = ref<DropdownState>();
 
 const sortedSheetList = computed(() => {
   return orderBy<Sheet>(
     sheetList.value,
     [
-      (sheet) => (extractSheetUID(sheet.name).startsWith("-") ? 0 : 1), // Unsaved sheets go ahead.
       (sheet) => (sheet.title ? 0 : 1), // Untitled sheets go behind.
       (sheet) => sheet.title,
     ],
@@ -92,45 +121,99 @@ const sortedSheetList = computed(() => {
   );
 });
 
-const filteredSheetList = computed(() => {
-  const kw = keyword.value.toLowerCase().trim();
-  if (!kw) return sortedSheetList.value;
-  return sortedSheetList.value.filter((sheet) =>
-    sheet.title.toLowerCase().includes(kw)
-  );
-});
+const mergedItemList = computed(() => {
+  const { tabList } = tabStore;
+  const mergedList: MergedItem[] = [];
 
-const domIDForSheet = (sheet: Sheet) => {
-  return `bb-sheet-list-sheet-${extractSheetUID(sheet.name)}`;
-};
-
-const titleHTML = (sheet: Sheet) => {
-  const kw = keyword.value.toLowerCase().trim();
-  const { title } = sheet;
-
-  if (!kw) {
-    return escape(title);
+  if (props.view === "my") {
+    // Tabs go ahead
+    tabList.forEach((tab) => {
+      if (!tab.sheetName) {
+        mergedList.push({
+          type: "TAB",
+          target: tab,
+        });
+      }
+    });
+  }
+  if (!isLoading.value) {
+    // Sheets follow
+    sortedSheetList.value.forEach((sheet) => {
+      mergedList.push({
+        type: "SHEET",
+        target: sheet,
+      });
+    });
   }
 
-  return getHighlightHTMLByRegExp(
-    escape(title),
-    escape(kw),
-    false /* !caseSensitive */
-  );
+  return mergedList;
+});
+
+const filteredItemList = computed(() => {
+  const kw = keyword.value.toLowerCase().trim();
+  if (!kw) return mergedItemList.value;
+  return mergedItemList.value.filter((item) => {
+    if (isTabItem(item)) {
+      return item.target.name.toLowerCase().includes(kw);
+    }
+    if (isSheetItem(item)) {
+      return item.target.title.toLowerCase().includes(kw);
+    }
+    throw new Error("should never reach this line.");
+  });
+});
+
+const isCurrentItem = (item: MergedItem) => {
+  if (isSheetItem(item)) {
+    return item.target.name === currentSheet.value?.name;
+  }
+  // isTabItem
+  return item.target.id === tabStore.currentTab.id;
 };
 
-const handleSheetClick = (sheet: Sheet, e: MouseEvent) => {
-  openSheet(sheet, e.metaKey || e.ctrlKey);
+const handleItemClick = (item: MergedItem, e: MouseEvent) => {
+  if (isTabItem(item)) {
+    tabStore.setCurrentTabId(item.target.id);
+  } else {
+    openSheet(item.target, e.metaKey || e.ctrlKey);
+  }
 };
 
-const scrollToSheet = (sheet: Sheet | undefined) => {
-  if (!sheet) return;
-  const id = domIDForSheet(sheet);
+const addSheet = () => {
+  useTabStore().addTab();
+  emit("add-tab");
+};
+
+const handleRightClick = (item: MergedItem, e: MouseEvent) => {
+  if (!isSheetItem(item)) return;
+  e.preventDefault();
+  dropdown.value = undefined;
+  nextTick().then(() => {
+    dropdown.value = {
+      item,
+      x: e.clientX,
+      y: e.clientY,
+    };
+  });
+};
+
+const scrollToItem = (item: MergedItem | undefined) => {
+  if (!item) return;
+  const id = domIDForItem(item);
   const elem = document.getElementById(id);
   if (elem) {
     scrollIntoView(elem, {
       scrollMode: "if-needed",
     });
+  }
+};
+
+const scrollToCurrentTabOrSheet = () => {
+  if (currentSheet.value) {
+    scrollToItem({ type: "SHEET", target: currentSheet.value });
+  } else {
+    const tab = tabStore.currentTab;
+    scrollToItem({ type: "TAB", target: tab });
   }
 };
 
@@ -140,21 +223,31 @@ watch(
     if (!isInitialized.value) {
       await fetchSheetList();
       await nextTick();
-      scrollToSheet(currentSheet.value);
+      scrollToCurrentTabOrSheet();
     }
   },
   { immediate: true }
 );
 
 watch(
-  () => currentSheet.value?.name,
+  [() => currentSheet.value?.name, () => tabStore.currentTab.id],
   () => {
-    scrollToSheet(currentSheet.value);
+    scrollToCurrentTabOrSheet();
   },
   { immediate: true }
 );
 
 onMounted(() => {
-  scrollToSheet(currentSheet.value);
+  scrollToCurrentTabOrSheet();
+});
+
+watchEffect(() => {
+  if (dropdown.value) {
+    console.log(
+      dropdown.value.item.target.name,
+      dropdown.value.x,
+      dropdown.value.y
+    );
+  }
 });
 </script>

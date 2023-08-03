@@ -3,9 +3,11 @@
     v-if="options.length > 0"
     trigger="click"
     :options="options"
+    v-bind="dropdownProps"
     @select="handleAction"
   >
     <heroicons-outline:dots-horizontal
+      v-show="!transparent"
       class="w-6 h-auto border border-gray-300 bg-white p-1 rounded outline-none shadow"
     />
   </NDropdown>
@@ -14,7 +16,12 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
+import {
+  type DropdownOption,
+  NDropdown,
+  useDialog,
+  DropdownProps,
+} from "naive-ui";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
@@ -29,6 +36,8 @@ import { useSheetContext, type SheetViewMode } from "../";
 const props = defineProps<{
   view: SheetViewMode;
   sheet: Sheet;
+  dropdownProps?: DropdownProps;
+  transparent?: boolean;
 }>();
 
 const { t } = useI18n();
