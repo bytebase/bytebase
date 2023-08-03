@@ -37,9 +37,9 @@ type RestoreContext struct {
 // WithRestoreDataNodePlaceholder set the placeholder for restoring data node.
 // DataNodePlaceholder is the placeholder for restoring data node, it may be different in different engine.
 // For example:
-// MyBatis: #{param}
-// MySQL: ?
-// PostgreSQL: $1
+// MyBatis: #{param}.
+// MySQL: ?.
+// PostgreSQL: $1.
 func (r *RestoreContext) WithRestoreDataNodePlaceholder(placeholder string) *RestoreContext {
 	r.RestoreDataNodePlaceholder = placeholder
 	return r
