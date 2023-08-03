@@ -41,11 +41,14 @@ jobs:
           msg=$(echo $content | jq -r '.[0]')
           echo $msg >> bytebase-sql-review.xml
 
-          status=$(echo $response | jq -r '.status')
-          if [[ "$status" == "ERROR" ]]; then exit 1; fi
+          result=$(echo $response | jq -r '.status')
+          echo "##vso[task.setvariable variable=status]$result"
         displayName: SQL Review
       - task: PublishTestResults@2
         inputs:
           testResultsFormat: "JUnit"
           testResultsFiles: "**/bytebase-sql-review.xml"
         displayName: Upload artifacts
+      - bash: |
+          if [[ "$STATUS" == "ERROR" ]]; then exit 1; fi
+        displayName: Check SQL Review Result
