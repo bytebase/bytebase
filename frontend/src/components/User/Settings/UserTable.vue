@@ -297,6 +297,7 @@ const changeRoleTooltip = (user: User): string => {
   if (user.state !== State.ACTIVE) {
     return "";
   }
+
   if (
     user.name === SYSTEM_BOT_USER_NAME ||
     user.userType === UserType.SERVICE_ACCOUNT
