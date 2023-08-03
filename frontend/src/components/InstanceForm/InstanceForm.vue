@@ -3,7 +3,7 @@
     <div class="space-y-6 divide-y divide-block-border">
       <div class="divide-y divide-block-border w-[850px]">
         <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
-          <template v-for="engine in engineList" :key="engine">
+          <template v-for="engine in EngineList" :key="engine">
             <div
               class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
               :class="
@@ -192,7 +192,7 @@
               {{ $t("data-source.connection-string-schema") }}
             </label>
             <label
-              v-for="type in mongodbConnectionStringSchemaList"
+              v-for="type in MongoDBConnectionStringSchemaList"
               :key="type"
               class="radio h-7"
             >
@@ -251,7 +251,7 @@
                 type="text"
                 :disabled="!allowEdit"
                 class="textfield mt-1 w-full"
-                :placeholder="snowflakeExtraLinkPlaceHolder"
+                :placeholder="SnowflakeExtraLinkPlaceHolder"
               />
             </template>
           </div>
@@ -262,292 +262,7 @@
           {{ $t("instance.connection-info") }}
         </p>
 
-        <div
-          v-if="!isCreating && !hasReadOnlyDataSource && allowEdit"
-          class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
-        >
-          <heroicons-outline:exclamation
-            class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
-          />
-          <span class="text-yellow-800 text-sm">
-            {{ $t("instance.no-read-only-data-source-warn") }}
-          </span>
-          <button
-            type="button"
-            class="btn-normal ml-4 text-sm"
-            @click.prevent="handleCreateRODataSource"
-          >
-            {{ $t("common.create") }}
-          </button>
-        </div>
-
-        <div
-          class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
-        >
-          <NTabs
-            v-if="!isCreating"
-            v-model:value="state.currentDataSourceType"
-            class="sm:col-span-3"
-            type="line"
-          >
-            <NTab :name="DataSourceType.ADMIN">
-              {{ $t("common.admin") }}
-            </NTab>
-            <NTab
-              :name="DataSourceType.READ_ONLY"
-              class="relative"
-              :disabled="!hasReadOnlyDataSource"
-            >
-              <span>{{ $t("common.read-only") }}</span>
-              <BBButtonConfirm
-                v-if="hasReadOnlyDataSource"
-                :style="'DELETE'"
-                class="absolute left-full ml-1"
-                :require-confirm="!readonlyDataSource?.pendingCreate"
-                :ok-text="$t('common.delete')"
-                :confirm-title="
-                  $t('data-source.delete-read-only-data-source') + '?'
-                "
-                @confirm="handleDeleteRODataSource"
-              />
-            </NTab>
-          </NTabs>
-
-          <template v-if="basicInfo.engine !== Engine.SPANNER">
-            <CreateDataSourceExample
-              class-name="sm:col-span-3 border-none mt-2"
-              :create-instance-flag="isCreating"
-              :engine="basicInfo.engine"
-              :data-source-type="state.currentDataSourceType"
-            />
-            <div class="mt-2 sm:col-span-1 sm:col-start-1">
-              <label for="username" class="textlabel block">
-                {{ $t("common.username") }}
-              </label>
-              <!-- For mysql, username can be empty indicating anonymous user.
-              But it's a very bad practice to use anonymous user for admin operation,
-              thus we make it REQUIRED here.-->
-              <input
-                id="username"
-                v-model="currentDataSource.username"
-                name="username"
-                type="text"
-                class="textfield mt-1 w-full"
-                :disabled="!allowEdit"
-                :placeholder="
-                  basicInfo.engine === Engine.CLICKHOUSE
-                    ? $t('common.default')
-                    : ''
-                "
-              />
-            </div>
-            <div class="mt-2 sm:col-span-1 sm:col-start-1">
-              <div class="flex flex-row items-center space-x-2">
-                <label for="password" class="textlabel block">
-                  {{ $t("common.password") }}
-                </label>
-                <BBCheckbox
-                  v-if="!isCreating && allowUsingEmptyPassword"
-                  :title="$t('common.empty')"
-                  :value="currentDataSource.useEmptyPassword"
-                  :disabled="!allowEdit"
-                  @toggle="toggleUseEmptyPassword"
-                />
-              </div>
-              <input
-                id="password"
-                name="password"
-                type="text"
-                class="textfield mt-1 w-full"
-                autocomplete="off"
-                :placeholder="
-                  currentDataSource.useEmptyPassword
-                    ? $t('instance.no-password')
-                    : $t('instance.password-write-only')
-                "
-                :disabled="!allowEdit || currentDataSource.useEmptyPassword"
-                :value="
-                  currentDataSource.useEmptyPassword
-                    ? ''
-                    : currentDataSource.updatedPassword
-                "
-                @input="
-                  currentDataSource.updatedPassword = trimInputValue(
-                    $event.target
-                  )
-                "
-              />
-            </div>
-          </template>
-          <SpannerCredentialInput
-            v-else
-            v-model:value="currentDataSource.updatedPassword"
-            :write-only="!isCreating"
-            class="mt-2 sm:col-span-3 sm:col-start-1"
-          />
-
-          <template v-if="basicInfo.engine === Engine.ORACLE">
-            <OracleSIDAndServiceNameInput
-              v-model:sid="currentDataSource.sid"
-              v-model:service-name="currentDataSource.serviceName"
-              :allow-edit="allowEdit"
-            />
-          </template>
-
-          <template v-if="showAuthenticationDatabase">
-            <div class="sm:col-span-1 sm:col-start-1">
-              <div class="flex flex-row items-center space-x-2">
-                <label for="authenticationDatabase" class="textlabel block">
-                  {{ $t("instance.authentication-database") }}
-                </label>
-              </div>
-              <input
-                id="authenticationDatabase"
-                name="authenticationDatabase"
-                type="text"
-                class="textfield mt-1 w-full"
-                autocomplete="off"
-                placeholder="admin"
-                :value="currentDataSource.authenticationDatabase"
-                @input="
-                  currentDataSource.authenticationDatabase = trimInputValue(
-                    $event.target
-                  )
-                "
-              />
-            </div>
-          </template>
-
-          <template
-            v-if="
-              state.currentDataSourceType === DataSourceType.READ_ONLY &&
-              (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
-            "
-          >
-            <div
-              v-if="hasReadonlyReplicaHost"
-              class="mt-2 sm:col-span-1 sm:col-start-1"
-            >
-              <div class="flex flex-row items-center space-x-2">
-                <label for="host" class="textlabel block">
-                  {{ $t("data-source.read-replica-host") }}
-                </label>
-              </div>
-              <input
-                id="host"
-                name="host"
-                type="text"
-                class="textfield mt-1 w-full"
-                autocomplete="off"
-                :value="currentDataSource.host"
-                @input="handleCurrentDataSourceHostInput"
-              />
-            </div>
-
-            <div
-              v-if="hasReadonlyReplicaPort"
-              class="mt-2 sm:col-span-1 sm:col-start-1"
-            >
-              <div class="flex flex-row items-center space-x-2">
-                <label for="port" class="textlabel block">
-                  {{ $t("data-source.read-replica-port") }}
-                </label>
-              </div>
-              <input
-                id="port"
-                name="port"
-                type="text"
-                class="textfield mt-1 w-full"
-                autocomplete="off"
-                :value="currentDataSource.port"
-                @input="handleCurrentDataSourcePortInput"
-              />
-            </div>
-          </template>
-
-          <div v-if="showDatabase" class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="database" class="textlabel block">
-              {{ $t("common.database") }}
-            </label>
-            <input
-              id="database"
-              v-model="currentDataSource.database"
-              name="database"
-              type="text"
-              class="textfield mt-1 w-full"
-              :disabled="!allowEdit"
-              :placeholder="$t('common.database')"
-            />
-          </div>
-
-          <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
-            <div class="flex flex-row items-center">
-              <label for="ssl" class="textlabel block">
-                {{ $t("data-source.ssl-connection") }}
-              </label>
-            </div>
-            <template v-if="currentDataSource.pendingCreate">
-              <SslCertificateForm
-                :value="currentDataSource"
-                @change="handleCurrentDataSourceSslChange"
-              />
-            </template>
-            <template v-else>
-              <template v-if="currentDataSource.updateSsl">
-                <SslCertificateForm
-                  :value="currentDataSource"
-                  @change="handleCurrentDataSourceSslChange"
-                />
-              </template>
-              <template v-else>
-                <button
-                  class="btn-normal mt-2"
-                  :disabled="!allowEdit"
-                  @click.prevent="handleEditSsl"
-                >
-                  {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-                </button>
-              </template>
-            </template>
-          </div>
-
-          <div v-if="showSSH" class="mt-2 sm:col-span-3 sm:col-start-1">
-            <div class="flex flex-row items-center gap-x-1">
-              <label for="ssh" class="textlabel block">
-                {{ $t("data-source.ssh-connection") }}
-              </label>
-              <FeatureBadge
-                feature="bb.feature.instance-ssh-connection"
-                :instance="instance"
-              />
-            </div>
-            <template v-if="currentDataSource.pendingCreate">
-              <SshConnectionForm
-                :value="currentDataSource"
-                :instance="instance"
-                @change="handleCurrentDataSourceSshChange"
-              />
-            </template>
-            <template v-else>
-              <template v-if="currentDataSource.updateSsh">
-                <SshConnectionForm
-                  :value="currentDataSource"
-                  :instance="instance"
-                  @change="handleCurrentDataSourceSshChange"
-                />
-              </template>
-              <template v-else>
-                <button
-                  class="btn-normal mt-2"
-                  :disabled="!allowEdit"
-                  @click.prevent="handleEditSsh"
-                >
-                  {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-                </button>
-              </template>
-            </template>
-          </div>
-        </div>
+        <DataSourceSection />
 
         <BBAttention
           v-if="outboundIpList && actuatorStore.isSaaSMode"
@@ -616,9 +331,9 @@
 
   <FeatureModal
     feature="bb.feature.read-replica-connection"
-    :open="state.showFeatureModal"
+    :open="showReadOnlyDataSourceFeatureModal"
     :instance="instance"
-    @cancel="state.showFeatureModal = false"
+    @cancel="showReadOnlyDataSourceFeatureModal = false"
   />
 
   <BBAlert
@@ -634,7 +349,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, PropType, ref, watch, onMounted } from "vue";
+import {
+  computed,
+  reactive,
+  PropType,
+  ref,
+  watch,
+  onMounted,
+  toRef,
+} from "vue";
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
@@ -642,14 +365,10 @@ import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
 
 import {
-  hasWorkspacePermissionV1,
   isDev,
   isValidSpannerHost,
   extractInstanceResourceName,
   engineNameV1,
-  instanceV1HasSSL,
-  instanceV1HasSSH,
-  supportedEngineV1List,
   instanceV1Slug,
   calcUpdateMask,
 } from "@/utils";
@@ -657,15 +376,10 @@ import {
   UNKNOWN_ID,
   ResourceId,
   ValidatedMessage,
-  DataSourceOptions,
-  emptyDataSource,
-  UNKNOWN_INSTANCE_NAME,
-  UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "@/types";
 import {
   pushNotification,
-  useCurrentUserV1,
   useSettingV1Store,
   useActuatorV1Store,
   useEnvironmentV1Store,
@@ -673,14 +387,10 @@ import {
   useSubscriptionV1Store,
   useGracefulRequest,
 } from "@/store";
-import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
 import OracleSyncModeInput from "./OracleSyncModeInput.vue";
-import SslCertificateForm from "./SslCertificateForm.vue";
-import SshConnectionForm from "./SshConnectionForm.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
-import SpannerCredentialInput from "./SpannerCredentialInput.vue";
-import OracleSIDAndServiceNameInput from "./OracleSIDAndServiceNameInput.vue";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { DrawerContent, InstanceV1EngineIcon } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
@@ -690,9 +400,21 @@ import {
   Instance,
   InstanceOptions,
 } from "@/types/proto/v1/instance_service";
-import { Engine, State } from "@/types/proto/v1/common";
-import { instanceServiceClient } from "@/grpcweb";
+import { Engine } from "@/types/proto/v1/common";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
+import { EditDataSource, extractDataSourceEditState } from "./common";
+import { provideInstanceFormContext } from "./context";
+import {
+  MongoDBConnectionStringSchemaList,
+  SnowflakeExtraLinkPlaceHolder,
+  defaultPortForEngine,
+  EngineIconPath,
+  EngineList,
+} from "./constants";
+import { useInstanceSpecs } from "./specs";
+import { instanceServiceClient } from "@/grpcweb";
+import { extractBasicInfo } from "./common";
 
 const props = defineProps({
   instance: {
@@ -720,18 +442,8 @@ const cancel = () => {
   emit("dismiss");
 };
 
-interface EditDataSource extends DataSource {
-  pendingCreate: boolean;
-  updatedPassword: string;
-  useEmptyPassword?: boolean;
-  updateSsl?: boolean;
-  updateSsh?: boolean;
-}
-
-type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
-
 interface LocalState {
-  currentDataSourceType: DataSourceType;
+  editingDataSourceId: string | undefined;
   showFeatureModal: boolean;
   isTestingConnection: boolean;
   isRequesting: boolean;
@@ -743,12 +455,13 @@ const { t } = useI18n();
 const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const settingV1Store = useSettingV1Store();
-const currentUserV1 = useCurrentUserV1();
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
-  currentDataSourceType: DataSourceType.ADMIN,
+  editingDataSourceId: props.instance?.dataSources.find(
+    (ds) => ds.type === DataSourceType.ADMIN
+  )?.id,
   showFeatureModal: false,
   isTestingConnection: false,
   isRequesting: false,
@@ -756,12 +469,27 @@ const state = reactive<LocalState>({
   createInstanceWarning: "",
 });
 
-const hasReadonlyReplicaFeature = computed(() => {
-  return subscriptionStore.hasInstanceFeature(
-    "bb.feature.read-replica-connection",
-    props.instance
-  );
-});
+const instance = toRef(props, "instance");
+const context = provideInstanceFormContext({ instance });
+const {
+  isCreating,
+  allowEdit,
+  basicInfo,
+  dataSourceEditState,
+  adminDataSource,
+  editingDataSource,
+  hasReadonlyReplicaFeature,
+  showReadOnlyDataSourceFeatureModal,
+} = context;
+const {
+  showDatabase,
+  showSSL,
+  showSSH,
+  isEngineBeta,
+  defaultPort,
+  instanceLink,
+  allowEditPort,
+} = useInstanceSpecs(context);
 
 const availableLicenseCount = computed(() => {
   return Math.max(
@@ -777,30 +505,6 @@ const availableLicenseCountText = computed((): string => {
   }
   return `${availableLicenseCount.value}`;
 });
-
-const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
-  return {
-    uid: instance?.uid ?? String(UNKNOWN_ID),
-    name: instance?.name ?? UNKNOWN_INSTANCE_NAME,
-    state: instance?.state ?? State.ACTIVE,
-    title: instance?.title ?? t("instance.new-instance"),
-    engine: instance?.engine ?? Engine.MYSQL,
-    externalLink: instance?.externalLink ?? "",
-    environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
-    activation: instance
-      ? instance.activation
-      : subscriptionStore.currentPlan !== PlanType.FREE &&
-        availableLicenseCount.value > 0,
-    options: instance?.options
-      ? cloneDeep(instance.options)
-      : {
-          // default to false (Manage based on database, aka CDB + non-CDB)
-          schemaTenantMode: false,
-        },
-  };
-};
-
-const basicInfo = ref<BasicInfo>(extractBasicInfo(props.instance));
 
 const environment = computed(() => {
   return (
@@ -821,76 +525,6 @@ const resourceId = computed({
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
-const getDataSourceByType = (
-  instance: Instance | undefined,
-  type: DataSourceType
-) => {
-  return instance?.dataSources.find((ds) => ds.type === type);
-};
-
-const extractAdminDataSource = (
-  instance: Instance | undefined
-): EditDataSource => {
-  const ds = getDataSourceByType(instance, DataSourceType.ADMIN);
-  return {
-    ...cloneDeep(ds ?? emptyDataSource()),
-    pendingCreate: ds === undefined,
-    updatedPassword: "",
-    useEmptyPassword: false,
-  };
-};
-// We only support one admin data source and one read-only data source.
-const adminDataSource = ref<EditDataSource>(
-  extractAdminDataSource(props.instance)
-);
-
-const extractReadOnlyDataSource = (
-  instance: Instance | undefined
-): EditDataSource | undefined => {
-  const ds = getDataSourceByType(instance, DataSourceType.READ_ONLY);
-  if (ds) {
-    return {
-      ...cloneDeep(ds),
-      pendingCreate: ds === undefined,
-      updatedPassword: "",
-      useEmptyPassword: false,
-    };
-  }
-  return undefined;
-};
-const readonlyDataSource = ref<EditDataSource | undefined>(
-  extractReadOnlyDataSource(props.instance)
-);
-
-const getDefaultPort = (engine: Engine) => {
-  if (engine === Engine.CLICKHOUSE) {
-    return "9000";
-  } else if (engine === Engine.POSTGRES) {
-    return "5432";
-  } else if (engine === Engine.SNOWFLAKE) {
-    return "443";
-  } else if (engine === Engine.TIDB) {
-    return "4000";
-  } else if (engine === Engine.MONGODB) {
-    return "27017";
-  } else if (engine === Engine.REDIS) {
-    return "6379";
-  } else if (engine === Engine.ORACLE) {
-    return "1521";
-  } else if (engine === Engine.MSSQL) {
-    return "1433";
-  } else if (engine === Engine.REDSHIFT) {
-    return "5439";
-  } else if (engine === Engine.OCEANBASE) {
-    return "2883";
-  } else if (engine === Engine.DM) {
-    return "5236";
-  }
-  return "3306";
-};
-
-const isCreating = computed(() => props.instance === undefined);
-
 onMounted(async () => {
   if (isCreating.value) {
     adminDataSource.value.host = isDev() ? "127.0.0.1" : "host.docker.internal";
@@ -904,7 +538,7 @@ watch(
   () => basicInfo.value.engine,
   () => {
     if (isCreating.value) {
-      adminDataSource.value.port = getDefaultPort(basicInfo.value.engine);
+      adminDataSource.value.port = defaultPortForEngine(basicInfo.value.engine);
     }
   },
   {
@@ -921,10 +555,6 @@ watch(
   }
 );
 
-const engineList = computed(() => {
-  return supportedEngineV1List();
-});
-
 const outboundIpList = computed(() => {
   if (!settingV1Store.workspaceProfileSetting) {
     return "";
@@ -932,32 +562,10 @@ const outboundIpList = computed(() => {
   return settingV1Store.workspaceProfileSetting.outboundIpList.join(",");
 });
 
-const EngineIconPath: Record<number, string> = {
-  [Engine.MYSQL]: new URL("@/assets/db-mysql.png", import.meta.url).href,
-  [Engine.POSTGRES]: new URL("@/assets/db-postgres.png", import.meta.url).href,
-  [Engine.TIDB]: new URL("@/assets/db-tidb.png", import.meta.url).href,
-  [Engine.SNOWFLAKE]: new URL("@/assets/db-snowflake.png", import.meta.url)
-    .href,
-  [Engine.CLICKHOUSE]: new URL("@/assets/db-clickhouse.png", import.meta.url)
-    .href,
-  [Engine.MONGODB]: new URL("@/assets/db-mongodb.png", import.meta.url).href,
-  [Engine.SPANNER]: new URL("@/assets/db-spanner.png", import.meta.url).href,
-  [Engine.REDIS]: new URL("@/assets/db-redis.png", import.meta.url).href,
-  [Engine.ORACLE]: new URL("@/assets/db-oracle.svg", import.meta.url).href,
-  [Engine.DM]: new URL("@/assets/db-dm.png", import.meta.url).href,
-  [Engine.MSSQL]: new URL("@/assets/db-mssql.svg", import.meta.url).href,
-  [Engine.REDSHIFT]: new URL("@/assets/db-redshift.svg", import.meta.url).href,
-  [Engine.MARIADB]: new URL("@/assets/db-mariadb.png", import.meta.url).href,
-  [Engine.OCEANBASE]: new URL("@/assets/db-oceanbase.png", import.meta.url)
-    .href,
-};
-
-const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
-
 const currentMongoDBConnectionSchema = computed(() => {
   return adminDataSource.value.srv === false
-    ? mongodbConnectionStringSchemaList[0]
-    : mongodbConnectionStringSchemaList[1];
+    ? MongoDBConnectionStringSchemaList[0]
+    : MongoDBConnectionStringSchemaList[1];
 });
 const allowCreate = computed(() => {
   if (basicInfo.value.engine === Engine.SPANNER) {
@@ -976,95 +584,24 @@ const allowCreate = computed(() => {
   );
 });
 
-const allowEdit = computed(() => {
-  if (isCreating.value) return true;
-
-  return (
-    props.instance?.state === State.ACTIVE &&
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
-    )
-  );
-});
-
-const allowEditPort = computed(() => {
-  // MongoDB doesn't support specify port if using srv record.
-  return !(
-    basicInfo.value.engine === Engine.MONGODB && currentDataSource.value.srv
-  );
-});
-
-const allowUsingEmptyPassword = computed(() => {
-  return basicInfo.value.engine !== Engine.SPANNER;
-});
-
 const valueChanged = computed(() => {
   const original = getOriginalEditState();
   const editing = {
     basicInfo: basicInfo.value,
-    adminDataSource: adminDataSource.value,
-    readonlyDataSource: readonlyDataSource.value,
+    dataSources: dataSourceEditState.value.dataSources,
   };
   return !isEqual(editing, original);
 });
 
-const defaultPort = computed(() => {
-  return getDefaultPort(basicInfo.value.engine);
-});
-
-const currentDataSource = computed((): EditDataSource => {
-  if (state.currentDataSourceType === DataSourceType.ADMIN) {
-    return adminDataSource.value;
-  } else if (state.currentDataSourceType === DataSourceType.READ_ONLY) {
-    return readonlyDataSource.value!;
-  } else {
-    throw new Error("Unknown data source type");
-  }
-});
-
-const hasReadOnlyDataSource = computed(() => {
-  return readonlyDataSource.value !== undefined;
-});
-
-const snowflakeExtraLinkPlaceHolder =
-  "https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false";
-
-const instanceLink = computed(() => {
-  if (basicInfo.value.engine === Engine.SNOWFLAKE) {
-    if (adminDataSource.value.host) {
-      return `https://${
-        adminDataSource.value.host.split("@")[0]
-      }.snowflakecomputing.com/console`;
-    }
-  }
-  return basicInfo.value.externalLink ?? "";
-});
-
-const hasReadonlyReplicaHost = computed((): boolean => {
-  return basicInfo.value.engine !== Engine.SPANNER;
-});
-
-const hasReadonlyReplicaPort = computed((): boolean => {
-  return basicInfo.value.engine !== Engine.SPANNER;
-});
-
-const showDatabase = computed((): boolean => {
-  return (
-    (basicInfo.value.engine === Engine.POSTGRES ||
-      basicInfo.value.engine === Engine.REDSHIFT) &&
-    state.currentDataSourceType === DataSourceType.ADMIN
-  );
-});
-const showAuthenticationDatabase = computed((): boolean => {
-  return basicInfo.value.engine === Engine.MONGODB;
-});
-const showSSL = computed((): boolean => {
-  return instanceV1HasSSL(basicInfo.value.engine);
-});
-const showSSH = computed((): boolean => {
-  return instanceV1HasSSH(basicInfo.value.engine);
-});
+// const currentDataSource = computed((): EditDataSource => {
+//   if (state.currentDataSourceType === DataSourceType.ADMIN) {
+//     return adminDataSource.value;
+//   } else if (state.currentDataSourceType === DataSourceType.READ_ONLY) {
+//     return readonlyDataSource.value!;
+//   } else {
+//     throw new Error("Unknown data source type");
+//   }
+// });
 
 const allowUpdate = computed((): boolean => {
   if (!valueChanged.value) {
@@ -1074,19 +611,15 @@ const allowUpdate = computed((): boolean => {
     if (!isValidSpannerHost(adminDataSource.value.host)) {
       return false;
     }
-    if (
-      readonlyDataSource.value &&
-      !isValidSpannerHost(readonlyDataSource.value.host)
-    ) {
-      return false;
-    }
+    // if (
+    //   readonlyDataSource.value &&
+    //   !isValidSpannerHost(readonlyDataSource.value.host)
+    // ) {
+    //   return false;
+    // }
   }
   return true;
 });
-
-const isEngineBeta = (engine: Engine): boolean => {
-  return [Engine.DM].includes(engine);
-};
 
 const handleSelectEnvironmentUID = (uid: number | string) => {
   const environment = useEnvironmentV1Store().getEnvironmentByUID(String(uid));
@@ -1125,136 +658,19 @@ const trimInputValue = (target: Event["target"]) => {
 };
 
 const handleMongodbConnectionStringSchemaChange = (event: Event) => {
+  const ds = editingDataSource.value;
+  if (!ds) return;
   switch ((event.target as HTMLInputElement).value) {
-    case mongodbConnectionStringSchemaList[0]:
-      currentDataSource.value.srv = false;
+    case MongoDBConnectionStringSchemaList[0]:
+      ds.srv = false;
       break;
-    case mongodbConnectionStringSchemaList[1]:
+    case MongoDBConnectionStringSchemaList[1]:
       // MongoDB doesn't support specify port if using srv record.
-      currentDataSource.value.port = "";
-      currentDataSource.value.srv = true;
+      ds.port = "";
+      ds.srv = true;
       break;
     default:
-      currentDataSource.value.srv = false;
-  }
-};
-
-const handleCurrentDataSourceHostInput = (event: Event) => {
-  if (currentDataSource.value.type === DataSourceType.READ_ONLY) {
-    if (!hasReadonlyReplicaFeature.value) {
-      if (currentDataSource.value.host || currentDataSource.value.port) {
-        currentDataSource.value.host = adminDataSource.value.host;
-        currentDataSource.value.port = adminDataSource.value.port;
-        state.showFeatureModal = true;
-        return;
-      }
-    }
-  }
-
-  currentDataSource.value.host = trimInputValue(event.target);
-};
-
-const handleCurrentDataSourcePortInput = (event: Event) => {
-  if (currentDataSource.value.type === DataSourceType.READ_ONLY) {
-    if (!hasReadonlyReplicaFeature.value) {
-      if (currentDataSource.value.host || currentDataSource.value.port) {
-        currentDataSource.value.host = adminDataSource.value.host;
-        currentDataSource.value.port = adminDataSource.value.port;
-        state.showFeatureModal = true;
-        return;
-      }
-    }
-  }
-
-  currentDataSource.value.port = trimInputValue(event.target);
-};
-
-const toggleUseEmptyPassword = (on: boolean) => {
-  currentDataSource.value.useEmptyPassword = on;
-  if (on) {
-    currentDataSource.value.updatedPassword = "";
-  }
-};
-
-const handleEditSsl = () => {
-  const curr = currentDataSource.value;
-  curr.sslCa = "";
-  curr.sslCert = "";
-  curr.sslKey = "";
-  curr.updateSsl = true;
-};
-
-const handleEditSsh = () => {
-  const curr = currentDataSource.value;
-  curr.sshHost = "";
-  curr.sshPort = "";
-  curr.sshUser = "";
-  curr.sshPassword = "";
-  curr.sshPrivateKey = "";
-  curr.updateSsh = true;
-};
-
-const handleCurrentDataSourceSslChange = (
-  value: Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey">>
-) => {
-  Object.assign(currentDataSource.value, value);
-  currentDataSource.value.updateSsl = true;
-};
-
-const handleCurrentDataSourceSshChange = (
-  value: Partial<
-    Pick<
-      DataSourceOptions,
-      "sshHost" | "sshPort" | "sshUser" | "sshPassword" | "sshPrivateKey"
-    >
-  >
-) => {
-  Object.assign(currentDataSource.value, value);
-  currentDataSource.value.updateSsh = true;
-};
-
-const handleCreateRODataSource = () => {
-  if (isCreating.value) {
-    return;
-  }
-
-  const tempDataSource: DataSource = {
-    ...emptyDataSource(),
-    title: "Read-only data source",
-    type: DataSourceType.READ_ONLY,
-    host: adminDataSource.value.host,
-    port: adminDataSource.value.port,
-    database: adminDataSource.value.database,
-  };
-  if (basicInfo.value.engine === Engine.SPANNER) {
-    tempDataSource.host = adminDataSource.value.host;
-  }
-  readonlyDataSource.value = {
-    ...tempDataSource,
-    pendingCreate: true,
-    updatedPassword: "",
-    useEmptyPassword: false,
-  };
-  state.currentDataSourceType = DataSourceType.READ_ONLY;
-};
-
-const handleDeleteRODataSource = async () => {
-  if (!readonlyDataSource.value) {
-    return;
-  }
-
-  if (readonlyDataSource.value.pendingCreate) {
-    state.currentDataSourceType = DataSourceType.ADMIN;
-    readonlyDataSource.value = undefined;
-  } else {
-    const { instance } = props;
-    if (!instance) return;
-    const ds = getDataSourceByType(instance, DataSourceType.READ_ONLY);
-    if (!ds) return;
-
-    const updated = await instanceV1Store.deleteDataSource(instance, ds);
-    state.currentDataSourceType = DataSourceType.ADMIN;
-    await updateEditState(updated);
+      ds.srv = false;
   }
 };
 
@@ -1289,9 +705,20 @@ const validateResourceId = async (
 };
 
 const updateEditState = async (instance: Instance) => {
+  console.log("updateEditState");
+
   basicInfo.value = extractBasicInfo(instance);
-  adminDataSource.value = extractAdminDataSource(instance);
-  readonlyDataSource.value = extractReadOnlyDataSource(instance);
+  const updatedEditState = extractDataSourceEditState(instance);
+  dataSourceEditState.value.dataSources = updatedEditState.dataSources;
+  if (
+    updatedEditState.dataSources.findIndex(
+      (ds) => ds.id === dataSourceEditState.value.editingDataSourceId
+    ) < 0
+  ) {
+    // The original selected data source id is no-longer in the latest data source list
+    dataSourceEditState.value.editingDataSourceId =
+      updatedEditState.editingDataSourceId;
+  }
 
   // Backend will sync the schema when connection info changed, so we need to fetch the synced schema here.
   instanceV1Store.fetchInstanceRoleListByName(instance.name);
@@ -1360,17 +787,16 @@ const doUpdate = async () => {
   if (!instance) {
     return;
   }
-
   if (!checkRODataSourceFeature(instance)) {
-    state.showFeatureModal = true;
+    showReadOnlyDataSourceFeatureModal.value = true;
     return;
   }
-
   // When clicking **Update** we may have more than one thing to do (if needed)
   // 1. Patch the instance itself.
   // 2. Update the admin datasource.
-  // 3. Create OR update a read-only data source.
-  const maybeUpdateInstance = async () => {
+  // 3. Create OR update read-only data source(s).
+
+  const maybeUpdateInstanceBasicInfo = async () => {
     const instancePatch = {
       ...instance,
       ...basicInfo.value,
@@ -1416,33 +842,34 @@ const doUpdate = async () => {
     const editing = extractDataSourceFromEdit(instance, adminDataSource.value);
     return await updateDataSource(editing, original, adminDataSource.value);
   };
-  const maybeUpsertReadonlyDataSource = async () => {
-    if (!readonlyDataSource.value) return;
-    const editing = extractDataSourceFromEdit(
-      instance,
-      readonlyDataSource.value
+  const maybeUpsertReadonlyDataSources = async () => {
+    const readonlyDataSourceList = dataSourceEditState.value.dataSources.filter(
+      (ds) => ds.type === DataSourceType.READ_ONLY
     );
-    if (readonlyDataSource.value.pendingCreate) {
-      return await instanceV1Store.createDataSource(instance, editing);
-    } else {
-      const original = instance.dataSources.find(
-        (ds) => ds.type === DataSourceType.READ_ONLY
-      );
-      return await updateDataSource(
-        editing,
-        original,
-        readonlyDataSource.value
-      );
+    if (readonlyDataSourceList.length === 0) {
+      // Nothing to do
+      return;
+    }
+    // Upsert readonly data sources one by one
+    for (let i = 0; i < readonlyDataSourceList.length; i++) {
+      const editing = readonlyDataSourceList[i];
+      const patch = extractDataSourceFromEdit(instance, editing);
+      if (editing.pendingCreate) {
+        await instanceV1Store.createDataSource(instance, patch);
+      } else {
+        const original = instance.dataSources.find(
+          (ds) => ds.id === editing.id
+        );
+        await updateDataSource(patch, original, editing);
+      }
     }
   };
-
   state.isRequesting = true;
   try {
     await useGracefulRequest(async () => {
-      await maybeUpdateInstance();
+      await maybeUpdateInstanceBasicInfo();
       await maybeUpdateAdminDataSource();
-      await maybeUpsertReadonlyDataSource();
-
+      await maybeUpsertReadonlyDataSources();
       const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
       await updateEditState(updatedInstance);
       pushNotification({
@@ -1461,6 +888,10 @@ const doUpdate = async () => {
 const testConnection = async (
   silent = false
 ): Promise<{ success: boolean; message: string }> => {
+  if (!editingDataSource.value) {
+    throw new Error("should never reach this line");
+  }
+
   // In different scenes, we use different methods to test connection.
   const ok = () => {
     if (!silent) {
@@ -1470,7 +901,6 @@ const testConnection = async (
         title: t("instance.successfully-connected-instance"),
       });
     }
-
     state.isTestingConnection = false;
     return { success: true, message: "" };
   };
@@ -1490,15 +920,13 @@ const testConnection = async (
         manualHide: true,
       });
     }
-
     state.isTestingConnection = false;
     return { success: false, message: error };
   };
-
   state.isTestingConnection = true;
   if (isCreating.value) {
     // When creating new instance, use
-    // CreateInstanceRequest.validateOnly = true
+    // adminDataSource + CreateInstanceRequest.validateOnly = true
     const instance: Instance = {
       ...basicInfo.value,
       engineVersion: "",
@@ -1527,10 +955,11 @@ const testConnection = async (
   } else {
     // Editing existed instance.
     const instance = props.instance!;
-    const ds = extractDataSourceFromEdit(instance, currentDataSource.value);
-    if (currentDataSource.value.pendingCreate) {
+    const editingDS = editingDataSource.value;
+    const ds = extractDataSourceFromEdit(instance, editingDS);
+    if (editingDS.pendingCreate) {
       // When read-only data source is about to be created, use
-      // AddDataSourceRequest.validateOnly = true
+      // editingDataSource + AddDataSourceRequest.validateOnly = true
       try {
         await instanceServiceClient.addDataSource(
           {
@@ -1548,16 +977,15 @@ const testConnection = async (
       }
     } else {
       // When a data source (admin or read-only) has been edited, use
-      // UpdateDataSourceRequest.validateOnly = true
+      // editingDataSource + UpdateDataSourceRequest.validateOnly = true
       try {
         const original = instance.dataSources.find(
-          (ds) => ds.type === currentDataSource.value.type
-        )!;
-        const updateMask = calcDataSourceUpdateMask(
-          ds,
-          original,
-          currentDataSource.value
+          (ds) => ds.id === editingDS.id
         );
+        if (!original) {
+          throw new Error("should never reach this line");
+        }
+        const updateMask = calcDataSourceUpdateMask(ds, original, editingDS);
         await instanceServiceClient.updateDataSource(
           {
             instance: instance.name,
@@ -1582,8 +1010,7 @@ const testConnection = async (
 const getOriginalEditState = () => {
   return {
     basicInfo: extractBasicInfo(props.instance),
-    adminDataSource: extractAdminDataSource(props.instance),
-    readonlyDataSource: extractReadOnlyDataSource(props.instance),
+    dataSources: extractDataSourceEditState(props.instance).dataSources,
   };
 };
 
@@ -1668,40 +1095,43 @@ const extractDataSourceFromEdit = (
 };
 
 const checkRODataSourceFeature = (instance: Instance) => {
+  // This is to
+  // - Disallow creating any new RO data sources
+  // - Disallow updating any existed RO data sources
+  // if feature is not available.
+
   // Early pass if the feature is available.
   if (hasReadonlyReplicaFeature.value) {
     return true;
   }
 
-  // Not editing/creating
-  if (!readonlyDataSource.value) {
+  const readonlyDataSourceList = dataSourceEditState.value.dataSources.filter(
+    (ds) => ds.type === DataSourceType.READ_ONLY
+  );
+  if (readonlyDataSourceList.length === 0) {
+    // Not creating or editing any RO data source
     return true;
   }
 
-  if (readonlyDataSource.value.pendingCreate) {
-    // pre-flight feature guard check for creating RO datasource
-    return false;
-  } else {
-    // pre-flight feature guard check for updating RO datasource
-    const editing = extractDataSourceFromEdit(
-      instance,
-      readonlyDataSource.value
-    );
-    const original = instance.dataSources.find(
-      (ds) => ds.type === DataSourceType.READ_ONLY
-    );
-    if (original) {
-      const updateMask = calcDataSourceUpdateMask(
-        editing,
-        original,
-        readonlyDataSource.value
-      );
-      if (updateMask.length > 0) {
-        return false;
+  const checkOne = (ds: EditDataSource) => {
+    if (ds.pendingCreate) {
+      // Disallowed to create any new RO data sources
+      return false;
+    } else {
+      const editing = extractDataSourceFromEdit(instance, ds);
+      const original = instance.dataSources.find((d) => d.id === ds.id);
+      if (original) {
+        const updateMask = calcDataSourceUpdateMask(editing, original, ds);
+        // Disallowed to update any existed RO data source
+        if (updateMask.length > 0) {
+          return false;
+        }
       }
     }
-  }
-  return true;
+    return true;
+  };
+  // Need to check all RO data sources
+  return readonlyDataSourceList.every(checkOne);
 };
 
 const changeInstanceActivation = async (on: boolean) => {

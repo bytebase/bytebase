@@ -893,23 +893,6 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import("../views/DatabaseDetail.vue"),
                 props: true,
               },
-              {
-                path: "table/:tableName",
-                name: "workspace.database.table.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const schemaName = route.query.schema?.toString() || "";
-                    let tableName = route.params.tableName;
-                    if (schemaName) {
-                      tableName = `"${schemaName}"."${tableName}"`;
-                    }
-                    return `${t("db.tables")} - ${tableName}`;
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/TableDetail.vue"),
-                props: true,
-              },
             ],
           },
           {

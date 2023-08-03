@@ -1344,6 +1344,7 @@
     "sql-review-ci-enable": "Habilitar la revisión de SQL CI",
     "sql-review-ci-enable-gitlab": "Habilitar la revisión de SQL CI a través de GitLab CI",
     "sql-review-ci-enable-github": "Habilitar la revisión de SQL CI a través de la acción de GitHub",
+    "sql-review-ci-enable-azure": "Habilite SQL Review CI a través de Azure DevOps Pipeline",
     "sql-review-ci-description": "Bytebase creará un {pr} para configurar la revisión de SQL CI en su repositorio. En cada {pr}, la política de revisión de SQL basada en el entorno verificará los archivos modificados que coincidan con el \"{pathTemplate}\".",
     "sql-review-ci-setup": "Configurar revisión de SQL CI",
     "sql-review-ci-setup-failed": "Error al configurar la revisión de SQL CI",
@@ -2643,9 +2644,22 @@
   },
   "schema-template": {
     "self": "Plantilla de esquema",
-    "field-template": "Plantilla de campo",
+    "field-template": {
+      "self": "Plantilla de campo",
+      "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
+    },
+    "column-type-restriction": {
+      "self": "Restricción de tipos de columna",
+      "description": "Para cada motor de base de datos, puede limitar los tipos de columna permitidos.",
+      "allow-all": "Permitir todos los tipos",
+      "allow-limited-types": "Permitir solo algunos tipos",
+      "save-all": "Guardar todo",
+      "messages": {
+        "unable-to-update": "No se puede actualizar la restricción",
+        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos."
+      }
+    },
     "add-field": "Agregar plantilla de campo",
-    "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema.",
     "search-by-name-or-comment": "Buscar por nombre o comentario",
     "form": {
       "category": "Categoría",

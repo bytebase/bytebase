@@ -213,7 +213,14 @@ const hasSchemaProperty = computed(() => {
 const prepareDatabaseMetadata = async () => {
   await dbSchemaStore.getOrFetchDatabaseMetadata(props.database.name);
   if (hasSchemaProperty.value && schemaList.value.length > 0) {
-    state.selectedSchemaName = head(schemaList.value)?.name || "";
+    const publicSchema = schemaList.value.find(
+      (schema) => schema.name.toLowerCase() === "public"
+    );
+    if (publicSchema) {
+      state.selectedSchemaName = publicSchema.name;
+    } else {
+      state.selectedSchemaName = head(schemaList.value)?.name || "";
+    }
   }
 };
 

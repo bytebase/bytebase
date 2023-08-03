@@ -283,6 +283,8 @@ const createSQLReviewCI = async () => {
     const pullRequestURL = await repositoryV1Store.setupSQLReviewCI(
       props.project.name
     );
+    // refresh repository
+    await repositoryV1Store.fetchRepositoryByProject(props.project.name, true);
     state.sqlReviewCIPullRequestURL = pullRequestURL;
     state.showSetupSQLReviewCIModal = true;
     window.open(pullRequestURL, "_blank");

@@ -28,7 +28,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import DroppableTextarea from "../misc/DroppableTextarea.vue";
+import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 
 const props = withDefaults(
   defineProps<{

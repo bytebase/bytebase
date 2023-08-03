@@ -364,6 +364,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list repositories").SetInternal(err)
 		}
+		if len(repositories) == 0 {
+			return c.String(http.StatusOK, "No repository matched")
+		}
 		// Check the consistence of the repositories, it should not throw any error by right.
 		for i := 1; i < len(repositories); i++ {
 			if repositories[i].ExternalID != repositories[0].ExternalID {
@@ -409,6 +412,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return c.String(http.StatusOK, "No repository matched")
 		}
 
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
+		}
+
 		// Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
 		// the file diff information by ourselves.
 		// We will use the previous commit id as the base commit id and the current commit id as the target commit id to
@@ -423,6 +431,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				AccessToken:  repositoryList[0].repository.AccessToken,
 				RefreshToken: repositoryList[0].repository.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			}, repositoryList[0].repository.ExternalID, commit.CommitID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get changes by commit %q", commit.CommitID)).SetInternal(err)
@@ -459,6 +468,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				AccessToken:  repositoryList[0].repository.AccessToken,
 				RefreshToken: repositoryList[0].repository.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			}, repositoryList[0].repository.ExternalID, pushEvent.Resource.PushID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get push commits by push id %d", pushEvent.Resource.PushID)).SetInternal(err)
@@ -493,6 +503,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
+
 	// id is the webhookEndpointID in repository
 	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
 	g.POST("/sql-review/:id", func(c echo.Context) error {
@@ -569,9 +580,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				AccessToken:  repo.repository.AccessToken,
 				RefreshToken: repo.repository.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			repo.vcs.InstanceURL,
-			request.RepositoryID,
+			repo.repository.ExternalID,
 			request.PullRequestID,
 		)
 		if err != nil {
@@ -642,6 +654,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		case vcs.GitHub:
 			response = convertSQLAdviceToGitHubActionResult(sqlFileName2Advice)
 		case vcs.GitLab:
+			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
+		case vcs.AzureDevOps:
 			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
 		}
 
@@ -751,7 +765,7 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get empty catalog").SetInternal(err)
 				}
 
-				mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent)
+				mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent, engineType)
 				if err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract mybatis mapper sql").SetInternal(err)
 				}
@@ -896,6 +910,7 @@ func (s *Server) sqlAdviceForFile(
 			AccessToken:  fileInfo.repoInfo.repository.AccessToken,
 			RefreshToken: fileInfo.repoInfo.repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, fileInfo.repoInfo.repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
 		},
 		fileInfo.repoInfo.vcs.InstanceURL,
 		fileInfo.repoInfo.repository.ExternalID,
@@ -1043,9 +1058,17 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 			continue
 		}
 
-		if pushEventRepositoryID != repo.ExternalID {
-			log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.UID), zap.String("pushEventExternalID", pushEventRepositoryID), zap.String("repoExternalID", repo.ExternalID))
-			continue
+		switch externalVCS.Type {
+		case vcs.AzureDevOps:
+			if !strings.HasSuffix(repo.ExternalID, pushEventRepositoryID) {
+				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.UID), zap.String("pushEventExternalID", pushEventRepositoryID), zap.String("repoExternalID", repo.ExternalID))
+				continue
+			}
+		default:
+			if pushEventRepositoryID != repo.ExternalID {
+				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.UID), zap.String("pushEventExternalID", pushEventRepositoryID), zap.String("repoExternalID", repo.ExternalID))
+				continue
+			}
 		}
 
 		ok, err := filter(repo)
@@ -2194,14 +2217,25 @@ func extractDBTypeFromJDBCConnectionString(jdbcURL string) (db.Type, error) {
 }
 
 // extractMybatisMapperSQL will extract the SQL from mybatis mapper XML.
-func extractMybatisMapperSQL(mapperContent string) (string, []*ast.MybatisSQLLineMapping, error) {
+func extractMybatisMapperSQL(mapperContent string, engineType db.Type) (string, []*ast.MybatisSQLLineMapping, error) {
 	mybatisMapperParser := mapperparser.NewParser(mapperContent)
 	mybatisMapperNode, err := mybatisMapperParser.Parse()
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to parse mybatis mapper xml")
 	}
+
+	var placeholder string
+	switch engineType {
+	case db.MySQL:
+		placeholder = "?"
+	case db.Postgres:
+		placeholder = "$1"
+	default:
+		return "", nil, errors.Errorf("unsupported database type %q", engineType)
+	}
+
 	var sb strings.Builder
-	lineMapping, err := mybatisMapperNode.RestoreSQLWithLineMapping(mybatisMapperParser.GetRestoreContext(), &sb)
+	lineMapping, err := mybatisMapperNode.RestoreSQLWithLineMapping(mybatisMapperParser.NewRestoreContext().WithRestoreDataNodePlaceholder(placeholder), &sb)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to restore mybatis mapper xml")
 	}

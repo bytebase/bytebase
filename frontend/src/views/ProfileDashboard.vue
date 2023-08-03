@@ -146,6 +146,7 @@
             </dt>
             <dd class="mt-1 text-sm text-main">
               <NInput
+                type="password"
                 size="large"
                 :placeholder="
                   $t('settings.profile.password-confirm-placeholder')

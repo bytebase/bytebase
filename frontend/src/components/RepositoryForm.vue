@@ -460,13 +460,21 @@ const isProjectSchemaChangeTypeSDL = computed(() => {
 const canEnableSQLReview = computed(() => {
   return (
     props.vcsType == ExternalVersionControl_Type.GITHUB ||
-    props.vcsType === ExternalVersionControl_Type.GITLAB
+    props.vcsType === ExternalVersionControl_Type.GITLAB ||
+    props.vcsType === ExternalVersionControl_Type.AZURE_DEVOPS
   );
 });
 const enableSQLReviewTitle = computed(() => {
-  return props.vcsType === ExternalVersionControl_Type.GITLAB
-    ? t("repository.sql-review-ci-enable-gitlab")
-    : t("repository.sql-review-ci-enable-github");
+  switch (props.vcsType) {
+    case ExternalVersionControl_Type.GITLAB:
+      return t("repository.sql-review-ci-enable-gitlab");
+    case ExternalVersionControl_Type.GITHUB:
+      return t("repository.sql-review-ci-enable-github");
+    case ExternalVersionControl_Type.AZURE_DEVOPS:
+      return t("repository.sql-review-ci-enable-azure");
+    default:
+      return "";
+  }
 });
 
 const sampleFilePath = (
