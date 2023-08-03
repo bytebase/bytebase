@@ -31,6 +31,7 @@ export type InstanceFormContext = {
   // derived states
   adminDataSource: ComputedRef<EditDataSource>;
   editingDataSource: ComputedRef<EditDataSource | undefined>;
+  readonlyDataSourceList: ComputedRef<EditDataSource[]>;
   hasReadOnlyDataSource: ComputedRef<boolean>;
 };
 
@@ -68,12 +69,13 @@ export const provideInstanceFormContext = (
     if (editingDataSourceId === undefined) return undefined;
     return dataSources.find((ds) => ds.id === editingDataSourceId);
   });
-  const hasReadOnlyDataSource = computed(() => {
-    return (
-      dataSourceEditState.value.dataSources.filter(
-        (ds) => ds.type === DataSourceType.READ_ONLY
-      ).length > 0
+  const readonlyDataSourceList = computed(() => {
+    return dataSourceEditState.value.dataSources.filter(
+      (ds) => ds.type === DataSourceType.READ_ONLY
     );
+  });
+  const hasReadOnlyDataSource = computed(() => {
+    return readonlyDataSourceList.value.length > 0;
   });
 
   const hasReadonlyReplicaFeature = computed(() => {
@@ -93,6 +95,7 @@ export const provideInstanceFormContext = (
     dataSourceEditState,
     adminDataSource,
     editingDataSource,
+    readonlyDataSourceList,
     hasReadOnlyDataSource,
     hasReadonlyReplicaFeature,
     showReadOnlyDataSourceFeatureModal,
