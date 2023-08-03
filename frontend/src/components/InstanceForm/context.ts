@@ -1,7 +1,3 @@
-import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
-import { State } from "@/types/proto/v1/common";
-import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   type InjectionKey,
   type Ref,
@@ -11,6 +7,10 @@ import {
   ref,
   ComputedRef,
 } from "vue";
+import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
+import { State } from "@/types/proto/v1/common";
+import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   BasicInfo,
   DataSourceEditState,
@@ -18,6 +18,7 @@ import {
   extractBasicInfo,
   extractDataSourceEditState,
 } from "./common";
+
 export type InstanceFormContext = {
   instance: Ref<Instance | undefined>;
   isCreating: Ref<boolean>;
