@@ -22,24 +22,25 @@ func getBaseProfile(dataDir string) config.Profile {
 	}
 
 	return config.Profile{
-		ExternalURL:          flags.externalURL,
-		GrpcPort:             flags.port + 1, // Using flags.port + 1 as our gRPC server port.
-		DatastorePort:        flags.port + 2, // Using flags.port + 2 as our datastore port.
-		SampleDatabasePort:   sampleDatabasePort,
-		Readonly:             flags.readonly,
-		SaaS:                 flags.saas,
-		DataDir:              dataDir,
-		ResourceDir:          common.GetResourceDir(dataDir),
-		Debug:                flags.debug,
-		DemoName:             flags.demoName,
-		Version:              version,
-		GitCommit:            gitcommit,
-		PgURL:                flags.pgURL,
-		BackupStorageBackend: backupStorageBackend,
-		BackupRegion:         flags.backupRegion,
-		BackupBucket:         flags.backupBucket,
-		BackupCredentialFile: flags.backupCredential,
-		FeishuAPIURL:         feishu.APIPath,
-		LastActiveTs:         time.Now().Unix(),
+		ExternalURL:               flags.externalURL,
+		GrpcPort:                  flags.port + 1, // Using flags.port + 1 as our gRPC server port.
+		DatastorePort:             flags.port + 2, // Using flags.port + 2 as our datastore port.
+		SampleDatabasePort:        sampleDatabasePort,
+		Readonly:                  flags.readonly,
+		SaaS:                      flags.saas,
+		DataDir:                   dataDir,
+		ResourceDir:               common.GetResourceDir(dataDir),
+		Debug:                     flags.debug,
+		DemoName:                  flags.demoName,
+		Version:                   version,
+		GitCommit:                 gitcommit,
+		PgURL:                     flags.pgURL,
+		BackupStorageBackend:      backupStorageBackend,
+		BackupRegion:              flags.backupRegion,
+		BackupBucket:              flags.backupBucket,
+		BackupCredentialFile:      flags.backupCredential,
+		FeishuAPIURL:              feishu.APIPath,
+		LastActiveTs:              time.Now().Unix(),
+		DevelopmentUseV2Scheduler: flags.developmentUseV2Scheduler,
 	}
 }

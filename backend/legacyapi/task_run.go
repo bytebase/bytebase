@@ -10,6 +10,8 @@ type TaskRunStatus string
 const (
 	// TaskRunUnknown is the task run status for UNKNOWN.
 	TaskRunUnknown TaskRunStatus = "UNKNOWN"
+	// TaskRunPending is the task run status of PENDING.
+	TaskRunPending TaskRunStatus = "PENDING"
 	// TaskRunRunning is the task run status for RUNNING.
 	TaskRunRunning TaskRunStatus = "RUNNING"
 	// TaskRunDone is the task run status for DONE.
