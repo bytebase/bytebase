@@ -290,7 +290,7 @@ const changeRoleTooltip = (user: User): string => {
   if (allowChangeRole(user)) {
     return "";
   }
-  // Archived user cannot be changed role, so the tooltip should be empty.
+  // Non-actived user cannot be changed role, so the tooltip should be empty.
   if (user.state !== State.ACTIVE) {
     return "";
   }
