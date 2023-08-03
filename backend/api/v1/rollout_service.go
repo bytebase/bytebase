@@ -493,8 +493,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 			continue
 		}
 		create := &store.TaskRunMessage{
-			TaskUID: task.ID,
-			Name:    fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+			TaskUID:   task.ID,
+			Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+			CreatorID: user.ID,
 		}
 		taskRunCreates = append(taskRunCreates, create)
 	}
