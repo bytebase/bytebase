@@ -222,6 +222,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 type ChangesResponseChangeItem struct {
 	GitObjectType string `json:"gitObjectType"`
 	Path          string `json:"path"`
+	CommitID      string `json:"commitId"`
 }
 
 // ChangesResponseChange represents a Azure DevOps changes response change.
@@ -1155,79 +1156,18 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 		return nil, err
 	}
 
-	return p.listChangedFilesInCommit(ctx, oauthCtx, repositoryID, res.LastMergeCommit.CommitID)
-}
-
-// listChangedFilesInCommit lists the changed files in the commit.
-//
-// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-changes?view=azure-devops-rest-7.1&tabs=HTTP
-func (p *Provider) listChangedFilesInCommit(ctx context.Context, oauthCtx common.OauthContext, repositoryID, commitID string) ([]*vcs.PullRequestFile, error) {
-	type changeItem struct {
-		GitObjectType string `json:"gitObjectType"`
-		Path          string `json:"path"`
-		CommitID      string `json:"commitId"`
-	}
-	type commitChange struct {
-		Item       *changeItem `json:"item"`
-		ChangeType string      `json:"changeType"`
-	}
-	type commitChangeResponse struct {
-		Changes []*commitChange `json:"changes"`
-	}
-
-	apiURL, err := getRepositoryAPIURL(repositoryID)
+	changeResponse, err := GetChangesByCommit(ctx, oauthCtx, repositoryID, res.LastMergeCommit.CommitID)
 	if err != nil {
 		return nil, err
 	}
-
-	urlParams := &url.Values{}
-	urlParams.Set("api-version", "7.0")
-	url := fmt.Sprintf("%s/commits/%s/changes?%s", apiURL, commitID, urlParams.Encode())
-
-	code, _, resp, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			oauthContext{
-				RefreshToken: oauthCtx.RefreshToken,
-				ClientSecret: oauthCtx.ClientSecret,
-				RedirectURL:  oauthCtx.RedirectURL,
-			},
-			oauthCtx.Refresher,
-		),
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
-	}
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to create merge request from URL %s", url)
-	} else if code >= 300 {
-		return nil, errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
-			url,
-			code,
-			resp,
-		)
-	}
-
-	var res commitChangeResponse
-	if err := json.Unmarshal([]byte(resp), &res); err != nil {
-		return nil, err
-	}
-
 	files := []*vcs.PullRequestFile{}
-	for _, change := range res.Changes {
-		if change.Item.GitObjectType != "blob" {
-			continue
-		}
+	for _, change := range changeResponse.Changes {
 		files = append(files, &vcs.PullRequestFile{
 			Path:         change.Item.Path,
 			LastCommitID: change.Item.CommitID,
 			IsDeleted:    change.ChangeType == "delete",
 		})
 	}
-
 	return files, nil
 }
 
