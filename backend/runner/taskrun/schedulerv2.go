@@ -243,10 +243,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		s.stateCfg.Unlock()
 	}()
 
-	executorCtx, cancel := context.WithCancel(ctx)
+	driverCtx, cancel := context.WithCancel(ctx)
 	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRun.ID, cancel)
 
-	done, result, err := RunExecutorOnce(executorCtx, executor, task)
+	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task)
 
 	if !done && err != nil {
 		log.Debug("Encountered transient error running task, will retry",
@@ -259,7 +259,43 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	}
 
 	if done && err != nil && errors.Is(err, context.Canceled) {
-		log.Warn("task run is canceled")
+		log.Warn("task run is canceled",
+			zap.Int("id", task.ID),
+			zap.String("name", task.Name),
+			zap.String("type", string(task.Type)),
+			zap.Error(err),
+		)
+		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
+			Detail:        "The task run is canceled",
+			ChangeHistory: "",
+			Version:       "",
+		})
+		if marshalErr != nil {
+			log.Error("Failed to marshal task run result",
+				zap.Int("task_id", task.ID),
+				zap.String("type", string(task.Type)),
+				zap.Error(marshalErr),
+			)
+			return
+		}
+		code := common.Ok
+		result := string(resultBytes)
+		taskRunStatusPatch := &store.TaskRunStatusPatch{
+			ID:        taskRun.ID,
+			UpdaterID: api.SystemBotID,
+			Status:    api.TaskRunCanceled,
+			Code:      &code,
+			Result:    &result,
+		}
+
+		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
+			log.Error("Failed to mark task as CANCELED",
+				zap.Int("id", task.ID),
+				zap.String("name", task.Name),
+				zap.Error(err),
+			)
+			return
+		}
 		return
 	}
 

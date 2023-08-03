@@ -454,7 +454,7 @@
         "not-allow-edit": "Solo el propietario puede cambiar el rol",
         "not-allow-remove": "No se puede eliminar el último propietario",
         "project-role-provider-gitlab": "Mapeado desde el rol {rawRole} en el proyecto correspondiente de GitLab.",
-        "cannot-change-role-of-systembot": "No se puede cambiar el rol del bot del sistema"
+        "cannot-change-role-of-systembot-or-service-account": "No se puede cambiar el rol de la cuenta bot del sistema o de la cuenta de servicio"
       },
       "system-bot": "Bot del Sistema",
       "service-account": "Cuenta de Servicio",
