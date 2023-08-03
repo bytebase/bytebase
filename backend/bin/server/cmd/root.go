@@ -85,6 +85,9 @@ var (
 		backupRegion     string
 		backupBucket     string
 		backupCredential string
+
+		// Development flags
+		developmentUseV2Scheduler bool
 	}
 
 	rootCmd = &cobra.Command{
@@ -134,6 +137,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3://example-bucket. When provided, Bytebase will store data to the S3 bucket.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
+
+	// Development flags
+	rootCmd.PersistentFlags().BoolVar(&flags.developmentUseV2Scheduler, "development-use-v2-scheduler", false, "whether to use the v2 scheduler")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
