@@ -33,8 +33,8 @@ func NewParser(stmt string) *Parser {
 	}
 }
 
-// GetRestoreContext returns the restore context.
-func (p *Parser) GetRestoreContext() *ast.RestoreContext {
+// NewRestoreContext returns the restore context.
+func (p *Parser) NewRestoreContext() *ast.RestoreContext {
 	return &ast.RestoreContext{
 		SQLMap:                           p.sqlMap,
 		Variable:                         make(map[string]string),
