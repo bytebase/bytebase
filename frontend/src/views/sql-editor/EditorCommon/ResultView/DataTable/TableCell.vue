@@ -72,7 +72,7 @@ const classes = computed(() => {
 });
 
 const html = computed(() => {
-  if (props.value === undefined) {
+  if (props.value === null) {
     return `<span class="text-gray-400 italic">NULL</span>`;
   }
   const str = String(props.value);
