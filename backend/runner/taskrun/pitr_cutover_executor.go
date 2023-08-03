@@ -50,7 +50,8 @@ type PITRCutoverExecutor struct {
 }
 
 // RunOnce will run the PITR cutover task executor once.
-func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+// TODO: support cancellation.
+func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
@@ -155,7 +156,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	}
 	defer driver.Close(ctx)
 
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, m, "" /* pitr cutover */, nil, db.ExecuteOptions{}); err != nil {
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, exec.store, driver, m, "" /* pitr cutover */, nil, db.ExecuteOptions{}); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
