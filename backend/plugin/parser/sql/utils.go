@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	pgquery "github.com/pganalyze/pg_query_go/v2"
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
