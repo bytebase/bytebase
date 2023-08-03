@@ -12,13 +12,15 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 // TestData is the test data for mybatis parser. It contains the xml and the expected sql.
 // And the sql is expected to be restored from the xml.
 type TestData struct {
-	XML string `yaml:"xml"`
-	SQL string `yaml:"sql"`
+	XML        string `yaml:"xml"`
+	PostgreSQL string `yaml:"postgresql"`
+	MySQL      string `yaml:"mysql"`
 }
 
 // runTest is a helper function to run the test.
@@ -41,17 +43,33 @@ func runTest(t *testing.T, filepath string, record bool) {
 		require.NotNil(t, node)
 
 		var stringsBuilder strings.Builder
-		err = node.RestoreSQL(parser.GetRestoreContext(), &stringsBuilder)
+		err = node.RestoreSQL(parser.NewRestoreContext().WithRestoreDataNodePlaceholder("$1"), &stringsBuilder)
 		require.NoError(t, err)
 		require.NoError(t, err)
 		if record {
-			testCases[i].SQL = stringsBuilder.String()
+			testCases[i].PostgreSQL = stringsBuilder.String()
 		} else {
-			require.Equal(t, testCase.SQL, stringsBuilder.String())
+			require.Equal(t, testCase.PostgreSQL, stringsBuilder.String())
 		}
+
+		// The result should be parsed correctly by PostgreSQL parser.
+		_, err = pg_query.Parse(testCases[i].PostgreSQL)
+		require.NoError(t, err, "failed to parse restored sql with PostgreSQL parser: %s", testCases[i].PostgreSQL)
+
+		stringsBuilder.Reset()
+
+		err = node.RestoreSQL(parser.NewRestoreContext().WithRestoreDataNodePlaceholder("?"), &stringsBuilder)
+		require.NoError(t, err)
+		require.NoError(t, err)
+		if record {
+			testCases[i].MySQL = stringsBuilder.String()
+		} else {
+			require.Equal(t, testCase.MySQL, stringsBuilder.String())
+		}
+
 		// The result should be parsed correctly by MySQL parser.
-		_, err = pg_query.Parse(testCases[i].SQL)
-		require.NoError(t, err, "failed to parse restored sql: %s", testCases[i].SQL)
+		_, err = tsqlparser.ParseMySQL(testCases[i].MySQL)
+		require.NoError(t, err, "failed to parse restored sql with MySQL parser: %s", testCases[i].MySQL)
 	}
 
 	if record {
@@ -70,7 +88,7 @@ func TestParser(t *testing.T) {
 		"test-data/test_dynamic_sql_mapper.yaml",
 	}
 	for _, filepath := range testFileList {
-		runTest(t, filepath, false)
+		runTest(t, filepath, true)
 	}
 }
 
@@ -118,7 +136,7 @@ func TestRestoreWithLineMapping(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, node)
 		var sb strings.Builder
-		lineMapping, err := node.RestoreSQLWithLineMapping(parser.GetRestoreContext(), &sb)
+		lineMapping, err := node.RestoreSQLWithLineMapping(parser.NewRestoreContext(), &sb)
 		require.NoError(t, err)
 		require.Equal(t, tc.sql, sb.String())
 		require.Equal(t, tc.lineMapping, lineMapping)

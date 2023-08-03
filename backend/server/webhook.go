@@ -765,7 +765,7 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get empty catalog").SetInternal(err)
 				}
 
-				mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent)
+				mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent, engineType)
 				if err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract mybatis mapper sql").SetInternal(err)
 				}
@@ -2217,14 +2217,25 @@ func extractDBTypeFromJDBCConnectionString(jdbcURL string) (db.Type, error) {
 }
 
 // extractMybatisMapperSQL will extract the SQL from mybatis mapper XML.
-func extractMybatisMapperSQL(mapperContent string) (string, []*ast.MybatisSQLLineMapping, error) {
+func extractMybatisMapperSQL(mapperContent string, engineType db.Type) (string, []*ast.MybatisSQLLineMapping, error) {
 	mybatisMapperParser := mapperparser.NewParser(mapperContent)
 	mybatisMapperNode, err := mybatisMapperParser.Parse()
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to parse mybatis mapper xml")
 	}
+
+	var placeholder string
+	switch engineType {
+	case db.MySQL:
+		placeholder = "?"
+	case db.Postgres:
+		placeholder = "$1"
+	default:
+		return "", nil, errors.Errorf("unsupported database type %q", engineType)
+	}
+
 	var sb strings.Builder
-	lineMapping, err := mybatisMapperNode.RestoreSQLWithLineMapping(mybatisMapperParser.GetRestoreContext(), &sb)
+	lineMapping, err := mybatisMapperNode.RestoreSQLWithLineMapping(mybatisMapperParser.NewRestoreContext().WithRestoreDataNodePlaceholder(placeholder), &sb)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to restore mybatis mapper xml")
 	}
