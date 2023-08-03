@@ -218,13 +218,13 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							s.stateCfg.Unlock()
 						}()
 
-						executorCtx, cancel := context.WithCancel(ctx)
+						driverCtx, cancel := context.WithCancel(ctx)
 						s.stateCfg.RunningTasksCancel.Store(task.ID, cancel)
 
-						done, result, err := RunExecutorOnce(executorCtx, executor, task)
+						done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task)
 
 						select {
-						case <-executorCtx.Done():
+						case <-driverCtx.Done():
 							// task cancelled
 							log.Debug("Task canceled",
 								zap.Int("id", task.ID),

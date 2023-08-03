@@ -44,7 +44,7 @@ type SchemaUpdateExecutor struct {
 }
 
 // RunOnce will run the schema update (DDL) task executor once.
-func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
@@ -64,7 +64,7 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, task *store.TaskM
 		return true, nil, err
 	}
 
-	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, &payload.SheetID, payload.VCSPushEvent)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, &payload.SheetID, payload.VCSPushEvent)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", instance.ResourceID),
