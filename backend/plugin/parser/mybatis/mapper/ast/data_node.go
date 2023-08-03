@@ -49,9 +49,9 @@ type ParameterNode struct {
 	Name string
 }
 
-// RestoreSQL implements Node interface, parameter node will always be restored to "?".
-func (*ParameterNode) RestoreSQL(_ *RestoreContext, w io.Writer) error {
-	if _, err := w.Write([]byte("?")); err != nil {
+// RestoreSQL implements Node interface, parameter node will always be restored to ctx.RestoreDataNodePlaceholder.
+func (*ParameterNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
+	if _, err := w.Write([]byte(ctx.RestoreDataNodePlaceholder)); err != nil {
 		return err
 	}
 	return nil
@@ -71,14 +71,14 @@ type VariableNode struct {
 	Name string
 }
 
-// RestoreSQL implements Node interface, variable node will always be restored to "?".
+// RestoreSQL implements Node interface, variable node will always be restored to ctx.RestoreDataNodePlaceholder.
 func (v *VariableNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if value, ok := ctx.Variable[v.Name]; ok {
 		if _, err := w.Write([]byte(value)); err != nil {
 			return err
 		}
 	} else {
-		if _, err := w.Write([]byte("?")); err != nil {
+		if _, err := w.Write([]byte(ctx.RestoreDataNodePlaceholder)); err != nil {
 			return err
 		}
 	}
