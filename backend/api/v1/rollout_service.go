@@ -2483,40 +2483,6 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 	return false, nil
 }
 
-// canUserCancelStageTaskRun returns if a user can cancel the task runs in a stage.
-func canUserCancelStageTaskRun(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
-	// the workspace owner and DBA roles can always cancel task runs.
-	if user.Role == api.Owner || user.Role == api.DBA {
-		return true, nil
-	}
-	// The creator can cancel task runs.
-	if user.ID == issue.Creator.ID {
-		return true, nil
-	}
-	groupValue, err := getGroupValueForIssueTypeEnvironment(ctx, s, issue.Type, stageEnvironmentID)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get assignee group value for issueID %d", issue.UID)
-	}
-	// as the policy says, the project owner has the privilege to cancel.
-	if groupValue == api.AssigneeGroupValueProjectOwner {
-		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
-		if err != nil {
-			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
-		}
-		for _, binding := range policy.Bindings {
-			if binding.Role != api.Owner {
-				continue
-			}
-			for _, member := range binding.Members {
-				if member.ID == user.ID {
-					return true, nil
-				}
-			}
-		}
-	}
-	return false, nil
-}
-
 func getGroupValueForIssueTypeEnvironment(ctx context.Context, s *store.Store, issueType api.IssueType, environmentID int) (api.AssigneeGroupValue, error) {
 	defaultGroupValue := api.AssigneeGroupValueWorkspaceOwnerOrDBA
 	policy, err := s.GetPipelineApprovalPolicy(ctx, environmentID)
