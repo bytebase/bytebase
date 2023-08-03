@@ -53,7 +53,8 @@ type PITRRestoreExecutor struct {
 }
 
 // RunOnce will run the PITR restore task executor once.
-func (exec *PITRRestoreExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+// TODO: support cancellation.
+func (exec *PITRRestoreExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR restore task", zap.String("task", task.Name))
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
@@ -560,7 +561,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 	}
 	defer targetDriver.Close(ctx)
 
-	migrationID, _, err := utils.ExecuteMigrationDefault(ctx, stores, targetDriver, m, "", nil, db.ExecuteOptions{})
+	migrationID, _, err := utils.ExecuteMigrationDefault(ctx, ctx, stores, targetDriver, m, "", nil, db.ExecuteOptions{})
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create migration history")
 	}

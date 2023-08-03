@@ -353,7 +353,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
 				Force:                 true,
 			}
-			if _, _, err := utils.ExecuteMigrationDefault(ctx, storeInstance, metadataDriver, mi, string(buf), nil, dbdriver.ExecuteOptions{}); err != nil {
+			if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, storeInstance, metadataDriver, mi, string(buf), nil, dbdriver.ExecuteOptions{}); err != nil {
 				return err
 			}
 			retVersion = pv.version
@@ -442,7 +442,7 @@ func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver 
 			Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
 			Force:                 true,
 		}
-		if _, _, err := utils.ExecuteMigrationDefault(ctx, storeInstance, metadataDriver, mi, m.statement, nil, dbdriver.ExecuteOptions{}); err != nil {
+		if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, storeInstance, metadataDriver, mi, m.statement, nil, dbdriver.ExecuteOptions{}); err != nil {
 			return err
 		}
 	}
