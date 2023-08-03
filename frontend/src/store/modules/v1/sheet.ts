@@ -121,12 +121,17 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     }
   };
   const fetchSheetByUID = async (uid: string, raw = false) => {
-    const name = `projects/-/sheets/${uid}`;
-    const sheet = await sheetServiceClient.getSheet({
-      name,
-      raw,
-    });
-    return sheet;
+    try {
+      const name = `projects/-/sheets/${uid}`;
+      const sheet = await sheetServiceClient.getSheet({
+        name,
+        raw,
+      });
+      setSheetList([sheet]);
+      return sheet;
+    } catch {
+      return undefined;
+    }
   };
   const getOrFetchSheetByUID = async (uid: string) => {
     if (uid === String(UNKNOWN_ID)) {
