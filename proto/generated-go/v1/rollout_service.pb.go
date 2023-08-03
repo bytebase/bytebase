@@ -1343,6 +1343,7 @@ type BatchCancelTaskRunsRequest struct {
 
 	// The name of the parent of the taskRuns.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+	// Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The taskRuns to cancel.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
