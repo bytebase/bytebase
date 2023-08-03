@@ -93,7 +93,7 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 
 	switch instance.Engine {
 	case db.Postgres:
-		return reportStatementTypeForPostgres(renderedStatement)
+		return reportStatementTypeForPostgres(database.DatabaseName, renderedStatement)
 	case db.MySQL, db.MariaDB, db.OceanBase, db.TiDB:
 		return reportStatementTypeForMySQL(database.DatabaseName, renderedStatement, charset, collation)
 	case db.Oracle:
@@ -256,7 +256,7 @@ func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]
 	return marshalChangedResources(resources)
 }
 
-func reportStatementTypeForPostgres(statement string) ([]api.TaskCheckResult, error) {
+func reportStatementTypeForPostgres(database, statement string) ([]api.TaskCheckResult, error) {
 	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -274,13 +274,18 @@ func reportStatementTypeForPostgres(statement string) ([]api.TaskCheckResult, er
 	var result []api.TaskCheckResult
 
 	for _, stmt := range stmts {
-		sqlType := getStatementTypeFromAstNode(stmt)
+		sqlType, resources := getStatementTypeAndResourcesFromAstNode(database, "public", stmt)
+		changedResource, err := marshalChangedResources(resources)
+		if err != nil {
+			log.Error("failed to marshal changed resources", zap.Error(err))
+		}
 		result = append(result, api.TaskCheckResult{
-			Status:    api.TaskCheckStatusSuccess,
-			Namespace: api.BBNamespace,
-			Code:      common.Ok.Int(),
-			Title:     "OK",
-			Content:   sqlType,
+			Status:           api.TaskCheckStatusSuccess,
+			Namespace:        api.BBNamespace,
+			Code:             common.Ok.Int(),
+			Title:            "OK",
+			Content:          sqlType,
+			ChangedResources: string(changedResource),
 		})
 	}
 
@@ -345,110 +350,168 @@ func getStatementTypeFromTidbAstNode(node tidbast.StmtNode) string {
 	return "UNKNOWN"
 }
 
-func getStatementTypeFromAstNode(node ast.Node) string {
+func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []parser.SchemaResource) {
+	result := []parser.SchemaResource{}
 	switch node := node.(type) {
 	// DDL
 
 	// CREATE
 	case *ast.CreateIndexStmt:
-		return "CREATE_INDEX"
+		return "CREATE_INDEX", result
 	case *ast.CreateTableStmt:
 		switch node.Name.Type {
 		case ast.TableTypeView:
-			return "CREATE_VIEW"
+			return "CREATE_VIEW", result
 		case ast.TableTypeBaseTable:
-			return "CREATE_TABLE"
+			resource := parser.SchemaResource{
+				Database: node.Name.Database,
+				Schema:   node.Name.Schema,
+				Table:    node.Name.Name,
+			}
+			if resource.Database == "" {
+				resource.Database = database
+			}
+			if resource.Schema == "" {
+				resource.Schema = schema
+			}
+			result = append(result, resource)
+			return "CREATE_TABLE", result
 		}
 	case *ast.CreateSequenceStmt:
-		return "CREATE_SEQUENCE"
+		return "CREATE_SEQUENCE", result
 	case *ast.CreateDatabaseStmt:
-		return "CREATE_DATABASE"
+		return "CREATE_DATABASE", result
 	case *ast.CreateSchemaStmt:
-		return "CREATE_SCHEMA"
+		return "CREATE_SCHEMA", result
 	case *ast.CreateFunctionStmt:
-		return "CREATE_FUNCTION"
+		return "CREATE_FUNCTION", result
 	case *ast.CreateTriggerStmt:
-		return "CREATE_TRIGGER"
+		return "CREATE_TRIGGER", result
 	case *ast.CreateTypeStmt:
-		return "CREATE_TYPE"
+		return "CREATE_TYPE", result
 	case *ast.CreateExtensionStmt:
-		return "CREATE_EXTENSION"
+		return "CREATE_EXTENSION", result
 
 	// DROP
 	case *ast.DropColumnStmt:
-		return "DROP_COLUMN"
+		return "DROP_COLUMN", result
 	case *ast.DropConstraintStmt:
-		return "DROP_CONSTRAINT"
+		return "DROP_CONSTRAINT", result
 	case *ast.DropDatabaseStmt:
-		return "DROP_DATABASE"
+		return "DROP_DATABASE", result
 	case *ast.DropDefaultStmt:
-		return "DROP_DEFAULT"
+		return "DROP_DEFAULT", result
 	case *ast.DropExtensionStmt:
-		return "DROP_EXTENSION"
+		return "DROP_EXTENSION", result
 	case *ast.DropFunctionStmt:
-		return "DROP_FUNCTION"
+		return "DROP_FUNCTION", result
 	case *ast.DropIndexStmt:
-		return "DROP_INDEX"
+		return "DROP_INDEX", result
 	case *ast.DropNotNullStmt:
-		return "DROP_NOT_NULL"
+		return "DROP_NOT_NULL", result
 	case *ast.DropSchemaStmt:
-		return "DROP_SCHEMA"
+		return "DROP_SCHEMA", result
 	case *ast.DropSequenceStmt:
-		return "DROP_SEQUENCE"
+		return "DROP_SEQUENCE", result
 	case *ast.DropTableStmt:
-		return "DROP_TABLE"
+		for _, table := range node.TableList {
+			resource := parser.SchemaResource{
+				Database: table.Database,
+				Schema:   table.Schema,
+				Table:    table.Name,
+			}
+			if resource.Database == "" {
+				resource.Database = database
+			}
+			if resource.Schema == "" {
+				resource.Schema = schema
+			}
+			result = append(result, resource)
+		}
+		return "DROP_TABLE", result
 
 	case *ast.DropTriggerStmt:
-		return "DROP_TRIGGER"
+		return "DROP_TRIGGER", result
 	case *ast.DropTypeStmt:
-		return "DROP_TYPE"
+		return "DROP_TYPE", result
 
 	// ALTER
 	case *ast.AlterColumnTypeStmt:
-		return "ALTER_COLUMN_TYPE"
+		return "ALTER_COLUMN_TYPE", result
 	case *ast.AlterSequenceStmt:
-		return "ALTER_SEQUENCE"
+		return "ALTER_SEQUENCE", result
 	case *ast.AlterTableStmt:
 		switch node.Table.Type {
 		case ast.TableTypeView:
-			return "ALTER_VIEW"
+			return "ALTER_VIEW", result
 		case ast.TableTypeBaseTable:
-			return "ALTER_TABLE"
+			resource := parser.SchemaResource{
+				Database: node.Table.Database,
+				Schema:   node.Table.Schema,
+				Table:    node.Table.Name,
+			}
+			if resource.Database == "" {
+				resource.Database = database
+			}
+			if resource.Schema == "" {
+				resource.Schema = schema
+			}
+			result = append(result, resource)
+			return "ALTER_TABLE", result
 		}
 	case *ast.AlterTypeStmt:
-		return "ALTER_TYPE"
+		return "ALTER_TYPE", result
 
 	case *ast.AddColumnListStmt:
-		return "ALTER_TABLE_ADD_COLUMN_LIST"
+		return "ALTER_TABLE_ADD_COLUMN_LIST", result
 	case *ast.AddConstraintStmt:
-		return "ALTER_TABLE_ADD_CONSTRAINT"
+		return "ALTER_TABLE_ADD_CONSTRAINT", result
 
 	// RENAME
 	case *ast.RenameColumnStmt:
-		return "RENAME_COLUMN"
+		return "RENAME_COLUMN", result
 	case *ast.RenameConstraintStmt:
-		return "RENAME_CONSTRAINT"
+		return "RENAME_CONSTRAINT", result
 	case *ast.RenameIndexStmt:
-		return "RENAME_INDEX"
+		return "RENAME_INDEX", result
 	case *ast.RenameSchemaStmt:
-		return "RENAME_SCHEMA"
+		return "RENAME_SCHEMA", result
 	case *ast.RenameTableStmt:
 		switch node.Table.Type {
 		case ast.TableTypeView:
-			return "RENAME_VIEW"
+			return "RENAME_VIEW", result
 		case ast.TableTypeBaseTable:
-			return "RENAME_TABLE"
+			resource := parser.SchemaResource{
+				Database: node.Table.Database,
+				Schema:   node.Table.Schema,
+				Table:    node.Table.Name,
+			}
+			if resource.Database == "" {
+				resource.Database = database
+			}
+			if resource.Schema == "" {
+				resource.Schema = schema
+			}
+			result = append(result, resource)
+
+			newResource := parser.SchemaResource{
+				Database: resource.Database,
+				Schema:   resource.Schema,
+				Table:    node.NewName,
+			}
+			result = append(result, newResource)
+			return "RENAME_TABLE", result
 		}
 
 	// DML
 
 	case *ast.InsertStmt:
-		return "INSERT"
+		return "INSERT", result
 	case *ast.UpdateStmt:
-		return "UPDATE"
+		return "UPDATE", result
 	case *ast.DeleteStmt:
-		return "DELETE"
+		return "DELETE", result
 	}
 
-	return "UNKNOWN"
+	return "UNKNOWN", result
 }
