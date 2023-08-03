@@ -14,11 +14,10 @@ import { useCurrentUserV1 } from "../auth";
 import { useTabStore } from "../tab";
 import { getUserEmailFromIdentifier } from "./common";
 
-// interface SheetState {
-//   sheetByName: Map<string, Sheet>;
-// }
-
-const REQUEST_CACHE = new Map<string /* uid */, Promise<Sheet | undefined>>();
+const REQUEST_CACHE_BY_UID = new Map<
+  string /* uid */,
+  Promise<Sheet | undefined>
+>();
 
 export const useSheetV1Store = defineStore("sheet_v1", () => {
   const sheetsByName = ref(new Map<string, Sheet>());
@@ -97,18 +96,18 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     if (existed) {
       return existed;
     }
-    const cached = REQUEST_CACHE.get(uid);
+    const cached = REQUEST_CACHE_BY_UID.get(uid);
     if (cached) {
       return cached;
     }
 
     const request = fetchSheetByName(name);
-    REQUEST_CACHE.set(uid, request);
+    REQUEST_CACHE_BY_UID.set(uid, request);
     request.then((sheet) => {
       if (!sheet) {
         // If the request failed
         // remove the request cache entry so we can retry when needed.
-        REQUEST_CACHE.delete(uid);
+        REQUEST_CACHE_BY_UID.delete(uid);
       }
     });
     return request;
@@ -141,19 +140,19 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     if (existed) {
       return existed;
     }
-    const cached = REQUEST_CACHE.get(uid);
+    const cached = REQUEST_CACHE_BY_UID.get(uid);
     if (cached) {
       return cached;
     }
 
     const name = `projects/-/sheets/${uid}`;
     const request = fetchSheetByName(name);
-    REQUEST_CACHE.set(uid, request);
+    REQUEST_CACHE_BY_UID.set(uid, request);
     request.then((sheet) => {
       if (!sheet) {
         // If the request failed
         // remove the request cache entry so we can retry when needed.
-        REQUEST_CACHE.delete(uid);
+        REQUEST_CACHE_BY_UID.delete(uid);
       }
     });
     return request;
