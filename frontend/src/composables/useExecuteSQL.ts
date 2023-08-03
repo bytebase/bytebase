@@ -180,7 +180,6 @@ const useExecuteSQL = () => {
       sqlEditorStore.fetchQueryHistoryList();
       cleanup();
     } catch (error: any) {
-      console.log(error.response.data);
       fail(error.response?.data?.message ?? String(error));
     }
   };
