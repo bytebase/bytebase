@@ -339,7 +339,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		// Validate presumptions.
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		if pushEvent.EventType != "git.push" {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Presumption failed: i9nvalid webhook event type, got %s, want git.push", pushEvent.EventType))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Presumption failed: invalid webhook event type, got %s, want git.push", pushEvent.EventType))
 		}
 		// All the examples on https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops#code-pushed
 		// have only one ref update.
