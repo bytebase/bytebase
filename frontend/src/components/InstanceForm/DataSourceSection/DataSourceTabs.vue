@@ -10,7 +10,7 @@
     <NTab :name="adminDataSource.id">
       {{ $t("common.admin") }}
     </NTab>
-    <NTab v-for="ds in readOnlyDataSourceList" :key="ds.id" :name="ds.id">
+    <NTab v-for="ds in readonlyDataSourceList" :key="ds.id" :name="ds.id">
       <span>{{ $t("common.read-only") }}</span>
       <BBButtonConfirm
         v-if="hasReadOnlyDataSource"
@@ -46,10 +46,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { nextTick, ref, watch } from "vue";
 import { NTabs, NTab, TabsInst, NButton } from "naive-ui";
 
-import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { BBButtonConfirm } from "@/bbkit";
 import { useInstanceFormContext } from "../context";
 import { EditDataSource } from "../common";
@@ -67,14 +66,9 @@ const {
   allowEdit,
   dataSourceEditState,
   adminDataSource,
+  readonlyDataSourceList,
   hasReadOnlyDataSource,
 } = useInstanceFormContext();
-
-const readOnlyDataSourceList = computed(() => {
-  return dataSourceEditState.value.dataSources.filter(
-    (ds) => ds.type === DataSourceType.READ_ONLY
-  );
-});
 
 const handleDeleteDataSource = async (ds: EditDataSource) => {
   const removeLocalEditDataSource = (ds: EditDataSource) => {
@@ -97,22 +91,6 @@ const handleDeleteDataSource = async (ds: EditDataSource) => {
   }
 
   removeLocalEditDataSource(ds);
-
-  // if (!readonlyDataSource.value) {
-  //   return;
-  // }
-  // if (readonlyDataSource.value.pendingCreate) {
-  //   // TODO: state.currentDataSourceType = DataSourceType.ADMIN;
-  //   readonlyDataSource.value = undefined;
-  // } else {
-  //   const { instance } = props;
-  //   if (!instance) return;
-  //   const ds = getDataSourceByType(instance, DataSourceType.READ_ONLY);
-  //   if (!ds) return;
-  //   const updated = await instanceV1Store.deleteDataSource(instance, ds);
-  //   // TODO: state.currentDataSourceType = DataSourceType.ADMIN;
-  //   await updateEditState(updated);
-  // }
 };
 
 watch(
