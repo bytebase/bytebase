@@ -57,8 +57,8 @@ import { NTabs, NTabPane } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 
-import DroppableTextarea from "../misc/DroppableTextarea.vue";
 import { DataSource } from "@/types/proto/v1/instance_service";
+import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 
 const SslTypes = ["NONE", "CA", "CA+KEY+CERT"] as const;
 

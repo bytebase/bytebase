@@ -274,7 +274,10 @@ const allowEdit = computed(() => {
 });
 
 const allowChangeRole = (user: User) => {
-  if (user.name === SYSTEM_BOT_USER_NAME) {
+  if (
+    user.name === SYSTEM_BOT_USER_NAME ||
+    user.userType === UserType.SERVICE_ACCOUNT
+  ) {
     return false;
   }
 
@@ -290,8 +293,18 @@ const changeRoleTooltip = (user: User): string => {
   if (allowChangeRole(user)) {
     return "";
   }
-  if (user.name === SYSTEM_BOT_USER_NAME) {
-    return t("settings.members.tooltip.cannot-change-role-of-systembot");
+  // Non-actived user cannot be changed role, so the tooltip should be empty.
+  if (user.state !== State.ACTIVE) {
+    return "";
+  }
+
+  if (
+    user.name === SYSTEM_BOT_USER_NAME ||
+    user.userType === UserType.SERVICE_ACCOUNT
+  ) {
+    return t(
+      "settings.members.tooltip.cannot-change-role-of-systembot-or-service-account"
+    );
   }
 
   if (!hasRBACFeature.value) {
