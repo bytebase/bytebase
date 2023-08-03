@@ -478,6 +478,7 @@ const {
   dataSourceEditState,
   adminDataSource,
   editingDataSource,
+  readonlyDataSourceList,
   hasReadonlyReplicaFeature,
   showReadOnlyDataSourceFeatureModal,
 } = context;
@@ -593,16 +594,6 @@ const valueChanged = computed(() => {
   return !isEqual(editing, original);
 });
 
-// const currentDataSource = computed((): EditDataSource => {
-//   if (state.currentDataSourceType === DataSourceType.ADMIN) {
-//     return adminDataSource.value;
-//   } else if (state.currentDataSourceType === DataSourceType.READ_ONLY) {
-//     return readonlyDataSource.value!;
-//   } else {
-//     throw new Error("Unknown data source type");
-//   }
-// });
-
 const allowUpdate = computed((): boolean => {
   if (!valueChanged.value) {
     return false;
@@ -611,12 +602,13 @@ const allowUpdate = computed((): boolean => {
     if (!isValidSpannerHost(adminDataSource.value.host)) {
       return false;
     }
-    // if (
-    //   readonlyDataSource.value &&
-    //   !isValidSpannerHost(readonlyDataSource.value.host)
-    // ) {
-    //   return false;
-    // }
+    if (readonlyDataSourceList.value.length > 0) {
+      if (
+        readonlyDataSourceList.value.some((ds) => !isValidSpannerHost(ds.host))
+      ) {
+        return false;
+      }
+    }
   }
   return true;
 });
@@ -843,16 +835,13 @@ const doUpdate = async () => {
     return await updateDataSource(editing, original, adminDataSource.value);
   };
   const maybeUpsertReadonlyDataSources = async () => {
-    const readonlyDataSourceList = dataSourceEditState.value.dataSources.filter(
-      (ds) => ds.type === DataSourceType.READ_ONLY
-    );
-    if (readonlyDataSourceList.length === 0) {
+    if (readonlyDataSourceList.value.length === 0) {
       // Nothing to do
       return;
     }
     // Upsert readonly data sources one by one
-    for (let i = 0; i < readonlyDataSourceList.length; i++) {
-      const editing = readonlyDataSourceList[i];
+    for (let i = 0; i < readonlyDataSourceList.value.length; i++) {
+      const editing = readonlyDataSourceList.value[i];
       const patch = extractDataSourceFromEdit(instance, editing);
       if (editing.pendingCreate) {
         await instanceV1Store.createDataSource(instance, patch);
@@ -1105,10 +1094,7 @@ const checkRODataSourceFeature = (instance: Instance) => {
     return true;
   }
 
-  const readonlyDataSourceList = dataSourceEditState.value.dataSources.filter(
-    (ds) => ds.type === DataSourceType.READ_ONLY
-  );
-  if (readonlyDataSourceList.length === 0) {
+  if (readonlyDataSourceList.value.length === 0) {
     // Not creating or editing any RO data source
     return true;
   }
@@ -1131,7 +1117,7 @@ const checkRODataSourceFeature = (instance: Instance) => {
     return true;
   };
   // Need to check all RO data sources
-  return readonlyDataSourceList.every(checkOne);
+  return readonlyDataSourceList.value.every(checkOne);
 };
 
 const changeInstanceActivation = async (on: boolean) => {
