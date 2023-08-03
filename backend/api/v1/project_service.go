@@ -1278,7 +1278,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 	branch *vcsPlugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
-	sqlReviewConfig := azure.SetupSQLReviewCI(sqlReviewEndpoint, repository.BranchFilter)
+	sqlReviewConfig := azure.SetupSQLReviewCI(sqlReviewEndpoint, repository.BranchFilter, repository.WebhookSecretToken)
 	fileLastCommitID := ""
 	fileSHA := ""
 

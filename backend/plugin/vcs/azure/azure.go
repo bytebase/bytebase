@@ -142,8 +142,12 @@ type project struct {
 	State string `json:"state"`
 }
 type repository struct {
-	ID      string  `json:"id"`
-	Name    string  `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// RemoteURL is the repo url in https://{org name}@dev.azure.com/{org name}/{project name}/_git/{repo name}
+	// The pipeline ci will use this url, so we need this url
+	RemoteURL string `json:"remoteUrl"`
+	// WebURL is the repo url in https://dev.azure.com/{org name}/{project name}/_git/{repo name}
 	WebURL  string  `json:"webUrl"`
 	Project project `json:"project"`
 }
@@ -489,7 +493,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 					ID:       fmt.Sprintf("%s/%s/%s", organization, r.Project.ID, r.ID),
 					Name:     r.Name,
 					FullPath: fmt.Sprintf("%s/%s/%s", organization, r.Project.Name, r.Name),
-					WebURL:   r.WebURL,
+					WebURL:   r.RemoteURL,
 				})
 			}
 			return nil
@@ -1178,7 +1182,7 @@ func (p *Provider) listChangedFilesInCommit(ctx context.Context, oauthCtx common
 
 	urlParams := &url.Values{}
 	urlParams.Set("api-version", "7.0")
-	url := fmt.Sprintf("%s/commits/%s?%s", apiURL, commitID, urlParams.Encode())
+	url := fmt.Sprintf("%s/commits/%s/changes?%s", apiURL, commitID, urlParams.Encode())
 
 	code, _, resp, err := oauth.Get(
 		ctx,
@@ -1305,6 +1309,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext, string, string, string, string) error {
+	// TODO: set api token to pipeline variable.
 	return nil
 }
 
