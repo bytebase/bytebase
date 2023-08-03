@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -18,32 +17,15 @@ import (
 
 const systemSchema = "'CTISYS','SYS','SYSAUDITOR','SYSDBA','SYSSSO'"
 
-var (
-	semVersionRegex       = regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
-	canonicalVersionRegex = regexp.MustCompile(`[0-9][0-9][a-z]`)
-)
-
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var fullVersion string
+	// DM Database Server 64 V8.
 	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'DM%'").Scan(&fullVersion); err != nil {
 		return nil, err
 	}
 	tokens := strings.Fields(fullVersion)
-	var version, canonicalVersion string
-	for _, token := range tokens {
-		if semVersionRegex.MatchString(token) {
-			version = token
-			continue
-		}
-		if canonicalVersionRegex.MatchString(token) {
-			canonicalVersion = token
-			continue
-		}
-	}
-	if canonicalVersion != "" {
-		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
-	}
+	version := tokens[len(tokens)-1]
 
 	databases, err := driver.syncSchemaTenantModeInstance(ctx)
 	if err != nil {
