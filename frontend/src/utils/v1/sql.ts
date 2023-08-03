@@ -1,7 +1,8 @@
+import { NullValue } from "@/types/proto/google/protobuf/struct";
 import { RowValue } from "@/types/proto/v1/sql_service";
 
 export const extractSQLRowValue = (value: RowValue) => {
-  if (value.nullValue === 0) {
+  if (value.nullValue === NullValue.NULL_VALUE) {
     return undefined;
   }
 
