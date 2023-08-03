@@ -704,7 +704,7 @@ func (p *Provider) getLatestCommitIDOnBranch(ctx context.Context, oauthCtx commo
 
 // createOrUpdateFile update or create the file.
 //
-// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pushes/create?view=azure-devops-rest-5.1&tabs=HTTP
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pushes/create?view=azure-devops-rest-7.0&tabs=HTTP
 func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate, create bool) error {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
@@ -1054,7 +1054,7 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 		[]*refUpdate{
 			{
 				Name:        fmt.Sprintf("refs/heads/%s", branch.Name),
-				OldObjectID: "0000000000000000000000000000000000000000",
+				OldObjectID: strings.Repeat("0", 40),
 				NewObjectID: branch.LastCommitID,
 			},
 		},
@@ -1461,6 +1461,161 @@ func GetPushCommitsByPushID(ctx context.Context, oauthCtx common.OauthContext, r
 	}
 
 	return r, nil
+}
+
+// PullRequest is the pull request.
+type PullRequest struct {
+	ID            uint64 `json:"pullRequestId"`
+	Status        string `json:"status"`
+	TargetRefName string `json:"targetRefName"`
+}
+
+// QueryPullRequest queries the pull request by the last merge commit.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-query/get?view=azure-devops-rest-7.0#gitpullrequestqueryinput
+func QueryPullRequest(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, lastMergeCommit string) ([]*PullRequest, error) {
+	apiURL, err := getRepositoryAPIURL(repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+
+	url := fmt.Sprintf("%s/pullrequestquery?%s", apiURL, values.Encode())
+
+	client := &http.Client{}
+	type pullRequestQueryInputQuery struct {
+		Item []string `json:"items"`
+		Type string   `json:"type"`
+	}
+
+	type pullRequestQueryInput struct {
+		Queries []pullRequestQueryInputQuery `json:"queries"`
+	}
+
+	b := pullRequestQueryInput{
+		Queries: []pullRequestQueryInputQuery{
+			{
+				Item: []string{
+					lastMergeCommit,
+				},
+				Type: "lastMergeCommit",
+			},
+		},
+	}
+
+	marshalBody, err := json.Marshal(b)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal pull request query input")
+	}
+
+	code, _, body, err := oauth.Post(ctx, client, url, &oauthCtx.AccessToken, bytes.NewReader(marshalBody), tokenRefresher(
+		oauthContext{
+			RefreshToken: oauthCtx.RefreshToken,
+			ClientSecret: oauthCtx.ClientSecret,
+			RedirectURL:  oauthCtx.RedirectURL,
+		},
+		oauthCtx.Refresher,
+	))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query pull request")
+	}
+
+	if code != http.StatusCreated {
+		return nil, errors.Errorf("failed to query pull request, code: %v, body: %s", code, string(body))
+	}
+
+	type pullRequestQueryResponseQuery struct {
+		Type  string   `json:"type"`
+		Items []string `json:"items"`
+	}
+	type pullRequestQueryResponseMapElem struct {
+		ID            uint64 `json:"pullRequestId"`
+		Status        string `json:"status"`
+		TargetRefName string `json:"targetRefName"`
+	}
+	type pullRequestQueryResponseResult map[string][]pullRequestQueryResponseMapElem
+
+	type pullRequestQueryResponse struct {
+		Results []pullRequestQueryResponseResult `json:"results"`
+	}
+
+	r := new(pullRequestQueryResponse)
+	if err := json.Unmarshal([]byte(body), r); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal query pull request response body, code %v", code)
+	}
+
+	if len(r.Results) == 0 {
+		return nil, nil
+	}
+	if len(r.Results) != 1 {
+		return nil, errors.Errorf("expected one result, but got %d, body: %v", len(r.Results), string(body))
+	}
+	if len(r.Results[0]) != 1 {
+		return nil, errors.Errorf("expected one element in result, but got %d, body: %v", len(r.Results[0]), string(body))
+	}
+
+	var result []*PullRequest
+	for _, item := range r.Results[0] {
+		for _, elem := range item {
+			result = append(result, &PullRequest{
+				ID:            elem.ID,
+				Status:        elem.Status,
+				TargetRefName: elem.TargetRefName,
+			})
+		}
+	}
+
+	return result, nil
+}
+
+// GetPullRequestCommits gets the commits in the pull request.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-commits/get-pull-request-commits?view=azure-devops-rest-7.0
+func GetPullRequestCommits(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, pullRequestID uint64) ([]ServiceHookCodePushEventResourceCommit, error) {
+	apiURL, err := getRepositoryAPIURL(repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("%s/pullRequests/%d/commits?%s", apiURL, pullRequestID, values.Encode())
+
+	client := &http.Client{}
+
+	code, _, resp, err := oauth.Get(
+		ctx,
+		client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				RefreshToken: oauthCtx.RefreshToken,
+				ClientSecret: oauthCtx.ClientSecret,
+				RedirectURL:  oauthCtx.RedirectURL,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+	if code != http.StatusOK {
+		return nil, errors.Errorf("failed to get pull request commits, code: %v, body: %s", code, string(resp))
+	}
+
+	type pullRequestCommitsResponse struct {
+		Value []ServiceHookCodePushEventResourceCommit `json:"value"`
+	}
+
+	r := new(pullRequestCommitsResponse)
+	if err := json.Unmarshal([]byte(resp), r); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal get pull request commits response body, code %v", code)
+	}
+
+	return r.Value, nil
 }
 
 // oauthContext is the request context for OAuth.
