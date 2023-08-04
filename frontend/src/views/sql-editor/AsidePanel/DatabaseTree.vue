@@ -407,7 +407,10 @@ watch(
 
 <style postcss>
 .databases-tree .n-tree-node-content {
-  @apply !pl-0;
+  @apply !pl-0 text-sm;
+}
+.databases-tree .n-tree-node-wrapper {
+  padding: 0;
 }
 .databases-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;

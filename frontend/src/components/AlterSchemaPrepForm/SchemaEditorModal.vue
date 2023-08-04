@@ -75,9 +75,8 @@
           </div>
         </div>
         <MonacoEditor
-          ref="editorRef"
           class="w-full h-full border border-b-0"
-          data-label="bb-issue-sql-editor"
+          data-label="bb-schema-editor-sql-editor"
           :value="state.editStatement"
           :auto-focus="false"
           :dialect="dialectOfEngineV1(databaseEngine)"
@@ -154,6 +153,7 @@ import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmMo
 import GhostDialog from "./GhostDialog.vue";
 import { Engine } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import MonacoEditor from "../MonacoEditor";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 

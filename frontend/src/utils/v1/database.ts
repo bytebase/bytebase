@@ -114,6 +114,39 @@ export const isDatabaseV1Accessible = (
   return false;
 };
 
+// isDatabaseV1Alterable checks if database alterable for user.
+export const isDatabaseV1Alterable = (
+  database: ComposedDatabase,
+  user: User
+): boolean => {
+  if (!hasFeature("bb.feature.access-control")) {
+    // The current plan doesn't have access control feature.
+    // Fallback to true.
+    return true;
+  }
+
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-access-control",
+      user.userRole
+    )
+  ) {
+    // The current user has the super privilege to access all databases.
+    // AKA. Owners and DBAs
+    return true;
+  }
+
+  // If user is owner or developer of its projects, we will show the database in the UI.
+  if (
+    isOwnerOfProjectV1(database.projectEntity.iamPolicy, user) ||
+    isDeveloperOfProjectV1(database.projectEntity.iamPolicy, user)
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.
 export const isDatabaseV1Queryable = (
   database: ComposedDatabase,

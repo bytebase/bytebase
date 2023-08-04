@@ -167,6 +167,18 @@ export const useSheetV1Store = defineStore("sheet_v1", {
       REQUEST_CACHE.set(name, request);
       return request;
     },
+    async fetchSheetByUid(uid: SheetId, raw = false) {
+      try {
+        const sheet = await sheetServiceClient.getSheet({
+          name: `${projectNamePrefix}-/${sheetNamePrefix}${uid}`,
+          raw,
+        });
+        this.sheetByName.set(sheet.name, sheet);
+        return sheet;
+      } catch {
+        return;
+      }
+    },
     getSheetByName(name: string) {
       const sheet = this.sheetByName.get(name);
       return sheet;

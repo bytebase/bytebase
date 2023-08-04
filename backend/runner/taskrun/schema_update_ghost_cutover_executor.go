@@ -52,7 +52,8 @@ type SchemaUpdateGhostCutoverExecutor struct {
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
-func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+// TODO: support cancellation.
+func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
 	if len(task.BlockedBy) != 1 {
 		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}
@@ -132,7 +133,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 
-	execFunc := func(_ string) error {
+	execFunc := func(_ context.Context, _ string) error {
 		if err := os.Remove(postponeFilename); err != nil {
 			return errors.Wrap(err, "failed to remove postpone flag file")
 		}
@@ -146,7 +147,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	migrationID, schema, err := utils.ExecuteMigrationWithFunc(ctx, stores, driver, mi, statement, &sheetID, execFunc)
+	migrationID, schema, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, driver, mi, statement, &sheetID, execFunc)
 	if err != nil {
 		return true, nil, err
 	}

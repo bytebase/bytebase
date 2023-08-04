@@ -14,12 +14,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -28,9 +27,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var (
-	_ db.Driver = (*Driver)(nil)
-)
+var _ db.Driver = (*Driver)(nil)
 
 func init() {
 	db.Register(db.MongoDB, newDriver)
@@ -91,7 +88,7 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
-func (driver *Driver) Execute(_ context.Context, statement string, _ bool, _ db.ExecuteOptions) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, _ db.ExecuteOptions) (int64, error) {
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
 	// There are some ways to execute the statement in mongosh:
@@ -122,8 +119,7 @@ func (driver *Driver) Execute(_ context.Context, statement string, _ bool, _ db.
 		"--file",
 		tempFile.Name(),
 	}
-	// We don't use the CommandContext here because the statement may take a long time to execute.
-	mongoshCmd := exec.Command(mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
+	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
 	var errContent bytes.Buffer
 	mongoshCmd.Stderr = &errContent
 	if err := mongoshCmd.Run(); err != nil {

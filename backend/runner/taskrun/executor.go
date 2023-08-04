@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -42,11 +44,13 @@ type Executor interface {
 	// 1. It's possible that err could be non-nil while terminated is false, which
 	// usually indicates a transient error and will make scheduler retry later.
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
-	RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error)
+	// driverCtx is used by the database driver so that we can cancel the query
+	// while have the ability to cleanup migration history etc.
+	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunExecutorOnce(ctx context.Context, exec Executor, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -60,7 +64,7 @@ func RunExecutorOnce(ctx context.Context, exec Executor, task *store.TaskMessage
 		}
 	}()
 
-	return exec.RunOnce(ctx, task)
+	return exec.RunOnce(ctx, driverCtx, task)
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
@@ -92,6 +96,33 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		Environment: environment.ResourceID,
 		Database:    database.DatabaseName,
 		Namespace:   database.DatabaseName,
+		Payload:     &storepb.InstanceChangeHistoryPayload{},
+	}
+
+	taskCheckType := api.TaskCheckDatabaseStatementTypeReport
+	typeReportTaskCheckRunFind := &store.TaskCheckRunFind{
+		TaskID:     &task.ID,
+		StageID:    &task.StageID,
+		PipelineID: &task.PipelineID,
+		Type:       &taskCheckType,
+		StatusList: &[]api.TaskCheckRunStatus{api.TaskCheckRunDone},
+	}
+	taskCheckRun, err := stores.ListTaskCheckRuns(ctx, typeReportTaskCheckRunFind)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list task check runs")
+	}
+	sort.Slice(taskCheckRun, func(i, j int) bool {
+		return taskCheckRun[i].ID > taskCheckRun[j].ID
+	})
+	if len(taskCheckRun) > 0 {
+		checkResult := &api.TaskCheckRunResultPayload{}
+		if err := json.Unmarshal([]byte(taskCheckRun[0].Result), checkResult); err != nil {
+			return nil, err
+		}
+		mi.Payload.ChangedResources, err = mergeChangedResources(checkResult.ResultList)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
@@ -123,9 +154,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	} else {
 		mi.Source = db.VCS
 		mi.Creator = vcsPushEvent.AuthorName
-		mi.Payload = &storepb.InstanceChangeHistoryPayload{
-			PushEvent: utils.ConvertVcsPushEvent(vcsPushEvent),
-		}
+		mi.Payload.PushEvent = utils.ConvertVcsPushEvent(vcsPushEvent)
 	}
 
 	statement = strings.TrimSpace(statement)
@@ -143,7 +172,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, sheetID *int, mi *db.MigrationInfo) (string, string, error) {
+func executeMigration(ctx context.Context, driverCtx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, statement string, sheetID *int, mi *db.MigrationInfo) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -185,7 +214,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
 
-	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, stores, driver, mi, statement, sheetID, opts)
+	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, driverCtx, stores, driver, mi, statement, sheetID, opts)
 	if err != nil {
 		return "", "", err
 	}
@@ -569,13 +598,13 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	return branch, nil
 }
 
-func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, sheetID *int, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, sheetID *int, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
 
-	migrationID, schema, err := executeMigration(ctx, store, dbFactory, stateCfg, task, statement, sheetID, mi)
+	migrationID, schema, err := executeMigration(ctx, driverCtx, store, dbFactory, stateCfg, task, statement, sheetID, mi)
 	if err != nil {
 		return true, nil, err
 	}
@@ -764,4 +793,92 @@ func getRepositoryAndVCS(ctx context.Context, storage *store.Store, repoUID, vcs
 		return nil, nil, errors.Errorf("vcs not found for schema write-back: %v", vcsUID)
 	}
 	return repo, vcs, nil
+}
+
+type resourceDatabase struct {
+	name    string
+	schemas schemaMap
+}
+
+type databaseMap map[string]*resourceDatabase
+
+type resourceSchema struct {
+	name   string
+	tables tableMap
+}
+
+type schemaMap map[string]*resourceSchema
+
+type resourceTable struct {
+	name string
+}
+
+type tableMap map[string]*resourceTable
+
+func mergeChangedResources(list []api.TaskCheckResult) (*storepb.ChangedResources, error) {
+	databaseMap := make(databaseMap)
+	for _, item := range list {
+		if item.ChangedResources == "" {
+			continue
+		}
+		meta := storepb.ChangedResources{}
+		if err := protojson.Unmarshal([]byte(item.ChangedResources), &meta); err != nil {
+			return nil, err
+		}
+		for _, database := range meta.Databases {
+			dbMeta, ok := databaseMap[database.Name]
+			if !ok {
+				dbMeta = &resourceDatabase{
+					name:    database.Name,
+					schemas: make(schemaMap),
+				}
+				databaseMap[database.Name] = dbMeta
+			}
+			for _, schema := range database.Schemas {
+				schemaMeta, ok := dbMeta.schemas[schema.Name]
+				if !ok {
+					schemaMeta = &resourceSchema{
+						name:   schema.Name,
+						tables: make(tableMap),
+					}
+					dbMeta.schemas[schema.Name] = schemaMeta
+				}
+				for _, table := range schema.Tables {
+					schemaMeta.tables[table.Name] = &resourceTable{
+						name: table.Name,
+					}
+				}
+			}
+		}
+	}
+
+	result := &storepb.ChangedResources{}
+	for _, dbMeta := range databaseMap {
+		db := &storepb.ChangedResourceDatabase{
+			Name: dbMeta.name,
+		}
+		for _, schemaMeta := range dbMeta.schemas {
+			schema := &storepb.ChangedResourceSchema{
+				Name: schemaMeta.name,
+			}
+			for _, tableMeta := range schemaMeta.tables {
+				table := &storepb.ChangedResourceTable{
+					Name: tableMeta.name,
+				}
+				schema.Tables = append(schema.Tables, table)
+			}
+			sort.Slice(schema.Tables, func(i, j int) bool {
+				return schema.Tables[i].Name < schema.Tables[j].Name
+			})
+			db.Schemas = append(db.Schemas, schema)
+		}
+		sort.Slice(db.Schemas, func(i, j int) bool {
+			return db.Schemas[i].Name < db.Schemas[j].Name
+		})
+		result.Databases = append(result.Databases, db)
+	}
+	sort.Slice(result.Databases, func(i, j int) bool {
+		return result.Databases[i].Name < result.Databases[j].Name
+	})
+	return result, nil
 }

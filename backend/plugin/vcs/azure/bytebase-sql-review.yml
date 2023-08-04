@@ -1,0 +1,54 @@
+variables:
+  - name: api
+    value: "%s"
+
+trigger:
+  - "%s"
+
+pr:
+  paths:
+    include:
+      - "**/*.sql"
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+  - job: SQL_Review
+    steps:
+      - bash: |
+          echo "Start request ${{ variables.api }}"
+
+          if [[ $SYSTEM_PULLREQUEST_PULLREQUESTID == "" ]]; then exit 0; fi
+
+          request_body=$(jq -n \
+            --arg 'repositoryId' "$BUILD_REPOSITORY_ID" \
+            --arg 'pullRequestId' "$SYSTEM_PULLREQUEST_PULLREQUESTID" \
+            --arg 'webURL' "$BUILD_REPOSITORY_URI" \
+            '$ARGS.named')
+
+          response=$(curl -s --show-error -X POST ${{ variables.api }} \
+            -H "X-SQL-Review-Token: %s" \
+            -H "Content-Type: application/json" \
+            -d "$request_body")
+
+          echo "response: $response"
+
+          content=$(echo $response | jq -r '.content')
+          len=$(echo $content | jq '. | length')
+          if [[ $len == 0 ]]; then exit 0; fi
+
+          msg=$(echo $content | jq -r '.[0]')
+          echo $msg >> bytebase-sql-review.xml
+
+          result=$(echo $response | jq -r '.status')
+          echo "##vso[task.setvariable variable=status]$result"
+        displayName: SQL Review
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFormat: "JUnit"
+          testResultsFiles: "**/bytebase-sql-review.xml"
+        displayName: Upload artifacts
+      - bash: |
+          if [[ "$STATUS" == "ERROR" ]]; then exit 1; fi
+        displayName: Check SQL Review Result

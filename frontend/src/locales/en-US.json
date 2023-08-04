@@ -461,7 +461,7 @@
         "not-allow-edit": "Only Owner can change the role",
         "not-allow-remove": "Cannot remove the last Owner",
         "project-role-provider-gitlab": "Mapped from the {rawRole} role in the corresponding GitLab project.",
-        "cannot-change-role-of-systembot": "Cannot change the role of system bot"
+        "cannot-change-role-of-systembot-or-service-account": "Cannot change the role of system bot or service account"
       },
       "system-bot": "System Bot",
       "service-account": "Service Account",
@@ -1361,6 +1361,7 @@
     "sql-review-ci-enable": "Enable SQL Review CI",
     "sql-review-ci-enable-gitlab": "Enable SQL Review CI via GitLab CI",
     "sql-review-ci-enable-github": "Enable SQL Review CI via GitHub Action",
+    "sql-review-ci-enable-azure": "Enable SQL Review CI via Azure DevOps Pipeline",
     "sql-review-ci-description": "Bytebase will create a {pr} to set up the SQL review CI in your repository. In every {pr}, environment-based SQL review policy will check against changed files matching the \"{pathTemplate}\".",
     "sql-review-ci-setup": "Setup SQL Review CI",
     "sql-review-ci-setup-failed": "Failed to setup SQL Review CI",
@@ -1393,7 +1394,7 @@
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
     "select-repository-attention-github": "Bytebase only lists GitHub repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
     "select-repository-attention-bitbucket": "Bytebase only lists Bitbucket repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
-    "select-repository-attention-azure-devops": "Bytebase only lists Azure DevOps repositories under the organization which third-party application access via OAuth is granted. If you don't see the repository you want, please go to Organization -> Organization Settings -> Policies to enable third-party application access.", 
+    "select-repository-attention-azure-devops": "Bytebase only lists Azure DevOps repositories under the organization which third-party application access via OAuth is granted. If you don't see the repository you want, please go to Organization -> Organization Settings -> Policies to enable third-party application access.",
     "select-repository-search": "Search repository",
     "linked": "Linked repositories"
   },
@@ -2655,9 +2656,22 @@
   },
   "schema-template": {
     "self": "Schema template",
-    "field-template": "Field Template",
+    "field-template": {
+      "self": "Field Template",
+      "description": "You can pre-define the field template, then apply the template during the schema change."
+    },
+    "column-type-restriction": {
+      "self": "Column Type Restriction",
+      "description": "You can restrict the allowed column types for each database engine.",
+      "allow-all": "Allow all",
+      "allow-limited-types": "Allow limited types",
+      "save-all": "Save all",
+      "messages": {
+        "unable-to-update": "Unable to update restriction",
+        "following-column-types-are-used": "Following column types are still used by field tempalte"
+      }
+    },
     "add-field": "Add field template",
-    "description": "You can pre-define the field template, then apply the template during the schema change.",
     "search-by-name-or-comment": "Search by name or comment",
     "form": {
       "category": "Category",

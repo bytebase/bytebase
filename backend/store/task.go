@@ -549,7 +549,6 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 			if err := s.createTaskRunImpl(ctx, tx, &TaskRunMessage{
 				TaskUID: task.ID,
 				Name:    fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
-				Type:    task.Type,
 			}, patch.UpdaterID); err != nil {
 				return nil, err
 			}
@@ -563,7 +562,6 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 			UpdaterID: patch.UpdaterID,
 			Code:      patch.Code,
 			Result:    patch.Result,
-			Comment:   patch.Comment,
 		}
 		switch patch.Status {
 		case api.TaskDone:
@@ -628,4 +626,37 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 	}
 
 	return updatedTask, nil
+}
+
+// ListTasksWithNoTaskRun returns tasks that have no task run.
+func (s *Store) ListTasksWithNoTaskRun(ctx context.Context) ([]int, error) {
+	rows, err := s.db.db.QueryContext(ctx, `
+	SELECT
+		task.id
+	FROM task
+	LEFT JOIN LATERAL
+		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run
+		ON TRUE
+	WHERE task_run.e IS NULL
+	ORDER BY task.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int
+
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
 }

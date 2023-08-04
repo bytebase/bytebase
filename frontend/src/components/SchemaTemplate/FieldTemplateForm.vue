@@ -1,5 +1,5 @@
 <template>
-  <DrawerContent :title="$t('schema-template.field-template')">
+  <DrawerContent :title="$t('schema-template.field-template.self')">
     <div class="space-y-6 divide-y divide-block-border">
       <div class="space-y-6">
         <!-- category -->
