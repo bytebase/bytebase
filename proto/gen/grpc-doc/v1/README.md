@@ -7466,7 +7466,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
 | spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. Could be empty if the rollout of the task does not have an associating plan. |
-| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. TODO(p0ny): migrate old task status and use this field as a summary of the task runs. |
+| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
+| skipped_reason | [string](#string) |  |  |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
@@ -7736,7 +7737,7 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
-| PENDING_APPROVAL | 1 |  |
+| NOT_STARTED | 1 |  |
 | PENDING | 2 |  |
 | RUNNING | 3 |  |
 | DONE | 4 |  |
@@ -7781,7 +7782,6 @@ Type is the database change type.
 | DONE | 3 |  |
 | FAILED | 4 |  |
 | CANCELED | 5 |  |
-| SKIPPED | 6 |  |
 
 
  
