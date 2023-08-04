@@ -44,12 +44,12 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, err
 	}
 
-	var filteredDatabases []*storepb.DatabaseMetadata
+	var filteredDatabases []*storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		if database == bytebaseDatabase {
 			continue
 		}
-		filteredDatabases = append(filteredDatabases, &storepb.DatabaseMetadata{Name: database})
+		filteredDatabases = append(filteredDatabases, &storepb.DatabaseSchemaMetadata{Name: database})
 	}
 
 	return &db.InstanceMetadata{
@@ -60,14 +60,14 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	databaseMetadata := &storepb.DatabaseMetadata{
+	databaseMetadata := &storepb.DatabaseSchemaMetadata{
 		Name: driver.databaseName,
 	}
 	found := false
