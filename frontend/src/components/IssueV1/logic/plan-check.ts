@@ -21,7 +21,12 @@ export const allPlanChecksPassedForTask = (
   issue: ComposedIssue,
   task: Task
 ) => {
-  return false; // TODO
+  const planCheckRunList = planCheckRunListForTask(issue, task);
+  if (planCheckRunList.length === 0) {
+    return true;
+  }
+  const summary = planCheckRunSummaryForCheckRunList(planCheckRunList);
+  return summary.errorCount === 0;
 };
 
 export const HiddenPlanCheckTypes = new Set<PlanCheckRun_Type>([
