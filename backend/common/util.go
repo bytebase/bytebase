@@ -222,6 +222,7 @@ func NormalizeExternalURL(url string) (string, error) {
 	return r, nil
 }
 
+// ValidatePhone validates the phone number.
 func ValidatePhone(phone string) error {
 	phoneNumber, err := phonenumbers.Parse(phone, "")
 	if err != nil {
