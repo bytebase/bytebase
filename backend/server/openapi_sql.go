@@ -222,6 +222,8 @@ func schemaDiff(c echo.Context) error {
 		engine = parser.Postgres
 	case parser.EngineType(db.MySQL), parser.EngineType(db.MariaDB), parser.EngineType(db.OceanBase):
 		engine = parser.MySQL
+	case parser.EngineType(db.TiDB):
+		engine = parser.TiDB
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database engine %s", request.EngineType))
 	}
