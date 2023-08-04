@@ -159,11 +159,11 @@ const onClickTask = (task: Task) => {
   @apply text-control;
 }
 .task.status_pending .name,
-.task.status_pending_approval .name {
+.task.status_not_started .name {
   @apply text-control;
 }
 .task.active.status_pending .name,
-.task.active.status_pending_approval .name {
+.task.active.status_not_started .name {
   @apply text-info;
 }
 .task.status_running .name {
