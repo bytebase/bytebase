@@ -221,7 +221,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 		taskIDs = append(taskIDs, create.TaskUID)
 	}
 
-	exist, err := s.checkTaskRunsExist(ctx, tx, taskIDs, []api.TaskRunStatus{api.TaskRunPending, api.TaskRunRunning})
+	exist, err := s.checkTaskRunsExist(ctx, tx, taskIDs, []api.TaskRunStatus{api.TaskRunPending, api.TaskRunRunning, api.TaskRunDone})
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if task runs exist")
 	}
