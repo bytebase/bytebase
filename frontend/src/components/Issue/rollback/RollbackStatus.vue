@@ -162,8 +162,8 @@ const tryRollbackTask = async () => {
 
     const originalSheetUID = payload.value!.sheetId!;
     const rollbackSheetUID = payload.value!.rollbackSheetId!;
-    const originalSheet = await sheetV1Store.getOrFetchSheetByUid(
-      originalSheetUID
+    const originalSheet = await sheetV1Store.getOrFetchSheetByUID(
+      String(originalSheetUID)
     );
     const description = [
       "The original SQL statement:",

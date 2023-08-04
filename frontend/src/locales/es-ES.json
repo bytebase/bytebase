@@ -1824,6 +1824,9 @@
     "sheet": {
       "choose-sheet": "Elegir hoja",
       "self": "Hoja"
+    },
+    "tab": {
+      "unsaved": "No guardado"
     }
   },
   "schema-editor": {
@@ -2160,7 +2163,11 @@
     "content-oversize-warning": "SQL está sobredimensionado y no se permite la edición en línea.",
     "notifications": {
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
-    }
+    },
+    "sheets": "Hojas",
+    "mine": "Mío",
+    "shared": "Compartido",
+    "search-sheets": "Hojas de búsqueda"
   },
   "engine": {
     "mysql": "MySQL",

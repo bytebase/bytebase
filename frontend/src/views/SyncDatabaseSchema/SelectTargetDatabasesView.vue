@@ -349,7 +349,7 @@ const sourceDatabaseSchema = computed(() => {
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
     if (props.rawSqlState?.sheetId) {
-      const sheet = sheetStore.getSheetByUid(props.rawSqlState.sheetId);
+      const sheet = sheetStore.getSheetByUID(String(props.rawSqlState.sheetId));
       if (sheet) {
         statement = new TextDecoder().decode(sheet.content);
       }
@@ -431,7 +431,7 @@ onMounted(async () => {
 
   // Prepare raw sql statement from sheet.
   if (props.rawSqlState?.sheetId) {
-    await sheetStore.fetchSheetByUid(props.rawSqlState?.sheetId);
+    await sheetStore.fetchSheetByUID(String(props.rawSqlState.sheetId));
   }
 });
 

@@ -11,17 +11,21 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 
-import { UNKNOWN_ID } from "@/types";
-import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
-import { defaultTabName, getDefaultTabNameFromConnection } from "@/utils";
-import SaveSheetForm from "./SaveSheetForm.vue";
 import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
   Sheet,
 } from "@/types/proto/v1/sheet_service";
-import { useSheetPanelContext } from "../TabList/SheetPanel/common";
+import { UNKNOWN_ID } from "@/types";
+import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
+import {
+  defaultTabName,
+  extractSheetUID,
+  getDefaultTabNameFromConnection,
+} from "@/utils";
+import SaveSheetForm from "./SaveSheetForm.vue";
+import { useSheetContext } from "../Sheet";
 
 type LocalState = {
   showModal: boolean;
@@ -30,7 +34,7 @@ type LocalState = {
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sheetV1Store = useSheetV1Store();
-const { events: sheetEvents } = useSheetPanelContext();
+const { events: sheetEvents } = useSheetContext();
 
 const state = reactive<LocalState>({
   showModal: false,
@@ -56,7 +60,7 @@ const doSaveSheet = async (sheetTitle?: string) => {
   const { name, statement, sheetName } = tabStore.currentTab;
   sheetTitle = sheetTitle || name;
 
-  const sheetId = sheetV1Store.getSheetUid(sheetName ?? "");
+  const sheetId = Number(extractSheetUID(sheetName ?? ""));
 
   const conn = tabStore.currentTab.connection;
   const database = await databaseStore.getOrFetchDatabaseByUID(conn.databaseId);

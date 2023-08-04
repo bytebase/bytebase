@@ -153,6 +153,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
+  extractSheetUID,
   getBacktracePayloadWithIssue,
   sheetNameOfTask,
   useInstanceV1EditorLanguage,
@@ -365,7 +366,7 @@ const isValidSheetName = computed(() => {
   if (!state.taskSheetName) {
     return false;
   }
-  return sheetV1Store.getSheetUid(state.taskSheetName) !== UNKNOWN_ID;
+  return extractSheetUID(state.taskSheetName) !== String(UNKNOWN_ID);
 });
 
 const isTaskSheetOversize = computed(() => {
@@ -521,7 +522,7 @@ const handleUploadAndOverwrite = async (event: Event) => {
     });
 
     resetTempEditState();
-    await updateSheetId(sheetV1Store.getSheetUid(sheet.name));
+    await updateSheetId(Number(extractSheetUID(sheet.name)));
     if (selectedTask.value) {
       updateEditorHeight();
     }

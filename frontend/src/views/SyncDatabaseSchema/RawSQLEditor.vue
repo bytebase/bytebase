@@ -83,7 +83,7 @@ import {
 } from "@/types";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { Engine } from "@/types/proto/v1/common";
-import { engineNameV1 } from "@/utils";
+import { engineNameV1, extractSheetUID } from "@/utils";
 import {
   Sheet_Source,
   Sheet_Type,
@@ -137,7 +137,7 @@ const engineSelectorOptions = computed(() => {
 });
 
 const sheet = computed(() => {
-  return sheetStore.getSheetByUid(props.sheetId || UNKNOWN_ID);
+  return sheetStore.getSheetByUID(String(props.sheetId || UNKNOWN_ID));
 });
 
 const isSheetOversized = computed(() => {
@@ -152,7 +152,7 @@ const isSheetOversized = computed(() => {
 
 onMounted(async () => {
   if (props.sheetId) {
-    const sheet = await sheetStore.getOrFetchSheetByUid(props.sheetId);
+    const sheet = await sheetStore.getOrFetchSheetByUID(String(props.sheetId));
     if (sheet) {
       const statement = new TextDecoder().decode(sheet.content);
       state.editStatement = statement;
@@ -206,7 +206,7 @@ const handleUploadFile = (e: Event) => {
       source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
       type: Sheet_Type.TYPE_SQL,
     });
-    const sheetId = sheetStore.getSheetUid(sheet.name);
+    const sheetId = Number(extractSheetUID(sheet.name));
     await handleStatementChange(statement);
     update(sheetId);
   };
@@ -243,7 +243,7 @@ const handleUpdateSheet = useDebounceFn(async (statement: string) => {
 
 const update = (sheetId?: number) => {
   if (sheet.value) {
-    sheetId = sheetStore.getSheetUid(sheet.value?.name);
+    sheetId = Number(extractSheetUID(sheet.value.name));
   }
   emit("update", {
     projectId: state.projectId,
