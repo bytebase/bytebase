@@ -1017,10 +1017,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Sprintf("branch %q does not exist in the repository %s", branchName, repositoryID))
-	}
-	if code != http.StatusOK {
+	if code >= 300 {
 		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
 
@@ -1091,9 +1088,7 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 	if err != nil {
 		return errors.Wrapf(err, "GET %s", url)
 	}
-	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
-	} else if code >= 300 {
+	if code >= 300 {
 		return errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
 			url,
 			code,
@@ -1141,9 +1136,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to create merge request from URL %s", url)
-	} else if code >= 300 {
+	if code >= 300 {
 		return nil, errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
 			url,
 			code,
@@ -1224,9 +1217,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		return nil, errors.Wrapf(err, "POST %s", url)
 	}
 
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
-	} else if code >= 300 {
+	if code >= 300 {
 		return nil, errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
 			url,
 			code,
@@ -1249,7 +1240,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext, string, string, string, string) error {
-	// TODO: set api token to pipeline variable.
+	// We will set the variable in pipeline. Check sql_review.go/createSQLReviewPipeline function.
 	return nil
 }
 
