@@ -44,7 +44,7 @@ var (
 	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
 	// MockMySQLDatabase is the mock MySQL database for test.
-	MockMySQLDatabase = &storepb.DatabaseMetadata{
+	MockMySQLDatabase = &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 		Schemas: []*storepb.SchemaMetadata{
 			{
@@ -84,7 +84,7 @@ var (
 		},
 	}
 	// MockPostgreSQLDatabase is the mock PostgreSQL database for test.
-	MockPostgreSQLDatabase = &storepb.DatabaseMetadata{
+	MockPostgreSQLDatabase = &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 		Schemas: []*storepb.SchemaMetadata{
 			{
@@ -261,7 +261,7 @@ func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, 
 }
 
 // SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseMetadata, error) {
+func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	return nil, nil
 }
 

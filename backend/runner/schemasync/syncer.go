@@ -315,12 +315,12 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
 }
 
-func syncDBSchema(ctx context.Context, stores *store.Store, database *store.DatabaseMessage, databaseMetadata *storepb.DatabaseMetadata, driver db.Driver, force bool) error {
+func syncDBSchema(ctx context.Context, stores *store.Store, database *store.DatabaseMessage, databaseMetadata *storepb.DatabaseSchemaMetadata, driver db.Driver, force bool) error {
 	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return err
 	}
-	var oldDatabaseMetadata *storepb.DatabaseMetadata
+	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
 	if dbSchema != nil {
 		oldDatabaseMetadata = dbSchema.Metadata
 	}
@@ -350,13 +350,13 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *store.Data
 	return nil
 }
 
-func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {
+func equalDatabaseMetadata(x, y *storepb.DatabaseSchemaMetadata) bool {
 	return cmp.Equal(x, y, protocmp.Transform(),
 		protocmp.IgnoreFields(&storepb.TableMetadata{}, "row_count", "data_size", "index_size", "data_free"),
 	)
 }
 
-func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseMetadata) {
+func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
 			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)

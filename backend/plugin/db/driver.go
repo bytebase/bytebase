@@ -77,7 +77,7 @@ type InstanceMetadata struct {
 	Version       string
 	InstanceRoles []*storepb.InstanceRoleMetadata
 	// Simplified database metadata.
-	Databases []*storepb.DatabaseMetadata
+	Databases []*storepb.DatabaseSchemaMetadata
 	Metadata  *storepb.InstanceMetadata
 }
 
@@ -519,7 +519,7 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error)
+	SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error)
 
 	// Sync slow query logs
 	// SyncSlowQuery syncs the slow query logs.
