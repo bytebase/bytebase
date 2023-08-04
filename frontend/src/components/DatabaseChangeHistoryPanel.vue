@@ -12,7 +12,6 @@
       </div>
       <div class="flex flex-row justify-end items-center space-x-2">
         <BBTooltipButton
-          v-if="showEstablishBaselineButton"
           type="normal"
           :disabled="!allowExportChangeHistory || state.isExporting"
           tooltip-mode="DISABLED-ONLY"
