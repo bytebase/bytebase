@@ -1240,7 +1240,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext, string, string, string, string) error {
-	// TODO: set api token to pipeline variable.
+	// We will set the variable in pipeline. Check sql_review.go/createSQLReviewPipeline function.
 	return nil
 }
 
