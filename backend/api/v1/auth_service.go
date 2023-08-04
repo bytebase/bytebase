@@ -749,7 +749,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
 		}
 	}
-	if email == "" {
+	// If the email is still invalid, we will return an error.
+	if err := validateEmail(email); err != nil {
 		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
