@@ -500,9 +500,10 @@
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
         "connection-security": "安全性选项",
         "connection-security-skip-tls-verify": "跳过自签名证书验证",
-        "identifier": "Bytebase 用户的唯一标识符",
+        "identifier": "Bytebase 用户的邮箱",
+        "identifier-tips": "邮箱应该具有唯一性。如果实际值不是邮箱格式，将会和 domain 进行拼接。",
         "display-name": "Bytebase 用户的昵称",
-        "email": "Bytebase 用户的 Email",
+        "phone": "Bytebase 用户的手机号",
         "auth-style": {
           "self": "认证参数传递方式",
           "in-params": {
