@@ -11,6 +11,9 @@
     >
       <heroicons:exclamation-triangle class="w-7 h-7 text-warning" />
     </template>
+    <template v-else-if="status === Task_Status.NOT_STARTED">
+      <heroicons-outline:user class="w-4 h-4" />
+    </template>
     <template v-else-if="status === Task_Status.PENDING">
       <span
         v-if="active"
@@ -22,9 +25,6 @@
         class="h-1.5 w-1.5 bg-control rounded-full"
         aria-hidden="true"
       />
-    </template>
-    <template v-else-if="status === Task_Status.PENDING_APPROVAL">
-      <heroicons-outline:user class="w-4 h-4" />
     </template>
     <template v-else-if="status === Task_Status.RUNNING">
       <div class="flex h-2.5 w-2.5 relative overflow-visible">
@@ -97,14 +97,14 @@ const classes = computed((): string => {
   }
 
   switch (props.status) {
+    case Task_Status.NOT_STARTED:
+      if (!isCreating.value && props.active) {
+        return "bg-white border-2 border-info text-info";
+      }
+      return "bg-white border-2 border-control";
     case Task_Status.PENDING:
       if (!isCreating.value && props.active) {
         return "bg-white border-2 border-info text-info ";
-      }
-      return "bg-white border-2 border-control";
-    case Task_Status.PENDING_APPROVAL:
-      if (!isCreating.value && props.active) {
-        return "bg-white border-2 border-info text-info";
       }
       return "bg-white border-2 border-control";
     case Task_Status.RUNNING:

@@ -110,8 +110,8 @@ const hasRunningPlanCheck = computed((): boolean => {
 
 const allowRunChecksForTask = (task: Task) => {
   return (
+    task.status === Task_Status.NOT_STARTED ||
     task.status === Task_Status.PENDING ||
-    task.status === Task_Status.PENDING_APPROVAL ||
     task.status === Task_Status.RUNNING ||
     task.status === Task_Status.FAILED
   );

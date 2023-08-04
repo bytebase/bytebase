@@ -50,7 +50,7 @@ export const planCheckRunResultStatus = (checkRun: PlanCheckRun) => {
 export const planCheckStatusForTask = (issue: ComposedIssue, task: Task) => {
   if (
     task.status === Task_Status.PENDING ||
-    task.status === Task_Status.PENDING_APPROVAL
+    task.status === Task_Status.NOT_STARTED
   ) {
     const summary = planCheckRunSummaryForTask(issue, task);
     if (summary.errorCount > 0) return PlanCheckRun_Result_Status.ERROR;

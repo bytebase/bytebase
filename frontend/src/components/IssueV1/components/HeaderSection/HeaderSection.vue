@@ -53,9 +53,9 @@ import RollbackFromTips from "./RollbackFromTips.vue";
 const { isCreating, issue } = useIssueContext();
 
 const issueTaskStatus = computed(() => {
-  // For grant request issue, we always show the status as "PENDING_APPROVAL" as task status.
+  // For grant request issue, we always show the status as "NOT_STARTED" as task status.
   if (!isDatabaseRelatedIssue(issue.value)) {
-    return Task_Status.PENDING_APPROVAL;
+    return Task_Status.NOT_STARTED;
   }
 
   return activeTaskInRollout(issue.value.rolloutEntity).status;

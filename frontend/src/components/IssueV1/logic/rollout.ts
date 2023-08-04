@@ -84,7 +84,7 @@ export const allowUserToEditStatementForTask = (
 
 export const isTaskEditable = (issue: ComposedIssue, task: Task): string[] => {
   if (
-    task.status === Task_Status.PENDING_APPROVAL ||
+    task.status === Task_Status.NOT_STARTED ||
     task.status === Task_Status.FAILED
   ) {
     return [];

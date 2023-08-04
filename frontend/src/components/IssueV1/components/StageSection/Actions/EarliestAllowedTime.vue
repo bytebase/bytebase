@@ -86,9 +86,7 @@ const allowEditEarliestAllowedTime = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) {
     return false;
   }
-  if (
-    ![Task_Status.PENDING, Task_Status.PENDING_APPROVAL].includes(task.status)
-  ) {
+  if (![Task_Status.NOT_STARTED, Task_Status.PENDING].includes(task.status)) {
     return false;
   }
 

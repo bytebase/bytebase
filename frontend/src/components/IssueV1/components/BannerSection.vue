@@ -85,7 +85,7 @@ const showPendingRollout = computed(() => {
   }
 
   const task = activeTaskInRollout(issue.value.rolloutEntity);
-  return task.status === Task_Status.PENDING_APPROVAL;
+  return task.status === Task_Status.NOT_STARTED;
 });
 
 const showEarliestAllowedTimeBanner = computed(() => {

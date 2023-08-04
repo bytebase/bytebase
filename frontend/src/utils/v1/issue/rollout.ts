@@ -41,8 +41,8 @@ export const taskV1Slug = (task: Task): string => {
 export const activeTaskInTaskList = (tasks: Task[]): Task => {
   for (const task of tasks) {
     if (
+      task.status === Task_Status.NOT_STARTED ||
       task.status === Task_Status.PENDING ||
-      task.status === Task_Status.PENDING_APPROVAL ||
       task.status === Task_Status.RUNNING ||
       // "FAILED" is also a transient task status, which requires user
       // to take further action (e.g. Skip, Retry)
