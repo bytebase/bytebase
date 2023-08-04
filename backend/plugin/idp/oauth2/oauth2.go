@@ -138,7 +138,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 	if p.config.FieldMapping.Phone != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Phone).(string); ok {
 			// Only set phone if it's valid.
-			if err := common.ValidatePhone(v); err != nil {
+			if err := common.ValidatePhone(v); err == nil {
 				userInfo.Phone = v
 			}
 		}
