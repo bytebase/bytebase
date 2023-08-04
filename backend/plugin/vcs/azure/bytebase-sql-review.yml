@@ -28,7 +28,7 @@ jobs:
             '$ARGS.named')
 
           response=$(curl -s --show-error -X POST ${{ variables.api }} \
-            -H "X-SQL-Review-Token: %s" \
+            -H "X-SQL-Review-Token: $(%s)" \
             -H "Content-Type: application/json" \
             -d "$request_body")
 

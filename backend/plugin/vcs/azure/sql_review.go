@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
 )
 
@@ -29,8 +30,8 @@ const (
 )
 
 // SetupSQLReviewCI will setup the SQL review CI content with SQL review endpoint.
-func SetupSQLReviewCI(endpoint, branch, token string) string {
-	return fmt.Sprintf(sqlReviewPipeline, endpoint, branch, token)
+func SetupSQLReviewCI(endpoint, branch string) string {
+	return fmt.Sprintf(sqlReviewPipeline, endpoint, branch, vcs.SQLReviewAPISecretName)
 }
 
 type pipeline struct {
@@ -49,9 +50,16 @@ type pipelineRepository struct {
 }
 
 type pipelineConfig struct {
-	Type       string              `json:"type"`
-	Path       string              `json:"path"`
-	Repository *pipelineRepository `json:"repository"`
+	Type       string                       `json:"type"`
+	Path       string                       `json:"path"`
+	Repository *pipelineRepository          `json:"repository"`
+	Variables  map[string]*pipelineVariable `json:"variables"`
+}
+
+type pipelineVariable struct {
+	Value         string `json:"value"`
+	IsSecret      bool   `json:"isSecret"`
+	AllowOverride bool   `json:"allowOverride"`
 }
 
 type branchPolicyCreate struct {
@@ -83,15 +91,15 @@ type branchPolicyScope struct {
 
 // policy is the API message for azure policy.
 // It is hard code with specific id.
-// We can check all the policies in docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/pipelines/pipelines/list?view=azure-devops-rest-7.1
+// We can check all the policies in docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/policy/types/list?view=azure-devops-rest-7.1
 // For branch validation policy, we will hardcode the id as "0609b952-1397-4640-95ec-e00a01b2c241".
 type policy struct {
 	ID string `json:"id"`
 }
 
 // EnableSQLReviewCI enables the SQL review pipeline and policy.
-func EnableSQLReviewCI(ctx context.Context, oauthCtx common.OauthContext, repositoryID, branch string) error {
-	pipeline, err := createSQLReviewPipeline(ctx, oauthCtx, repositoryID)
+func EnableSQLReviewCI(ctx context.Context, oauthCtx common.OauthContext, repositoryID, branch, token string) error {
+	pipeline, err := createSQLReviewPipeline(ctx, oauthCtx, repositoryID, token)
 	if err != nil {
 		return err
 	}
@@ -101,7 +109,7 @@ func EnableSQLReviewCI(ctx context.Context, oauthCtx common.OauthContext, reposi
 // createSQLReviewPipeline creates the SQL Review pipeline.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/pipelines/pipelines/create?view=azure-devops-rest-7.1
-func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, repositoryID string) (*pipeline, error) {
+func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, repositoryID, token string) (*pipeline, error) {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
 		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
@@ -121,6 +129,13 @@ func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, 
 			Repository: &pipelineRepository{
 				ID:   repositoryID,
 				Type: "azureReposGit",
+			},
+			Variables: map[string]*pipelineVariable{
+				vcs.SQLReviewAPISecretName: {
+					Value:         token,
+					AllowOverride: false,
+					IsSecret:      true,
+				},
 			},
 		},
 	}
@@ -148,7 +163,7 @@ func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "POST %s", apiURL)
 	}
-	if code != 200 {
+	if code >= 300 {
 		return nil, errors.Errorf("non-200 POST %s status code %d with body %q", apiURL, code, string(resp))
 	}
 
@@ -221,7 +236,7 @@ func createSQLReviewBranchPolicy(ctx context.Context, oauthCtx common.OauthConte
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", apiURL)
 	}
-	if code != 200 {
+	if code >= 300 {
 		return errors.Errorf("non-200 POST %s status code %d with body %q", apiURL, code, string(resp))
 	}
 
