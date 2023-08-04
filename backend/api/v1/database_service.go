@@ -1560,7 +1560,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	}
 }
 
-func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseMetadata {
+func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,

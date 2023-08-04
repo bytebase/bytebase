@@ -7,6 +7,16 @@ export const protobufPackage = "bytebase.store";
 
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseMetadata {
+  labels: { [key: string]: string };
+}
+
+export interface DatabaseMetadata_LabelsEntry {
+  key: string;
+  value: string;
+}
+
+/** DatabaseSchemaMetadata is the schema metadata for databases. */
+export interface DatabaseSchemaMetadata {
   name: string;
   /** The schemas is the list of schemas in a database. */
   schemas: SchemaMetadata[];
@@ -383,11 +393,155 @@ export interface SecretItem {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false, serviceName: "" };
+  return { labels: {} };
 }
 
 export const DatabaseMetadata = {
   encode(message: DatabaseMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    Object.entries(message.labels).forEach(([key, value]) => {
+      DatabaseMetadata_LabelsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          const entry1 = DatabaseMetadata_LabelsEntry.decode(reader, reader.uint32());
+          if (entry1.value !== undefined) {
+            message.labels[entry1.key] = entry1.value;
+          }
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseMetadata {
+    return {
+      labels: isObject(object.labels)
+        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: DatabaseMetadata): unknown {
+    const obj: any = {};
+    obj.labels = {};
+    if (message.labels) {
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
+    return DatabaseMetadata.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
+    const message = createBaseDatabaseMetadata();
+    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseDatabaseMetadata_LabelsEntry(): DatabaseMetadata_LabelsEntry {
+  return { key: "", value: "" };
+}
+
+export const DatabaseMetadata_LabelsEntry = {
+  encode(message: DatabaseMetadata_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata_LabelsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseMetadata_LabelsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseMetadata_LabelsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: DatabaseMetadata_LabelsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseMetadata_LabelsEntry>): DatabaseMetadata_LabelsEntry {
+    return DatabaseMetadata_LabelsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseMetadata_LabelsEntry>): DatabaseMetadata_LabelsEntry {
+    const message = createBaseDatabaseMetadata_LabelsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseDatabaseSchemaMetadata(): DatabaseSchemaMetadata {
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false, serviceName: "" };
+}
+
+export const DatabaseSchemaMetadata = {
+  encode(message: DatabaseSchemaMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -412,10 +566,10 @@ export const DatabaseMetadata = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseSchemaMetadata {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseMetadata();
+    const message = createBaseDatabaseSchemaMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -477,7 +631,7 @@ export const DatabaseMetadata = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseMetadata {
+  fromJSON(object: any): DatabaseSchemaMetadata {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       schemas: Array.isArray(object?.schemas) ? object.schemas.map((e: any) => SchemaMetadata.fromJSON(e)) : [],
@@ -491,7 +645,7 @@ export const DatabaseMetadata = {
     };
   },
 
-  toJSON(message: DatabaseMetadata): unknown {
+  toJSON(message: DatabaseSchemaMetadata): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.schemas) {
@@ -511,12 +665,12 @@ export const DatabaseMetadata = {
     return obj;
   },
 
-  create(base?: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
-    return DatabaseMetadata.fromPartial(base ?? {});
+  create(base?: DeepPartial<DatabaseSchemaMetadata>): DatabaseSchemaMetadata {
+    return DatabaseSchemaMetadata.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
-    const message = createBaseDatabaseMetadata();
+  fromPartial(object: DeepPartial<DatabaseSchemaMetadata>): DatabaseSchemaMetadata {
+    const message = createBaseDatabaseSchemaMetadata();
     message.name = object.name ?? "";
     message.schemas = object.schemas?.map((e) => SchemaMetadata.fromPartial(e)) || [];
     message.characterSet = object.characterSet ?? "";
@@ -2368,6 +2522,10 @@ function longToNumber(long: Long): number {
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {
