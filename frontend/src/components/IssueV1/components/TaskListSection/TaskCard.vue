@@ -63,7 +63,7 @@ import {
   Task_Type,
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
-import { databaseForTask, useIssueContext } from "../../logic";
+import { databaseForTask, isTaskFinished, useIssueContext } from "../../logic";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import { InstanceV1Name } from "@/components/v2";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
@@ -82,7 +82,10 @@ const { isCreating, issue, activeTask, selectedTask, events } =
   useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 const active = computed(
-  () => !isCreating.value && props.task === activeTask.value
+  () =>
+    !isCreating.value &&
+    props.task === activeTask.value &&
+    !isTaskFinished(props.task)
 );
 const selected = computed(() => props.task === selectedTask.value);
 

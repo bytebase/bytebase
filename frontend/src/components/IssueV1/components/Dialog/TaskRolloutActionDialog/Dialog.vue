@@ -17,11 +17,16 @@ import {
   TaskRolloutAction,
   stageForTask,
   taskRolloutActionDisplayName,
+  taskRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import CommonDialog from "../CommonDialog.vue";
 import Form from "./Form.vue";
-import { Task } from "@/types/proto/v1/rollout_service";
+import {
+  Task,
+  TaskRun,
+  TaskRun_Status,
+} from "@/types/proto/v1/rollout_service";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 
@@ -70,8 +75,21 @@ const handleConfirm = async (
         tasks: props.taskList.map((task) => task.name),
       });
     } else if (action === "CANCEL") {
-      // TODO: find the running task runs for each task and call
-      // rolloutServiceClient.batchCancelTaskRuns
+      const taskRunListToCancel = props.taskList
+        .map((task) => {
+          const taskRunList = taskRunListForTask(issue.value, task);
+          const currentRunningTaskRun = taskRunList.find(
+            (taskRun) => taskRun.status === TaskRun_Status.RUNNING
+          );
+          return currentRunningTaskRun;
+        })
+        .filter((taskRun) => taskRun !== undefined) as TaskRun[];
+      if (taskRunListToCancel.length > 0) {
+        await rolloutServiceClient.batchCancelTaskRuns({
+          parent: `${stage.name}/tasks/-`,
+          taskRuns: taskRunListToCancel.map((taskRun) => taskRun.name),
+        });
+      }
     }
     pushNotification({
       module: "bytebase",

@@ -363,7 +363,8 @@
       "created": "(creado)"
     },
     "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual",
-    "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual"
+    "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
+    "cancel-task": "Cancelar tarea | Cancelar tareas"
   },
   "banner": {
     "update-license": "Actualizar licencia",

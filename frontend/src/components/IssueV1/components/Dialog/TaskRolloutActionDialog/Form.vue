@@ -45,7 +45,7 @@
         v-bind="taskRolloutActionButtonProps(action)"
         @click="$emit('confirm', action, comment)"
       >
-        {{ taskRolloutActionDisplayName(action) }}
+        {{ taskRolloutActionDialogButtonName(action, taskList) }}
       </NButton>
     </div>
   </div>
@@ -56,7 +56,7 @@ import { computed, ref } from "vue";
 import {
   TaskRolloutAction,
   taskRolloutActionButtonProps,
-  taskRolloutActionDisplayName,
+  taskRolloutActionDialogButtonName,
 } from "@/components/IssueV1/logic";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { groupBy } from "lodash-es";

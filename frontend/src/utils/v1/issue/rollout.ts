@@ -47,6 +47,8 @@ export const activeTaskInTaskList = (tasks: Task[]): Task => {
       // "FAILED" is also a transient task status, which requires user
       // to take further action (e.g. Skip, Retry)
       task.status === Task_Status.FAILED ||
+      // "CANCELED" tasks can be "RESTART"ed
+      // So it should be an "active" task
       task.status === Task_Status.CANCELED
     ) {
       return task;

@@ -85,7 +85,8 @@ export const allowUserToEditStatementForTask = (
 export const isTaskEditable = (issue: ComposedIssue, task: Task): string[] => {
   if (
     task.status === Task_Status.NOT_STARTED ||
-    task.status === Task_Status.FAILED
+    task.status === Task_Status.FAILED ||
+    task.status === Task_Status.CANCELED
   ) {
     return [];
   }
@@ -107,9 +108,7 @@ export const isTaskEditable = (issue: ComposedIssue, task: Task): string[] => {
 };
 
 export const isTaskFinished = (task: Task): boolean => {
-  return [Task_Status.DONE, Task_Status.CANCELED, Task_Status.SKIPPED].includes(
-    task.status
-  );
+  return [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status);
 };
 
 export const isTaskV1TriggeredByVCS = (

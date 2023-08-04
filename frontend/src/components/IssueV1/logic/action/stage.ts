@@ -1,12 +1,19 @@
 import { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Stage, Task } from "@/types/proto/v1/rollout_service";
-import { getApplicableTaskRolloutActionList } from "./task";
+import { getApplicableTaskRolloutActionList, TaskRolloutAction } from "./task";
 
-export type StageRolloutAction =
-  | "ROLLOUT" // PENDING_APPROVAL -> PENDING
-  | "RETRY" // FAILED -> PENDING_APPROVAL
-  | "SKIP"; // ? -> SKIPPED
+export type StageRolloutAction = Extract<
+  TaskRolloutAction,
+  "ROLLOUT" | "CANCEL" | "RETRY" | "SKIP" | "RESTART"
+>;
+export const StageRolloutActionList: StageRolloutAction[] = [
+  "ROLLOUT",
+  "CANCEL",
+  "RETRY",
+  "SKIP",
+  "RESTART",
+];
 
 export const getApplicableStageRolloutActionList = (
   issue: ComposedIssue,
@@ -19,8 +26,10 @@ export const getApplicableStageRolloutActionList = (
 
   const applicableActionsMap: Record<StageRolloutAction, Task[]> = {
     ROLLOUT: [],
+    CANCEL: [],
     RETRY: [],
     SKIP: [],
+    RESTART: [],
   };
   stage.tasks.forEach((task) => {
     const actions = getApplicableTaskRolloutActionList(
@@ -28,35 +37,22 @@ export const getApplicableStageRolloutActionList = (
       task,
       allowSkipPendingTasks
     );
-    if (actions.includes("ROLLOUT")) {
-      applicableActionsMap.ROLLOUT.push(task);
-    }
-    if (actions.includes("RETRY")) {
-      applicableActionsMap.RETRY.push(task);
-    }
-    if (actions.includes("SKIP")) {
-      applicableActionsMap.SKIP.push(task);
-    }
+    StageRolloutActionList.forEach((action) => {
+      if (actions.includes(action)) {
+        applicableActionsMap[action].push(task);
+      }
+    });
   });
 
   const actions: { action: StageRolloutAction; tasks: Task[] }[] = [];
-  if (applicableActionsMap.ROLLOUT.length > 1) {
-    actions.push({
-      action: "ROLLOUT",
-      tasks: applicableActionsMap.ROLLOUT,
-    });
-  }
-  if (applicableActionsMap.RETRY.length > 1) {
-    actions.push({
-      action: "RETRY",
-      tasks: applicableActionsMap.RETRY,
-    });
-  }
-  if (applicableActionsMap.SKIP.length > 1) {
-    actions.push({
-      action: "SKIP",
-      tasks: applicableActionsMap.SKIP,
-    });
-  }
+  StageRolloutActionList.forEach((action) => {
+    const tasks = applicableActionsMap[action];
+    if (tasks.length > 1) {
+      actions.push({
+        action,
+        tasks,
+      });
+    }
+  });
   return actions;
 };

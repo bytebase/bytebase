@@ -12,8 +12,10 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import { useIssueContext } from "../../logic";
-import { extractTaskUID } from "@/utils";
+import {
+  useIssueContext,
+  taskRunListForTask,
+} from "@/components/IssueV1/logic";
 import TaskRunTable from "./TaskRunTable.vue";
 
 type ViewMode = "SINGLE" | "MERGED";
@@ -34,9 +36,7 @@ const mode = computed((): ViewMode => {
 
 const flattenTaskRunList = computed(() => {
   if (mode.value === "SINGLE") {
-    return issue.value.rolloutTaskRunList.filter(
-      (taskRun) => extractTaskUID(taskRun.name) === selectedTask.value.uid
-    );
+    return taskRunListForTask(issue.value, selectedTask.value);
   }
   if (mode.value === "MERGED") {
     return issue.value.rolloutTaskRunList;

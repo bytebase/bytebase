@@ -364,7 +364,8 @@
       "created": "(created)"
     },
     "action-failed-in-current-stage": "{action} failed tasks in current stage",
-    "action-all-tasks-in-current-stage": "{action} all tasks in current stage"
+    "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
+    "cancel-task": "Cancel task | Cancel tasks"
   },
   "banner": {
     "update-license": "Update license",

@@ -11,11 +11,11 @@ import {
 } from "../assignee";
 
 export type TaskRolloutAction =
-  | "ROLLOUT" // PENDING_APPROVAL -> PENDING
-  | "RETRY" // FAILED -> PENDING_APPROVAL
+  | "ROLLOUT" // NOT_STARTED -> PENDING
+  | "RETRY" // FAILED -> NOT_STARTED
   | "CANCEL" // ? -> CANCELLED
   | "SKIP" // ? -> SKIPPED
-  | "RESTART"; // ? -> PENDING_APPROVAL
+  | "RESTART"; // ? -> NOT_STARTED
 
 // Primary actions will be displayed as big buttons.
 export const PrimaryTaskRolloutActionList: TaskRolloutAction[] = [
@@ -28,10 +28,17 @@ export const PrimaryTaskRolloutActionList: TaskRolloutAction[] = [
 // Secondary actions will be folded in the context menu.
 export const SecondaryTaskRolloutActionList: TaskRolloutAction[] = ["SKIP"];
 
+export const CancelableTaskTypeList: Task_Type[] = [
+  Task_Type.DATABASE_DATA_UPDATE,
+  Task_Type.DATABASE_SCHEMA_UPDATE,
+  Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
+  // Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC, // on the way
+];
+
 export const TaskRolloutActionMap: Record<Task_Status, TaskRolloutAction[]> = {
   [Task_Status.NOT_STARTED]: ["ROLLOUT", "SKIP"],
-  [Task_Status.PENDING]: ["CANCEL"], // Only gh-ost sync task can be cancelled
-  [Task_Status.RUNNING]: ["CANCEL"], // Only gh-ost sync task can be cancelled
+  [Task_Status.PENDING]: ["CANCEL"], // Only DDL/DML can be cancelled
+  [Task_Status.RUNNING]: ["CANCEL"], // Only DDL/DML can be cancelled
   [Task_Status.SKIPPED]: [],
   [Task_Status.DONE]: [],
   [Task_Status.FAILED]: ["RETRY", "SKIP"],
@@ -53,7 +60,7 @@ export const getApplicableTaskRolloutActionList = (
   const list = TaskRolloutActionMap[task.status];
   return list.filter((action) => {
     if (action === "CANCEL") {
-      // Now, only gh-ost sync task is cancelable
+      return CancelableTaskTypeList.includes(task.type);
       return task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC;
     }
     if (action === "RETRY") {
@@ -85,6 +92,17 @@ export const taskRolloutActionDisplayName = (action: TaskRolloutAction) => {
     case "SKIP":
       return t("common.skip");
   }
+};
+
+export const taskRolloutActionDialogButtonName = (
+  action: TaskRolloutAction,
+  tasks: Task[]
+) => {
+  if (action === "CANCEL") {
+    // Avoiding [Cancel] [Cancel] button group scene
+    return t("task.cancel-task", tasks.length);
+  }
+  return taskRolloutActionDisplayName(action);
 };
 
 export const taskRolloutActionButtonProps = (
