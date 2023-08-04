@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
 )
 
@@ -219,4 +220,16 @@ func NormalizeExternalURL(url string) (string, error) {
 		}
 	}
 	return r, nil
+}
+
+// ValidatePhone validates the phone number.
+func ValidatePhone(phone string) error {
+	phoneNumber, err := phonenumbers.Parse(phone, "")
+	if err != nil {
+		return err
+	}
+	if !phonenumbers.IsValidNumber(phoneNumber) {
+		return errors.New("invalid phone number")
+	}
+	return nil
 }
