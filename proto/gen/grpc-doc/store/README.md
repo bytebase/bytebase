@@ -967,8 +967,9 @@ reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | identifier | [string](#string) |  | Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. |
-| display_name | [string](#string) |  | DisplayName is the field name of display name in 3rd-party idp user info. Required. |
-| email | [string](#string) |  | Email is the field name of primary email in 3rd-party idp user info. Required. |
+| display_name | [string](#string) |  | DisplayName is the field name of display name in 3rd-party idp user info. Optional. |
+| email | [string](#string) |  | Email is the field name of primary email in 3rd-party idp user info. Optional. |
+| phone | [string](#string) |  | Phone is the field name of primary phone in 3rd-party idp user info. Optional. |
 
 
 
@@ -1002,6 +1003,7 @@ reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get
 | identifier | [string](#string) |  | Identifier is the value of the unique identifier in 3rd-party idp user info. |
 | display_name | [string](#string) |  | DisplayName is the value of display name in 3rd-party idp user info. |
 | email | [string](#string) |  | Email is the value of primary email in 3rd-party idp user info. |
+| phone | [string](#string) |  | Phone is the value of primary phone in 3rd-party idp user info. |
 
 
 
