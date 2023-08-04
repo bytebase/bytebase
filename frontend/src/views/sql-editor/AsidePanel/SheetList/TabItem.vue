@@ -16,7 +16,7 @@
           <carbon:dot-mark class="text-accent opacity-50 w-4 h-4" />
         </template>
         <template #default>
-          <span>Unsaved</span>
+          <span>{{ $t("sql-editor.tab.unsaved") }}</span>
         </template>
       </NTooltip>
     </div>
