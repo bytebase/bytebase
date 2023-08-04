@@ -503,9 +503,10 @@
         "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
-        "identifier": "Identificador de usuario Bytebase",
-        "display-name": "Nombre de visualización de usuario Bytebase",
-        "email": "Correo electrónico de usuario Bytebase",
+        "identifier": "Correo electrónico de usuario de Bytebase",
+        "identifier-tips": "Debe ser una cadena única. Y si no está en formato de correo electrónico, se empalmará con el dominio.",
+        "display-name": "Nombre para mostrar de usuario de Bytebase",
+        "phone": "Número de teléfono de usuario de Bytebase",
         "auth-style": {
           "self": "Estilo de autenticación",
           "in-params": {

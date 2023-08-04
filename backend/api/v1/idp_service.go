@@ -319,6 +319,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Email:       v.FieldMapping.Email,
+			Phone:       v.FieldMapping.Phone,
 		}
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_Oauth2Config{
@@ -340,6 +341,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Email:       v.FieldMapping.Email,
+			Phone:       v.FieldMapping.Phone,
 		}
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_OidcConfig{
@@ -364,6 +366,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Email:       v.FieldMapping.Email,
+			Phone:       v.FieldMapping.Phone,
 		}
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_Oauth2Config{
@@ -385,6 +388,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Email:       v.FieldMapping.Email,
+			Phone:       v.FieldMapping.Phone,
 		}
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_OidcConfig{
