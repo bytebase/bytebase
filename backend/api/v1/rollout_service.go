@@ -1211,7 +1211,7 @@ func convertToTaskStatus(status api.TaskStatus, skipped bool) v1pb.Task_Status {
 	case api.TaskPending:
 		return v1pb.Task_PENDING
 	case api.TaskPendingApproval:
-		return v1pb.Task_PENDING_APPROVAL
+		return v1pb.Task_NOT_STARTED
 	case api.TaskRunning:
 		if skipped {
 			return v1pb.Task_SKIPPED
