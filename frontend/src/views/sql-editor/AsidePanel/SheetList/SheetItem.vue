@@ -35,22 +35,4 @@ defineEmits<{
   (event: "click", item: MergedItem, e: MouseEvent): void;
   (event: "contextmenu", item: MergedItem, e: MouseEvent): void;
 }>();
-
-// const dropdownState = ref({
-//   show: false,
-//   x: 0,
-//   y: 0,
-// });
-
-// const handleRightClick = (e: MouseEvent) => {
-//   e.preventDefault();
-//   dropdownState.value.show = false;
-//   nextTick().then(() => {
-//     dropdownState.value = {
-//       show: true,
-//       x: e.clientX,
-//       y: e.clientY,
-//     };
-//   });
-// };
 </script>
