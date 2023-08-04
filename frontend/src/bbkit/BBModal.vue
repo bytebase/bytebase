@@ -203,9 +203,10 @@ export const useOverrideSubtitle = (
 
 <style scoped lang="postcss">
 .bb-modal {
-  @apply max-w-max bg-white shadow-lg rounded-lg pt-4 pb-4 flex pointer-events-auto;
+  @apply bg-white shadow-lg rounded-lg pt-4 pb-4 flex pointer-events-auto;
   @apply flex-col;
 
+  max-width: calc(100vw - 80px);
   max-height: calc(100vh - 80px);
 }
 
