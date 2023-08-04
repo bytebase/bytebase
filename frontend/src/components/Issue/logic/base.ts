@@ -16,6 +16,7 @@ import { useRoute, useRouter } from "vue-router";
 import {
   activeStage,
   activeTaskInStage,
+  extractSheetUID,
   idFromSlug,
   indexFromSlug,
   issueSlug,
@@ -28,7 +29,7 @@ import {
   useIssueStore,
   useProjectV1Store,
   useSheetV1Store,
-  useSheetStatementByUid,
+  useSheetStatementByUID,
   useDatabaseV1Store,
 } from "@/store";
 import { flattenTaskList, TaskTypeWithStatement } from "./common";
@@ -235,13 +236,13 @@ export const useBaseIssueLogic = (params: {
     if (create.value) {
       const taskCreate = task as TaskCreate;
       if (taskCreate.sheetId && taskCreate.sheetId !== UNKNOWN_ID) {
-        return useSheetStatementByUid(taskCreate.sheetId).value || "";
+        return useSheetStatementByUID(String(taskCreate.sheetId)).value || "";
       }
       return (task as TaskCreate).statement;
     }
     return (
-      useSheetStatementByUid(sheetIdOfTask(task as Task) || UNKNOWN_ID).value ||
-      ""
+      useSheetStatementByUID(String(sheetIdOfTask(task as Task) || UNKNOWN_ID))
+        .value || ""
     );
   });
 
@@ -314,7 +315,7 @@ export const useBaseIssueLogic = (params: {
                 payload: "{}",
               }
             );
-            taskItem.sheetId = sheetV1Store.getSheetUid(newSheet.name);
+            taskItem.sheetId = Number(extractSheetUID(newSheet.name));
           }
           taskItem.statement = "";
         } else {
