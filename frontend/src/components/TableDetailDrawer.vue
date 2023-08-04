@@ -8,7 +8,7 @@
   >
     <NDrawerContent
       class="w-[calc(100vw-256px)]"
-      :title="$t('schema-designer.quick-action')"
+      :title="$t('database.table-detail')"
       :closable="true"
     >
       <div

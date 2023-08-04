@@ -10,7 +10,21 @@
           :title="$t('change-history.refreshing-history')"
         />
       </div>
-      <div class="flex flex-row justify-end items-center space-x-2">
+      <div class="flex flex-row justify-end items-center grow space-x-2">
+        <div class="w-40">
+          <BBSelect
+            :selected-item="state.selectedAffectedTable"
+            :item-list="affectedTables"
+            :show-prefix-item="false"
+            @select-item="(item: AffectedTable) => state.selectedAffectedTable = item"
+          >
+            <template #menuItem="{ item }">
+              <span :class="item.dropped && 'text-gray-400'">
+                {{ getAffectedTableDisplayName(item) }}
+              </span>
+            </template>
+          </BBSelect>
+        </div>
         <BBTooltipButton
           v-if="showEstablishBaselineButton"
           type="normal"
@@ -87,8 +101,11 @@ import { useRouter } from "vue-router";
 import { BBTooltipButton } from "@/bbkit";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import { instanceV1HasAlterSchema } from "@/utils";
-import { useChangeHistoryStore } from "@/store";
+import {
+  getAffectedTablesOfChangeHistory,
+  instanceV1HasAlterSchema,
+} from "@/utils";
+import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   ChangeHistory,
@@ -98,12 +115,21 @@ import {
 } from "@/types/proto/v1/database_service";
 import { ChangeHistoryTable } from "@/components/ChangeHistory";
 import dayjs from "dayjs";
+import { AffectedTable } from "@/types/changeHistory";
+import { isEqual, orderBy } from "lodash-es";
+
+const EmptyAffectedTable: AffectedTable = {
+  schema: "",
+  table: "",
+  dropped: false,
+};
 
 interface LocalState {
   showBaselineModal: boolean;
   loading: boolean;
   selectedChangeHistoryNameList: string[];
   isExporting: boolean;
+  selectedAffectedTable: AffectedTable;
 }
 
 const props = defineProps({
@@ -127,17 +153,17 @@ const state = reactive<LocalState>({
   loading: false,
   selectedChangeHistoryNameList: [],
   isExporting: false,
+  selectedAffectedTable: EmptyAffectedTable,
 });
 
-const prepareChangeHistoryList = () => {
+const prepareChangeHistoryList = async () => {
   state.loading = true;
-  changeHistoryStore
-    .fetchChangeHistoryList({
-      parent: props.database.name,
-    })
-    .finally(() => {
-      state.loading = false;
-    });
+  await changeHistoryStore.fetchChangeHistoryList({
+    parent: props.database.name,
+  });
+  // prepare database metadata for getting affected tables.
+  await useDBSchemaV1Store().getOrFetchDatabaseMetadata(props.database.name);
+  state.loading = false;
 };
 
 onBeforeMount(prepareChangeHistoryList);
@@ -177,16 +203,58 @@ const changeHistoryList = computed(() => {
   return changeHistoryStore.changeHistoryListByDatabase(props.database.name);
 });
 
+const shownChangeHistoryList = computed(() => {
+  return changeHistoryList.value.filter((changeHistory) => {
+    if (
+      state.selectedAffectedTable &&
+      !isEqual(state.selectedAffectedTable, EmptyAffectedTable)
+    ) {
+      const affectedTables = getAffectedTablesOfChangeHistory(changeHistory);
+      return affectedTables.find((item) =>
+        isEqual(item, state.selectedAffectedTable)
+      );
+    }
+    return true;
+  });
+});
+
 const changeHistorySectionList = computed(
   (): BBTableSectionDataSource<ChangeHistory>[] => {
     return [
       {
         title: "",
-        list: changeHistoryList.value,
+        list: shownChangeHistoryList.value,
       },
     ];
   }
 );
+
+const affectedTables = computed(() => {
+  return [
+    EmptyAffectedTable,
+    ...orderBy(
+      changeHistoryList.value
+        .map((changeHistory) => getAffectedTablesOfChangeHistory(changeHistory))
+        .flat(),
+      ["dropped"]
+    ),
+  ];
+});
+
+const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
+  if (isEqual(affectedTable, EmptyAffectedTable)) {
+    return t("change-history.all-tables");
+  }
+  const { schema, table, dropped } = affectedTable;
+  let name = table;
+  if (schema !== "") {
+    name = `${schema}.${table}`;
+  }
+  if (dropped) {
+    name = `${name} (deleted)`;
+  }
+  return name;
+};
 
 const handleExportChangeHistory = async () => {
   if (state.isExporting) {
