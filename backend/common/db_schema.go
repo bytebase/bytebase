@@ -10,6 +10,9 @@ var getClassificationFromCommentReg = regexp.MustCompile("^[0-9]+-[0-9]+-[0-9]+"
 // GetClassificationAndUserComment parses classification and user comment from the given comment.
 func GetClassificationAndUserComment(comment string) (string, string) {
 	classification := getClassificationFromCommentReg.FindString(comment)
+	if classification == "" {
+		return "", comment
+	}
 	userComment := strings.TrimPrefix(strings.TrimPrefix(comment, classification), "-")
 	return classification, userComment
 }
