@@ -222,7 +222,7 @@ export const buildSpecForTarget = async (
       type: Plan_ChangeDatabaseConfig_Type.DATA,
     });
     if (route.query.sheetId) {
-      const sheet = await useSheetV1Store().getOrFetchSheetByUid(
+      const sheet = await useSheetV1Store().getOrFetchSheetByUID(
         route.query.sheetId as string
       );
       if (sheet) {

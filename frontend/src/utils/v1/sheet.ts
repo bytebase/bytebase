@@ -26,7 +26,7 @@ import {
 export const extractSheetUID = (name: string) => {
   const pattern = /(?:^|\/)sheets\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
-  return matches?.[1] ?? "";
+  return matches?.[1] ?? "-1";
 };
 
 export const isSheetReadableV1 = (sheet: Sheet) => {

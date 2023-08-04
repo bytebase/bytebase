@@ -1834,6 +1834,9 @@
     "sheet": {
       "choose-sheet": "选择工作表",
       "self": "工作表"
+    },
+    "tab": {
+      "unsaved": "未保存"
     }
   },
   "schema-editor": {
@@ -2171,7 +2174,11 @@
     },
     "linked-issue": "关联工单",
     "from-issue-warning": "这个工作表来自工单 {issue}，处于只读模式。{oversize}",
-    "content-oversize-warning": "SQL 过大所以无法直接编辑。"
+    "content-oversize-warning": "SQL 过大所以无法直接编辑。",
+    "sheets": "工作表",
+    "mine": "我的",
+    "shared": "分享的",
+    "search-sheets": "搜索工作表"
   },
   "engine": {
     "mysql": "MySQL",

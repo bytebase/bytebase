@@ -75,10 +75,10 @@ const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
 }
 
 .body {
-  @apply flex items-center justify-between gap-x-1 pl-2 pr-1 py-1 border-t;
+  @apply flex items-center justify-between gap-x-1 pl-2 pr-1 pb-1 border-t pt-[4px];
 }
 .current .body {
-  @apply relative bg-white text-accent border-t-accent border-t-2;
+  @apply relative bg-white text-accent border-t-accent border-t-2 pt-[3px];
 }
 
 .tab-item.admin .body {
