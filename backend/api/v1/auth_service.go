@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/phonenumbers"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slices"
@@ -134,7 +133,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	firstEndUser := count == 0
 
 	if request.User.Phone != "" {
-		if err := validatePhone(request.User.Phone); err != nil {
+		if err := common.ValidatePhone(request.User.Phone); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid phone %q, error: %v", request.User.Phone, err)
 		}
 	}
@@ -331,7 +330,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 		case "phone":
 			if request.User.Phone != "" {
-				if err := validatePhone(request.User.Phone); err != nil {
+				if err := common.ValidatePhone(request.User.Phone); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid phone number %q, error: %v", request.User.Phone, err)
 				}
 			}
@@ -827,17 +826,6 @@ func validateEmail(email string) error {
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		return err
-	}
-	return nil
-}
-
-func validatePhone(phone string) error {
-	phoneNumber, err := phonenumbers.Parse(phone, "")
-	if err != nil {
-		return err
-	}
-	if !phonenumbers.IsValidNumber(phoneNumber) {
-		return errors.New("invalid phone number")
 	}
 	return nil
 }
