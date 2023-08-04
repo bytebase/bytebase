@@ -473,7 +473,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		SET `+strings.Join(set, ", ")+`
 		WHERE instance_id = $%d AND name = $%d
 		RETURNING id
-	`, len(set)+1, len(set)+2),
+	`, len(args)-1, len(args)),
 		args...,
 	).Scan(
 		&databaseUID,
