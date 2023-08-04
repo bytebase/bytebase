@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -443,11 +441,11 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 				stageToRun = stage
 				break
 			}
-			if stage.Active {
-				return nil, status.Errorf(codes.InvalidArgument, "Tasks in a prior stage are not done yet")
-			}
 		}
 		break
+	}
+	if stageToRun == nil {
+		return nil, status.Errorf(codes.Internal, "failed to find the stage to run")
 	}
 
 	pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}
@@ -478,10 +476,10 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 
 	approved, err := utils.CheckIssueApproved(issue)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
+		return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
 	}
 	if !approved {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot run the tasks because the issue is not approved")
 	}
 
 	var taskRunCreates []*store.TaskRunMessage
