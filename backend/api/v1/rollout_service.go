@@ -783,6 +783,8 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		Title:  rollout.Name,
 		Stages: nil,
 	}
+
+	taskIDToName := map[int]string{}
 	for _, stage := range rollout.Stages {
 		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 			UID: &stage.EnvironmentID,
@@ -804,11 +806,22 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert task, error: %v", err)
 			}
+			taskIDToName[task.ID] = rolloutTask.Name
 			rolloutStage.Tasks = append(rolloutStage.Tasks, rolloutTask)
 		}
 
 		rolloutV1.Stages = append(rolloutV1.Stages, rolloutStage)
 	}
+
+	for i, rolloutStage := range rolloutV1.Stages {
+		for j, rolloutTask := range rolloutStage.Tasks {
+			task := rollout.Stages[i].TaskList[j]
+			for _, blockingTask := range task.BlockedBy {
+				rolloutTask.BlockedByTasks = append(rolloutTask.BlockedByTasks, taskIDToName[blockingTask])
+			}
+		}
+	}
+
 	return rolloutV1, nil
 }
 
