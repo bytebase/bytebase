@@ -685,7 +685,6 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
-	var fieldMapping *storepb.FieldMapping
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
@@ -704,7 +703,6 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-		fieldMapping = idp.Config.GetOauth2Config().FieldMapping
 	} else if idp.Type == storepb.IdentityProviderType_OIDC {
 		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
@@ -736,7 +734,6 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-		fieldMapping = idp.Config.GetOidcConfig().FieldMapping
 	} else {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", idp.Type.String())
 	}
@@ -745,12 +742,13 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
-	var email string
-	if fieldMapping.Identifier == fieldMapping.Email {
-		email = strings.ToLower(userInfo.Email)
-	} else if idp.Domain != "" {
-		domain := extractDomain(idp.Domain)
-		email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
+	email := strings.ToLower(userInfo.Identifier)
+	if err := validateEmail(email); err != nil {
+		// If the email is invalid, we will try to use the domain and identifier to construct the email.
+		if idp.Domain != "" {
+			domain := extractDomain(idp.Domain)
+			email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
+		}
 	}
 	if email == "" {
 		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
@@ -780,6 +778,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Name:         userInfo.DisplayName,
 			Email:        email,
+			Phone:        userInfo.Phone,
 			Type:         api.EndUser,
 			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
