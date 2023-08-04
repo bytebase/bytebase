@@ -1134,7 +1134,9 @@
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve change history.",
     "contact-dba": "Please contact your DBA to config it",
     "export": "Export Change History",
-    "need-to-select-first": "Need to select change history first"
+    "need-to-select-first": "Need to select change history first",
+    "all-tables": "All tables",
+    "affected-tables": "Affected Tables"
   },
   "database": {
     "select": "Select database",
@@ -1151,6 +1153,7 @@
     "change-data": "Change Data",
     "change-data-in-vcs": "Change Data in VCS",
     "design-schema": "Design Schema",
+    "table-detail": "Table detail",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
     "create-backup": "Create backup",

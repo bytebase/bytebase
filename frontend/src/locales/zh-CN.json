@@ -1130,7 +1130,9 @@
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
     "contact-dba": "请联系您的 DBA 进行配置。",
     "export": "导出变更历史",
-    "need-to-select-first": "需要先选择变更历史"
+    "need-to-select-first": "需要先选择变更历史",
+    "all-tables": "所有表",
+    "affected-tables": "受影响的表"
   },
   "database": {
     "select": "选择数据库",
@@ -1145,6 +1147,7 @@
     "alter-schema-in-vcs": "变更 Schema (VCS)",
     "change-data": "变更数据",
     "change-data-in-vcs": "变更数据 (VCS)",
+    "table-detail": "表详情",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
