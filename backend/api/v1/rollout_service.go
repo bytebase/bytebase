@@ -744,6 +744,8 @@ func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
 	switch status {
 	case api.TaskRunUnknown:
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
+	case api.TaskRunPending:
+		return v1pb.TaskRun_PENDING
 	case api.TaskRunRunning:
 		return v1pb.TaskRun_RUNNING
 	case api.TaskRunDone:
@@ -761,8 +763,8 @@ func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	return &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),
-		Creator:       fmt.Sprintf("user/%s", taskRun.Creator.Email),
-		Updater:       fmt.Sprintf("user/%s", taskRun.Updater.Email),
+		Creator:       fmt.Sprintf("users/%s", taskRun.Creator.Email),
+		Updater:       fmt.Sprintf("users/%s", taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
 		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
 		Title:         taskRun.Name,
@@ -871,7 +873,8 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
@@ -911,7 +914,8 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
@@ -944,7 +948,8 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
@@ -977,7 +982,8 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
@@ -1011,7 +1017,8 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -1084,7 +1091,8 @@ func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseBackup_{
@@ -1120,7 +1128,8 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -1197,7 +1206,8 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -1206,24 +1216,24 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 	return v1pbTask, nil
 }
 
-func convertToTaskStatus(status api.TaskStatus, skipped bool) v1pb.Task_Status {
-	switch status {
-	case api.TaskPending:
-		return v1pb.Task_PENDING
-	case api.TaskPendingApproval:
+func convertToTaskStatus(latestTaskRunStatus *api.TaskRunStatus, skipped bool) v1pb.Task_Status {
+	if skipped {
+		return v1pb.Task_SKIPPED
+	}
+	if latestTaskRunStatus == nil {
 		return v1pb.Task_NOT_STARTED
-	case api.TaskRunning:
-		if skipped {
-			return v1pb.Task_SKIPPED
-		}
+	}
+	switch *latestTaskRunStatus {
+	case api.TaskRunPending:
+		return v1pb.Task_PENDING
+	case api.TaskRunRunning:
 		return v1pb.Task_RUNNING
-	case api.TaskDone:
+	case api.TaskRunDone:
 		return v1pb.Task_DONE
-	case api.TaskFailed:
+	case api.TaskRunFailed:
 		return v1pb.Task_FAILED
-	case api.TaskCanceled:
+	case api.TaskRunCanceled:
 		return v1pb.Task_CANCELED
-
 	default:
 		return v1pb.Task_STATUS_UNSPECIFIED
 	}
