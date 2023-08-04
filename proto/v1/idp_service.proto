@@ -227,6 +227,9 @@ message FieldMapping {
 
   // Email is the field name of primary email in 3rd-party idp user info.
   string email = 3;
+
+  // Phone is the field name of primary phone in 3rd-party idp user info.
+  string phone = 4;
 }
 
 enum OAuth2AuthStyle {

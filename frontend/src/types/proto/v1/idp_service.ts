@@ -247,6 +247,8 @@ export interface FieldMapping {
   displayName: string;
   /** Email is the field name of primary email in 3rd-party idp user info. */
   email: string;
+  /** Phone is the field name of primary phone in 3rd-party idp user info. */
+  phone: string;
 }
 
 function createBaseGetIdentityProviderRequest(): GetIdentityProviderRequest {
@@ -1453,7 +1455,7 @@ export const OIDCIdentityProviderConfig = {
 };
 
 function createBaseFieldMapping(): FieldMapping {
-  return { identifier: "", displayName: "", email: "" };
+  return { identifier: "", displayName: "", email: "", phone: "" };
 }
 
 export const FieldMapping = {
@@ -1466,6 +1468,9 @@ export const FieldMapping = {
     }
     if (message.email !== "") {
       writer.uint32(26).string(message.email);
+    }
+    if (message.phone !== "") {
+      writer.uint32(34).string(message.phone);
     }
     return writer;
   },
@@ -1498,6 +1503,13 @@ export const FieldMapping = {
 
           message.email = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.phone = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1512,6 +1524,7 @@ export const FieldMapping = {
       identifier: isSet(object.identifier) ? String(object.identifier) : "",
       displayName: isSet(object.displayName) ? String(object.displayName) : "",
       email: isSet(object.email) ? String(object.email) : "",
+      phone: isSet(object.phone) ? String(object.phone) : "",
     };
   },
 
@@ -1520,6 +1533,7 @@ export const FieldMapping = {
     message.identifier !== undefined && (obj.identifier = message.identifier);
     message.displayName !== undefined && (obj.displayName = message.displayName);
     message.email !== undefined && (obj.email = message.email);
+    message.phone !== undefined && (obj.phone = message.phone);
     return obj;
   },
 
@@ -1532,6 +1546,7 @@ export const FieldMapping = {
     message.identifier = object.identifier ?? "";
     message.displayName = object.displayName ?? "";
     message.email = object.email ?? "";
+    message.phone = object.phone ?? "";
     return message;
   },
 };
