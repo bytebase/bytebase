@@ -125,6 +125,7 @@ type DatabaseMessage struct {
 	DataShare            bool
 	// ServiceName is the Oracle specific field.
 	ServiceName string
+	Metadata    *storepb.DatabaseMetadata
 }
 
 // UpdateDatabaseMessage is the mssage for updating a database.
@@ -142,6 +143,7 @@ type UpdateDatabaseMessage struct {
 	DataShare            *bool
 	ServiceName          *string
 	EnvironmentID        *string
+	Metadata             *storepb.DatabaseMetadata
 }
 
 // FindDatabaseMessage is the message for finding databases.
@@ -262,10 +264,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
 func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID int, create *DatabaseMessage) (int, error) {
-	emptySecret := &storepb.Secrets{
-		Items: []*storepb.SecretItem{},
-	}
-	secretsString, err := protojson.Marshal(emptySecret)
+	secretsString, err := protojson.Marshal(&storepb.Secrets{})
 	if err != nil {
 		return 0, err
 	}
@@ -292,7 +291,8 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 			project_id = EXCLUDED.project_id,
 			sync_status = EXCLUDED.sync_status,
 			last_successful_sync_ts = EXCLUDED.last_successful_sync_ts,
-			datashare = EXCLUDED.datashare
+			datashare = EXCLUDED.datashare,
+			service_name = EXCLUDED.service_name
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
@@ -347,6 +347,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if err != nil {
 		return nil, err
 	}
+	metadataString, err := protojson.Marshal(create.Metadata)
+	if err != nil {
+		return nil, err
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -368,14 +372,16 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			schema_version,
 			secrets,
 			datashare,
-			service_name
+			service_name,
+			metadata
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			environment_id = EXCLUDED.environment_id,
 			name = EXCLUDED.name,
-			schema_version = EXCLUDED.schema_version
+			schema_version = EXCLUDED.schema_version,
+			metadata = EXCLUDED.metadata
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
@@ -391,6 +397,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		secretsString,
 		create.DataShare,
 		create.ServiceName,
+		metadataString,
 	).Scan(
 		&databaseUID,
 	); err != nil {
@@ -459,6 +466,13 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	}
 	if v := patch.ServiceName; v != nil {
 		set, args = append(set, fmt.Sprintf("service_name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Metadata; v != nil {
+		metadataString, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadataString)
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
 
@@ -629,7 +643,8 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			) label_values,
 			db.secrets,
 			db.datashare,
-			db.service_name
+			db.service_name,
+			db.metadata
 		FROM db
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
@@ -647,7 +662,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			Labels: make(map[string]string),
 		}
 		var keys, values []sql.NullString
-		var secretsString string
+		var secretsString, metadataString string
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
@@ -663,6 +678,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&secretsString,
 			&databaseMessage.DataShare,
 			&databaseMessage.ServiceName,
+			&metadataString,
 		); err != nil {
 			return nil, err
 		}
@@ -671,6 +687,12 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			return nil, err
 		}
 		databaseMessage.Secrets = &secret
+		var metadata storepb.DatabaseMetadata
+		if err := protojson.Unmarshal([]byte(metadataString), &metadata); err != nil {
+			return nil, err
+		}
+		databaseMessage.Metadata = &metadata
+
 		if len(keys) != len(values) {
 			return nil, errors.Errorf("invalid length of database label keys and values")
 		}
