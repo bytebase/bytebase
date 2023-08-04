@@ -26,7 +26,6 @@
           </BBSelect>
         </div>
         <BBTooltipButton
-          v-if="showEstablishBaselineButton"
           type="normal"
           :disabled="!allowExportChangeHistory || state.isExporting"
           tooltip-mode="DISABLED-ONLY"
