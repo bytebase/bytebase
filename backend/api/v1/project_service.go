@@ -1529,6 +1529,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
 	}
 
+	resp := &v1pb.TestWebhookResponse{}
 	err = webhookPlugin.Post(
 		webhook.Type,
 		webhookPlugin.Context{
@@ -1545,8 +1546,11 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			Project:      &webhookPlugin.Project{Name: project.Title},
 		},
 	)
+	if err != nil {
+		resp.Error = err.Error()
+	}
 
-	return &v1pb.TestWebhookResponse{Error: err.Error()}, nil
+	return resp, nil
 }
 
 // CreateDatabaseGroup creates a database group.
