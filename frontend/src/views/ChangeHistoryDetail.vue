@@ -97,11 +97,35 @@
         </div>
       </div>
 
+      <div v-if="affectedTables.length > 0" class="mt-6 px-4">
+        <span class="flex items-center text-lg text-main mt-6 capitalize">
+          {{ $t("change-history.affected-tables") }}
+        </span>
+        <div
+          class="w-full flex flex-row justify-start items-center gap-x-3 gap-y-2"
+        >
+          <div
+            v-for="affectedTable in affectedTables"
+            :key="`${affectedTable.schema}.${affectedTable.table}`"
+          >
+            <span
+              :class="
+                !affectedTable.dropped
+                  ? 'text-blue-600 cursor-pointer hover:opacity-80'
+                  : 'text-gray-400 italic'
+              "
+              @click="handleAffectedTableClick(affectedTable)"
+              >{{ getAffectedTableDisplayName(affectedTable) }}</span
+            >
+          </div>
+        </div>
+      </div>
+
       <div class="mt-6 px-4">
         <a
           id="statement"
           href="#statement"
-          class="flex items-center text-lg text-main mb-2 hover:underline"
+          class="w-auto flex items-center text-lg text-main mb-2 hover:underline"
         >
           {{ $t("common.statement") }}
           <button
@@ -237,10 +261,18 @@
       </div>
     </BBModal>
   </div>
+
+  <TableDetailDrawer
+    v-if="selectedAffectedTable"
+    :database-name="database.name"
+    :schema-name="selectedAffectedTable.schema"
+    :table-name="selectedAffectedTable.table"
+    @dismiss="selectedAffectedTable = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, ref } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
 import {
@@ -248,10 +280,12 @@ import {
   extractChangeHistoryUID,
   extractIssueId,
   extractUserResourceName,
+  getAffectedTablesOfChangeHistory,
 } from "@/utils";
 import {
   pushNotification,
   useChangeHistoryStore,
+  useDBSchemaV1Store,
   useDatabaseV1Store,
   useUserStore,
 } from "@/store";
@@ -263,6 +297,8 @@ import {
 } from "@/types/proto/v1/database_service";
 import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
+import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
+import { AffectedTable } from "@/types/changeHistory";
 
 interface LocalState {
   showDiff: boolean;
@@ -275,8 +311,14 @@ const props = defineProps<{
   changeHistorySlug: string;
 }>();
 
+const databaseStore = useDatabaseV1Store();
+const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
+const selectedAffectedTable = ref<AffectedTable | undefined>();
 
+const database = computed(() => {
+  return databaseStore.getDatabaseByName(changeHistoryParent.value);
+});
 const changeHistoryParent = computed(() => {
   return `instances/${props.instance}/databases/${props.database}`;
 });
@@ -287,25 +329,53 @@ const changeHistoryName = computed(() => {
   return `${changeHistoryParent.value}/changeHistories/${changeHistoryUID.value}`;
 });
 
+const affectedTables = computed(() => {
+  if (changeHistory.value === undefined) {
+    return [];
+  }
+  return getAffectedTablesOfChangeHistory(changeHistory.value);
+});
+
 watch(
   changeHistoryParent,
-  (parent) => {
-    useDatabaseV1Store().getOrFetchDatabaseByName(parent);
-    changeHistoryStore.fetchChangeHistoryList({
+  async (parent) => {
+    const database = await databaseStore.getOrFetchDatabaseByName(parent);
+    await dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
+    await changeHistoryStore.fetchChangeHistoryList({
       parent,
     });
   },
   { immediate: true }
 );
+
 watch(
   changeHistoryName,
-  (name) => {
-    changeHistoryStore.fetchChangeHistory({
+  async (name) => {
+    await changeHistoryStore.fetchChangeHistory({
       name,
     });
   },
   { immediate: true }
 );
+
+const getAffectedTableDisplayName = (affectedTable: AffectedTable): string => {
+  const { schema, table, dropped } = affectedTable;
+  let name = table;
+  if (schema !== "") {
+    name = `${schema}.${table}`;
+  }
+  if (dropped) {
+    name = `${name} (deleted)`;
+  }
+  return name;
+};
+
+const handleAffectedTableClick = (affectedTable: AffectedTable): void => {
+  if (affectedTable.dropped) {
+    return;
+  }
+  selectedAffectedTable.value = affectedTable;
+};
 
 // get all change histories before (include) the one of given id, ordered by descending version.
 const prevChangeHistoryList = computed(() => {

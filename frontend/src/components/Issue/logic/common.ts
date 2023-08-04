@@ -35,6 +35,7 @@ import {
 import { IssueLogic, useIssueLogic } from "./index";
 import {
   defer,
+  extractSheetUID,
   extractUserUID,
   getBacktracePayloadWithIssue,
   hasWorkspacePermissionV1,
@@ -250,7 +251,7 @@ export const useCommonLogic = () => {
       });
 
       const patchRequestList = patchingTaskList.map((task) => {
-        patchTask(task.id, { sheetId: sheetV1Store.getSheetUid(sheet.name) });
+        patchTask(task.id, { sheetId: Number(extractUserUID(sheet.name)) });
       });
       await Promise.allSettled(patchRequestList);
     }
@@ -294,7 +295,7 @@ export const useCommonLogic = () => {
           type: Sheet_Type.TYPE_SQL,
           payload: "{}",
         });
-        migrationDetail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+        migrationDetail.sheetId = Number(extractSheetUID(sheet.name));
       } else if (taskCreate.sheetId !== UNKNOWN_ID) {
         const sheetName = `${db.project}/sheets/${taskCreate.sheetId}`;
         const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);

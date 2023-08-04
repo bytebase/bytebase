@@ -893,23 +893,6 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import("../views/DatabaseDetail.vue"),
                 props: true,
               },
-              {
-                path: "table/:tableName",
-                name: "workspace.database.table.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const schemaName = route.query.schema?.toString() || "";
-                    let tableName = route.params.tableName;
-                    if (schemaName) {
-                      tableName = `"${schemaName}"."${tableName}"`;
-                    }
-                    return `${t("db.tables")} - ${tableName}`;
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/TableDetail.vue"),
-                props: true,
-              },
             ],
           },
           {
@@ -1010,21 +993,21 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: "",
         name: SQL_EDITOR_HOME_MODULE,
-        meta: { title: () => "SQL Editor" },
+        meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug",
         name: "sql-editor.detail",
-        meta: { title: () => "SQL Editor" },
+        meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
       {
         path: "/sql-editor/sheet/:sheetSlug",
         name: "sql-editor.share",
-        meta: { title: () => "SQL Editor" },
+        meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },

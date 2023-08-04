@@ -4,7 +4,7 @@ import {
   useSheetV1Store,
   useProjectV1Store,
   useTaskStore,
-  useSheetStatementByUid,
+  useSheetStatementByUID,
   useDatabaseV1Store,
   useCurrentUserV1,
 } from "@/store";
@@ -99,8 +99,8 @@ export default defineComponent({
         const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
         const selectedTaskSheetId = sheetIdOfTask(selectedTask.value as Task);
         return (
-          useSheetStatementByUid(
-            selectedTaskSheetId || payload.sheetId || UNKNOWN_ID
+          useSheetStatementByUID(
+            String(selectedTaskSheetId || payload.sheetId || UNKNOWN_ID)
           ).value || ""
         );
       }
@@ -140,7 +140,7 @@ export default defineComponent({
             ),
           }
         );
-        updateSheetId(sheetV1Store.getSheetUid(sheet.name));
+        updateSheetId(Number(extractUserUID(sheet.name)));
       }
     };
 
@@ -230,7 +230,7 @@ export default defineComponent({
           payload: "{}",
         });
         detail.statement = "";
-        detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+        detail.sheetId = Number(extractUserUID(sheet.name));
       }
       for (const detailItem of context.detailList) {
         detailItem.statement = "";

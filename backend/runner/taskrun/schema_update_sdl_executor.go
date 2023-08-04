@@ -46,7 +46,7 @@ type SchemaUpdateSDLExecutor struct {
 }
 
 // RunOnce will run the schema update (SDL) task executor once.
-func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
 	payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
@@ -74,7 +74,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.Ta
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
-	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, &payload.SheetID, payload.VCSPushEvent)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, &payload.SheetID, payload.VCSPushEvent)
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",

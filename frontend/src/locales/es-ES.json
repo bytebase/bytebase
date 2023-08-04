@@ -454,7 +454,7 @@
         "not-allow-edit": "Solo el propietario puede cambiar el rol",
         "not-allow-remove": "No se puede eliminar el último propietario",
         "project-role-provider-gitlab": "Mapeado desde el rol {rawRole} en el proyecto correspondiente de GitLab.",
-        "cannot-change-role-of-systembot": "No se puede cambiar el rol del bot del sistema"
+        "cannot-change-role-of-systembot-or-service-account": "No se puede cambiar el rol de la cuenta bot del sistema o de la cuenta de servicio"
       },
       "system-bot": "Bot del Sistema",
       "service-account": "Cuenta de Servicio",
@@ -503,9 +503,10 @@
         "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
-        "identifier": "Identificador de usuario Bytebase",
-        "display-name": "Nombre de visualización de usuario Bytebase",
-        "email": "Correo electrónico de usuario Bytebase",
+        "identifier": "Correo electrónico de usuario de Bytebase",
+        "identifier-tips": "Debe ser una cadena única. Y si no está en formato de correo electrónico, se empalmará con el dominio.",
+        "display-name": "Nombre para mostrar de usuario de Bytebase",
+        "phone": "Número de teléfono de usuario de Bytebase",
         "auth-style": {
           "self": "Estilo de autenticación",
           "in-params": {
@@ -550,7 +551,7 @@
           "self": "URL externa",
           "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://. {viewDoc}"
         },
-        "config-updated": "La configuración se ha actualizado",
+        "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto.",
         "plugin": {
           "openai": {
             "ai-augmentation": "Mejora IA",
@@ -1133,7 +1134,9 @@
     "instance-bad-connection": "No se pudo conectar la instancia \"{name}\" para recuperar el historial de cambios.",
     "contact-dba": "Por favor, contacte a su DBA para configurarlo",
     "export": "Exportar historial de cambios",
-    "need-to-select-first": "Necesita seleccionar primero el historial de cambios"
+    "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
+    "all-tables": "Todas las tablas",
+    "affected-tables": "Tablas afectadas"
   },
   "database": {
     "select": "Seleccionar base de datos",
@@ -1149,6 +1152,7 @@
     "alter-schema-in-vcs": "Modificar esquema en VCS",
     "change-data": "Cambiar datos",
     "change-data-in-vcs": "Cambiar datos en VCS",
+    "table-detail": "Detalle de la tabla",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "backup-name": "Nombre de la copia de seguridad",
     "create-backup": "Crear copia de seguridad",
@@ -1344,6 +1348,7 @@
     "sql-review-ci-enable": "Habilitar la revisión de SQL CI",
     "sql-review-ci-enable-gitlab": "Habilitar la revisión de SQL CI a través de GitLab CI",
     "sql-review-ci-enable-github": "Habilitar la revisión de SQL CI a través de la acción de GitHub",
+    "sql-review-ci-enable-azure": "Habilite SQL Review CI a través de Azure DevOps Pipeline",
     "sql-review-ci-description": "Bytebase creará un {pr} para configurar la revisión de SQL CI en su repositorio. En cada {pr}, la política de revisión de SQL basada en el entorno verificará los archivos modificados que coincidan con el \"{pathTemplate}\".",
     "sql-review-ci-setup": "Configurar revisión de SQL CI",
     "sql-review-ci-setup-failed": "Error al configurar la revisión de SQL CI",
@@ -1822,6 +1827,9 @@
     "sheet": {
       "choose-sheet": "Elegir hoja",
       "self": "Hoja"
+    },
+    "tab": {
+      "unsaved": "No guardado"
     }
   },
   "schema-editor": {
@@ -2158,7 +2166,11 @@
     "content-oversize-warning": "SQL está sobredimensionado y no se permite la edición en línea.",
     "notifications": {
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
-    }
+    },
+    "sheets": "Hojas",
+    "mine": "Mío",
+    "shared": "Compartido",
+    "search-sheets": "Hojas de búsqueda"
   },
   "engine": {
     "mysql": "MySQL",
@@ -2639,9 +2651,22 @@
   },
   "schema-template": {
     "self": "Plantilla de esquema",
-    "field-template": "Plantilla de campo",
+    "field-template": {
+      "self": "Plantilla de campo",
+      "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
+    },
+    "column-type-restriction": {
+      "self": "Restricción de tipos de columna",
+      "description": "Para cada motor de base de datos, puede limitar los tipos de columna permitidos.",
+      "allow-all": "Permitir todos los tipos",
+      "allow-limited-types": "Permitir solo algunos tipos",
+      "save-all": "Guardar todo",
+      "messages": {
+        "unable-to-update": "No se puede actualizar la restricción",
+        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos."
+      }
+    },
     "add-field": "Agregar plantilla de campo",
-    "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema.",
     "search-by-name-or-comment": "Buscar por nombre o comentario",
     "form": {
       "category": "Categoría",

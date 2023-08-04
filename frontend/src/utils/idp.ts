@@ -44,7 +44,8 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       fieldMapping: {
         identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -65,7 +66,8 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       fieldMapping: {
         identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -89,7 +91,8 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       fieldMapping: {
         identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -111,6 +114,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
         identifier: "",
         displayName: "",
         email: "",
+        phone: "",
       },
     },
   },

@@ -3,18 +3,11 @@ package dm
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"io"
+	"strings"
 
-	"go.uber.org/zap"
-
-	"github.com/pkg/errors"
-	go_ora "github.com/sijms/go-ora/v2"
-
-	"github.com/bytebase/bytebase/backend/common/log"
-)
-
-const (
-	maxOutputSize = 500 * 1024 * 1024 // 500MB
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 // Dump dumps the database.
@@ -34,9 +27,11 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 		return "", nil
 	}
 
-	var list []string
-	list = append(list, driver.databaseName)
-	if err := dumpTxn(ctx, txn, list, out); err != nil {
+	var quotedSchemas []string
+	for _, schema := range schemas {
+		quotedSchemas = append(quotedSchemas, fmt.Sprintf("'%s'", schema))
+	}
+	if err := dumpTxn(ctx, txn, quotedSchemas, out); err != nil {
 		return "", err
 	}
 
@@ -49,63 +44,43 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
 	// Exclude nested tables, their DDL is part of their parent table.
 	// Exclude overflow segments, their DDL is part of their parent table.
-	query := `
-		DECLARE
-			TYPE type_user_name_list IS TABLE OF VARCHAR2(128) INDEX BY BINARY_INTEGER;
-			PROCEDURE fetch_ddl(
-				user_names type_user_name_list,
-				ddls OUT LONG
-			) IS
-			BEGIN
-				FOR user_name IN user_names.FIRST .. user_names.LAST LOOP
-					ddls := ddls || '/* Schema: ' || user_names(user_name) || ' */' || chr(10) || chr(10) ;
-					FOR object_meta IN (
-						WITH DISALLOW_OBJECTS AS (
-							SELECT OWNER, TABLE_NAME FROM DBA_TABLES WHERE IOT_TYPE = 'IOT_OVERFLOW' OR NESTED = 'YES'
-						), NEED_OBJECTS AS (
-							SELECT
-								OWNER,
-								OBJECT_NAME,
-								decode(object_type,
-									'JOB',                'PROCOBJ',
-									'QUEUE',              'AQ_QUEUE',
-									object_type
-								) OBJECT_TYPE
-							FROM DBA_OBJECTS U
-							WHERE OWNER = user_names(user_name) AND U.OBJECT_TYPE IN ('TABLE','INDEX','SEQUENCE','DIRECTORY','VIEW','FUNCTION','PROCEDURE','TRIGGER','SCHEDULE','JOB','QUEUE','WINDOW')
-							MINUS
-							SELECT OWNER, TABLE_NAME, 'TABLE' FROM DISALLOW_OBJECTS
-						)
-						SELECT
-							U.OBJECT_TYPE, U.OBJECT_NAME, U.OWNER
-						FROM NEED_OBJECTS U
-					) LOOP
-						BEGIN
-							ddls := ddls || DBMS_METADATA.GET_DDL(object_meta.OBJECT_TYPE, object_meta.OBJECT_NAME, object_meta.OWNER) || ';' || chr(10) || chr(10);
-						EXCEPTION
-							WHEN OTHERS THEN
-							ddls := ddls || '/* Error: failed to get ddl for ' || object_meta.OBJECT_TYPE || ' ' || object_meta.OBJECT_NAME || ' in ' || object_meta.OWNER || ' */' || chr(10) || chr(10);
-						END;
-					END LOOP;
-				END LOOP;
-			END;
-		BEGIN
-			fetch_ddl(:1, :2);
-		END;
-	`
+	query := fmt.Sprintf(`
+		SELECT
+			DBMS_METADATA.GET_DDL(u.OBJECT_TYPE, u.OBJECT_NAME, u.OWNER)
+		FROM DBA_OBJECTS u
+		WHERE
+			OWNER IN (%s)
+			AND
+			u.OBJECT_TYPE IN ('TABLE','INDEX','SEQUENCE','DIRECTORY','VIEW','FUNCTION','PROCEDURE','TABLE PARTITION','INDEX PARTITION','TRIGGER','SCHEDULE','JOB','QUEUE','WINDOW');`,
+		strings.Join(schemas, ","))
 
-	text := ""
-	log.Debug("start dumping DM schemas", zap.String("query", query))
-	// dm driver has no Out struct,so i use one from go_ora's instead
-	if _, err := txn.ExecContext(ctx, query, schemas, go_ora.Out{Dest: &text, Size: maxOutputSize}); err != nil {
-		return errors.Wrap(err, "failed to dump schemas")
+	rows, err := txn.QueryContext(ctx, query)
+	if err != nil {
+		return util.FormatErrorWithQuery(err, query)
 	}
+	defer rows.Close()
 
-	if _, err := io.WriteString(out, text); err != nil {
-		log.Warn("write error", zap.Error(err))
+	var ddls []string
+	for rows.Next() {
+		var databaseDDL string
+		if err := rows.Scan(&databaseDDL); err != nil {
+			return err
+		}
+		ddls = append(ddls, databaseDDL)
+	}
+	if err := rows.Err(); err != nil {
 		return err
 	}
-	return nil
+
+	for _, ddl := range ddls {
+		if _, err := io.WriteString(out, ddl); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, ";\n"); err != nil {
+			return err
+		}
+	}
+	return err
 }
 
 // Restore restores a database.

@@ -1,245 +1,295 @@
 import { defineStore } from "pinia";
-import { computed, unref, watchEffect } from "vue";
+import { computed, ref, unref, watchEffect } from "vue";
+import { isEqual, isUndefined } from "lodash-es";
+
 import { sheetServiceClient } from "@/grpcweb";
-import { isEqual, isUndefined, isEmpty } from "lodash-es";
-import { Sheet, SheetOrganizer } from "@/types/proto/v1/sheet_service";
-import { useTabStore } from "../tab";
-import { useCurrentUserV1 } from "../auth";
 import {
-  getUserEmailFromIdentifier,
-  projectNamePrefix,
-  sheetNamePrefix,
-  getProjectAndSheetId,
-} from "./common";
-import { isSheetReadableV1 } from "@/utils";
-import { UNKNOWN_ID, SheetId, MaybeRef } from "@/types";
+  Sheet,
+  SheetOrganizer,
+  Sheet_Source,
+} from "@/types/proto/v1/sheet_service";
+import { extractSheetUID, getSheetStatement, isSheetReadableV1 } from "@/utils";
+import { UNKNOWN_ID, MaybeRef } from "@/types";
+import { useCurrentUserV1 } from "../auth";
+import { useTabStore } from "../tab";
+import { getUserEmailFromIdentifier } from "./common";
 
-interface SheetState {
-  sheetByName: Map<string, Sheet>;
-}
+const REQUEST_CACHE_BY_UID = new Map<
+  string /* uid */,
+  Promise<Sheet | undefined>
+>();
 
-const REQUEST_CACHE = new Map<string /* uid */, Promise<Sheet | undefined>>();
+export const useSheetV1Store = defineStore("sheet_v1", () => {
+  const sheetsByName = ref(new Map<string, Sheet>());
 
-export const useSheetV1Store = defineStore("sheet_v1", {
-  state: (): SheetState => ({
-    sheetByName: new Map<string, Sheet>(),
-  }),
+  // Getters
+  const sheetListWithoutIssueArtifact = computed(() => {
+    // Hide those sheets from issue.
+    return Array.from(sheetsByName.value.values()).filter(
+      (sheet) => sheet.source !== Sheet_Source.SOURCE_BYTEBASE_ARTIFACT
+    );
+  });
+  const mySheetList = computed(() => {
+    const me = useCurrentUserV1();
+    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
+      return sheet.creator === `users/${me.value.email}`;
+    });
+  });
+  const sharedSheetList = computed(() => {
+    const me = useCurrentUserV1();
+    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
+      return sheet.creator !== `users/${me.value.email}`;
+    });
+  });
+  const starredSheetList = computed(() => {
+    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
+      return sheet.starred;
+    });
+  });
 
-  getters: {
-    currentSheet(state) {
-      const currentTab = useTabStore().currentTab;
+  // Utilities
+  const removeLocalSheet = (name: string) => {
+    const uid = extractSheetUID(name);
+    if (uid.startsWith("-")) {
+      sheetsByName.value.delete(name);
+    }
+  };
+  const setSheetList = (sheets: Sheet[]) => {
+    for (const sheet of sheets) {
+      sheetsByName.value.set(sheet.name, sheet);
+    }
+  };
 
-      if (!currentTab || isEmpty(currentTab)) {
-        return;
-      }
+  // CRUD
+  const createSheet = async (parent: string, sheet: Partial<Sheet>) => {
+    const created = await sheetServiceClient.createSheet({
+      parent,
+      sheet,
+    });
+    setSheetList([created]);
+    if (sheet.name) {
+      removeLocalSheet(sheet.name);
+    }
+    return created;
+  };
 
-      const sheetName = currentTab.sheetName;
-      if (!sheetName) {
-        return;
-      }
-      return state.sheetByName.get(sheetName);
-    },
-    isCreator() {
-      const currentUserV1 = useCurrentUserV1();
-      const currentSheet = this.currentSheet as Sheet;
-
-      if (!currentSheet) return false;
-
-      return (
-        getUserEmailFromIdentifier(currentSheet.creator) ===
-        currentUserV1.value.email
-      );
-    },
-    /**
-     * Check the sheet whether is read-only.
-     * 1. If the sheet is not created yet, it cannot be edited.
-     * 2. If the sheet is created by the current user, it can be edited.
-     * 3. If the sheet is created by other user, will be checked the visibility of the sheet.
-     *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
-     *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
-     */
-    isReadOnly() {
-      const currentSheet = this.currentSheet as Sheet;
-
-      // We don't have a selected sheet, we've got nothing to edit.
-      if (!currentSheet) {
-        return false;
-      }
-
-      // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.
-      if (currentSheet.content.length !== currentSheet.contentSize) {
-        return true;
-      }
-
-      return !isSheetReadableV1(currentSheet);
-    },
-  },
-
-  actions: {
-    getSheetUid(name: string): number {
-      const [_, sheetId] = getProjectAndSheetId(name);
-      if (!sheetId || Number.isNaN(sheetId)) {
-        return UNKNOWN_ID;
-      }
-      return Number(sheetId);
-    },
-    getProjectResourceId(name: string): string {
-      const [projectId, _] = getProjectAndSheetId(name);
-      return projectId;
-    },
-    getSheetParentPath(name: string): string {
-      const projectId = this.getProjectResourceId(name);
-      return `${projectNamePrefix}${projectId}`;
-    },
-    setSheetList(sheets: Sheet[]) {
-      for (const sheet of sheets) {
-        this.sheetByName.set(sheet.name, sheet);
-      }
-    },
-    async createSheet(parentPath: string, sheet: Partial<Sheet>) {
-      const createdSheet = await sheetServiceClient.createSheet({
-        parent: parentPath,
-        sheet,
+  const getSheetByName = (name: string) => {
+    return sheetsByName.value.get(name);
+  };
+  const fetchSheetByName = async (name: string) => {
+    try {
+      const sheet = await sheetServiceClient.getSheet({
+        name,
       });
-      this.sheetByName.set(createdSheet.name, createdSheet);
-      return createdSheet;
-    },
-    async patchSheet(sheet: Partial<Sheet>) {
-      if (!sheet.name) {
-        return;
-      }
-      const exist = this.sheetByName.get(sheet.name);
-      if (!exist) {
-        return;
-      }
-
-      const updateMask = getUpdateMaskForSheet(exist, sheet);
-      if (updateMask.length === 0) {
-        return exist;
-      }
-      const updatedSheet = await this.patchSheetWithUpdateMask(
-        updateMask,
-        sheet
-      );
-      this.sheetByName.set(updatedSheet.name, updatedSheet);
-      return updatedSheet;
-    },
-    async patchSheetWithUpdateMask(
-      updateMask: string[],
-      sheet: Partial<Sheet>
-    ) {
-      const updatedSheet = await sheetServiceClient.updateSheet({
-        sheet,
-        updateMask,
-      });
-      this.sheetByName.set(updatedSheet.name, updatedSheet);
-      return updatedSheet;
-    },
-    async fetchSheetByName(name: string) {
-      try {
-        const sheet = await sheetServiceClient.getSheet({
-          name,
-        });
-        this.sheetByName.set(sheet.name, sheet);
-        return sheet;
-      } catch {
-        return;
-      }
-    },
-    getSheetByName(name: string) {
-      const sheet = this.sheetByName.get(name);
+      setSheetList([sheet]);
       return sheet;
-    },
-    getSheetByUid(uid: SheetId) {
-      for (const [name, sheet] of this.sheetByName) {
-        if (`${this.getSheetUid(name)}` === `${uid}`) {
-          return sheet;
-        }
+    } catch {
+      return undefined;
+    }
+  };
+  const getOrFetchSheetByName = async (name: string) => {
+    const uid = extractSheetUID(name);
+    if (uid === String(UNKNOWN_ID)) {
+      return undefined;
+    }
+    const existed = getSheetByName(name);
+    if (existed) {
+      return existed;
+    }
+    const cached = REQUEST_CACHE_BY_UID.get(uid);
+    if (cached) {
+      return cached;
+    }
+
+    const request = fetchSheetByName(name);
+    REQUEST_CACHE_BY_UID.set(uid, request);
+    request.then((sheet) => {
+      if (!sheet) {
+        // If the request failed
+        // remove the request cache entry so we can retry when needed.
+        REQUEST_CACHE_BY_UID.delete(uid);
       }
-    },
-    async getOrFetchSheetByUid(uid: SheetId) {
-      if (uid === UNKNOWN_ID) {
-        return;
-      }
-      const sheet = this.getSheetByUid(uid);
-      if (sheet) {
+    });
+    return request;
+  };
+  const getSheetByUID = (uid: string) => {
+    for (const [name, sheet] of sheetsByName.value) {
+      if (extractSheetUID(name) === uid) {
         return sheet;
       }
+    }
+  };
+  const fetchSheetByUID = async (uid: string, raw = false) => {
+    try {
+      const name = `projects/-/sheets/${uid}`;
+      const sheet = await sheetServiceClient.getSheet({
+        name,
+        raw,
+      });
+      setSheetList([sheet]);
+      return sheet;
+    } catch {
+      return undefined;
+    }
+  };
+  const getOrFetchSheetByUID = async (uid: string) => {
+    if (uid === String(UNKNOWN_ID)) {
+      return undefined;
+    }
+    const existed = getSheetByUID(uid);
+    if (existed) {
+      return existed;
+    }
+    const cached = REQUEST_CACHE_BY_UID.get(uid);
+    if (cached) {
+      return cached;
+    }
 
-      const cached = REQUEST_CACHE.get(String(uid));
-      if (cached) {
-        return cached;
+    const name = `projects/-/sheets/${uid}`;
+    const request = fetchSheetByName(name);
+    REQUEST_CACHE_BY_UID.set(uid, request);
+    request.then((sheet) => {
+      if (!sheet) {
+        // If the request failed
+        // remove the request cache entry so we can retry when needed.
+        REQUEST_CACHE_BY_UID.delete(uid);
       }
+    });
+    return request;
+  };
+  const fetchMySheetList = async () => {
+    const me = useCurrentUserV1();
+    const { sheets } = await sheetServiceClient.searchSheets({
+      parent: "projects/-",
+      filter: `creator = users/${me.value.email}`,
+    });
+    setSheetList(sheets);
+    return sheets;
+  };
+  const fetchSharedSheetList = async () => {
+    const me = useCurrentUserV1();
+    const { sheets } = await sheetServiceClient.searchSheets({
+      parent: "projects/-",
+      filter: `creator != users/${me.value.email}`,
+    });
+    setSheetList(sheets);
+    return sheets;
+  };
+  const fetchStarredSheetList = async () => {
+    const { sheets } = await sheetServiceClient.searchSheets({
+      parent: "projects/-",
+      filter: "starred = true",
+    });
+    setSheetList(sheets);
+    return sheets;
+  };
 
-      const runner = () => {
-        return this.fetchSheetByName(
-          `${projectNamePrefix}-/${sheetNamePrefix}${uid}`
-        );
-      };
+  const patchSheet = async (
+    sheet: Partial<Sheet>,
+    updateMask: string[] | undefined = undefined
+  ) => {
+    if (!sheet.name) return;
+    const existed = sheetsByName.value.get(sheet.name);
+    if (!existed) return;
+    if (!updateMask) {
+      updateMask = getUpdateMaskForSheet(existed, sheet);
+    }
+    if (updateMask.length === 0) {
+      return existed;
+    }
+    const updated = await sheetServiceClient.updateSheet({
+      sheet,
+      updateMask,
+    });
+    setSheetList([updated]);
+    return updated;
+  };
 
-      const request = runner();
-      request.then((sheet) => {
-        if (sheet) {
-          this.sheetByName.set(sheet.name, sheet);
-        } else {
-          // If the request failed (e.g., "Too many requests")
-          // Remove the cache entry so we can retry when needed.
-          REQUEST_CACHE.delete(String(uid));
-        }
-      });
-      REQUEST_CACHE.set(String(uid), request);
-      return request;
-    },
-    async getOrFetchSheetByName(name: string) {
-      const storedSheet = this.sheetByName.get(name);
-      if (storedSheet) {
-        return storedSheet;
-      }
-      return this.fetchSheetByName(name);
-    },
-    async fetchSharedSheetList() {
-      const currentUserV1 = useCurrentUserV1();
-      const { sheets } = await sheetServiceClient.searchSheets({
-        parent: `${projectNamePrefix}-`,
-        filter: `creator != users/${currentUserV1.value.email}`,
-      });
-      this.setSheetList(sheets);
-      return sheets;
-    },
-    async fetchStarredSheetList() {
-      const { sheets } = await sheetServiceClient.searchSheets({
-        parent: `${projectNamePrefix}-`,
-        filter: "starred = true",
-      });
-      this.setSheetList(sheets);
-      return sheets;
-    },
-    async fetchMySheetList() {
-      const currentUserV1 = useCurrentUserV1();
-      const { sheets } = await sheetServiceClient.searchSheets({
-        parent: `${projectNamePrefix}-`,
-        filter: `creator = users/${currentUserV1.value.email}`,
-      });
-      this.setSheetList(sheets);
-      return sheets;
-    },
-    async deleteSheetByName(name: string) {
-      await sheetServiceClient.deleteSheet({ name });
-      this.sheetByName.delete(name);
-    },
-    async syncSheetFromVCS(project: string) {
-      await sheetServiceClient.syncSheets({
-        parent: project,
-      });
-    },
-    async upsertSheetOrganizer(organizer: Partial<SheetOrganizer>) {
-      await sheetServiceClient.updateSheetOrganizer({
-        organizer,
-        // for now we only support change the `starred` field.
-        updateMask: ["starred"],
-      });
-    },
-  },
+  const deleteSheetByName = async (name: string) => {
+    await sheetServiceClient.deleteSheet({ name });
+    sheetsByName.value.delete(name);
+  };
+
+  // Other functions
+  const syncSheetFromVCS = async (parent: string) => {
+    await sheetServiceClient.syncSheets({
+      parent,
+    });
+  };
+  const upsertSheetOrganizer = async (
+    organizer: Pick<SheetOrganizer, "sheet" | "starred">
+  ) => {
+    await sheetServiceClient.updateSheetOrganizer({
+      organizer,
+      // for now we only support change the `starred` field.
+      updateMask: ["starred"],
+    });
+
+    // Update local sheet values
+    const sheet = getSheetByName(organizer.sheet);
+    if (sheet) {
+      sheet.starred = organizer.starred;
+    }
+  };
+
+  return {
+    mySheetList,
+    sharedSheetList,
+    starredSheetList,
+    createSheet,
+    getSheetByName,
+    fetchSheetByName,
+    getOrFetchSheetByName,
+    getSheetByUID,
+    fetchSheetByUID,
+    getOrFetchSheetByUID,
+    fetchMySheetList,
+    fetchSharedSheetList,
+    fetchStarredSheetList,
+    patchSheet,
+    deleteSheetByName,
+    syncSheetFromVCS,
+    upsertSheetOrganizer,
+  };
+});
+
+export const useSheetAndTabStore = defineStore("sheet_and_tab", () => {
+  const tabStore = useTabStore();
+  const sheetStore = useSheetV1Store();
+  const me = useCurrentUserV1();
+
+  const currentSheet = computed(() => {
+    const tab = tabStore.currentTab;
+    const name = tab.sheetName;
+    if (!name) {
+      return undefined;
+    }
+    return sheetStore.getSheetByName(name);
+  });
+
+  const isCreator = computed(() => {
+    const sheet = currentSheet.value;
+    if (!sheet) return false;
+    return getUserEmailFromIdentifier(sheet.name) === me.value.email;
+  });
+
+  const isReadOnly = computed(() => {
+    const sheet = currentSheet.value;
+
+    // We don't have a selected sheet, we've got nothing to edit.
+    if (!sheet) {
+      return false;
+    }
+
+    // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.
+    if (sheet.content.length !== sheet.contentSize) {
+      return true;
+    }
+
+    return !isSheetReadableV1(sheet);
+  });
+
+  return { currentSheet, isCreator, isReadOnly };
 });
 
 const getUpdateMaskForSheet = (
@@ -271,15 +321,15 @@ const getUpdateMaskForSheet = (
   return updateMask;
 };
 
-export const useSheetStatementByUid = (sheetId: MaybeRef<SheetId>) => {
+export const useSheetStatementByUID = (uid: MaybeRef<string>) => {
   const store = useSheetV1Store();
   watchEffect(async () => {
-    await store.getOrFetchSheetByUid(unref(sheetId));
+    await store.getOrFetchSheetByUID(unref(uid));
   });
 
   return computed(() => {
-    return new TextDecoder().decode(
-      store.getSheetByUid(unref(sheetId))?.content
-    );
+    const sheet = store.getSheetByUID(unref(uid));
+    if (!sheet) return "";
+    return getSheetStatement(sheet);
   });
 };

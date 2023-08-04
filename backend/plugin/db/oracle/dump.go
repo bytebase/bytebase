@@ -13,10 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 )
 
-const (
-	maxOutputSize = 500 * 1024 * 1024 // 500MB
-)
-
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
@@ -56,13 +52,15 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) 
 	query := `
 		DECLARE
 			TYPE type_user_name_list IS TABLE OF VARCHAR2(128) INDEX BY BINARY_INTEGER;
+			TYPE type_object_meta IS TABLE OF LONG INDEX BY BINARY_INTEGER;
 			PROCEDURE fetch_ddl(
 				user_names type_user_name_list,
-				ddls OUT LONG
+				ddls OUT type_object_meta
 			) IS
+				idx number := 1;
 			BEGIN
 				FOR user_name IN user_names.FIRST .. user_names.LAST LOOP
-					ddls := ddls || '/* Schema: ' || user_names(user_name) || ' */' || chr(10) || chr(10) ;
+					ddls(idx) := '/* Schema: ' || user_names(user_name) || ' */' || chr(10) || chr(10) ;
 					FOR object_meta IN (
 						WITH DISALLOW_OBJECTS AS (
 							SELECT OWNER, TABLE_NAME FROM DBA_NESTED_TABLES
@@ -87,12 +85,13 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) 
 						FROM NEED_OBJECTS U
 					) LOOP
 						BEGIN
-							ddls := ddls || DBMS_METADATA.GET_DDL(object_meta.OBJECT_TYPE, object_meta.OBJECT_NAME, object_meta.OWNER) || ';' || chr(10) || chr(10);
+							ddls(idx) := ddls(idx) || DBMS_METADATA.GET_DDL(object_meta.OBJECT_TYPE, object_meta.OBJECT_NAME, object_meta.OWNER) || ';' || chr(10) || chr(10);
 						EXCEPTION
 							WHEN OTHERS THEN
-							ddls := ddls || '/* Error: failed to get ddl for ' || object_meta.OBJECT_TYPE || ' ' || object_meta.OBJECT_NAME || ' in ' || object_meta.OWNER || ' */' || chr(10) || chr(10);
+							ddls(idx) := ddls(idx) || '/* Error: failed to get ddl for ' || object_meta.OBJECT_TYPE || ' ' || object_meta.OBJECT_NAME || ' in ' || object_meta.OWNER || ' */' || chr(10) || chr(10);
 						END;
 					END LOOP;
+					idx := idx + 1;
 				END LOOP;
 			END;
 		BEGIN
@@ -100,16 +99,22 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) 
 		END;
 	`
 
-	text := ""
+	var text []string
 	log.Debug("start dumping Oracle schemas", zap.String("query", query))
-	if _, err := txn.ExecContext(ctx, query, schemas, go_ora.Out{Dest: &text, Size: maxOutputSize}); err != nil {
+	if _, err := txn.ExecContext(ctx, query, schemas, go_ora.Out{Dest: &text, Size: len(schemas)}); err != nil {
 		return errors.Wrap(err, "failed to dump schemas")
 	}
-
-	if _, err := io.WriteString(out, text); err != nil {
-		log.Warn("write error", zap.Error(err))
-		return err
+	for _, data := range text {
+		if _, err := io.WriteString(out, data); err != nil {
+			log.Warn("write error", zap.Error(err))
+			return err
+		}
+		if _, err := io.WriteString(out, "\n"); err != nil {
+			log.Warn("write error", zap.Error(err))
+			return err
+		}
 	}
+
 	return nil
 }
 

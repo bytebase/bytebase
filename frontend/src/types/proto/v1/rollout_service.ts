@@ -347,6 +347,7 @@ export interface BatchCancelTaskRunsRequest {
   /**
    * The name of the parent of the taskRuns.
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   * Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
    */
   parent: string;
   /**
@@ -669,11 +670,9 @@ export interface Task {
    * Could be empty if the rollout of the task does not have an associating plan.
    */
   specId: string;
-  /**
-   * Status is the status of the task.
-   * TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
-   */
+  /** Status is the status of the task. */
   status: Task_Status;
+  skippedReason: string;
   type: Task_Type;
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   blockedByTasks: string[];
@@ -692,7 +691,7 @@ export interface Task {
 
 export enum Task_Status {
   STATUS_UNSPECIFIED = 0,
-  PENDING_APPROVAL = 1,
+  NOT_STARTED = 1,
   PENDING = 2,
   RUNNING = 3,
   DONE = 4,
@@ -708,8 +707,8 @@ export function task_StatusFromJSON(object: any): Task_Status {
     case "STATUS_UNSPECIFIED":
       return Task_Status.STATUS_UNSPECIFIED;
     case 1:
-    case "PENDING_APPROVAL":
-      return Task_Status.PENDING_APPROVAL;
+    case "NOT_STARTED":
+      return Task_Status.NOT_STARTED;
     case 2:
     case "PENDING":
       return Task_Status.PENDING;
@@ -739,8 +738,8 @@ export function task_StatusToJSON(object: Task_Status): string {
   switch (object) {
     case Task_Status.STATUS_UNSPECIFIED:
       return "STATUS_UNSPECIFIED";
-    case Task_Status.PENDING_APPROVAL:
-      return "PENDING_APPROVAL";
+    case Task_Status.NOT_STARTED:
+      return "NOT_STARTED";
     case Task_Status.PENDING:
       return "PENDING";
     case Task_Status.RUNNING:
@@ -1030,7 +1029,6 @@ export enum TaskRun_Status {
   DONE = 3,
   FAILED = 4,
   CANCELED = 5,
-  SKIPPED = 6,
   UNRECOGNIZED = -1,
 }
 
@@ -1054,9 +1052,6 @@ export function taskRun_StatusFromJSON(object: any): TaskRun_Status {
     case 5:
     case "CANCELED":
       return TaskRun_Status.CANCELED;
-    case 6:
-    case "SKIPPED":
-      return TaskRun_Status.SKIPPED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -1078,8 +1073,6 @@ export function taskRun_StatusToJSON(object: TaskRun_Status): string {
       return "FAILED";
     case TaskRun_Status.CANCELED:
       return "CANCELED";
-    case TaskRun_Status.SKIPPED:
-      return "SKIPPED";
     case TaskRun_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -3981,6 +3974,7 @@ function createBaseTask(): Task {
     title: "",
     specId: "",
     status: 0,
+    skippedReason: "",
     type: 0,
     blockedByTasks: [],
     target: "",
@@ -4005,37 +3999,40 @@ export const Task = {
       writer.uint32(26).string(message.title);
     }
     if (message.specId !== "") {
-      writer.uint32(98).string(message.specId);
+      writer.uint32(34).string(message.specId);
     }
     if (message.status !== 0) {
-      writer.uint32(104).int32(message.status);
+      writer.uint32(40).int32(message.status);
+    }
+    if (message.skippedReason !== "") {
+      writer.uint32(122).string(message.skippedReason);
     }
     if (message.type !== 0) {
-      writer.uint32(32).int32(message.type);
+      writer.uint32(48).int32(message.type);
     }
     for (const v of message.blockedByTasks) {
-      writer.uint32(42).string(v!);
+      writer.uint32(58).string(v!);
     }
     if (message.target !== "") {
-      writer.uint32(50).string(message.target);
+      writer.uint32(66).string(message.target);
     }
     if (message.databaseCreate !== undefined) {
-      Task_DatabaseCreate.encode(message.databaseCreate, writer.uint32(58).fork()).ldelim();
+      Task_DatabaseCreate.encode(message.databaseCreate, writer.uint32(74).fork()).ldelim();
     }
     if (message.databaseSchemaBaseline !== undefined) {
-      Task_DatabaseSchemaBaseline.encode(message.databaseSchemaBaseline, writer.uint32(66).fork()).ldelim();
+      Task_DatabaseSchemaBaseline.encode(message.databaseSchemaBaseline, writer.uint32(82).fork()).ldelim();
     }
     if (message.databaseSchemaUpdate !== undefined) {
-      Task_DatabaseSchemaUpdate.encode(message.databaseSchemaUpdate, writer.uint32(74).fork()).ldelim();
+      Task_DatabaseSchemaUpdate.encode(message.databaseSchemaUpdate, writer.uint32(90).fork()).ldelim();
     }
     if (message.databaseDataUpdate !== undefined) {
-      Task_DatabaseDataUpdate.encode(message.databaseDataUpdate, writer.uint32(82).fork()).ldelim();
+      Task_DatabaseDataUpdate.encode(message.databaseDataUpdate, writer.uint32(98).fork()).ldelim();
     }
     if (message.databaseBackup !== undefined) {
-      Task_DatabaseBackup.encode(message.databaseBackup, writer.uint32(114).fork()).ldelim();
+      Task_DatabaseBackup.encode(message.databaseBackup, writer.uint32(106).fork()).ldelim();
     }
     if (message.databaseRestoreRestore !== undefined) {
-      Task_DatabaseRestoreRestore.encode(message.databaseRestoreRestore, writer.uint32(90).fork()).ldelim();
+      Task_DatabaseRestoreRestore.encode(message.databaseRestoreRestore, writer.uint32(114).fork()).ldelim();
     }
     return writer;
   },
@@ -4068,78 +4065,85 @@ export const Task = {
 
           message.title = reader.string();
           continue;
-        case 12:
-          if (tag !== 98) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
           message.specId = reader.string();
           continue;
-        case 13:
-          if (tag !== 104) {
+        case 5:
+          if (tag !== 40) {
             break;
           }
 
           message.status = reader.int32() as any;
           continue;
-        case 4:
-          if (tag !== 32) {
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.skippedReason = reader.string();
+          continue;
+        case 6:
+          if (tag !== 48) {
             break;
           }
 
           message.type = reader.int32() as any;
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.blockedByTasks.push(reader.string());
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.target = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.databaseCreate = Task_DatabaseCreate.decode(reader, reader.uint32());
+          message.blockedByTasks.push(reader.string());
           continue;
         case 8:
           if (tag !== 66) {
             break;
           }
 
-          message.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.decode(reader, reader.uint32());
+          message.target = reader.string();
           continue;
         case 9:
           if (tag !== 74) {
             break;
           }
 
-          message.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.decode(reader, reader.uint32());
+          message.databaseCreate = Task_DatabaseCreate.decode(reader, reader.uint32());
           continue;
         case 10:
           if (tag !== 82) {
             break;
           }
 
+          message.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.decode(reader, reader.uint32());
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.decode(reader, reader.uint32());
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
           message.databaseDataUpdate = Task_DatabaseDataUpdate.decode(reader, reader.uint32());
           continue;
-        case 14:
-          if (tag !== 114) {
+        case 13:
+          if (tag !== 106) {
             break;
           }
 
           message.databaseBackup = Task_DatabaseBackup.decode(reader, reader.uint32());
           continue;
-        case 11:
-          if (tag !== 90) {
+        case 14:
+          if (tag !== 114) {
             break;
           }
 
@@ -4161,6 +4165,7 @@ export const Task = {
       title: isSet(object.title) ? String(object.title) : "",
       specId: isSet(object.specId) ? String(object.specId) : "",
       status: isSet(object.status) ? task_StatusFromJSON(object.status) : 0,
+      skippedReason: isSet(object.skippedReason) ? String(object.skippedReason) : "",
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : 0,
       blockedByTasks: Array.isArray(object?.blockedByTasks) ? object.blockedByTasks.map((e: any) => String(e)) : [],
       target: isSet(object.target) ? String(object.target) : "",
@@ -4188,6 +4193,7 @@ export const Task = {
     message.title !== undefined && (obj.title = message.title);
     message.specId !== undefined && (obj.specId = message.specId);
     message.status !== undefined && (obj.status = task_StatusToJSON(message.status));
+    message.skippedReason !== undefined && (obj.skippedReason = message.skippedReason);
     message.type !== undefined && (obj.type = task_TypeToJSON(message.type));
     if (message.blockedByTasks) {
       obj.blockedByTasks = message.blockedByTasks.map((e) => e);
@@ -4225,6 +4231,7 @@ export const Task = {
     message.title = object.title ?? "";
     message.specId = object.specId ?? "";
     message.status = object.status ?? 0;
+    message.skippedReason = object.skippedReason ?? "";
     message.type = object.type ?? 0;
     message.blockedByTasks = object.blockedByTasks?.map((e) => e) || [];
     message.target = object.target ?? "";

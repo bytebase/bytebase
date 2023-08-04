@@ -2868,7 +2868,11 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 
 When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
-| filter | [string](#string) |  | The filter of the change histories. Follow the CEL syntax. currently, we have three attributes for CEL: - resource.database - resource.schema - resource.table examples: if you want to filter by databases, you should use: resource.database in [&#34;db1&#34;, &#34;db2&#34;] even if you only want to filter by one database, you should use the array syntax. if you want to filter by tables, you should use: resource.database = &#34;db1&#34; &amp;&amp; resource.schema = &#34;&#34; &amp;&amp; resource.table in [&#34;table1&#34;, &#34;table2&#34;] Empty schema name is for no schema database engines, such as MySQL. |
+| filter | [string](#string) |  | The filter of the change histories. Follow the CEL syntax. currently, we have one function for CEL: - tableExists(database, schema, table): return true if the table exists in changed resources.
+
+examples: Use tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) to filter the change histories which have the table &#34;table1&#34; in the schema &#34;public&#34; of the database &#34;db&#34;. For MySQL, the schema is always &#34;&#34;, such as tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
+
+Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive Normal Form(DNF). In other words, the CEL expression consists of several parts connected by OR operators. For example, the following expression is valid: ( tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) &amp;&amp; tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table2&#34;) ) || ( tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table3&#34;) ) |
 
 
 
@@ -4056,6 +4060,7 @@ reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get
 | identifier | [string](#string) |  | Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. |
 | display_name | [string](#string) |  | DisplayName is the field name of display name in 3rd-party idp user info. |
 | email | [string](#string) |  | Email is the field name of primary email in 3rd-party idp user info. |
+| phone | [string](#string) |  | Phone is the field name of primary phone in 3rd-party idp user info. |
 
 
 
@@ -4823,7 +4828,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
+| id | [string](#string) |  |  |
 | type | [DataSourceType](#bytebase-v1-DataSourceType) |  |  |
 | username | [string](#string) |  |  |
 | password | [string](#string) |  |  |
@@ -6911,7 +6916,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the parent of the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| parent | [string](#string) |  | The name of the parent of the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
 | task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
 
@@ -7461,7 +7466,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
 | spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. Could be empty if the rollout of the task does not have an associating plan. |
-| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. TODO(p0ny): migrate old task status and use this field as a summary of the task runs. |
+| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
+| skipped_reason | [string](#string) |  |  |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
@@ -7731,7 +7737,7 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
-| PENDING_APPROVAL | 1 |  |
+| NOT_STARTED | 1 |  |
 | PENDING | 2 |  |
 | RUNNING | 3 |  |
 | DONE | 4 |  |
@@ -7776,7 +7782,6 @@ Type is the database change type.
 | DONE | 3 |  |
 | FAILED | 4 |  |
 | CANCELED | 5 |  |
-| SKIPPED | 6 |  |
 
 
  

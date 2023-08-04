@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	pgquery "github.com/pganalyze/pg_query_go/v2"
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
@@ -37,6 +37,9 @@ type SchemaResource struct {
 	Database string
 	Schema   string
 	Table    string
+
+	// LinkedServer is the special resource for MSSQL, which can be used to specify the linked server.
+	LinkedServer string
 }
 
 // String implements fmt.Stringer interface.
@@ -60,10 +63,12 @@ func (r SchemaResource) Pretty() string {
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engineType EngineType, currentDatabase string, _ string, sql string) ([]SchemaResource, error) {
+func ExtractChangedResources(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
 	switch engineType {
 	case MySQL, MariaDB, OceanBase:
 		return extractMySQLChangedResources(currentDatabase, sql)
+	case Oracle:
+		return extractOracleChangedResources(currentDatabase, currentSchema, sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
@@ -88,6 +93,8 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		return extractPostgresResourceList(currentDatabase, "public", sql)
 	case Snowflake:
 		return extractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
+	case MSSQL:
+		return extractMSSQLNormalizedResourceListFromSelectStatement(currentDatabase, "dbo", sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)

@@ -23,9 +23,9 @@ import {
   findTaskById,
   issueActivityActionSentence,
 } from "@/utils";
-import { useSheetV1Store, useSheetStatementByUid } from "@/store";
+import { useSheetV1Store, useSheetStatementByUID } from "@/store";
 import TaskName from "./TaskName.vue";
-import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
+import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import StageName from "./StageName.vue";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
@@ -211,10 +211,10 @@ const renderActionSentence = () => {
         activity.payload
       ) as ActivityTaskStatementUpdatePayload;
       const oldStatement =
-        useSheetStatementByUid(payload.oldSheetId).value ||
+        useSheetStatementByUID(String(payload.oldSheetId)).value ||
         payload.oldStatement;
       const newStatement =
-        useSheetStatementByUid(payload.newSheetId).value ||
+        useSheetStatementByUID(String(payload.newSheetId)).value ||
         payload.newStatement;
       return h(
         "span",
@@ -289,11 +289,11 @@ const Renderer = defineComponent({
 });
 
 const renderStatement = (statement: string) => {
-  return h(SQLPreviewPopover, {
-    statement,
+  return h(TextOverflowPopover, {
+    content: statement,
     maxLength: 50,
     width: 400,
-    statementClass: "text-main",
+    contentClass: "text-main",
   });
 };
 
@@ -305,13 +305,17 @@ watch(
     if (
       activity.action === LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE
     ) {
-      sheetV1Store.getOrFetchSheetByUid(
-        (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
-          .newSheetId
+      sheetV1Store.getOrFetchSheetByUID(
+        String(
+          (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
+            .newSheetId
+        )
       );
-      sheetV1Store.getOrFetchSheetByUid(
-        (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
-          .oldSheetId
+      sheetV1Store.getOrFetchSheetByUID(
+        String(
+          (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
+            .oldSheetId
+        )
       );
     }
   },

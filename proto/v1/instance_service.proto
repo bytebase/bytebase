@@ -249,7 +249,7 @@ message Instance {
 }
 
 message DataSource {
-  string title = 1;
+  string id = 1;
   DataSourceType type = 2;
   string username = 3;
   string password = 4 [(google.api.field_behavior) = INPUT_ONLY];

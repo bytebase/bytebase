@@ -490,7 +490,8 @@
                 </dt>
                 <!-- TODO: decide necessary scopes -->
                 <dd class="text-sm text-main">
-                  Code (full), Identity (read), Project and team (read)
+                  Code (full), Identity (read), Project and team (read), Build
+                  (read and execute)
                 </dd>
               </div>
             </dl>

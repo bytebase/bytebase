@@ -451,7 +451,7 @@
         "not-allow-edit": "只有所有者才能改变角色",
         "not-allow-remove": "不能移除最后一个所有者",
         "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
-        "cannot-change-role-of-systembot": "不能修改机器人助手的角色"
+        "cannot-change-role-of-systembot-or-service-account": "不能修改机器人助手和服务账号的角色"
       },
       "system-bot": "机器人助手",
       "service-account": "服务账号",
@@ -500,9 +500,10 @@
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
         "connection-security": "安全性选项",
         "connection-security-skip-tls-verify": "跳过自签名证书验证",
-        "identifier": "Bytebase 用户的唯一标识符",
+        "identifier": "Bytebase 用户的邮箱",
+        "identifier-tips": "邮箱应该具有唯一性。如果实际值不是邮箱格式，将会和 domain 进行拼接。",
         "display-name": "Bytebase 用户的昵称",
-        "email": "Bytebase 用户的 Email",
+        "phone": "Bytebase 用户的手机号",
         "auth-style": {
           "self": "认证参数传递方式",
           "in-params": {
@@ -557,7 +558,7 @@
           "hours": "小时",
           "days": "天数"
         },
-        "config-updated": "配置已更新",
+        "config-updated": "配置已更新，需要重新启动 Bytebase 以及重新登录后生效。",
         "plugin": {
           "openai": {
             "ai-augmentation": "AI 增强",
@@ -1130,7 +1131,9 @@
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
     "contact-dba": "请联系您的 DBA 进行配置。",
     "export": "导出变更历史",
-    "need-to-select-first": "需要先选择变更历史"
+    "need-to-select-first": "需要先选择变更历史",
+    "all-tables": "所有表",
+    "affected-tables": "受影响的表"
   },
   "database": {
     "select": "选择数据库",
@@ -1145,6 +1148,7 @@
     "alter-schema-in-vcs": "变更 Schema (VCS)",
     "change-data": "变更数据",
     "change-data-in-vcs": "变更数据 (VCS)",
+    "table-detail": "表详情",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
@@ -1339,6 +1343,7 @@
     "sql-review-ci-enable": "开启 SQL 审核 CI",
     "sql-review-ci-enable-gitlab": "基于 GitLab CI 开启 SQL 审核",
     "sql-review-ci-enable-github": "基于 GitHub Action 开启 SQL 审核",
+    "sql-review-ci-enable-azure": "基于 Azure DevOps Pipeline 开启 SQL 审核",
     "sql-review-ci-description": "Bytebase 会发起 {pr} 为您的代码仓库配置 SQL 审核 CI。在每一个 {pr} 中，任何匹配上「{pathTemplate}」的文件修改将被赋予对应环境的 SQL 审核策略。",
     "sql-review-ci-setup": "配置 SQL 审核 CI",
     "sql-review-ci-setup-failed": "SQL 审核 CI 创建失败",
@@ -1817,6 +1822,9 @@
     "sheet": {
       "choose-sheet": "选择工作表",
       "self": "工作表"
+    },
+    "tab": {
+      "unsaved": "未保存"
     }
   },
   "schema-editor": {
@@ -2154,7 +2162,11 @@
     },
     "linked-issue": "关联工单",
     "from-issue-warning": "这个工作表来自工单 {issue}，处于只读模式。{oversize}",
-    "content-oversize-warning": "SQL 过大所以无法直接编辑。"
+    "content-oversize-warning": "SQL 过大所以无法直接编辑。",
+    "sheets": "工作表",
+    "mine": "我的",
+    "shared": "分享的",
+    "search-sheets": "搜索工作表"
   },
   "engine": {
     "mysql": "MySQL",
@@ -2631,9 +2643,22 @@
   },
   "schema-template": {
     "self": "Schema 模板",
-    "field-template": "字段模板",
+    "field-template": {
+      "self": "字段模板",
+      "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+    },
+    "column-type-restriction": {
+      "self": "列类型约束",
+      "description": "在每一个数据库引擎上，您可以限制允许使用的列类型。",
+      "allow-all": "允许所有类型",
+      "allow-limited-types": "只允许部分类型",
+      "save-all": "保存所有",
+      "messages": {
+        "unable-to-update": "无法更新限制",
+        "following-column-types-are-used": "以下列类型仍在字段模板中使用。"
+      }
+    },
     "add-field": "新增字段模板",
-    "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。",
     "search-by-name-or-comment": "根据名称或备注搜索",
     "form": {
       "category": "分类",
