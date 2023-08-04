@@ -1823,6 +1823,9 @@
     "sheet": {
       "choose-sheet": "Elegir hoja",
       "self": "Hoja"
+    },
+    "tab": {
+      "unsaved": "No guardado"
     }
   },
   "schema-editor": {

@@ -1818,6 +1818,9 @@
     "sheet": {
       "choose-sheet": "选择工作表",
       "self": "工作表"
+    },
+    "tab": {
+      "unsaved": "未保存"
     }
   },
   "schema-editor": {
