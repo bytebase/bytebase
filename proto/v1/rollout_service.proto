@@ -508,11 +508,11 @@ message Task {
 
   // A UUID4 string that uniquely identifies the Spec.
   // Could be empty if the rollout of the task does not have an associating plan.
-  string spec_id = 12;
+  string spec_id = 4;
 
   enum Status {
     STATUS_UNSPECIFIED = 0;
-    PENDING_APPROVAL = 1;
+    NOT_STARTED = 1;
     PENDING = 2;
     RUNNING = 3;
     DONE = 4;
@@ -521,8 +521,8 @@ message Task {
     SKIPPED = 7;
   }
   // Status is the status of the task.
-  // TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
-  Status status = 13;
+  Status status = 5;
+  string skipped_reason = 15;
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
@@ -548,14 +548,23 @@ message Task {
     // use payload nil
     DATABASE_RESTORE_CUTOVER = 11;
   }
-  Type type = 4;
+  Type type = 6;
 
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-  repeated string blocked_by_tasks = 5;
+  repeated string blocked_by_tasks = 7;
 
   // Format: instances/{instance} if the task is DatabaseCreate.
   // Format: instances/{instance}/databases/{database}
-  string target = 6;
+  string target = 8;
+
+  oneof payload {
+    DatabaseCreate database_create = 9;
+    DatabaseSchemaBaseline database_schema_baseline = 10;
+    DatabaseSchemaUpdate database_schema_update = 11;
+    DatabaseDataUpdate database_data_update = 12;
+    DatabaseBackup database_backup = 13;
+    DatabaseRestoreRestore database_restore_restore = 14;
+  }
 
   message DatabaseCreate {
     // The project owning the database.
@@ -634,15 +643,6 @@ message Task {
       google.protobuf.Timestamp point_in_time = 3;
     }
   }
-
-  oneof payload {
-    DatabaseCreate database_create = 7;
-    DatabaseSchemaBaseline database_schema_baseline = 8;
-    DatabaseSchemaUpdate database_schema_update = 9;
-    DatabaseDataUpdate database_data_update = 10;
-    DatabaseBackup database_backup = 14;
-    DatabaseRestoreRestore database_restore_restore = 11;
-  }
 }
 
 message TaskRun {
@@ -667,7 +667,6 @@ message TaskRun {
     DONE = 3;
     FAILED = 4;
     CANCELED = 5;
-    SKIPPED = 6;
   }
   Status status = 8;
 
