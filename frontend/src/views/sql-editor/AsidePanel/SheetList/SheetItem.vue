@@ -1,7 +1,7 @@
 <template>
   <div
     :id="domIDForItem(item)"
-    class="flex items-start justify-between hover:bg-gray-200 px-2 py-1 gap-x-1"
+    class="flex items-start justify-between hover:bg-gray-100 px-2 py-1 gap-x-1"
     :class="[isCurrentItem && 'bg-indigo-600/10']"
     @click="$emit('click', item, $event)"
     @contextmenu="$emit('contextmenu', item, $event)"
@@ -14,7 +14,7 @@
       </span>
     </div>
     <div class="shrink-0" @click.stop>
-      <Dropdown :sheet="item.target" :view="view" />
+      <Dropdown :sheet="item.target" :view="view" :secondary="true" />
     </div>
   </div>
 </template>

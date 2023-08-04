@@ -8,7 +8,8 @@
   >
     <heroicons-outline:dots-horizontal
       v-show="!transparent"
-      class="w-6 h-auto border border-gray-300 bg-white p-1 rounded outline-none shadow"
+      class="w-6 h-6 p-1 rounded outline-none hover:bg-link-hover"
+      :class="[secondary ? '' : 'border border-gray-300 bg-white shadow']"
     />
   </NDropdown>
 </template>
@@ -37,6 +38,7 @@ const props = defineProps<{
   view: SheetViewMode;
   sheet: Sheet;
   dropdownProps?: DropdownProps;
+  secondary?: boolean;
   transparent?: boolean;
 }>();
 
