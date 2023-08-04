@@ -110,6 +110,7 @@ import { computed, reactive } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
 import { stringify } from "qs";
 import { NDrawer } from "naive-ui";
+import { useWindowSize } from "@vueuse/core";
 
 import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
@@ -119,21 +120,20 @@ import {
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
-import AsidePanel from "./AsidePanel/AsidePanel.vue";
-import EditorPanel from "./EditorPanel/EditorPanel.vue";
-import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
-import TabList from "./TabList";
-import ResultPanel from "./ResultPanel";
 import {
   allowUsingSchemaEditorV1,
   instanceV1HasReadonlyMode,
   isDatabaseV1Queryable,
 } from "@/utils";
-import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
-import { useWindowSize } from "@vueuse/core";
 import { InstanceV1Name } from "@/components/v2";
-import { provideSheetPanelContext } from "./TabList/SheetPanel/common";
+import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
+import AsidePanel from "./AsidePanel/AsidePanel.vue";
+import EditorPanel from "./EditorPanel/EditorPanel.vue";
+import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
+import TabList from "./TabList";
+import ResultPanel from "./ResultPanel";
+import { provideSheetContext } from "./Sheet";
 
 type LocalState = {
   sidebarExpanded: boolean;
@@ -218,8 +218,8 @@ const handleAlterSchema = async (params: {
   }
 };
 
-// provide context for SheetPanel
-provideSheetPanelContext();
+// provide context for sheets
+provideSheetContext();
 </script>
 
 <style>

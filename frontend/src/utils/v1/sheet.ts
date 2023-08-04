@@ -23,6 +23,12 @@ import {
   getSheetPathByLegacyProject,
 } from "@/store/modules/v1/common";
 
+export const extractSheetUID = (name: string) => {
+  const pattern = /(?:^|\/)sheets\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "-1";
+};
+
 export const isSheetReadableV1 = (sheet: Sheet) => {
   const currentUserV1 = useCurrentUserV1();
 
@@ -159,4 +165,13 @@ export const sheetNameOfTask = (task: Task) => {
   }
 
   return getSheetPathByLegacyProject(project, sheetId);
+};
+
+export const setSheetStatement = (sheet: Sheet, statement: string) => {
+  sheet.content = new TextEncoder().encode(statement);
+  sheet.contentSize = statement.length;
+};
+
+export const getSheetStatement = (sheet: Sheet) => {
+  return new TextDecoder().decode(sheet.content);
 };
