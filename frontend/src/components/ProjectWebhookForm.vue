@@ -229,6 +229,13 @@
         />
       </div>
     </div>
+    <button
+      type="button"
+      class="btn-normal whitespace-nowrap items-center"
+      @click.prevent="testWebhook"
+    >
+      {{ $t("project.webhook.test-webhook") }}
+    </button>
     <div
       class="flex pt-5"
       :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
@@ -488,6 +495,33 @@ const deleteWebhook = () => {
       }),
     });
     cancel();
+  });
+};
+
+const testWebhook = () => {
+  useGracefulRequest(async () => {
+    console.log("Barny1", props.project);
+    console.log("Barny2", state.webhook);
+    const result = await useProjectWebhookV1Store().testProjectWebhook(
+      props.project,
+      state.webhook
+    );
+
+    if (result.error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("project.webhook.fail-tested-title"),
+        description: result.error,
+        manualHide: true,
+      });
+    } else {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("project.webhook.success-tested-prompt"),
+      });
+    }
   });
 };
 </script>

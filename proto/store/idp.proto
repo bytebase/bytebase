@@ -65,11 +65,14 @@ message FieldMapping {
   // Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.
   string identifier = 1;
 
-  // DisplayName is the field name of display name in 3rd-party idp user info. Required.
+  // DisplayName is the field name of display name in 3rd-party idp user info. Optional.
   string display_name = 2;
 
-  // Email is the field name of primary email in 3rd-party idp user info. Required.
+  // Email is the field name of primary email in 3rd-party idp user info. Optional.
   string email = 3;
+
+  // Phone is the field name of primary phone in 3rd-party idp user info. Optional.
+  string phone = 4;
 }
 
 message IdentityProviderUserInfo {
@@ -81,6 +84,9 @@ message IdentityProviderUserInfo {
 
   // Email is the value of primary email in 3rd-party idp user info.
   string email = 3;
+
+  // Phone is the value of primary phone in 3rd-party idp user info.
+  string phone = 4;
 }
 
 enum OAuth2AuthStyle {
