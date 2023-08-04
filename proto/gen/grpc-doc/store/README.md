@@ -38,7 +38,7 @@
   
 - [store/database.proto](#store_database-proto)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
-    - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
+    - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
     - [DependentColumn](#bytebase-store-DependentColumn)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
@@ -620,10 +620,10 @@ ColumnMetadata is the metadata for columns.
 
 
 
-<a name="bytebase-store-DatabaseMetadata"></a>
+<a name="bytebase-store-DatabaseSchemaMetadata"></a>
 
-### DatabaseMetadata
-DatabaseMetadata is the metadata for databases.
+### DatabaseSchemaMetadata
+DatabaseSchemaMetadata is the metadata for databases.
 
 
 | Field | Type | Label | Description |

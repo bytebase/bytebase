@@ -6,8 +6,8 @@ import "google/protobuf/wrappers.proto";
 
 option go_package = "generated-go/store";
 
-// DatabaseMetadata is the metadata for databases.
-message DatabaseMetadata {
+// DatabaseSchemaMetadata is the metadata for databases.
+message DatabaseSchemaMetadata {
   string name = 1;
 
   // The schemas is the list of schemas in a database.

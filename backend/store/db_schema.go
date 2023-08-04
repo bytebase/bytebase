@@ -14,7 +14,7 @@ import (
 
 // DBSchema is the database schema including the metadata and schema (raw dump).
 type DBSchema struct {
-	Metadata *storepb.DatabaseMetadata
+	Metadata *storepb.DatabaseSchemaMetadata
 	Schema   []byte
 }
 
@@ -175,7 +175,7 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 		return nil, err
 	}
 
-	var databaseSchema storepb.DatabaseMetadata
+	var databaseSchema storepb.DatabaseSchemaMetadata
 	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err := decoder.Unmarshal(metadata, &databaseSchema); err != nil {
 		return nil, err

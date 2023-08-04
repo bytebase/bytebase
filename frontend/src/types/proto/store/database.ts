@@ -5,8 +5,8 @@ import { StringValue } from "../google/protobuf/wrappers";
 
 export const protobufPackage = "bytebase.store";
 
-/** DatabaseMetadata is the metadata for databases. */
-export interface DatabaseMetadata {
+/** DatabaseSchemaMetadata is the metadata for databases. */
+export interface DatabaseSchemaMetadata {
   name: string;
   /** The schemas is the list of schemas in a database. */
   schemas: SchemaMetadata[];
@@ -382,12 +382,12 @@ export interface SecretItem {
   description: string;
 }
 
-function createBaseDatabaseMetadata(): DatabaseMetadata {
+function createBaseDatabaseSchemaMetadata(): DatabaseSchemaMetadata {
   return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false, serviceName: "" };
 }
 
-export const DatabaseMetadata = {
-  encode(message: DatabaseMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const DatabaseSchemaMetadata = {
+  encode(message: DatabaseSchemaMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -412,10 +412,10 @@ export const DatabaseMetadata = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseSchemaMetadata {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseMetadata();
+    const message = createBaseDatabaseSchemaMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -477,7 +477,7 @@ export const DatabaseMetadata = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseMetadata {
+  fromJSON(object: any): DatabaseSchemaMetadata {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       schemas: Array.isArray(object?.schemas) ? object.schemas.map((e: any) => SchemaMetadata.fromJSON(e)) : [],
@@ -491,7 +491,7 @@ export const DatabaseMetadata = {
     };
   },
 
-  toJSON(message: DatabaseMetadata): unknown {
+  toJSON(message: DatabaseSchemaMetadata): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.schemas) {
@@ -511,12 +511,12 @@ export const DatabaseMetadata = {
     return obj;
   },
 
-  create(base?: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
-    return DatabaseMetadata.fromPartial(base ?? {});
+  create(base?: DeepPartial<DatabaseSchemaMetadata>): DatabaseSchemaMetadata {
+    return DatabaseSchemaMetadata.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
-    const message = createBaseDatabaseMetadata();
+  fromPartial(object: DeepPartial<DatabaseSchemaMetadata>): DatabaseSchemaMetadata {
+    const message = createBaseDatabaseSchemaMetadata();
     message.name = object.name ?? "";
     message.schemas = object.schemas?.map((e) => SchemaMetadata.fromPartial(e)) || [];
     message.characterSet = object.characterSet ?? "";
