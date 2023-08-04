@@ -477,18 +477,18 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 }
 
 // ExecuteMigrationDefault executes migration.
-func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, sheetID *int, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
-	execFunc := func(execStatement string) error {
+func ExecuteMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, sheetID *int, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+	execFunc := func(ctx context.Context, execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, false /* createDatabase */, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return ExecuteMigrationWithFunc(ctx, store, driver, mi, statement, sheetID, execFunc)
+	return ExecuteMigrationWithFunc(ctx, driverCtx, store, driver, mi, statement, sheetID, execFunc)
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 	// For baseline migration, we also record the live schema to detect the schema drift.
@@ -541,7 +541,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Dri
 			// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
 			renderedStatement = RenderStatement(statement, materials)
 		}
-		if err := execFunc(renderedStatement); err != nil {
+		if err := execFunc(driverCtx, renderedStatement); err != nil {
 			return "", "", err
 		}
 	}

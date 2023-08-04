@@ -504,6 +504,104 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	return &v1pb.BatchRunTasksResponse{}, nil
 }
 
+// BatchCancelTaskRuns cancels a list of task runs.
+// TODO(p0ny): forbid cancel noncancellable task runs.
+func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
+	if len(request.TaskRuns) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "task runs cannot be empty")
+	}
+
+	projectID, rolloutID, stageID, _, err := common.GetProjectIDRolloutIDStageIDMaybeTaskID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	rollout, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find rollout, error: %v", err)
+	}
+	if rollout == nil {
+		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
+	}
+
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
+	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue not found for rollout %v", rolloutID)
+	}
+
+	stages, err := s.store.ListStageV2(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list stages, error: %v", err)
+	}
+	if len(stages) == 0 {
+		return nil, status.Errorf(codes.NotFound, "no stages found for rollout %v", rolloutID)
+	}
+
+	var stage *store.StageMessage
+	for i := range stages {
+		if stages[i].ID == stageID {
+			stage = stages[i]
+			break
+		}
+	}
+	if stage == nil {
+		return nil, status.Errorf(codes.NotFound, "stage %v not found in rollout %v", stageID, rolloutID)
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, err := s.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
+	}
+
+	ok, err := canUserCancelStageTaskRun(ctx, s.store, user, issue, stage.EnvironmentID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "Not allowed to run tasks")
+	}
+
+	var taskRunIDs []int
+	for _, taskRun := range request.TaskRuns {
+		_, _, _, _, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		running, ok := s.stateCfg.RunningTaskRuns.Load(taskRunID)
+		if !ok || !running.(bool) {
+			return nil, status.Errorf(codes.InvalidArgument, "taskRun %s is not running", taskRun)
+		}
+		taskRunIDs = append(taskRunIDs, taskRunID)
+	}
+
+	for _, taskRunID := range taskRunIDs {
+		cancelFunc, ok := s.stateCfg.RunningTaskRunsCancelFunc.Load(taskRunID)
+		if !ok {
+			continue
+		}
+		cancelFunc.(context.CancelFunc)()
+	}
+
+	return &v1pb.BatchCancelTaskRunsResponse{}, nil
+}
+
 func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
 	var planCheckRuns []*v1pb.PlanCheckRun
 	for _, run := range runs {
@@ -2464,6 +2562,40 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 		return false, errors.Wrapf(err, "failed to get assignee group value for issueID %d", issue.UID)
 	}
 	// as the policy says, the project owner has the privilege to run.
+	if groupValue == api.AssigneeGroupValueProjectOwner {
+		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
+		if err != nil {
+			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
+		}
+		for _, binding := range policy.Bindings {
+			if binding.Role != api.Owner {
+				continue
+			}
+			for _, member := range binding.Members {
+				if member.ID == user.ID {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
+// canUserCancelStageTaskRun returns if a user can cancel the task runs in a stage.
+func canUserCancelStageTaskRun(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+	// the workspace owner and DBA roles can always cancel task runs.
+	if user.Role == api.Owner || user.Role == api.DBA {
+		return true, nil
+	}
+	// The creator can cancel task runs.
+	if user.ID == issue.Creator.ID {
+		return true, nil
+	}
+	groupValue, err := getGroupValueForIssueTypeEnvironment(ctx, s, issue.Type, stageEnvironmentID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get assignee group value for issueID %d", issue.UID)
+	}
+	// as the policy says, the project owner has the privilege to cancel.
 	if groupValue == api.AssigneeGroupValueProjectOwner {
 		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
 		if err != nil {
