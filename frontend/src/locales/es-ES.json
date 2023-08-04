@@ -550,7 +550,7 @@
           "self": "URL externa",
           "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://. {viewDoc}"
         },
-        "config-updated": "La configuración se ha actualizado",
+        "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto.",
         "plugin": {
           "openai": {
             "ai-augmentation": "Mejora IA",
