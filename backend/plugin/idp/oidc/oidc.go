@@ -7,11 +7,11 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-oidc"
-	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/idp"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -162,21 +162,10 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	if p.config.FieldMapping.Phone != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Phone).(string); ok {
 			// Only set phone if it's valid.
-			if err := validatePhone(v); err != nil {
+			if err := common.ValidatePhone(v); err != nil {
 				userInfo.Phone = v
 			}
 		}
 	}
 	return userInfo, nil
-}
-
-func validatePhone(phone string) error {
-	phoneNumber, err := phonenumbers.Parse(phone, "")
-	if err != nil {
-		return err
-	}
-	if !phonenumbers.IsValidNumber(phoneNumber) {
-		return errors.New("invalid phone number")
-	}
-	return nil
 }
