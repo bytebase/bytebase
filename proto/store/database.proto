@@ -6,7 +6,12 @@ import "google/protobuf/wrappers.proto";
 
 option go_package = "generated-go/store";
 
-// DatabaseSchemaMetadata is the metadata for databases.
+// DatabaseMetadata is the metadata for databases.
+message DatabaseMetadata {
+  map<string, string> labels = 1;
+}
+
+// DatabaseSchemaMetadata is the schema metadata for databases.
 message DatabaseSchemaMetadata {
   string name = 1;
 

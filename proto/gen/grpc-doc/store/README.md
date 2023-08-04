@@ -38,6 +38,8 @@
   
 - [store/database.proto](#store_database-proto)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
+    - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
+    - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
     - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
     - [DependentColumn](#bytebase-store-DependentColumn)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
@@ -620,10 +622,41 @@ ColumnMetadata is the metadata for columns.
 
 
 
+<a name="bytebase-store-DatabaseMetadata"></a>
+
+### DatabaseMetadata
+DatabaseMetadata is the metadata for databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| labels | [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-DatabaseMetadata-LabelsEntry"></a>
+
+### DatabaseMetadata.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-DatabaseSchemaMetadata"></a>
 
 ### DatabaseSchemaMetadata
-DatabaseSchemaMetadata is the metadata for databases.
+DatabaseSchemaMetadata is the schema metadata for databases.
 
 
 | Field | Type | Label | Description |
