@@ -31,7 +31,7 @@ import {
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
 import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
-import { useSheetV1Store, pushNotification } from "@/store";
+import { useSheetV1Store, pushNotification, useTabStore } from "@/store";
 import { useSheetContext, type SheetViewMode } from "../";
 
 const props = defineProps<{
@@ -91,9 +91,15 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        await sheetV1Store.deleteSheetByName(sheet.name);
-        events.emit("refresh", { views: ["my", "shared", "starred"] });
-        dialogInstance.destroy();
+        try {
+          dialogInstance.loading = true;
+          await sheetV1Store.deleteSheetByName(sheet.name);
+          events.emit("refresh", { views: ["my", "shared", "starred"] });
+          turnSheetToUnsavedTab(sheet);
+        } finally {
+          dialogInstance.destroy();
+          dialogInstance.loading = false;
+        }
       },
       onNegativeClick() {
         dialogInstance.destroy();
@@ -141,6 +147,15 @@ const handleAction = async (key: string) => {
       positiveText: t("common.confirm"),
       showIcon: true,
     });
+  }
+};
+
+const turnSheetToUnsavedTab = (sheet: Sheet) => {
+  const tabStore = useTabStore();
+  const tab = tabStore.tabList.find((tab) => tab.sheetName === sheet.name);
+  if (tab) {
+    tab.sheetName = undefined;
+    tab.isSaved = false;
   }
 };
 </script>
