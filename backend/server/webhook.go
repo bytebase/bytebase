@@ -502,7 +502,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		if len(backfillCommits) == 1 && len(backfillCommits[0].AddedList) == 1 && strings.HasSuffix(backfillCommits[0].AddedList[0], azure.SQLReviewPipelineFilePath) {
 			// Setup SQL review pipeline and policy.
-			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.ExternalID, repositoryList[0].repository.BranchFilter); err != nil {
+			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.ExternalID, repositoryList[0].repository.BranchFilter, repositoryList[0].repository.WebhookSecretToken); err != nil {
 				log.Error("failed to setup pipeline", zap.Error(err), zap.String("repository", repositoryList[0].repository.ExternalID))
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to setup SQL review pipeline").SetInternal(err)
 			}
