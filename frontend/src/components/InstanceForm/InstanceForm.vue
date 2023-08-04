@@ -705,8 +705,6 @@ const validateResourceId = async (
 };
 
 const updateEditState = async (instance: Instance) => {
-  console.log("updateEditState");
-
   basicInfo.value = extractBasicInfo(instance);
   const updatedEditState = extractDataSourceEditState(instance);
   dataSourceEditState.value.dataSources = updatedEditState.dataSources;
