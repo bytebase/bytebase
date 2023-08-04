@@ -1,8 +1,8 @@
 <template>
   <div class="flex items-center gap-x-3">
     <RolloutActionButton
-      v-for="(action, index) in taskRolloutActionList"
-      :key="index"
+      v-for="action in taskRolloutActionList"
+      :key="action"
       :action="action"
       :stage-rollout-action-list="stageRolloutActionList"
       @perform-action="$emit('perform-action', $event)"
