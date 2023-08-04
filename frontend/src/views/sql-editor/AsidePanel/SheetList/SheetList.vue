@@ -93,7 +93,6 @@ import {
 } from "./common";
 import TabItem from "./TabItem.vue";
 import SheetItem from "./SheetItem.vue";
-import { watchEffect } from "vue";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -239,15 +238,5 @@ watch(
 
 onMounted(() => {
   scrollToCurrentTabOrSheet();
-});
-
-watchEffect(() => {
-  if (dropdown.value) {
-    console.log(
-      dropdown.value.item.target.name,
-      dropdown.value.x,
-      dropdown.value.y
-    );
-  }
 });
 </script>

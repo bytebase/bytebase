@@ -96,17 +96,7 @@ export const provideSheetContext = () => {
   };
 
   context.events.on("refresh", ({ views }) => {
-    console.log("should refresh", views);
-    // views.forEach((view) => {
-    //   // If the panel is shown and the view is current view, re-fetch immediately.
-    //   if (context.showPanel.value && view === context.view.value) {
-    //     context.views[view].fetchSheetList();
-    //   } else {
-    //     // Otherwise reset the view status to isInitialized=false
-    //     context.views[view].isInitialized.value = false;
-    //     context.views[view].sheetList.value = [];
-    //   }
-    // });
+    // Nothing todo
   });
 
   provide(KEY, context);
