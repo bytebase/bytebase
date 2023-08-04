@@ -1540,19 +1540,23 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	case api.NotFound:
 		syncState = v1pb.State_DELETED
 	}
-	environment := ""
+	environment, effectiveEnvironment := "", ""
+	if database.EnvironmentID != "" {
+		environment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EnvironmentID)
+	}
 	if database.EffectiveEnvironmentID != "" {
-		environment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
+		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
 	}
 	return &v1pb.Database{
-		Name:               fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
-		Uid:                fmt.Sprintf("%d", database.UID),
-		SyncState:          syncState,
-		SuccessfulSyncTime: timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
-		Project:            fmt.Sprintf("%s%s", common.ProjectNamePrefix, database.ProjectID),
-		Environment:        environment,
-		SchemaVersion:      database.SchemaVersion,
-		Labels:             database.Labels,
+		Name:                 fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+		Uid:                  fmt.Sprintf("%d", database.UID),
+		SyncState:            syncState,
+		SuccessfulSyncTime:   timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
+		Project:              fmt.Sprintf("%s%s", common.ProjectNamePrefix, database.ProjectID),
+		Environment:          environment,
+		EffectiveEnvironment: effectiveEnvironment,
+		SchemaVersion:        database.SchemaVersion,
+		Labels:               database.Labels,
 	}
 }
 
