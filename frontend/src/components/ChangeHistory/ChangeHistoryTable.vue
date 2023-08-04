@@ -24,9 +24,10 @@
         <BBTableHeaderCell class="w-56" :title="columnList[3].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
         <BBTableHeaderCell :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-28" :title="columnList[6].title" />
+        <BBTableHeaderCell :title="columnList[6].title" />
         <BBTableHeaderCell class="w-28" :title="columnList[7].title" />
         <BBTableHeaderCell class="w-28" :title="columnList[8].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[9].title" />
       </template>
       <template v-else>
         <BBTableHeaderCell
@@ -83,9 +84,20 @@
           </router-link>
         </template>
       </BBTableCell>
+      <BBTableCell v-if="mode === 'DATABASE'">
+        <TextOverflowPopover
+          :content="
+            getAffectedTablesOfChangeHistory(history)
+              .map(getAffectedTableDisplayName)
+              .join(', ')
+          "
+          :max-length="100"
+          placement="bottom"
+        />
+      </BBTableCell>
       <BBTableCell>
-        <SQLPreviewPopover
-          :statement="history.statement"
+        <TextOverflowPopover
+          :content="history.statement"
           :max-length="100"
           placement="bottom"
         />
@@ -116,8 +128,9 @@ import {
   humanizeDate,
   extractUserResourceName,
   changeHistoryLink,
+  getAffectedTablesOfChangeHistory,
 } from "@/utils";
-import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
+import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 import {
   ChangeHistory,
@@ -127,6 +140,7 @@ import {
   changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
 import { useUserStore } from "@/store";
+import { AffectedTable } from "@/types/changeHistory";
 
 type Mode = "DATABASE" | "PROJECT";
 
@@ -162,6 +176,9 @@ const columnList = computed(() => {
       },
       {
         title: t("common.issue"),
+      },
+      {
+        title: t("db.tables"),
       },
       {
         title: "SQL",
@@ -211,6 +228,18 @@ const clickHistory = (section: number, row: number) => {
 const creatorOfChangeHistory = (history: ChangeHistory) => {
   const email = extractUserResourceName(history.creator);
   return useUserStore().getUserByEmail(email);
+};
+
+const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
+  const { schema, table, dropped } = affectedTable;
+  let name = table;
+  if (schema !== "") {
+    name = `${schema}.${table}`;
+  }
+  if (dropped) {
+    name = `${name} (deleted)`;
+  }
+  return name;
 };
 
 const allSelectionState = computed(() => {
