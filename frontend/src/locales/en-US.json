@@ -561,7 +561,7 @@
           "hours": "Hour(s)",
           "days": "Day(s)"
         },
-        "config-updated": "Configuration is updated",
+        "config-updated": "Configuration is updated. Need to restart Bytebase and re-login to take effect.",
         "plugin": {
           "openai": {
             "ai-augmentation": "AI Augmentation",
