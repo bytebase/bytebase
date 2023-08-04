@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/idp"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -156,6 +157,14 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	if p.config.FieldMapping.Email != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Email).(string); ok {
 			userInfo.Email = v
+		}
+	}
+	if p.config.FieldMapping.Phone != "" {
+		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Phone).(string); ok {
+			// Only set phone if it's valid.
+			if err := common.ValidatePhone(v); err == nil {
+				userInfo.Phone = v
+			}
 		}
 	}
 	return userInfo, nil

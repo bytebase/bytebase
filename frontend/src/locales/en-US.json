@@ -510,9 +510,10 @@
         "connection-security-skip-tls-verify": "Skip TLS verify for self-signed certificates",
         "user-information-mapping": "User information mapping",
         "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
-        "identifier": "Bytebase user identifier",
-        "display-name": "Bytebase user display name",
-        "email": "Bytebase user email",
+        "identifier": "Bytebase user's email",
+        "identifier-tips": "It should be a unique string. And if it is not in email format, it will be spliced with domain.",
+        "display-name": "Bytebase user's display name",
+        "phone": "Bytebase user's phone number",
         "auth-style": {
           "self": "Auth style",
           "in-params": {
