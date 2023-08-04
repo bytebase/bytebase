@@ -39,6 +39,7 @@ type TaskRunMessage struct {
 // FindTaskRunMessage is the message for finding task runs.
 type FindTaskRunMessage struct {
 	UID         *int
+	UIDs        *[]int
 	TaskUID     *int
 	StageUID    *int
 	PipelineUID *int
@@ -92,6 +93,9 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UIDs; v != nil {
+		where, args = append(where, fmt.Sprintf("task_run.id IN $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.TaskUID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
