@@ -88,7 +88,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.Equal(testEnvironment.Name, db2.Environment)
 	a.Equal(testEnvironment.Name, db2.EffectiveEnvironment)
 
-	// Update database environment for db2.
+	// Unset database environment for db2.
 	db2, err = ctl.databaseServiceClient.UpdateDatabase(ctx, &v1pb.UpdateDatabaseRequest{
 		Database: &v1pb.Database{
 			Name:        db2.Name,
