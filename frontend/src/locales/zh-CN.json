@@ -557,7 +557,7 @@
           "hours": "小时",
           "days": "天数"
         },
-        "config-updated": "配置已更新",
+        "config-updated": "配置已更新，需要重新启动 Bytebase 以及重新登录后生效。",
         "plugin": {
           "openai": {
             "ai-augmentation": "AI 增强",
