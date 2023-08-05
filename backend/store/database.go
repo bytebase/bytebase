@@ -93,7 +93,7 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 
 	// Compose labels.
 	var labelList []*api.DatabaseLabel
-	for key, value := range database.Labels {
+	for key, value := range database.Metadata.Labels {
 		labelList = append(labelList, &api.DatabaseLabel{
 			Key:   key,
 			Value: value,
@@ -120,12 +120,23 @@ type DatabaseMessage struct {
 	SyncState            api.SyncStatus
 	SuccessfulSyncTimeTs int64
 	SchemaVersion        string
-	Labels               map[string]string
 	Secrets              *storepb.Secrets
 	DataShare            bool
 	// ServiceName is the Oracle specific field.
 	ServiceName string
 	Metadata    *storepb.DatabaseMetadata
+}
+
+// GetEffectiveLabels gets the effective labels for a database.
+func (m *DatabaseMessage) GetEffectiveLabels() map[string]string {
+	ret := make(map[string]string)
+	for k, v := range m.Metadata.Labels {
+		ret[k] = v
+	}
+	// System default environment label.
+	// The value of bb.environment is resource ID of the environment.
+	ret[api.EnvironmentLabelKey] = m.EffectiveEnvironmentID
+	return ret
 }
 
 // UpdateDatabaseMessage is the mssage for updating a database.
@@ -137,7 +148,6 @@ type UpdateDatabaseMessage struct {
 	SyncState            *api.SyncStatus
 	SuccessfulSyncTimeTs *int64
 	SchemaVersion        *string
-	Labels               *map[string]string
 	SourceBackupID       *int
 	Secrets              *storepb.Secrets
 	DataShare            *bool
@@ -403,9 +413,6 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	); err != nil {
 		return nil, err
 	}
-	if err := s.setDatabaseLabels(ctx, tx, databaseUID, create.Labels, api.SystemBotID); err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -468,6 +475,8 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		set, args = append(set, fmt.Sprintf("service_name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Metadata; v != nil {
+		// We will skip writing the system label, environment.
+		delete(v.Labels, api.EnvironmentLabelKey)
 		metadataString, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
@@ -493,11 +502,6 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		&databaseUID,
 	); err != nil {
 		return nil, err
-	}
-	if patch.Labels != nil {
-		if err := s.setDatabaseLabels(ctx, tx, databaseUID, *(patch.Labels), updaterID); err != nil {
-			return nil, err
-		}
 	}
 	// When we update the project ID of the database, we should update the project ID of the related sheets in the same transaction.
 	if patch.ProjectID != nil {
@@ -658,9 +662,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	defer rows.Close()
 	for rows.Next() {
-		databaseMessage := DatabaseMessage{
-			Labels: make(map[string]string),
-		}
+		databaseMessage := DatabaseMessage{}
 		var keys, values []sql.NullString
 		var secretsString, metadataString string
 		if err := rows.Scan(
@@ -693,19 +695,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		}
 		databaseMessage.Metadata = &metadata
 
-		if len(keys) != len(values) {
-			return nil, errors.Errorf("invalid length of database label keys and values")
-		}
-		for i := 0; i < len(keys); i++ {
-			if !keys[i].Valid || !values[i].Valid {
-				continue
-			}
-			databaseMessage.Labels[keys[i].String] = values[i].String
-		}
-		// System default environment label.
-		// The value of bb.environment is resource ID of the environment.
-		databaseMessage.Labels[api.EnvironmentLabelKey] = databaseMessage.EffectiveEnvironmentID
-
 		databaseMessages = append(databaseMessages, &databaseMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -713,108 +702,4 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 
 	return databaseMessages, nil
-}
-
-func (s *Store) setDatabaseLabels(ctx context.Context, tx *Tx, databaseUID int, labels map[string]string, updaterID int) error {
-	oldLabels, err := s.getDatabaseLabels(ctx, tx, databaseUID)
-	if err != nil {
-		return err
-	}
-	upserts := make(map[string]string)
-	var deleteKeys []string
-	for key, value := range labels {
-		// We will skip writing the system label, environment.
-		if key == api.EnvironmentLabelKey {
-			continue
-		}
-		if oldValue, ok := oldLabels[key]; !ok || oldValue != value {
-			upserts[key] = value
-		}
-	}
-	for key := range oldLabels {
-		if _, ok := labels[key]; !ok {
-			deleteKeys = append(deleteKeys, key)
-		}
-	}
-	if err := s.upsertLabels(ctx, tx, databaseUID, upserts, updaterID); err != nil {
-		return err
-	}
-	return s.deleteLabels(ctx, tx, databaseUID, deleteKeys)
-}
-
-func (*Store) upsertLabels(ctx context.Context, tx *Tx, databaseUID int, labels map[string]string, updaterID int) error {
-	query := `
-		INSERT INTO db_label (
-			row_status,
-			creator_id,
-			updater_id,
-			database_id,
-			key,
-			value
-		)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT(database_id, key) DO UPDATE SET
-			row_status = excluded.row_status,
-			updater_id = excluded.updater_id,
-			value = excluded.value
-	`
-	for key, value := range labels {
-		if _, err := tx.ExecContext(ctx, query,
-			api.Normal,
-			updaterID,
-			updaterID,
-			databaseUID,
-			key,
-			value,
-		); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (*Store) deleteLabels(ctx context.Context, tx *Tx, databaseUID int, keys []string) error {
-	query := `
-		DELETE FROM db_label
-		WHERE database_id = $1 AND key = $2
-	`
-	for _, key := range keys {
-		if _, err := tx.ExecContext(ctx, query,
-			databaseUID,
-			key,
-		); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (*Store) getDatabaseLabels(ctx context.Context, tx *Tx, databaseUID int) (map[string]string, error) {
-	labels := make(map[string]string)
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			key,
-			value
-		FROM db_label
-		WHERE database_id = $1`,
-		databaseUID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var key, value string
-		if err := rows.Scan(
-			&key,
-			&value,
-		); err != nil {
-			return nil, err
-		}
-		labels[key] = value
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return labels, nil
 }
