@@ -111,6 +111,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	// Register dm driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
+	// Register risingwave driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/risingwave"
 
 	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"

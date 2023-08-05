@@ -1,5 +1,5 @@
-// Package pg is the plugin for PostgreSQL driver.
-package pg
+// Package risingwave is the plugin for RisingWave driver.
+package risingwave
 
 import (
 	"context"
@@ -53,7 +53,7 @@ var (
 )
 
 func init() {
-	db.Register(db.Postgres, newDriver)
+	db.Register(db.RisingWave, newDriver)
 }
 
 // Driver is the Postgres driver.
@@ -75,7 +75,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 	}
 }
 
-// Open opens a Postgres driver.
+// Open opens a RisingWave driver.
 func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
@@ -97,12 +97,6 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
-	// Neon requires new driver, however due to https://github.com/jackc/pgx/issues/1600, we have to
-	// stay at pgx/v4 to support SSH tunnelling. So we do a hack here to support Neon SSL following
-	// https://neon.tech/docs/connect/connectivity-issues#c-set-verify-full-for-golang-based-clients
-	if strings.HasSuffix(config.Host, ".neon.tech") {
-		connStr += " sslmode=verify-full"
-	}
 	connConfig, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, err
@@ -167,7 +161,6 @@ func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.Con
 	// Some postgres server default behavior is to use username as the database name if not specified,
 	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
 	guesses := []string{"postgres", username, "template1"}
-	//  dsn+" dbname=bytebase"
 	for _, guessDatabase := range guesses {
 		connConfig := *baseConnConfig
 		connConfig.Database = guessDatabase
