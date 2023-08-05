@@ -475,6 +475,8 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		set, args = append(set, fmt.Sprintf("service_name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Metadata; v != nil {
+		// We will skip writing the system label, environment.
+		delete(v.Labels, api.EnvironmentLabelKey)
 		metadataString, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
