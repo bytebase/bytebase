@@ -238,7 +238,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
-			patch.Labels = &request.Database.Labels
+			metadata := database.Metadata
+			metadata.Labels = request.Database.Labels
+			patch.Metadata = metadata
 		case "environment":
 			if request.Database.Environment == "" {
 				unsetEnvironment := ""
@@ -1556,7 +1558,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
 		SchemaVersion:        database.SchemaVersion,
-		Labels:               database.Labels,
+		Labels:               database.GetEffectiveLabels(),
 	}
 }
 
