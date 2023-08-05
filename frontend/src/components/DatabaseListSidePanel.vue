@@ -4,6 +4,7 @@
     :title="$t('common.databases')"
     :item-list="mixedDatabaseList"
     :allow-collapse="false"
+    :outline-item-class="'pt-0.5 pb-0.5'"
   />
 </template>
 
@@ -88,7 +89,7 @@ const databaseList = computed(() => {
 const databaseListByEnvironment = computed(() => {
   const envToDbMap: Map<string, BBOutlineItem[]> = new Map();
   for (const environment of environmentList.value) {
-    envToDbMap.set(environment.uid, []);
+    envToDbMap.set(environment.name, []);
   }
   const list = [...databaseList.value].filter(
     (db) =>
@@ -100,7 +101,9 @@ const databaseListByEnvironment = computed(() => {
   });
   for (const database of list) {
     const dbList = envToDbMap.get(
-      String(database.instanceEntity.environmentEntity.uid)
+      String(
+        database.environment || database.instanceEntity.environmentEntity.name
+      )
     )!;
     // dbList may be undefined if the environment is archived
     if (dbList) {
@@ -114,14 +117,14 @@ const databaseListByEnvironment = computed(() => {
 
   return environmentList.value
     .filter((environment) => {
-      const items = envToDbMap.get(environment.uid) ?? [];
+      const items = envToDbMap.get(environment.name) ?? [];
       return items.length > 0;
     })
     .map((environment): BBOutlineItem => {
       return {
         id: `bb.env.${environment.uid}`,
         name: environmentV1Name(environment),
-        childList: envToDbMap.get(environment.uid),
+        childList: envToDbMap.get(environment.name),
         childCollapse: true,
       };
     });
