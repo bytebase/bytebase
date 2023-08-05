@@ -40,7 +40,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 	if find.ID != nil {
 		v2Find.UID = find.ID
 	}
-	v2Find.IncludeAllDatabase = find.IncludeAllDatabase
 
 	database, err := s.GetDatabaseV2(ctx, v2Find)
 	if err != nil {
@@ -165,9 +164,6 @@ type FindDatabaseMessage struct {
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
 	ShowDeleted bool
-
-	// TODO(d): deprecate this field when we migrate all datasource to v1 store.
-	IncludeAllDatabase bool
 
 	// IgnoreCaseSensitive is used to ignore case sensitive when finding database.
 	IgnoreCaseSensitive bool
@@ -578,26 +574,8 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	return updatedDatabases, nil
 }
 
-func (s *Store) getDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) (*DatabaseMessage, error) {
-	databaseList, err := s.listDatabaseImplV2(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-	if len(databaseList) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("database not found with %v", find)}
-	}
-	if len(databaseList) > 1 {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases with %v, but expect 1", len(databaseList), find)}
-	}
-
-	return databaseList[0], nil
-}
-
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	if !find.IncludeAllDatabase {
-		where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
-	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
