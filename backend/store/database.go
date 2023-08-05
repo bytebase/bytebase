@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -639,12 +638,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			db.sync_status,
 			db.last_successful_sync_ts,
 			db.schema_version,
-			ARRAY_AGG (
-				db_label.key
-			) keys,
-			ARRAY_AGG (
-				db_label.value
-			) label_values,
 			db.secrets,
 			db.datashare,
 			db.service_name,
@@ -652,7 +645,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		FROM db
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
-		LEFT JOIN db_label ON db.id = db_label.database_id
 		WHERE %s
 		GROUP BY db.id, project.resource_id, instance.resource_id`, strings.Join(where, " AND ")),
 		args...,
@@ -662,8 +654,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	defer rows.Close()
 	for rows.Next() {
-		databaseMessage := DatabaseMessage{}
-		var keys, values []sql.NullString
+		databaseMessage := &DatabaseMessage{}
 		var secretsString, metadataString string
 		if err := rows.Scan(
 			&databaseMessage.UID,
@@ -675,8 +666,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.SyncState,
 			&databaseMessage.SuccessfulSyncTimeTs,
 			&databaseMessage.SchemaVersion,
-			pq.Array(&keys),
-			pq.Array(&values),
 			&secretsString,
 			&databaseMessage.DataShare,
 			&databaseMessage.ServiceName,
@@ -695,7 +684,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		}
 		databaseMessage.Metadata = &metadata
 
-		databaseMessages = append(databaseMessages, &databaseMessage)
+		databaseMessages = append(databaseMessages, databaseMessage)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
