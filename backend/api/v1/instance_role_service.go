@@ -300,7 +300,7 @@ func validateRole(dbType db.Type, upsert *db.DatabaseRoleUpsertMessage) error {
 		return status.Errorf(codes.InvalidArgument, "Invalid role name, role name cannot be empty")
 	}
 	switch dbType {
-	case db.Postgres:
+	case db.Postgres, db.RisingWave:
 		if v := upsert.ConnectionLimit; v != nil && *v < int32(-1) {
 			return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
 		}

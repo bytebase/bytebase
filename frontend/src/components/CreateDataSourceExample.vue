@@ -32,7 +32,8 @@
         v-if="
           props.engine === Engine.MYSQL ||
           props.engine === Engine.TIDB ||
-          props.engine === Engine.OCEANBASE
+          props.engine === Engine.OCEANBASE ||
+          props.engine === Engine.RISINGWAVE
         "
       >
         <i18n-t
@@ -211,7 +212,7 @@ const grantStatement = (
 CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'
 DEFAULT_ROLE = "ACCOUNTADMIN"
 DEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';
-        
+
 GRANT ROLE "ACCOUNTADMIN" TO USER bytebase;
 
 -- Option 2: grant more granular privileges
@@ -299,7 +300,7 @@ GRANT ALL PRIVILEGES ON FUTURE SESSION POLICYS IN DATABASE {{YOUR_DB_NAME}} TO R
 -- PIPE are not allowed to be bulk granted, you need to grant them one by one.
 GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE;
 `;
-      case Engine.POSTGRES:
+      case (Engine.POSTGRES, Engine.RISINGWAVE):
         return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
       case Engine.REDSHIFT:
         return "CREATE USER bytebase WITH PASSWORD 'YOUR_DB_PWD' CREATEUSER CREATEDB;";
@@ -330,7 +331,7 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
 CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'
 DEFAULT_ROLE = "ACCOUNTADMIN"
 DEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';
-        
+
 GRANT ROLE "ACCOUNTADMIN" TO USER bytebase;
 
 -- Option 2: grant more granular privileges
@@ -418,7 +419,7 @@ GRANT ALL PRIVILEGES ON FUTURE SESSION POLICYS IN DATABASE {{YOUR_DB_NAME}} TO R
 -- PIPE are not allowed to be bulk granted, you need to grant them one by one.
 GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE_READER;
 `;
-      case Engine.POSTGRES:
+      case (Engine.POSTGRES, Engine.RISINGWAVE):
         return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
       case Engine.MONGODB:
         return 'use admin;\ndb.createUser({\n\tuser: "bytebase", \n\tpwd: "YOUR_DB_PWD", \n\troles: [\n\t\t{role: "readAnyDatabase", db: "admin"},\n\t\t{role: "dbAdminAnyDatabase", db: "admin"},\n\t\t{role: "userAdminAnyDatabase", db: "admin"}\n\t]\n});';

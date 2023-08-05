@@ -80,6 +80,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 
 // CreateInstance creates an instance.
 func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.CreateInstanceRequest) (*v1pb.Instance, error) {
+	println(request.Instance.Engine)
 	if request.Instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}

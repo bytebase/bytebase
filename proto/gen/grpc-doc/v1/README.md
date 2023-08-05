@@ -767,6 +767,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
 | DM | 15 |  |
+| RISINGWAVE | 16 |  |
 
 
 

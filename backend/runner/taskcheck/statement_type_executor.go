@@ -82,7 +82,7 @@ func (exec *StatementTypeExecutor) Run(ctx context.Context, _ *store.TaskCheckRu
 	renderedStatement := backendutils.RenderStatement(statement, materials)
 
 	switch instance.Engine {
-	case db.Postgres:
+	case db.Postgres, db.RisingWave:
 		result, err = postgresqlStatementTypeCheck(renderedStatement, task.Type)
 		if err != nil {
 			return nil, err

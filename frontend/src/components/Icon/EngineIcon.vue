@@ -35,6 +35,10 @@ const ICON_PATH_MAP = new Map([
     Engine.OCEANBASE,
     new URL("@/assets/db-oceanbase.png", import.meta.url).href,
   ],
+  [
+    Engine.RISINGWAVE,
+    new URL("@/assets/db-risingwave.png", import.meta.url).href,
+  ],
 ]);
 const icon = computed(() => {
   return ICON_PATH_MAP.get(props.engine);

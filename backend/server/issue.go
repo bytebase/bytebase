@@ -1774,6 +1774,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 			stmt = fmt.Sprintf("%s WITH\n\t%s", stmt, strings.Join(list, "\n\t"))
 		}
 		return fmt.Sprintf("%s;", stmt), nil
+	case db.RisingWave:
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }

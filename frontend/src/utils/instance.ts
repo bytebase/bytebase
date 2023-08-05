@@ -29,6 +29,7 @@ export const supportedEngineList = () => {
     "MSSQL",
     "REDSHIFT",
     "DM",
+    "RISINGWAVE",
   ];
   return engines;
 };

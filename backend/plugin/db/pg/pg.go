@@ -54,6 +54,7 @@ var (
 
 func init() {
 	db.Register(db.Postgres, newDriver)
+	db.Register(db.RisingWave, newDriver)
 }
 
 // Driver is the Postgres driver.
