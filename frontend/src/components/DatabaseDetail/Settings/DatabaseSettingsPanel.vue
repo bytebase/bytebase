@@ -33,7 +33,10 @@ const databaseStore = useDatabaseV1Store();
 const envStore = useEnvironmentV1Store();
 
 const environment = computed(() => {
-  return envStore.getEnvironmentByName(props.database.environment);
+  return envStore.getEnvironmentByName(
+    props.database.environment ||
+      props.database.instanceEntity.environmentEntity.name
+  );
 });
 
 const handleSelectEnvironmentUID = async (uid: number | string) => {
