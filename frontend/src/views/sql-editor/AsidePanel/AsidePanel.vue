@@ -1,6 +1,10 @@
 <template>
   <div class="aside-panel h-full">
-    <NTabs v-model:value="mainTab" class="h-full" :tabs-padding="8">
+    <NTabs
+      v-model:value="tabStore.asidePanelTab"
+      class="h-full"
+      :tabs-padding="8"
+    >
       <NTabPane name="databases" :tab="$t('common.databases')">
         <NTabs v-model:value="databaseTab" type="segment" class="h-full">
           <NTabPane name="projects" :tab="$t('common.projects')">
@@ -96,7 +100,6 @@ const tabStore = useTabStore();
 const connectionTreeStore = useConnectionTreeStore();
 const searchPattern = ref("");
 
-const mainTab = ref<"databases" | "sheets">("databases");
 const databaseTab = ref<"projects" | "instances" | "history">(
   connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE
     ? "instances"
