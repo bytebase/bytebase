@@ -137,27 +137,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	return databaseMetadata, err
 }
 
-func getColumnList(definition string) ([]string, error) {
-	list := strings.Split(definition, ",")
-	if len(list) == 0 {
-		return nil, errors.Errorf("invalid column list definition: %q", definition)
-	}
-	var result []string
-	for _, name := range list {
-		name = strings.TrimSpace(name)
-		name = strings.Trim(name, `"`)
-		result = append(result, name)
-	}
-	return result, nil
-}
-
-func formatTableNameFromRegclass(name string) string {
-	if strings.Contains(name, ".") {
-		name = name[1+strings.Index(name, "."):]
-	}
-	return strings.Trim(name, `"`)
-}
-
 var listSchemaQuery = fmt.Sprintf(`
 SELECT nspname
 FROM pg_catalog.pg_namespace
