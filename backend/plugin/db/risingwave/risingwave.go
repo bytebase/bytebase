@@ -30,22 +30,6 @@ import (
 )
 
 var (
-	// ExcludedDatabaseList is the list of system or internal databases.
-	ExcludedDatabaseList = map[string]bool{
-		// Skip our internal "bytebase" database
-		"bytebase": true,
-		// Skip internal databases from cloud service providers
-		// see https://github.com/bytebase/bytebase/issues/30
-		// aws
-		"rdsadmin": true,
-		// gcp
-		"cloudsql":      true,
-		"cloudsqladmin": true,
-		// system templates.
-		"template0": true,
-		"template1": true,
-	}
-
 	// driverName is the driver name that our driver dependence register, now is "pgx".
 	driverName = "pgx"
 

@@ -42,19 +42,10 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var filteredDatabases []*storepb.DatabaseSchemaMetadata
-	for _, database := range databases {
-		// Skip all system databases
-		if _, ok := ExcludedDatabaseList[database.Name]; ok {
-			continue
-		}
-		filteredDatabases = append(filteredDatabases, database)
-	}
-
 	return &db.InstanceMetadata{
 		Version:       version,
 		InstanceRoles: instanceRoles,
-		Databases:     filteredDatabases,
+		Databases:     databases,
 	}, nil
 }
 
