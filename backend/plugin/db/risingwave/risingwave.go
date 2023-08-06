@@ -184,7 +184,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 
 // GetType returns the database type.
 func (*Driver) GetType() db.Type {
-	return db.Postgres
+	return db.RisingWave
 }
 
 // GetDB gets the database.
