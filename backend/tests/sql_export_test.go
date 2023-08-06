@@ -220,10 +220,10 @@ func TestSQLExport(t *testing.T) {
 func checkResults(a *require.Assertions, databaseName string, query string, affectedRows []*v1pb.QueryResult, results []*v1pb.QueryResult) {
 	a.Equal(len(affectedRows), len(results))
 	for idx, result := range results {
-		a.Equal("", result.Error, fmt.Sprintf("databaseName: %s", databaseName))
+		a.Equal("", result.Error, "%s: %s", databaseName, query)
 		result.Latency = nil
 		affectedRows[idx].Statement = strings.TrimSuffix(query, ";")
 		diff := cmp.Diff(affectedRows[idx], result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-		a.Equal("", diff, fmt.Sprintf("databaseName: %s", databaseName))
+		a.Equal("", diff, "%s: %s", databaseName, query)
 	}
 }

@@ -551,11 +551,32 @@ func convertValueToBytesInSQL(engine db.Type, value *v1pb.RowValue) []byte {
 	}
 }
 
+// quoteLiteral quotes a 'literal' (e.g. a parameter, often used to pass literal
+// to DDL and other statements that do not accept parameters) to be used as part
+// of an SQL statement.  For example:
+//
+//	exp_date := quoteLiteral("2023-01-05 15:00:00Z")
+//	err := db.Exec(fmt.Sprintf("CREATE ROLE my_user VALID UNTIL %s", exp_date))
+//
+// Any single quotes in name will be escaped. Any backslashes (i.e. "\") will be
+// replaced by two backslashes (i.e. "\\") .
+func quoteLiteral(literal string) string {
+	// substitute any single-quotes (') with two single-quotes ('')
+	literal = strings.Replace(literal, `'`, `''`, -1)
+	// replace any backslashes (\) with two backslashes (\\)
+	literal = strings.Replace(literal, `\`, `\\`, -1)
+
+	return `'` + literal + `'`
+}
+
 func escapeSQLString(engine db.Type, v []byte) []byte {
 	switch engine {
 	case db.Postgres, db.Redshift:
 		escapedStr := pq.QuoteLiteral(string(v))
 		return []byte(escapedStr)
+	case db.MySQL, db.MariaDB:
+		result := quoteLiteral(string(v))
+		return []byte(result)
 	default:
 		result := []byte("'")
 		s := strconv.Quote(string(v))
@@ -564,6 +585,16 @@ func escapeSQLString(engine db.Type, v []byte) []byte {
 		result = append(result, []byte(s)...)
 		result = append(result, '\'')
 		return result
+	}
+}
+
+func escapeSQLBytes(engine db.Type, v []byte) []byte {
+	switch engine {
+	case db.MySQL, db.MariaDB:
+		result := fmt.Sprintf("b'%b'", v)
+		return []byte(result)
+	default:
+		return escapeSQLString(engine, v)
 	}
 }
 
