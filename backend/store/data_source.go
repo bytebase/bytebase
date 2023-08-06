@@ -36,8 +36,7 @@ type DataSourceMessage struct {
 	SSHObfuscatedPassword   string
 	SSHObfuscatedPrivateKey string
 	// (deprecated) Output only.
-	UID        int
-	DatabaseID int
+	UID int
 }
 
 // Copy returns a copy of the data source message.
@@ -63,7 +62,6 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		SSHObfuscatedPassword:   m.SSHObfuscatedPassword,
 		SSHObfuscatedPrivateKey: m.SSHObfuscatedPrivateKey,
 		UID:                     m.UID,
-		DatabaseID:              m.DatabaseID,
 	}
 }
 
@@ -100,7 +98,6 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			data_source.id,
-			data_source.database_id,
 			data_source.name,
 			data_source.type,
 			data_source.username,
@@ -126,7 +123,6 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
 			&dataSourceMessage.UID,
-			&dataSourceMessage.DatabaseID,
 			&dataSourceMessage.ID,
 			&dataSourceMessage.Type,
 			&dataSourceMessage.Username,
@@ -173,17 +169,7 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 	}
 	defer tx.Rollback()
 
-	allDatabaseName := api.AllDatabaseName
-	allDatabase, err := s.getDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
-		InstanceID:         &instanceID,
-		DatabaseName:       &allDatabaseName,
-		IncludeAllDatabase: true,
-	})
-	if err != nil {
-		return err
-	}
-
-	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, allDatabase.UID, creatorID, dataSource); err != nil {
+	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource); err != nil {
 		return err
 	}
 
@@ -323,7 +309,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	return nil
 }
 
-func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, databaseUID, creatorID int, dataSource *DataSourceMessage) error {
+func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) error {
 	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
 	dataSourceOptions := storepb.DataSourceOptions{
 		Srv:                     dataSource.SRV,
@@ -346,7 +332,6 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 			creator_id,
 			updater_id,
 			instance_id,
-			database_id,
 			name,
 			type,
 			username,
@@ -359,8 +344,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 			options,
 			database
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-	`, creatorID, creatorID, instanceUID, databaseUID, dataSource.ID,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+	`, creatorID, creatorID, instanceUID, dataSource.ID,
 		dataSource.Type, dataSource.Username, dataSource.ObfuscatedPassword, dataSource.ObfuscatedSslKey,
 		dataSource.ObfuscatedSslCert, dataSource.ObfuscatedSslCa, dataSource.Host, dataSource.Port,
 		protoBytes, dataSource.Database,
@@ -372,8 +357,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 }
 
 // clearDataSourceImpl deletes dataSources by instance id and database id.
-func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID, databaseID int) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM data_source WHERE instance_id = $1 AND database_id = $2`, instanceID, databaseID); err != nil {
+func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID int) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM data_source WHERE instance_id = $1`, instanceID); err != nil {
 		return err
 	}
 	return nil
