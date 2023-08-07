@@ -45,6 +45,7 @@ export type IssueContext = {
   isGhostMode: Ref<boolean>;
   isPITRMode: Ref<boolean>;
   isTenantMode: Ref<boolean>;
+  isLegacyIssue: Ref<boolean>;
 
   // review status
   reviewContext: ReviewContext;

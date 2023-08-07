@@ -836,7 +836,8 @@
         "selected-stage": "Etapa seleccionada",
         "all-tasks": "Todas las tareas"
       }
-    }
+    },
+    "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",

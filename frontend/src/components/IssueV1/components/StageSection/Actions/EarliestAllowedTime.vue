@@ -58,7 +58,11 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
 import { useCurrentUserV1 } from "@/store";
 import { extractUserResourceName } from "@/utils";
-import { specForTask, useIssueContext } from "@/components/IssueV1";
+import {
+  notifyNotEditableLegacyIssue,
+  specForTask,
+  useIssueContext,
+} from "@/components/IssueV1";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 
@@ -106,6 +110,11 @@ const handleUpdateEarliestAllowedTime = (timestampMS: number | null) => {
       spec.earliestAllowedTime.setTime(timestampMS);
     }
   } else {
+    const spec = specForTask(issue.value, selectedTask.value);
+    if (!spec) {
+      notifyNotEditableLegacyIssue();
+      return;
+    }
     // TODO
   }
 };

@@ -187,6 +187,7 @@ import {
   isTaskEditable,
   specForTask,
   createEmptyLocalSheet,
+  notifyNotEditableLegacyIssue,
 } from "@/components/IssueV1/logic";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -519,8 +520,11 @@ const updateStatement = async (statement: string) => {
     }
   });
   const uniqSpecIds = new Set(specs.map((s) => s.id));
-
   console.log(`uniqSpecIds`, uniqSpecIds);
+  if (uniqSpecIds.size === 0) {
+    notifyNotEditableLegacyIssue();
+    return;
+  }
 
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) return;

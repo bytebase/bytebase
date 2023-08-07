@@ -170,12 +170,16 @@ export const useBaseIssueContext = (
       ).length > 1
     );
   });
+  const isLegacyIssue = computed(() => {
+    return !issue.value.plan && !issue.value.planEntity;
+  });
 
   return {
     phase,
     isGhostMode,
     isPITRMode,
     isTenantMode,
+    isLegacyIssue,
     events,
     reviewContext,
     activeStage,

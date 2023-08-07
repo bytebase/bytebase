@@ -12,6 +12,7 @@ import { useCurrentUserV1, experimentalFetchIssueByName } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   databaseForTask,
+  notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
@@ -169,6 +170,12 @@ export const useRollbackContext = () => {
       // }
     } else {
       // TODO: patch plan to reconcile rollout/stages/tasks
+      const spec = specForTask(issue.value, task.value);
+      if (!spec) {
+        notifyNotEditableLegacyIssue();
+        return;
+      }
+
       const config = task.value.databaseDataUpdate;
       if (config) {
         config.rollbackEnabled = on;

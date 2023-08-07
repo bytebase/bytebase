@@ -833,7 +833,8 @@
         "selected-stage": "选中的阶段",
         "all-tasks": "所有任务"
       }
-    }
+    },
+    "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
