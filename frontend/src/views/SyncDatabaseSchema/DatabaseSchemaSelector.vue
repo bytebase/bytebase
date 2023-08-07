@@ -89,15 +89,6 @@
               </span>
             </div>
           </template>
-          <template v-if="shouldShowMoreVersionButton" #suffixItem>
-            <div
-              class="w-full flex flex-row justify-start items-center pl-3 leading-8 text-accent cursor-pointer hover:opacity-80"
-              @click.prevent.capture="() => (state.showFeatureModal = true)"
-            >
-              <heroicons-solid:sparkles class="w-4 h-auto mr-1" />
-              {{ $t("database.sync-schema.more-version") }}
-            </div>
-          </template>
         </BBSelect>
       </div>
     </div>
@@ -167,13 +158,6 @@ const hasSyncSchemaFeature = computed(() => {
   return useSubscriptionV1Store().hasInstanceFeature(
     "bb.feature.sync-schema-all-versions",
     database.value?.instanceEntity
-  );
-});
-
-const shouldShowMoreVersionButton = computed(() => {
-  return (
-    hasSyncSchemaFeature.value &&
-    databaseChangeHistoryList(state.databaseId as string).length > 0
   );
 });
 
@@ -286,6 +270,13 @@ const databaseChangeHistoryList = (databaseId: string) => {
 };
 
 const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
+  const index = databaseChangeHistoryList(state.databaseId as string).findIndex(
+    (history) => history.uid === changeHistory.uid
+  );
+  if (index > 0 && !hasSyncSchemaFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
   state.changeHistory = changeHistory;
 };
 
