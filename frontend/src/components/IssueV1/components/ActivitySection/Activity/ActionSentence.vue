@@ -24,7 +24,7 @@ import {
 } from "@/utils";
 import { useSheetV1Store, useSheetStatementByUID } from "@/store";
 import TaskName from "./TaskName.vue";
-import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
+import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import StageName from "./StageName.vue";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
@@ -275,12 +275,12 @@ const Renderer = defineComponent({
   render: renderActionSentence,
 });
 
-const renderStatement = (statement: string) => {
-  return h(SQLPreviewPopover, {
-    statement,
+const renderStatement = (content: string) => {
+  return h(TextOverflowPopover, {
+    statement: content,
     maxLength: 50,
     width: 400,
-    statementClass: "text-main",
+    contentClass: "text-main",
   });
 };
 
