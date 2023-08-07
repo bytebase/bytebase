@@ -2,7 +2,7 @@
   <div class="w-full h-full relative">
     <IssueDetailPage v-if="ready" />
     <div v-else class="w-full h-full flex flex-col items-center justify-center">
-      <BBSpin />
+      <NSpin />
     </div>
   </div>
   <FeatureModal
@@ -16,6 +16,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTitle } from "@vueuse/core";
+import { NSpin } from "naive-ui";
 
 import { UNKNOWN_ID } from "@/types";
 import {

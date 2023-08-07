@@ -47,7 +47,7 @@ const link = computed(() => {
   }
 
   return {
-    path: `/issue-v1/${issue.uid}`,
+    path: `/issue/${issue.uid}`,
     query,
   };
 });

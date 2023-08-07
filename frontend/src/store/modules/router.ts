@@ -87,19 +87,6 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /issue-v1/:issueSlug
-        // Total 2 elements, 2nd element is the issue slug
-        const issueComponents = currentRoute.path.match(
-          "/issue-v1/([0-9a-zA-Z_-]+)"
-        ) || ["/", undefined];
-        if (issueComponents[1]) {
-          return {
-            issueSlug: issueComponents[1],
-          };
-        }
-      }
-
-      {
         // /db/:databaseSlug/table/:tableName
         // Total 3 elements, 2nd element is the database slug, 3rd element is the table name
         const databaseComponents = currentRoute.path.match(

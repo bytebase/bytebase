@@ -7,7 +7,7 @@
         return {
           id: item.name,
           name: item.title,
-          link: maybeReplaceV1Link(item.link),
+          link: item.link,
         };
       })
     "
@@ -63,11 +63,4 @@ const kbarActions = computed((): Action[] => {
   return actions;
 });
 useRegisterActions(kbarActions);
-
-const maybeReplaceV1Link = (link: string) => {
-  if (router.currentRoute.value.fullPath.includes("/issue-v1/")) {
-    return link.replace("/issue/", "/issue-v1/");
-  }
-  return link;
-};
 </script>

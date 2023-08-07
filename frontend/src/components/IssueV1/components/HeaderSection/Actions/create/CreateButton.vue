@@ -106,7 +106,7 @@ const doCreateIssue = async () => {
   };
   console.log("created composed issue", composedIssue);
 
-  router.push(`/issue-v1/${composedIssue.uid}`);
+  router.push(`/issue/${composedIssue.uid}`);
 
   return composedIssue;
 };

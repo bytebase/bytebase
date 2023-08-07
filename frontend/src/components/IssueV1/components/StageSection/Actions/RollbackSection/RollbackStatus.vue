@@ -140,7 +140,7 @@ const rollbackByIssue = ref(unknownIssue()); // TODO
 const tryRollbackTask = async () => {
   // const navigateToRollbackIssue = () => {
   //   if (!state.rollbackIssue) return;
-  //   router.push(`/issue-v1/${state.rollbackIssue.uid}`);
+  //   router.push(`/issue/${state.rollbackIssue.uid}`);
   // };
 
   // if (state.rollbackIssue) {
