@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
+import { CodeInspectorPlugin } from "code-inspector-plugin";
 import VueI18n from "@intlify/vite-plugin-vue-i18n";
 import Icons from "unplugin-icons/vite";
 import IconsResolver from "unplugin-icons/resolver";
@@ -35,6 +36,9 @@ export default defineConfig(() => {
       }),
       Icons(),
       yaml(),
+      CodeInspectorPlugin({
+        bundler: "vite",
+      }),
     ],
     build: {
       rollupOptions: {
