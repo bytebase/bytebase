@@ -328,10 +328,6 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			log.Error("Failed to get database", zap.Error(err))
 			return
 		}
-		if database.DatabaseName == api.AllDatabaseName {
-			// Skip backup job for wildcard database `*`.
-			continue
-		}
 		project, err := r.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 		if err != nil {
 			log.Error("Failed to get project", zap.Error(err))

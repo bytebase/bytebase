@@ -31,6 +31,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -40,6 +42,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
             - name: t4
               columns:
@@ -52,6 +56,8 @@
                   characterset: ""
                   collation: ""
                   comment: this is comment, aha
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 0
                   default: null
@@ -60,6 +66,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 0
                   default: null
@@ -68,6 +76,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: e
                   position: 0
                   default: null
@@ -76,6 +86,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -95,6 +107,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys:
                 - name: fk1
                   columns:
@@ -116,6 +130,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -133,6 +149,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys:
                 - name: fk1
                   columns:
