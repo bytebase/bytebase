@@ -74,6 +74,7 @@
 import { computed } from "vue";
 
 import {
+  notifyNotEditableLegacyIssue,
   planCheckRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
@@ -89,8 +90,14 @@ const planCheckRunList = computed(() => {
 });
 
 const runChecks = (taskList: Task[]) => {
+  const { plan } = issue.value;
+  if (!plan) {
+    notifyNotEditableLegacyIssue();
+    return;
+  }
+
   rolloutServiceClient.runPlanChecks({
-    name: issue.value.plan,
+    name: plan,
   });
   events.emit("status-changed", { eager: true });
   console.log(
