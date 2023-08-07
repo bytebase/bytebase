@@ -186,7 +186,9 @@ const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
     } as BBOutlineItem;
   });
 
-  return outlineItemList.filter((item) => (item.childList?.length || 0) > 0);
+  return outlineItemList.filter(
+    (item) => item.childList && item.childList.length > 0
+  );
 });
 
 const mixedDatabaseList = computed(() => {
