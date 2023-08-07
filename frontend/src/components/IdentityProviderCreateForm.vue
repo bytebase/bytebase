@@ -551,6 +551,208 @@
       </div>
     </div>
 
+    <!-- LDAP form group -->
+    <div
+      v-else-if="isDev() && state.type === IdentityProviderType.LDAP"
+      class="w-full flex flex-col justify-start items-start space-y-3"
+    >
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="text-lg font-medium mt-2">
+          {{ $t("settings.sso.form.identity-provider-information") }}
+        </p>
+        <p class="textinfolabel">
+          {{
+            $t("settings.sso.form.identity-provider-information-description")
+          }}
+        </p>
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          Host
+          <span class="text-red-600">*</span>
+        </p>
+        <input
+          v-model="configForLDAP.host"
+          :disabled="!allowEdit"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="e.g. ldap.example.com"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          Port
+          <span class="text-red-600">*</span>
+        </p>
+        <input
+          v-model="configForLDAP.port"
+          :disabled="!allowEdit"
+          type="number"
+          class="textfield mt-1 w-full"
+          placeholder="e.g. 389 or 636"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          Bind DN
+          <span class="text-red-600">*</span>
+        </p>
+        <input
+          v-model="configForLDAP.bindDn"
+          :disabled="!allowEdit"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="e.g. uid=system,ou=Users,dc=example,dc=com"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          Bind Password
+          <span class="text-red-600">*</span>
+        </p>
+        <input
+          v-model="configForLDAP.bindPassword"
+          :disabled="!allowEdit"
+          type="text"
+          class="textfield mt-1 w-full"
+          :placeholder="$t('common.sensitive-placeholder')"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          Base DN
+          <span class="text-red-600">*</span>
+        </p>
+        <input
+          v-model="configForLDAP.baseDn"
+          :disabled="!allowEdit"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="e.g. ou=users,dc=example,dc=com"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          User Filter
+          <span class="text-red-600">*</span>
+        </p>
+        <input
+          v-model="configForLDAP.userFilter"
+          :disabled="!allowEdit"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="e.g. (uid=%s)"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          {{ $t("settings.sso.form.security-protocol") }}
+          <span class="text-red-600">*</span>
+        </p>
+        <p class="textinfolabel mt-1">
+          <NRadioGroup v-model:value="configForLDAP.securityProtocol">
+            <NRadio value="starttls" label="StartTLS" />
+            <NRadio value="ldaps" label="LDAPS" />
+          </NRadioGroup>
+        </p>
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          {{ $t("settings.sso.form.connection-security") }}
+        </p>
+        <p class="textinfolabel mt-1">
+          <BBCheckbox
+            :title="$t('settings.sso.form.connection-security-skip-tls-verify')"
+            :value="configForLDAP.skipTlsVerify"
+            :disabled="!allowEdit"
+            @toggle="
+              () => (configForLDAP.skipTlsVerify = !configForLDAP.skipTlsVerify)
+            "
+          />
+        </p>
+      </div>
+
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="text-lg font-medium mt-2">
+          {{ $t("settings.sso.form.user-information-mapping") }}
+        </p>
+        <p class="textinfolabel">
+          {{ $t("settings.sso.form.user-information-mapping-description") }}
+          <a
+            href="https://www.bytebase.com/docs/administration/sso/ldap#configuration?source=console"
+            class="normal-link text-sm inline-flex flex-row items-center"
+            target="_blank"
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4" />
+          </a>
+        </p>
+      </div>
+      <p class="textinfolabel !mt-4">
+        {{ $t("settings.sso.form.user-information-mapping") }}
+      </p>
+      <div class="w-full grid grid-cols-[256px_1fr]">
+        <input
+          v-model="configForLDAP.fieldMapping!.identifier"
+          :disabled="!allowEdit"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="e.g. mail"
+        />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p class="flex flex-row justify-start items-center">
+            {{ $t("settings.sso.form.identifier")
+            }}<span class="text-red-600">*</span>
+            <NTooltip>
+              <template #trigger>
+                <heroicons-outline:information-circle
+                  class="ml-1 w-4 h-auto text-blue-500"
+                />
+              </template>
+              {{ $t("settings.sso.form.identifier-tips") }}
+            </NTooltip>
+          </p>
+        </div>
+      </div>
+      <div class="w-full grid grid-cols-[256px_1fr]">
+        <input
+          v-model="configForLDAP.fieldMapping!.displayName"
+          :disabled="!allowEdit"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="e.g. displayName"
+        />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p>
+            {{ $t("settings.sso.form.display-name") }}
+          </p>
+        </div>
+      </div>
+      <div class="w-full grid grid-cols-[256px_1fr]">
+        <input
+          v-model="configForLDAP.fieldMapping!.phone"
+          :disabled="!allowEdit"
+          type="text"
+          class="textfield mt-1 w-full"
+          placeholder="e.g. phone"
+        />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <heroicons-outline:arrow-right
+            class="mx-1 h-auto w-4 text-gray-300"
+          />
+          <p>
+            {{ $t("settings.sso.form.phone") }}
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Button group -->
     <div
       class="mt-4 space-x-4 w-full flex flex-row justify-between items-center"
@@ -638,6 +840,7 @@ import {
   OAuth2AuthStyle,
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
+  LDAPIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { pushNotification, useActuatorV1Store } from "@/store";
@@ -645,6 +848,7 @@ import {
   IdentityProviderTemplate,
   identityProviderTemplateList,
   identityProviderTypeToString,
+  isDev,
   openWindowForSSO,
 } from "@/utils";
 import { OAuthWindowEventPayload, ResourceId, ValidatedMessage } from "@/types";
@@ -687,6 +891,13 @@ const configForOIDC = ref<OIDCIdentityProviderConfig>(
     fieldMapping: FieldMapping.fromPartial({}),
   })
 );
+const configForLDAP = ref<LDAPIdentityProviderConfig>(
+  LDAPIdentityProviderConfig.fromPartial({
+    port: 389,
+    securityProtocol: "starttls",
+    fieldMapping: FieldMapping.fromPartial({}),
+  })
+);
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const selectedTemplate = ref<IdentityProviderTemplate>();
 
@@ -697,6 +908,13 @@ const currentIdentityProvider = computed(() => {
 });
 
 const identityProviderTypeList = computed(() => {
+  if (isDev()) {
+    return [
+      IdentityProviderType.OAUTH2,
+      IdentityProviderType.OIDC,
+      IdentityProviderType.LDAP,
+    ];
+  }
   return [IdentityProviderType.OAUTH2, IdentityProviderType.OIDC];
 });
 
@@ -733,6 +951,8 @@ const userDocLink = computed(() => {
     return "https://www.bytebase.com/docs/administration/sso/oauth2?source=console";
   } else if (state.type === IdentityProviderType.OIDC) {
     return "https://www.bytebase.com/docs/administration/sso/oidc?source=console";
+  } else if (state.type === IdentityProviderType.LDAP) {
+    return "https://www.bytebase.com/docs/administration/sso/ldap?source=console";
   }
   return "";
 });
@@ -778,6 +998,19 @@ const isFormCompleted = computed(() => {
     ) {
       return false;
     }
+  } else if (state.type === IdentityProviderType.LDAP) {
+    if (
+      !configForLDAP.value.host ||
+      !configForLDAP.value.port ||
+      !configForLDAP.value.bindDn ||
+      !configForLDAP.value.baseDn ||
+      !configForLDAP.value.userFilter ||
+      !configForLDAP.value.securityProtocol ||
+      !configForLDAP.value.fieldMapping?.identifier ||
+      (isCreating.value && !configForLDAP.value.bindPassword)
+    ) {
+      return false;
+    }
   } else {
     return false;
   }
@@ -803,7 +1036,8 @@ const allowCreate = computed(() => {
 const allowTestConnection = computed(() => {
   if (
     state.type === IdentityProviderType.OAUTH2 ||
-    state.type === IdentityProviderType.OIDC
+    state.type === IdentityProviderType.OIDC ||
+    state.type === IdentityProviderType.LDAP
   ) {
     if (isFormCompleted.value) {
       return true;
@@ -825,6 +1059,8 @@ const editedIdentityProvider = computed(() => {
     };
   } else if (tempIdentityProvider.type === IdentityProviderType.OIDC) {
     tempIdentityProvider.config!.oidcConfig = configForOIDC.value;
+  } else if (tempIdentityProvider.type === IdentityProviderType.LDAP) {
+    tempIdentityProvider.config!.ldapConfig = configForLDAP.value;
   } else {
     throw new Error(`identity provider type ${state.type} is invalid`);
   }
@@ -857,6 +1093,12 @@ onMounted(async () => {
       configForOIDC.value =
         tempIdentityProvider.config?.oidcConfig ||
         OIDCIdentityProviderConfig.fromPartial({
+          fieldMapping: FieldMapping.fromPartial({}),
+        });
+    } else if (tempIdentityProvider.type === IdentityProviderType.LDAP) {
+      configForLDAP.value =
+        tempIdentityProvider.config?.ldapConfig ||
+        LDAPIdentityProviderConfig.fromPartial({
           fieldMapping: FieldMapping.fromPartial({}),
         });
     }
@@ -933,12 +1175,31 @@ const validateResourceId = async (
   return [];
 };
 
-const testConnection = () => {
+const testConnection = async () => {
   if (
     state.type === IdentityProviderType.OAUTH2 ||
     state.type === IdentityProviderType.OIDC
   ) {
     openWindowForSSO(editedIdentityProvider.value);
+  } else if (state.type === IdentityProviderType.LDAP) {
+    try {
+      await identityProviderClient.testIdentityProvider({
+        identityProvider: editedIdentityProvider.value,
+      });
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `Request error occurred`,
+        description: (error as ClientError).details,
+      });
+      return;
+    }
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: "Test connection succeed",
+    });
   }
 };
 
@@ -1011,6 +1272,12 @@ const updateEditState = (updatedIdentityProvider: IdentityProvider) => {
       OIDCIdentityProviderConfig.fromPartial({
         fieldMapping: FieldMapping.fromPartial({}),
       });
+  } else if (tempIdentityProvider.type === IdentityProviderType.LDAP) {
+    configForLDAP.value =
+      tempIdentityProvider.config?.ldapConfig ||
+      LDAPIdentityProviderConfig.fromPartial({
+        fieldMapping: FieldMapping.fromPartial({}),
+      });
   }
 };
 
@@ -1032,6 +1299,8 @@ const handleCreateButtonClick = async () => {
     identityProviderCreate.config!.oauth2Config = configForOAuth2.value;
   } else if (state.type === IdentityProviderType.OIDC) {
     identityProviderCreate.config!.oidcConfig = configForOIDC.value;
+  } else if (state.type === IdentityProviderType.LDAP) {
+    identityProviderCreate.config!.ldapConfig = configForLDAP.value;
   } else {
     throw new Error(`identity provider type ${state.type} is invalid`);
   }
@@ -1075,8 +1344,11 @@ watch(
           selectedTemplate.value as IdentityProviderTemplate
         );
       }
-    } else if (state.type === IdentityProviderType.OIDC) {
-      // NOTE: We do not yet have templates for OIDC providers so resetting
+    } else if (
+      state.type === IdentityProviderType.OIDC ||
+      state.type === IdentityProviderType.LDAP
+    ) {
+      // NOTE: We do not yet have templates for OIDC nor LDAP providers so resetting
       // leftover values when we switch from other provider types to not confuse users.
       identityProvider.value.title = "";
       identityProvider.value.name = "";
