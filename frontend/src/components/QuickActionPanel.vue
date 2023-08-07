@@ -12,7 +12,7 @@
           <heroicons-outline:plus-sm class="w-5 h-5" />
         </button>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.add-instance") }}
         </h3>
@@ -26,7 +26,7 @@
           <heroicons-outline:users class="w-5 h-5" />
         </router-link>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.manage-user") }}
         </h3>
@@ -42,7 +42,7 @@
             <heroicons-outline:database class="w-5 h-5" />
           </button>
           <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
             {{ $t("quick-action.new-db") }}
           </h3>
@@ -60,7 +60,7 @@
             <heroicons-outline:pencil-alt class="w-5 h-5" />
           </button>
           <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
             {{ $t("database.alter-schema") }}
           </h3>
@@ -74,7 +74,7 @@
             <heroicons-outline:pencil class="w-5 h-5" />
           </button>
           <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
             {{ $t("database.change-data") }}
           </h3>
@@ -88,7 +88,7 @@
             <heroicons-outline:table-cells class="w-5 h-5" />
           </button>
           <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
             {{ $t("schema-designer.quick-action") }}
           </h3>
@@ -103,7 +103,7 @@
           <heroicons-outline:hand class="w-5 h-5" />
         </router-link>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.troubleshoot") }}
         </h3>
@@ -117,7 +117,7 @@
           <heroicons-outline:plus-sm class="w-5 h-5" />
         </button>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("environment.create") }}
         </h3>
@@ -134,7 +134,7 @@
           <heroicons-outline:selector class="transform rotate-90 w-5 h-5" />
         </button>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("common.reorder") }}
         </h3>
@@ -149,7 +149,7 @@
           <heroicons-outline:template class="w-5 h-5" />
         </button>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.new-project") }}
         </h3>
@@ -163,7 +163,7 @@
           <heroicons-outline:chevron-double-down class="w-5 h-5" />
         </button>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.transfer-in-db") }}
         </h3>
@@ -180,7 +180,7 @@
           <heroicons-outline:chevron-double-up class="w-5 h-5" />
         </button>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.transfer-out-db") }}
         </h3>
@@ -198,7 +198,7 @@
             <heroicons-outline:document-search class="w-5 h-5" />
           </button>
           <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
             {{ $t("quick-action.request-query") }}
           </h3>
@@ -215,7 +215,7 @@
             <heroicons-outline:document-download class="w-5 h-5" />
           </button>
           <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
             {{ $t("quick-action.request-export") }}
           </h3>
@@ -237,7 +237,7 @@
           <heroicons-outline:academic-cap class="w-5 h-5" />
         </button>
         <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight whitespace-nowrap"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("subscription.instance-assignment.assign-license") }}
         </h3>
