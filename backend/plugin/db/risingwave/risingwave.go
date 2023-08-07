@@ -291,13 +291,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		// We will execute the statement directly before "\\connect" statement.
 		// https://github.com/bytebase/bytebase/issues/202
 		if isSuperuserStatement(stmt) {
-			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-			if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
-				stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-			}
 			// Use superuser privilege to run privileged statements.
 			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", stmt, owner)
 			remainingStmts = append(remainingStmts, stmt)
