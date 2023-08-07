@@ -188,7 +188,7 @@
 <script lang="ts" setup>
 import { NDrawer, NDrawerContent } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import {
   bytesToString,
   hasWorkspacePermissionV1,
@@ -219,13 +219,11 @@ const props = defineProps<{
 
 const emit = defineEmits(["dismiss"]);
 
-const route = useRoute();
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const table = ref<TableMetadata>();
-const schemaName = (route.query.schema as string) || "";
 
 const database = computed(() => {
   return databaseV1Store.getDatabaseByName(props.databaseName);
@@ -254,14 +252,14 @@ const shouldShowColumnTable = computed(() => {
 });
 const getTableName = (tableName: string) => {
   if (hasSchemaProperty.value) {
-    return `"${schemaName}"."${tableName}"`;
+    return `"${props.schemaName}"."${tableName}"`;
   }
   return tableName;
 };
 
 onMounted(() => {
   const schemaList = dbSchemaStore.getSchemaList(database.value.name);
-  const schema = schemaList.find((schema) => schema.name === schemaName);
+  const schema = schemaList.find((schema) => schema.name === props.schemaName);
   if (schema) {
     table.value = schema.tables.find((table) => table.name === props.tableName);
   }
