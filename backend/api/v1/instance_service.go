@@ -236,7 +236,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	return convertToInstance(ins), nil
 }
 
-func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instanceName string, request *v1pb.SyncSlowQueriesRequest) (*emptypb.Empty, error) {
+func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instanceName string) (*emptypb.Empty, error) {
 	instance, err := s.getInstanceMessage(ctx, instanceName)
 	if err != nil {
 		return nil, err
@@ -324,10 +324,13 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 	return nil
 }
 
-func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, projectName string, request *v1pb.SyncSlowQueriesRequest) (*emptypb.Empty, error) {
+func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, projectName string) (*emptypb.Empty, error) {
 	project, err := s.getProjectMessage(ctx, projectName)
 	if err != nil {
 		return nil, err
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
 	}
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &project.ResourceID})
 	if err != nil {
@@ -379,9 +382,9 @@ func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, project
 func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.SyncSlowQueriesRequest) (*emptypb.Empty, error) {
 	switch {
 	case strings.HasPrefix(request.Parent, common.InstanceNamePrefix):
-		return s.syncSlowQueriesForInstance(ctx, request.Parent, request)
+		return s.syncSlowQueriesForInstance(ctx, request.Parent)
 	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
-		return s.syncSlowQueriesForProject(ctx, request.Parent, request)
+		return s.syncSlowQueriesForProject(ctx, request.Parent)
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
 	}

@@ -81,7 +81,7 @@ service InstanceService {
   rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*}:syncSlowQueries"
-      additional_bindings {post: "/v1/{parent=projects/*}/syncSlowQueries"}
+      additional_bindings {post: "/v1/{parent=projects/*}:syncSlowQueries"}
 
       body: "*"
     };
