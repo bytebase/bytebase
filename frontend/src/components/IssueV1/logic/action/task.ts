@@ -42,7 +42,7 @@ export const TaskRolloutActionMap: Record<Task_Status, TaskRolloutAction[]> = {
   [Task_Status.SKIPPED]: [],
   [Task_Status.DONE]: [],
   [Task_Status.FAILED]: ["RETRY", "SKIP"],
-  [Task_Status.CANCELED]: ["RESTART"],
+  [Task_Status.CANCELED]: ["RESTART", "SKIP"],
 
   // Only to make TypeScript compiler happy
   [Task_Status.STATUS_UNSPECIFIED]: [],
