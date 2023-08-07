@@ -142,7 +142,8 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		return err
 	}
 
-	var firstDatabase *store.DatabaseMessage
+	var enabledDatabases []*store.DatabaseMessage
+
 	for _, database := range databases {
 		if database.SyncState != api.OK {
 			continue
@@ -163,18 +164,17 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 				zap.String("database", database.DatabaseName),
 				zap.Int("databaseID", database.UID),
 				zap.Error(err))
+			continue
 		}
 
-		if firstDatabase == nil {
-			firstDatabase = database
-		}
+		enabledDatabases = append(enabledDatabases, database)
 	}
 
-	if firstDatabase == nil {
+	if len(enabledDatabases) == 0 {
 		return errors.Errorf("no database is available for slow query sync in instance %s", instance.ResourceID)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, firstDatabase)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, enabledDatabases[0])
 	if err != nil {
 		return err
 	}
@@ -193,7 +193,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 	latestLogDate = latestLogDate.Truncate(24 * time.Hour)
 	nextLogDate := latestLogDate.AddDate(0, 0, 1)
 
-	for _, database := range databases {
+	for _, database := range enabledDatabases {
 		statistics, exists := logMap[database.DatabaseName]
 		if !exists {
 			continue
