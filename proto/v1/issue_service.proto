@@ -37,6 +37,11 @@ service IssueService {
     option (google.api.method_signature) = "issue,update_mask";
   }
 
+  rpc SearchIssues(SearchIssuesRequest) returns (SearchIssuesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/issues:search"};
+    option (google.api.method_signature) = "";
+  }
+
   rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/issues/*}:comment"
@@ -137,6 +142,38 @@ message UpdateIssueRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SearchIssuesRequest {
+  // The parent, which owns this collection of issues.
+  // Format: projects/{project}.
+  // Use "projects/-" to search all issues.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of issues to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 issues will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `SearchIssues` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `SearchIssues` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Filter is used to filter issues returned in the list.
+  string filter = 4;
+}
+
+message SearchIssuesResponse {
+  // The issues from the specified request.
+  repeated Issue issues = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
 }
 
 message BatchUpdateIssuesRequest {
