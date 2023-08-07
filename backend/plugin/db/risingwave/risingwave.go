@@ -278,11 +278,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return 0, nil
 	}
 
-	owner, err := driver.GetCurrentDatabaseOwner()
-	if err != nil {
-		return 0, err
-	}
-
 	var remainingStmts []string
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
@@ -291,8 +286,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		// We will execute the statement directly before "\\connect" statement.
 		// https://github.com/bytebase/bytebase/issues/202
 		if isSuperuserStatement(stmt) {
-			// Use superuser privilege to run privileged statements.
-			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", stmt, owner)
 			remainingStmts = append(remainingStmts, stmt)
 		} else if isNonTransactionStatement(stmt) {
 			nonTransactionStmts = append(nonTransactionStmts, stmt)
@@ -312,11 +305,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 			return 0, err
 		}
 		defer tx.Rollback()
-
-		// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
-			return 0, err
-		}
 
 		sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
 		if err != nil {
