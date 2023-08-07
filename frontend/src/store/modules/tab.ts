@@ -48,6 +48,7 @@ export const useTabStore = defineStore("tab", () => {
   const tabs = ref(new Map<string, TabInfo>());
   const tabIdList = ref<string[]>([]);
   const currentTabId = ref<string>();
+  const asidePanelTab = ref<"databases" | "sheets">("databases");
 
   // getters
   const getTabById = (id: string) => {
@@ -87,6 +88,8 @@ export const useTabStore = defineStore("tab", () => {
     }
     currentTabId.value = id;
     tabs.value.set(id, newTab);
+
+    asidePanelTab.value = "databases";
 
     watchTab(newTab, false);
   };
@@ -255,6 +258,7 @@ export const useTabStore = defineStore("tab", () => {
     selectOrAddTempTab,
     selectOrAddSimilarTab,
     reset,
+    asidePanelTab,
   };
 });
 

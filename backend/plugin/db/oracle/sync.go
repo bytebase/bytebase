@@ -57,7 +57,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		}, nil
 	}
 
-	var databases []*storepb.DatabaseMetadata
+	var databases []*storepb.DatabaseSchemaMetadata
 	// sync CDB
 	cdbRows, err := driver.db.QueryContext(ctx, "SELECT name FROM v$database")
 	if err != nil {
@@ -66,7 +66,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	defer cdbRows.Close()
 
 	for cdbRows.Next() {
-		database := &storepb.DatabaseMetadata{}
+		database := &storepb.DatabaseSchemaMetadata{}
 		if err := cdbRows.Scan(&database.Name); err != nil {
 			return nil, err
 		}
@@ -95,7 +95,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	defer rows.Close()
 
 	for rows.Next() {
-		database := &storepb.DatabaseMetadata{}
+		database := &storepb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(&database.Name, &database.ServiceName); err != nil {
 			return nil, err
 		}
@@ -111,7 +111,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}, nil
 }
 
-func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
+func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -123,10 +123,10 @@ func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*stor
 		return nil, err
 	}
 
-	var result []*storepb.DatabaseMetadata
+	var result []*storepb.DatabaseSchemaMetadata
 
 	for _, schema := range schemas {
-		result = append(result, &storepb.DatabaseMetadata{
+		result = append(result, &storepb.DatabaseSchemaMetadata{
 			Name:        schema,
 			ServiceName: "",
 		})
@@ -136,7 +136,7 @@ func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*stor
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	if driver.schemaTenantMode {
 		return driver.syncSchemaTenantModeDBSchema(ctx)
 	}
@@ -164,7 +164,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		return nil, err
 	}
 
-	databaseMetadata := &storepb.DatabaseMetadata{
+	databaseMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:        driver.databaseName,
 		ServiceName: driver.serviceName,
 	}
@@ -178,7 +178,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	return databaseMetadata, nil
 }
 
-func (driver *Driver) syncSchemaTenantModeDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) syncSchemaTenantModeDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -198,7 +198,7 @@ func (driver *Driver) syncSchemaTenantModeDBSchema(ctx context.Context) (*storep
 		return nil, err
 	}
 
-	databaseMetadata := &storepb.DatabaseMetadata{
+	databaseMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:        driver.databaseName,
 		ServiceName: driver.serviceName,
 	}

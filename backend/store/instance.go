@@ -64,7 +64,6 @@ func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) 
 		composedInstance.DataSourceList = append(composedInstance.DataSourceList, &api.DataSource{
 			ID:         ds.UID,
 			InstanceID: instance.UID,
-			DatabaseID: ds.DatabaseID,
 			Name:       ds.ID,
 			Type:       ds.Type,
 			Username:   ds.Username,
@@ -267,13 +266,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		return nil, err
 	}
 
-	allDatabaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instanceID, &DatabaseMessage{DatabaseName: api.AllDatabaseName})
-	if err != nil {
-		return nil, err
-	}
-
 	for _, ds := range instanceCreate.DataSources {
-		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, allDatabaseUID, creatorID, ds); err != nil {
+		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, creatorID, ds); err != nil {
 			return nil, err
 		}
 	}
@@ -406,22 +400,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	if patch.DataSources != nil {
-		allDatabaseName := api.AllDatabaseName
-		allDatabase, err := s.getDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
-			InstanceID:         &instance.ResourceID,
-			DatabaseName:       &allDatabaseName,
-			IncludeAllDatabase: true,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		if err := s.clearDataSourceImpl(ctx, tx, instance.UID, allDatabase.UID); err != nil {
+		if err := s.clearDataSourceImpl(ctx, tx, instance.UID); err != nil {
 			return nil, err
 		}
 
 		for _, ds := range *patch.DataSources {
-			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, allDatabase.UID, patch.UpdaterID, ds); err != nil {
+			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, patch.UpdaterID, ds); err != nil {
 				return nil, err
 			}
 		}

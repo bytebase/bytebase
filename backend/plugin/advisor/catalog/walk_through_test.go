@@ -23,12 +23,12 @@ import (
 
 type testData struct {
 	Statement string
-	Want      *storepb.DatabaseMetadata
+	Want      *storepb.DatabaseSchemaMetadata
 	Err       *WalkThroughError
 }
 
 func TestMySQLWalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseMetadata{
+	originDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 	}
 
@@ -52,7 +52,7 @@ func TestMySQLWalkThroughForIncomplete(t *testing.T) {
 }
 
 func TestPostgreSQLWalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseMetadata{
+	originDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: "postgres",
 		Schemas: []*storepb.SchemaMetadata{
 			{
@@ -113,7 +113,7 @@ func convertInterfaceSliceToStringSlice(slice []any) []string {
 	return res
 }
 
-func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDatabase *storepb.DatabaseMetadata, record bool) {
+func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDatabase *storepb.DatabaseSchemaMetadata, record bool) {
 	tests := []testData{}
 	filepath := filepath.Join("test", file+".yaml")
 	yamlFile, err := os.Open(filepath)
@@ -175,11 +175,11 @@ func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDat
 }
 
 // convertToDatabaseMetadata only used for tests.
-func (d *DatabaseState) convertToDatabaseMetadata() *storepb.DatabaseMetadata {
+func (d *DatabaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetadata {
 	if d.deleted {
 		return nil
 	}
-	return &storepb.DatabaseMetadata{
+	return &storepb.DatabaseSchemaMetadata{
 		Name:         d.name,
 		CharacterSet: d.characterSet,
 		Collation:    d.collation,

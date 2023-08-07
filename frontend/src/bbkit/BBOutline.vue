@@ -39,12 +39,13 @@
         :item-list="item.childList"
         :allow-collapse="item.childCollapse"
         :level="level + 1"
+        :outline-item-class="outlineItemClass"
       />
       <router-link
         v-else-if="item.link"
         :to="item.link"
         class="outline-item group flex justify-between pr-1 py-1"
-        :class="'pl-' + (4 + level * 3)"
+        :class="['pl-' + (4 + level * 3), outlineItemClass]"
       >
         <div class="flex flex-row justify-start items-center truncate">
           <component :is="item.prefix" class="mr-1" />
@@ -86,12 +87,14 @@ const props = withDefaults(
     allowDelete?: boolean;
     allowCollapse?: boolean;
     level?: number;
+    outlineItemClass?: string;
   }>(),
   {
     id: "",
     allowDelete: false,
     allowCollapse: false,
     level: 0,
+    outlineItemClass: "",
   }
 );
 

@@ -8,6 +8,7 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
@@ -15,60 +16,74 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 		{
 			UID:          0,
 			DatabaseName: "hello",
-			Labels: map[string]string{
-				"bb.location":    "us-central1",
-				"bb.tenant":      "bytebase",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "us-central1",
+					"bb.tenant":      "bytebase",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          1,
 			DatabaseName: "hello",
-			Labels: map[string]string{
-				"bb.location":    "earth",
-				"bb.tenant":      "bytebase",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "earth",
+					"bb.tenant":      "bytebase",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          2,
 			DatabaseName: "hello",
-			Labels: map[string]string{
-				"bb.location":    "europe-west1",
-				"bb.tenant":      "bytebase",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "europe-west1",
+					"bb.tenant":      "bytebase",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          3,
 			DatabaseName: "hello",
-			Labels: map[string]string{
-				"bb.location":    "earth",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "earth",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          4,
 			DatabaseName: "world",
-			Labels: map[string]string{
-				"bb.location":    "earth",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "earth",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          5,
 			DatabaseName: "db1_us",
-			Labels: map[string]string{
-				"bb.location":    "us",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "us",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          6,
 			DatabaseName: "db1_eu",
-			Labels: map[string]string{
-				"bb.location":    "eu",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "eu",
+					"bb.environment": "dev",
+				},
 			},
 		},
 	}

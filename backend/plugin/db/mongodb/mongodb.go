@@ -240,18 +240,46 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 	}
 
 	result := &v1pb.QueryResult{
-		ColumnNames:     []string{"result"},
-		ColumnTypeNames: []string{"TEXT"},
+		ColumnNames:     []string{"_id", "result"},
+		ColumnTypeNames: []string{"TEXT", "TEXT"},
 	}
 	for _, v := range rows {
+		id := ""
+		m, ok := v.(map[string]any)
+		if ok {
+			// Flatten "_id" object.
+			idObj, ok := m["_id"]
+			if ok {
+				objIDObj, ok := idObj.(map[string]any)
+				if ok {
+					idStr, ok := objIDObj["$oid"].(string)
+					if ok {
+						id = idStr
+					}
+				}
+				if id == "" {
+					r, err := json.MarshalIndent(idObj, "", "	")
+					if err != nil {
+						return nil, err
+					}
+					id = string(r)
+				}
+			}
+
+			// Remove "_id" from result.
+			delete(m, "_id")
+			v = m
+		}
+
 		r, err := json.MarshalIndent(v, "", "	")
 		if err != nil {
 			return nil, err
 		}
 		result.Rows = append(result.Rows, &v1pb.QueryRow{
-			Values: []*v1pb.RowValue{{
-				Kind: &v1pb.RowValue_StringValue{StringValue: string(r)},
-			}},
+			Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_StringValue{StringValue: id}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}},
+			},
 		})
 	}
 	return result, nil
