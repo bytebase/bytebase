@@ -25,7 +25,7 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.20.3 as backend
+FROM --platform=$BUILDPLATFORM golang:1.20.3 as backend
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
@@ -34,10 +34,12 @@ ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
+ARG TARGETARCH
 ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
-RUN apt-get install -y gcc
+# RUN apt-get install -y gcc
+RUN apt-get update && apt-get install -y gcc-aarch64-linux-gnu
 
 WORKDIR /backend-build
 
@@ -50,11 +52,18 @@ COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
-RUN VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-    --tags "${RELEASE},embed_frontend" \
-    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
-    -o bytebase \
-    ./backend/bin/server/main.go
+RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; fi && \
+    VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
+        --tags "${RELEASE},embed_frontend" \
+        -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
+        -o bytebase \
+        ./backend/bin/server/main.go
+
+#RUN VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH go build \
+#    --tags "${RELEASE},embed_frontend" \
+#    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
+#    -o bytebase \
+#    ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
 FROM debian:bullseye-slim as monolithic
@@ -101,3 +110,11 @@ CMD ["--port", "80", "--data", "/var/opt/bytebase"]
 HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:80/healthz || exit 1
 
 ENTRYPOINT ["bytebase"]
+
+
+#helm \
+#--set "bytebase.option.port"=443 \
+#--set "bytebase.option.external-url"="https://bytebase.example.com" \
+#--set "bytebase.option.pg"="postgresql://postgres:5j7cvh2j@10.43.33.0:5432/postgres" \
+#--set "bytebase.version"=2.5.0 \
+#install bytebase-release bytebase/bytebase
