@@ -1002,7 +1002,6 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", instance.Engine, err)
 		}
 
-		fmt.Println("SchemaChangeType: ", fileInfo.repoInfo.project.SchemaChangeType)
 		advisorMode := advisor.SyntaxModeNormal
 		if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 			advisorMode = advisor.SyntaxModeSDL
