@@ -540,7 +540,7 @@ func convertValueToBytesInSQL(engine db.Type, value *v1pb.RowValue) []byte {
 	case *v1pb.RowValue_BoolValue:
 		return []byte(strconv.FormatBool(value.GetBoolValue()))
 	case *v1pb.RowValue_BytesValue:
-		return escapeSQLString(engine, value.GetBytesValue())
+		return escapeSQLBytes(engine, value.GetBytesValue())
 	case *v1pb.RowValue_NullValue:
 		return []byte("NULL")
 	case *v1pb.RowValue_ValueValue:
@@ -564,6 +564,20 @@ func escapeSQLString(engine db.Type, v []byte) []byte {
 		result = append(result, []byte(s)...)
 		result = append(result, '\'')
 		return result
+	}
+}
+
+func escapeSQLBytes(engine db.Type, v []byte) []byte {
+	switch engine {
+	case db.MySQL, db.MariaDB:
+		result := []byte("B'")
+		s := fmt.Sprintf("%b", v)
+		s = s[1 : len(s)-1]
+		result = append(result, []byte(s)...)
+		result = append(result, '\'')
+		return result
+	default:
+		return escapeSQLString(engine, v)
 	}
 }
 

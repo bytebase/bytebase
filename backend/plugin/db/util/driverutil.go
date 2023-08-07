@@ -306,6 +306,8 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 		return data, nil
 	}
 	for rows.Next() {
+		// wantBytesValue want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
+		wantBytesValue := make([]bool, len(columnTypes))
 		scanArgs := make([]any, len(columnTypes))
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
@@ -318,6 +320,9 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 				scanArgs[i] = new(sql.NullInt64)
 			case "FLOAT":
 				scanArgs[i] = new(sql.NullFloat64)
+			case "BIT", "VARBIT":
+				wantBytesValue[i] = true
+				scanArgs[i] = new(sql.NullString)
 			default:
 				scanArgs[i] = new(sql.NullString)
 			}
@@ -338,7 +343,11 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String}})
+				if wantBytesValue[i] {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte(v.String)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String}})
+				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
