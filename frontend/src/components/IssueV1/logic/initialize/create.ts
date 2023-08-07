@@ -30,6 +30,7 @@ import { rolloutServiceClient } from "@/grpcweb";
 import { TemplateType } from "@/plugins";
 import { nextUID } from "../base";
 import {
+  extractSheetUID,
   getPipelineFromDeploymentScheduleV1,
   getSheetStatement,
   instanceV1HasAlterSchema,
@@ -318,9 +319,20 @@ export const isValidStage = (stage: Stage): boolean => {
 
     if (TaskTypeListWithStatement.includes(task.type)) {
       const sheetName = sheetNameOfTaskV1(task);
-      const sheet = getLocalSheetByName(sheetName);
-      if (getSheetStatement(sheet).length === 0) {
-        return false;
+      const uid = extractSheetUID(sheetName);
+      if (uid.startsWith("-")) {
+        const sheet = getLocalSheetByName(sheetName);
+        if (getSheetStatement(sheet).length === 0) {
+          return false;
+        }
+      } else {
+        const sheet = useSheetV1Store().getSheetByName(sheetName);
+        if (!sheet) {
+          return false;
+        }
+        if (getSheetStatement(sheet).length === 0) {
+          return false;
+        }
       }
     }
   }
