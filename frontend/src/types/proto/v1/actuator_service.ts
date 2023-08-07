@@ -95,6 +95,12 @@ export interface ActuatorInfo {
   gitopsWebhookUrl: string;
   /** debug flag means if the debug mode is enabled. */
   debug: boolean;
+  /**
+   * development_use_v2_scheduler flag means if the server uses the v2 task run scheduler.
+   * this flag is only used for development purpose and
+   * will be removed once we switch to the v2 scheduler.
+   */
+  developmentUseV2Scheduler: boolean;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -532,6 +538,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     workspaceId: "",
     gitopsWebhookUrl: "",
     debug: false,
+    developmentUseV2Scheduler: false,
   };
 }
 
@@ -581,6 +588,9 @@ export const ActuatorInfo = {
     }
     if (message.debug === true) {
       writer.uint32(120).bool(message.debug);
+    }
+    if (message.developmentUseV2Scheduler === true) {
+      writer.uint32(800).bool(message.developmentUseV2Scheduler);
     }
     return writer;
   },
@@ -697,6 +707,13 @@ export const ActuatorInfo = {
 
           message.debug = reader.bool();
           continue;
+        case 100:
+          if (tag !== 800) {
+            break;
+          }
+
+          message.developmentUseV2Scheduler = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -723,6 +740,9 @@ export const ActuatorInfo = {
       workspaceId: isSet(object.workspaceId) ? String(object.workspaceId) : "",
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
       debug: isSet(object.debug) ? Boolean(object.debug) : false,
+      developmentUseV2Scheduler: isSet(object.developmentUseV2Scheduler)
+        ? Boolean(object.developmentUseV2Scheduler)
+        : false,
     };
   },
 
@@ -743,6 +763,8 @@ export const ActuatorInfo = {
     message.workspaceId !== undefined && (obj.workspaceId = message.workspaceId);
     message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
     message.debug !== undefined && (obj.debug = message.debug);
+    message.developmentUseV2Scheduler !== undefined &&
+      (obj.developmentUseV2Scheduler = message.developmentUseV2Scheduler);
     return obj;
   },
 
@@ -767,6 +789,7 @@ export const ActuatorInfo = {
     message.workspaceId = object.workspaceId ?? "";
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
     message.debug = object.debug ?? false;
+    message.developmentUseV2Scheduler = object.developmentUseV2Scheduler ?? false;
     return message;
   },
 };

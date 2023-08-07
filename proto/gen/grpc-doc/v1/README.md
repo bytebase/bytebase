@@ -620,6 +620,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
+| development_use_v2_scheduler | [bool](#bool) |  | development_use_v2_scheduler flag means if the server uses the v2 task run scheduler. this flag is only used for development purpose and will be removed once we switch to the v2 scheduler. |
 
 
 
