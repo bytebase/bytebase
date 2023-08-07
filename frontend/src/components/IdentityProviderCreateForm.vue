@@ -305,6 +305,7 @@
           />
           <p class="flex flex-row justify-start items-center">
             {{ $t("settings.sso.form.identifier") }}
+            <span class="text-red-600">*</span>
             <NTooltip>
               <template #trigger>
                 <heroicons-outline:information-circle
@@ -504,6 +505,7 @@
           />
           <p class="flex flex-row justify-start items-center">
             {{ $t("settings.sso.form.identifier") }}
+            <span class="text-red-600">*</span>
             <NTooltip>
               <template #trigger>
                 <heroicons-outline:information-circle
