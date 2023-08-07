@@ -95,7 +95,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		where, args = append(where, fmt.Sprintf("task_run.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.UIDs; v != nil {
-		where, args = append(where, fmt.Sprintf("task_run.id IN $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("task_run.id = ANY($%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.TaskUID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
