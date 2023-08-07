@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -274,8 +273,7 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 			return nil, status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
 		}
 
-		var firstDatabase string
-		var errs error
+		var enabledDatabases []*store.DatabaseMessage
 		for _, database := range databases {
 			if database.SyncState != api.OK {
 				continue
@@ -291,19 +289,14 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 				defer driver.Close(ctx)
 				return driver.CheckSlowQueryLogEnabled(ctx)
 			}(); err != nil {
-				errs = multierr.Append(errs, err)
+				log.Warn("slow query log is not enabled", zap.String("database", database.DatabaseName), zap.Error(err))
+				continue
 			}
 
-			if firstDatabase == "" {
-				firstDatabase = database.DatabaseName
-			}
+			enabledDatabases = append(enabledDatabases, database)
 		}
 
-		if errs != nil {
-			return nil, status.Errorf(codes.FailedPrecondition, "slow query log is not enabled: %s", errs.Error())
-		}
-
-		if firstDatabase == "" {
+		if len(enabledDatabases) == 0 {
 			return nil, status.Errorf(codes.FailedPrecondition, "no database enabled pg_stat_statements")
 		}
 
