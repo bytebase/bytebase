@@ -48,7 +48,11 @@ const { t } = useI18n();
 const engine = computed(() => props.database.instanceEntity.engine);
 
 const hasSchemaProperty = computed(() => {
-  return engine.value === Engine.POSTGRES || engine.value === Engine.SNOWFLAKE;
+  return (
+    engine.value === Engine.POSTGRES ||
+    engine.value === Engine.SNOWFLAKE ||
+    engine.value === Engine.RISINGWAVE
+  );
 });
 
 const columnList = computed(() => [

@@ -206,7 +206,8 @@ const hasSchemaProperty = computed(() => {
     databaseEngine.value === Engine.ORACLE ||
     databaseEngine.value === Engine.DM ||
     databaseEngine.value === Engine.MSSQL ||
-    databaseEngine.value === Engine.REDSHIFT
+    databaseEngine.value === Engine.REDSHIFT ||
+    databaseEngine.value === Engine.RISINGWAVE
   );
 });
 

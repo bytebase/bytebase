@@ -60,7 +60,8 @@ const hasSchemaProperty = computed(() => {
     engine.value === Engine.SNOWFLAKE ||
     engine.value === Engine.ORACLE ||
     engine.value === Engine.DM ||
-    engine.value === Engine.MSSQL
+    engine.value === Engine.MSSQL ||
+    engine.value === Engine.RISINGWAVE
   );
 });
 

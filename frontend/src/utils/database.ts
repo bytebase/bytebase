@@ -166,6 +166,7 @@ export const hasSchemaProperty = (databaseEngine: Engine) => {
     databaseEngine === Engine.SNOWFLAKE ||
     databaseEngine === Engine.ORACLE ||
     databaseEngine === Engine.MSSQL ||
-    databaseEngine === Engine.REDSHIFT
+    databaseEngine === Engine.REDSHIFT ||
+    databaseEngine === Engine.RISINGWAVE
   );
 };
