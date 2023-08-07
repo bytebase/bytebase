@@ -279,8 +279,30 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 }
 
 var listViewQuery = `
-SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views` + fmt.Sprintf(`
-WHERE schemaname NOT IN (%s);`, systemSchemas)
+WITH all_views AS (
+  SELECT
+    schema_id,
+    name,
+    definition
+  FROM
+    rw_materialized_views
+  UNION
+  ALL
+  SELECT
+    schema_id,
+    name,
+    definition
+  FROM
+    rw_views
+)
+SELECT
+  S.name AS schema_name,
+  all_views.name AS view_name,
+  definition
+FROM
+  all_views
+  JOIN rw_schemas S ON all_views.schema_id = S.id
+  AND S.name NOT IN ` + fmt.Sprintf("(%s)", systemSchemas)
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
@@ -294,8 +316,8 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	for rows.Next() {
 		view := &storepb.ViewMetadata{}
 		var schemaName string
-		var def, comment sql.NullString
-		if err := rows.Scan(&schemaName, &view.Name, &def, &comment); err != nil {
+		var def sql.NullString
+		if err := rows.Scan(&schemaName, &view.Name, &def); err != nil {
 			return nil, err
 		}
 		// Return error on NULL view definition.
@@ -304,9 +326,7 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", schemaName, view.Name)
 		}
 		view.Definition = def.String
-		if comment.Valid {
-			view.Comment = comment.String
-		}
+		view.Comment = ""
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
@@ -314,58 +334,9 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 		return nil, err
 	}
 
-	for schemaName, list := range viewMap {
-		for _, view := range list {
-			dependencies, err := getViewDependencies(txn, schemaName, view.Name)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
-			}
-			view.DependentColumns = dependencies
-		}
-	}
+	// TODO: RisingWave doesn't support view dependencies analyze yet.
 
 	return viewMap, nil
-}
-
-// getViewDependencies gets the dependencies of a view.
-func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependentColumn, error) {
-	var result []*storepb.DependentColumn
-
-	query := fmt.Sprintf(`
-		SELECT source_ns.nspname as source_schema,
-	  		source_table.relname as source_table,
-	  		pg_attribute.attname as column_name
-	  	FROM pg_depend
-	  		JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid
-	  		JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid
-	  		JOIN pg_class as source_table ON pg_depend.refobjid = source_table.oid
-	  		JOIN pg_attribute ON pg_depend.refobjid = pg_attribute.attrelid
-	  		    AND pg_depend.refobjsubid = pg_attribute.attnum
-	  		JOIN pg_namespace dependent_ns ON dependent_ns.oid = dependent_view.relnamespace
-	  		JOIN pg_namespace source_ns ON source_ns.oid = source_table.relnamespace
-	  	WHERE
-	  		dependent_ns.nspname = '%s'
-	  		AND dependent_view.relname = '%s'
-	  		AND pg_attribute.attnum > 0
-	  	ORDER BY 1,2,3;
-	`, schemaName, viewName)
-
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		dependentColumn := &storepb.DependentColumn{}
-		if err := rows.Scan(&dependentColumn.Schema, &dependentColumn.Table, &dependentColumn.Column); err != nil {
-			return nil, err
-		}
-		result = append(result, dependentColumn)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return result, nil
 }
 
 var listIndexQuery = `
