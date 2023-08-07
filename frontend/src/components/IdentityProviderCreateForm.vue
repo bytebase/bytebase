@@ -504,10 +504,11 @@
           />
           <p>
             {{ $t("settings.sso.form.identifier") }}
-            <span class="text-red-600">*</span>
             <NTooltip>
               <template #trigger>
-                <heroicons-solid:information-circle class="w-5 h-5" />
+                <heroicons-outline:information-circle
+                  class="ml-1 w-4 h-auto text-blue-500"
+                />
               </template>
               {{ $t("settings.sso.form.identifier-tips") }}
             </NTooltip>
