@@ -502,7 +502,7 @@
           <heroicons-outline:arrow-right
             class="mx-1 h-auto w-4 text-gray-300"
           />
-          <p>
+          <p class="flex flex-row justify-start items-center">
             {{ $t("settings.sso.form.identifier") }}
             <NTooltip>
               <template #trigger>
