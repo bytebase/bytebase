@@ -247,7 +247,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 func (s *Store) createPendingTaskRunsTx(ctx context.Context, tx *Tx, creates ...*TaskRunMessage) error {
 	// TODO(p0ny): batch create.
 	for _, create := range creates {
-		if err := s.createTaskRunImpl(ctx, tx, create, create.CreatorID); err != nil {
+		if err := s.createTaskRunImpl(ctx, tx, create, api.TaskRunPending, create.CreatorID); err != nil {
 			return err
 		}
 	}
@@ -271,7 +271,7 @@ func (*Store) checkTaskRunsExist(ctx context.Context, tx *Tx, taskIDs []int, sta
 }
 
 // createTaskRunImpl creates a new taskRun.
-func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, creatorID int) error {
+func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, status api.TaskRunStatus, creatorID int) error {
 	query := `
 		INSERT INTO task_run (
 			creator_id,
@@ -286,7 +286,7 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 		creatorID,
 		create.TaskUID,
 		create.Name,
-		api.TaskRunRunning,
+		status,
 	); err != nil {
 		return err
 	}
