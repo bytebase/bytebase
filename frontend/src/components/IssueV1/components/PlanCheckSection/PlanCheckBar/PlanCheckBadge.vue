@@ -8,6 +8,7 @@
   <button
     class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
     :class="buttonClasses"
+    @click="$emit('click')"
   >
     <template v-if="status === PlanCheckRun_Status.RUNNING">
       <TaskSpinner class="-ml-1 mr-1.5 h-4 w-4 text-info" />
@@ -56,6 +57,9 @@ import { planCheckRunResultStatus } from "@/components/IssueV1/logic";
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   type: PlanCheckRun_Type;
+}>();
+defineEmits<{
+  (event: "click"): void;
 }>();
 const { t } = useI18n();
 

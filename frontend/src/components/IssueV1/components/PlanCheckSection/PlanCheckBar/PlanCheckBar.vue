@@ -64,14 +64,24 @@
       {{ $t("task.task-checks") }}
     </div>
 
-    <PlanCheckBadgeBar :plan-check-run-list="planCheckRunList" />
+    <PlanCheckBadgeBar
+      :plan-check-run-list="planCheckRunList"
+      @select-type="selectedType = $event"
+    />
 
     <PlanCheckRunButton @run-checks="runChecks" />
+
+    <PlanCheckPanel
+      v-if="planCheckRunList.length > 0 && selectedType"
+      :selected-type="selectedType"
+      :plan-check-run-list="planCheckRunList"
+      @close="selectedType = undefined"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import {
   notifyNotEditableLegacyIssue,
@@ -80,10 +90,12 @@ import {
 } from "@/components/IssueV1/logic";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckRunButton from "./PlanCheckRunButton.vue";
-import { Task } from "@/types/proto/v1/rollout_service";
+import { PlanCheckRun_Type, Task } from "@/types/proto/v1/rollout_service";
 import { rolloutServiceClient } from "@/grpcweb";
+import PlanCheckPanel from "./PlanCheckPanel.vue";
 
 const { issue, selectedTask, events } = useIssueContext();
+const selectedType = ref<PlanCheckRun_Type>();
 
 const planCheckRunList = computed(() => {
   return planCheckRunListForTask(issue.value, selectedTask.value);

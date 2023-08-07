@@ -54,6 +54,7 @@
       :key="group.type"
       :type="group.type"
       :plan-check-run-list="group.list"
+      @click="$emit('select-type', group.type)"
     />
   </div>
 </template>
@@ -66,19 +67,19 @@ import {
   PlanCheckRun_Type,
 } from "@/types/proto/v1/rollout_service";
 import PlanCheckBadge from "./PlanCheckBadge.vue";
+import { groupBy } from "@/utils/collections";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   selectedType?: PlanCheckRun_Type;
 }>();
 
+defineEmits<{
+  (event: "select-type", type: PlanCheckRun_Type): void;
+}>();
+
 const planCheckRunsGroupByType = computed(() => {
-  const groups = new Map<PlanCheckRun_Type, PlanCheckRun[]>();
-  for (const check of props.planCheckRunList) {
-    const list = groups.get(check.type) ?? [];
-    list.push(check);
-    groups.set(check.type, list);
-  }
+  const groups = groupBy(props.planCheckRunList, (checkRun) => checkRun.type);
   // TODO: sort groups by type
   return Array.from(groups.entries()).map(([type, list]) => ({
     type,
