@@ -168,7 +168,7 @@ const toggleActive = async (instance: ComposedInstance, active: boolean) => {
       // API endpoint to sync slow queries from the instance immediately.
       try {
         await useGracefulRequest(() =>
-          slowQueryStore.syncSlowQueriesByInstance(instance.name)
+          slowQueryStore.syncSlowQueries(instance.name)
         );
         pushNotification({
           module: "bytebase",
