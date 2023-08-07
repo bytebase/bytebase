@@ -39,6 +39,7 @@ type TaskRunMessage struct {
 // FindTaskRunMessage is the message for finding task runs.
 type FindTaskRunMessage struct {
 	UID         *int
+	UIDs        *[]int
 	TaskUID     *int
 	StageUID    *int
 	PipelineUID *int
@@ -92,6 +93,9 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UIDs; v != nil {
+		where, args = append(where, fmt.Sprintf("task_run.id = ANY($%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.TaskUID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
@@ -243,7 +247,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 func (s *Store) createPendingTaskRunsTx(ctx context.Context, tx *Tx, creates ...*TaskRunMessage) error {
 	// TODO(p0ny): batch create.
 	for _, create := range creates {
-		if err := s.createTaskRunImpl(ctx, tx, create, create.CreatorID); err != nil {
+		if err := s.createTaskRunImpl(ctx, tx, create, api.TaskRunPending, create.CreatorID); err != nil {
 			return err
 		}
 	}
@@ -267,7 +271,7 @@ func (*Store) checkTaskRunsExist(ctx context.Context, tx *Tx, taskIDs []int, sta
 }
 
 // createTaskRunImpl creates a new taskRun.
-func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, creatorID int) error {
+func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, status api.TaskRunStatus, creatorID int) error {
 	query := `
 		INSERT INTO task_run (
 			creator_id,
@@ -282,7 +286,7 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 		creatorID,
 		create.TaskUID,
 		create.Name,
-		api.TaskRunRunning,
+		status,
 	); err != nil {
 		return err
 	}

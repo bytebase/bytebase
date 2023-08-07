@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // NewDatabaseCreateExecutor creates a database create task executor.
@@ -116,7 +117,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		DatabaseName:         payload.DatabaseName,
 		SyncState:            api.NotFound,
 		SuccessfulSyncTimeTs: time.Now().Unix(),
-		Labels:               labels,
+		Metadata: &storepb.DatabaseMetadata{
+			Labels: labels,
+		},
 	})
 	if err != nil {
 		return true, nil, err

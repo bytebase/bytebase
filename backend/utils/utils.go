@@ -278,7 +278,7 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 	databaseMap := make(map[int]*store.DatabaseMessage)
 	for _, database := range databaseList {
 		databaseMap[database.UID] = database
-		idToLabels[database.UID] = database.Labels
+		idToLabels[database.UID] = database.GetEffectiveLabels()
 	}
 
 	// idsSeen records database id which is already in a stage.

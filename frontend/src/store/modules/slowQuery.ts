@@ -23,13 +23,13 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
     }
   };
 
-  const syncSlowQueriesByInstance = async (instance: string) => {
+  const syncSlowQueries = async (parent: string) => {
     await instanceServiceClient.syncSlowQueries({
-      instance,
+      parent,
     });
   };
 
-  return { fetchSlowQueryLogList, syncSlowQueriesByInstance };
+  return { fetchSlowQueryLogList, syncSlowQueries };
 });
 
 const databaseRequestCache = new Map<string, Promise<ComposedDatabase>>();

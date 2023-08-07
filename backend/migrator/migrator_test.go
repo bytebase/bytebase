@@ -241,5 +241,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("2.6.1"), releaseVersion)
+	require.Equal(t, semver.MustParse("2.6.5"), releaseVersion)
 }

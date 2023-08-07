@@ -390,7 +390,8 @@ CREATE TABLE db (
     secrets JSONB NOT NULL DEFAULT '{}',
     datashare BOOLEAN NOT NULL DEFAULT FALSE,
     -- service_name is the Oracle specific field.
-    service_name TEXT NOT NULL DEFAULT ''
+    service_name TEXT NOT NULL DEFAULT '',
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_db_instance_id ON db(instance_id);
@@ -439,7 +440,6 @@ CREATE TABLE data_source (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
-    database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
@@ -453,9 +453,7 @@ CREATE TABLE data_source (
     database TEXT NOT NULL DEFAULT ''
 );
 
-CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
-
-CREATE UNIQUE INDEX idx_data_source_unique_database_id_name ON data_source(database_id, name);
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON data_source(instance_id, name);
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 

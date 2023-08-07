@@ -79,9 +79,6 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 
 func TestGetSimpleStatementResult(t *testing.T) {
 	v1 := `{
-	"_id": {
-		"$oid": "64c0b8c4e65c51195e0584b2"
-	},
 	"age": 13,
 	"groups": [
 		"basketball",
@@ -94,9 +91,6 @@ func TestGetSimpleStatementResult(t *testing.T) {
 	}
 }`
 	v2 := `{
-	"_id": {
-		"$oid": "64c1de7e85c563e625f217d5"
-	},
 	"flower": 123
 }`
 
@@ -107,28 +101,31 @@ func TestGetSimpleStatementResult(t *testing.T) {
 		{
 			data: `{"_id":{"$oid":"64c0b8c4e65c51195e0584b2"},"name":"danny","age":13,"groups":["basketball","swimming"],"tree":{"a":"a","b":1}}`,
 			want: &v1pb.QueryResult{
-				ColumnNames:     []string{"result"},
-				ColumnTypeNames: []string{"TEXT"},
+				ColumnNames:     []string{"_id", "result"},
+				ColumnTypeNames: []string{"TEXT", "TEXT"},
 				Rows: []*v1pb.QueryRow{{
-					Values: []*v1pb.RowValue{{
-						Kind: &v1pb.RowValue_StringValue{StringValue: v1},
-					}},
+					Values: []*v1pb.RowValue{
+						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c0b8c4e65c51195e0584b2"}},
+						{Kind: &v1pb.RowValue_StringValue{StringValue: v1}},
+					},
 				}},
 			},
 		},
 		{
 			data: `[{"_id":{"$oid":"64c0b8c4e65c51195e0584b2"},"name":"danny","age":13,"groups":["basketball","swimming"],"tree":{"a":"a","b":1}},{"_id":{"$oid":"64c1de7e85c563e625f217d5"},"flower":123}]`,
 			want: &v1pb.QueryResult{
-				ColumnNames:     []string{"result"},
-				ColumnTypeNames: []string{"TEXT"},
+				ColumnNames:     []string{"_id", "result"},
+				ColumnTypeNames: []string{"TEXT", "TEXT"},
 				Rows: []*v1pb.QueryRow{{
-					Values: []*v1pb.RowValue{{
-						Kind: &v1pb.RowValue_StringValue{StringValue: v1},
-					}},
+					Values: []*v1pb.RowValue{
+						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c0b8c4e65c51195e0584b2"}},
+						{Kind: &v1pb.RowValue_StringValue{StringValue: v1}},
+					},
 				}, {
-					Values: []*v1pb.RowValue{{
-						Kind: &v1pb.RowValue_StringValue{StringValue: v2},
-					}},
+					Values: []*v1pb.RowValue{
+						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c1de7e85c563e625f217d5"}},
+						{Kind: &v1pb.RowValue_StringValue{StringValue: v2}},
+					},
 				}},
 			},
 		},

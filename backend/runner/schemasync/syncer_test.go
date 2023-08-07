@@ -10,31 +10,31 @@ import (
 
 func TestEqualDatabaseMetadata(t *testing.T) {
 	tests := []struct {
-		x    *storepb.DatabaseMetadata
-		y    *storepb.DatabaseMetadata
+		x    *storepb.DatabaseSchemaMetadata
+		y    *storepb.DatabaseSchemaMetadata
 		want bool
 	}{
 		{
-			x:    &storepb.DatabaseMetadata{},
-			y:    &storepb.DatabaseMetadata{},
+			x:    &storepb.DatabaseSchemaMetadata{},
+			y:    &storepb.DatabaseSchemaMetadata{},
 			want: true,
 		},
 		{
 			x:    nil,
-			y:    &storepb.DatabaseMetadata{},
+			y:    &storepb.DatabaseSchemaMetadata{},
 			want: false,
 		},
 		{
-			x: &storepb.DatabaseMetadata{
+			x: &storepb.DatabaseSchemaMetadata{
 				Name: "hello",
 			},
-			y: &storepb.DatabaseMetadata{
+			y: &storepb.DatabaseSchemaMetadata{
 				Name: "world",
 			},
 			want: false,
 		},
 		{
-			x: &storepb.DatabaseMetadata{
+			x: &storepb.DatabaseSchemaMetadata{
 				Name: "hello",
 				Schemas: []*storepb.SchemaMetadata{
 					{
@@ -47,7 +47,7 @@ func TestEqualDatabaseMetadata(t *testing.T) {
 					},
 				},
 			},
-			y: &storepb.DatabaseMetadata{
+			y: &storepb.DatabaseSchemaMetadata{
 				Name: "hello",
 				Schemas: []*storepb.SchemaMetadata{
 					{
@@ -63,7 +63,7 @@ func TestEqualDatabaseMetadata(t *testing.T) {
 			want: true,
 		},
 		{
-			x: &storepb.DatabaseMetadata{
+			x: &storepb.DatabaseSchemaMetadata{
 				Name: "hello",
 				Schemas: []*storepb.SchemaMetadata{
 					{
@@ -76,7 +76,7 @@ func TestEqualDatabaseMetadata(t *testing.T) {
 					},
 				},
 			},
-			y: &storepb.DatabaseMetadata{
+			y: &storepb.DatabaseSchemaMetadata{
 				Name: "hello",
 				Schemas: []*storepb.SchemaMetadata{
 					{
@@ -92,7 +92,7 @@ func TestEqualDatabaseMetadata(t *testing.T) {
 			want: false,
 		},
 		{
-			x: &storepb.DatabaseMetadata{
+			x: &storepb.DatabaseSchemaMetadata{
 				Name: "hello",
 				Schemas: []*storepb.SchemaMetadata{
 					{
@@ -109,7 +109,7 @@ func TestEqualDatabaseMetadata(t *testing.T) {
 					},
 				},
 			},
-			y: &storepb.DatabaseMetadata{
+			y: &storepb.DatabaseSchemaMetadata{
 				Name: "hello",
 				Schemas: []*storepb.SchemaMetadata{
 					{

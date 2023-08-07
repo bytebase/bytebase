@@ -18,7 +18,7 @@
       </NButton>
     </div>
     <div
-      class="flex-1 flex flex-col gap-y-2 h-full overflow-y-auto"
+      class="flex-1 flex flex-col h-full overflow-y-auto"
       @scroll="dropdown = undefined"
     >
       <div

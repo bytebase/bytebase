@@ -508,13 +508,17 @@ func convertToDatabaseState(database *v1pb.DatabaseMetadata) *databaseState {
 }
 
 func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
-	schemas := []*v1pb.SchemaMetadata{}
+	schemaStates := []*schemaState{}
 	for _, schema := range s.schemas {
+		schemaStates = append(schemaStates, schema)
+	}
+	sort.Slice(schemaStates, func(i, j int) bool {
+		return schemaStates[i].id < schemaStates[j].id
+	})
+	schemas := []*v1pb.SchemaMetadata{}
+	for _, schema := range schemaStates {
 		schemas = append(schemas, schema.convertToSchemaMetadata())
 	}
-	sort.Slice(schemas, func(i, j int) bool {
-		return schemas[i].Name < schemas[j].Name
-	})
 	return &v1pb.DatabaseMetadata{
 		Name:    s.name,
 		Schemas: schemas,
@@ -524,6 +528,7 @@ func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
 }
 
 type schemaState struct {
+	id     int
 	name   string
 	tables map[string]*tableState
 }
@@ -537,20 +542,24 @@ func newSchemaState() *schemaState {
 func convertToSchemaState(schema *v1pb.SchemaMetadata) *schemaState {
 	state := newSchemaState()
 	state.name = schema.Name
-	for _, table := range schema.Tables {
-		state.tables[table.Name] = convertToTableState(table)
+	for i, table := range schema.Tables {
+		state.tables[table.Name] = convertToTableState(i, table)
 	}
 	return state
 }
 
 func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
-	tables := []*v1pb.TableMetadata{}
+	tableStates := []*tableState{}
 	for _, table := range s.tables {
+		tableStates = append(tableStates, table)
+	}
+	sort.Slice(tableStates, func(i, j int) bool {
+		return tableStates[i].id < tableStates[j].id
+	})
+	tables := []*v1pb.TableMetadata{}
+	for _, table := range tableStates {
 		tables = append(tables, table.convertToTableMetadata())
 	}
-	sort.Slice(tables, func(i, j int) bool {
-		return tables[i].Name < tables[j].Name
-	})
 	return &v1pb.SchemaMetadata{
 		Name:   s.name,
 		Tables: tables,
@@ -563,6 +572,7 @@ func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
 }
 
 type tableState struct {
+	id          int
 	name        string
 	columns     map[string]*columnState
 	indexes     map[string]*indexState
@@ -635,8 +645,9 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	return nil
 }
 
-func newTableState(name string) *tableState {
+func newTableState(id int, name string) *tableState {
 	return &tableState{
+		id:          id,
 		name:        name,
 		columns:     make(map[string]*columnState),
 		indexes:     make(map[string]*indexState),
@@ -644,44 +655,56 @@ func newTableState(name string) *tableState {
 	}
 }
 
-func convertToTableState(table *v1pb.TableMetadata) *tableState {
-	state := newTableState(table.Name)
-	for _, column := range table.Columns {
-		state.columns[column.Name] = convertToColumnState(column)
+func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
+	state := newTableState(id, table.Name)
+	for i, column := range table.Columns {
+		state.columns[column.Name] = convertToColumnState(i, column)
 	}
-	for _, index := range table.Indexes {
-		state.indexes[index.Name] = convertToIndexState(index)
+	for i, index := range table.Indexes {
+		state.indexes[index.Name] = convertToIndexState(i, index)
 	}
-	for _, fk := range table.ForeignKeys {
-		state.foreignKeys[fk.Name] = convertToForeignKeyState(fk)
+	for i, fk := range table.ForeignKeys {
+		state.foreignKeys[fk.Name] = convertToForeignKeyState(i, fk)
 	}
 	return state
 }
 
 func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
-	columns := []*v1pb.ColumnMetadata{}
+	columnStates := []*columnState{}
 	for _, column := range t.columns {
+		columnStates = append(columnStates, column)
+	}
+	sort.Slice(columnStates, func(i, j int) bool {
+		return columnStates[i].id < columnStates[j].id
+	})
+	columns := []*v1pb.ColumnMetadata{}
+	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
 	}
-	sort.Slice(columns, func(i, j int) bool {
-		return columns[i].Name < columns[j].Name
-	})
 
-	indexes := []*v1pb.IndexMetadata{}
+	indexStates := []*indexState{}
 	for _, index := range t.indexes {
+		indexStates = append(indexStates, index)
+	}
+	sort.Slice(indexStates, func(i, j int) bool {
+		return indexStates[i].id < indexStates[j].id
+	})
+	indexes := []*v1pb.IndexMetadata{}
+	for _, index := range indexStates {
 		indexes = append(indexes, index.convertToIndexMetadata())
 	}
-	sort.Slice(indexes, func(i, j int) bool {
-		return indexes[i].Name < indexes[j].Name
-	})
 
-	fks := []*v1pb.ForeignKeyMetadata{}
+	fkStates := []*foreignKeyState{}
 	for _, fk := range t.foreignKeys {
+		fkStates = append(fkStates, fk)
+	}
+	sort.Slice(fkStates, func(i, j int) bool {
+		return fkStates[i].id < fkStates[j].id
+	})
+	fks := []*v1pb.ForeignKeyMetadata{}
+	for _, fk := range fkStates {
 		fks = append(fks, fk.convertToForeignKeyMetadata())
 	}
-	sort.Slice(fks, func(i, j int) bool {
-		return fks[i].Name < fks[j].Name
-	})
 
 	return &v1pb.TableMetadata{
 		Name:        t.name,
@@ -692,6 +715,7 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 }
 
 type foreignKeyState struct {
+	id                int
 	name              string
 	columns           []string
 	referencedTable   string
@@ -707,8 +731,9 @@ func (f *foreignKeyState) convertToForeignKeyMetadata() *v1pb.ForeignKeyMetadata
 	}
 }
 
-func convertToForeignKeyState(foreignKey *v1pb.ForeignKeyMetadata) *foreignKeyState {
+func convertToForeignKeyState(id int, foreignKey *v1pb.ForeignKeyMetadata) *foreignKeyState {
 	return &foreignKeyState{
+		id:                id,
 		name:              foreignKey.Name,
 		columns:           foreignKey.Columns,
 		referencedTable:   foreignKey.ReferencedTable,
@@ -774,6 +799,7 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 }
 
 type indexState struct {
+	id      int
 	name    string
 	keys    []string
 	primary bool
@@ -791,8 +817,9 @@ func (i *indexState) convertToIndexMetadata() *v1pb.IndexMetadata {
 	}
 }
 
-func convertToIndexState(index *v1pb.IndexMetadata) *indexState {
+func convertToIndexState(id int, index *v1pb.IndexMetadata) *indexState {
 	return &indexState{
+		id:      id,
 		name:    index.Name,
 		keys:    index.Expressions,
 		primary: index.Primary,
@@ -824,6 +851,7 @@ func (i *indexState) toString(buf *strings.Builder) error {
 }
 
 type columnState struct {
+	id           int
 	name         string
 	tp           string
 	defaultValue *string
@@ -870,8 +898,9 @@ func (c *columnState) convertToColumnMetadata() *v1pb.ColumnMetadata {
 	return result
 }
 
-func convertToColumnState(column *v1pb.ColumnMetadata) *columnState {
+func convertToColumnState(id int, column *v1pb.ColumnMetadata) *columnState {
 	result := &columnState{
+		id:       id,
 		name:     column.Name,
 		tp:       column.Type,
 		nullable: column.Nullable,
@@ -904,7 +933,7 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	schema.tables[tableName] = newTableState(tableName)
+	schema.tables[tableName] = newTableState(len(schema.tables), tableName)
 	t.currentTable = tableName
 }
 
