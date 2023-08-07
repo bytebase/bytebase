@@ -23,7 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import {
+  TaskRun_Status,
+  taskRun_StatusToJSON,
+} from "@/types/proto/v1/rollout_service";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -41,7 +44,12 @@ const classes = computed(() => {
     case TaskRun_Status.CANCELED:
       return "bg-white border-2 border-gray-400 text-gray-400";
   }
-  console.assert(false, "should never reach this line");
+  console.assert(
+    false,
+    `should never reach this line. status=${
+      props.status
+    } ${taskRun_StatusToJSON(props.status)}`
+  );
   return "";
 });
 </script>
