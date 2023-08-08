@@ -22,6 +22,7 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/dgraph-io/ristretto v0.1.1-0.20220403145359-8e850b710d6d
 	github.com/github/gh-ost v1.1.5
+	github.com/go-ego/gse v0.80.2
 	github.com/go-ldap/ldap/v3 v3.4.5
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -66,6 +67,7 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.13.1
 	github.com/xuri/excelize/v2 v2.7.1
+	github.com/yanyiwu/gojieba v1.3.0
 	go.mongodb.org/mongo-driver v1.12.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
@@ -127,6 +129,7 @@ require (
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
+	github.com/vcaesar/cedar v0.20.1 // indirect
 	github.com/xuri/efp v0.0.0-20220603152613-6918739fd470 // indirect
 	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
