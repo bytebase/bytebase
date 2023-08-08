@@ -25,6 +25,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -730,6 +731,29 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 
 		userInfo, err = oidcIDP.UserInfo(ctx, token, "")
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
+		}
+	} else if idp.Type == storepb.IdentityProviderType_LDAP {
+		idpConfig := idp.Config.GetLdapConfig()
+		ldapIDP, err := ldap.NewIdentityProvider(
+			ldap.IdentityProviderConfig{
+				Host:             idpConfig.Host,
+				Port:             int(idpConfig.Port),
+				SkipTLSVerify:    idpConfig.SkipTlsVerify,
+				BindDN:           idpConfig.BindDn,
+				BindPassword:     idpConfig.BindPassword,
+				BaseDN:           idpConfig.BaseDn,
+				UserFilter:       idpConfig.UserFilter,
+				SecurityProtocol: ldap.SecurityProtocol(idpConfig.SecurityProtocol),
+				FieldMapping:     idpConfig.FieldMapping,
+			},
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create new LDAP identity provider: %v", err)
+		}
+
+		userInfo, err = ldapIDP.Authenticate(request.Email, request.Password)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
