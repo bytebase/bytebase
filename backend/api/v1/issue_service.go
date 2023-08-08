@@ -651,6 +651,24 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 		case "description":
 			patch.Description = &request.Issue.Description
+
+		case "subscribers":
+			var subscribers []*store.UserMessage
+			for _, subscriber := range request.Issue.Subscribers {
+				subscriberEmail, err := common.GetUserEmail(subscriber)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", subscriber, err)
+				}
+				user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &subscriberEmail})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", subscriberEmail, err)
+				}
+				if user == nil {
+					return nil, status.Errorf(codes.NotFound, "user %v not found", subscriber)
+				}
+				subscribers = append(subscribers, user)
+			}
+			patch.Subscribers = &subscribers
 		}
 	}
 
