@@ -25,7 +25,7 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM --platform=$BUILDPLATFORM golang:1.20.3 as backend
+FROM  golang:1.20.3 as backend
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
@@ -39,7 +39,11 @@ ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
 # RUN apt-get install -y gcc
-RUN apt-get update && apt-get install -y gcc-aarch64-linux-gnu
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+  apt-get update && apt-get install -y gcc-aarch64-linux-gnu; \
+else \
+  apt-get install -y gcc ;\
+fi
 
 WORKDIR /backend-build
 
@@ -52,18 +56,14 @@ COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
-RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; fi && \
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+  CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
+fi && \
     VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
         --tags "${RELEASE},embed_frontend" \
         -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
         -o bytebase \
         ./backend/bin/server/main.go
-
-#RUN VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH go build \
-#    --tags "${RELEASE},embed_frontend" \
-#    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
-#    -o bytebase \
-#    ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
 FROM debian:bullseye-slim as monolithic
