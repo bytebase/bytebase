@@ -1082,7 +1082,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
-		case db.Postgres, db.Redshift:
+		case db.Postgres, db.Redshift, db.RisingWave:
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
@@ -1281,7 +1281,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					Name:       table.Name,
 					ColumnList: []db.ColumnInfo{},
 				}
-				if instance.Engine == db.Postgres || instance.Engine == db.Redshift {
+				if instance.Engine == db.Postgres || instance.Engine == db.Redshift || instance.Engine == db.RisingWave {
 					tableSchema.Name = fmt.Sprintf("%s.%s", schema.Name, table.Name)
 				}
 				for _, column := range table.Columns {

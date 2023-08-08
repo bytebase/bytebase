@@ -45,7 +45,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			schemaInfo:      schemaInfo,
 		}
 		return extractor.extractMySQLSensitiveField(statement)
-	case db.Postgres, db.Redshift:
+	case db.Postgres, db.Redshift, db.RisingWave:
 		extractor := &sensitiveFieldExtractor{
 			schemaInfo: schemaInfo,
 		}
@@ -53,7 +53,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		if err != nil {
 			tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
 			content := tableNotFound.FindStringSubmatch(err.Error())
-			if len(content) == 3 && isPostgreSQLSystemSchema(content[1]) {
+			if len(content) == 3 && (isPostgreSQLSystemSchema(content[1]) || dbType == db.RisingWave && isRisingWaveSystemSchema(content[1])) {
 				// skip for system schema
 				return nil, nil
 			}
@@ -80,6 +80,14 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 func isPostgreSQLSystemSchema(schema string) bool {
 	switch schema {
 	case "information_schema", "pg_catalog":
+		return true
+	}
+	return false
+}
+
+func isRisingWaveSystemSchema(schema string) bool {
+	switch schema {
+	case "information_schema", "pg_catalog", "rw_catalog":
 		return true
 	}
 	return false
