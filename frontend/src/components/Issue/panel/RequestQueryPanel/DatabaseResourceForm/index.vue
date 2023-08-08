@@ -28,7 +28,7 @@
     <DatabaseResourceSelector
       v-if="project"
       :project-id="project.uid"
-      :selected-database-resource-list="state.selectedDatabaseResourceList"
+      :database-resources="state.databaseResources"
       @update="handleSelectedDatabaseResourceChanged"
     />
   </div>
@@ -43,7 +43,7 @@ import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
 
 interface LocalState {
   allDatabases: boolean;
-  selectedDatabaseResourceList: DatabaseResource[];
+  databaseResources: DatabaseResource[];
 }
 
 const props = defineProps<{
@@ -62,7 +62,7 @@ const emit = defineEmits<{
 const projectStore = useProjectV1Store();
 const state = reactive<LocalState>({
   allDatabases: (props.databaseResources || []).length === 0,
-  selectedDatabaseResourceList: props.databaseResources || [],
+  databaseResources: props.databaseResources || [],
 });
 
 const project = computed(() => {
@@ -82,24 +82,22 @@ watchEffect(async () => {
 const handleSelectedDatabaseResourceChanged = (
   databaseResourceList: DatabaseResource[]
 ) => {
-  state.selectedDatabaseResourceList = databaseResourceList;
+  state.databaseResources = databaseResourceList;
 };
 
 watch(
-  () => [state.allDatabases, state.selectedDatabaseResourceList],
+  () => [state.allDatabases, state.databaseResources],
   () => {
     if (state.allDatabases) {
       emit("update:condition", "");
     } else {
-      if (state.selectedDatabaseResourceList.length === 0) {
+      if (state.databaseResources.length === 0) {
         emit("update:condition", undefined);
       } else {
-        const condition = stringifyDatabaseResources(
-          state.selectedDatabaseResourceList
-        );
+        const condition = stringifyDatabaseResources(state.databaseResources);
         emit("update:condition", condition);
       }
-      emit("update:database-resources", state.selectedDatabaseResourceList);
+      emit("update:database-resources", state.databaseResources);
     }
   }
 );
