@@ -292,6 +292,7 @@ const {
 
 const isTaskSheetOversize = computed(() => {
   if (isCreating.value) return false;
+  if (state.isEditing) return false;
   if (!sheetReady.value) return false;
   if (!sheet.value) return false;
   return getSheetStatement(sheet.value).length < sheet.value.contentSize;
@@ -459,11 +460,42 @@ const chooseUpdateStatementTarget = () => {
   return d.promise;
 };
 
-const handleUploadAndOverwrite = async () => {
+const showOverwriteConfirmDialog = () => {
+  return new Promise((resolve, reject) => {
+    // Show a confirm dialog before replacing if the editing statement is not empty.
+    dialog.create({
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      title: t("issue.overwrite-current-statement"),
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      onNegativeClick: () => {
+        reject();
+      },
+      onPositiveClick: () => {
+        resolve(undefined);
+      },
+    });
+  });
+};
+
+const handleUploadAndOverwrite = async (event: Event) => {
+  if (state.isUploadingFile) {
+    return;
+  }
   try {
     state.isUploadingFile = true;
-    // TODO
-    await new Promise((r) => setTimeout(r, 500));
+    await showOverwriteConfirmDialog();
+    const { filename, content: statement } = await readFileAsync(event, 100);
+    state.isEditing = true;
+    state.statement = statement;
+    handleStatementChange(statement);
+    if (sheet.value) {
+      sheet.value.title = filename;
+    }
+
     resetTempEditState();
     updateEditorHeight();
   } finally {
