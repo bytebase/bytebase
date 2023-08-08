@@ -387,6 +387,8 @@ message PlanCheckRun {
   // error is set if the Status is FAILED.
   string error = 8;
 
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message Result {
     enum Status {
       STATUS_UNSPECIFIED = 0;
