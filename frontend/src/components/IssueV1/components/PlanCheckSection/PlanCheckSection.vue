@@ -66,10 +66,9 @@ const runPlanChecks = async () => {
   if (!plan) return;
 
   try {
-    const response = await rolloutServiceClient.runPlanChecks({
+    await rolloutServiceClient.runPlanChecks({
       name: plan.name,
     });
-    console.log("runPlanChecks response", response);
   } catch (ex) {
     // debugger;
   }

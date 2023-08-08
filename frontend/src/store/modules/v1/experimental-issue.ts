@@ -26,10 +26,6 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
   const rawIssue = await issueServiceClient.getIssue({
     name: `projects/-/issues/${uid}`,
   });
-  console.log(
-    "raw Issue from IssueService.GetIssue",
-    JSON.stringify(Issue.toJSON(rawIssue), null, "  ")
-  );
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
   const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
@@ -79,10 +75,6 @@ export const experimentalFetchIssueByName = async (name: string) => {
   const rawIssue = await issueServiceClient.getIssue({
     name,
   });
-  console.log(
-    "raw Issue from IssueService.GetIssue",
-    JSON.stringify(rawIssue, null, "  ")
-  );
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
   const projectEntity = await useProjectV1Store().getOrFetchProjectByName(

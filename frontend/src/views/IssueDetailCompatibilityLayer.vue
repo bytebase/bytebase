@@ -62,7 +62,6 @@ watch(
       const legacyIssue = await useIssueStore().getOrFetchIssueById(
         idFromSlug(slug)
       );
-      console.log(legacyIssue);
       if (String(legacyIssue.id) === String(UNKNOWN_ID)) {
         router.replace({
           name: "error.404",

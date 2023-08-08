@@ -74,10 +74,7 @@ export const createIssueSkeleton = async (route: _RouteLocationBase) => {
   issue.plan = plan.name;
   issue.planEntity = plan;
 
-  console.log("plan", plan);
-
   const rollout = await previewPlan(plan, params);
-  console.log("rollout", rollout);
   issue.rollout = rollout.name;
   issue.rolloutEntity = rollout;
 

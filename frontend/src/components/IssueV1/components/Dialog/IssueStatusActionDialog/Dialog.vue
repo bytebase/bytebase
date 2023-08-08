@@ -52,9 +52,6 @@ const handleConfirm = async (
   try {
     await new Promise((r) => setTimeout(r, 1000));
 
-    alert(
-      `confirm issue status action, action=${action}, comment=${comment}\n(not implemented yet)`
-    );
     // notify the issue logic to update issue status
     events.emit("status-changed", { eager: true });
   } finally {

@@ -540,9 +540,7 @@ const updateStatement = async (statement: string) => {
   // Find the target editing task(s)
   // default to selectedTask
   // also ask whether to apply the change to all tasks in the stage.
-  const { target, tasks } = await chooseUpdateStatementTarget();
-
-  console.log(`targets: (${target}) ${tasks.map((t) => t.uid).join(",")}`);
+  const { tasks } = await chooseUpdateStatementTarget();
 
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
@@ -557,16 +555,15 @@ const updateStatement = async (statement: string) => {
       specs.push(spec);
     }
   });
-  const uniqSpecIds = new Set(specs.map((s) => s.id));
-  console.log(`uniqSpecIds`, uniqSpecIds);
-  if (uniqSpecIds.size === 0) {
+  const distinctSpecIds = new Set(specs.map((s) => s.id));
+  if (distinctSpecIds.size === 0) {
     notifyNotEditableLegacyIssue();
     return;
   }
 
   const specsToPatch = planPatch.steps
     .flatMap((step) => step.specs)
-    .filter((spec) => uniqSpecIds.has(spec.id));
+    .filter((spec) => distinctSpecIds.has(spec.id));
 
   const sheet = {
     ...createEmptyLocalSheet(),
@@ -584,8 +581,6 @@ const updateStatement = async (statement: string) => {
     if (!config) continue;
     config.sheet = createdSheet.name;
   }
-
-  console.log(JSON.stringify(planPatch, null, "  "));
 
   const updatedPlan = await rolloutServiceClient.updatePlan({
     plan: planPatch,

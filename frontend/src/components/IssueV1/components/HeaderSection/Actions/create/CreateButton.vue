@@ -63,20 +63,6 @@ const doCreateIssue = async () => {
   issue.value.plan = createdPlan.name;
   issue.value.planEntity = createdPlan;
 
-  console.log(
-    "CreateIssueRequest",
-    JSON.stringify(
-      CreateIssueRequest.toJSON(
-        CreateIssueRequest.fromJSON({
-          parent: issue.value.project,
-          issue: issue.value,
-        })
-      ),
-      null,
-      "  "
-    )
-  );
-
   const createdIssue = await issueServiceClient.createIssue({
     parent: issue.value.project,
     issue: issue.value,
@@ -86,17 +72,8 @@ const doCreateIssue = async () => {
     parent: issue.value.project,
     plan: createdPlan.name,
   });
-  console.log(
-    "createdRollout",
-    JSON.stringify(Rollout.toJSON(createdRollout), null, "  ")
-  );
 
   createdIssue.rollout = createdRollout.name;
-
-  console.log(
-    "created issue",
-    JSON.stringify(Issue.toJSON(createdIssue), null, "  ")
-  );
 
   const composedIssue: ComposedIssue = {
     ...issue.value,
@@ -104,7 +81,6 @@ const doCreateIssue = async () => {
     planEntity: createdPlan,
     rolloutEntity: createdRollout,
   };
-  console.log("created composed issue", composedIssue);
 
   router.push(`/issue/${composedIssue.uid}`);
 
@@ -161,7 +137,6 @@ const createPlan = async () => {
     parent: issue.value.project,
     plan,
   });
-  console.log("created plan", Plan.toJSON(createdPlan));
   return createdPlan;
 };
 </script>
