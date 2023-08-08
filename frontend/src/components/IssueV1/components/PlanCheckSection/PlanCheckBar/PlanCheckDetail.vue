@@ -41,6 +41,14 @@
       </div>
       <div class="bb-grid-cell">
         <span>{{ row.checkResult.content }}</span>
+        <template v-if="row.checkResult.sqlReviewReport?.detail">
+          <span
+            class="ml-1 normal-link"
+            @click="selectDetail(row.checkResult.sqlReviewReport)"
+            >{{ $t("sql-review.view-definition") }}</span
+          >
+          <span class="border-r border-control-border ml-1"></span>
+        </template>
         TODO: details
       </div>
     </template>
@@ -241,4 +249,8 @@ const COLUMN_LIST = computed(() => {
   }
   return [STATUS, TITLE, CONTENT];
 });
+
+const selectDetail = (args: any) => {
+  // TODO
+};
 </script>

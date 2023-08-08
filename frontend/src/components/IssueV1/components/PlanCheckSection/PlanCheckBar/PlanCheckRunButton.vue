@@ -34,6 +34,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import {
   planCheckRunListForTask,
+  stageForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -42,17 +43,16 @@ type ButtonAction = ContextMenuButtonAction<{
   taskList: Task[];
 }>;
 
+const props = defineProps<{
+  task: Task;
+}>();
+
 defineEmits<{
   (event: "run-checks", taskList: Task[]): void;
 }>();
 
 const { t } = useI18n();
-const {
-  isCreating: isCreating,
-  issue,
-  selectedTask,
-  selectedStage,
-} = useIssueContext();
+const { isCreating, issue } = useIssueContext();
 
 const allowRunCheckForIssue = computed(() => {
   if (isCreating.value) {
@@ -68,29 +68,32 @@ const actionList = computed(() => {
   if (!allowRunCheckForIssue.value) return [];
 
   const actionList: ButtonAction[] = [];
-  if (allowRunChecksForTask(selectedTask.value)) {
+  if (allowRunChecksForTask(props.task)) {
     actionList.push({
       key: "RUN-CHECKS",
       text: t("task.run-checks"),
       params: {
-        taskList: [selectedTask.value],
+        taskList: [props.task],
       },
     });
 
     // Don't only show 'run checks in current stage' if we don't show 'run checks'
     // since that might be weird.
-    const taskListInStage = selectedStage.value.tasks;
-    const runnableTaskList = taskListInStage.filter((task) =>
-      allowRunChecksForTask(task)
-    );
-    if (runnableTaskList.length > 1) {
-      actionList.push({
-        key: "RUN-CHECKS-IN-CURRENT-STAGE",
-        text: t("task.run-checks-in-current-stage"),
-        params: {
-          taskList: runnableTaskList,
-        },
-      });
+    const stage = stageForTask(issue.value, props.task);
+    if (stage) {
+      const taskListInStage = stage.tasks;
+      const runnableTaskList = taskListInStage.filter((task) =>
+        allowRunChecksForTask(task)
+      );
+      if (runnableTaskList.length > 1) {
+        actionList.push({
+          key: "RUN-CHECKS-IN-CURRENT-STAGE",
+          text: t("task.run-checks-in-current-stage"),
+          params: {
+            taskList: runnableTaskList,
+          },
+        });
+      }
     }
   }
   return actionList;
@@ -99,10 +102,7 @@ const actionList = computed(() => {
 const hasRunningPlanCheck = computed((): boolean => {
   if (isCreating.value) return false;
 
-  const planCheckRunList = planCheckRunListForTask(
-    issue.value,
-    selectedTask.value
-  );
+  const planCheckRunList = planCheckRunListForTask(issue.value, props.task);
   return planCheckRunList.some(
     (checkRun) => checkRun.status === PlanCheckRun_Status.RUNNING
   );

@@ -1,6 +1,6 @@
 <template>
   <BBModal
-    :title="$t('task.check-result.title', { name: selectedTask.title })"
+    :title="$t('task.check-result.title', { name: task.title })"
     class="!w-[56rem]"
     header-class="whitespace-pre-wrap break-all gap-x-1"
     @close="$emit('close')"
@@ -9,6 +9,7 @@
       <PlanCheckBadgeBar
         :plan-check-run-list="planCheckRunList"
         :selected-type="selectedType"
+        :task="task"
       />
       <!-- <div>
         <TaskCheckBadgeBar
@@ -52,7 +53,7 @@
       <PlanCheckDetail
         v-if="selectedPlanCheckRun"
         :plan-check-run="selectedPlanCheckRun"
-        :task="selectedTask"
+        :task="task"
       />
     </div>
   </BBModal>
@@ -66,15 +67,16 @@ import { useI18n } from "vue-i18n";
 import {
   PlanCheckRun,
   PlanCheckRun_Type,
+  Task,
 } from "@/types/proto/v1/rollout_service";
 import { TabFilter, TabFilterItem } from "@/components/v2";
-import { useIssueContext } from "@/components/IssueV1/logic";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckDetail from "./PlanCheckDetail.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   selectedType: PlanCheckRun_Type;
+  task: Task;
 }>();
 
 defineEmits<{
@@ -82,7 +84,6 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { selectedTask } = useIssueContext();
 
 const selectedPlanCheckRunList = computed(() => {
   return orderBy(
@@ -107,7 +108,7 @@ const selectedPlanCheckRun = computed(() => {
 const tabItemList = computed(() => {
   return selectedPlanCheckRunList.value.map<TabFilterItem<string>>(
     (checkRun, i) => {
-      const label = i === 0 ? t("common.latest") : checkRun.uid;
+      const label = i === 0 ? t("common.latest") : `uid = ${checkRun.uid}`;
       return {
         label,
         value: checkRun.uid,

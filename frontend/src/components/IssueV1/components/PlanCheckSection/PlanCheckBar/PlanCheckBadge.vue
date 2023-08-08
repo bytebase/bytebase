@@ -58,9 +58,11 @@ const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   type: PlanCheckRun_Type;
 }>();
+
 defineEmits<{
   (event: "click"): void;
 }>();
+
 const { t } = useI18n();
 
 const latestPlanCheckRun = computed(() => {

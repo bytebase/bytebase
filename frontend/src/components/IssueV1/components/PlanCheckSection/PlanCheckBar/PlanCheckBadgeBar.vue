@@ -1,54 +1,5 @@
 <template>
   <div class="flex items-center flex-wrap gap-2 flex-1">
-    <!-- <template
-      v-for="(checkRun, index) in filteredTaskCheckRunList"
-      :key="index"
-    >
-      <button
-        class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
-        :class="buttonStyle(checkRun)"
-        @click.prevent="selectTaskCheckType(checkRun.type)"
-      >
-        <template v-if="checkRun.status == 'RUNNING'">
-          <TaskSpinner class="-ml-1 mr-1.5 h-4 w-4 text-info" />
-        </template>
-        <template v-else-if="checkRun.status == 'DONE'">
-          <template v-if="taskCheckStatus(checkRun) == 'SUCCESS'">
-            <heroicons-outline:check
-              class="-ml-1 mr-1.5 mt-0.5 h-4 w-4 text-success"
-            />
-          </template>
-          <template v-else-if="taskCheckStatus(checkRun) == 'WARN'">
-            <heroicons-outline:exclamation
-              class="-ml-1 mr-1.5 mt-0.5 h-4 w-4 text-warning"
-            />
-          </template>
-          <template v-else-if="taskCheckStatus(checkRun) == 'ERROR'">
-            <span class="mr-1.5 font-medium text-error" aria-hidden="true">
-              !
-            </span>
-          </template>
-        </template>
-        <template v-else-if="checkRun.status == 'FAILED'">
-          <span class="mr-1.5 font-medium text-error" aria-hidden="true">
-            !
-          </span>
-        </template>
-        <template v-else-if="checkRun.status == 'CANCELED'">
-          <heroicons-outline:ban
-            class="-ml-1 mr-1.5 mt-0.5 h-4 w-4 text-control"
-          />
-        </template>
-        {{ name(checkRun) }}
-      </button>
-    </template> -->
-
-    <!-- <div class="issue-debug">
-      <h1>plan check badge bar</h1>
-      <div>planCheckRunListForSelectedTask:</div>
-      <pre>{{ planCheckRunList.map(PlanCheckRun.toJSON) }}</pre>
-    </div> -->
-
     <PlanCheckBadge
       v-for="group in planCheckRunsGroupByType"
       :key="group.type"
@@ -65,6 +16,7 @@ import { computed } from "vue";
 import {
   PlanCheckRun,
   PlanCheckRun_Type,
+  Task,
 } from "@/types/proto/v1/rollout_service";
 import PlanCheckBadge from "./PlanCheckBadge.vue";
 import { groupBy } from "@/utils/collections";
@@ -72,6 +24,7 @@ import { groupBy } from "@/utils/collections";
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   selectedType?: PlanCheckRun_Type;
+  task: Task;
 }>();
 
 defineEmits<{
