@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/store"
@@ -138,6 +139,10 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		} else if identityProvider.Type == storepb.IdentityProviderType_OIDC {
 			if request.IdentityProvider.Config.GetOidcConfig().ClientSecret == "" {
 				patch.Config.GetOidcConfig().ClientSecret = identityProvider.Config.GetOidcConfig().ClientSecret
+			}
+		} else if identityProvider.Type == storepb.IdentityProviderType_LDAP {
+			if request.IdentityProvider.Config.GetLdapConfig().BindPassword == "" {
+				patch.Config.GetLdapConfig().BindPassword = identityProvider.Config.GetLdapConfig().BindPassword
 			}
 		}
 	}
@@ -274,6 +279,41 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if _, err := oidcIdentityProvider.UserInfo(ctx, token, ""); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
 		}
+	} else if identityProvider.Type == v1pb.IdentityProviderType_LDAP {
+		// Retrieve bind password from stored identity provider if not provided.
+		if request.IdentityProvider.Config.GetLdapConfig().BindPassword == "" {
+			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
+			}
+			if storedIdentityProvider == nil {
+				return nil, status.Errorf(codes.Internal, "identity provider %s not found", request.IdentityProvider.Name)
+			}
+			request.IdentityProvider.Config.GetLdapConfig().BindPassword = storedIdentityProvider.Config.GetLdapConfig().BindPassword
+		}
+		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config).GetLdapConfig()
+		ldapIdentityProvider, err := ldap.NewIdentityProvider(
+			ldap.IdentityProviderConfig{
+				Host:             identityProviderConfig.Host,
+				Port:             int(identityProviderConfig.Port),
+				SkipTLSVerify:    identityProviderConfig.SkipTlsVerify,
+				BindDN:           identityProviderConfig.BindDn,
+				BindPassword:     identityProviderConfig.BindPassword,
+				BaseDN:           identityProviderConfig.BaseDn,
+				UserFilter:       identityProviderConfig.UserFilter,
+				SecurityProtocol: ldap.SecurityProtocol(identityProviderConfig.SecurityProtocol),
+				FieldMapping:     identityProviderConfig.FieldMapping,
+			},
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create new LDAP identity provider: %v", err)
+		}
+
+		conn, err := ldapIdentityProvider.Connect()
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to test connection, error: %s", err.Error())
+		}
+		_ = conn.Close()
 	} else {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
 	}
@@ -356,6 +396,28 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 				},
 			},
 		}
+	} else if v := identityProviderConfig.GetLdapConfig(); v != nil {
+		fieldMapping := v1pb.FieldMapping{
+			Identifier:  v.FieldMapping.Identifier,
+			DisplayName: v.FieldMapping.DisplayName,
+			Email:       v.FieldMapping.Email,
+			Phone:       v.FieldMapping.Phone,
+		}
+		return &v1pb.IdentityProviderConfig{
+			Config: &v1pb.IdentityProviderConfig_LdapConfig{
+				LdapConfig: &v1pb.LDAPIdentityProviderConfig{
+					Host:             v.Host,
+					Port:             v.Port,
+					SkipTlsVerify:    v.SkipTlsVerify,
+					BindDn:           v.BindDn,
+					BindPassword:     "", // SECURITY: We do not expose the bind password
+					BaseDn:           v.BaseDn,
+					UserFilter:       v.UserFilter,
+					SecurityProtocol: v.SecurityProtocol,
+					FieldMapping:     &fieldMapping,
+				},
+			},
+		}
 	}
 	return nil
 }
@@ -402,6 +464,28 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 				},
 			},
 		}
+	} else if v := identityProviderConfig.GetLdapConfig(); v != nil {
+		fieldMapping := storepb.FieldMapping{
+			Identifier:  v.FieldMapping.Identifier,
+			DisplayName: v.FieldMapping.DisplayName,
+			Email:       v.FieldMapping.Email,
+			Phone:       v.FieldMapping.Phone,
+		}
+		return &storepb.IdentityProviderConfig{
+			Config: &storepb.IdentityProviderConfig_LdapConfig{
+				LdapConfig: &storepb.LDAPIdentityProviderConfig{
+					Host:             v.Host,
+					Port:             v.Port,
+					SkipTlsVerify:    v.SkipTlsVerify,
+					BindDn:           v.BindDn,
+					BindPassword:     v.BindPassword,
+					BaseDn:           v.BaseDn,
+					UserFilter:       v.UserFilter,
+					SecurityProtocol: v.SecurityProtocol,
+					FieldMapping:     &fieldMapping,
+				},
+			},
+		}
 	} else {
 		return nil
 	}
@@ -415,6 +499,10 @@ func validIdentityProviderConfig(identityProviderType v1pb.IdentityProviderType,
 		}
 	} else if identityProviderType == v1pb.IdentityProviderType_OIDC {
 		if identityProviderConfig.GetOidcConfig() == nil {
+			return errors.Errorf("unexpected provider config value")
+		}
+	} else if identityProviderType == v1pb.IdentityProviderType_LDAP {
+		if identityProviderConfig.GetLdapConfig() == nil {
 			return errors.Errorf("unexpected provider config value")
 		}
 	} else {
