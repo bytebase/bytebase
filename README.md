@@ -304,7 +304,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
    air -c scripts/.air.toml -- --backup-region us-east-1 --backup-bucket s3:\\/\\/example-bucket --backup-credential ~/.aws/credentials
    ```
 
-4. Start frontend (with live reload).
+1. Start frontend (with live reload).
 
    ```bash
    cd frontend && pnpm i && pnpm dev
