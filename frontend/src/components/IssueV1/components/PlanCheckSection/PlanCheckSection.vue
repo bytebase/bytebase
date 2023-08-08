@@ -13,6 +13,7 @@
     v-if="!isCreating"
     :allow-run-checks="allowRunChecks"
     :task="selectedTask"
+    class="px-4 py-2"
   />
 </template>
 

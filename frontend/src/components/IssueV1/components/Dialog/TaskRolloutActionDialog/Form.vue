@@ -22,6 +22,12 @@
           </span>
         </li>
       </ul>
+      <PlanCheckBar
+        v-if="taskList.length === 1 && action === 'ROLLOUT'"
+        :allow-run-checks="false"
+        :task="taskList[0]"
+        class="pt-2"
+      />
     </div>
     <div class="flex flex-col gap-y-1">
       <p class="textlabel">
@@ -53,13 +59,14 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
+import { groupBy } from "lodash-es";
+import { Task } from "@/types/proto/v1/rollout_service";
 import {
   TaskRolloutAction,
   taskRolloutActionButtonProps,
   taskRolloutActionDialogButtonName,
 } from "@/components/IssueV1/logic";
-import { Task } from "@/types/proto/v1/rollout_service";
-import { groupBy } from "lodash-es";
+import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
 
 const props = defineProps<{
   action: TaskRolloutAction;
