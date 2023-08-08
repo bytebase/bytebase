@@ -2,7 +2,6 @@
   <div class="w-[60rem] space-y-2">
     <NTransfer
       v-if="!loading"
-      ref="transfer"
       v-model:value="selectedValueList"
       style="height: calc(100vh - 380px)"
       :options="sourceTransferOptions"
@@ -39,7 +38,7 @@ import Label from "./Label.vue";
 const props = defineProps<{
   projectId: string;
   databaseId?: string;
-  selectedDatabaseResourceList: DatabaseResource[];
+  databaseResources: DatabaseResource[];
 }>();
 
 const emit = defineEmits<{
@@ -50,7 +49,7 @@ const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 
 const selectedValueList = ref<string[]>(
-  props.selectedDatabaseResourceList.map((databaseResource) => {
+  props.databaseResources.map((databaseResource) => {
     const database = databaseStore.getDatabaseByName(
       databaseResource.databaseName
     );
