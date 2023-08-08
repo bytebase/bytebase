@@ -48,7 +48,10 @@
           {{ $t("issue.format-on-save") }}
         </NCheckbox>
 
-        <UploadProgressButton :upload="handleUploadFile" size="tiny">
+        <UploadProgressButton
+          :upload="create ? handleUploadFile : handleUploadAndOverwrite"
+          size="tiny"
+        >
           {{ $t("issue.upload-sql") }}
         </UploadProgressButton>
       </template>
@@ -534,6 +537,7 @@ const handleUploadAndOverwrite = async (event: Event) => {
     });
   } finally {
     state.isUploadingFile = false;
+    state.editing = false;
   }
 };
 
