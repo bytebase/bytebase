@@ -256,16 +256,16 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
-		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
+		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config).GetOidcConfig()
 		oidcIdentityProvider, err := oidc.NewIdentityProvider(
 			ctx,
 			oidc.IdentityProviderConfig{
-				Issuer:        identityProviderConfig.GetOidcConfig().Issuer,
-				ClientID:      identityProviderConfig.GetOidcConfig().ClientId,
-				ClientSecret:  identityProviderConfig.GetOidcConfig().ClientSecret,
-				FieldMapping:  identityProviderConfig.GetOidcConfig().FieldMapping,
-				SkipTLSVerify: identityProviderConfig.GetOidcConfig().SkipTlsVerify,
-				AuthStyle:     identityProviderConfig.GetOidcConfig().GetAuthStyle(),
+				Issuer:        identityProviderConfig.Issuer,
+				ClientID:      identityProviderConfig.ClientId,
+				ClientSecret:  identityProviderConfig.ClientSecret,
+				FieldMapping:  identityProviderConfig.FieldMapping,
+				SkipTLSVerify: identityProviderConfig.SkipTlsVerify,
+				AuthStyle:     identityProviderConfig.GetAuthStyle(),
 			})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
