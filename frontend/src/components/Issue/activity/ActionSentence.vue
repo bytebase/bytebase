@@ -16,6 +16,7 @@ import {
   ActivityTaskStatusUpdatePayload,
   Issue,
   SYSTEM_BOT_EMAIL,
+  UNKNOWN_ID,
   empty,
 } from "@/types";
 import {
@@ -211,11 +212,11 @@ const renderActionSentence = () => {
         activity.payload
       ) as ActivityTaskStatementUpdatePayload;
       const oldStatement =
-        useSheetStatementByUID(String(payload.oldSheetId)).value ||
-        payload.oldStatement;
+        useSheetStatementByUID(String(payload.oldSheetId || UNKNOWN_ID))
+          .value || payload.oldStatement;
       const newStatement =
-        useSheetStatementByUID(String(payload.newSheetId)).value ||
-        payload.newStatement;
+        useSheetStatementByUID(String(payload.newSheetId || UNKNOWN_ID))
+          .value || payload.newStatement;
       return h(
         "span",
         {},
@@ -308,13 +309,13 @@ watch(
       sheetV1Store.getOrFetchSheetByUID(
         String(
           (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
-            .newSheetId
+            .newSheetId || UNKNOWN_ID
         )
       );
       sheetV1Store.getOrFetchSheetByUID(
         String(
           (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
-            .oldSheetId
+            .oldSheetId || UNKNOWN_ID
         )
       );
     }
