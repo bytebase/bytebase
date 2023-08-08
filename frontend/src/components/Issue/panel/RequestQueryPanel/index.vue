@@ -67,40 +67,14 @@
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-start textlabel mb-4">
-            {{ $t("issue.grant-request.expire-days") }}
+            {{ $t("common.expiration") }}
             <RequiredStar />
           </span>
-          <div>
-            <NRadioGroup
-              v-model:value="state.expireDays"
-              class="!grid grid-cols-4 gap-4"
-              name="radiogroup"
-            >
-              <div
-                v-for="day in expireDaysOptions"
-                :key="day.value"
-                class="col-span-1 flex flex-row justify-start items-center"
-              >
-                <NRadio :value="day.value" :label="day.label" />
-              </div>
-              <div class="col-span-2 flex flex-row justify-start items-center">
-                <NRadio
-                  :value="-1"
-                  :label="$t('issue.grant-request.customize')"
-                />
-                <NInputNumber
-                  v-model:value="state.customDays"
-                  class="!w-24 ml-2"
-                  :disabled="state.expireDays !== -1"
-                  :min="1"
-                  :show-button="false"
-                  :placeholder="''"
-                >
-                  <template #suffix>{{ $t("common.date.days") }}</template>
-                </NInputNumber>
-              </div>
-            </NRadioGroup>
-          </div>
+          <ExpirationSelector
+            class="grid-cols-4"
+            :options="expireDaysOptions"
+            :value="state.expireDays"
+          />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">{{
@@ -136,7 +110,6 @@ import {
   NDrawerContent,
   NRadioGroup,
   NRadio,
-  NInputNumber,
   NInput,
   NTooltip,
 } from "naive-ui";
@@ -163,13 +136,13 @@ import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
 
 interface LocalState {
   projectId?: string;
   allDatabases: boolean;
   selectedDatabaseResourceList: DatabaseResource[];
   expireDays: number;
-  customDays: number;
   description: string;
 }
 
@@ -211,7 +184,6 @@ const state = reactive<LocalState>({
   projectId: props.projectId,
   ...extractDatabaseResourceFromProps(),
   expireDays: 7,
-  customDays: 365,
   description: "",
 });
 
@@ -293,8 +265,7 @@ const doCreateIssue = async () => {
   }
 
   const expression: string[] = [];
-  const expireDays =
-    state.expireDays === -1 ? state.customDays : state.expireDays;
+  const expireDays = state.expireDays;
   expression.push(
     `request.time < timestamp("${dayjs()
       .add(expireDays, "days")
