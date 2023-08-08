@@ -11,39 +11,6 @@
         :selected-type="selectedType"
         :task="task"
       />
-      <!-- <div>
-        <TaskCheckBadgeBar
-          :task-check-run-list="task.taskCheckRunList"
-          :allow-selection="true"
-          :sticky-selection="true"
-          :selected-task-check-type="state.selectedTaskCheckType"
-          @select-task-check-type="viewCheckRunDetail"
-        />
-      </div>
-      <BBTabFilter
-        class="pt-4"
-        :tab-item-list="tabItemList"
-        :selected-index="state.selectedTabIndex"
-        @select-index="
-        (index: number) => {
-          state.selectedTabIndex = index;
-        }
-      "
-      />
-      <TaskCheckRunPanel
-        v-if="selectedTaskCheckRun"
-        :task-check-run="selectedTaskCheckRun"
-        :task="task"
-      />
-      <div class="pt-4 flex justify-end">
-        <button
-          type="button"
-          class="btn-primary py-2 px-4"
-          @click.prevent="$emit('close')"
-        >
-          {{ $t("common.close") }}
-        </button>
-      </div> -->
       <TabFilter
         v-if="selectedPlanCheckRunUID"
         v-model:value="selectedPlanCheckRunUID"
@@ -72,6 +39,7 @@ import {
 import { TabFilter, TabFilterItem } from "@/components/v2";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckDetail from "./PlanCheckDetail.vue";
+import { humanizeDate } from "@/utils";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
@@ -108,7 +76,12 @@ const selectedPlanCheckRun = computed(() => {
 const tabItemList = computed(() => {
   return selectedPlanCheckRunList.value.map<TabFilterItem<string>>(
     (checkRun, i) => {
-      const label = i === 0 ? t("common.latest") : `uid = ${checkRun.uid}`;
+      const label =
+        i === 0
+          ? t("common.latest")
+          : checkRun.createTime
+          ? humanizeDate(checkRun.createTime)
+          : `UID(${checkRun.uid})`;
       return {
         label,
         value: checkRun.uid,
