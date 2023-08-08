@@ -58,6 +58,8 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { extractUserResourceName } from "@/utils";
@@ -66,8 +68,6 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
 
 dayjs.extend(isSameOrAfter);
 
