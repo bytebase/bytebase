@@ -10,7 +10,7 @@ import {
   unknownDatabase,
   UNKNOWN_ID,
 } from "@/types";
-import { Task, Task_Type } from "@/types/proto/v1/rollout_service";
+import { Plan, Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import { extractDatabaseResourceName, flattenSpecList } from "@/utils";
 
 export const databaseForTask = (issue: ComposedIssue, task: Task) => {
@@ -86,8 +86,7 @@ const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   return unknownDatabase();
 };
 
-export const specForTask = (issue: ComposedIssue, task: Task) => {
-  const plan = issue.planEntity;
+export const specForTask = (plan: Plan | undefined, task: Task) => {
   if (!plan) return undefined;
   return flattenSpecList(plan).find((spec) => spec.id === task.specId);
 };

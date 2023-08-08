@@ -512,9 +512,15 @@ const updateStatement = async (statement: string) => {
 
   console.log(`targets: (${target}) ${tasks.map((t) => t.uid).join(",")}`);
 
+  const planPatch = cloneDeep(issue.value.planEntity);
+  if (!planPatch) {
+    notifyNotEditableLegacyIssue();
+    return;
+  }
+
   const specs: Plan_Spec[] = [];
   tasks.forEach((task) => {
-    const spec = specForTask(issue.value, task);
+    const spec = specForTask(planPatch, task);
     if (spec) {
       specs.push(spec);
     }
@@ -526,8 +532,6 @@ const updateStatement = async (statement: string) => {
     return;
   }
 
-  const planPatch = cloneDeep(issue.value.planEntity);
-  if (!planPatch) return;
   const specsToPatch = planPatch.steps
     .flatMap((step) => step.specs)
     .filter((spec) => uniqSpecIds.has(spec.id));

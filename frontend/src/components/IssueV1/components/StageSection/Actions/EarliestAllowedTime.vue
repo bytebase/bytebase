@@ -73,7 +73,7 @@ const { isCreating, issue, isTenantMode, selectedTask } = useIssueContext();
 
 // `null` to "Unset"
 const earliestAllowedTime = computed(() => {
-  const spec = specForTask(issue.value, selectedTask.value);
+  const spec = specForTask(issue.value.planEntity, selectedTask.value);
   return spec?.earliestAllowedTime ? spec.earliestAllowedTime.getTime() : null;
 });
 
@@ -101,7 +101,7 @@ const allowEditEarliestAllowedTime = computed(() => {
 
 const handleUpdateEarliestAllowedTime = (timestampMS: number | null) => {
   if (isCreating.value) {
-    const spec = specForTask(issue.value, selectedTask.value);
+    const spec = specForTask(issue.value.planEntity, selectedTask.value);
     if (!spec) return;
     if (!timestampMS) {
       spec.earliestAllowedTime = undefined;
@@ -110,7 +110,7 @@ const handleUpdateEarliestAllowedTime = (timestampMS: number | null) => {
       spec.earliestAllowedTime.setTime(timestampMS);
     }
   } else {
-    const spec = specForTask(issue.value, selectedTask.value);
+    const spec = specForTask(issue.value.planEntity, selectedTask.value);
     if (!spec) {
       notifyNotEditableLegacyIssue();
       return;

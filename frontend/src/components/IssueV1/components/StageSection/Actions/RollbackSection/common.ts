@@ -8,7 +8,12 @@ import {
   hasWorkspacePermissionV1,
   semverCompare,
 } from "@/utils";
-import { useCurrentUserV1, experimentalFetchIssueByName } from "@/store";
+import {
+  useCurrentUserV1,
+  experimentalFetchIssueByName,
+  useIssueV1Store,
+  pushNotification,
+} from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   databaseForTask,
@@ -17,6 +22,9 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { cloneDeep } from "lodash-es";
+import { rolloutServiceClient } from "@/grpcweb";
+import { useI18n } from "vue-i18n";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
 
@@ -28,7 +36,8 @@ export type RollbackUIType =
 export const useRollbackContext = () => {
   const currentUserV1 = useCurrentUserV1();
   const context = useIssueContext();
-  const { isCreating, issue, selectedTask: task } = context;
+  const { t } = useI18n();
+  const { isCreating, issue, selectedTask: task, events } = context;
   const project = computed(() => issue.value.projectEntity);
 
   // Decide with type of UI should be displayed.
@@ -116,91 +125,61 @@ export const useRollbackContext = () => {
 
   const rollbackEnabled = computed((): boolean => {
     if (isCreating.value) {
-      // TODO: see if rollback enabled from issue plan
-      return task.value.databaseDataUpdate?.rollbackEnabled ?? false;
-
-      // if (isTenantMode.value) {
-      //   // In tenant mode, all tasks share a common MigrationDetail
-      //   const issueCreate = issue.value as IssueCreate;
-      //   const createContext = issueCreate.createContext as MigrationContext;
-      //   const migrationDetail = head(createContext.detailList);
-      //   return migrationDetail?.rollbackEnabled ?? false;
-      // }
-      // // In standard mode, every task has a independent TaskCreate with its
-      // // own rollbackEnabled field.
-      // const taskCreate = task.value as TaskCreate;
-      // return taskCreate.rollbackEnabled ?? false;
+      const spec = specForTask(issue.value.planEntity, task.value);
+      return spec?.changeDatabaseConfig?.rollbackEnabled ?? false;
     } else {
       return task.value.databaseDataUpdate?.rollbackEnabled ?? false;
-      // const taskEntity = task.value as Task;
-      // const payload = taskEntity.payload as
-      //   | TaskDatabaseDataUpdatePayload
-      //   | undefined;
-      // return payload?.rollbackEnabled ?? false;
     }
   });
 
   const toggleRollback = async (on: boolean) => {
     if (isCreating.value) {
-      // TODO: update issue plan
       const config = task.value.databaseDataUpdate;
       if (config) {
         config.rollbackEnabled = on;
       }
-      const spec = specForTask(issue.value, task.value);
-      if (spec) {
-        const config = spec.changeDatabaseConfig;
-        if (config) {
-          config.rollbackEnabled = on;
-        }
+      const spec = specForTask(issue.value.planEntity, task.value);
+      if (spec && spec.changeDatabaseConfig) {
+        spec.changeDatabaseConfig.rollbackEnabled = on;
       }
-
-      // if (isTenantMode.value) {
-      //   // In tenant mode, all tasks share a common MigrationDetail
-      //   const issueCreate = issue.value as IssueCreate;
-      //   const createContext = issueCreate.createContext as MigrationContext;
-      //   createContext.detailList.forEach((detail) => {
-      //     detail.rollbackEnabled = on;
-      //   });
-      // } else {
-      //   // In standard mode, every task has a independent TaskCreate with its
-      //   // own rollbackEnabled field.
-      //   const taskCreate = task.value as TaskCreate;
-      //   taskCreate.rollbackEnabled = on;
-      // }
     } else {
-      // TODO: patch plan to reconcile rollout/stages/tasks
-      const spec = specForTask(issue.value, task.value);
-      if (!spec) {
+      // patch plan to reconcile rollout/stages/tasks
+      const planPatch = cloneDeep(issue.value.planEntity);
+      const spec = specForTask(planPatch, task.value);
+      if (!planPatch || !spec || !spec.changeDatabaseConfig) {
         notifyNotEditableLegacyIssue();
         return;
       }
-
-      const config = task.value.databaseDataUpdate;
-      if (config) {
-        config.rollbackEnabled = on;
+      spec.changeDatabaseConfig.rollbackEnabled = on;
+      if (task.value.databaseDataUpdate) {
+        task.value.databaseDataUpdate.rollbackEnabled = on;
       }
 
-      // // Once the issue has been created, we need to patch the task.
-      // const taskEntity = task.value as Task;
-      // await patchTask(taskEntity.id, {
-      //   rollbackEnabled: on,
-      // });
+      const updatedPlan = await rolloutServiceClient.updatePlan({
+        plan: planPatch,
+        updateMask: ["steps"],
+      });
+      issue.value.planEntity = updatedPlan;
 
-      // const issueEntity = issue.value as Issue;
-      // const action = on ? "Enable" : "Disable";
-      // try {
-      //   await useIssueV1Store().createIssueComment({
-      //     issueId: issueEntity.id,
-      //     comment: `${action} SQL rollback log for task [${taskEntity.name}].`,
-      //     payload: {
-      //       issueName: issueEntity.name,
-      //     },
-      //   });
-      // } catch {
-      //   // do nothing
-      //   // failing to comment to won't be too bad
-      // }
+      const action = on ? "Enable" : "Disable";
+      events.emit("status-changed", { eager: true });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+
+      try {
+        await useIssueV1Store().createIssueComment({
+          issueId: issue.value.uid,
+          comment: `${action} SQL rollback log for task [${issue.value.title}].`,
+          payload: {
+            issueName: issue.value.title,
+          },
+        });
+      } catch {
+        // fail to comment won't be too bad
+      }
     }
   };
 
