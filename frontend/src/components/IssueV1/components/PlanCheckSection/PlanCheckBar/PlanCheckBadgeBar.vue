@@ -20,6 +20,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import PlanCheckBadge from "./PlanCheckBadge.vue";
 import { groupBy } from "@/utils/collections";
+import { orderBy } from "lodash-es";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
@@ -33,12 +34,30 @@ defineEmits<{
 
 const planCheckRunsGroupByType = computed(() => {
   const groups = groupBy(props.planCheckRunList, (checkRun) => checkRun.type);
-  // TODO: sort groups by type
-  return Array.from(groups.entries()).map(([type, list]) => ({
+  const list = Array.from(groups.entries()).map(([type, list]) => ({
     type,
     list,
   }));
+  // Sort by pre-defined orders
+  // If an item's order is not defined, put it behind
+  return orderBy(
+    list,
+    [(group) => PlanCheckTypeOrderDict.get(group.type) ?? 99999],
+    "asc"
+  );
 });
+
+const PlanCheckTypeOrderList: PlanCheckRun_Type[] = [
+  PlanCheckRun_Type.DATABASE_PITR_MYSQL,
+  PlanCheckRun_Type.DATABASE_GHOST_SYNC,
+  PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY,
+  PlanCheckRun_Type.DATABASE_STATEMENT_TYPE,
+  PlanCheckRun_Type.DATABASE_CONNECT,
+  PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
+];
+const PlanCheckTypeOrderDict = new Map<PlanCheckRun_Type, number>(
+  PlanCheckTypeOrderList.map((type, order) => [type, order])
+);
 
 // import { computed, defineComponent, PropType, reactive, watch } from "vue";
 // import { groupBy, maxBy } from "lodash-es";
