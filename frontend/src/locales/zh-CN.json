@@ -1322,7 +1322,10 @@
       },
       "select-target-project": "选择目标项目"
     },
-    "transfer-database-from-to": "将数据库从源项目转移到目标项目"
+    "transfer-database-from-to": "将数据库从源项目转移到目标项目",
+    "classification": {
+      "self": "分类分级"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
