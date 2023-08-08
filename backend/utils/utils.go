@@ -231,6 +231,16 @@ func GetActiveStage(stages []*store.StageMessage) *store.StageMessage {
 	return nil
 }
 
+// GetActiveStageV2 returns the first activeV2 stage among all stages.
+func GetActiveStageV2(stages []*store.StageMessage) *store.StageMessage {
+	for _, stage := range stages {
+		if stage.ActiveV2 {
+			return stage
+		}
+	}
+	return nil
+}
+
 // isMatchExpression checks whether a databases matches the query.
 // labels is a mapping from database label key to value.
 func isMatchExpression(labels map[string]string, expression *api.LabelSelectorRequirement) bool {
