@@ -55,8 +55,11 @@ import { useNow } from "@vueuse/core";
 import { NDatePicker, NTooltip } from "naive-ui";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import { cloneDeep } from "lodash-es";
+import { useI18n } from "vue-i18n";
 
-import { useCurrentUserV1 } from "@/store";
+import { rolloutServiceClient } from "@/grpcweb";
+import { pushNotification, useCurrentUserV1 } from "@/store";
 import { extractUserResourceName } from "@/utils";
 import {
   notifyNotEditableLegacyIssue,
@@ -68,8 +71,10 @@ import { Task_Status } from "@/types/proto/v1/rollout_service";
 
 dayjs.extend(isSameOrAfter);
 
+const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { isCreating, issue, isTenantMode, selectedTask } = useIssueContext();
+const { isCreating, issue, isTenantMode, selectedTask, events } =
+  useIssueContext();
 
 // `null` to "Unset"
 const earliestAllowedTime = computed(() => {
@@ -99,7 +104,7 @@ const allowEditEarliestAllowedTime = computed(() => {
   );
 });
 
-const handleUpdateEarliestAllowedTime = (timestampMS: number | null) => {
+const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
   if (isCreating.value) {
     const spec = specForTask(issue.value.planEntity, selectedTask.value);
     if (!spec) return;
@@ -110,12 +115,33 @@ const handleUpdateEarliestAllowedTime = (timestampMS: number | null) => {
       spec.earliestAllowedTime.setTime(timestampMS);
     }
   } else {
+    const planPatch = cloneDeep(issue.value.planEntity);
     const spec = specForTask(issue.value.planEntity, selectedTask.value);
-    if (!spec) {
+    if (!planPatch || !spec) {
       notifyNotEditableLegacyIssue();
       return;
     }
-    // TODO
+
+    if (!timestampMS) {
+      spec.earliestAllowedTime = undefined;
+    } else {
+      spec.earliestAllowedTime = new Date();
+      spec.earliestAllowedTime.setTime(timestampMS);
+    }
+
+    const updatedPlan = await rolloutServiceClient.updatePlan({
+      plan: planPatch,
+      updateMask: ["steps"],
+    });
+    issue.value.planEntity = updatedPlan;
+
+    events.emit("status-changed", { eager: true });
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
   }
 };
 
