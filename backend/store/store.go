@@ -40,7 +40,7 @@ type Store struct {
 	databaseGroupIDCache           sync.Map // map[int]*DatabaseGroupMessage
 	schemaGroupCache               sync.Map // map[string]*SchemaGroupMessage
 	// sheetStatementCache caches the statement of a sheet.
-	sheetStatementCache *ristretto.Cache //map[sheetUID]sheetStatementString
+	sheetStatementCache *ristretto.Cache // map[sheetUID]sheetStatementString
 	vcsIDCache          sync.Map         // map[int]*ExternalVersionControlMessage
 }
 
