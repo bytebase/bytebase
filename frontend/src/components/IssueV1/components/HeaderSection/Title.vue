@@ -17,17 +17,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
+import { CSSProperties, computed, reactive, watch } from "vue";
 import { NInput } from "naive-ui";
+import { useI18n } from "vue-i18n";
 
-import { useCurrentUserV1 } from "@/store";
-import { useIssueContext } from "../../logic";
+import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
+import { issueServiceClient } from "@/grpcweb";
+import { pushNotification, useCurrentUserV1 } from "@/store";
 import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { CSSProperties } from "vue";
+import { useIssueContext } from "../../logic";
 
 type ViewMode = "EDIT" | "VIEW";
 
+const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { isCreating, issue } = useIssueContext();
 
@@ -105,8 +107,18 @@ const onBlur = async () => {
   try {
     state.isUpdating = true;
     // TODO update name
-    await new Promise((r) => setTimeout(r, 1500));
-    issue.value.title = state.title;
+    const issuePatch = Issue.fromJSON(issue.value);
+    issuePatch.title = state.title;
+    const updated = await issueServiceClient.updateIssue({
+      issue: issuePatch,
+      updateMask: ["title"],
+    });
+    Object.assign(issue.value, updated);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
   } finally {
     cleanup();
   }
