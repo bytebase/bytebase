@@ -124,8 +124,8 @@
           >
             <n-tab-pane
               v-if="identityProvider.type === IdentityProviderType.LDAP"
-              name="ldap"
-              tab="LDAP"
+              :name="identityProvider.name"
+              :tab="identityProvider.title"
             >
               <form
                 class="space-y-6"
