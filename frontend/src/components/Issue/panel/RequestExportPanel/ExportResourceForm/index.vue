@@ -45,6 +45,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import {
   DatabaseResource,
@@ -54,7 +55,6 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
-import { computed, reactive, watch, watchEffect } from "vue";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
 
 const props = defineProps<{
