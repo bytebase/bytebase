@@ -285,7 +285,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
   CREATE DATABASE bbdev;
   ```
 
-3. Start backend using air (with live reload).
+1. Start backend using air (with live reload).
 
    ```bash
    PG_URL=postgresql://bbdev@localhost/bbdev
