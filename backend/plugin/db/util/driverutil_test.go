@@ -2153,3 +2153,80 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
+
+func TestTSQLExtractSensitiveField(t *testing.T) {
+	var (
+		defaultDatabase       = "MyDB"
+		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
+			IgnoreCaseSensitive: true,
+			DatabaseList: []db.DatabaseSchema{
+				{
+					Name: defaultDatabase,
+					SchemaList: []db.SchemaSchema{
+						{
+							Name: "dbo",
+							TableList: []db.TableSchema{
+								{
+									Name: "MyTable1",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "a",
+											Sensitive: true,
+										},
+										{
+											Name:      "b",
+											Sensitive: false,
+										},
+										{
+											Name:      "c",
+											Sensitive: false,
+										},
+										{
+											Name:      "d",
+											Sensitive: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	)
+
+	tests := []struct {
+		statement  string
+		schemaInfo *db.SensitiveSchemaInfo
+		fieldList  []db.SensitiveField
+	}{
+		{
+			statement:  `SELECT * FROM MyTable1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		res, err := extractSensitiveField(db.MSSQL, test.statement, defaultDatabase, test.schemaInfo)
+		require.NoError(t, err, test.statement)
+		require.Equal(t, test.fieldList, res, test.statement)
+	}
+}
