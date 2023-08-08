@@ -61,6 +61,7 @@ const props = defineProps<{
   projectId?: string;
   databaseId?: string;
   statement?: string;
+  databaseResources?: DatabaseResource[];
 }>();
 
 const emit = defineEmits<{
@@ -82,7 +83,7 @@ const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   exportMethod: "SQL",
   statement: props.statement || "",
-  databaseResources: [],
+  databaseResources: props.databaseResources || [],
 });
 
 const project = computed(() => {
