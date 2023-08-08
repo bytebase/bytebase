@@ -55,7 +55,10 @@
           <template v-if="isBindingExpired(binding)" #avatar>
             <RoleExpiredTip />
           </template>
-          {{ displayRoleTitle(binding.role) }}
+          <span>{{ displayRoleTitle(binding.role) }}</span>
+          <span v-if="getBindingConditionTitle(binding)" class="ml-0.5">
+            ({{ getBindingConditionTitle(binding) }})
+          </span>
         </NTag>
       </div>
       <div class="bb-grid-cell gap-x-2 justify-end">
@@ -112,6 +115,7 @@ import ProjectMemberRolePanel from "./ProjectMemberRolePanel.vue";
 import { ComposedProjectMember } from "./types";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { convertFromExpr } from "@/utils/issue/cel";
+import { getBindingConditionTitle } from "../common/util";
 
 export type ProjectMemberRow = BBGridRow<ComposedProjectMember>;
 

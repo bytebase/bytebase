@@ -77,6 +77,10 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     return sheetsByName.value.get(name);
   };
   const fetchSheetByName = async (name: string) => {
+    const uid = extractSheetUID(name);
+    if (uid.startsWith("-") || !uid) {
+      return undefined;
+    }
     try {
       const sheet = await sheetServiceClient.getSheet({
         name,
@@ -90,6 +94,9 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   };
   const getOrFetchSheetByName = async (name: string) => {
     const uid = extractSheetUID(name);
+    if (uid.startsWith("-") || !uid) {
+      return undefined;
+    }
     if (uid === String(UNKNOWN_ID)) {
       return undefined;
     }
@@ -121,6 +128,9 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     }
   };
   const fetchSheetByUID = async (uid: string, raw = false) => {
+    if (uid.startsWith("-") || !uid) {
+      return undefined;
+    }
     try {
       const name = `projects/-/sheets/${uid}`;
       const sheet = await sheetServiceClient.getSheet({
@@ -134,6 +144,9 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     }
   };
   const getOrFetchSheetByUID = async (uid: string) => {
+    if (uid.startsWith("-") || !uid) {
+      return undefined;
+    }
     if (uid === String(UNKNOWN_ID)) {
       return undefined;
     }

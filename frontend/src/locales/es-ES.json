@@ -1344,7 +1344,10 @@
       },
       "select-target-project": "Seleccionar proyecto de destino"
     },
-    "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino"
+    "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
+    "classification": {
+      "self": "Clasificación"
+    }
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",

@@ -88,16 +88,14 @@
           </div>
 
           <div class="mt-6">
-            <div
-              class="max-w-6xl mx-auto px-6 space-y-6 divide-y divide-block-border"
-            >
+            <div class="max-w-6xl px-6 space-y-6 divide-y divide-block-border">
               <!-- Description list -->
-              <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-                <div class="col-span-1 col-start-1">
-                  <dt class="text-sm font-medium text-control-light">
+              <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
+                <div class="col-span-1">
+                  <dt class="text-sm text-control-light">
                     {{ $t("database.engine") }}
                   </dt>
-                  <dd class="mt-1 text-sm text-main">
+                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
                     {{
                       instanceEngine === Engine.POSTGRES ||
                       instanceEngine === Engine.SNOWFLAKE
@@ -107,27 +105,39 @@
                   </dd>
                 </div>
 
-                <div class="col-span-1">
-                  <dt class="text-sm font-medium text-control-light">
-                    {{ $t("database.row-count-estimate") }}
+                <!-- TODO: show table classification -->
+                <div v-if="table.classification" class="col-span-1">
+                  <dt class="text-sm text-control-light">
+                    {{ $t("database.classification.self") }}
                   </dt>
-                  <dd class="mt-1 text-sm text-main">{{ table.rowCount }}</dd>
+                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                    {{ table.classification }}
+                  </dd>
                 </div>
 
-                <div class="col-span-1 col-start-1">
-                  <dt class="text-sm font-medium text-control-light">
+                <div class="col-span-1">
+                  <dt class="text-sm text-control-light">
+                    {{ $t("database.row-count-estimate") }}
+                  </dt>
+                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                    {{ table.rowCount }}
+                  </dd>
+                </div>
+
+                <div class="col-span-1">
+                  <dt class="text-sm text-control-light">
                     {{ $t("database.data-size") }}
                   </dt>
-                  <dd class="mt-1 text-sm text-main">
+                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
                     {{ bytesToString(table.dataSize) }}
                   </dd>
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm font-medium text-control-light">
+                  <dt class="text-sm text-control-light">
                     {{ $t("database.index-size") }}
                   </dt>
-                  <dd class="mt-1 text-sm text-main">
+                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
                     {{
                       instanceEngine === Engine.CLICKHOUSE ||
                       instanceEngine === Engine.SNOWFLAKE
@@ -144,10 +154,10 @@
                   "
                 >
                   <div class="col-span-1">
-                    <dt class="text-sm font-medium text-control-light">
+                    <dt class="text-sm text-control-light">
                       {{ $t("db.collation") }}
                     </dt>
-                    <dd class="mt-1 text-sm text-main">
+                    <dd class="mt-1 text-lg sm:text-xl font-semibold">
                       {{
                         instanceEngine === Engine.POSTGRES
                           ? "n/a"

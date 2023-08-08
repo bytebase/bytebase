@@ -494,7 +494,7 @@
         "resource-id-description": "唯一的字符串，有效字符为 /[a-z][0-9]-/",
         "domain": "域名",
         "domain-description": "OAuth 提供商的域名",
-        "identity-provider-information": "OAuth 提供商信息",
+        "identity-provider-information": "身份提供商信息",
         "identity-provider-information-description": "这些信息是由您的身份提供商提供的。",
         "identity-provider-needed-information": "用以下信息创建您的 SSO 应用程序。",
         "endpoints": "链接信息",
@@ -505,6 +505,7 @@
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
+        "security-protocol": "安全协议",
         "connection-security": "安全性选项",
         "connection-security-skip-tls-verify": "跳过自签名证书验证",
         "identifier": "Bytebase 用户的邮箱",
@@ -1339,7 +1340,10 @@
       },
       "select-target-project": "选择目标项目"
     },
-    "transfer-database-from-to": "将数据库从源项目转移到目标项目"
+    "transfer-database-from-to": "将数据库从源项目转移到目标项目",
+    "classification": {
+      "self": "分类分级"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
