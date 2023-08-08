@@ -288,10 +288,6 @@ const doCreateIssue = async () => {
   if (!allowCreate.value) {
     return;
   }
-  if (!state.databaseResourceCondition) {
-    console.error("databaseResourceCondition should not be empty");
-    return;
-  }
 
   const newIssue: IssueCreate = {
     name: generateIssueName(),
@@ -326,7 +322,9 @@ const doCreateIssue = async () => {
   );
   expression.push(`request.export_format == "${state.exportFormat}"`);
   expression.push(`request.row_limit == ${state.maxRowCount}`);
-  expression.push(state.databaseResourceCondition);
+  if (state.databaseResourceCondition) {
+    expression.push(state.databaseResourceCondition);
+  }
   // If the export statement is not empty, add the selected database to the condition.
   if (state.databaseResources.length === 0) {
     const condition = stringifyDatabaseResources([
