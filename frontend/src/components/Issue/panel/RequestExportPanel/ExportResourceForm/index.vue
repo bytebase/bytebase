@@ -3,7 +3,6 @@
     <NRadioGroup
       v-model:value="state.exportMethod"
       class="w-full !flex flex-row justify-start items-center gap-4"
-      name="export-method"
     >
       <NRadio :value="'SQL'" label="SQL" />
       <NTooltip :disabled="allowSelectTableResource">
