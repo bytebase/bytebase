@@ -205,28 +205,26 @@ const cancelEditComment = () => {
   state.editComment = "";
 };
 
-const doCreateComment = (comment: string) => {
-  issueV1Store
-    .createIssueComment({
-      issueId: issue.value.uid,
-      comment,
-    })
-    .then(() => {
-      state.newComment = "";
+const doCreateComment = async (comment: string) => {
+  await issueV1Store.createIssueComment({
+    issueId: issue.value.uid,
+    comment,
+  });
+  state.newComment = "";
 
-      // // Because the user just added a comment and we assume she is interested in this
-      // // issue, and we add her to the subscriber list if she is not there
-      // let isSubscribed = false;
-      // for (const subscriber of subscriberList.value) {
-      //   if (subscriber.subscriber.id == currentUser.value.id) {
-      //     isSubscribed = true;
-      //     break;
-      //   }
-      // }
-      // if (!isSubscribed) {
-      //   addSubscriberId(currentUser.value.id);
-      // }
-    });
+  await prepareActivityList();
+  // // Because the user just added a comment and we assume she is interested in this
+  // // issue, and we add her to the subscriber list if she is not there
+  // let isSubscribed = false;
+  // for (const subscriber of subscriberList.value) {
+  //   if (subscriber.subscriber.id == currentUser.value.id) {
+  //     isSubscribed = true;
+  //     break;
+  //   }
+  // }
+  // if (!isSubscribed) {
+  //   addSubscriberId(currentUser.value.id);
+  // }
 };
 
 const allowEditActivity = (activity: LogEntity) => {
