@@ -34,15 +34,16 @@
         v-if="isCreating || state.isEditing"
         ref="inputRef"
         v-model:value="state.description"
+        :placeholder="$t('issue.add-some-description')"
+        :autosize="{ minRows: 3, maxRows: 10 }"
+        :disabled="state.isUpdating"
+        :loading="state.isUpdating"
         style="
           width: 100%;
           --n-placeholder-color: var(--color-control-placeholder);
         "
         type="textarea"
         size="small"
-        :placeholder="$t('issue.add-some-description')"
-        :autosize="{ minRows: 3, maxRows: 10 }"
-        :disabled="state.isUpdating"
         @update:value="onDescriptionChange"
       />
       <div
@@ -71,7 +72,7 @@ import {
   hasWorkspacePermissionV1,
   isGrantRequestIssue,
 } from "@/utils";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { issueServiceClient } from "@/grpcweb";
 
@@ -144,12 +145,15 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     state.isUpdating = true;
-    const issuePatch = { ...issue, description: state.description };
-    await issueServiceClient.updateIssue({
+    const issuePatch = Issue.fromJSON({
+      ...issue.value,
+      description: state.description,
+    });
+    const updated = await issueServiceClient.updateIssue({
       issue: issuePatch,
       updateMask: ["description"],
     });
-    issue.value.description = state.description;
+    Object.assign(issue.value, updated);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

@@ -107,8 +107,10 @@ const onBlur = async () => {
   try {
     state.isUpdating = true;
     // TODO update name
-    const issuePatch = Issue.fromJSON(issue.value);
-    issuePatch.title = state.title;
+    const issuePatch = Issue.fromJSON({
+      ...issue.value,
+      title: state.title,
+    });
     const updated = await issueServiceClient.updateIssue({
       issue: issuePatch,
       updateMask: ["title"],
