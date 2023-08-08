@@ -24,34 +24,12 @@
     </div>
     <div class="w-full">
       <span>{{ $t("common.expiration") }}</span>
-      <div class="w-full mt-2">
-        <NRadioGroup
-          v-model:value="state.expireDays"
-          class="w-full !grid grid-cols-3 gap-2"
-          name="radiogroup"
-        >
-          <div
-            v-for="day in expireDaysOptions"
-            :key="day.value"
-            class="col-span-1 h-8 flex flex-row justify-start items-center"
-          >
-            <NRadio :value="day.value" :label="day.label" />
-          </div>
-          <div class="col-span-2 flex flex-row justify-start items-center">
-            <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
-            <NInputNumber
-              v-model:value="state.customDays"
-              class="!w-24 ml-2"
-              :disabled="state.expireDays !== -1"
-              :min="1"
-              :show-button="false"
-              :placeholder="''"
-            >
-              <template #suffix>{{ $t("common.date.days") }}</template>
-            </NInputNumber>
-          </div>
-        </NRadioGroup>
-      </div>
+      <ExpirationSelector
+        class="mt-2"
+        :options="expireDaysOptions"
+        :value="state.expireDays"
+        @update="state.expireDays = $event"
+      />
     </div>
   </div>
 </template>
@@ -60,7 +38,6 @@
 /* eslint-disable vue/no-mutating-props */
 
 import dayjs from "dayjs";
-import { NRadio, NRadioGroup, NInputNumber } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
@@ -68,6 +45,7 @@ import { ComposedProject } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { Expr } from "@/types/proto/google/type/expr";
 import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -83,15 +61,13 @@ interface LocalState {
   userUidList: string[];
   role?: string;
   expireDays: number;
-  customDays: number;
 }
 
 const { t } = useI18n();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   userUidList: [],
-  expireDays: 0,
-  customDays: 7,
+  expireDays: 7,
 });
 
 const expireDaysOptions = computed(() => [
@@ -113,11 +89,11 @@ const expireDaysOptions = computed(() => [
   },
   {
     value: 180,
-    label: t("common.date.days", { days: 180 }),
+    label: t("common.date.months", { months: 6 }),
   },
   {
     value: 365,
-    label: t("common.date.days", { days: 365 }),
+    label: t("common.date.years", { years: 1 }),
   },
   {
     value: 0,
@@ -140,10 +116,7 @@ watch(
     if (state.expireDays === 0) {
       props.binding.condition = undefined;
     } else {
-      let days = state.expireDays;
-      if (state.expireDays === -1) {
-        days = state.customDays;
-      }
+      const days = state.expireDays;
       props.binding.condition = Expr.create({
         expression: `request.time < timestamp("${dayjs()
           .add(days, "days")
