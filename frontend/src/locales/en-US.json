@@ -1329,7 +1329,10 @@
       },
       "select-target-project": "Select target project"
     },
-    "transfer-database-from-to": "Transfer database from source project to target project"
+    "transfer-database-from-to": "Transfer database from source project to target project",
+    "classification": {
+      "self": "Classification"
+    }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
