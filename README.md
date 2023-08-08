@@ -278,7 +278,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
    git clone https://github.com/bytebase/bytebase
    ```
 
-2. Create an external Postgres database on localhost.
+1. Create an external Postgres database on localhost.
 
   ```sql
   CREATE USER bbdev SUPERUSER;
