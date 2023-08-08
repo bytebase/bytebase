@@ -49,7 +49,7 @@ import {
   SelectGroupOption,
 } from "naive-ui";
 
-import { useIssueContext } from "@/components/IssueV1";
+import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
 import { extractUserResourceName } from "@/utils";
@@ -129,8 +129,12 @@ const renderLabel = (option: SelectOption | SelectGroupOption) => {
 };
 
 const onUpdateSubscribers = async (subscribers: string[]) => {
-  issue.value.subscribers = subscribers;
-  keyword.value = "";
+  try {
+    await updateIssueSubscribers(issue.value, subscribers);
+    keyword.value = "";
+  } finally {
+    // Nothing
+  }
 };
 
 const onUpdateShow = (show: boolean) => {
