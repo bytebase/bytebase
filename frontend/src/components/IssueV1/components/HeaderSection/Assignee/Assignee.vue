@@ -18,24 +18,36 @@
       <AssigneeAttentionButton />
     </div>
 
-    <UserSelect
-      :multiple="false"
-      :user="assigneeUID"
-      :disabled="!allowChangeAssignee"
-      :filter="filterAssignee"
-      style="width: 12rem"
-      @update:user="changeAssigneeUID"
-    />
+    <NTooltip :disabled="allowChangeAssignee">
+      <template #trigger>
+        <UserSelect
+          :multiple="false"
+          :user="assigneeUID"
+          :disabled="!allowChangeAssignee || isUpdating"
+          :loading="isUpdating"
+          :filter="filterAssignee"
+          style="width: 12rem"
+          @update:user="changeAssigneeUID"
+        />
+      </template>
+      <template #default>
+        <ErrorList :errors="['You are not allowed to change assignee']" />
+      </template>
+    </NTooltip>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import { NTooltip } from "naive-ui";
+import { useI18n } from "vue-i18n";
 
-import { useCurrentUserV1, useUserStore } from "@/store";
+import { User } from "@/types/proto/v1/auth_service";
+import { Issue } from "@/types/proto/v1/issue_service";
+import { issueServiceClient } from "@/grpcweb";
+import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import { SYSTEM_BOT_EMAIL, SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
 import { extractUserResourceName, extractUserUID } from "@/utils";
-import { User } from "@/types/proto/v1/auth_service";
 import { UserSelect } from "@/components/v2";
 import {
   allowUserToChangeAssignee,
@@ -44,10 +56,13 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
+import { ErrorList } from "../../common";
 
+const { t } = useI18n();
 const userStore = useUserStore();
 const { isCreating, issue } = useIssueContext();
 const currentUser = useCurrentUserV1();
+const isUpdating = ref(false);
 
 const assigneeEmail = computed(() => {
   const assignee = issue.value.assignee;
@@ -70,7 +85,7 @@ const allowChangeAssignee = computed(() => {
   return allowUserToChangeAssignee(currentUser.value, issue.value);
 });
 
-const changeAssigneeUID = (uid: string | undefined) => {
+const changeAssigneeUID = async (uid: string | undefined) => {
   if (!uid || uid === String(UNKNOWN_ID)) {
     issue.value.assignee = "";
     return;
@@ -81,6 +96,25 @@ const changeAssigneeUID = (uid: string | undefined) => {
     return;
   }
   issue.value.assignee = `users/${assignee.email}`;
+
+  if (!isCreating.value) {
+    const issuePatch = Issue.fromJSON(issue.value);
+    isUpdating.value = true;
+    try {
+      const updated = await issueServiceClient.updateIssue({
+        issue: issuePatch,
+        updateMask: ["assignee"],
+      });
+      Object.assign(issue.value, updated);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } finally {
+      isUpdating.value = false;
+    }
+  }
 };
 
 const rollOutPolicy = useCurrentRolloutPolicyForActiveEnvironment();

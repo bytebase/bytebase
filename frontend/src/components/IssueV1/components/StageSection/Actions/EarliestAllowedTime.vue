@@ -19,25 +19,18 @@
       </div>
     </h2>
     <div class="w-[12rem]">
-      <NDatePicker
-        v-if="allowEditEarliestAllowedTime"
-        :value="earliestAllowedTime"
-        :is-date-disabled="isDayPassed"
-        :placeholder="$t('task.earliest-allowed-time-unset')"
-        type="datetime"
-        clearable
-        @update:value="handleUpdateEarliestAllowedTime"
-      />
-
-      <NTooltip v-else>
+      <NTooltip :disabled="allowEditEarliestAllowedTime">
         <template #trigger>
-          <span class="textfield text-sm font-medium text-main">
-            {{
-              earliestAllowedTime
-                ? dayjs(earliestAllowedTime).format("LLL")
-                : $t("task.earliest-allowed-time-unset")
-            }}
-          </span>
+          <NDatePicker
+            :value="earliestAllowedTime"
+            :is-date-disabled="isDayPassed"
+            :placeholder="$t('task.earliest-allowed-time-unset')"
+            :disabled="!allowEditEarliestAllowedTime || isUpdating"
+            :loading="isUpdating"
+            type="datetime"
+            clearable
+            @update:value="handleUpdateEarliestAllowedTime"
+          />
         </template>
         <template #default>
           <div class="w-48">
@@ -50,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useNow } from "@vueuse/core";
 import { NDatePicker, NTooltip } from "naive-ui";
 import dayjs from "dayjs";
@@ -75,6 +68,7 @@ const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { isCreating, issue, isTenantMode, selectedTask, events } =
   useIssueContext();
+const isUpdating = ref(false);
 
 // `null` to "Unset"
 const earliestAllowedTime = computed(() => {
@@ -122,26 +116,31 @@ const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
       return;
     }
 
-    if (!timestampMS) {
-      spec.earliestAllowedTime = undefined;
-    } else {
-      spec.earliestAllowedTime = new Date();
-      spec.earliestAllowedTime.setTime(timestampMS);
+    isUpdating.value = true;
+    try {
+      if (!timestampMS) {
+        spec.earliestAllowedTime = undefined;
+      } else {
+        spec.earliestAllowedTime = new Date();
+        spec.earliestAllowedTime.setTime(timestampMS);
+      }
+
+      const updatedPlan = await rolloutServiceClient.updatePlan({
+        plan: planPatch,
+        updateMask: ["steps"],
+      });
+      issue.value.planEntity = updatedPlan;
+
+      events.emit("status-changed", { eager: true });
+
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } finally {
+      isUpdating.value = false;
     }
-
-    const updatedPlan = await rolloutServiceClient.updatePlan({
-      plan: planPatch,
-      updateMask: ["steps"],
-    });
-    issue.value.planEntity = updatedPlan;
-
-    events.emit("status-changed", { eager: true });
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
   }
 };
 
