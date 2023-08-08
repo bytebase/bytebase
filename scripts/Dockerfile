@@ -110,11 +110,3 @@ CMD ["--port", "80", "--data", "/var/opt/bytebase"]
 HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:80/healthz || exit 1
 
 ENTRYPOINT ["bytebase"]
-
-
-#helm \
-#--set "bytebase.option.port"=443 \
-#--set "bytebase.option.external-url"="https://bytebase.example.com" \
-#--set "bytebase.option.pg"="postgresql://postgres:5j7cvh2j@10.43.33.0:5432/postgres" \
-#--set "bytebase.version"=2.5.0 \
-#install bytebase-release bytebase/bytebase
