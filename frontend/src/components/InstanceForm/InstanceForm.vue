@@ -303,6 +303,11 @@
           </div>
         </div>
       </div>
+
+      <InstanceArchiveRestoreButton
+        v-if="!isCreating && instance"
+        :instance="(instance as ComposedInstance)"
+      />
     </div>
 
     <template v-if="drawer" #footer>
@@ -377,6 +382,7 @@ import {
   ResourceId,
   ValidatedMessage,
   unknownEnvironment,
+  ComposedInstance,
 } from "@/types";
 import {
   pushNotification,
@@ -394,6 +400,7 @@ import SpannerHostInput from "./SpannerHostInput.vue";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { DrawerContent, InstanceV1EngineIcon } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { InstanceArchiveRestoreButton } from "@/components/Instance";
 import {
   DataSource,
   DataSourceType,
