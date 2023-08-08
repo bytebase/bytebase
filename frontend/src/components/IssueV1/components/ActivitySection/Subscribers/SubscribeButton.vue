@@ -12,7 +12,7 @@ import { computed, ref } from "vue";
 import { NButton } from "naive-ui";
 
 import { useCurrentUserV1 } from "@/store";
-import { useIssueContext, toggleSubscribe } from "@/components/IssueV1";
+import { useIssueContext, toggleSubscribeIssue } from "@/components/IssueV1";
 
 const { issue } = useIssueContext();
 const currentUser = useCurrentUserV1();
@@ -26,7 +26,7 @@ const handleClick = async () => {
   // TODO
   try {
     isLoading.value = true;
-    await toggleSubscribe(issue.value, currentUser.value);
+    await toggleSubscribeIssue(issue.value, currentUser.value);
   } finally {
     isLoading.value = false;
   }

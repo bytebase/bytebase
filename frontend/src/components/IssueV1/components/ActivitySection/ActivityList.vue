@@ -74,7 +74,7 @@
       <div class="flex">
         <div class="flex-shrink-0">
           <div class="relative">
-            <UserAvatar :user="currentUserV1" />
+            <UserAvatar :user="currentUser" />
             <span
               class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
             >
@@ -118,7 +118,7 @@ import { computed, onMounted, reactive, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 
 import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
-import { useIssueContext } from "../../logic";
+import { doSubscribeIssue, useIssueContext } from "../../logic";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   DistinctActivity,
@@ -152,7 +152,7 @@ const state = reactive<LocalState>({
   newComment: "",
 });
 
-const currentUserV1 = useCurrentUserV1();
+const currentUser = useCurrentUserV1();
 const issueV1Store = useIssueV1Store();
 
 const prepareActivityList = async () => {
@@ -213,25 +213,21 @@ const doCreateComment = async (comment: string) => {
   state.newComment = "";
 
   await prepareActivityList();
+
   // // Because the user just added a comment and we assume she is interested in this
   // // issue, and we add her to the subscriber list if she is not there
-  // let isSubscribed = false;
-  // for (const subscriber of subscriberList.value) {
-  //   if (subscriber.subscriber.id == currentUser.value.id) {
-  //     isSubscribed = true;
-  //     break;
-  //   }
-  // }
-  // if (!isSubscribed) {
-  //   addSubscriberId(currentUser.value.id);
-  // }
+  try {
+    await doSubscribeIssue(issue.value, currentUser.value);
+  } catch {
+    // Nothing
+  }
 };
 
 const allowEditActivity = (activity: LogEntity) => {
   if (activity.action !== LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE) {
     return false;
   }
-  if (currentUserV1.value.email !== extractUserResourceName(activity.creator)) {
+  if (currentUser.value.email !== extractUserResourceName(activity.creator)) {
     return false;
   }
   const payload = JSON.parse(

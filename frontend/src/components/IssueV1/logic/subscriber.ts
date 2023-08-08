@@ -25,7 +25,7 @@ export const updateIssueSubscribers = async (
   });
 };
 
-export const toggleSubscribe = async (issue: Issue, user: User) => {
+export const toggleSubscribeIssue = async (issue: Issue, user: User) => {
   const subscribers = [...issue.subscribers];
   const userTag = `users/${user.email}`;
   const isSubscribed = subscribers.includes(userTag);
@@ -34,5 +34,16 @@ export const toggleSubscribe = async (issue: Issue, user: User) => {
   } else {
     subscribers.push(userTag);
   }
+  return await updateIssueSubscribers(issue, subscribers);
+};
+
+export const doSubscribeIssue = async (issue: Issue, user: User) => {
+  const subscribers = [...issue.subscribers];
+  const userTag = `users/${user.email}`;
+  const isSubscribed = subscribers.includes(userTag);
+  if (isSubscribed) {
+    return;
+  }
+  subscribers.push(userTag);
   return await updateIssueSubscribers(issue, subscribers);
 };
