@@ -609,9 +609,13 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		return nil, err
 	}
 
+	updateMasks := map[string]bool{}
+
 	patch := &store.UpdateIssueMessage{}
 	for _, path := range request.UpdateMask.Paths {
-		if path == "approval_finding_done" {
+		updateMasks[path] = true
+		switch path {
+		case "approval_finding_done":
 			if request.Issue.ApprovalFindingDone {
 				return nil, status.Errorf(codes.InvalidArgument, "cannot set approval_finding_done to true")
 			}
@@ -641,6 +645,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					return nil, status.Errorf(codes.Internal, "failed to schedule pipeline task check report, error: %v", err)
 				}
 			}
+
+		case "title":
+			patch.Title = &request.Issue.Title
+
+		case "description":
+			patch.Description = &request.Issue.Description
 		}
 	}
 
@@ -649,7 +659,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
 
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+	if updateMasks["approval_finding_done"] {
+		s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
