@@ -15,26 +15,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref, watch } from "vue";
 import {
   NTransfer,
   TransferRenderSourceList,
   NTree,
   TreeOption,
 } from "naive-ui";
+import { computed, h, ref, watch } from "vue";
 
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useProjectV1Store,
 } from "@/store";
+import { DatabaseResource } from "@/types";
 import {
   flattenTreeOptions,
   mapTreeOptions,
   DatabaseTreeOption,
 } from "./common";
 import Label from "./Label.vue";
-import { DatabaseResource } from "@/types";
 
 const props = defineProps<{
   projectId: string;
@@ -66,41 +66,57 @@ const selectedValueList = ref<string[]>(
 const databaseResourceMap = ref<Map<string, DatabaseResource>>(new Map());
 const loading = ref(false);
 
-onMounted(async () => {
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    props.projectId
-  );
-  const databaseList = await databaseStore.fetchDatabaseList({
-    parent: "instances/-",
-    filter: `project == "${project.name}"`,
-  });
-
-  for (const database of databaseList) {
-    const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata(
-      database.name
+// Fetch database list when projectId changed.
+watch(
+  () => props.projectId,
+  async () => {
+    loading.value = true;
+    const project = await useProjectV1Store().getOrFetchProjectByUID(
+      props.projectId
     );
-    databaseResourceMap.value.set(`d-${database.uid}`, {
-      databaseName: database.name,
+    const databaseList = await databaseStore.fetchDatabaseList({
+      parent: "instances/-",
+      filter: `project == "${project.name}"`,
     });
-    for (const schema of databaseMetadata.schemas) {
-      databaseResourceMap.value.set(`s-${database.uid}-${schema.name}`, {
+
+    for (const database of databaseList) {
+      const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata(
+        database.name
+      );
+      databaseResourceMap.value.set(`d-${database.uid}`, {
         databaseName: database.name,
-        schema: schema.name,
       });
-      for (const table of schema.tables) {
-        databaseResourceMap.value.set(
-          `t-${database.uid}-${schema.name}-${table.name}`,
-          {
-            databaseName: database.name,
-            schema: schema.name,
-            table: table.name,
-          }
-        );
+      for (const schema of databaseMetadata.schemas) {
+        databaseResourceMap.value.set(`s-${database.uid}-${schema.name}`, {
+          databaseName: database.name,
+          schema: schema.name,
+        });
+        for (const table of schema.tables) {
+          databaseResourceMap.value.set(
+            `t-${database.uid}-${schema.name}-${table.name}`,
+            {
+              databaseName: database.name,
+              schema: schema.name,
+              table: table.name,
+            }
+          );
+        }
       }
     }
+    loading.value = false;
+  },
+  {
+    immediate: true,
   }
-  loading.value = false;
-});
+);
+
+// Clear selectedValueList when projectId changed.
+watch(
+  () => props.projectId,
+  () => {
+    selectedValueList.value = [];
+  }
+);
 
 const databaseList = computed(() => {
   const project = useProjectV1Store().getProjectByUID(props.projectId);
