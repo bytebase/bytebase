@@ -42,8 +42,8 @@ import dayjs from "dayjs";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { useProjectV1Store, useUserStore } from "@/store";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { projectV1Name } from "@/utils";
 

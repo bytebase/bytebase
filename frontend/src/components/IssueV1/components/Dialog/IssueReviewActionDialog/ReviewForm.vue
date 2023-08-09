@@ -34,16 +34,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
 import { NButton, NInput } from "naive-ui";
-
-import RequiredStar from "@/components/RequiredStar.vue";
+import { computed, ref } from "vue";
 import {
   IssueReviewAction,
   issueReviewActionButtonProps,
   issueReviewActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
+import RequiredStar from "@/components/RequiredStar.vue";
 
 const props = defineProps<{
   action: IssueReviewAction;

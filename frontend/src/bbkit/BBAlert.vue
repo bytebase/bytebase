@@ -123,8 +123,8 @@
 
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
-import { withDefaults, computed } from "vue";
 import { zindexable as vZindexable } from "vdirs";
+import { withDefaults, computed } from "vue";
 import { BBAlertStyle } from "./types";
 
 type Payload = string | number | boolean | any;

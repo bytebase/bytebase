@@ -49,11 +49,11 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTableColumn } from "../../bbkit/types";
+import { useUserStore } from "@/store";
 import { activityName } from "@/types";
 import { LogEntity, LogEntity_Level } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
-import { useUserStore } from "@/store";
+import { BBTableColumn } from "../../bbkit/types";
 
 defineProps({
   activityList: {

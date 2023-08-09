@@ -34,10 +34,9 @@
 </template>
 
 <script setup lang="ts">
+import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { asyncComputed } from "@vueuse/core";
-
 import {
   PrimaryTaskRolloutActionList,
   TaskRolloutAction,
@@ -47,10 +46,10 @@ import {
   getApplicableTaskRolloutActionList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { Task } from "@/types/proto/v1/rollout_service";
 import { useCurrentUserV1 } from "@/store";
-import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
+import { Task } from "@/types/proto/v1/rollout_service";
 import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
+import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 import { RolloutAction } from "./common";
 
 const { t } = useI18n();

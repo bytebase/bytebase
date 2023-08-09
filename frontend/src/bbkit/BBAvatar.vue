@@ -13,9 +13,9 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
+import { VueClass } from "@/utils";
 import { hashCode } from "./BBUtil";
 import { BBAvatarSizeType } from "./types";
-import { VueClass } from "@/utils";
 
 const BACKGROUND_COLOR_LIST: string[] = [
   "#64748B",

@@ -12,10 +12,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import type { ComposedDatabase } from "@/types";
-import { databaseV1Slug } from "@/utils";
 import { Engine } from "@/types/proto/v1/common";
+import { databaseV1Slug } from "@/utils";
 
 const props = withDefaults(
   defineProps<{

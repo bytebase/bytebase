@@ -109,15 +109,15 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { useRouter } from "vue-router";
+import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import SchemaDesigner from "./index.vue";
-import { mergeSchemaEditToMetadata } from "./common/util";
-import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { useRouter } from "vue-router";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
+import { mergeSchemaEditToMetadata } from "./common/util";
+import SchemaDesigner from "./index.vue";
 
 interface LocalState {
   schemaDesignName: string;

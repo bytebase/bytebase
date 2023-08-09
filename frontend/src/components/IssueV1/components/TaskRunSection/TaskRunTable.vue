@@ -26,13 +26,12 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { Task, TaskRun } from "@/types/proto/v1/rollout_service";
-import { Duration } from "@/types/proto/google/protobuf/duration";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
-import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
+import { Duration } from "@/types/proto/google/protobuf/duration";
+import { Task, TaskRun } from "@/types/proto/v1/rollout_service";
 import TaskRunComment from "./TaskRunComment.vue";
+import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
 export type MergedTaskRunItem = {
   task: Task;

@@ -1,8 +1,8 @@
-import { useRoute, useRouter } from "vue-router";
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useStorage, useDebounce } from "@vueuse/core";
 import { computed, ref, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 
 type RecentVisit = {
   title: string;

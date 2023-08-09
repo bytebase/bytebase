@@ -12,7 +12,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import type { Database } from "@/types";
 import { databaseSlug } from "@/utils";
 

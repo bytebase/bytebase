@@ -33,9 +33,9 @@
 <script lang="ts">
 import { reactive, computed, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
+import { useVCSV1Store } from "@/store";
 import VCSCard from "../components/VCSCard.vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
-import { useVCSV1Store } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}

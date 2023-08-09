@@ -49,10 +49,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive } from "vue";
 import { NCheckbox } from "naive-ui";
+import { computed, ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-
 import {
   useCurrentUserV1,
   useInstanceV1Store,

@@ -55,14 +55,14 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive, watch, computed } from "vue";
 import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import DOMPurify from "dompurify";
 import yaml from "js-yaml";
 import { storeToRefs } from "pinia";
+import { defineComponent, ref, reactive, watch, computed } from "vue";
+import Drawer from "@/components/Drawer.vue";
 import { useLanguage } from "@/composables/useLanguage";
 import { useUIStateStore, useHelpStore } from "@/store";
-import Drawer from "@/components/Drawer.vue";
 import { markdocConfig, DOMPurifyConfig } from "./config";
 
 interface State {

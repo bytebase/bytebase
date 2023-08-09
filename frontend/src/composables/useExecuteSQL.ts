@@ -1,8 +1,9 @@
-import { markRaw } from "vue";
 import { isEmpty } from "lodash-es";
+import { Status } from "nice-grpc-common";
+import { markRaw } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { parseSQL } from "../components/MonacoEditor/sqlParser";
+import { BBNotificationStyle } from "@/bbkit/types";
+import { useSilentRequest } from "@/plugins/silent-request";
 import {
   pushNotification,
   useTabStore,
@@ -10,15 +11,13 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
 } from "@/store";
-import { BBNotificationStyle } from "@/bbkit/types";
 import { ExecuteConfig, ExecuteOption } from "@/types";
-import { useSilentRequest } from "@/plugins/silent-request";
 import {
   Advice_Status,
   advice_StatusToJSON,
 } from "@/types/proto/v1/sql_service";
-import { Status } from "nice-grpc-common";
 import { isDatabaseV1Alterable } from "@/utils";
+import { parseSQL } from "../components/MonacoEditor/sqlParser";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();

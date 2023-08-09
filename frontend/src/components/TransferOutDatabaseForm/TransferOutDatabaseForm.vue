@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref, toRef } from "vue";
+import { cloneDeep } from "lodash-es";
 import {
   NTransfer,
   NTree,
@@ -84,10 +84,9 @@ import {
   NButton,
   NTooltip,
 } from "naive-ui";
+import { computed, h, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
-
-import { ComposedDatabase, PresetRoleType, UNKNOWN_ID } from "@/types";
+import { ProjectV1Name, ProjectSelect, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -96,15 +95,15 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import { ProjectV1Name, ProjectSelect, DrawerContent } from "@/components/v2";
+import { ComposedDatabase, PresetRoleType, UNKNOWN_ID } from "@/types";
+import { Project } from "@/types/proto/v1/project_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import Label from "./Label.vue";
 import {
   DatabaseTreeOption,
   flattenTreeOptions,
   mapTreeOptions,
 } from "./common";
-import { Project } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
 
 const props = defineProps<{
   projectId: string;

@@ -1,5 +1,5 @@
-import { Database, Environment, Issue, IssueCreate, Principal } from "../types";
 import { Policy } from "@/types/proto/v1/org_policy_service";
+import { Database, Environment, Issue, IssueCreate, Principal } from "../types";
 
 // Issue
 // It has to be string type because the id for stage field contain multiple parts.

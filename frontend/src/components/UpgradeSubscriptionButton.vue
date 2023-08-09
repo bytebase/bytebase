@@ -15,11 +15,11 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { pushNotification, useSubscriptionV1Store } from "@/store";
 import { useI18n } from "vue-i18n";
-import { PlanType } from "@/types/proto/v1/subscription_service";
-import { planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
+import { pushNotification, useSubscriptionV1Store } from "@/store";
+import { planTypeToString } from "@/types";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const { t } = useI18n();
 const router = useRouter();

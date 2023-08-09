@@ -1,8 +1,8 @@
 import { computed, unref } from "vue";
-import { MaybeRef, PresetRoleType, ProjectRoleType, RoleType } from "../types";
-import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
 import { t } from "@/plugins/i18n";
+import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
 import { UserRole } from "@/types/proto/v1/auth_service";
+import { MaybeRef, PresetRoleType, ProjectRoleType, RoleType } from "../types";
 
 export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"

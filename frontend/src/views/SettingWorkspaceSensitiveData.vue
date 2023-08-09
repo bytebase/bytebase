@@ -78,31 +78,30 @@
 </template>
 
 <script lang="ts" setup>
+import { uniq } from "lodash-es";
+import { NPopconfirm } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { NPopconfirm } from "naive-ui";
-import { uniq } from "lodash-es";
 import { useRouter } from "vue-router";
-
-import { featureToRef, useCurrentUserV1, useDatabaseV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
-import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import {
-  usePolicyListByResourceTypeAndPolicyType,
-  usePolicyV1Store,
-} from "@/store/modules/v1/policy";
-import {
-  PolicyType,
-  Policy,
-  PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
 import {
   DatabaseV1Name,
   EnvironmentV1Name,
   InstanceV1Name,
   ProjectV1Name,
 } from "@/components/v2";
+import { featureToRef, useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import {
+  usePolicyListByResourceTypeAndPolicyType,
+  usePolicyV1Store,
+} from "@/store/modules/v1/policy";
+import { ComposedDatabase } from "@/types";
+import {
+  PolicyType,
+  Policy,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
+import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
 
 type SensitiveColumn = {
   database: ComposedDatabase;

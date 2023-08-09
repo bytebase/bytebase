@@ -130,20 +130,11 @@
 </template>
 
 <script lang="ts">
+import { cloneDeep } from "lodash-es";
 import { computed, defineComponent, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
-
-import AnomalyTable from "@/components/AnomalyTable.vue";
-import { UNKNOWN_USER_NAME } from "../types";
-import {
-  databaseV1Slug,
-  instanceV1Slug,
-  hasWorkspacePermissionV1,
-  sortDatabaseV1List,
-  sortInstanceV1List,
-} from "@/utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "@/bbkit/types";
+import AnomalyTable from "@/components/AnomalyTable.vue";
 import {
   featureToRef,
   useAnomalyV1List,
@@ -156,6 +147,14 @@ import {
   Anomaly,
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";
+import {
+  databaseV1Slug,
+  instanceV1Slug,
+  hasWorkspacePermissionV1,
+  sortDatabaseV1List,
+  sortInstanceV1List,
+} from "@/utils";
+import { UNKNOWN_USER_NAME } from "../types";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;

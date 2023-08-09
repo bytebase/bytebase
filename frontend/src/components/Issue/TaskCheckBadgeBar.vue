@@ -46,12 +46,12 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { groupBy, maxBy } from "lodash-es";
+import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { HiddenCheckTypes } from "@/utils";
 import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../../types";
 import TaskSpinner from "./TaskSpinner.vue";
-import { HiddenCheckTypes } from "@/utils";
 
 interface LocalState {
   selectedTaskCheckType: TaskCheckType | undefined;

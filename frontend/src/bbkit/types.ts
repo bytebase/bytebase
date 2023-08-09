@@ -1,6 +1,6 @@
+import { VNode } from "vue";
 import { VueClass } from "@/utils";
 import { ColumnWidth } from "./BBGrid";
-import { VNode } from "vue";
 
 export type BBButtonType =
   | "NORMAL"

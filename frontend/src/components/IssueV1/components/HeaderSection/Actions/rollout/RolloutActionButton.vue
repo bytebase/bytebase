@@ -15,11 +15,10 @@
 </template>
 
 <script setup lang="ts">
+import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { asyncComputed } from "@vueuse/core";
-
-import { useCurrentUserV1 } from "@/store";
+import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   StageRolloutAction,
   TaskRolloutAction,
@@ -29,8 +28,8 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { ErrorList } from "@/components/IssueV1/components/common";
 import { ContextMenuButton } from "@/components/v2";
+import { useCurrentUserV1 } from "@/store";
 import { RolloutAction, RolloutButtonAction } from "./common";
 
 const props = defineProps<{

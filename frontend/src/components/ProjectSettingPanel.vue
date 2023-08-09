@@ -9,10 +9,9 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-
 import { ComposedProject } from "@/types";
-import ProjectGeneralSettingPanel from "./Project/ProjectGeneralSettingPanel.vue";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
+import ProjectGeneralSettingPanel from "./Project/ProjectGeneralSettingPanel.vue";
 
 defineProps({
   project: {

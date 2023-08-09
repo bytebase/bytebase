@@ -43,13 +43,12 @@
 </template>
 
 <script lang="ts" setup>
-import { shallowRef, computed, ref, watch } from "vue";
 import { NTooltip } from "naive-ui";
-
+import { shallowRef, computed, ref, watch } from "vue";
+import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { useIssueStore, useSheetV1Store, useTabStore } from "@/store";
 import { Issue } from "@/types";
 import { getSheetIssueBacktracePayloadV1 } from "@/utils";
-import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();

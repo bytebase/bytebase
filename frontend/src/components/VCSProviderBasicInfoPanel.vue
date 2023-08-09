@@ -119,6 +119,7 @@
 </template>
 
 <script lang="ts">
+import isEmpty from "lodash-es/isEmpty";
 import {
   computed,
   defineComponent,
@@ -126,11 +127,10 @@ import {
   PropType,
   reactive,
 } from "vue";
-import isEmpty from "lodash-es/isEmpty";
-import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
-import { isUrl, isDev } from "../utils";
 import { useI18n } from "vue-i18n";
 import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
+import { isUrl, isDev } from "../utils";
 
 interface LocalState {
   urlValidationTimer?: ReturnType<typeof setTimeout>;

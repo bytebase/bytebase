@@ -20,15 +20,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch } from "vue";
 import { groupBy } from "lodash-es";
-
-import RiskSection from "./RiskSection.vue";
-import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
-import { useRiskCenterContext } from "./context";
-import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
-import { PresetRiskLevelList, SupportedSourceList } from "@/types";
+import { computed, watch } from "vue";
 import { useRiskStore } from "@/store";
+import { PresetRiskLevelList, SupportedSourceList } from "@/types";
+import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
+import RiskSection from "./RiskSection.vue";
+import { useRiskCenterContext } from "./context";
 
 const riskStore = useRiskStore();
 const context = useRiskCenterContext();

@@ -1,3 +1,5 @@
+import { ClientError } from "nice-grpc-web";
+import { t } from "@/plugins/i18n";
 import {
   isPagedResponse,
   PagedResponse,
@@ -5,10 +7,8 @@ import {
   ResourceObject,
   ResponseWithData,
 } from "@/types";
-import { pushNotification } from "./notification";
-import { t } from "@/plugins/i18n";
-import { ClientError } from "nice-grpc-web";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { pushNotification } from "./notification";
 
 type ConvertEntityFn<T> = (
   data: ResourceObject,

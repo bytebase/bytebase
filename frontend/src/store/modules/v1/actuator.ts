@@ -1,13 +1,13 @@
-import { watchEffect } from "vue";
-import axios from "axios";
 import { RemovableRef } from "@vueuse/core";
-import { defineStore, storeToRefs } from "pinia";
-import { Release, ReleaseInfo } from "@/types";
 import { useLocalStorage } from "@vueuse/core";
+import axios from "axios";
+import { defineStore, storeToRefs } from "pinia";
+import { watchEffect } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
-import { semverCompare } from "@/utils";
 import { useSilentRequest } from "@/plugins/silent-request";
+import { Release, ReleaseInfo } from "@/types";
 import { ActuatorInfo, DebugLog } from "@/types/proto/v1/actuator_service";
+import { semverCompare } from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://www.bytebase.com/docs/get-started/install/external-url";

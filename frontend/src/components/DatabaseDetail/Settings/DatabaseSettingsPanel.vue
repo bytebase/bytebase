@@ -18,11 +18,11 @@
 </template>
 
 <script setup lang="ts">
-import { type ComposedDatabase } from "@/types";
-import { computed } from "vue";
 import { cloneDeep } from "lodash-es";
-import Secrets from "./components/Secrets.vue";
+import { computed } from "vue";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { type ComposedDatabase } from "@/types";
+import Secrets from "./components/Secrets.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;

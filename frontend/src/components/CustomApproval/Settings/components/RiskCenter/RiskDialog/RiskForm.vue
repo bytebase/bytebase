@@ -90,23 +90,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
-import { NButton, NInput } from "naive-ui";
 import { cloneDeep } from "lodash-es";
-
-import { Risk } from "@/types/proto/v1/risk_service";
-import {
-  Expr as CELExpr,
-  ParsedExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { Expr } from "@/types/proto/google/type/expr";
-import type { ConditionGroupExpr } from "@/plugins/cel";
-import { useRiskCenterContext } from "../context";
+import { NButton, NInput } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import RiskLevelSelect from "./RiskLevelSelect.vue";
-import RiskSourceSelect from "./RiskSourceSelect.vue";
-import ExprEditor from "../../common/ExprEditor";
-import RuleTemplateTable from "./RuleTemplateTable.vue";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   resolveCELExpr,
   buildCELExpr,
@@ -114,9 +102,20 @@ import {
   validateSimpleExpr,
 } from "@/plugins/cel";
 import {
+  Expr as CELExpr,
+  ParsedExpr,
+} from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/type/expr";
+import { Risk } from "@/types/proto/v1/risk_service";
+import {
   convertCELStringToParsedExpr,
   convertParsedExprToCELString,
 } from "@/utils";
+import ExprEditor from "../../common/ExprEditor";
+import { useRiskCenterContext } from "../context";
+import RiskLevelSelect from "./RiskLevelSelect.vue";
+import RiskSourceSelect from "./RiskSourceSelect.vue";
+import RuleTemplateTable from "./RuleTemplateTable.vue";
 
 type LocalState = {
   risk: Risk;

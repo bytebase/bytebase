@@ -1,7 +1,6 @@
-import slug from "slug";
 import { last } from "lodash-es";
 import { stringify } from "qs";
-
+import slug from "slug";
 import {
   EMPTY_TASK_NAME,
   emptyStage,

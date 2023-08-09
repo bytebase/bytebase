@@ -168,24 +168,23 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { cloneDeep } from "lodash-es";
-
-import { RoleSelect } from "@/components/v2";
-import UserAvatar from "../UserAvatar.vue";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
+import { RoleSelect } from "@/components/v2";
 import {
   featureToRef,
   useCurrentUserV1,
   pushNotification,
   useUserStore,
 } from "@/store";
+import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
+import UserAvatar from "../UserAvatar.vue";
 import { copyServiceKeyToClipboardIfNeeded } from "./common";
 
 const columnList = computed(() => [

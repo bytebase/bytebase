@@ -122,12 +122,10 @@
 </template>
 
 <script setup lang="ts">
+import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
+import { storeToRefs } from "pinia";
 import { computed, unref, Ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { storeToRefs } from "pinia";
-import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-
-import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -136,6 +134,7 @@ import {
   useUIStateStore,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 type IntroItem = {
   name: string | Ref<string>;

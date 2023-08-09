@@ -64,8 +64,8 @@ import {
   onUnmounted,
   onMounted,
 } from "vue";
-import { Template, TemplateInput, InputType } from "./types";
 import AutoWidthInput from "./AutoWidthInput.vue";
+import { Template, TemplateInput, InputType } from "./types";
 import { getTemplateInputs, templateInputsToString, KEY_EVENT } from "./utils";
 
 interface LocalState {

@@ -12,19 +12,18 @@
 </template>
 
 <script lang="ts" setup>
+import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
-
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { SheetViewMode } from "../types";
-import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
 import { useSheetV1Store, pushNotification } from "@/store";
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
+import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
+import type { SheetViewMode } from "../types";
 
 const props = defineProps<{
   view: SheetViewMode;

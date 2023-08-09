@@ -24,13 +24,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, Ref } from "vue";
 import { NButton, NTooltip } from "naive-ui";
+import { ref, Ref } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { pushNotification, useIssueV1Store } from "@/store";
 import { Issue } from "@/types";
 import { useIssueLogic } from "../logic";
-import { pushNotification, useIssueV1Store } from "@/store";
 
 const { t } = useI18n();
 const syncing = ref(false);

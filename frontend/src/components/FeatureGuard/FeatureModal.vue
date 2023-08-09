@@ -128,16 +128,16 @@
 
 <script lang="ts" setup>
 import { PropType, computed, reactive } from "vue";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import {
   useSubscriptionV1Store,
   useCurrentUserV1,
   pushNotification,
 } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {

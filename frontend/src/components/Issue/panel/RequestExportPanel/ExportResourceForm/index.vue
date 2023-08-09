@@ -46,6 +46,7 @@
 <script lang="ts" setup>
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import {
   DatabaseResource,
@@ -56,7 +57,6 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 
 const props = defineProps<{
   projectId?: string;

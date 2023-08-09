@@ -57,11 +57,10 @@
 </template>
 
 <script lang="ts" setup>
+import { useClipboard } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useClipboard } from "@vueuse/core";
-
 import {
   pushNotification,
   useTabStore,

@@ -23,11 +23,11 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGridColumn } from "@/bbkit";
-import { SchemaGroup } from "@/types/proto/v1/project_service";
 import { useRouter } from "vue-router";
+import { BBGridColumn } from "@/bbkit";
 import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
 import { ComposedSchemaGroup } from "@/types";
+import { SchemaGroup } from "@/types/proto/v1/project_service";
 
 defineProps<{
   schemaGroupList: SchemaGroup[];

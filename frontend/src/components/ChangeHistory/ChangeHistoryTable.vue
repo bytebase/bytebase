@@ -116,22 +116,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { NCheckbox } from "naive-ui";
-
-import { ComposedDatabase } from "@/types";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import {
-  extractIssueUID,
-  humanizeDate,
-  extractUserResourceName,
-  changeHistoryLink,
-  getAffectedTablesOfChangeHistory,
-} from "@/utils";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
-import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
+import { useUserStore } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { AffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
   changeHistory_SourceToJSON,
@@ -139,8 +132,14 @@ import {
   ChangeHistory_Type,
   changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
-import { useUserStore } from "@/store";
-import { AffectedTable } from "@/types/changeHistory";
+import {
+  extractIssueUID,
+  humanizeDate,
+  extractUserResourceName,
+  changeHistoryLink,
+  getAffectedTablesOfChangeHistory,
+} from "@/utils";
+import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 
 type Mode = "DATABASE" | "PROJECT";
 

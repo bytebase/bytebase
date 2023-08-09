@@ -1,6 +1,6 @@
 import { watch } from "vue";
-import type { Connection } from "@/types";
 import { useCurrentTab } from "@/store";
+import type { Connection } from "@/types";
 import { DatabaseMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
 import { engineNameV1 } from "@/utils";

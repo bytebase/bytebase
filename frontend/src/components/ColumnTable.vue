@@ -84,19 +84,19 @@
 import { cloneDeep } from "lodash-es";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTableColumn } from "@/bbkit/types";
+import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { ComposedDatabase } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
-import { hasWorkspacePermissionV1, isDev } from "@/utils";
-import { BBTableColumn } from "@/bbkit/types";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { Engine } from "@/types/proto/v1/common";
 import {
   PolicyType,
   SensitiveData,
   SensitiveDataMaskType,
 } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { Engine } from "@/types/proto/v1/common";
+import { hasWorkspacePermissionV1, isDev } from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;

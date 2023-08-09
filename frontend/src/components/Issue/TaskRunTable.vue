@@ -66,11 +66,10 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { BBTableColumn } from "@/bbkit/types";
+import { useDatabaseV1Store } from "@/store";
 import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "@/types";
 import { changeHistorySlug, databaseSlug, instanceSlug } from "@/utils";
-import { useDatabaseV1Store } from "@/store";
 
 type CommentLink = {
   title: string;

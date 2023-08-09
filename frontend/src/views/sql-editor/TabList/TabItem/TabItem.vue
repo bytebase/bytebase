@@ -21,17 +21,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
 import { storeToRefs } from "pinia";
-
+import { computed, PropType, reactive } from "vue";
+import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import { isTempTab } from "@/utils";
-import { useTabStore } from "@/store";
-import Prefix from "./Prefix.vue";
-import Label from "./Label.vue";
-import Suffix from "./Suffix.vue";
 import AdminLabel from "./AdminLabel.vue";
+import Label from "./Label.vue";
+import Prefix from "./Prefix.vue";
+import Suffix from "./Suffix.vue";
 
 type LocalState = {
   hovering: boolean;

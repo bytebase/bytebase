@@ -27,19 +27,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
 import { first, orderBy } from "lodash-es";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { TabFilter, TabFilterItem } from "@/components/v2";
 import {
   PlanCheckRun,
   PlanCheckRun_Type,
   Task,
 } from "@/types/proto/v1/rollout_service";
-import { TabFilter, TabFilterItem } from "@/components/v2";
+import { humanizeDate } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckDetail from "./PlanCheckDetail.vue";
-import { humanizeDate } from "@/utils";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

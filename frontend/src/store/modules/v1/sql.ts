@@ -1,3 +1,5 @@
+import { ClientError, Status } from "nice-grpc-common";
+import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
 import { SQLResultSetV1 } from "@/types";
 import {
@@ -6,8 +8,6 @@ import {
   QueryRequest,
 } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-import { ClientError, Status } from "nice-grpc-common";
-import { defineStore } from "pinia";
 
 export const useSQLStore = defineStore("sql", () => {
   const queryReadonly = async (

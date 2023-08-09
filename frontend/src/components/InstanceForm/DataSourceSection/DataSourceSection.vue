@@ -14,13 +14,13 @@
 </template>
 
 <script setup lang="ts">
-import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { Engine } from "@/types/proto/v1/common";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { wrapEditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import CreateReadOnlyDataSourceTips from "./CreateReadOnlyDataSourceTips.vue";
-import DataSourceTabs from "./DataSourceTabs.vue";
 import DataSourceForm from "./DataSourceForm.vue";
-import { wrapEditDataSource } from "../common";
+import DataSourceTabs from "./DataSourceTabs.vue";
 
 const {
   isCreating,

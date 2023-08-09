@@ -1,6 +1,6 @@
-import { MaybeRef } from "@/types";
 import { useTimestamp } from "@vueuse/core";
 import { computed, ref, unref } from "vue";
+import { MaybeRef } from "@/types";
 
 export const useCancelableTimeout = (timeoutMS: MaybeRef<number>) => {
   const running = ref(false);

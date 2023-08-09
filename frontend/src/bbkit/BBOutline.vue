@@ -68,8 +68,8 @@
 
 <script lang="ts" setup>
 import { computed, reactive, withDefaults } from "vue";
-import { BBOutlineItem } from "./types";
 import { useUIStateStore } from "@/store";
+import { BBOutlineItem } from "./types";
 
 interface LocalState {
   hoverIndex: number;

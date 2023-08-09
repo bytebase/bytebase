@@ -1,5 +1,5 @@
+import dayjs from "dayjs";
 import { ref } from "vue";
-
 import {
   getExportFileType,
   getExportRequestFormat,
@@ -7,7 +7,6 @@ import {
   useSQLStore,
 } from "@/store";
 import { extractDatabaseResourceName } from "@/utils";
-import dayjs from "dayjs";
 
 export type ExportDataParams = {
   format: "CSV" | "JSON" | "SQL" | "XLSX";

@@ -79,16 +79,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
 import dayjs from "dayjs";
+import { computed, PropType } from "vue";
+import { useUserStore } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   extractUserResourceName,
   extractIssueUID,
   changeHistoryLink as makeChangeHistoryLink,
 } from "@/utils";
-import { ComposedDatabase } from "@/types";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { useUserStore } from "@/store";
 
 const props = defineProps({
   database: {

@@ -263,6 +263,8 @@ import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -270,17 +272,15 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { changeHistoryLink, databaseV1Slug, projectV1Slug } from "@/utils";
-import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
-import DiffViewPanel from "./DiffViewPanel.vue";
-import { Engine, engineToJSON } from "@/types/proto/v1/common";
-import { InstanceV1EngineIcon } from "@/components/v2";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { RawSQLState, SourceSchemaType } from "./types";
-import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { Engine, engineToJSON } from "@/types/proto/v1/common";
+import { ChangeHistory } from "@/types/proto/v1/database_service";
+import { changeHistoryLink, databaseV1Slug, projectV1Slug } from "@/utils";
+import DiffViewPanel from "./DiffViewPanel.vue";
 import RawSQLEditorPanel from "./RawSQLEditorPanel.vue";
+import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
+import { RawSQLState, SourceSchemaType } from "./types";
 
 interface DatabaseSourceSchema {
   environmentId: string;

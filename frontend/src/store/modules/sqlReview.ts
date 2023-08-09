@@ -1,4 +1,10 @@
 import { pullAt } from "lodash-es";
+import { defineStore } from "pinia";
+import { computed, unref, watchEffect } from "vue";
+import {
+  policyNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
 import {
   PolicyId,
   SchemaPolicyRule,
@@ -8,11 +14,8 @@ import {
   RuleType,
   RuleLevel,
 } from "@/types";
-import { defineStore } from "pinia";
-import { usePolicyV1Store } from "./v1/policy";
-import { useEnvironmentV1Store } from "./v1/environment";
-import { computed, unref, watchEffect } from "vue";
 import { Engine } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
 import {
   PolicyType,
   Policy,
@@ -21,11 +24,8 @@ import {
   SQLReviewPolicy as SQLReviewPolicyV1,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { Environment } from "@/types/proto/v1/environment_service";
-import {
-  policyNamePrefix,
-  environmentNamePrefix,
-} from "@/store/modules/v1/common";
+import { useEnvironmentV1Store } from "./v1/environment";
+import { usePolicyV1Store } from "./v1/policy";
 
 const getEnvironmentById = async (
   environmentId: IdType

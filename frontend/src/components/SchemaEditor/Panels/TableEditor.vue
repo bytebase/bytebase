@@ -299,11 +299,14 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isUndefined, flatten } from "lodash-es";
+import { NDropdown } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { NDropdown } from "naive-ui";
-import { v1 as uuidv1 } from "uuid";
+import { BBCheckbox, BBSpin } from "@/bbkit";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
   generateUniqueTabId,
@@ -312,6 +315,8 @@ import {
 } from "@/store/modules";
 import { TableTabContext } from "@/types";
 import { ColumnMetadata } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
+import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import { DatabaseEdit, SchemaEditorTabType } from "@/types/schemaEditor";
 import {
   Column,
@@ -321,16 +326,11 @@ import {
   ForeignKey,
 } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
-import { BBCheckbox, BBSpin } from "@/bbkit";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import { diffSchema } from "@/utils/schemaEditor/diffSchema";
+import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
+import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { isColumnChanged } from "../utils/column";
 import { isTableChanged } from "../utils/table";
-import { diffSchema } from "@/utils/schemaEditor/diffSchema";
-import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
-import { Engine } from "@/types/proto/v1/common";
-import { Drawer, DrawerContent } from "@/components/v2";
-import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 
 type SubtabType = "column-list" | "raw-sql";
 

@@ -1,9 +1,7 @@
+import { uniq, uniqBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { uniq, uniqBy } from "lodash-es";
-
 import { issueServiceClient } from "@/grpcweb";
-import { useActivityV1Store } from "./activity";
 import {
   IdType,
   ActivityIssueCommentCreatePayload,
@@ -11,17 +9,18 @@ import {
   PresetRoleType,
   ComposedIssue,
 } from "@/types";
+import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import {
   Issue,
   ApprovalStep,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
-import { projectNamePrefix, issueNamePrefix } from "./common";
-import { useUserStore } from "../user";
-import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 import { useProjectV1Store } from ".";
+import { useUserStore } from "../user";
+import { useActivityV1Store } from "./activity";
+import { projectNamePrefix, issueNamePrefix } from "./common";
 
 const issueName = (legacyIssue: LegacyIssue) => {
   return `projects/${legacyIssue.project.id}/issues/${legacyIssue.id}`;

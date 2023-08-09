@@ -88,17 +88,16 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-
 import {
   notifyNotEditableLegacyIssue,
   planCheckRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
-import PlanCheckRunButton from "./PlanCheckRunButton.vue";
-import { PlanCheckRun_Type, Task } from "@/types/proto/v1/rollout_service";
 import { rolloutServiceClient } from "@/grpcweb";
+import { PlanCheckRun_Type, Task } from "@/types/proto/v1/rollout_service";
+import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckPanel from "./PlanCheckPanel.vue";
+import PlanCheckRunButton from "./PlanCheckRunButton.vue";
 
 const props = defineProps<{
   allowRunChecks?: boolean;

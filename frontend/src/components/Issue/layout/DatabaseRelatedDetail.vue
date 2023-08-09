@@ -99,33 +99,12 @@
 </template>
 
 <script lang="ts" setup>
+import { useDialog } from "naive-ui";
 import { computed, onMounted, PropType, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { useDialog } from "naive-ui";
-
-import {
-  pipelineType,
-  PipelineType,
-  activeStage as activeStageOfPipeline,
-  activeTaskInStage,
-  activeTask as activeTaskOfPipeline,
-} from "@/utils";
-import IssueBanner from "../IssueBanner.vue";
-import IssueHighlightPanel from "../IssueHighlightPanel.vue";
-import IssueRollbackFromTips from "../IssueRollbackFromTips.vue";
-import IssueStagePanel from "../IssueStagePanel.vue";
-import IssueOutputPanel from "../IssueOutputPanel.vue";
-import IssueSidebar from "../IssueSidebar.vue";
-import IssueTaskSDLPanel from "../IssueTaskSDLPanel.vue";
-import IssueTaskStatementPanel from "../IssueTaskStatementPanel.vue";
-import IssueDescriptionPanel from "../IssueDescriptionPanel.vue";
-import IssueActivityPanel from "../IssueActivityPanel.vue";
-import PipelineSimpleFlow from "../PipelineSimpleFlow.vue";
-import PipelineTenantFlow from "../PipelineTenantFlow.vue";
-import PipelineGhostFlow from "../PipelineGhostFlow.vue";
-import PipelinePITRFlow from "../PipelinePITRFlow.vue";
-import TaskCheckBar from "../TaskCheckBar.vue";
+import { defaultTemplate, templateForType } from "@/plugins";
+import { useInstanceV1Store, useProjectV1Store, useTaskStore } from "@/store";
 import type {
   Issue,
   IssueCreate,
@@ -133,8 +112,29 @@ import type {
   TaskCreate,
   MigrationType,
 } from "@/types";
-import { defaultTemplate, templateForType } from "@/plugins";
-import { useInstanceV1Store, useProjectV1Store, useTaskStore } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
+import {
+  pipelineType,
+  PipelineType,
+  activeStage as activeStageOfPipeline,
+  activeTaskInStage,
+  activeTask as activeTaskOfPipeline,
+} from "@/utils";
+import IssueActivityPanel from "../IssueActivityPanel.vue";
+import IssueBanner from "../IssueBanner.vue";
+import IssueDescriptionPanel from "../IssueDescriptionPanel.vue";
+import IssueHighlightPanel from "../IssueHighlightPanel.vue";
+import IssueOutputPanel from "../IssueOutputPanel.vue";
+import IssueRollbackFromTips from "../IssueRollbackFromTips.vue";
+import IssueSidebar from "../IssueSidebar.vue";
+import IssueStagePanel from "../IssueStagePanel.vue";
+import IssueTaskSDLPanel from "../IssueTaskSDLPanel.vue";
+import IssueTaskStatementPanel from "../IssueTaskStatementPanel.vue";
+import PipelineGhostFlow from "../PipelineGhostFlow.vue";
+import PipelinePITRFlow from "../PipelinePITRFlow.vue";
+import PipelineSimpleFlow from "../PipelineSimpleFlow.vue";
+import PipelineTenantFlow from "../PipelineTenantFlow.vue";
+import TaskCheckBar from "../TaskCheckBar.vue";
 import {
   provideIssueLogic,
   TenantModeProvider,
@@ -144,7 +144,6 @@ import {
   IssueLogic,
   useBaseIssueLogic,
 } from "../logic";
-import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({
   create: {

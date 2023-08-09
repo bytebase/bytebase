@@ -14,18 +14,18 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, isEqual } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import { onMounted, ref, watch } from "vue";
+import { useSettingV1Store } from "@/store";
+import { Schema, convertSchemaMetadataList } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { Engine } from "@/types/proto/v1/common";
-import { provideSchemaDesignerContext } from "./common";
-import { SchemaDesignerTabState } from "./common/type";
 import AsidePanel from "./AsidePanel.vue";
 import Designer from "./Designer.vue";
-import { Schema, convertSchemaMetadataList } from "@/types";
-import { cloneDeep, isEqual } from "lodash-es";
-import { useSettingV1Store } from "@/store";
+import { provideSchemaDesignerContext } from "./common";
+import { SchemaDesignerTabState } from "./common/type";
 
 const props = defineProps<{
   readonly: boolean;

@@ -73,29 +73,28 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, ref, toRef } from "vue";
-import { useI18n } from "vue-i18n";
 import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
 import { Status } from "nice-grpc-common";
-
+import { computed, PropType, ref, toRef } from "vue";
+import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { Drawer } from "@/components/v2";
-import SingleResultViewV1 from "./SingleResultViewV1.vue";
-import EmptyView from "./EmptyView.vue";
-import { ExecuteConfig, ExecuteOption, SQLResultSetV1 } from "@/types";
-import { provideSQLResultViewContext, SQLResultViewContext } from "./context";
-import ErrorView from "./ErrorView.vue";
-import RequestQueryButton from "./RequestQueryButton.vue";
-import DetailPanel from "./DetailPanel.vue";
-import { QueryResult } from "@/types/proto/v1/sql_service";
 import {
   useCurrentUserV1,
   useInstanceV1Store,
   usePolicyV1Store,
   useTabStore,
 } from "@/store";
+import { ExecuteConfig, ExecuteOption, SQLResultSetV1 } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { QueryResult } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import DetailPanel from "./DetailPanel.vue";
+import EmptyView from "./EmptyView.vue";
+import ErrorView from "./ErrorView.vue";
+import RequestQueryButton from "./RequestQueryButton.vue";
+import SingleResultViewV1 from "./SingleResultViewV1.vue";
+import { provideSQLResultViewContext, SQLResultViewContext } from "./context";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 

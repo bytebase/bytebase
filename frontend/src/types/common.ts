@@ -1,7 +1,7 @@
 import { BackupSetting } from "./backup";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
-import { Database } from "./database";
 import { DataSource } from "./dataSource";
+import { Database } from "./database";
 import { Environment } from "./environment";
 import { CommandId, CommandRegisterId, PrincipalId } from "./id";
 import { Instance } from "./instance";
@@ -9,8 +9,8 @@ import { Issue } from "./issue";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
-import { VCS } from "./vcs";
 import { SQLReviewPolicy } from "./sqlReview";
+import { VCS } from "./vcs";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
