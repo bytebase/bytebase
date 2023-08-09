@@ -10,7 +10,6 @@ import {
   UNKNOWN_ID,
   UNKNOWN_ISSUE_NAME,
 } from "@/types";
-import { Issue } from "@/types/proto/v1/issue_service";
 import { extractProjectResourceName } from "@/utils";
 import { useProjectV1Store } from "./project";
 

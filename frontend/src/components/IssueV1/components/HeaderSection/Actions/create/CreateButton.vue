@@ -22,12 +22,7 @@
 import { computed } from "vue";
 import { NTooltip, NButton } from "naive-ui";
 
-import { CreateIssueRequest, Issue } from "@/types/proto/v1/issue_service";
-import {
-  Plan,
-  Plan_ChangeDatabaseConfig,
-  Rollout,
-} from "@/types/proto/v1/rollout_service";
+import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { useSheetV1Store } from "@/store";
 import {
