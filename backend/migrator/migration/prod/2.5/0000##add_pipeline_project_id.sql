@@ -10,4 +10,6 @@ SET project_id = issue.project_id
 FROM issue
 WHERE issue.pipeline_id = pipeline.id;
 
+DELETE FROM pipeline WHERE project_id IS NULL;
+
 ALTER TABLE pipeline ALTER COLUMN project_id SET NOT NULL;
