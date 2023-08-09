@@ -850,7 +850,6 @@ import {
   IdentityProviderTemplate,
   identityProviderTemplateList,
   identityProviderTypeToString,
-  isDev,
   openWindowForSSO,
 } from "@/utils";
 import { OAuthWindowEventPayload, ResourceId, ValidatedMessage } from "@/types";
