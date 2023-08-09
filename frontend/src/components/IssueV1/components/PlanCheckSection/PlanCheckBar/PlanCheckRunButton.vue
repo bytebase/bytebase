@@ -34,7 +34,6 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import {
   planCheckRunListForTask,
-  stageForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -77,24 +76,28 @@ const actionList = computed(() => {
       },
     });
 
-    // Don't only show 'run checks in current stage' if we don't show 'run checks'
-    // since that might be weird.
-    const stage = stageForTask(issue.value, props.task);
-    if (stage) {
-      const taskListInStage = stage.tasks;
-      const runnableTaskList = taskListInStage.filter((task) =>
-        allowRunChecksForTask(task)
-      );
-      if (runnableTaskList.length > 1) {
-        actionList.push({
-          key: "RUN-CHECKS-IN-CURRENT-STAGE",
-          text: t("task.run-checks-in-current-stage"),
-          params: {
-            taskList: runnableTaskList,
-          },
-        });
-      }
-    }
+    // TODO: never show 'run checks in current stage' by now
+    // since RolloutService.RunPlanChecks will actually run all plan checks
+    // for the entire plan
+
+    // // Don't only show 'run checks in current stage' if we don't show 'run checks'
+    // // since that might be weird.
+    // const stage = stageForTask(issue.value, props.task);
+    // if (stage) {
+    //   const taskListInStage = stage.tasks;
+    //   const runnableTaskList = taskListInStage.filter((task) =>
+    //     allowRunChecksForTask(task)
+    //   );
+    //   if (runnableTaskList.length > 1) {
+    //     actionList.push({
+    //       key: "RUN-CHECKS-IN-CURRENT-STAGE",
+    //       text: t("task.run-checks-in-current-stage"),
+    //       params: {
+    //         taskList: runnableTaskList,
+    //       },
+    //     });
+    //   }
+    // }
   }
   return actionList;
 });
