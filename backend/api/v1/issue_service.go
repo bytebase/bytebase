@@ -682,41 +682,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			if user == nil {
 				return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
 			}
-			if issue.PipelineUID != nil {
-				stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to list stages, error: %v", err)
-				}
-				activeStage := utils.GetActiveStageV2(stages)
-				ok, err := canUserRunStageTasks(ctx, s.store, user, issue, activeStage.EnvironmentID)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
-				}
-				if !ok {
-					return nil, status.Errorf(codes.InvalidArgument, "cannot set assignee to %v because the user cannot run tasks in the stage", request.Issue.Assignee)
-				}
-			}
 			patch.Assignee = user
-
-			// set AssigneeNeedAttention to false on assignee change
-			if issue.Project.Workflow == api.UIWorkflow {
-				needAttention := false
-				patch.NeedAttention = &needAttention
-			}
-
-		case "assignee_attention":
-			if !request.Issue.AssigneeAttention {
-				return nil, status.Errorf(codes.InvalidArgument, "cannot set assignee_attention to false")
-			}
-
-			approved, err := utils.CheckIssueApproved(issue)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
-			}
-			if !approved {
-				return nil, status.Errorf(codes.FailedPrecondition, "cannot set assignee_attention because the issue is not approved")
-			}
-			patch.NeedAttention = &request.Issue.AssigneeAttention
 		}
 	}
 

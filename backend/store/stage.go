@@ -15,8 +15,7 @@ type StageMessage struct {
 	TaskList      []*TaskMessage
 
 	// Active is true if not all tasks are done within the stage.
-	Active   bool
-	ActiveV2 bool
+	Active bool
 	// Output only.
 	ID int
 
@@ -113,14 +112,7 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			stage.pipeline_id,
 			stage.environment_id,
 			stage.name,
-			(SELECT COUNT(1) > 0 FROM task WHERE task.pipeline_id = stage.pipeline_id AND task.stage_id <= stage.id AND task.status != 'DONE'),
-			(SELECT EXISTS
-				(SELECT 1
-					FROM task LEFT JOIN LATERAL
-						(SELECT task_run.status FROM task_run WHERE task_run.task_id = task.id ORDER BY task_run.id DESC LIMIT 1) AS task_run ON TRUE
-					WHERE task.pipeline_id = stage.pipeline_id AND task.stage_id <= stage.id AND (task.status != 'DONE' OR (task_run.status IS NOT NULL AND task_run.status != 'DONE'))
-				)
-			) AS active_v2
+			(SELECT COUNT(1) > 0 FROM task WHERE task.pipeline_id = stage.pipeline_id AND task.stage_id <= stage.id AND task.status != 'DONE')
 		FROM stage
 		WHERE %s ORDER BY id ASC`, strings.Join(where, " AND ")),
 		args...,
@@ -139,7 +131,6 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			&stage.EnvironmentID,
 			&stage.Name,
 			&stage.Active,
-			&stage.ActiveV2,
 		); err != nil {
 			return nil, err
 		}
