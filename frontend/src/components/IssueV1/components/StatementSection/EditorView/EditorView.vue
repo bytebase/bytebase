@@ -195,7 +195,6 @@ import {
   pushNotification,
   useCurrentUserV1,
   useSheetV1Store,
-  useUIStateStore,
 } from "@/store";
 import { rolloutServiceClient } from "@/grpcweb";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
@@ -212,10 +211,10 @@ type LocalState = EditState & {
 };
 
 const { t } = useI18n();
-const uiStateStore = useUIStateStore();
 const route = useRoute();
 const currentUser = useCurrentUserV1();
-const { events, isCreating, issue, selectedTask } = useIssueContext();
+const { events, isCreating, issue, selectedTask, formatOnSave } =
+  useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 
@@ -275,11 +274,6 @@ const isEditorReadonly = computed(() => {
     // isGroupingChangeIssue(issue.value as Issue) || // TODO
     false // TODO
   );
-});
-
-const formatOnSave = computed({
-  get: () => uiStateStore.issueFormatStatementOnSave,
-  set: (value: boolean) => uiStateStore.setIssueFormatStatementOnSave(value),
 });
 
 const {

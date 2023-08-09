@@ -1,6 +1,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { first } from "lodash-es";
+import Emittery from "emittery";
 
 import { IssueContext, IssueEvents, IssuePhase } from "./context";
 import { Stage, Task, Task_Type } from "@/types/proto/v1/rollout_service";
@@ -14,11 +15,11 @@ import {
   stageV1Slug,
   taskV1Slug,
 } from "@/utils";
+import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
 import { extractReviewContext } from "./review";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { stageForTask } from "./utils";
-import Emittery from "emittery";
 
 const state = {
   uid: -101,
@@ -31,6 +32,7 @@ export const useBaseIssueContext = (
   context: Pick<IssueContext, "isCreating" | "ready" | "issue">
 ): Partial<IssueContext> => {
   const { isCreating, issue } = context;
+  const uiStateStore = useUIStateStore();
   const route = useRoute();
   const router = useRouter();
 
@@ -173,6 +175,10 @@ export const useBaseIssueContext = (
   const isLegacyIssue = computed(() => {
     return !issue.value.plan && !issue.value.planEntity;
   });
+  const formatOnSave = computed({
+    get: () => uiStateStore.issueFormatStatementOnSave,
+    set: (value: boolean) => uiStateStore.setIssueFormatStatementOnSave(value),
+  });
 
   return {
     phase,
@@ -186,5 +192,6 @@ export const useBaseIssueContext = (
     activeTask,
     selectedStage,
     selectedTask,
+    formatOnSave,
   };
 };
