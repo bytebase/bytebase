@@ -2063,7 +2063,6 @@ func (s *SQLService) checkQueryRights(
 		return err
 	}
 
-	var conditionExpression string
 	isExport := exportFormat != v1pb.ExportRequest_FORMAT_UNSPECIFIED
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
@@ -2076,79 +2075,22 @@ func (s *SQLService) checkQueryRights(
 			"request.row_limit": limit,
 		}
 
-		switch exportFormat {
-		case v1pb.ExportRequest_FORMAT_UNSPECIFIED:
-			attributes["request.export_format"] = "QUERY"
-		case v1pb.ExportRequest_CSV:
-			attributes["request.export_format"] = "CSV"
-		case v1pb.ExportRequest_JSON:
-			attributes["request.export_format"] = "JSON"
-		case v1pb.ExportRequest_SQL:
-			attributes["request.export_format"] = "SQL"
-		case v1pb.ExportRequest_XLSX:
-			attributes["request.export_format"] = "XLSX"
-		default:
-			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
-		}
-
-		ok, expression, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
+		ok, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
 		if !ok {
 			return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", resource.Pretty())
 		}
-		conditionExpression = expression
 	}
 
-	if isExport {
-		newPolicy := removeExportBinding(user.ID, conditionExpression, projectPolicy)
-		if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, api.SystemBotID, project.UID); err != nil {
-			return err
-		}
-		// Post project IAM policy update activity.
-		if _, err := s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: project.UID,
-			Type:         api.ActivityProjectMemberCreate,
-			Level:        api.ActivityInfo,
-			Comment:      fmt.Sprintf("Granted %s to %s (%s).", user.Name, user.Email, api.Role(common.ProjectExporter)),
-		}, &activity.Metadata{}); err != nil {
-			log.Warn("Failed to create project activity", zap.Error(err))
-		}
-	}
 	return nil
 }
 
-func removeExportBinding(principalID int, usedExpression string, projectPolicy *store.IAMPolicyMessage) *store.IAMPolicyMessage {
-	var newPolicy store.IAMPolicyMessage
-	for _, binding := range projectPolicy.Bindings {
-		if binding.Role != api.Role(common.ProjectExporter) || binding.Condition.Expression != usedExpression {
-			newPolicy.Bindings = append(newPolicy.Bindings, binding)
-			continue
-		}
-
-		var newMembers []*store.UserMessage
-		for _, member := range binding.Members {
-			if member.ID != principalID {
-				newMembers = append(newMembers, member)
-			}
-		}
-		if len(newMembers) == 0 {
-			continue
-		}
-		newBinding := *binding
-		newBinding.Members = newMembers
-		newPolicy.Bindings = append(newPolicy.Bindings, &newBinding)
-	}
-	return &newPolicy
-}
-
-func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, string, error) {
+func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
-	usedExpression := ""
 	for _, binding := range projectPolicy.Bindings {
 		// Project owner has all permissions.
 		if binding.Role == api.Role(common.ProjectOwner) {
@@ -2173,7 +2115,6 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 			}
 			if ok {
 				pass = true
-				usedExpression = binding.Condition.Expression
 				break
 			}
 		}
@@ -2181,7 +2122,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 			break
 		}
 	}
-	return pass, usedExpression, nil
+	return pass, nil
 }
 
 func evaluateCondition(expression string, attributes map[string]any) (bool, error) {

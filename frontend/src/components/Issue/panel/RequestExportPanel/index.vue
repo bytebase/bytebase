@@ -85,24 +85,6 @@
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
-            {{ $t("issue.grant-request.export-format") }}
-            <RequiredStar />
-          </span>
-          <div>
-            <NRadioGroup
-              v-model:value="state.exportFormat"
-              class="w-full !flex flex-row justify-start items-center gap-4"
-              name="export-format"
-            >
-              <NRadio :value="'CSV'" label="CSV" />
-              <NRadio :value="'JSON'" label="JSON" />
-              <NRadio :value="'SQL'" label="SQL" />
-              <NRadio :value="'XLSX'" label="XLSX" />
-            </NRadioGroup>
-          </div>
-        </div>
-        <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-start textlabel mb-2">
             {{ $t("common.expiration") }}
             <RequiredStar />
@@ -143,7 +125,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { NDrawer, NDrawerContent, NRadioGroup, NRadio, NInput } from "naive-ui";
+import { NDrawer, NDrawerContent, NInput } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -182,7 +164,6 @@ interface LocalState {
   databaseResources: DatabaseResource[];
   expireDays: number;
   maxRowCount: number;
-  exportFormat: "CSV" | "JSON" | "SQL" | "XLSX";
   statement: string;
   description: string;
 }
@@ -204,7 +185,6 @@ const state = reactive<LocalState>({
   databaseResources: [],
   expireDays: 1,
   maxRowCount: 1000,
-  exportFormat: "CSV",
   statement: "",
   description: "",
 });
@@ -320,7 +300,6 @@ const doCreateIssue = async () => {
       .add(expireDays, "days")
       .toISOString()}")`
   );
-  expression.push(`request.export_format == "${state.exportFormat}"`);
   expression.push(`request.row_limit == ${state.maxRowCount}`);
   if (state.databaseResourceCondition) {
     expression.push(state.databaseResourceCondition);
