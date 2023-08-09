@@ -143,6 +143,24 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		case "schema_change":
 			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			patch.SchemaChangeType = &schemaChange
+		case "data_classification_config_id":
+			setting, err := s.store.GetDataClassificationSetting(ctx)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get data classification setting")
+			}
+			existConfig := false
+			for _, config := range setting.Configs {
+				if config.Id == request.Project.DataClassificationConfigId {
+					existConfig = true
+					break
+				}
+			}
+			if !existConfig {
+				return nil, status.Errorf(codes.InvalidArgument, "data classification %s not exists", request.Project.DataClassificationConfigId)
+			}
+			patch.DataClassificationConfigID = &request.Project.DataClassificationConfigId
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
 	}
 
@@ -2583,17 +2601,18 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 
 	return &v1pb.Project{
-		Name:           fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
-		Uid:            fmt.Sprintf("%d", projectMessage.UID),
-		State:          convertDeletedToState(projectMessage.Deleted),
-		Title:          projectMessage.Title,
-		Key:            projectMessage.Key,
-		Workflow:       workflow,
-		Visibility:     visibility,
-		TenantMode:     tenantMode,
-		DbNameTemplate: projectMessage.DBNameTemplate,
-		SchemaChange:   schemaChange,
-		Webhooks:       projectWebhooks,
+		Name:                       fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
+		Uid:                        fmt.Sprintf("%d", projectMessage.UID),
+		State:                      convertDeletedToState(projectMessage.Deleted),
+		Title:                      projectMessage.Title,
+		Key:                        projectMessage.Key,
+		Workflow:                   workflow,
+		Visibility:                 visibility,
+		TenantMode:                 tenantMode,
+		DbNameTemplate:             projectMessage.DBNameTemplate,
+		SchemaChange:               schemaChange,
+		Webhooks:                   projectWebhooks,
+		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 	}
 }
 
