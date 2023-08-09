@@ -223,7 +223,8 @@ CREATE TABLE project (
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
-    resource_id TEXT NOT NULL
+    resource_id TEXT NOT NULL,
+    data_classification_config_id TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);

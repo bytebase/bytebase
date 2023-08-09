@@ -39,7 +39,7 @@
         {{ column.name }}
       </BBTableCell>
       <BBTableCell v-if="showClassificationColumn" class="w-10">
-        {{ column.classification }}
+        {{ getColumnClassification(column.classification) }}
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ column.type }}
@@ -84,7 +84,7 @@
 import { cloneDeep } from "lodash-es";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { Column, ComposedDatabase } from "@/types";
+import { ComposedDatabase } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { hasWorkspacePermissionV1, isDev } from "@/utils";
@@ -95,6 +95,7 @@ import {
   SensitiveData,
   SensitiveDataMaskType,
 } from "@/types/proto/v1/org_policy_service";
+import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { Engine } from "@/types/proto/v1/common";
 
 type LocalState = {
@@ -121,6 +122,12 @@ const props = defineProps({
   sensitiveDataList: {
     required: true,
     type: Array as PropType<SensitiveData[]>,
+  },
+  classificationConfig: {
+    required: false,
+    type: Object as PropType<
+      DataClassificationSetting_DataClassificationConfig | undefined
+    >,
   },
 });
 
@@ -282,7 +289,7 @@ const columnNameList = computed(() => {
   }
 });
 
-const isSensitiveColumn = (column: Column) => {
+const isSensitiveColumn = (column: ColumnMetadata) => {
   return (
     props.sensitiveDataList.findIndex((sensitiveData) => {
       return (
@@ -293,7 +300,11 @@ const isSensitiveColumn = (column: Column) => {
   );
 };
 
-const toggleSensitiveColumn = (column: Column, on: boolean, e: Event) => {
+const toggleSensitiveColumn = (
+  column: ColumnMetadata,
+  on: boolean,
+  e: Event
+) => {
   if (!hasSensitiveDataFeature.value || instanceMissingLicense.value) {
     state.showFeatureModal = true;
 
@@ -333,5 +344,13 @@ const toggleSensitiveColumn = (column: Column, on: boolean, e: Event) => {
     },
     updateMask: ["payload"],
   });
+};
+
+const getColumnClassification = (classificationId: string) => {
+  if (!classificationId || !props.classificationConfig) {
+    return "";
+  }
+  const config = props.classificationConfig.classification[classificationId];
+  return config?.title ?? "";
 };
 </script>
