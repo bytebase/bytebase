@@ -92,6 +92,8 @@ export interface ListIssuesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** Filter is used to filter issues returned in the list. */
+  filter: string;
 }
 
 export interface ListIssuesResponse {
@@ -685,7 +687,7 @@ export const CreateIssueRequest = {
 };
 
 function createBaseListIssuesRequest(): ListIssuesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
 }
 
 export const ListIssuesRequest = {
@@ -698,6 +700,9 @@ export const ListIssuesRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
     }
     return writer;
   },
@@ -730,6 +735,13 @@ export const ListIssuesRequest = {
 
           message.pageToken = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -744,6 +756,7 @@ export const ListIssuesRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      filter: isSet(object.filter) ? String(object.filter) : "",
     };
   },
 
@@ -752,6 +765,7 @@ export const ListIssuesRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.filter !== undefined && (obj.filter = message.filter);
     return obj;
   },
 
@@ -764,6 +778,7 @@ export const ListIssuesRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
     return message;
   },
 };
