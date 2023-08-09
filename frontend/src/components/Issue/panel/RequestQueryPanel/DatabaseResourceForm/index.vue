@@ -35,7 +35,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch, watchEffect } from "vue";
+import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import { useProjectV1Store } from "@/store";
 import { DatabaseResource } from "@/types";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
@@ -71,14 +72,6 @@ const project = computed(() => {
     : undefined;
 });
 
-// Prepare project entity.
-watchEffect(async () => {
-  if (!props.projectId) {
-    return;
-  }
-  await projectStore.getOrFetchProjectByUID(props.projectId);
-});
-
 const handleSelectedDatabaseResourceChanged = (
   databaseResourceList: DatabaseResource[]
 ) => {
@@ -99,6 +92,9 @@ watch(
       }
       emit("update:database-resources", state.databaseResources);
     }
+  },
+  {
+    immediate: true,
   }
 );
 </script>
