@@ -26,8 +26,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
-import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { ComposedDatabaseGroup } from "@/types";
+import { DatabaseGroup } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
   databaseGroupList: ComposedDatabaseGroup[];

@@ -1,12 +1,11 @@
-import { computed, defineComponent } from "vue";
 import { cloneDeep } from "lodash-es";
-import { provideIssueLogic, useIssueLogic } from "./index";
+import { computed, defineComponent } from "vue";
 import {
-  flattenTaskList,
-  maybeFormatStatementOnSave,
-  TaskTypeWithStatement,
-  useCommonLogic,
-} from "./common";
+  useSheetV1Store,
+  useSheetStatementByUID,
+  useTaskStore,
+  useDatabaseV1Store,
+} from "@/store";
 import {
   Issue,
   IssueCreate,
@@ -19,17 +18,18 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
-  useSheetV1Store,
-  useSheetStatementByUid,
-  useTaskStore,
-  useDatabaseV1Store,
-} from "@/store";
-import { sheetIdOfTask } from "@/utils";
-import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
+import { extractSheetUID, sheetIdOfTask } from "@/utils";
+import {
+  flattenTaskList,
+  maybeFormatStatementOnSave,
+  TaskTypeWithStatement,
+  useCommonLogic,
+} from "./common";
+import { provideIssueLogic, useIssueLogic } from "./index";
 
 export default defineComponent({
   name: "GhostModeProvider",
@@ -56,14 +56,15 @@ export default defineComponent({
           const issueCreate = issue.value as IssueCreate;
           const context = issueCreate.createContext as MigrationContext;
           return (
-            useSheetStatementByUid(context.detailList[0].sheetId).value || ""
+            useSheetStatementByUID(String(context.detailList[0].sheetId))
+              .value || ""
           );
         } else {
           const issueEntity = issue.value as Issue;
           const task = issueEntity.pipeline!.stageList[0].taskList[0];
           const payload =
             task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
-          return useSheetStatementByUid(payload.sheetId).value || "";
+          return useSheetStatementByUID(String(payload.sheetId)).value || "";
         }
       } else {
         // In standard pipeline, each ghost-sync task can hold its own
@@ -74,14 +75,15 @@ export default defineComponent({
             let statement = (task as TaskCreate).statement;
             if ((task as TaskCreate).sheetId !== UNKNOWN_ID) {
               statement =
-                useSheetStatementByUid((task as TaskCreate).sheetId).value ||
-                "";
+                useSheetStatementByUID(String((task as TaskCreate).sheetId))
+                  .value || "";
             }
             return statement;
           } else {
             return (
-              useSheetStatementByUid(sheetIdOfTask(task as Task) || UNKNOWN_ID)
-                .value || ""
+              useSheetStatementByUID(
+                String(sheetIdOfTask(task as Task) || UNKNOWN_ID)
+              ).value || ""
             );
           }
         } else {
@@ -184,7 +186,7 @@ export default defineComponent({
               payload: "{}",
             });
             detail.statement = "";
-            detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+            detail.sheetId = Number(extractSheetUID(sheet.name));
           }
         }
       } else {
@@ -216,7 +218,7 @@ export default defineComponent({
                 payload: "{}",
               });
               detail.statement = "";
-              detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+              detail.sheetId = Number(extractSheetUID(sheet.name));
             }
             detail.earliestAllowedTs = task.earliestAllowedTs;
           }

@@ -1,8 +1,6 @@
 import { computed, unref } from "vue";
-
-import { Database, DatabaseSchema, MaybeRef } from "@/types";
-import { Column, Schema, Table } from "@/types/schemaEditor/atomType";
 import { EditStatus } from "@/components/SchemaDiagram";
+import { Database, DatabaseSchema, MaybeRef } from "@/types";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -11,9 +9,10 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import { isTableChanged } from "./table";
-import { isSchemaChanged } from "./schema";
+import { Column, Schema, Table } from "@/types/schemaEditor/atomType";
 import { isColumnChanged } from "./column";
+import { isSchemaChanged } from "./schema";
+import { isTableChanged } from "./table";
 
 type MetadataWithEditStatus<T, E> = T & {
   $$status?: EditStatus;

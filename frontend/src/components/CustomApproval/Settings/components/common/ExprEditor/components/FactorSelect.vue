@@ -11,18 +11,16 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-
-import { computed, watch } from "vue";
 import { SelectOption } from "naive-ui";
-
+import { computed, watch } from "vue";
 import {
   type ConditionExpr,
   type Factor,
   isHighLevelFactor,
 } from "@/plugins/cel";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
-import { useExprEditorContext } from "../context";
 import { factorText } from "../../utils";
+import { useExprEditorContext } from "../context";
 import { FactorList } from "../factor";
 
 const props = defineProps<{

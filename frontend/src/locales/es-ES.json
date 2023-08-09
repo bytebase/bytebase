@@ -260,7 +260,8 @@
     "warehouse": "Almacén",
     "schedule": "Horario",
     "state": "Estado",
-    "condition": "Condición"
+    "condition": "Condición",
+    "search-user": "Buscar usuario"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -357,7 +358,13 @@
     "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
     "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual",
-    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual"
+    "database-create": {
+      "pending": "(pendiente de crear)",
+      "created": "(creado)"
+    },
+    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual",
+    "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
+    "cancel-task": "Cancelar tarea | Cancelar tareas"
   },
   "banner": {
     "update-license": "Actualizar licencia",
@@ -454,7 +461,7 @@
         "not-allow-edit": "Solo el propietario puede cambiar el rol",
         "not-allow-remove": "No se puede eliminar el último propietario",
         "project-role-provider-gitlab": "Mapeado desde el rol {rawRole} en el proyecto correspondiente de GitLab.",
-        "cannot-change-role-of-systembot": "No se puede cambiar el rol del bot del sistema"
+        "cannot-change-role-of-systembot-or-service-account": "No se puede cambiar el rol de la cuenta bot del sistema o de la cuenta de servicio"
       },
       "system-bot": "Bot del Sistema",
       "service-account": "Cuenta de Servicio",
@@ -503,9 +510,10 @@
         "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
-        "identifier": "Identificador de usuario Bytebase",
-        "display-name": "Nombre de visualización de usuario Bytebase",
-        "email": "Correo electrónico de usuario Bytebase",
+        "identifier": "Correo electrónico de usuario de Bytebase",
+        "identifier-tips": "Debe ser una cadena única. Y si no está en formato de correo electrónico, se empalmará con el dominio.",
+        "display-name": "Nombre para mostrar de usuario de Bytebase",
+        "phone": "Número de teléfono de usuario de Bytebase",
         "auth-style": {
           "self": "Estilo de autenticación",
           "in-params": {
@@ -550,7 +558,7 @@
           "self": "URL externa",
           "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://. {viewDoc}"
         },
-        "config-updated": "La configuración se ha actualizado",
+        "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto.",
         "plugin": {
           "openai": {
             "ai-augmentation": "Mejora IA",
@@ -819,7 +827,17 @@
       "export-method": "Método de exportación",
       "please-select-database-first": "Por favor, seleccione primero la base de datos"
     },
-    "review-sent-back": "Revisión devuelta"
+    "review-sent-back": "Revisión devuelta",
+    "update-statement": {
+      "self": "Actualizar {type}",
+      "apply-current-change-to": "Aplicar el cambio actual a",
+      "target": {
+        "selected-task": "Tarea seleccionada",
+        "selected-stage": "Etapa seleccionada",
+        "all-tasks": "Todas las tareas"
+      }
+    },
+    "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1133,7 +1151,9 @@
     "instance-bad-connection": "No se pudo conectar la instancia \"{name}\" para recuperar el historial de cambios.",
     "contact-dba": "Por favor, contacte a su DBA para configurarlo",
     "export": "Exportar historial de cambios",
-    "need-to-select-first": "Necesita seleccionar primero el historial de cambios"
+    "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
+    "all-tables": "Todas las tablas",
+    "affected-tables": "Tablas afectadas"
   },
   "database": {
     "select": "Seleccionar base de datos",
@@ -1149,6 +1169,7 @@
     "alter-schema-in-vcs": "Modificar esquema en VCS",
     "change-data": "Cambiar datos",
     "change-data-in-vcs": "Cambiar datos en VCS",
+    "table-detail": "Detalle de la tabla",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "backup-name": "Nombre de la copia de seguridad",
     "create-backup": "Crear copia de seguridad",
@@ -1323,7 +1344,10 @@
       },
       "select-target-project": "Seleccionar proyecto de destino"
     },
-    "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino"
+    "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
+    "classification": {
+      "self": "Clasificación"
+    }
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
@@ -1823,6 +1847,9 @@
     "sheet": {
       "choose-sheet": "Elegir hoja",
       "self": "Hoja"
+    },
+    "tab": {
+      "unsaved": "No guardado"
     }
   },
   "schema-editor": {
@@ -2159,7 +2186,11 @@
     "content-oversize-warning": "SQL está sobredimensionado y no se permite la edición en línea.",
     "notifications": {
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
-    }
+    },
+    "sheets": "Hojas",
+    "mine": "Mío",
+    "shared": "Compartido",
+    "search-sheets": "Hojas de búsqueda"
   },
   "engine": {
     "mysql": "MySQL",

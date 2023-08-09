@@ -198,18 +198,18 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { BBCheckbox, BBSelect, BBTextField } from "@/bbkit";
-import { pushNotification } from "@/store";
+import { cloneDeep, isEqual } from "lodash-es";
+import { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep, isEqual } from "lodash-es";
+import { BBCheckbox, BBSelect, BBTextField } from "@/bbkit";
+import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import {
   SMTPMailDeliverySettingValue,
   SMTPMailDeliverySettingValue_Authentication,
   SMTPMailDeliverySettingValue_Encryption,
 } from "@/types/proto/v1/setting_service";
-import { ClientError } from "nice-grpc-web";
 
 interface LocalState {
   originMailDeliverySetting?: SMTPMailDeliverySettingValue;

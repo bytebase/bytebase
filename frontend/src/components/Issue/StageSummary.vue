@@ -10,7 +10,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import type { Stage } from "@/types";
 
 const props = defineProps<{

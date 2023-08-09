@@ -21,17 +21,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
 import { storeToRefs } from "pinia";
-
+import { computed, PropType, reactive } from "vue";
+import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import { isTempTab } from "@/utils";
-import { useTabStore } from "@/store";
-import Prefix from "./Prefix.vue";
-import Label from "./Label.vue";
-import Suffix from "./Suffix.vue";
 import AdminLabel from "./AdminLabel.vue";
+import Label from "./Label.vue";
+import Prefix from "./Prefix.vue";
+import Suffix from "./Suffix.vue";
 
 type LocalState = {
   hovering: boolean;
@@ -75,10 +74,10 @@ const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
 }
 
 .body {
-  @apply flex items-center justify-between gap-x-1 pl-2 pr-1 py-1 border-t;
+  @apply flex items-center justify-between gap-x-1 pl-2 pr-1 pb-1 border-t pt-[4px];
 }
 .current .body {
-  @apply relative bg-white text-accent border-t-accent border-t-2;
+  @apply relative bg-white text-accent border-t-accent border-t-2 pt-[3px];
 }
 
 .tab-item.admin .body {

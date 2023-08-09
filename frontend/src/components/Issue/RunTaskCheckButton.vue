@@ -25,10 +25,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { useIssueLogic } from "./logic";
-import { ContextMenuButton, ContextMenuButtonAction } from "../v2";
 import { Issue, Task } from "@/types";
+import { ContextMenuButton, ContextMenuButtonAction } from "../v2";
+import { useIssueLogic } from "./logic";
 
 type ButtonAction = ContextMenuButtonAction<{
   taskList: Task[];

@@ -4,7 +4,11 @@
     :title="$t('common.bookmarks')"
     :item-list="
       bookmarkList.map((item) => {
-        return { id: item.name, name: item.title, link: item.link };
+        return {
+          id: item.name,
+          name: item.title,
+          link: item.link,
+        };
       })
     "
     :allow-delete="true"
@@ -14,13 +18,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
-import { UNKNOWN_ID } from "../types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { useRouter } from "vue-router";
+import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { useBookmarkV1Store, useCurrentUser } from "@/store";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
+import { UNKNOWN_ID } from "../types";
 
 const { t } = useI18n();
 const router = useRouter();

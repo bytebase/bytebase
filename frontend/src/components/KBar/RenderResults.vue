@@ -35,13 +35,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
 import {
   useKBarMatches,
   KBarResults,
   ActionImpl,
   useKBarState,
 } from "@bytebase/vue-kbar";
+import { defineComponent } from "vue";
 
 export default defineComponent({
   name: "RenderResults",

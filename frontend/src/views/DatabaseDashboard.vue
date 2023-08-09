@@ -65,16 +65,35 @@
 </template>
 
 <script lang="ts" setup>
+import { NInputGroup, NTooltip } from "naive-ui";
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { NInputGroup, NTooltip } from "naive-ui";
-
 import {
   EnvironmentTabFilter,
   InstanceSelect,
   DatabaseV1Table,
   SearchBox,
 } from "@/components/v2";
+import {
+  useCurrentUserV1,
+  useDBGroupStore,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  usePolicyV1Store,
+  useProjectV1ListByCurrentUser,
+  useUIStateStore,
+} from "@/store";
+import {
+  Policy,
+  PolicyResourceType,
+  PolicyType,
+} from "@/types/proto/v1/org_policy_service";
+import {
+  filterDatabaseV1ByKeyword,
+  hasWorkspacePermissionV1,
+  sortDatabaseV1List,
+  isDatabaseV1Accessible,
+} from "@/utils";
 import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
@@ -83,25 +102,6 @@ import {
   ComposedDatabaseGroup,
   DEFAULT_PROJECT_V1_NAME,
 } from "../types";
-import {
-  filterDatabaseV1ByKeyword,
-  hasWorkspacePermissionV1,
-  sortDatabaseV1List,
-  isDatabaseV1Accessible,
-} from "@/utils";
-import {
-  useCurrentUserV1,
-  useDBGroupStore,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  usePolicyV1Store,
-  useUIStateStore,
-} from "@/store";
-import {
-  Policy,
-  PolicyResourceType,
-  PolicyType,
-} from "@/types/proto/v1/org_policy_service";
 
 interface LocalState {
   instanceFilter: string;
@@ -111,10 +111,11 @@ interface LocalState {
   loading: boolean;
 }
 
+const route = useRoute();
+const router = useRouter();
 const uiStateStore = useUIStateStore();
 const environmentV1Store = useEnvironmentV1Store();
-const router = useRouter();
-const route = useRoute();
+const { projectList } = useProjectV1ListByCurrentUser();
 
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
@@ -170,14 +171,22 @@ const prepareDatabaseList = async () => {
     const databaseV1List = await databaseV1Store.searchDatabaseList({
       parent: "instances/-",
     });
-    state.databaseV1List = sortDatabaseV1List(databaseV1List);
+    state.databaseV1List = sortDatabaseV1List(databaseV1List).filter((db) =>
+      projectList.value.map((project) => project.name).includes(db.project)
+    );
     state.loading = false;
   }
 };
 
 const prepareDatabaseGroupList = async () => {
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    state.databaseGroupList = await dbGroupStore.fetchAllDatabaseGroupList();
+    state.databaseGroupList = (
+      await dbGroupStore.fetchAllDatabaseGroupList()
+    ).filter((dbGroup) =>
+      projectList.value
+        .map((project) => project.name)
+        .includes(dbGroup.project.name)
+    );
   }
 };
 

@@ -143,6 +143,24 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		case "schema_change":
 			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			patch.SchemaChangeType = &schemaChange
+		case "data_classification_config_id":
+			setting, err := s.store.GetDataClassificationSetting(ctx)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get data classification setting")
+			}
+			existConfig := false
+			for _, config := range setting.Configs {
+				if config.Id == request.Project.DataClassificationConfigId {
+					existConfig = true
+					break
+				}
+			}
+			if !existConfig {
+				return nil, status.Errorf(codes.InvalidArgument, "data classification %s not exists", request.Project.DataClassificationConfigId)
+			}
+			patch.DataClassificationConfigID = &request.Project.DataClassificationConfigId
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
 	}
 
@@ -832,6 +850,110 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 	return convertToProject(project), nil
 }
 
+// RemoveWebhook removes a webhook from a given project.
+func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
+	projectID, webhookID, err := common.GetProjectIDWebhookID(request.Webhook.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	webhookIDInt, err := strconv.Atoi(webhookID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid webhook id %q", webhookID)
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", webhookID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
+	}
+
+	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+		ProjectID: &project.UID,
+		ID:        &webhookIDInt,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if webhook == nil {
+		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
+	}
+
+	if err := s.store.DeleteProjectWebhookV2(ctx, project.ResourceID, webhook.ID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToProject(project), nil
+}
+
+// TestWebhook tests a webhook.
+func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebhookRequest) (*v1pb.TestWebhookResponse, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
+	}
+
+	projectID, err := common.GetProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
+	}
+
+	webhook, err := convertToStoreProjectWebhookMessage(request.Webhook)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	resp := &v1pb.TestWebhookResponse{}
+	err = webhookPlugin.Post(
+		webhook.Type,
+		webhookPlugin.Context{
+			URL:          webhook.URL,
+			Level:        webhookPlugin.WebhookInfo,
+			ActivityType: string(api.ActivityIssueCreate),
+			Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
+			Description:  "This is a test",
+			Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, fmt.Sprintf("%s-%d", slug.Make(project.Title), project.UID), fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
+			CreatorID:    api.SystemBotID,
+			CreatorName:  "Bytebase",
+			CreatorEmail: api.SystemBotEmail,
+			CreatedTs:    time.Now().Unix(),
+			Project:      &webhookPlugin.Project{Name: project.Title},
+		},
+	)
+	if err != nil {
+		resp.Error = err.Error()
+	}
+
+	return resp, nil
+}
+
 func (s *ProjectService) findProjectRepository(ctx context.Context, projectName string) (*store.RepositoryMessage, error) {
 	project, err := s.getProjectMessage(ctx, projectName)
 	if err != nil {
@@ -1441,112 +1563,6 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 			Content:       newContent,
 		},
 	)
-}
-
-// RemoveWebhook removes a webhook from a given project.
-func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
-	projectID, webhookID, err := common.GetProjectIDWebhookID(request.Webhook.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	webhookIDInt, err := strconv.Atoi(webhookID)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid webhook id %q", webhookID)
-	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", webhookID)
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
-	}
-
-	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
-		ProjectID: &project.UID,
-		ID:        &webhookIDInt,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if webhook == nil {
-		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
-	}
-
-	if err := s.store.DeleteProjectWebhookV2(ctx, project.ResourceID, webhook.ID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	return convertToProject(project), nil
-}
-
-// TestWebhook tests a webhook.
-func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebhookRequest) (*v1pb.TestWebhookResponse, error) {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
-	}
-
-	projectID, err := common.GetProjectID(request.Project)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
-	}
-
-	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
-		ProjectID: &project.UID,
-		URL:       &request.Webhook.Url,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if webhook == nil {
-		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
-	}
-
-	err = webhookPlugin.Post(
-		webhook.Type,
-		webhookPlugin.Context{
-			URL:          webhook.URL,
-			Level:        webhookPlugin.WebhookInfo,
-			ActivityType: string(api.ActivityIssueCreate),
-			Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
-			Description:  "This is a test",
-			Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, fmt.Sprintf("%s-%d", slug.Make(project.Title), project.UID), fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
-			CreatorID:    api.SystemBotID,
-			CreatorName:  "Bytebase",
-			CreatorEmail: api.SystemBotEmail,
-			CreatedTs:    time.Now().Unix(),
-			Project:      &webhookPlugin.Project{Name: project.Title},
-		},
-	)
-
-	return &v1pb.TestWebhookResponse{Error: err.Error()}, nil
 }
 
 // CreateDatabaseGroup creates a database group.
@@ -2585,17 +2601,18 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 
 	return &v1pb.Project{
-		Name:           fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
-		Uid:            fmt.Sprintf("%d", projectMessage.UID),
-		State:          convertDeletedToState(projectMessage.Deleted),
-		Title:          projectMessage.Title,
-		Key:            projectMessage.Key,
-		Workflow:       workflow,
-		Visibility:     visibility,
-		TenantMode:     tenantMode,
-		DbNameTemplate: projectMessage.DBNameTemplate,
-		SchemaChange:   schemaChange,
-		Webhooks:       projectWebhooks,
+		Name:                       fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
+		Uid:                        fmt.Sprintf("%d", projectMessage.UID),
+		State:                      convertDeletedToState(projectMessage.Deleted),
+		Title:                      projectMessage.Title,
+		Key:                        projectMessage.Key,
+		Workflow:                   workflow,
+		Visibility:                 visibility,
+		TenantMode:                 tenantMode,
+		DbNameTemplate:             projectMessage.DBNameTemplate,
+		SchemaChange:               schemaChange,
+		Webhooks:                   projectWebhooks,
+		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 	}
 }
 

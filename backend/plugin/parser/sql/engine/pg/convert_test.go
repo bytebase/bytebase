@@ -2783,12 +2783,12 @@ func TestCreateFunction(t *testing.T) {
 							{
 								Name: "Price_from",
 								Type: &ast.Integer{Size: 4},
-								Mode: ast.FunctionParameterModeIn,
+								Mode: ast.FunctionParameterModeDefault,
 							},
 							{
 								Name: "price_to",
 								Type: &ast.Integer{Size: 4},
-								Mode: ast.FunctionParameterModeIn,
+								Mode: ast.FunctionParameterModeDefault,
 							},
 						},
 					},

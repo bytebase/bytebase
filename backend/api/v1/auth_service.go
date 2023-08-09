@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/phonenumbers"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slices"
@@ -26,6 +25,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -134,7 +134,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	firstEndUser := count == 0
 
 	if request.User.Phone != "" {
-		if err := validatePhone(request.User.Phone); err != nil {
+		if err := common.ValidatePhone(request.User.Phone); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid phone %q, error: %v", request.User.Phone, err)
 		}
 	}
@@ -331,7 +331,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 		case "phone":
 			if request.User.Phone != "" {
-				if err := validatePhone(request.User.Phone); err != nil {
+				if err := common.ValidatePhone(request.User.Phone); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid phone number %q, error: %v", request.User.Phone, err)
 				}
 			}
@@ -685,7 +685,6 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
-	var fieldMapping *storepb.FieldMapping
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
@@ -704,22 +703,22 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-		fieldMapping = idp.Config.GetOauth2Config().FieldMapping
 	} else if idp.Type == storepb.IdentityProviderType_OIDC {
 		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 
+		idpConfig := idp.Config.GetOidcConfig()
 		oidcIDP, err := oidc.NewIdentityProvider(
 			ctx,
 			oidc.IdentityProviderConfig{
-				Issuer:        idp.Config.GetOidcConfig().Issuer,
-				ClientID:      idp.Config.GetOidcConfig().ClientId,
-				ClientSecret:  idp.Config.GetOidcConfig().ClientSecret,
-				FieldMapping:  idp.Config.GetOidcConfig().FieldMapping,
-				SkipTLSVerify: idp.Config.GetOidcConfig().SkipTlsVerify,
-				AuthStyle:     idp.Config.GetOidcConfig().GetAuthStyle(),
+				Issuer:        idpConfig.Issuer,
+				ClientID:      idpConfig.ClientId,
+				ClientSecret:  idpConfig.ClientSecret,
+				FieldMapping:  idpConfig.FieldMapping,
+				SkipTLSVerify: idpConfig.SkipTlsVerify,
+				AuthStyle:     idpConfig.GetAuthStyle(),
 			},
 		)
 		if err != nil {
@@ -736,7 +735,29 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-		fieldMapping = idp.Config.GetOidcConfig().FieldMapping
+	} else if idp.Type == storepb.IdentityProviderType_LDAP {
+		idpConfig := idp.Config.GetLdapConfig()
+		ldapIDP, err := ldap.NewIdentityProvider(
+			ldap.IdentityProviderConfig{
+				Host:             idpConfig.Host,
+				Port:             int(idpConfig.Port),
+				SkipTLSVerify:    idpConfig.SkipTlsVerify,
+				BindDN:           idpConfig.BindDn,
+				BindPassword:     idpConfig.BindPassword,
+				BaseDN:           idpConfig.BaseDn,
+				UserFilter:       idpConfig.UserFilter,
+				SecurityProtocol: ldap.SecurityProtocol(idpConfig.SecurityProtocol),
+				FieldMapping:     idpConfig.FieldMapping,
+			},
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create new LDAP identity provider: %v", err)
+		}
+
+		userInfo, err = ldapIDP.Authenticate(request.Email, request.Password)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
+		}
 	} else {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", idp.Type.String())
 	}
@@ -745,14 +766,16 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
-	var email string
-	if fieldMapping.Identifier == fieldMapping.Email {
-		email = strings.ToLower(userInfo.Email)
-	} else if idp.Domain != "" {
-		domain := extractDomain(idp.Domain)
-		email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
+	email := strings.ToLower(userInfo.Identifier)
+	if err := validateEmail(email); err != nil {
+		// If the email is invalid, we will try to use the domain and identifier to construct the email.
+		if idp.Domain != "" {
+			domain := extractDomain(idp.Domain)
+			email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
+		}
 	}
-	if email == "" {
+	// If the email is still invalid, we will return an error.
+	if err := validateEmail(email); err != nil {
 		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
@@ -780,6 +803,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Name:         userInfo.DisplayName,
 			Email:        email,
+			Phone:        userInfo.Phone,
 			Type:         api.EndUser,
 			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
@@ -828,17 +852,6 @@ func validateEmail(email string) error {
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		return err
-	}
-	return nil
-}
-
-func validatePhone(phone string) error {
-	phoneNumber, err := phonenumbers.Parse(phone, "")
-	if err != nil {
-		return err
-	}
-	if !phonenumbers.IsValidNumber(phoneNumber) {
-		return errors.New("invalid phone number")
 	}
 	return nil
 }

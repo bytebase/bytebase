@@ -20,9 +20,9 @@ require (
 	github.com/casbin/casbin/v2 v2.71.1
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/dgraph-io/ristretto v0.1.1-0.20220403145359-8e850b710d6d
 	github.com/github/gh-ost v1.1.5
 	github.com/go-ldap/ldap/v3 v3.4.5
-	github.com/go-pkgz/expirable-cache/v2 v2.0.0
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
@@ -46,7 +46,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.1.0
 	github.com/nyaruka/phonenumbers v1.1.7
 	github.com/paulmach/orb v0.9.2
-	github.com/pganalyze/pg_query_go/v2 v2.1.2
+	github.com/pganalyze/pg_query_go/v4 v4.0.0-00010101000000-000000000000
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
 	github.com/pingcap/tidb/parser v0.0.0-20221101143359-5b0be9af540e
 	github.com/pkg/errors v0.9.1
@@ -77,6 +77,7 @@ require (
 	google.golang.org/api v0.128.0
 	google.golang.org/genproto v0.0.0-20230731193218-e0aa005b6bdf
 	google.golang.org/genproto/googleapis/api v0.0.0-20230731193218-e0aa005b6bdf
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230731190214-cbb8c96f2d6d
 	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -95,11 +96,13 @@ require (
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/danieljoos/wincred v1.2.0 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.4 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
+	github.com/golang/glog v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
@@ -129,7 +132,6 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/term v0.9.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230731190214-cbb8c96f2d6d // indirect
 )
 
 require (
@@ -280,4 +282,4 @@ replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-2023032909590
 
 replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20230329095902-fe196d3c77d0
 
-replace github.com/pganalyze/pg_query_go/v2 => github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7
+replace github.com/pganalyze/pg_query_go/v4 => github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5

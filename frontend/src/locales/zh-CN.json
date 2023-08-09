@@ -257,7 +257,8 @@
     "warehouse": "仓库",
     "schedule": "计划",
     "state": "状态",
-    "condition": "条件"
+    "condition": "条件",
+    "search-user": "搜索用户"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -354,7 +355,13 @@
     "execution-time": "执行时间",
     "run-checks": "运行检查",
     "run-checks-in-current-stage": "运行当前阶段的所有检查",
-    "action-failed-in-current-stage": "{action}当前阶段失败的任务"
+    "database-create": {
+      "pending": "（待创建）",
+      "created": "（已创建）"
+    },
+    "action-failed-in-current-stage": "{action}当前阶段失败的任务",
+    "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
+    "cancel-task": "取消任务"
   },
   "banner": {
     "update-license": "更新证书",
@@ -451,7 +458,7 @@
         "not-allow-edit": "只有所有者才能改变角色",
         "not-allow-remove": "不能移除最后一个所有者",
         "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
-        "cannot-change-role-of-systembot": "不能修改机器人助手的角色"
+        "cannot-change-role-of-systembot-or-service-account": "不能修改机器人助手和服务账号的角色"
       },
       "system-bot": "机器人助手",
       "service-account": "服务账号",
@@ -487,7 +494,7 @@
         "resource-id-description": "唯一的字符串，有效字符为 /[a-z][0-9]-/",
         "domain": "域名",
         "domain-description": "OAuth 提供商的域名",
-        "identity-provider-information": "OAuth 提供商信息",
+        "identity-provider-information": "身份提供商信息",
         "identity-provider-information-description": "这些信息是由您的身份提供商提供的。",
         "identity-provider-needed-information": "用以下信息创建您的 SSO 应用程序。",
         "endpoints": "链接信息",
@@ -498,11 +505,13 @@
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
+        "security-protocol": "安全协议",
         "connection-security": "安全性选项",
         "connection-security-skip-tls-verify": "跳过自签名证书验证",
-        "identifier": "Bytebase 用户的唯一标识符",
+        "identifier": "Bytebase 用户的邮箱",
+        "identifier-tips": "邮箱应该具有唯一性。如果实际值不是邮箱格式，将会和 domain 进行拼接。",
         "display-name": "Bytebase 用户的昵称",
-        "email": "Bytebase 用户的 Email",
+        "phone": "Bytebase 用户的手机号",
         "auth-style": {
           "self": "认证参数传递方式",
           "in-params": {
@@ -557,7 +566,7 @@
           "hours": "小时",
           "days": "天数"
         },
-        "config-updated": "配置已更新",
+        "config-updated": "配置已更新，需要重新启动 Bytebase 以及重新登录后生效。",
         "plugin": {
           "openai": {
             "ai-augmentation": "AI 增强",
@@ -691,7 +700,7 @@
         "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
-        "resolve": "解决",
+        "resolve": "解决工单",
         "cancel": "取消工单",
         "reopen": "重开"
       },
@@ -816,7 +825,17 @@
       "export-method": "导出方式",
       "please-select-database-first": "请先选择数据库"
     },
-    "review-sent-back": "审核被退回"
+    "review-sent-back": "审核被退回",
+    "update-statement": {
+      "self": "更新{type}",
+      "apply-current-change-to": "应用当前修改到",
+      "target": {
+        "selected-task": "选中的任务",
+        "selected-stage": "选中的阶段",
+        "all-tasks": "所有任务"
+      }
+    },
+    "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1130,7 +1149,9 @@
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
     "contact-dba": "请联系您的 DBA 进行配置。",
     "export": "导出变更历史",
-    "need-to-select-first": "需要先选择变更历史"
+    "need-to-select-first": "需要先选择变更历史",
+    "all-tables": "所有表",
+    "affected-tables": "受影响的表"
   },
   "database": {
     "select": "选择数据库",
@@ -1145,6 +1166,7 @@
     "alter-schema-in-vcs": "变更 Schema (VCS)",
     "change-data": "变更数据",
     "change-data-in-vcs": "变更数据 (VCS)",
+    "table-detail": "表详情",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
@@ -1318,7 +1340,10 @@
       },
       "select-target-project": "选择目标项目"
     },
-    "transfer-database-from-to": "将数据库从源项目转移到目标项目"
+    "transfer-database-from-to": "将数据库从源项目转移到目标项目",
+    "classification": {
+      "self": "分类分级"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1818,6 +1843,9 @@
     "sheet": {
       "choose-sheet": "选择工作表",
       "self": "工作表"
+    },
+    "tab": {
+      "unsaved": "未保存"
     }
   },
   "schema-editor": {
@@ -2155,7 +2183,11 @@
     },
     "linked-issue": "关联工单",
     "from-issue-warning": "这个工作表来自工单 {issue}，处于只读模式。{oversize}",
-    "content-oversize-warning": "SQL 过大所以无法直接编辑。"
+    "content-oversize-warning": "SQL 过大所以无法直接编辑。",
+    "sheets": "工作表",
+    "mine": "我的",
+    "shared": "分享的",
+    "search-sheets": "搜索工作表"
   },
   "engine": {
     "mysql": "MySQL",

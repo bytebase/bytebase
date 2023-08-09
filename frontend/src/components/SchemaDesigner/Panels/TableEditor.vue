@@ -264,12 +264,15 @@
 
 <script lang="ts" setup>
 import { isUndefined, flatten } from "lodash-es";
+import { NDropdown } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { NDropdown } from "naive-ui";
+import { BBCheckbox, BBSpin } from "@/bbkit";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import { generateUniqueTabId, useSettingV1Store } from "@/store/modules";
 import { ColumnMetadata } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
 import {
   Column,
   Table,
@@ -278,10 +281,7 @@ import {
   ForeignKey,
 } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
-import { BBCheckbox, BBSpin } from "@/bbkit";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
-import { Engine } from "@/types/proto/v1/common";
 import {
   SchemaDesignerTabType,
   TableTabContext,

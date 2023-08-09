@@ -160,10 +160,17 @@
 </template>
 
 <script lang="ts" setup>
+import { NPopover } from "naive-ui";
 import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { NPopover } from "naive-ui";
+import { DrawerContent } from "@/components/v2";
+import { pushNotification, useBackupV1Store } from "@/store";
 import { ComposedDatabase, unknown } from "@/types";
+import { BackupSetting } from "@/types/proto/v1/database_service";
+import {
+  BackupPlanSchedule,
+  backupPlanScheduleToJSON,
+} from "@/types/proto/v1/org_policy_service";
 import {
   AVAILABLE_DAYS_OF_WEEK,
   AVAILABLE_HOURS_OF_DAY,
@@ -174,13 +181,6 @@ import {
   localToUTC,
   parseScheduleFromBackupSetting,
 } from "./utils";
-import { pushNotification, useBackupV1Store } from "@/store";
-import {
-  BackupPlanSchedule,
-  backupPlanScheduleToJSON,
-} from "@/types/proto/v1/org_policy_service";
-import { BackupSetting } from "@/types/proto/v1/database_service";
-import { DrawerContent } from "@/components/v2";
 
 interface BackupSettingEdit {
   enabled: boolean;

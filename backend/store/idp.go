@@ -32,6 +32,9 @@ func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
 	} else if v := config.GetOidcConfig(); v != nil {
 		configBytes, err := protojson.Marshal(v)
 		return configBytes, err
+	} else if v := config.GetLdapConfig(); v != nil {
+		configBytes, err := protojson.Marshal(v)
+		return configBytes, err
 	} else {
 		return nil, errors.Errorf("unexpected provider type")
 	}
@@ -312,6 +315,8 @@ func convertIdentityProviderType(identityProviderType string) storepb.IdentityPr
 		return storepb.IdentityProviderType_OAUTH2
 	} else if identityProviderType == "OIDC" {
 		return storepb.IdentityProviderType_OIDC
+	} else if identityProviderType == "LDAP" {
+		return storepb.IdentityProviderType_LDAP
 	}
 	return storepb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
 }
@@ -335,6 +340,15 @@ func convertIdentityProviderConfigString(identityProviderType storepb.IdentityPr
 		}
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_OidcConfig{
 			OidcConfig: &formattedConfig,
+		}
+	} else if identityProviderType == storepb.IdentityProviderType_LDAP {
+		var formattedConfig storepb.LDAPIdentityProviderConfig
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal([]byte(config), &formattedConfig); err != nil {
+			return nil
+		}
+		identityProviderConfig.Config = &storepb.IdentityProviderConfig_LdapConfig{
+			LdapConfig: &formattedConfig,
 		}
 	}
 	return identityProviderConfig

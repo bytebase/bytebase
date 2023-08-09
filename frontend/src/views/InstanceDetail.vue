@@ -1,37 +1,43 @@
 <template>
-  <div class="py-4 space-y-4">
+  <div class="py-4 space-y-2">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
 
-    <div class="px-6 space-y-6">
-      <InstanceForm :instance="instance" />
-      <NTabs>
-        <template #suffix>
-          <div class="flex items-center gap-x-4">
-            <NButton
-              v-if="allowEdit"
-              :loading="state.syncingSchema"
-              @click.prevent="syncSchema"
-            >
-              <template v-if="state.syncingSchema">
-                {{ $t("instance.syncing") }}
-              </template>
-              <template v-else>
-                {{ $t("common.sync-now") }}
-              </template>
-            </NButton>
-            <NButton
-              v-if="
-                instance.state === State.ACTIVE &&
-                instanceV1HasCreateDatabase(instance)
-              "
-              type="primary"
-              @click.prevent="createDatabase"
-            >
-              {{ $t("instance.new-database") }}
-            </NButton>
-          </div>
-        </template>
+    <div class="px-6 flex items-center justify-between">
+      <div class="flex items-center gap-x-2">
+        <EngineIcon :engine="instance.engine" custom-class="!h-6" />
+        <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
+      </div>
+      <div class="flex items-center gap-x-4">
+        <NButton
+          v-if="allowEdit"
+          :loading="state.syncingSchema"
+          @click.prevent="syncSchema"
+        >
+          <template v-if="state.syncingSchema">
+            {{ $t("instance.syncing") }}
+          </template>
+          <template v-else>
+            {{ $t("common.sync-now") }}
+          </template>
+        </NButton>
+        <NButton
+          v-if="
+            instance.state === State.ACTIVE &&
+            instanceV1HasCreateDatabase(instance)
+          "
+          type="primary"
+          @click.prevent="createDatabase"
+        >
+          {{ $t("instance.new-database") }}
+        </NButton>
+      </div>
+    </div>
 
+    <div class="px-6">
+      <NTabs>
+        <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
+          <InstanceForm :instance="instance" />
+        </NTabPane>
         <NTabPane name="DATABASES" :tab="$t('common.databases')">
           <DatabaseV1Table
             mode="INSTANCE"
@@ -43,8 +49,6 @@
           <InstanceRoleTable :instance-role-list="instanceRoleList" />
         </NTabPane>
       </NTabs>
-
-      <InstanceArchiveRestoreButton :instance="instance" />
     </div>
   </div>
 
@@ -61,21 +65,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { ClientError } from "nice-grpc-web";
-
-import {
-  idFromSlug,
-  hasWorkspacePermissionV1,
-  instanceV1HasCreateDatabase,
-  isMemberOfProjectV1,
-} from "@/utils";
+import { computed, reactive, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
-import InstanceForm from "@/components/InstanceForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
-import { InstanceArchiveRestoreButton } from "@/components/Instance";
+import { EngineIcon } from "@/components/Icon";
+import InstanceForm from "@/components/InstanceForm/";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
 import {
   pushNotification,
@@ -86,6 +83,13 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
+import {
+  idFromSlug,
+  hasWorkspacePermissionV1,
+  instanceV1HasCreateDatabase,
+  isMemberOfProjectV1,
+  instanceV1Name,
+} from "@/utils";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;

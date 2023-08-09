@@ -51,11 +51,11 @@
 <script lang="ts" setup>
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
-import { vcsSlugV1 } from "../utils";
 import {
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
+import { vcsSlugV1 } from "../utils";
 
 const props = defineProps({
   vcs: {

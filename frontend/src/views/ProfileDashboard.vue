@@ -146,6 +146,7 @@
             </dt>
             <dd class="mt-1 text-sm text-main">
               <NInput
+                type="password"
                 size="large"
                 :placeholder="
                   $t('settings.profile.password-confirm-placeholder')
@@ -245,14 +246,15 @@
 </template>
 
 <script lang="ts" setup>
-import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
-import { NButton, NInput } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
+import { NButton, NInput } from "naive-ui";
+import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-
-import { unknownUser } from "../types";
-import { hasWorkspacePermissionV1, roleNameV1 } from "../utils";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
+import UserAvatar from "@/components/User/UserAvatar.vue";
+import PhoneNumberInput from "@/components/v2/Form/PhoneNumberInput.vue";
 import {
   featureToRef,
   pushNotification,
@@ -261,15 +263,13 @@ import {
   useCurrentUserV1,
   useUserStore,
 } from "@/store";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import {
   UpdateUserRequest,
   User,
   UserType,
 } from "@/types/proto/v1/auth_service";
-import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
-import UserAvatar from "@/components/User/UserAvatar.vue";
-import PhoneNumberInput from "@/components/v2/Form/PhoneNumberInput.vue";
+import { unknownUser } from "../types";
+import { hasWorkspacePermissionV1, roleNameV1 } from "../utils";
 
 interface LocalState {
   editing: boolean;

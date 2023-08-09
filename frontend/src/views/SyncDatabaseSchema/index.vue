@@ -29,6 +29,7 @@
               :value="'SCHEMA_DESIGN'"
               :label="$t('schema-designer.schema-design')"
             />
+            <NRadio :value="'RAW_SQL'" :label="'Raw SQL'" />
           </NRadioGroup>
         </div>
         <DatabaseSchemaSelector
@@ -44,6 +45,14 @@
               (schemaDesignState.selectedSchemaDesign = schemaDesign)
           "
         />
+        <RawSQLEditor
+          v-if="state.sourceSchemaType === 'RAW_SQL'"
+          :project-id="rawSQLState.projectId"
+          :engine="rawSQLState.engine"
+          :statement="rawSQLState.statement"
+          :sheet-id="rawSQLState.sheetId"
+          @update="handleRawSQLStateChange"
+        />
       </template>
       <template #1>
         <SelectTargetDatabasesView
@@ -52,6 +61,7 @@
           :source-schema-type="state.sourceSchemaType"
           :database-source-schema="(changeHistorySourceSchemaState as any)"
           :schema-design-name="schemaDesignState.selectedSchemaDesign?.name"
+          :raw-sql-state="rawSQLState"
         />
       </template>
     </BBStepTab>
@@ -65,16 +75,22 @@ import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useProjectV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
-import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
-import { ChangeHistorySourceSchema, SourceSchemaType } from "./types";
-import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
-import SchemaDesignSelector from "./SchemaDesignSelector.vue";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { BBStepTab } from "@/bbkit";
+import { useProjectV1Store } from "@/store";
+import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import { UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
+import RawSQLEditor from "./RawSQLEditor.vue";
+import SchemaDesignSelector from "./SchemaDesignSelector.vue";
+import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
+import {
+  ChangeHistorySourceSchema,
+  RawSQLState,
+  SourceSchemaType,
+} from "./types";
 
 const SELECT_SOURCE_SCHEMA = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;
@@ -102,10 +118,15 @@ const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({});
 const schemaDesignState = reactive<{
   selectedSchemaDesign?: SchemaDesign;
 }>({});
+const rawSQLState = reactive<RawSQLState>({
+  engine: Engine.MYSQL,
+  statement: "",
+});
+
 const projectId = computed(() => {
   if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return changeHistorySourceSchemaState.projectId;
-  } else {
+  } else if (state.sourceSchemaType === "SCHEMA_DESIGN") {
     if (!schemaDesignState.selectedSchemaDesign) {
       return undefined;
     }
@@ -114,6 +135,8 @@ const projectId = computed(() => {
     );
     const project = projectStore.getProjectByName(`projects/${projectName}`);
     return project.uid;
+  } else {
+    return rawSQLState.projectId;
   }
 });
 
@@ -145,8 +168,13 @@ const allowNext = computed(() => {
         isValidId(changeHistorySourceSchemaState.databaseId) &&
         !isUndefined(changeHistorySourceSchemaState.changeHistory)
       );
-    } else {
+    } else if (state.sourceSchemaType === "SCHEMA_DESIGN") {
       return !isUndefined(schemaDesignState.selectedSchemaDesign);
+    } else {
+      return (
+        !isUndefined(rawSQLState.projectId) &&
+        (rawSQLState.statement !== "" || !isUndefined(rawSQLState.sheetId))
+      );
     }
   } else {
     if (!targetDatabaseViewRef.value) {
@@ -184,6 +212,10 @@ onMounted(async () => {
     }
   }
 });
+
+const handleRawSQLStateChange = (state: RawSQLState) => {
+  Object.assign(rawSQLState, state);
+};
 
 const tryChangeStep = async (
   oldStep: number,

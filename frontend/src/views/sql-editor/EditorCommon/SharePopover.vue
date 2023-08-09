@@ -82,17 +82,24 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
+import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useTabStore, useSheetV1Store } from "@/store";
+import {
+  pushNotification,
+  useTabStore,
+  useSheetV1Store,
+  useSheetAndTabStore,
+} from "@/store";
 import { AccessOption } from "@/types";
-import { sheetSlugV1 } from "@/utils";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
+import { sheetSlugV1 } from "@/utils";
 
 const { t } = useI18n();
+
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
+const sheetAndTabStore = useSheetAndTabStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
   return [
@@ -114,8 +121,12 @@ const accessOptions = computed<AccessOption[]>(() => {
   ];
 });
 
-const sheet = computed(() => sheetV1Store.currentSheet);
-const isCreator = computed(() => sheetV1Store.isCreator);
+const sheet = computed(() => {
+  return sheetAndTabStore.currentSheet;
+});
+const isCreator = computed(() => {
+  return sheetAndTabStore.isCreator;
+});
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);

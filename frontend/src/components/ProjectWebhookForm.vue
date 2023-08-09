@@ -229,6 +229,13 @@
         />
       </div>
     </div>
+    <button
+      type="button"
+      class="btn-normal whitespace-nowrap items-center"
+      @click.prevent="testWebhook"
+    >
+      {{ $t("project.webhook.test-webhook") }}
+    </button>
     <div
       class="flex pt-5"
       :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
@@ -277,27 +284,26 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, PropType, watch } from "vue";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
-import { useRouter } from "vue-router";
+import { reactive, computed, PropType, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { projectV1Slug, projectWebhookV1Slug } from "../utils";
+import { useRouter } from "vue-router";
 import {
   pushNotification,
   useProjectWebhookV1Store,
   useGracefulRequest,
 } from "@/store";
 import {
+  projectWebhookV1ActivityItemList,
+  projectWebhookV1TypeItemList,
+} from "@/types";
+import {
   Activity_Type,
   Project,
   Webhook,
   Webhook_Type,
 } from "@/types/proto/v1/project_service";
-import {
-  projectWebhookV1ActivityItemList,
-  projectWebhookV1TypeItemList,
-} from "@/types";
+import { projectV1Slug, projectWebhookV1Slug } from "../utils";
 
 interface LocalState {
   webhook: Webhook;
@@ -488,6 +494,33 @@ const deleteWebhook = () => {
       }),
     });
     cancel();
+  });
+};
+
+const testWebhook = () => {
+  useGracefulRequest(async () => {
+    console.log("Barny1", props.project);
+    console.log("Barny2", state.webhook);
+    const result = await useProjectWebhookV1Store().testProjectWebhook(
+      props.project,
+      state.webhook
+    );
+
+    if (result.error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("project.webhook.fail-tested-title"),
+        description: result.error,
+        manualHide: true,
+      });
+    } else {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("project.webhook.success-tested-prompt"),
+      });
+    }
   });
 };
 </script>

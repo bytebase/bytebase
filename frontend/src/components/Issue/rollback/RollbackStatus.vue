@@ -64,10 +64,11 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
 import { computed, reactive, type Ref } from "vue";
 import { useRouter } from "vue-router";
-import { NTooltip } from "naive-ui";
-
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { useActivityV1Store, useIssueById, useSheetV1Store } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
   Issue,
@@ -76,14 +77,12 @@ import {
   TaskRollbackBy,
   UNKNOWN_ID,
 } from "@/types";
-import { useIssueLogic } from "../logic";
-import { useRollbackLogic } from "./common";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import IssueStatusIcon from "../IssueStatusIcon.vue";
+import { useIssueLogic } from "../logic";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
-import { useActivityV1Store, useIssueById, useSheetV1Store } from "@/store";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { useRollbackLogic } from "./common";
 
 type LocalState = {
   loading: boolean;
@@ -162,8 +161,8 @@ const tryRollbackTask = async () => {
 
     const originalSheetUID = payload.value!.sheetId!;
     const rollbackSheetUID = payload.value!.rollbackSheetId!;
-    const originalSheet = await sheetV1Store.getOrFetchSheetByUid(
-      originalSheetUID
+    const originalSheet = await sheetV1Store.getOrFetchSheetByUID(
+      String(originalSheetUID)
     );
     const description = [
       "The original SQL statement:",

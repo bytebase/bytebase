@@ -32,12 +32,12 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { SchemaEditorTabType, UNKNOWN_ID } from "@/types";
 import {
   useSchemaEditorStore,
   useNotificationStore,
   generateUniqueTabId,
 } from "@/store";
+import { SchemaEditorTabType, UNKNOWN_ID } from "@/types";
 import { SchemaMetadata } from "@/types/proto/store/database";
 import { convertSchemaMetadataToSchema } from "@/types/schemaEditor/atomType";
 

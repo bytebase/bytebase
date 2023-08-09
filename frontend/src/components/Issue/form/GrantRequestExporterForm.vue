@@ -60,7 +60,8 @@
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { computed, onMounted, reactive, ref } from "vue";
-import { useIssueLogic } from "../logic";
+import MonacoEditor from "@/components/MonacoEditor";
+import { useDatabaseV1Store } from "@/store";
 import {
   GrantRequestPayload,
   Issue,
@@ -69,11 +70,10 @@ import {
   UNKNOWN_ID,
   dialectOfEngineV1,
 } from "@/types";
-import { useDatabaseV1Store } from "@/store";
-import MonacoEditor from "@/components/MonacoEditor";
-import { convertFromCELString } from "@/utils/issue/cel";
 import { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { convertFromCELString } from "@/utils/issue/cel";
+import { useIssueLogic } from "../logic";
 import DatabaseResourceTable from "../table/DatabaseResourceTable.vue";
 
 interface LocalState {

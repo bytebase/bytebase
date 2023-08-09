@@ -1,26 +1,25 @@
 import { orderBy } from "lodash-es";
 import slug from "slug";
-
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
   usePolicyV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { hasWorkspacePermissionV1 } from "../role";
-import { Engine, State } from "@/types/proto/v1/common";
-import { isDev, semverCompare } from "../util";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
-import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
 import { policyNamePrefix } from "@/store/modules/v1/common";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { User } from "@/types/proto/v1/auth_service";
+import { Engine, State } from "@/types/proto/v1/common";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {
   PolicyType,
   policyTypeToJSON,
 } from "@/types/proto/v1/org_policy_service";
+import { hasWorkspacePermissionV1 } from "../role";
+import { isDev, semverCompare } from "../util";
+import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
@@ -108,6 +107,39 @@ export const isDatabaseV1Accessible = (
   }
 
   if (isDatabaseV1Queryable(database, user)) {
+    return true;
+  }
+
+  return false;
+};
+
+// isDatabaseV1Alterable checks if database alterable for user.
+export const isDatabaseV1Alterable = (
+  database: ComposedDatabase,
+  user: User
+): boolean => {
+  if (!hasFeature("bb.feature.access-control")) {
+    // The current plan doesn't have access control feature.
+    // Fallback to true.
+    return true;
+  }
+
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-access-control",
+      user.userRole
+    )
+  ) {
+    // The current user has the super privilege to access all databases.
+    // AKA. Owners and DBAs
+    return true;
+  }
+
+  // If user is owner or developer of its projects, we will show the database in the UI.
+  if (
+    isOwnerOfProjectV1(database.projectEntity.iamPolicy, user) ||
+    isDeveloperOfProjectV1(database.projectEntity.iamPolicy, user)
+  ) {
     return true;
   }
 

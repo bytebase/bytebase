@@ -8,12 +8,14 @@ enum IdentityProviderType {
   IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0;
   OAUTH2 = 1;
   OIDC = 2;
+  LDAP = 3;
 }
 
 message IdentityProviderConfig {
   oneof config {
     OAuth2IdentityProviderConfig oauth2_config = 1;
     OIDCIdentityProviderConfig oidc_config = 2;
+    LDAPIdentityProviderConfig ldap_config = 3;
   }
 }
 
@@ -53,6 +55,35 @@ message OIDCIdentityProviderConfig {
   OAuth2AuthStyle auth_style = 6;
 }
 
+// LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
+message LDAPIdentityProviderConfig {
+  // Host is the hostname or IP address of the LDAP server, e.g.
+  // "ldap.example.com".
+  string host = 1;
+  // Port is the port number of the LDAP server, e.g. 389. When not set, the
+  // default port of the corresponding security protocol will be used, i.e. 389
+  // for StartTLS and 636 for LDAPS.
+  int32 port = 2;
+  // SkipTLSVerify controls whether to skip TLS certificate verification.
+  bool skip_tls_verify = 3;
+  // BindDN is the DN of the user to bind as a service account to perform
+  // search requests.
+  string bind_dn = 4;
+  // BindPassword is the password of the user to bind as a service account.
+  string bind_password = 5;
+  // BaseDN is the base DN to search for users, e.g. "ou=users,dc=example,dc=com".
+  string base_dn = 6;
+  // UserFilter is the filter to search for users, e.g. "(uid=%s)".
+  string user_filter = 7;
+  // SecurityProtocol is the security protocol to be used for establishing
+  // connections with the LDAP server. It should be either StartTLS or LDAPS, and
+  // cannot be empty.
+  string security_protocol = 8;
+  // FieldMapping is the mapping of the user attributes returned by the LDAP
+  // server.
+  FieldMapping field_mapping = 9;
+}
+
 // FieldMapping saves the field names from user info API of identity provider.
 // As we save all raw json string of user info response data into `principal.idp_user_info`,
 // we can extract the relevant data based with `FieldMapping`.
@@ -65,11 +96,14 @@ message FieldMapping {
   // Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.
   string identifier = 1;
 
-  // DisplayName is the field name of display name in 3rd-party idp user info. Required.
+  // DisplayName is the field name of display name in 3rd-party idp user info. Optional.
   string display_name = 2;
 
-  // Email is the field name of primary email in 3rd-party idp user info. Required.
+  // Email is the field name of primary email in 3rd-party idp user info. Optional.
   string email = 3;
+
+  // Phone is the field name of primary phone in 3rd-party idp user info. Optional.
+  string phone = 4;
 }
 
 message IdentityProviderUserInfo {
@@ -81,6 +115,9 @@ message IdentityProviderUserInfo {
 
   // Email is the value of primary email in 3rd-party idp user info.
   string email = 3;
+
+  // Phone is the value of primary phone in 3rd-party idp user info.
+  string phone = 4;
 }
 
 enum OAuth2AuthStyle {

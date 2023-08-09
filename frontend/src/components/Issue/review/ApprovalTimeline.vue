@@ -66,14 +66,13 @@
 
 <script lang="ts" setup>
 import { NTimeline, NTimelineItem, NEllipsis } from "naive-ui";
-
-import { WrappedReviewStep } from "@/types";
-import { approvalNodeText } from "@/utils";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store";
+import { WrappedReviewStep } from "@/types";
+import { ApprovalStep } from "@/types/proto/v1/issue_service";
+import { approvalNodeText } from "@/utils";
 import Candidates from "./Candidates.vue";
 import ExternalApprovalSyncButton from "./ExternalApprovalNodeSyncButton.vue";
-import { ApprovalStep } from "@/types/proto/v1/issue_service";
 
 const USER_SYSTEM_BOT = "users/1";
 

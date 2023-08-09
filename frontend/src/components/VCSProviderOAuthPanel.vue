@@ -490,7 +490,8 @@
                 </dt>
                 <!-- TODO: decide necessary scopes -->
                 <dd class="text-sm text-main">
-                  Code (full), Identity (read), Project and team (read)
+                  Code (full), Identity (read), Project and team (read), Build
+                  (read and execute)
                 </dd>
               </div>
             </dl>
@@ -536,6 +537,8 @@
 </template>
 
 <script lang="ts">
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import isEmpty from "lodash-es/isEmpty";
 import {
   computed,
   defineComponent,
@@ -543,17 +546,15 @@ import {
   PropType,
   reactive,
 } from "vue";
-import isEmpty from "lodash-es/isEmpty";
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 import {
   isValidVCSApplicationIdOrSecret,
   TEXT_VALIDATION_DELAY,
   VCSConfig,
   redirectUrl,
 } from "../types";
-import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
   applicationIdValidationTimer?: ReturnType<typeof setTimeout>;

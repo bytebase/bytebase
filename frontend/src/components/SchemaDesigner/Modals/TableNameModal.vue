@@ -29,13 +29,13 @@
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useNotificationStore } from "@/store";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { Engine } from "@/types/proto/v1/common";
-import { useSchemaDesignerContext } from "../common";
 import {
   convertColumnMetadataToColumn,
   convertTableMetadataToTable,
 } from "@/types";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
+import { useSchemaDesignerContext } from "../common";
 
 const tableNameFieldRegexp = /^\S+$/;
 

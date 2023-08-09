@@ -1,6 +1,7 @@
 <template>
   <NButton
     :disabled="disabled"
+    tag="div"
     style="--n-icon-margin: 3px"
     @click="handleClick"
   >
@@ -40,9 +41,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
 import { NButton } from "naive-ui";
-
+import { computed, ref } from "vue";
 import { BBProgressPie } from "@/bbkit";
 
 type Tick = (p: number) => void;

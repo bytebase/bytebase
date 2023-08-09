@@ -11,6 +11,8 @@ export const identityProviderTypeToString = (
     return "OAuth 2.0";
   } else if (type === IdentityProviderType.OIDC) {
     return "OIDC";
+  } else if (type == IdentityProviderType.LDAP) {
+    return "LDAP";
   } else {
     throw new Error(`identity provider type ${type} not found`);
   }
@@ -44,7 +46,8 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       fieldMapping: {
         identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -65,7 +68,8 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       fieldMapping: {
         identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -89,7 +93,8 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       fieldMapping: {
         identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -111,6 +116,7 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
         identifier: "",
         displayName: "",
         email: "",
+        phone: "",
       },
     },
   },

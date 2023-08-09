@@ -1,7 +1,7 @@
-import { IssueCreate, StageCreate, UNKNOWN_ID } from "../../types";
-import { IssueTemplate, TemplateContext } from "../types";
 import { defaultApprovalStrategy } from "@/store/modules/v1/policy";
 import { ApprovalStrategy } from "@/types/proto/v1/org_policy_service";
+import { IssueCreate, StageCreate, UNKNOWN_ID } from "../../types";
+import { IssueTemplate, TemplateContext } from "../types";
 
 const template: IssueTemplate = {
   type: "bb.issue.database.schema.update",

@@ -1,12 +1,12 @@
+import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { isEqual, isUndefined } from "lodash-es";
 import {
   projectServiceClient,
   externalVersionControlServiceClient,
 } from "@/grpcweb";
-import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
 import { ComposedRepository } from "@/types";
+import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
 import { getProjectPathFromRepoName } from "./common";
 import { useProjectV1Store } from "./project";
 
@@ -126,6 +126,7 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     getRepositoryByProject,
     getOrFetchRepositoryByProject,
     fetchRepositoryListByVCS,
+    fetchRepositoryByProject,
     getRepositoryListByVCS,
   };
 });

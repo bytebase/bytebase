@@ -8,28 +8,20 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-
-import { isMemberOfProjectV1, projectV1Slug } from "../utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { useProjectV1ListByCurrentUser } from "@/store";
 import { BBOutlineItem } from "../bbkit/types";
-import { useCurrentUserV1, useProjectV1ListByCurrentUser } from "@/store";
-import { DEFAULT_PROJECT_ID } from "@/types";
+import { projectV1Slug } from "../utils";
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUserV1 = useCurrentUserV1();
 const { projectList } = useProjectV1ListByCurrentUser();
 
 const outlineItemList = computed((): BBOutlineItem[] => {
   return projectList.value
-    .filter(
-      (project) =>
-        project.uid != String(DEFAULT_PROJECT_ID) &&
-        isMemberOfProjectV1(project.iamPolicy, currentUserV1.value)
-    )
     .map((project): BBOutlineItem => {
       return {
         id: project.uid,

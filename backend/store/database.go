@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -41,7 +40,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 	if find.ID != nil {
 		v2Find.UID = find.ID
 	}
-	v2Find.IncludeAllDatabase = find.IncludeAllDatabase
 
 	database, err := s.GetDatabaseV2(ctx, v2Find)
 	if err != nil {
@@ -93,7 +91,7 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 
 	// Compose labels.
 	var labelList []*api.DatabaseLabel
-	for key, value := range database.Labels {
+	for key, value := range database.Metadata.Labels {
 		labelList = append(labelList, &api.DatabaseLabel{
 			Key:   key,
 			Value: value,
@@ -120,11 +118,23 @@ type DatabaseMessage struct {
 	SyncState            api.SyncStatus
 	SuccessfulSyncTimeTs int64
 	SchemaVersion        string
-	Labels               map[string]string
 	Secrets              *storepb.Secrets
 	DataShare            bool
 	// ServiceName is the Oracle specific field.
 	ServiceName string
+	Metadata    *storepb.DatabaseMetadata
+}
+
+// GetEffectiveLabels gets the effective labels for a database.
+func (m *DatabaseMessage) GetEffectiveLabels() map[string]string {
+	ret := make(map[string]string)
+	for k, v := range m.Metadata.Labels {
+		ret[k] = v
+	}
+	// System default environment label.
+	// The value of bb.environment is resource ID of the environment.
+	ret[api.EnvironmentLabelKey] = m.EffectiveEnvironmentID
+	return ret
 }
 
 // UpdateDatabaseMessage is the mssage for updating a database.
@@ -136,12 +146,12 @@ type UpdateDatabaseMessage struct {
 	SyncState            *api.SyncStatus
 	SuccessfulSyncTimeTs *int64
 	SchemaVersion        *string
-	Labels               *map[string]string
 	SourceBackupID       *int
 	Secrets              *storepb.Secrets
 	DataShare            *bool
 	ServiceName          *string
 	EnvironmentID        *string
+	Metadata             *storepb.DatabaseMetadata
 }
 
 // FindDatabaseMessage is the message for finding databases.
@@ -154,9 +164,6 @@ type FindDatabaseMessage struct {
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
 	ShowDeleted bool
-
-	// TODO(d): deprecate this field when we migrate all datasource to v1 store.
-	IncludeAllDatabase bool
 
 	// IgnoreCaseSensitive is used to ignore case sensitive when finding database.
 	IgnoreCaseSensitive bool
@@ -262,10 +269,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
 func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID int, create *DatabaseMessage) (int, error) {
-	emptySecret := &storepb.Secrets{
-		Items: []*storepb.SecretItem{},
-	}
-	secretsString, err := protojson.Marshal(emptySecret)
+	secretsString, err := protojson.Marshal(&storepb.Secrets{})
 	if err != nil {
 		return 0, err
 	}
@@ -292,7 +296,8 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 			project_id = EXCLUDED.project_id,
 			sync_status = EXCLUDED.sync_status,
 			last_successful_sync_ts = EXCLUDED.last_successful_sync_ts,
-			datashare = EXCLUDED.datashare
+			datashare = EXCLUDED.datashare,
+			service_name = EXCLUDED.service_name
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
@@ -347,6 +352,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if err != nil {
 		return nil, err
 	}
+	metadataString, err := protojson.Marshal(create.Metadata)
+	if err != nil {
+		return nil, err
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -368,14 +377,16 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			schema_version,
 			secrets,
 			datashare,
-			service_name
+			service_name,
+			metadata
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			environment_id = EXCLUDED.environment_id,
 			name = EXCLUDED.name,
-			schema_version = EXCLUDED.schema_version
+			schema_version = EXCLUDED.schema_version,
+			metadata = EXCLUDED.metadata
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
@@ -391,12 +402,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		secretsString,
 		create.DataShare,
 		create.ServiceName,
+		metadataString,
 	).Scan(
 		&databaseUID,
 	); err != nil {
-		return nil, err
-	}
-	if err := s.setDatabaseLabels(ctx, tx, databaseUID, create.Labels, api.SystemBotID); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -460,6 +469,15 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if v := patch.ServiceName; v != nil {
 		set, args = append(set, fmt.Sprintf("service_name = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Metadata; v != nil {
+		// We will skip writing the system label, environment.
+		delete(v.Labels, api.EnvironmentLabelKey)
+		metadataString, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadataString)
+	}
 	args = append(args, instance.UID, patch.DatabaseName)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -473,17 +491,12 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		SET `+strings.Join(set, ", ")+`
 		WHERE instance_id = $%d AND name = $%d
 		RETURNING id
-	`, len(set)+1, len(set)+2),
+	`, len(args)-1, len(args)),
 		args...,
 	).Scan(
 		&databaseUID,
 	); err != nil {
 		return nil, err
-	}
-	if patch.Labels != nil {
-		if err := s.setDatabaseLabels(ctx, tx, databaseUID, *(patch.Labels), updaterID); err != nil {
-			return nil, err
-		}
 	}
 	// When we update the project ID of the database, we should update the project ID of the related sheets in the same transaction.
 	if patch.ProjectID != nil {
@@ -529,7 +542,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	var wheres []string
 	args := []any{project.UID, updaterID}
 	for i, database := range databases {
-		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+2, 2*i+3))
+		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+3, 2*i+4))
 		args = append(args, database.InstanceID, database.DatabaseName)
 	}
 	databaseClause := ""
@@ -539,7 +552,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE db
 			SET project_id = $1, updater_id = $2
-			FROM instance JOIN environment ON instance.environment_id = environment.id
+			FROM instance
 			WHERE db.instance_id = instance.id %s;`, databaseClause),
 		args...,
 	); err != nil {
@@ -561,26 +574,8 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	return updatedDatabases, nil
 }
 
-func (s *Store) getDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) (*DatabaseMessage, error) {
-	databaseList, err := s.listDatabaseImplV2(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-	if len(databaseList) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("database not found with %v", find)}
-	}
-	if len(databaseList) > 1 {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases with %v, but expect 1", len(databaseList), find)}
-	}
-
-	return databaseList[0], nil
-}
-
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	if !find.IncludeAllDatabase {
-		where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
-	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -621,19 +616,13 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			db.sync_status,
 			db.last_successful_sync_ts,
 			db.schema_version,
-			ARRAY_AGG (
-				db_label.key
-			) keys,
-			ARRAY_AGG (
-				db_label.value
-			) label_values,
 			db.secrets,
 			db.datashare,
-			db.service_name
+			db.service_name,
+			db.metadata
 		FROM db
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
-		LEFT JOIN db_label ON db.id = db_label.database_id
 		WHERE %s
 		GROUP BY db.id, project.resource_id, instance.resource_id`, strings.Join(where, " AND ")),
 		args...,
@@ -643,11 +632,8 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	defer rows.Close()
 	for rows.Next() {
-		databaseMessage := DatabaseMessage{
-			Labels: make(map[string]string),
-		}
-		var keys, values []sql.NullString
-		var secretsString string
+		databaseMessage := &DatabaseMessage{}
+		var secretsString, metadataString string
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
@@ -658,11 +644,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.SyncState,
 			&databaseMessage.SuccessfulSyncTimeTs,
 			&databaseMessage.SchemaVersion,
-			pq.Array(&keys),
-			pq.Array(&values),
 			&secretsString,
 			&databaseMessage.DataShare,
 			&databaseMessage.ServiceName,
+			&metadataString,
 		); err != nil {
 			return nil, err
 		}
@@ -671,128 +656,17 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			return nil, err
 		}
 		databaseMessage.Secrets = &secret
-		if len(keys) != len(values) {
-			return nil, errors.Errorf("invalid length of database label keys and values")
+		var metadata storepb.DatabaseMetadata
+		if err := protojson.Unmarshal([]byte(metadataString), &metadata); err != nil {
+			return nil, err
 		}
-		for i := 0; i < len(keys); i++ {
-			if !keys[i].Valid || !values[i].Valid {
-				continue
-			}
-			databaseMessage.Labels[keys[i].String] = values[i].String
-		}
-		// System default environment label.
-		// The value of bb.environment is resource ID of the environment.
-		databaseMessage.Labels[api.EnvironmentLabelKey] = databaseMessage.EffectiveEnvironmentID
+		databaseMessage.Metadata = &metadata
 
-		databaseMessages = append(databaseMessages, &databaseMessage)
+		databaseMessages = append(databaseMessages, databaseMessage)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
 	return databaseMessages, nil
-}
-
-func (s *Store) setDatabaseLabels(ctx context.Context, tx *Tx, databaseUID int, labels map[string]string, updaterID int) error {
-	oldLabels, err := s.getDatabaseLabels(ctx, tx, databaseUID)
-	if err != nil {
-		return err
-	}
-	upserts := make(map[string]string)
-	var deleteKeys []string
-	for key, value := range labels {
-		// We will skip writing the system label, environment.
-		if key == api.EnvironmentLabelKey {
-			continue
-		}
-		if oldValue, ok := oldLabels[key]; !ok || oldValue != value {
-			upserts[key] = value
-		}
-	}
-	for key := range oldLabels {
-		if _, ok := labels[key]; !ok {
-			deleteKeys = append(deleteKeys, key)
-		}
-	}
-	if err := s.upsertLabels(ctx, tx, databaseUID, upserts, updaterID); err != nil {
-		return err
-	}
-	return s.deleteLabels(ctx, tx, databaseUID, deleteKeys)
-}
-
-func (*Store) upsertLabels(ctx context.Context, tx *Tx, databaseUID int, labels map[string]string, updaterID int) error {
-	query := `
-		INSERT INTO db_label (
-			row_status,
-			creator_id,
-			updater_id,
-			database_id,
-			key,
-			value
-		)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT(database_id, key) DO UPDATE SET
-			row_status = excluded.row_status,
-			updater_id = excluded.updater_id,
-			value = excluded.value
-	`
-	for key, value := range labels {
-		if _, err := tx.ExecContext(ctx, query,
-			api.Normal,
-			updaterID,
-			updaterID,
-			databaseUID,
-			key,
-			value,
-		); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (*Store) deleteLabels(ctx context.Context, tx *Tx, databaseUID int, keys []string) error {
-	query := `
-		DELETE FROM db_label
-		WHERE database_id = $1 AND key = $2
-	`
-	for _, key := range keys {
-		if _, err := tx.ExecContext(ctx, query,
-			databaseUID,
-			key,
-		); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (*Store) getDatabaseLabels(ctx context.Context, tx *Tx, databaseUID int) (map[string]string, error) {
-	labels := make(map[string]string)
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			key,
-			value
-		FROM db_label
-		WHERE database_id = $1`,
-		databaseUID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var key, value string
-		if err := rows.Scan(
-			&key,
-			&value,
-		); err != nil {
-			return nil, err
-		}
-		labels[key] = value
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return labels, nil
 }

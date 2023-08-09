@@ -89,10 +89,10 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { pushNotification, useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useCurrentUserV1 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   externalUrl: string;

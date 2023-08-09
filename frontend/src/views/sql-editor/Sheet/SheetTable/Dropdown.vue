@@ -12,19 +12,18 @@
 </template>
 
 <script lang="ts" setup>
+import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
-
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { SheetViewMode } from "../types";
-import { isSheetWritableV1 } from "@/utils";
 import { useSheetV1Store, pushNotification } from "@/store";
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
+import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
+import type { SheetViewMode } from "../types";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -109,18 +108,16 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        await sheetV1Store.createSheet(
-          sheetV1Store.getSheetParentPath(sheet.name),
-          {
-            title: sheet.title,
-            content: sheet.content,
-            database: sheet.database,
-            visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
-            source: Sheet_Source.SOURCE_BYTEBASE,
-            type: Sheet_Type.TYPE_SQL,
-            payload: "{}",
-          }
-        );
+        const project = extractProjectResourceName(sheet.name);
+        await sheetV1Store.createSheet(`projects/${project}`, {
+          title: sheet.title,
+          content: sheet.content,
+          database: sheet.database,
+          visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
+          source: Sheet_Source.SOURCE_BYTEBASE,
+          type: Sheet_Type.TYPE_SQL,
+          payload: "{}",
+        });
         pushNotification({
           module: "bytebase",
           style: "INFO",

@@ -1,9 +1,10 @@
+import { watchThrottled } from "@vueuse/core";
+import { pick } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, toRef, watch } from "vue";
-import { pick } from "lodash-es";
-import { watchThrottled } from "@vueuse/core";
 import { TabInfo, CoreTabInfo, AnyTabInfo, TabMode } from "@/types";
 import { UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   getDefaultTab,
   INITIAL_TAB,
@@ -11,10 +12,9 @@ import {
   isSimilarTab,
   WebStorageHelper,
 } from "@/utils";
+import { useWebTerminalV1Store } from "./v1";
 import { useInstanceV1Store } from "./v1/instance";
 import { useSheetV1Store } from "./v1/sheet";
-import { Engine } from "@/types/proto/v1/common";
-import { useWebTerminalV1Store } from "./v1";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor.tab-list";
 const KEYS = {
@@ -48,6 +48,7 @@ export const useTabStore = defineStore("tab", () => {
   const tabs = ref(new Map<string, TabInfo>());
   const tabIdList = ref<string[]>([]);
   const currentTabId = ref<string>();
+  const asidePanelTab = ref<"databases" | "sheets">("databases");
 
   // getters
   const getTabById = (id: string) => {
@@ -87,6 +88,8 @@ export const useTabStore = defineStore("tab", () => {
     }
     currentTabId.value = id;
     tabs.value.set(id, newTab);
+
+    asidePanelTab.value = "databases";
 
     watchTab(newTab, false);
   };
@@ -255,6 +258,7 @@ export const useTabStore = defineStore("tab", () => {
     selectOrAddTempTab,
     selectOrAddSimilarTab,
     reset,
+    asidePanelTab,
   };
 });
 

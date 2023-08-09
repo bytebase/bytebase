@@ -20,7 +20,16 @@
             </if>
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            WHERE
+            1=1  AND category = $1  AND price = $1  AND name = 'Fuji';
+  mysql: |
     SELECT
             name,
             category,
@@ -55,7 +64,15 @@
           </choose>
       </select>
     </mapper>
-  sql: |
+  postgresql: |
+    SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits
+          WHERE category = 'apple'    AND name = $1   AND category = $1  AND price = $1  AND category = 'apple';
+  mysql: |
     SELECT
           name,
           category,
@@ -78,7 +95,15 @@
             </where>
       </select>
     </mapper>
-  sql: |
+  postgresql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple'
+                OR price = 200;
+  mysql: |
     SELECT
             name,
             category,
@@ -101,7 +126,15 @@
           </where>
       </select>
     </mapper>
-  sql: |
+  postgresql: |
+    SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits WHERE category = 'apple'
+              OR price = 200;
+  mysql: |
     SELECT
           name,
           category,
@@ -126,7 +159,14 @@
             </where>
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple'  AND price = $1;
+  mysql: |
     SELECT
             name,
             category,
@@ -150,7 +190,11 @@
             name = #{name}
         </update>
     </mapper>
-  sql: |
+  postgresql: |
+    UPDATE
+            fruits SET category = $1,  price = $1 WHERE
+            name = $1;
+  mysql: |
     UPDATE
             fruits SET category = ?,  price = ? WHERE
             name = ?;
@@ -173,7 +217,9 @@
           </trim>
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    select users_id, name, age, sex from users where name like $1 and   age >= $1 and  users_id is not null   group by users_id;
+  mysql: |
     select users_id, name, age, sex from users where name like ? and   age >= ? and  users_id is not null   group by users_id;
 - xml: |-
     <mapper namespace="com.bytebase.test">
@@ -192,7 +238,14 @@
             </where>
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple' AND (name = $1 OR name = $1);
+  mysql: |
     SELECT
             name,
             category,
@@ -217,7 +270,14 @@
             <include refid="someTable" />
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM fruits WHERE category = 'apple'
+                AND price = 200;
+  mysql: |
     SELECT
             name,
             category,
@@ -242,7 +302,10 @@
             </include>
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    select
+            field1, field2, field3 from SomeTable;
+  mysql: |
     select
             field1, field2, field3 from SomeTable;
 - xml: |-
@@ -280,7 +343,13 @@
             </include>
         </select>
     </mapper>
-  sql: |
+  postgresql: |
+    SELECT * FROM users;
+    SELECT * FROM users WHERE id = $1  AND name = $1;
+    INSERT INTO users (id, name) VALUES ($1, $1);
+    SELECT
+            * FROM SomeTable;
+  mysql: |
     SELECT * FROM users;
     SELECT * FROM users WHERE id = ?  AND name = ?;
     INSERT INTO users (id, name) VALUES (?, ?);

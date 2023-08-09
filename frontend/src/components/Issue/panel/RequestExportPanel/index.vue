@@ -63,51 +63,13 @@
             {{ $t("issue.grant-request.export-method") }}
             <RequiredStar />
           </span>
-          <div class="w-full mb-2">
-            <NRadioGroup
-              v-model:value="state.exportMethod"
-              class="w-full !flex flex-row justify-start items-center gap-4"
-              name="export-method"
-            >
-              <NRadio :value="'SQL'" label="SQL" />
-              <NTooltip :disabled="allowSelectTableResource">
-                <template #trigger>
-                  <NRadio
-                    :disabled="!allowSelectTableResource"
-                    :value="'DATABASE'"
-                    :label="$t('common.database')"
-                  />
-                </template>
-                {{ $t("issue.grant-request.please-select-database-first") }}
-              </NTooltip>
-            </NRadioGroup>
-          </div>
-          <div
-            v-show="state.exportMethod === 'SQL'"
-            class="w-full h-[300px] border rounded"
-          >
-            <MonacoEditor
-              class="w-full h-full py-2"
-              :value="state.statement"
-              :auto-focus="false"
-              :language="'sql'"
-              :dialect="dialect"
-              @change="handleStatementChange"
-            />
-          </div>
-          <div
-            v-if="state.exportMethod === 'DATABASE'"
-            class="w-full flex flex-row justify-start items-center"
-          >
-            <SelectTableForm
-              :project-id="(state.projectId as string)"
-              :database-id="state.databaseId as string"
-              :selected-database-resource-list="
-                selectedTableResource ? [selectedTableResource] : []
-              "
-              @update="handleTableResourceUpdate"
-            />
-          </div>
+          <ExportResourceForm
+            :project-id="state.projectId"
+            :database-id="state.databaseId"
+            :statement="statement"
+            @update:condition="state.databaseResourceCondition = $event"
+            @update:database-resources="state.databaseResources = $event"
+          />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">
@@ -123,59 +85,15 @@
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
-            {{ $t("issue.grant-request.export-format") }}
-            <RequiredStar />
-          </span>
-          <div>
-            <NRadioGroup
-              v-model:value="state.exportFormat"
-              class="w-full !flex flex-row justify-start items-center gap-4"
-              name="export-format"
-            >
-              <NRadio :value="'CSV'" label="CSV" />
-              <NRadio :value="'JSON'" label="JSON" />
-              <NRadio :value="'SQL'" label="SQL" />
-              <NRadio :value="'XLSX'" label="XLSX" />
-            </NRadioGroup>
-          </div>
-        </div>
-        <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-start textlabel mb-2">
-            {{ $t("issue.grant-request.expire-days") }}
+            {{ $t("common.expiration") }}
             <RequiredStar />
           </span>
-          <div>
-            <NRadioGroup
-              v-model:value="state.expireDays"
-              class="!grid grid-cols-6 gap-4"
-              name="radiogroup"
-            >
-              <div
-                v-for="day in expireDaysOptions"
-                :key="day.value"
-                class="col-span-1 flex flex-row justify-start items-center"
-              >
-                <NRadio :value="day.value" :label="day.label" />
-              </div>
-              <div class="col-span-2 flex flex-row justify-start items-center">
-                <NRadio
-                  :value="-1"
-                  :label="$t('issue.grant-request.customize')"
-                />
-                <NInputNumber
-                  v-model:value="state.customDays"
-                  class="!w-24 ml-2"
-                  :disabled="state.expireDays !== -1"
-                  :min="1"
-                  :show-button="false"
-                  :placeholder="''"
-                >
-                  <template #suffix>{{ $t("common.date.days") }}</template>
-                </NInputNumber>
-              </div>
-            </NRadioGroup>
-          </div>
+          <ExpirationSelector
+            class="grid-cols-6"
+            :options="expireDaysOptions"
+            :value="state.expireDays"
+          />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">{{
@@ -206,25 +124,28 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  NDrawer,
-  NDrawerContent,
-  NRadioGroup,
-  NRadio,
-  NInputNumber,
-  NInput,
-  NTooltip,
-} from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import dayjs from "dayjs";
+import { head, isUndefined } from "lodash-es";
+import { NDrawer, NDrawerContent, NInput } from "naive-ui";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import DatabaseSelect from "@/components/DatabaseSelect.vue";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
+import { InstanceV1EngineIcon } from "@/components/v2";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useIssueStore,
+  useProjectV1Store,
+} from "@/store";
 import {
   DatabaseResource,
   IssueCreate,
   PresetRoleType,
-  SQLDialect,
   SYSTEM_BOT_ID,
   UNKNOWN_ID,
-  dialectOfEngineV1,
 } from "@/types";
 import {
   extractUserUID,
@@ -232,32 +153,17 @@ import {
   issueSlug,
   memberListInProjectV1,
 } from "@/utils";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useIssueStore,
-  useProjectV1Store,
-} from "@/store";
-import MonacoEditor from "@/components/MonacoEditor";
-import RequiredStar from "@/components/RequiredStar.vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
-import DatabaseSelect from "@/components/DatabaseSelect.vue";
-import { Engine } from "@/types/proto/v1/common";
-import { head } from "lodash-es";
-import { useRouter } from "vue-router";
-import SelectTableForm from "./SelectTableForm/index.vue";
-import dayjs from "dayjs";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
+import ExportResourceForm from "./ExportResourceForm/index.vue";
 
 interface LocalState {
   projectId?: string;
   environmentId?: string;
   databaseId?: string;
+  databaseResourceCondition?: string;
+  databaseResources: DatabaseResource[];
   expireDays: number;
-  customDays: number;
   maxRowCount: number;
-  exportMethod: "SQL" | "DATABASE";
-  exportFormat: "CSV" | "JSON" | "SQL" | "XLSX";
   statement: string;
   description: string;
 }
@@ -276,15 +182,12 @@ const router = useRouter();
 const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
+  databaseResources: [],
   expireDays: 1,
-  customDays: 7,
   maxRowCount: 1000,
-  exportMethod: "SQL",
-  exportFormat: "CSV",
   statement: "",
   description: "",
 });
-const selectedTableResource = ref<DatabaseResource>();
 
 const selectedDatabase = computed(() => {
   if (!state.databaseId || state.databaseId === String(UNKNOWN_ID)) {
@@ -316,21 +219,10 @@ const allowCreate = computed(() => {
   if (!state.databaseId) {
     return false;
   }
-
-  if (state.exportMethod === "SQL") {
-    return state.statement && state.statement !== "";
-  } else {
-    return selectedTableResource.value !== undefined;
+  if (isUndefined(state.databaseResourceCondition)) {
+    return false;
   }
-});
-
-const allowSelectTableResource = computed(() => {
-  return state.databaseId !== undefined;
-});
-
-const dialect = computed((): SQLDialect => {
-  const db = selectedDatabase.value;
-  return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
+  return true;
 });
 
 onMounted(async () => {
@@ -372,22 +264,6 @@ const handleDatabaseSelect = (databaseId: string) => {
   }
 };
 
-const handleTableResourceUpdate = (
-  databaseResourceList: DatabaseResource[]
-) => {
-  if (databaseResourceList.length > 1) {
-    throw new Error("Only one table can be selected");
-  } else if (databaseResourceList.length === 0) {
-    selectedTableResource.value = undefined;
-  } else {
-    selectedTableResource.value = databaseResourceList[0];
-  }
-};
-
-const handleStatementChange = (value: string) => {
-  state.statement = value;
-};
-
 const doCreateIssue = async () => {
   if (!allowCreate.value) {
     return;
@@ -418,33 +294,24 @@ const doCreateIssue = async () => {
   }
 
   const expression: string[] = [];
-  const expireDays =
-    state.expireDays === -1 ? state.customDays : state.expireDays;
+  const expireDays = state.expireDays;
   expression.push(
     `request.time < timestamp("${dayjs()
       .add(expireDays, "days")
       .toISOString()}")`
   );
-  expression.push(`request.export_format == "${state.exportFormat}"`);
   expression.push(`request.row_limit == ${state.maxRowCount}`);
-  if (state.exportMethod === "SQL") {
-    expression.push(
-      `request.statement == "${btoa(
-        unescape(encodeURIComponent(state.statement))
-      )}"`
-    );
-    const cel = stringifyDatabaseResources([
+  if (state.databaseResourceCondition) {
+    expression.push(state.databaseResourceCondition);
+  }
+  // If the export statement is not empty, add the selected database to the condition.
+  if (state.databaseResources.length === 0) {
+    const condition = stringifyDatabaseResources([
       {
         databaseName: selectedDatabase.value!.name,
       },
     ]);
-    expression.push(cel);
-  } else {
-    if (!selectedTableResource.value) {
-      throw new Error("No table selected");
-    }
-    const cel = stringifyDatabaseResources([selectedTableResource.value]);
-    expression.push(cel);
+    expression.push(condition);
   }
 
   const celExpressionString = expression.join(" && ");
@@ -471,10 +338,10 @@ const generateIssueName = () => {
     throw new Error("No database selected");
   }
 
-  if (state.exportMethod === "SQL") {
+  if (state.databaseResources.length === 0) {
     return `Request data export for "${database.databaseName} (${database.instanceEntity.title})"`;
   } else {
-    const tableResource = selectedTableResource.value as DatabaseResource;
+    const tableResource = state.databaseResources[0] as DatabaseResource;
     const nameList = [database.databaseName];
     if (tableResource.schema) {
       nameList.push(tableResource.schema);

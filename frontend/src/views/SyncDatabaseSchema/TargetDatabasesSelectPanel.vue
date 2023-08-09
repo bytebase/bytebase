@@ -123,7 +123,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from "vue";
 import {
   NCollapse,
   NCollapseItem,
@@ -131,15 +130,12 @@ import {
   NDrawer,
   NDrawerContent,
 } from "naive-ui";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
-import { ComposedDatabase } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import { computed, reactive } from "vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 type LocalState = {
   searchText: string;
@@ -167,10 +163,9 @@ const state = reactive<LocalState>({
 });
 
 const databaseListGroupByEnvironment = computed(() => {
-  const project = useProjectV1Store().getProjectByUID(props.projectId);
   const databaseList =
-    databaseStore
-      .databaseListByProject(project.name)
+    databaseStore.databaseList
+      .filter((db) => db.projectEntity.uid === props.projectId)
       .filter((db) => db.databaseName.includes(state.searchText))
       .filter((db) => db.instanceEntity.engine === props.engine) || [];
   const listByEnv = environmentV1Store.environmentList.map((environment) => {

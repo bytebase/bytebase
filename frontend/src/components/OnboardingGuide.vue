@@ -7,15 +7,15 @@
 <script lang="ts" setup>
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useCurrentUserV1, useOnboardingGuideStore } from "@/store";
-import { UNKNOWN_USER_NAME } from "@/types";
-import { isDev, isOwner } from "@/utils";
-import CreateDatabaseGuide from "./OnboardingGuides/CreateDatabaseGuide.vue";
 import {
   databaseServiceClient,
   instanceServiceClient,
   projectServiceClient,
 } from "@/grpcweb";
+import { useCurrentUserV1, useOnboardingGuideStore } from "@/store";
+import { UNKNOWN_USER_NAME } from "@/types";
+import { isDev, isOwner } from "@/utils";
+import CreateDatabaseGuide from "./OnboardingGuides/CreateDatabaseGuide.vue";
 
 const currentUserV1 = useCurrentUserV1();
 const guideStore = useOnboardingGuideStore();

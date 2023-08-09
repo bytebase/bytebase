@@ -23,16 +23,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch } from "vue";
-import { creatorOfRule, defer } from "@/utils";
 import { useDialog } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { BBModal } from "@/bbkit";
-import RuleForm from "./RuleForm.vue";
-import { useCustomApprovalContext } from "../context";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import { LocalApprovalRule, SYSTEM_BOT_USER_NAME } from "@/types";
+import { creatorOfRule, defer } from "@/utils";
+import { useCustomApprovalContext } from "../context";
+import RuleForm from "./RuleForm.vue";
 
 type LocalState = {
   loading: boolean;

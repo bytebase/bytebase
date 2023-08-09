@@ -8,8 +8,8 @@ import {
   ResourceObject,
   unknown,
 } from "@/types";
-import { useLegacyEnvironmentStore } from "./environment";
 import { useDataSourceStore } from "./dataSource";
+import { useLegacyEnvironmentStore } from "./environment";
 
 function convert(
   instance: ResourceObject,

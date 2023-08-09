@@ -86,30 +86,29 @@
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
 import { NCheckbox } from "naive-ui";
 import { computed, reactive, watch, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { BBTableColumn } from "@/bbkit/types";
+import UpgradeSubscriptionButton from "@/components/UpgradeSubscriptionButton.vue";
+import { EnvironmentV1Name } from "@/components/v2";
+import { resolveCELExpr } from "@/plugins/cel";
 import {
   featureToRef,
   pushNotification,
   useCurrentUserV1,
   useEnvironmentV1List,
 } from "@/store";
-import { BBTableColumn } from "@/bbkit/types";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { Expr } from "@/types/proto/google/type/expr";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { EnvironmentV1Name } from "@/components/v2";
-import { resolveCELExpr } from "@/plugins/cel";
+import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import { Expr } from "@/types/proto/google/type/expr";
-import { useDebounceFn } from "@vueuse/core";
-import UpgradeSubscriptionButton from "@/components/UpgradeSubscriptionButton.vue";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface EnvironmentPolicy {
   environment: Environment;

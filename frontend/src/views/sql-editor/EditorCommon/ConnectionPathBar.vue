@@ -75,19 +75,18 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NPopover } from "naive-ui";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
-
-import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
-import { TabMode, UNKNOWN_ID } from "@/types";
-import { instanceV1Slug } from "@/utils";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import {
   InstanceV1EngineIcon,
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
+import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
+import { TabMode, UNKNOWN_ID } from "@/types";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { instanceV1Slug } from "@/utils";
 
 const router = useRouter();
 const tabStore = useTabStore();

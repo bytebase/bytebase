@@ -313,6 +313,31 @@ func GetProjectIDRolloutIDMaybeStageID(name string) (string, int, *int, error) {
 	return tokens[0], rolloutID, maybeStageID, nil
 }
 
+// GetProjectIDRolloutIDStageIDMaybeTaskID returns the project ID, rollout ID, and maybe stage ID and maybe task ID from a resource name.
+func GetProjectIDRolloutIDStageIDMaybeTaskID(name string) (string, int, int, *int, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix)
+	if err != nil {
+		return "", 0, 0, nil, err
+	}
+	rolloutID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, 0, nil, errors.Errorf("invalid rollout ID %q", tokens[1])
+	}
+	stageID, err := strconv.Atoi(tokens[2])
+	if err != nil {
+		return "", 0, 0, nil, errors.Errorf("invalid stage ID %q", tokens[2])
+	}
+	var maybeTaskID *int
+	if tokens[3] != "-" {
+		taskID, err := strconv.Atoi(tokens[3])
+		if err != nil {
+			return "", 0, 0, nil, errors.Errorf("invalid task ID %q", tokens[3])
+		}
+		maybeTaskID = &taskID
+	}
+	return tokens[0], rolloutID, stageID, maybeTaskID, nil
+}
+
 // GetProjectIDRolloutIDMaybeStageIDMaybeTaskID returns the project ID, rollout ID, and maybe stage ID and maybe task ID from a resource name.
 func GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int, *int, *int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix)
@@ -361,6 +386,32 @@ func GetProjectIDRolloutIDStageIDTaskID(name string) (string, int, int, int, err
 		return "", 0, 0, 0, errors.Errorf("invalid task ID %q", tokens[3])
 	}
 	return tokens[0], rolloutID, stageID, taskID, nil
+}
+
+// GetProjectIDRolloutIDStageIDTaskIDTaskRunID returns the project ID, rollout ID, stage ID, task ID and task run ID from a resource name.
+func GetProjectIDRolloutIDStageIDTaskIDTaskRunID(name string) (string, int, int, int, int, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix, TaskRunPrefix)
+	if err != nil {
+		return "", 0, 0, 0, 0, err
+	}
+	rolloutID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, 0, 0, 0, errors.Errorf("invalid rollout ID %q", tokens[1])
+	}
+	stageID, err := strconv.Atoi(tokens[2])
+	if err != nil {
+		return "", 0, 0, 0, 0, errors.Errorf("invalid stage ID %q", tokens[2])
+	}
+
+	taskID, err := strconv.Atoi(tokens[3])
+	if err != nil {
+		return "", 0, 0, 0, 0, errors.Errorf("invalid task ID %q", tokens[3])
+	}
+	taskRunID, err := strconv.Atoi(tokens[4])
+	if err != nil {
+		return "", 0, 0, 0, 0, errors.Errorf("invalid task run ID %q", tokens[4])
+	}
+	return tokens[0], rolloutID, stageID, taskID, taskRunID, nil
 }
 
 // GetRoleID returns the role ID from a resource name.

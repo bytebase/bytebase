@@ -1,25 +1,28 @@
-import { markRaw } from "vue";
 import { isEmpty } from "lodash-es";
+import { Status } from "nice-grpc-common";
+import { markRaw } from "vue";
 import { useI18n } from "vue-i18n";
-
-import {
-  parseSQL,
-  isSelectStatement,
-  isDDLStatement,
-  isDMLStatement,
-} from "../components/MonacoEditor/sqlParser";
-import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
 import { BBNotificationStyle } from "@/bbkit/types";
-import { ExecuteConfig, ExecuteOption } from "@/types";
 import { useSilentRequest } from "@/plugins/silent-request";
+import {
+  pushNotification,
+  useTabStore,
+  useSQLEditorStore,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+} from "@/store";
+import { ExecuteConfig, ExecuteOption } from "@/types";
 import {
   Advice_Status,
   advice_StatusToJSON,
 } from "@/types/proto/v1/sql_service";
-import { Status } from "nice-grpc-common";
+import { isDatabaseV1Alterable } from "@/utils";
+import { parseSQL } from "../components/MonacoEditor/sqlParser";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();
+  const currentUser = useCurrentUserV1();
+  const databaseStore = useDatabaseV1Store();
   const tabStore = useTabStore();
   const sqlEditorStore = useSQLEditorStore();
 
@@ -58,6 +61,7 @@ const useExecuteSQL = () => {
     tab.isExecutingSQL = true;
     return true;
   };
+
   const cleanup = () => {
     const tab = tabStore.currentTab;
     tab.isExecutingSQL = false;
@@ -78,16 +82,6 @@ const useExecuteSQL = () => {
     if (data === undefined) {
       notify("CRITICAL", t("sql-editor.notify-invalid-sql-statement"));
       return cleanup();
-    }
-
-    if (data !== null && !isSelectStatement(data)) {
-      // only DDL and DML statements are allowed
-      if (isDDLStatement(data, "some") || isDMLStatement(data, "some")) {
-        sqlEditorStore.setSQLEditorState({
-          isShowExecutingHint: true,
-        });
-        return cleanup();
-      }
     }
 
     let selectStatement = query;
@@ -153,6 +147,22 @@ const useExecuteSQL = () => {
       }
 
       if (sqlResultSet.error) {
+        // The error message should be consistent with the one from the backend.
+        if (
+          sqlResultSet.error === "Support SELECT sql statement only" &&
+          sqlResultSet.status === Status.INVALID_ARGUMENT
+        ) {
+          const { databaseId } = tab.connection;
+          const database = databaseStore.getDatabaseByUID(databaseId);
+          // Only show the warning if the database is alterable.
+          // AKA, the current user has the permission to alter the database.
+          if (isDatabaseV1Alterable(database, currentUser.value)) {
+            sqlEditorStore.setSQLEditorState({
+              isShowExecutingHint: true,
+            });
+            return cleanup();
+          }
+        }
         return fail(sqlResultSet.error, sqlResultSet.status);
       }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -18,32 +17,15 @@ import (
 
 const systemSchema = "'CTISYS','SYS','SYSAUDITOR','SYSDBA','SYSSSO'"
 
-var (
-	semVersionRegex       = regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
-	canonicalVersionRegex = regexp.MustCompile(`[0-9][0-9][a-z]`)
-)
-
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var fullVersion string
+	// DM Database Server 64 V8.
 	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'DM%'").Scan(&fullVersion); err != nil {
 		return nil, err
 	}
 	tokens := strings.Fields(fullVersion)
-	var version, canonicalVersion string
-	for _, token := range tokens {
-		if semVersionRegex.MatchString(token) {
-			version = token
-			continue
-		}
-		if canonicalVersionRegex.MatchString(token) {
-			canonicalVersion = token
-			continue
-		}
-	}
-	if canonicalVersion != "" {
-		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
-	}
+	version := tokens[len(tokens)-1]
 
 	databases, err := driver.syncSchemaTenantModeInstance(ctx)
 	if err != nil {
@@ -56,7 +38,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}, nil
 }
 
-func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
+func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -68,10 +50,10 @@ func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*stor
 		return nil, err
 	}
 
-	var result []*storepb.DatabaseMetadata
+	var result []*storepb.DatabaseSchemaMetadata
 
 	for _, schema := range schemas {
-		result = append(result, &storepb.DatabaseMetadata{
+		result = append(result, &storepb.DatabaseSchemaMetadata{
 			Name:        schema,
 			ServiceName: "",
 		})
@@ -81,7 +63,7 @@ func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*stor
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -101,7 +83,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		return nil, err
 	}
 
-	databaseMetadata := &storepb.DatabaseMetadata{
+	databaseMetadata := &storepb.DatabaseSchemaMetadata{
 		Name: driver.databaseName,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{

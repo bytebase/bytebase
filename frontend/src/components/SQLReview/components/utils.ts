@@ -7,8 +7,8 @@ import {
   SQLReviewPolicy,
   TEMPLATE_LIST,
 } from "@/types";
-import { PayloadValueType } from "./RuleConfigComponents";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { PayloadValueType } from "./RuleConfigComponents";
 
 export const templateIdForEnvironment = (environment: Environment): string => {
   return `bb.sql-review.environment-policy.${environment.name}`;

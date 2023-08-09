@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -26,7 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
-	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -39,7 +36,6 @@ type RolloutService struct {
 	store              *store.Store
 	licenseService     enterpriseAPI.LicenseService
 	dbFactory          *dbfactory.DBFactory
-	taskScheduler      *taskrun.Scheduler
 	taskCheckScheduler *taskcheck.Scheduler
 	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
@@ -47,12 +43,11 @@ type RolloutService struct {
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskCheckScheduler *taskcheck.Scheduler, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
 	return &RolloutService{
 		store:              store,
 		licenseService:     licenseService,
 		dbFactory:          dbFactory,
-		taskScheduler:      taskScheduler,
 		taskCheckScheduler: taskCheckScheduler,
 		planCheckScheduler: planCheckScheduler,
 		stateCfg:           stateCfg,
@@ -428,14 +423,12 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 
 	stageTasks := map[int][]int{}
 	taskIDsToRunMap := map[int]bool{}
-	taskIDsToRun := []int{}
 	for _, task := range request.Tasks {
 		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		stageTasks[stageID] = append(stageTasks[stageID], taskID)
-		taskIDsToRun = append(taskIDsToRun, taskID)
 		taskIDsToRunMap[taskID] = true
 	}
 	if len(stageTasks) > 1 {
@@ -448,11 +441,11 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 				stageToRun = stage
 				break
 			}
-			if stage.Active {
-				return nil, status.Errorf(codes.InvalidArgument, "Tasks in a prior stage are not done yet")
-			}
 		}
 		break
+	}
+	if stageToRun == nil {
+		return nil, status.Errorf(codes.Internal, "failed to find the stage to run")
 	}
 
 	pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}
@@ -473,7 +466,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
 	}
 
-	ok, err := s.taskScheduler.CanPrincipalChangeIssueStageTaskStatus(ctx, user, issue, stageToRun.EnvironmentID, api.TaskPending)
+	ok, err := canUserRunStageTasks(ctx, s.store, user, issue, stageToRun.EnvironmentID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -483,28 +476,144 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 
 	approved, err := utils.CheckIssueApproved(issue)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
+		return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
 	}
 	if !approved {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot run the tasks because the issue is not approved")
 	}
 
-	var tasksToRun []*store.TaskMessage
+	var taskRunCreates []*store.TaskRunMessage
 	for _, task := range stageToRunTasks {
 		if !taskIDsToRunMap[task.ID] {
 			continue
 		}
-		tasksToRun = append(tasksToRun, task)
+		create := &store.TaskRunMessage{
+			TaskUID:   task.ID,
+			Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+			CreatorID: user.ID,
+		}
+		taskRunCreates = append(taskRunCreates, create)
 	}
 
-	if err := s.store.BatchPatchTaskStatus(ctx, taskIDsToRun, api.TaskPending, principalID); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update task status, error: %v", err)
-	}
-	if err := s.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasksToRun, principalID, issue, stageToRun.Name); err != nil {
-		log.Error("failed to create task status update activity", zap.Error(err))
+	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create pending task runs")
 	}
 
 	return &v1pb.BatchRunTasksResponse{}, nil
+}
+
+// BatchCancelTaskRuns cancels a list of task runs.
+// TODO(p0ny): forbid cancel noncancellable task runs.
+func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
+	if len(request.TaskRuns) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "task runs cannot be empty")
+	}
+
+	projectID, rolloutID, stageID, _, err := common.GetProjectIDRolloutIDStageIDMaybeTaskID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	rollout, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find rollout, error: %v", err)
+	}
+	if rollout == nil {
+		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
+	}
+
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
+	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue not found for rollout %v", rolloutID)
+	}
+
+	stages, err := s.store.ListStageV2(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list stages, error: %v", err)
+	}
+	if len(stages) == 0 {
+		return nil, status.Errorf(codes.NotFound, "no stages found for rollout %v", rolloutID)
+	}
+
+	var stage *store.StageMessage
+	for i := range stages {
+		if stages[i].ID == stageID {
+			stage = stages[i]
+			break
+		}
+	}
+	if stage == nil {
+		return nil, status.Errorf(codes.NotFound, "stage %v not found in rollout %v", stageID, rolloutID)
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, err := s.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
+	}
+
+	ok, err := canUserCancelStageTaskRun(ctx, s.store, user, issue, stage.EnvironmentID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "Not allowed to run tasks")
+	}
+
+	var taskRunIDs []int
+	for _, taskRun := range request.TaskRuns {
+		_, _, _, _, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		taskRunIDs = append(taskRunIDs, taskRunID)
+	}
+
+	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+		UIDs: &taskRunIDs,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+	}
+
+	for _, taskRun := range taskRuns {
+		switch taskRun.Status {
+		case api.TaskRunPending:
+		case api.TaskRunRunning:
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.Name)
+		}
+	}
+
+	for _, taskRun := range taskRuns {
+		if taskRun.Status == api.TaskRunRunning {
+			if cancelFunc, ok := s.stateCfg.RunningTaskRunsCancelFunc.Load(taskRun.ID); ok {
+				cancelFunc.(context.CancelFunc)()
+			}
+		}
+	}
+
+	if err := s.store.BatchPatchTaskRunStatus(ctx, taskRunIDs, api.TaskRunCanceled, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
+	}
+
+	return &v1pb.BatchCancelTaskRunsResponse{}, nil
 }
 
 func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
@@ -521,14 +630,15 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, 
 
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
-		Name:    fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
-		Uid:     fmt.Sprintf("%d", run.UID),
-		Type:    convertToPlanCheckRunType(run.Type),
-		Status:  convertToPlanCheckRunStatus(run.Status),
-		Target:  "",
-		Sheet:   "",
-		Results: convertToPlanCheckRunResults(run.Result.Results),
-		Error:   run.Result.Error,
+		Name:       fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
+		Uid:        fmt.Sprintf("%d", run.UID),
+		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
+		Type:       convertToPlanCheckRunType(run.Type),
+		Status:     convertToPlanCheckRunStatus(run.Status),
+		Target:     "",
+		Sheet:      "",
+		Results:    convertToPlanCheckRunResults(run.Result.Results),
+		Error:      run.Result.Error,
 	}
 	if run.Config.DatabaseId != 0 {
 		databaseUID := int(run.Config.DatabaseId)
@@ -651,6 +761,8 @@ func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
 	switch status {
 	case api.TaskRunUnknown:
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
+	case api.TaskRunPending:
+		return v1pb.TaskRun_PENDING
 	case api.TaskRunRunning:
 		return v1pb.TaskRun_RUNNING
 	case api.TaskRunDone:
@@ -668,8 +780,8 @@ func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	return &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),
-		Creator:       fmt.Sprintf("user/%s", taskRun.Creator.Email),
-		Updater:       fmt.Sprintf("user/%s", taskRun.Updater.Email),
+		Creator:       fmt.Sprintf("users/%s", taskRun.Creator.Email),
+		Updater:       fmt.Sprintf("users/%s", taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
 		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
 		Title:         taskRun.Name,
@@ -688,6 +800,8 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		Title:  rollout.Name,
 		Stages: nil,
 	}
+
+	taskIDToName := map[int]string{}
 	for _, stage := range rollout.Stages {
 		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 			UID: &stage.EnvironmentID,
@@ -709,11 +823,22 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert task, error: %v", err)
 			}
+			taskIDToName[task.ID] = rolloutTask.Name
 			rolloutStage.Tasks = append(rolloutStage.Tasks, rolloutTask)
 		}
 
 		rolloutV1.Stages = append(rolloutV1.Stages, rolloutStage)
 	}
+
+	for i, rolloutStage := range rolloutV1.Stages {
+		for j, rolloutTask := range rolloutStage.Tasks {
+			task := rollout.Stages[i].TaskList[j]
+			for _, blockingTask := range task.BlockedBy {
+				rolloutTask.BlockedByTasks = append(rolloutTask.BlockedByTasks, taskIDToName[blockingTask])
+			}
+		}
+	}
+
 	return rolloutV1, nil
 }
 
@@ -778,7 +903,8 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
@@ -818,7 +944,8 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
@@ -851,7 +978,8 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
@@ -884,7 +1012,8 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
@@ -918,7 +1047,8 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -991,7 +1121,8 @@ func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseBackup_{
@@ -1027,7 +1158,8 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -1104,7 +1236,8 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.Status, payload.Skipped),
+		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason:  payload.SkippedReason,
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -1113,24 +1246,24 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 	return v1pbTask, nil
 }
 
-func convertToTaskStatus(status api.TaskStatus, skipped bool) v1pb.Task_Status {
-	switch status {
-	case api.TaskPending:
+func convertToTaskStatus(latestTaskRunStatus *api.TaskRunStatus, skipped bool) v1pb.Task_Status {
+	if skipped {
+		return v1pb.Task_SKIPPED
+	}
+	if latestTaskRunStatus == nil {
+		return v1pb.Task_NOT_STARTED
+	}
+	switch *latestTaskRunStatus {
+	case api.TaskRunPending:
 		return v1pb.Task_PENDING
-	case api.TaskPendingApproval:
-		return v1pb.Task_PENDING_APPROVAL
-	case api.TaskRunning:
-		if skipped {
-			return v1pb.Task_SKIPPED
-		}
+	case api.TaskRunRunning:
 		return v1pb.Task_RUNNING
-	case api.TaskDone:
+	case api.TaskRunDone:
 		return v1pb.Task_DONE
-	case api.TaskFailed:
+	case api.TaskRunFailed:
 		return v1pb.Task_FAILED
-	case api.TaskCanceled:
+	case api.TaskRunCanceled:
 		return v1pb.Task_CANCELED
-
 	default:
 		return v1pb.Task_STATUS_UNSPECIFIED
 	}
@@ -2454,4 +2587,86 @@ func getOrDefaultSchemaVersion(v string) string {
 		return v
 	}
 	return common.DefaultMigrationVersion()
+}
+
+// canUserRunStageTasks returns if a user can run the tasks in a stage.
+func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+	// the workspace owner and DBA roles can always run tasks.
+	if user.Role == api.Owner || user.Role == api.DBA {
+		return true, nil
+	}
+	groupValue, err := getGroupValueForIssueTypeEnvironment(ctx, s, issue.Type, stageEnvironmentID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get assignee group value for issueID %d", issue.UID)
+	}
+	// as the policy says, the project owner has the privilege to run.
+	if groupValue == api.AssigneeGroupValueProjectOwner {
+		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
+		if err != nil {
+			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
+		}
+		for _, binding := range policy.Bindings {
+			if binding.Role != api.Owner {
+				continue
+			}
+			for _, member := range binding.Members {
+				if member.ID == user.ID {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
+// canUserCancelStageTaskRun returns if a user can cancel the task runs in a stage.
+func canUserCancelStageTaskRun(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+	// the workspace owner and DBA roles can always cancel task runs.
+	if user.Role == api.Owner || user.Role == api.DBA {
+		return true, nil
+	}
+	// The creator can cancel task runs.
+	if user.ID == issue.Creator.ID {
+		return true, nil
+	}
+	groupValue, err := getGroupValueForIssueTypeEnvironment(ctx, s, issue.Type, stageEnvironmentID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get assignee group value for issueID %d", issue.UID)
+	}
+	// as the policy says, the project owner has the privilege to cancel.
+	if groupValue == api.AssigneeGroupValueProjectOwner {
+		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
+		if err != nil {
+			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
+		}
+		for _, binding := range policy.Bindings {
+			if binding.Role != api.Owner {
+				continue
+			}
+			for _, member := range binding.Members {
+				if member.ID == user.ID {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
+func getGroupValueForIssueTypeEnvironment(ctx context.Context, s *store.Store, issueType api.IssueType, environmentID int) (api.AssigneeGroupValue, error) {
+	defaultGroupValue := api.AssigneeGroupValueWorkspaceOwnerOrDBA
+	policy, err := s.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return defaultGroupValue, errors.Wrapf(err, "failed to get pipeline approval policy by environmentID %d", environmentID)
+	}
+	if policy == nil {
+		return defaultGroupValue, nil
+	}
+
+	for _, assigneeGroup := range policy.AssigneeGroupList {
+		if assigneeGroup.IssueType == issueType {
+			return assigneeGroup.Value, nil
+		}
+	}
+	return defaultGroupValue, nil
 }

@@ -85,25 +85,24 @@
 </template>
 
 <script lang="ts" setup>
-import { NTabs, NTab, NTooltip } from "naive-ui";
-import { reactive, watch, computed, ref } from "vue";
-import { CodeDiff } from "v-code-diff";
 import axios from "axios";
-
+import { NTabs, NTab, NTooltip } from "naive-ui";
+import { CodeDiff } from "v-code-diff";
+import { reactive, watch, computed, ref } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { sqlServiceClient } from "@/grpcweb";
+import { useSilentRequest } from "@/plugins/silent-request";
 import {
   hasFeature,
   pushNotification,
   useChangeHistoryStore,
   useDatabaseV1Store,
 } from "@/store";
-import { useIssueLogic } from "./logic";
 import { Task, TaskId } from "@/types";
-import MonacoEditor from "../MonacoEditor";
-import { sqlServiceClient } from "@/grpcweb";
-import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
-import { useSilentRequest } from "@/plugins/silent-request";
 import { engineToJSON } from "@/types/proto/v1/common";
+import MonacoEditor from "../MonacoEditor";
+import { useIssueLogic } from "./logic";
+import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 
 type TabView = "diff" | "statement" | "schema";
 

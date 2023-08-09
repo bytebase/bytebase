@@ -1,6 +1,12 @@
-import { computed } from "vue";
 import { head } from "lodash-es";
-
+import { computed } from "vue";
+import {
+  useIssueV1Store,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useIssueStore,
+  useProjectV1Store,
+} from "@/store";
 import {
   ComposedDatabase,
   Issue,
@@ -13,6 +19,7 @@ import {
   TaskId,
   UNKNOWN_ID,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   extractUserUID,
   hasPermissionInProjectV1,
@@ -22,14 +29,6 @@ import {
   semverCompare,
 } from "@/utils";
 import { flattenTaskList, useIssueLogic } from "../logic";
-import {
-  useIssueV1Store,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useIssueStore,
-  useProjectV1Store,
-} from "@/store";
-import { Engine } from "@/types/proto/v1/common";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
 

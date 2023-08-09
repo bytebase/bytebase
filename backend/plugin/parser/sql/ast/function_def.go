@@ -14,6 +14,10 @@ const (
 	FunctionParameterModeInOut
 	// FunctionParameterModeVariadic is mode for the VARIADIC parameters.
 	FunctionParameterModeVariadic
+	// FunctionParameterModeTable is mode for the TABLE parameters.
+	FunctionParameterModeTable
+	// FunctionParameterModeDefault is mode for the DEFAULT parameters.
+	FunctionParameterModeDefault
 )
 
 // FunctionParameterDef is the struct for function parameter definition.

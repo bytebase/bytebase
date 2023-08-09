@@ -30,17 +30,16 @@
 </template>
 
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { NTooltip } from "naive-ui";
-
 import { pushNotification, useCurrentUserV1, useIssueStore } from "@/store";
-import { useIssueLogic } from "./logic";
-import { Issue } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { AppIMSetting_IMType } from "@/types/proto/v1/setting_service";
+import { Issue } from "@/types";
 import { Workflow } from "@/types/proto/v1/project_service";
+import { AppIMSetting_IMType } from "@/types/proto/v1/setting_service";
 import { extractUserUID } from "@/utils";
+import { useIssueLogic } from "./logic";
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();

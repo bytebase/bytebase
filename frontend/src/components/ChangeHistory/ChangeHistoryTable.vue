@@ -24,9 +24,10 @@
         <BBTableHeaderCell class="w-56" :title="columnList[3].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
         <BBTableHeaderCell :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-28" :title="columnList[6].title" />
+        <BBTableHeaderCell :title="columnList[6].title" />
         <BBTableHeaderCell class="w-28" :title="columnList[7].title" />
         <BBTableHeaderCell class="w-28" :title="columnList[8].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[9].title" />
       </template>
       <template v-else>
         <BBTableHeaderCell
@@ -73,19 +74,30 @@
         >
       </BBTableCell>
       <BBTableCell>
-        <template v-if="extractIssueId(history.issue)">
+        <template v-if="extractIssueUID(history.issue)">
           <!--Short circuit the click event to prevent propagating to row click-->
           <router-link
-            :to="`/issue/${extractIssueId(history.issue)}`"
+            :to="`/issue/${extractIssueUID(history.issue)}`"
             class="normal-link"
             @click.stop=""
-            >{{ extractIssueId(history.issue) }}
+            >{{ extractIssueUID(history.issue) }}
           </router-link>
         </template>
       </BBTableCell>
+      <BBTableCell v-if="mode === 'DATABASE'">
+        <TextOverflowPopover
+          :content="
+            getAffectedTablesOfChangeHistory(history)
+              .map(getAffectedTableDisplayName)
+              .join(', ')
+          "
+          :max-length="100"
+          placement="bottom"
+        />
+      </BBTableCell>
       <BBTableCell>
-        <SQLPreviewPopover
-          :statement="history.statement"
+        <TextOverflowPopover
+          :content="history.statement"
           :max-length="100"
           placement="bottom"
         />
@@ -104,21 +116,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { NCheckbox } from "naive-ui";
-
-import { ComposedDatabase } from "@/types";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import {
-  extractIssueId,
-  humanizeDate,
-  extractUserResourceName,
-  changeHistoryLink,
-} from "@/utils";
-import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
-import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
+import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
+import { useUserStore } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { AffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
   changeHistory_SourceToJSON,
@@ -126,7 +132,14 @@ import {
   ChangeHistory_Type,
   changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
-import { useUserStore } from "@/store";
+import {
+  extractIssueUID,
+  humanizeDate,
+  extractUserResourceName,
+  changeHistoryLink,
+  getAffectedTablesOfChangeHistory,
+} from "@/utils";
+import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 
 type Mode = "DATABASE" | "PROJECT";
 
@@ -162,6 +175,9 @@ const columnList = computed(() => {
       },
       {
         title: t("common.issue"),
+      },
+      {
+        title: t("db.tables"),
       },
       {
         title: "SQL",
@@ -211,6 +227,18 @@ const clickHistory = (section: number, row: number) => {
 const creatorOfChangeHistory = (history: ChangeHistory) => {
   const email = extractUserResourceName(history.creator);
   return useUserStore().getUserByEmail(email);
+};
+
+const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
+  const { schema, table, dropped } = affectedTable;
+  let name = table;
+  if (schema !== "") {
+    name = `${schema}.${table}`;
+  }
+  if (dropped) {
+    name = `${name} (deleted)`;
+  }
+  return name;
 };
 
 const allSelectionState = computed(() => {

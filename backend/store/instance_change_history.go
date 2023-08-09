@@ -4,11 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/checker/decls"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -55,14 +60,15 @@ const instanceChangeHistoryTruncateLength = 1024 * 1024
 
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
-	ID         *string
-	InstanceID *int
-	DatabaseID *int
-	SheetID    *int
-	Source     *db.MigrationSource
-	Version    *string
-	Limit      *int
-	Offset     *int
+	ID              *string
+	InstanceID      *int
+	DatabaseID      *int
+	SheetID         *int
+	Source          *db.MigrationSource
+	Version         *string
+	ResourcesFilter *string
+	Limit           *int
+	Offset          *int
 
 	// Truncate Statement, Schema, SchemaPrev unless ShowFull.
 	ShowFull bool
@@ -253,13 +259,14 @@ func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistor
 // FindInstanceChangeHistoryList finds a list of instance change history and returns as a list of migration history.
 func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	findMessage := &FindInstanceChangeHistoryMessage{
-		ID:         find.ID,
-		InstanceID: find.InstanceID,
-		DatabaseID: find.DatabaseID,
-		Source:     find.Source,
-		Version:    find.Version,
-		Limit:      find.Limit,
-		ShowFull:   true,
+		ID:              find.ID,
+		InstanceID:      find.InstanceID,
+		DatabaseID:      find.DatabaseID,
+		Source:          find.Source,
+		Version:         find.Version,
+		ResourcesFilter: find.ResourcesFilter,
+		Limit:           find.Limit,
+		ShowFull:        true,
 	}
 
 	list, err := s.ListInstanceChangeHistory(ctx, findMessage)
@@ -295,6 +302,218 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 	return migrationHistoryList, nil
 }
 
+type resourceDatabase struct {
+	name    string
+	schemas schemaMap
+}
+
+type databaseMap map[string]*resourceDatabase
+
+type resourceSchema struct {
+	name   string
+	tables tableMap
+}
+
+type schemaMap map[string]*resourceSchema
+
+type resourceTable struct {
+	name string
+}
+
+type tableMap map[string]*resourceTable
+
+// The CEL filter MUST be a Disjunctive Normal Form (DNF) expression.
+// In other words, the CEL expression consists of several parts connected by OR operators.
+// For example, the following expression is valid:
+// (
+//
+//	tableExists("db", "public", "table1") &&
+//	tableExists("db", "public", "table2")
+//
+// ) || (
+//
+//	tableExists("db", "public", "table3")
+//
+// )
+// .
+func generateResourceFilter(filter string) (string, error) {
+	env, err := cel.NewEnv(
+		cel.Declarations(
+			decls.NewFunction("tableExists", decls.NewOverload("tableExists_string", []*exprpb.Type{decls.String, decls.String, decls.String}, decls.Bool)),
+		),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	ast, iss := env.Compile(filter)
+	if iss != nil && iss.Err() != nil {
+		return "", iss.Err()
+	}
+
+	rewriter := &expressionRewriter{
+		metaMap: make(databaseMap),
+	}
+	if err := rewriter.rewriteExpression(ast.Expr()); err != nil {
+		return "", err
+	}
+
+	if len(rewriter.metaMap) != 0 {
+		if err := rewriter.appendDNFPart(); err != nil {
+			return "", err
+		}
+	}
+
+	if len(rewriter.dnfParts) == 0 {
+		return "", nil
+	}
+
+	var buf strings.Builder
+	if len(rewriter.dnfParts) > 1 {
+		if _, err := buf.WriteString("("); err != nil {
+			return "", err
+		}
+	}
+	for i, part := range rewriter.dnfParts {
+		if i > 0 {
+			if _, err := buf.WriteString(" OR "); err != nil {
+				return "", err
+			}
+		}
+		if _, err := buf.WriteString("(instance_change_history.payload @> '"); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString(part); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("'::jsonb)"); err != nil {
+			return "", err
+		}
+	}
+	if len(rewriter.dnfParts) > 1 {
+		if _, err := buf.WriteString(")"); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
+
+type expressionRewriter struct {
+	metaMap  databaseMap
+	dnfParts []string
+}
+
+func (r *expressionRewriter) appendDNFPart() error {
+	if r.metaMap == nil {
+		return nil
+	}
+
+	defer func() {
+		r.metaMap = make(databaseMap)
+	}()
+
+	var meta storepb.ChangedResources
+	for _, dbMeta := range r.metaMap {
+		db := &storepb.ChangedResourceDatabase{
+			Name: dbMeta.name,
+		}
+		for _, schemaMeta := range dbMeta.schemas {
+			schema := &storepb.ChangedResourceSchema{
+				Name: schemaMeta.name,
+			}
+			for _, tableMeta := range schemaMeta.tables {
+				table := &storepb.ChangedResourceTable{
+					Name: tableMeta.name,
+				}
+				schema.Tables = append(schema.Tables, table)
+			}
+			sort.Slice(schema.Tables, func(i, j int) bool {
+				return schema.Tables[i].Name < schema.Tables[j].Name
+			})
+			db.Schemas = append(db.Schemas, schema)
+		}
+		sort.Slice(db.Schemas, func(i, j int) bool {
+			return db.Schemas[i].Name < db.Schemas[j].Name
+		})
+		meta.Databases = append(meta.Databases, db)
+	}
+	sort.Slice(meta.Databases, func(i, j int) bool {
+		return meta.Databases[i].Name < meta.Databases[j].Name
+	})
+
+	text, err := protojson.Marshal(&storepb.InstanceChangeHistoryPayload{
+		ChangedResources: &meta,
+	})
+	if err != nil {
+		return err
+	}
+	r.dnfParts = append(r.dnfParts, string(text))
+	return nil
+}
+
+func (r *expressionRewriter) rewriteExpression(expr *exprpb.Expr) error {
+	switch e := expr.ExprKind.(type) {
+	case *exprpb.Expr_CallExpr:
+		switch e.CallExpr.Function {
+		case "_||_":
+			for _, arg := range e.CallExpr.Args {
+				if err := r.rewriteExpression(arg); err != nil {
+					return err
+				}
+				if err := r.appendDNFPart(); err != nil {
+					return err
+				}
+			}
+		case "_&&_":
+			for _, arg := range e.CallExpr.Args {
+				if err := r.rewriteExpression(arg); err != nil {
+					return err
+				}
+			}
+		case "tableExists":
+			if len(e.CallExpr.Args) != 3 {
+				return errors.Errorf("invalid tableExists function call: %v, expected three arguments buf got %d", e.CallExpr, len(e.CallExpr.Args))
+			}
+			var args []string
+			for _, arg := range e.CallExpr.Args {
+				switch a := arg.ExprKind.(type) {
+				case *exprpb.Expr_ConstExpr:
+					switch a.ConstExpr.ConstantKind.(type) {
+					case *exprpb.Constant_StringValue:
+						args = append(args, a.ConstExpr.GetStringValue())
+					default:
+						return errors.Errorf("invalid tableExists function call: %v, expected string arguments buf got %v", e.CallExpr, arg)
+					}
+				default:
+					return errors.Errorf("invalid tableExists function call: %v, expected constant arguments buf got %v", e.CallExpr, arg)
+				}
+			}
+			database, ok := r.metaMap[args[0]]
+			if !ok {
+				database = &resourceDatabase{
+					name:    args[0],
+					schemas: make(schemaMap),
+				}
+				r.metaMap[args[0]] = database
+			}
+			schema, ok := database.schemas[args[1]]
+			if !ok {
+				schema = &resourceSchema{
+					name:   args[1],
+					tables: make(tableMap),
+				}
+				database.schemas[args[1]] = schema
+			}
+			schema.tables[args[2]] = &resourceTable{
+				name: args[2],
+			}
+		}
+	default:
+		return errors.Errorf("invalid expression: %v", expr)
+	}
+	return nil
+}
+
 // ListInstanceChangeHistory finds the instance change history.
 func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
@@ -323,6 +542,15 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	}
 	if v := find.Version; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ResourcesFilter; v != nil {
+		text, err := generateResourceFilter(*v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate resource filter from %q", *v)
+		}
+		if text != "" {
+			where = append(where, text)
+		}
 	}
 
 	statementField := fmt.Sprintf("LEFT(instance_change_history.statement, %d)", instanceChangeHistoryTruncateLength)

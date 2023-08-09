@@ -138,20 +138,19 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, ref, PropType, defineComponent } from "vue";
 import { cloneDeep, groupBy } from "lodash-es";
+import { computed, reactive, ref, PropType, defineComponent } from "vue";
 import { useI18n } from "vue-i18n";
-
 import DatabaseSelect from "@/components/DatabaseSelect.vue";
-import TaskCheckBar from "../TaskCheckBar.vue";
-import { Issue, IssueStatusTransition, Task } from "@/types";
 import { OutputField } from "@/plugins";
+import { Issue, IssueStatusTransition, Task } from "@/types";
 import {
   activeEnvironment,
   activeStage,
   taskCheckRunSummary,
   TaskStatusTransition,
 } from "@/utils";
+import TaskCheckBar from "../TaskCheckBar.vue";
 import { useIssueLogic } from "../logic";
 
 interface LocalState {

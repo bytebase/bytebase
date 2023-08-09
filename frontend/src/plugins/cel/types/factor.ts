@@ -26,6 +26,7 @@ export const StringFactorList = [
   "resource.schema",
   "resource.table",
   "request.statement",
+  // Deprecated
   "request.export_format",
 
   // Database/table group related factors

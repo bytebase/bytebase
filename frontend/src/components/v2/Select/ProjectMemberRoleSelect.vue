@@ -1,11 +1,11 @@
 <template>
   <NSelect
+    v-bind="$attrs"
     :value="role"
     :options="roleOptions"
     :max-tag-count="'responsive'"
     :placeholder="'Select role'"
     :render-label="renderLabel"
-    v-bind="$attrs"
     @update:value="changeRole"
   />
   <FeatureModal
@@ -16,15 +16,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, ref } from "vue";
 import { type SelectOption, NSelect } from "naive-ui";
-
-import { featureToRef, useRoleStore } from "@/store";
-import { PresetRoleType, ProjectRoleType } from "@/types";
-import { displayRoleTitle } from "@/utils";
+import { computed, h, ref } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
+import { featureToRef, useRoleStore } from "@/store";
+import { PresetRoleType, ProjectRoleType } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
+import { displayRoleTitle } from "@/utils";
 
 type ProjectRoleSelectOption = SelectOption & {
   value: string;
@@ -32,24 +31,23 @@ type ProjectRoleSelectOption = SelectOption & {
 };
 
 defineProps<{
-  role: ProjectRoleType;
+  role?: ProjectRoleType;
 }>();
 
 const emit = defineEmits<{
   (event: "update:role", role: ProjectRoleType): void;
 }>();
 
-const FREE_ROLE_LIST = [PresetRoleType.OWNER, PresetRoleType.DEVELOPER];
+const FREE_ROLE_LIST = [
+  PresetRoleType.OWNER,
+  PresetRoleType.DEVELOPER,
+  PresetRoleType.QUERIER,
+  PresetRoleType.EXPORTER,
+];
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const showFeatureModal = ref(false);
 const roleList = computed(() => {
   const roleList = useRoleStore().roleList;
-  // For enterprise plan, we don't allow to add exporter role.
-  if (hasCustomRoleFeature.value) {
-    return roleList.filter((role) => {
-      return role.name !== PresetRoleType.EXPORTER;
-    });
-  }
   return roleList;
 });
 
@@ -97,10 +95,4 @@ const changeRole = (value: string) => {
   }
   emit("update:role", value);
 };
-</script>
-
-<script lang="ts">
-defineComponent({
-  inheritAttrs: false,
-});
 </script>

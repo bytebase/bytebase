@@ -2,20 +2,25 @@ import { isEqual } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { projectServiceClient } from "@/grpcweb";
-import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
-import {
-  useEnvironmentV1Store,
-  useProjectV1Store,
-  useDatabaseV1Store,
-} from "./v1";
+import { ConditionGroupExpr, buildCELExpr } from "@/plugins/cel";
 import {
   ComposedSchemaGroupTable,
   ComposedDatabaseGroup,
   ComposedSchemaGroup,
   ComposedDatabase,
 } from "@/types";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/type/expr";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import { convertParsedExprToCELString } from "@/utils";
+import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
+import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
+import {
+  useEnvironmentV1Store,
+  useProjectV1Store,
+  useDatabaseV1Store,
+} from "./v1";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
@@ -23,11 +28,6 @@ import {
   projectNamePrefix,
   schemaGroupNamePrefix,
 } from "./v1/common";
-import { ConditionGroupExpr, buildCELExpr } from "@/plugins/cel";
-import { Expr } from "@/types/proto/google/type/expr";
-import { convertParsedExprToCELString } from "@/utils";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 
 const composeDatabaseGroup = async (
   databaseGroup: DatabaseGroup

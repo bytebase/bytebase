@@ -33,8 +33,10 @@
             <a
               class="normal-link inline-flex items-center"
               :href="`/db/${databaseV1Slug(getSourceDatabase()!)}`"
-              >{{ getSourceDatabase()!.databaseName }}</a
             >
+              <EngineIcon class="mr-1" :engine="engine" />
+              {{ getSourceDatabase()!.databaseName }}
+            </a>
           </div>
           <div
             v-if="databaseSourceSchema.changeHistory.uid !== String(UNKNOWN_ID)"
@@ -43,12 +45,15 @@
             <a
               class="normal-link inline-flex items-center"
               :href="changeHistoryLink(databaseSourceSchema.changeHistory)"
-              >{{ databaseSourceSchema.changeHistory.version }}</a
             >
+              {{ databaseSourceSchema.changeHistory.version }}
+            </a>
           </div>
         </div>
       </template>
-      <template v-else>
+      <template
+        v-else-if="sourceSchemaType === 'SCHEMA_DESIGN' && selectedSchemaDesign"
+      >
         <div>
           <span>{{ $t("common.project") }} - </span>
           <a
@@ -63,7 +68,28 @@
             class="normal-link inline-flex items-center"
             @click="state.showViewSchemaDesignPanel = true"
           >
+            <EngineIcon class="mr-1" :engine="engine" />
             {{ selectedSchemaDesign?.title || "Unknown" }}
+          </span>
+        </div>
+      </template>
+      <template v-else>
+        <div>
+          <span>{{ $t("common.project") }} - </span>
+          <a
+            class="normal-link inline-flex items-center"
+            :href="`/project/${projectV1Slug(project)}`"
+            >{{ project.title }}</a
+          >
+        </div>
+        <div>
+          <span>{{ "Schema" }} - </span>
+          <span
+            class="normal-link inline-flex items-center"
+            @click="state.showViewRawSQLPanel = true"
+          >
+            <EngineIcon class="mr-1" :engine="engine" />
+            <span>{{ "Raw SQL" }}</span>
           </span>
         </div>
       </template>
@@ -221,6 +247,13 @@
     :view-mode="true"
     @dismiss="state.showViewSchemaDesignPanel = false"
   />
+
+  <RawSQLEditorPanel
+    v-if="state.showViewRawSQLPanel && rawSqlState"
+    :raw-sql-state="rawSqlState"
+    :view-mode="true"
+    @dismiss="state.showViewRawSQLPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -230,22 +263,24 @@ import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   pushNotification,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  useProjectV1ByUID,
+  useProjectV1Store,
+  useSheetV1Store,
 } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { changeHistoryLink, databaseV1Slug, projectV1Slug } from "@/utils";
-import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
-import DiffViewPanel from "./DiffViewPanel.vue";
-import { Engine, engineToJSON } from "@/types/proto/v1/common";
-import { InstanceV1EngineIcon } from "@/components/v2";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { SourceSchemaType } from "./types";
-import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { Engine, engineToJSON } from "@/types/proto/v1/common";
+import { ChangeHistory } from "@/types/proto/v1/database_service";
+import { changeHistoryLink, databaseV1Slug, projectV1Slug } from "@/utils";
+import DiffViewPanel from "./DiffViewPanel.vue";
+import RawSQLEditorPanel from "./RawSQLEditorPanel.vue";
+import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
+import { RawSQLState, SourceSchemaType } from "./types";
 
 interface DatabaseSourceSchema {
   environmentId: string;
@@ -260,6 +295,7 @@ interface LocalState {
   selectedDatabaseIdList: string[];
   showSelectDatabasePanel: boolean;
   showViewSchemaDesignPanel: boolean;
+  showViewRawSQLPanel: boolean;
 }
 
 const props = defineProps<{
@@ -267,12 +303,14 @@ const props = defineProps<{
   sourceSchemaType: SourceSchemaType;
   databaseSourceSchema?: DatabaseSourceSchema;
   schemaDesignName?: string;
+  rawSqlState?: RawSQLState;
 }>();
 
 const { t } = useI18n();
 const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
+const sheetStore = useSheetV1Store();
 const diffViewerRef = ref<HTMLDivElement>();
 const state = reactive<LocalState>({
   isLoading: true,
@@ -281,6 +319,7 @@ const state = reactive<LocalState>({
   selectedDatabaseId: undefined,
   selectedDatabaseIdList: [],
   showViewSchemaDesignPanel: false,
+  showViewRawSQLPanel: false,
 });
 const databaseSchemaCache = reactive<Record<string, string>>({});
 const databaseDiffCache = reactive<
@@ -292,8 +331,10 @@ const databaseDiffCache = reactive<
     }
   >
 >({});
+const project = computed(() => {
+  return useProjectV1Store().getProjectByUID(props.projectId);
+});
 
-const { project } = useProjectV1ByUID(props.projectId);
 const selectedSchemaDesign = computed(() => {
   if (!props.schemaDesignName) {
     return undefined;
@@ -303,8 +344,19 @@ const selectedSchemaDesign = computed(() => {
 const sourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return props.databaseSourceSchema?.changeHistory.schema || "";
-  } else {
+  } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
     return selectedSchemaDesign.value?.schema || "";
+  } else if (props.sourceSchemaType === "RAW_SQL") {
+    let statement = props.rawSqlState?.statement || "";
+    if (props.rawSqlState?.sheetId) {
+      const sheet = sheetStore.getSheetByUID(String(props.rawSqlState.sheetId));
+      if (sheet) {
+        statement = new TextDecoder().decode(sheet.content);
+      }
+    }
+    return statement;
+  } else {
+    return "";
   }
 });
 const engine = computed(() => {
@@ -314,8 +366,10 @@ const engine = computed(() => {
     ).instanceEntity.engine;
   } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
     return selectedSchemaDesign.value!.engine;
+  } else if (props.sourceSchemaType === "RAW_SQL") {
+    return props.rawSqlState!.engine;
   } else {
-    return Engine.MYSQL;
+    return Engine.ENGINE_UNSPECIFIED;
   }
 });
 const targetDatabaseList = computed(() => {
@@ -372,8 +426,13 @@ const shownDatabaseList = computed(() => {
   );
 });
 
-onMounted(() => {
+onMounted(async () => {
   state.isLoading = false;
+
+  // Prepare raw sql statement from sheet.
+  if (props.rawSqlState?.sheetId) {
+    await sheetStore.fetchSheetByUID(String(props.rawSqlState.sheetId));
+  }
 });
 
 const getSourceDatabase = () => {

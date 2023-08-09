@@ -89,15 +89,6 @@
               </span>
             </div>
           </template>
-          <template v-if="shouldShowMoreVersionButton" #suffixItem>
-            <div
-              class="w-full flex flex-row justify-start items-center pl-3 leading-8 text-accent cursor-pointer hover:opacity-80"
-              @click.prevent.capture="() => (state.showFeatureModal = true)"
-            >
-              <heroicons-solid:sparkles class="w-4 h-auto mr-1" />
-              {{ $t("database.sync-schema.more-version") }}
-            </div>
-          </template>
         </BBSelect>
       </div>
     </div>
@@ -112,6 +103,9 @@
 </template>
 
 <script lang="ts" setup>
+import { head, isNull, isUndefined } from "lodash-es";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
@@ -125,11 +119,8 @@ import {
   ChangeHistoryView,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
-import { head, isNull, isUndefined } from "lodash-es";
-import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
 import { ChangeHistorySourceSchema } from "./types";
-import { InstanceV1EngineIcon } from "@/components/v2";
 
 const props = defineProps<{
   selectState?: ChangeHistorySourceSchema;
@@ -167,13 +158,6 @@ const hasSyncSchemaFeature = computed(() => {
   return useSubscriptionV1Store().hasInstanceFeature(
     "bb.feature.sync-schema-all-versions",
     database.value?.instanceEntity
-  );
-});
-
-const shouldShowMoreVersionButton = computed(() => {
-  return (
-    !hasSyncSchemaFeature.value &&
-    databaseChangeHistoryList(state.databaseId as string).length > 0
   );
 });
 
@@ -229,7 +213,11 @@ watch(() => state.changeHistory, prepareFullViewChangeHistory, {
   deep: true,
 });
 
-const allowedEngineTypeList: Engine[] = [Engine.MYSQL, Engine.POSTGRES];
+const allowedEngineTypeList: Engine[] = [
+  Engine.MYSQL,
+  Engine.POSTGRES,
+  Engine.TIDB,
+];
 const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
   ChangeHistory_Type.MIGRATE,
@@ -282,6 +270,13 @@ const databaseChangeHistoryList = (databaseId: string) => {
 };
 
 const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
+  const index = databaseChangeHistoryList(state.databaseId as string).findIndex(
+    (history) => history.uid === changeHistory.uid
+  );
+  if (index > 0 && !hasSyncSchemaFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
   state.changeHistory = changeHistory;
 };
 

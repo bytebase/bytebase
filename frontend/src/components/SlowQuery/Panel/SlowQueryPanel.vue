@@ -49,11 +49,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, shallowRef, watch } from "vue";
 import { NButton } from "naive-ui";
+import { computed, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { ComposedSlowQueryLog } from "@/types";
+import { useRouter } from "vue-router";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -62,17 +61,21 @@ import {
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
+import { ComposedSlowQueryLog } from "@/types";
+import {
+  extractInstanceResourceName,
+  extractProjectResourceName,
+  hasWorkspacePermissionV1,
+} from "@/utils";
+import DetailPanel from "./DetailPanel.vue";
+import LogFilter from "./LogFilter.vue";
+import LogTable from "./LogTable.vue";
 import {
   type FilterType,
   type SlowQueryFilterParams,
   FilterTypeList,
   buildListSlowQueriesRequest,
 } from "./types";
-import LogFilter from "./LogFilter.vue";
-import LogTable from "./LogTable.vue";
-import DetailPanel from "./DetailPanel.vue";
-import { extractInstanceResourceName, hasWorkspacePermissionV1 } from "@/utils";
-import { useRouter } from "vue-router";
 
 const props = withDefaults(
   defineProps<{
@@ -143,17 +146,28 @@ const syncNow = async () => {
   syncing.value = true;
   try {
     await useGracefulRequest(async () => {
-      const policyList = await useSlowQueryPolicyStore().fetchPolicyList();
-      const requestList = policyList
-        .filter((policy) => {
-          return policy.slowQueryPolicy?.active;
-        })
-        .map(async (policy) => {
-          return slowQueryStore.syncSlowQueriesByInstance(
-            `instances/${extractInstanceResourceName(policy.name)}`
-          );
-        });
-      await Promise.all(requestList);
+      if (props.filter.instance) {
+        await slowQueryStore.syncSlowQueries(
+          `instances/${extractInstanceResourceName(props.filter.instance.name)}`
+        );
+      } else if (props.filter.project) {
+        await slowQueryStore.syncSlowQueries(
+          `projects/${extractProjectResourceName(props.filter.project.name)}`
+        );
+      } else {
+        const policyList = await useSlowQueryPolicyStore().fetchPolicyList();
+        const requestList = policyList
+          .filter((policy) => {
+            return policy.slowQueryPolicy?.active;
+          })
+          .map(async (policy) => {
+            return slowQueryStore.syncSlowQueries(
+              `instances/${extractInstanceResourceName(policy.name)}`
+            );
+          });
+        await Promise.all(requestList);
+      }
+
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

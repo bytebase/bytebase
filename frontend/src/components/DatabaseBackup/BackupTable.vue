@@ -139,37 +139,36 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-
+import { computed, PropType, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
+import {
+  CreateDatabasePrepForm,
+  CreateDatabasePrepButtonGroup,
+} from "@/components/CreateDatabasePrepForm";
+import {
+  default as RestoreTargetForm,
+  RestoreTarget,
+} from "@/components/DatabaseBackup/RestoreTargetForm.vue";
+import EllipsisText from "@/components/EllipsisText.vue";
+import HumanizeDate from "@/components/misc/HumanizeDate.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
+import { useSubscriptionV1Store, useIssueStore } from "@/store";
 import {
   ComposedDatabase,
   IssueCreate,
   PITRContext,
   SYSTEM_BOT_ID,
 } from "@/types";
-import { issueSlug, extractBackupResourceName } from "@/utils";
-import { useSubscriptionV1Store, useIssueStore } from "@/store";
-import { Drawer, DrawerContent } from "@/components/v2";
-import {
-  CreateDatabasePrepForm,
-  CreateDatabasePrepButtonGroup,
-} from "@/components/CreateDatabasePrepForm";
-import HumanizeDate from "@/components/misc/HumanizeDate.vue";
-import EllipsisText from "@/components/EllipsisText.vue";
-import {
-  default as RestoreTargetForm,
-  RestoreTarget,
-} from "@/components/DatabaseBackup/RestoreTargetForm.vue";
 import { Engine } from "@/types/proto/v1/common";
 import {
   Backup,
   Backup_BackupState,
   Backup_BackupType,
 } from "@/types/proto/v1/database_service";
+import { issueSlug, extractBackupResourceName } from "@/utils";
 
 export type BackupRow = BBGridRow<Backup>;
 

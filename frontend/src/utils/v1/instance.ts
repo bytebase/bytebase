@@ -1,14 +1,12 @@
-import slug from "slug";
 import { keyBy, orderBy } from "lodash-es";
-
+import slug from "slug";
 import { useI18n } from "vue-i18n";
-import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
+import { useSubscriptionV1Store } from "@/store";
+import { ComposedInstance } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { ComposedInstance } from "@/types";
-import { useSubscriptionV1Store } from "@/store";
+import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { isDev } from "../util";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -92,9 +90,7 @@ export const supportedEngineV1List = () => {
     Engine.REDSHIFT,
   ];
   if (locale.value === "zh-CN") {
-    if (isDev()) {
-      engines.push(Engine.DM);
-    }
+    engines.push(Engine.DM);
   }
   return engines;
 };

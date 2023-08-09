@@ -18,11 +18,11 @@
 </template>
 
 <script setup lang="ts">
-import { type ComposedDatabase } from "@/types";
-import { computed } from "vue";
 import { cloneDeep } from "lodash-es";
-import Secrets from "./components/Secrets.vue";
+import { computed } from "vue";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { type ComposedDatabase } from "@/types";
+import Secrets from "./components/Secrets.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -33,7 +33,10 @@ const databaseStore = useDatabaseV1Store();
 const envStore = useEnvironmentV1Store();
 
 const environment = computed(() => {
-  return envStore.getEnvironmentByName(props.database.environment);
+  return envStore.getEnvironmentByName(
+    props.database.environment ||
+      props.database.instanceEntity.environmentEntity.name
+  );
 });
 
 const handleSelectEnvironmentUID = async (uid: number | string) => {

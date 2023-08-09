@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v2"
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -189,7 +189,7 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []fieldInfo, rightF
 				if !yes {
 					return nil, errors.Errorf("expect Node_String_ but found %T", nameNode.Node)
 				}
-				usingList = append(usingList, name.String_.Str)
+				usingList = append(usingList, name.String_.Sval)
 			}
 			usingMap := make(map[string]bool)
 			for _, column := range usingList {
@@ -273,7 +273,7 @@ func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
 		if !yes {
 			return "", nil, errors.Errorf("expect Node_String_ but found %T", item.Node)
 		}
-		columnNameList = append(columnNameList, stringNode.String_.Str)
+		columnNameList = append(columnNameList, stringNode.String_.Sval)
 	}
 	return alias.Aliasname, columnNameList, nil
 }
@@ -367,7 +367,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.No
 				if !yes {
 					return db.TableSchema{}, errors.Errorf("expect Node_String_ but found %T", nameNode.Node)
 				}
-				initialField[i].name = stringNode.String_.Str
+				initialField[i].name = stringNode.String_.Sval
 			}
 		}
 
@@ -436,7 +436,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery
 			if !yes {
 				return db.TableSchema{}, errors.Errorf("expect Node_String_ but found %T", nameNode.Node)
 			}
-			nameList = append(nameList, stringNode.String_.Str)
+			nameList = append(nameList, stringNode.String_.Sval)
 		}
 		for i := 0; i < len(fieldList); i++ {
 			fieldList[i].name = nameList[i]
@@ -634,7 +634,7 @@ func pgExtractFieldName(in *pgquery.Node) (string, error) {
 		if !yes {
 			return "", errors.Errorf("expect Node_string_ but found %T", node.FuncCall.Funcname[len(node.FuncCall.Funcname)-1].Node)
 		}
-		return lastNode.String_.Str, nil
+		return lastNode.String_.Sval, nil
 	case *pgquery.Node_XmlExpr:
 		switch node.XmlExpr.Op {
 		case pgquery.XmlExprOp_IS_XMLCONCAT:
@@ -669,7 +669,7 @@ func pgExtractFieldName(in *pgquery.Node) (string, error) {
 			if !yes {
 				return "", errors.Errorf("expect Node_string_ but found %T", node.TypeCast.TypeName.Names[len(node.TypeCast.TypeName.Names)-1].Node)
 			}
-			return lastName.String_.Str, nil
+			return lastName.String_.Sval, nil
 		}
 	case *pgquery.Node_AConst:
 		return pgUnknownFieldName, nil

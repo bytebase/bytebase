@@ -37,7 +37,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		excludedDatabases = append(excludedDatabases, fmt.Sprintf("'%s'", k))
 	}
 
-	var databases []*storepb.DatabaseMetadata
+	var databases []*storepb.DatabaseSchemaMetadata
 	// Query db info
 	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabases, ", "))
 	query := `
@@ -51,7 +51,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}
 	defer rows.Close()
 	for rows.Next() {
-		database := &storepb.DatabaseMetadata{}
+		database := &storepb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(
 			&database.Name,
 		); err != nil {
@@ -71,7 +71,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
@@ -172,7 +172,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	return &storepb.DatabaseMetadata{
+	return &storepb.DatabaseSchemaMetadata{
 		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil

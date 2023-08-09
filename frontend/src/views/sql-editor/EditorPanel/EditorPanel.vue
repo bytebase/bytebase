@@ -32,15 +32,16 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-
-import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { AIChatToSQL } from "@/plugins/ai";
 import {
   useCurrentTab,
   useInstanceV1Store,
   useSheetV1Store,
   useTabStore,
 } from "@/store";
-import SQLEditor from "./SQLEditor.vue";
+import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
+import { formatEngineV1, getSheetIssueBacktracePayloadV1 } from "@/utils";
 import {
   EditorAction,
   ConnectionPathBar,
@@ -48,10 +49,8 @@ import {
   ExecutingHintModal,
   SaveSheetModal,
 } from "../EditorCommon";
+import SQLEditor from "./SQLEditor.vue";
 import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { AIChatToSQL } from "@/plugins/ai";
-import { formatEngineV1, getSheetIssueBacktracePayloadV1 } from "@/utils";
 
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();

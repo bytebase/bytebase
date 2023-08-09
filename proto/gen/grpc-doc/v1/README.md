@@ -240,6 +240,7 @@
     - [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest)
     - [IdentityProvider](#bytebase-v1-IdentityProvider)
     - [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig)
+    - [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig)
     - [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest)
     - [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse)
     - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
@@ -330,6 +331,8 @@
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
     - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
     - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
+    - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
+    - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
@@ -521,7 +524,9 @@
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
     - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig)
-    - [DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry)
+    - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
+    - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification)
+    - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level)
     - [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-v1-ExternalApprovalSetting-Node)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
@@ -618,6 +623,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
+| development_use_v2_scheduler | [bool](#bool) |  | development_use_v2_scheduler flag means if the server uses the v2 task run scheduler. this flag is only used for development purpose and will be removed once we switch to the v2 scheduler. |
 
 
 
@@ -2868,7 +2874,11 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 
 When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
-| filter | [string](#string) |  | The filter of the change histories. Follow the CEL syntax. currently, we have three attributes for CEL: - resource.database - resource.schema - resource.table examples: if you want to filter by databases, you should use: resource.database in [&#34;db1&#34;, &#34;db2&#34;] even if you only want to filter by one database, you should use the array syntax. if you want to filter by tables, you should use: resource.database = &#34;db1&#34; &amp;&amp; resource.schema = &#34;&#34; &amp;&amp; resource.table in [&#34;table1&#34;, &#34;table2&#34;] Empty schema name is for no schema database engines, such as MySQL. |
+| filter | [string](#string) |  | The filter of the change histories. Follow the CEL syntax. currently, we have one function for CEL: - tableExists(database, schema, table): return true if the table exists in changed resources.
+
+examples: Use tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) to filter the change histories which have the table &#34;table1&#34; in the schema &#34;public&#34; of the database &#34;db&#34;. For MySQL, the schema is always &#34;&#34;, such as tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
+
+Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive Normal Form(DNF). In other words, the CEL expression consists of several parts connected by OR operators. For example, the following expression is valid: ( tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) &amp;&amp; tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table2&#34;) ) || ( tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table3&#34;) ) |
 
 
 
@@ -4056,6 +4066,7 @@ reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get
 | identifier | [string](#string) |  | Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. |
 | display_name | [string](#string) |  | DisplayName is the field name of display name in 3rd-party idp user info. |
 | email | [string](#string) |  | Email is the field name of primary email in 3rd-party idp user info. |
+| phone | [string](#string) |  | Phone is the field name of primary phone in 3rd-party idp user info. |
 
 
 
@@ -4108,6 +4119,30 @@ reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get
 | ----- | ---- | ----- | ----------- |
 | oauth2_config | [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig) |  |  |
 | oidc_config | [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig) |  |  |
+| ldap_config | [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-LDAPIdentityProviderConfig"></a>
+
+### LDAPIdentityProviderConfig
+LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | Host is the hostname or IP address of the LDAP server, e.g. &#34;ldap.example.com&#34;. |
+| port | [int32](#int32) |  | Port is the port number of the LDAP server, e.g. 389. When not set, the default port of the corresponding security protocol will be used, i.e. 389 for StartTLS and 636 for LDAPS. |
+| skip_tls_verify | [bool](#bool) |  | SkipTLSVerify controls whether to skip TLS certificate verification. |
+| bind_dn | [string](#string) |  | BindDN is the DN of the user to bind as a service account to perform search requests. |
+| bind_password | [string](#string) |  | BindPassword is the password of the user to bind as a service account. |
+| base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g. &#34;ou=users,dc=example,dc=com&#34;. |
+| user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g. &#34;(uid=%s)&#34;. |
+| security_protocol | [string](#string) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. It should be either StartTLS or LDAPS, and cannot be empty. |
+| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | FieldMapping is the mapping of the user attributes returned by the LDAP server. |
 
 
 
@@ -4279,6 +4314,7 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
+| LDAP | 3 |  |
 
 
 
@@ -5003,7 +5039,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to sync slow queries. Format: instances/{instance} |
+| parent | [string](#string) |  | The name of the instance to sync slow queries. Format: instances/{instance} for one instance or projects/{project} for one project. |
 
 
 
@@ -5352,6 +5388,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
 
 
 
@@ -5400,6 +5437,42 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the issue to request a issue. Format: projects/{project}/issues/{issue} |
 | comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchIssuesRequest"></a>
+
+### SearchIssuesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project}. Use &#34;projects/-&#34; to search all issues. |
+| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchIssuesResponse"></a>
+
+### SearchIssuesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -5548,6 +5621,7 @@ ANY means approving any node will proceed.
 | CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) |  |
 | UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
+| SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) |  |
 | CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | BatchUpdateIssues | [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest) | [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse) |  |
@@ -6911,7 +6985,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the parent of the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| parent | [string](#string) |  | The name of the parent of the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
 | task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
 
@@ -7311,6 +7385,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 | error | [string](#string) |  | error is set if the Status is FAILED. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -7461,7 +7536,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
 | spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. Could be empty if the rollout of the task does not have an associating plan. |
-| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. TODO(p0ny): migrate old task status and use this field as a summary of the task runs. |
+| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
+| skipped_reason | [string](#string) |  |  |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
@@ -7731,7 +7807,7 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
-| PENDING_APPROVAL | 1 |  |
+| NOT_STARTED | 1 |  |
 | PENDING | 2 |  |
 | RUNNING | 3 |  |
 | DONE | 4 |  |
@@ -7776,7 +7852,6 @@ Type is the database change type.
 | DONE | 3 |  |
 | FAILED | 4 |  |
 | CANCELED | 5 |  |
-| SKIPPED | 6 |  |
 
 
  
@@ -8266,32 +8341,66 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 <a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig"></a>
 
 ### DataClassificationSetting.DataClassificationConfig
-Hard-coded schema comment format: [0-9]&#43;-[0-9]&#43;-[0-9]&#43;
+
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
+| id | [string](#string) |  | id is the uuid for classification. Each project can chose one classification config. |
 | title | [string](#string) |  |  |
-| classification_level | [DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry) | repeated | Maps classification to level.
-
-TODO(ed): store the actual config. |
-
+| levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
+| classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
 
 
 
 
 
-<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationLevelEntry"></a>
 
-### DataClassificationSetting.DataClassificationConfig.ClassificationLevelEntry
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry"></a>
+
+### DataClassificationSetting.DataClassificationConfig.ClassificationEntry
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
+| value | [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification"></a>
+
+### DataClassificationSetting.DataClassificationConfig.DataClassification
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the classification id in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| level_id | [string](#string) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level"></a>
+
+### DataClassificationSetting.DataClassificationConfig.Level
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
 
 
 
@@ -8521,6 +8630,7 @@ The data in setting value.
 | workspace_trial_setting_value | [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting) |  |  |
 | external_approval_setting_value | [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting) |  |  |
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
+| data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
 
 
 
