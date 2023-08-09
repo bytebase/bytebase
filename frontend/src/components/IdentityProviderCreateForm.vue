@@ -555,7 +555,7 @@
 
     <!-- LDAP form group -->
     <div
-      v-else-if="isDev() && state.type === IdentityProviderType.LDAP"
+      v-else-if="state.type === IdentityProviderType.LDAP"
       class="w-full flex flex-col justify-start items-start space-y-3"
     >
       <div class="w-full flex flex-col justify-start items-start">
@@ -910,14 +910,11 @@ const currentIdentityProvider = computed(() => {
 });
 
 const identityProviderTypeList = computed(() => {
-  if (isDev()) {
-    return [
-      IdentityProviderType.OAUTH2,
-      IdentityProviderType.OIDC,
-      IdentityProviderType.LDAP,
-    ];
-  }
-  return [IdentityProviderType.OAUTH2, IdentityProviderType.OIDC];
+  return [
+    IdentityProviderType.OAUTH2,
+    IdentityProviderType.OIDC,
+    IdentityProviderType.LDAP,
+  ];
 });
 
 const redirectUrl = computed(() => {
