@@ -25,7 +25,7 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM  golang:1.20.3 as backend
+FROM golang:1.20.3 as backend
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
