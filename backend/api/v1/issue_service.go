@@ -693,7 +693,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 				}
 				if !ok {
-					return nil, status.Errorf(codes.PermissionDenied, "Not allowed to run tasks")
+					return nil, status.Errorf(codes.InvalidArgument, "cannot set assignee to %v because the user cannot run tasks in the stage", request.Issue.Assignee)
 				}
 			}
 			patch.Assignee = user
