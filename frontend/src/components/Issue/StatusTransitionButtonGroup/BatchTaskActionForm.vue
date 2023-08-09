@@ -87,13 +87,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
 import { groupBy } from "lodash-es";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { pushNotification, useTaskStore } from "@/store";
 import { Issue, Task, TaskStatusPatch } from "@/types";
 import { TaskStatusTransition } from "@/utils";
-import { pushNotification, useTaskStore } from "@/store";
 import { useIssueLogic } from "../logic";
 
 interface LocalState {

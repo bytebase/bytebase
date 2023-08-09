@@ -91,8 +91,8 @@ import { reactive, watchEffect, watch } from "vue";
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
-import { Project, Workflow } from "@/types/proto/v1/project_service";
 import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
+import { Project, Workflow } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   workflowType: Workflow;

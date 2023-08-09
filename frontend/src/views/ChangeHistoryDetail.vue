@@ -272,16 +272,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch, ref } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
-import {
-  changeHistoryLink,
-  extractIssueUID,
-  extractUserResourceName,
-  uidFromSlug,
-  getAffectedTablesOfChangeHistory,
-} from "@/utils";
+import { computed, reactive, watch, ref } from "vue";
+import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
+import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -289,6 +284,7 @@ import {
   useDatabaseV1Store,
   useUserStore,
 } from "@/store";
+import { AffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
   ChangeHistory_Type,
@@ -296,9 +292,13 @@ import {
   changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
 import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
-import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
-import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
-import { AffectedTable } from "@/types/changeHistory";
+import {
+  changeHistoryLink,
+  extractIssueUID,
+  extractUserResourceName,
+  uidFromSlug,
+  getAffectedTablesOfChangeHistory,
+} from "@/utils";
 
 interface LocalState {
   showDiff: boolean;

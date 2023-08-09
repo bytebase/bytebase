@@ -10,22 +10,21 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-
+import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
+import { UNKNOWN_ID } from "@/types";
 import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
   Sheet,
 } from "@/types/proto/v1/sheet_service";
-import { UNKNOWN_ID } from "@/types";
-import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
 import {
   defaultTabName,
   extractSheetUID,
   getDefaultTabNameFromConnection,
 } from "@/utils";
-import SaveSheetForm from "./SaveSheetForm.vue";
 import { useSheetContext } from "../Sheet";
+import SaveSheetForm from "./SaveSheetForm.vue";
 
 type LocalState = {
   showModal: boolean;

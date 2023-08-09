@@ -93,13 +93,12 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref } from "vue";
 import { NTabs, NTab, NTooltip } from "naive-ui";
 import { CodeDiff } from "v-code-diff";
-
+import { reactive, ref } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { hasFeature, pushNotification } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
+import { hasFeature, pushNotification } from "@/store";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSDLState } from "./useSDLState";
 

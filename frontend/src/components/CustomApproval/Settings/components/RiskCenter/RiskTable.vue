@@ -40,15 +40,14 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton } from "naive-ui";
-
 import { BBGrid, type BBGridColumn } from "@/bbkit";
+import { pushNotification, useRiskStore } from "@/store";
+import { Risk } from "@/types/proto/v1/risk_service";
 import { SpinnerButton, SpinnerSwitch, levelText } from "../common";
 import { useRiskCenterContext } from "./context";
-import { Risk } from "@/types/proto/v1/risk_service";
-import { pushNotification, useRiskStore } from "@/store";
 
 defineProps<{
   riskList: Risk[];

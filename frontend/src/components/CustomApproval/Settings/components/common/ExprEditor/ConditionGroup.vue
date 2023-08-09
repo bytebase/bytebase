@@ -120,9 +120,8 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { computed } from "vue";
 import { NButton, NSelect, NTooltip, type SelectOption } from "naive-ui";
-
+import { computed } from "vue";
 import {
   type ConditionExpr,
   type ConditionGroupExpr,

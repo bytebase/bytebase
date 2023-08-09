@@ -14,15 +14,14 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-
-import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { useCurrentUserV1 } from "@/store";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";
+import { ExportCenterButton, SQLEditorButton } from "./request";
 import { IssueReviewButtonGroup } from "./review";
 import { CombinedRolloutButtonGroup } from "./rollout";
-import { ExportCenterButton, SQLEditorButton } from "./request";
 
 type ActionType =
   | "CREATE"

@@ -14,10 +14,10 @@
 
 <script lang="ts">
 import { computed, defineComponent } from "vue";
-import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
-import { idFromSlug } from "../utils";
 import { useProjectV1Store } from "@/store";
 import { emptyProjectWebhook } from "@/types";
+import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
+import { idFromSlug } from "../utils";
 
 export default defineComponent({
   name: "ProjectWebhookCreate",

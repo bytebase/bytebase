@@ -97,25 +97,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { NButton, NTag } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { ComposedProject } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import { Binding, IamPolicy } from "@/types/proto/v1/iam_policy";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
+import { ComposedProject } from "@/types";
+import { Binding, IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV1,
   displayRoleTitle,
   hasPermissionInProjectV1,
   extractUserUID,
 } from "@/utils";
-import ProjectMemberRolePanel from "./ProjectMemberRolePanel.vue";
-import { ComposedProjectMember } from "./types";
-import UserAvatar from "@/components/User/UserAvatar.vue";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { getBindingConditionTitle } from "../common/util";
+import ProjectMemberRolePanel from "./ProjectMemberRolePanel.vue";
+import { ComposedProjectMember } from "./types";
 
 export type ProjectMemberRow = BBGridRow<ComposedProjectMember>;
 

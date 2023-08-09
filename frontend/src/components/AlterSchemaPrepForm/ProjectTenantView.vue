@@ -52,15 +52,14 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-
 import { computed, watchEffect } from "vue";
 import { RouterLink } from "vue-router";
-import type { ComposedDatabase, LabelKeyType } from "@/types";
-import { DeployDatabaseTable } from "../TenantDatabaseTable";
-import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
 import { useDeploymentConfigV1ByProject } from "@/store";
+import type { ComposedDatabase, LabelKeyType } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Project } from "@/types/proto/v1/project_service";
+import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
+import { DeployDatabaseTable } from "../TenantDatabaseTable";
 
 export type ProjectTenantViewState = {
   selectedDatabaseIdListForTenantMode: Set<string>;

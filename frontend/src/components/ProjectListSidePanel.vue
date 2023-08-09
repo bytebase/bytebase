@@ -8,14 +8,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { useProjectV1ListByCurrentUser } from "@/store";
-import { projectV1Slug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
+import { projectV1Slug } from "../utils";
 
 const { t } = useI18n();
 const router = useRouter();

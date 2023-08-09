@@ -100,8 +100,8 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
-import { BBTableColumn, BBTableSectionDataSource } from "../types";
 import type { VueClass } from "@/utils";
+import { BBTableColumn, BBTableSectionDataSource } from "../types";
 
 type DataType = any; // vue does not support generic typed components yet
 

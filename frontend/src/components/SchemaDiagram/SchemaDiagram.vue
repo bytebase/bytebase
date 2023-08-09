@@ -30,10 +30,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, toRef, watch } from "vue";
-import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
-
+import { uniqueId } from "lodash-es";
+import { computed, nextTick, ref, toRef, watch } from "vue";
 import type { ComposedDatabase } from "@/types";
 import {
   ColumnMetadata,
@@ -41,6 +40,10 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
+import Canvas from "./Canvas";
+import { TableNode, autoLayout, GraphNodeItem, GraphEdgeItem } from "./ER";
+import Navigator from "./Navigator";
+import { provideSchemaDiagramContext } from "./common";
 import {
   Point,
   Rect,
@@ -50,10 +53,6 @@ import {
   EditStatus,
   Geometry,
 } from "./types";
-import Canvas from "./Canvas";
-import Navigator from "./Navigator";
-import { TableNode, autoLayout, GraphNodeItem, GraphEdgeItem } from "./ER";
-import { provideSchemaDiagramContext } from "./common";
 
 const props = withDefaults(
   defineProps<{

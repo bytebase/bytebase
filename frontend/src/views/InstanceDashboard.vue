@@ -27,16 +27,13 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-
+import { useRouter } from "vue-router";
 import {
   EnvironmentTabFilter,
   InstanceV1Table,
   SearchBox,
 } from "@/components/v2";
-import { UNKNOWN_ID } from "../types";
-import { sortInstanceV1ListByEnvironmentV1 } from "../utils";
 import {
   useUIStateStore,
   useSubscriptionV1Store,
@@ -46,6 +43,8 @@ import {
   useInstanceV1Store,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { UNKNOWN_ID } from "../types";
+import { sortInstanceV1ListByEnvironmentV1 } from "../utils";
 
 interface LocalState {
   searchText: string;

@@ -8,11 +8,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { NButton } from "naive-ui";
-
-import { useCurrentUserV1 } from "@/store";
+import { computed, ref } from "vue";
 import { useIssueContext, toggleSubscribeIssue } from "@/components/IssueV1";
+import { useCurrentUserV1 } from "@/store";
 
 const { issue } = useIssueContext();
 const currentUser = useCurrentUserV1();

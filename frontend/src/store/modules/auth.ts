@@ -1,16 +1,16 @@
-import { defineStore } from "pinia";
 import axios from "axios";
 import { isEqual } from "lodash-es";
+import { defineStore } from "pinia";
 import { computed } from "vue";
-import { SignupInfo, ActivateInfo, unknownUser } from "@/types";
-import { getIntCookie } from "@/utils";
 import { authServiceClient } from "@/grpcweb";
+import { SignupInfo, ActivateInfo, unknownUser } from "@/types";
 import {
   LoginRequest,
   LoginResponse,
   User,
   UserType,
 } from "@/types/proto/v1/auth_service";
+import { getIntCookie } from "@/utils";
 import { convertUserToPrincipal, useUserStore } from ".";
 
 interface AuthState {

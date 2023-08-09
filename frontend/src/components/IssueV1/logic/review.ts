@@ -1,5 +1,9 @@
 import { Ref, computed, unref } from "vue";
-
+import {
+  candidatesOfApprovalStepV1,
+  useAuthStore,
+  useUserStore,
+} from "@/store";
 import {
   ReviewFlow,
   emptyFlow,
@@ -8,13 +12,8 @@ import {
   WrappedReviewStep,
 } from "@/types";
 import { Issue, Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { ReviewContext } from "./context";
-import {
-  candidatesOfApprovalStepV1,
-  useAuthStore,
-  useUserStore,
-} from "@/store";
 import { extractUserResourceName } from "@/utils";
+import { ReviewContext } from "./context";
 
 export const extractReviewContext = (issue: Ref<Issue>): ReviewContext => {
   const ready = computed(() => {

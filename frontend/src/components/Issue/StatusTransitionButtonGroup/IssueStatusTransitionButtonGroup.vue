@@ -49,13 +49,13 @@
 </template>
 
 <script setup lang="ts">
-import { Issue, IssueStatusTransition, Task } from "@/types";
-import { ExtraActionOption, IssueContext } from "./common";
-import { Ref, computed } from "vue";
-import { useIssueLogic } from "../logic";
-import { useI18n } from "vue-i18n";
 import { DropdownOption } from "naive-ui";
+import { Ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { Issue, IssueStatusTransition, Task } from "@/types";
 import { TaskStatusTransition } from "@/utils";
+import { useIssueLogic } from "../logic";
+import { ExtraActionOption, IssueContext } from "./common";
 
 const props = defineProps<{
   issueContext: IssueContext;

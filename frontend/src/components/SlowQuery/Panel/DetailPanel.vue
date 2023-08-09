@@ -124,21 +124,20 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 import { computed, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton, NDrawer, NDrawerContent } from "naive-ui";
-
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import type { ComposedSlowQueryLog } from "@/types";
-import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
-import { instanceV1HasSlowQueryDetail } from "@/utils";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import {
   DatabaseV1Name,
   InstanceV1Name,
   EnvironmentV1Name,
   ProjectV1Name,
 } from "@/components/v2";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import type { ComposedSlowQueryLog } from "@/types";
+import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
+import { instanceV1HasSlowQueryDetail } from "@/utils";
 import IndexAdvisor from "./IndexAdvisor.vue";
 
 export type SlowQueryDetailsRow = BBGridRow<SlowQueryDetails>;

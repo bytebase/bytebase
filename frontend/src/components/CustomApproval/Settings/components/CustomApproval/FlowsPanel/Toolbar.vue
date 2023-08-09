@@ -8,9 +8,9 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-
 import { useCustomApprovalContext } from "../context";
 import { emptyLocalApprovalRule } from "../logic";
+
 const context = useCustomApprovalContext();
 const { hasFeature, showFeatureModal, allowAdmin, dialog } = context;
 

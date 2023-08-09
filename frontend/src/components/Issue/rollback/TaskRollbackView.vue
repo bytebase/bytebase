@@ -30,9 +30,8 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-
-import RollbackSwitch from "./RollbackSwitch.vue";
 import RollbackStatus from "./RollbackStatus.vue";
+import RollbackSwitch from "./RollbackSwitch.vue";
 import { useRollbackLogic } from "./common";
 
 const { rollbackUIType } = useRollbackLogic();

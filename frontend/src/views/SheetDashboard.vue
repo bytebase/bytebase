@@ -82,13 +82,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRoute } from "vue-router";
 import { last } from "lodash-es";
 import { useDialog } from "naive-ui";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { t } from "@/plugins/i18n";
-
-import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   hasFeature,
   useUserStore,
@@ -97,13 +95,14 @@ import {
   useProjectV1Store,
   useEnvironmentV1Store,
 } from "@/store";
+import { Workflow } from "@/types/proto/v1/project_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import { getSheetIssueBacktracePayloadV1 } from "@/utils";
 import {
   type SheetViewMode,
   SheetTable,
   SheetViewModeList,
 } from "./sql-editor/Sheet";
-import { Workflow } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   isLoading: boolean;

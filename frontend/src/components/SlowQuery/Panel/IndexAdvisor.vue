@@ -52,14 +52,14 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { Status } from "nice-grpc-common";
 import { computed, reactive, watch } from "vue";
-import { ComposedSlowQueryLog } from "@/types";
 import { useRouter } from "vue-router";
 import { databaseServiceClient } from "@/grpcweb";
-import { getErrorCode } from "@/utils/grpcweb";
-import { Status } from "nice-grpc-common";
 import { featureToRef, hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { ComposedSlowQueryLog } from "@/types";
+import { getErrorCode } from "@/utils/grpcweb";
 
 const props = defineProps<{
   slowQueryLog: ComposedSlowQueryLog;

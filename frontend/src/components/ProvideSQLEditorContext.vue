@@ -5,6 +5,7 @@
 <script lang="ts" setup>
 import { uniqBy } from "lodash-es";
 import { onMounted, computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
   useSQLEditorStore,
@@ -19,6 +20,9 @@ import {
   useEnvironmentV1Store,
   useUserStore,
 } from "@/store";
+import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   Connection,
   ConnectionAtom,
@@ -29,6 +33,11 @@ import {
   UNKNOWN_USER_NAME,
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
+import { State } from "@/types/proto/v1/common";
+import {
+  PolicyType,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
 import {
   emptyConnection,
   idFromSlug,
@@ -41,15 +50,6 @@ import {
   isSimilarTab,
   hasWorkspacePermissionV1,
 } from "@/utils";
-import { useI18n } from "vue-i18n";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import {
-  PolicyType,
-  PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
-import { State } from "@/types/proto/v1/common";
 
 const route = useRoute();
 const router = useRouter();

@@ -18,12 +18,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { computed } from "vue";
+import { stageForTask } from "@/components/IssueV1/logic";
 import { ComposedIssue } from "@/types";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
-import { stageForTask } from "@/components/IssueV1/logic";
 
 const props = defineProps<{
   issue: ComposedIssue;

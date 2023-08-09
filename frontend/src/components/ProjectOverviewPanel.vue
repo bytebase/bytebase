@@ -119,11 +119,11 @@
 
 <script lang="ts" setup>
 import { reactive, PropType } from "vue";
-import { IssueTable } from "../components/Issue";
-import { Issue } from "../types";
 import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 import { featureToRef } from "@/store";
 import { Project } from "@/types/proto/v1/project_service";
+import { IssueTable } from "../components/Issue";
+import { Issue } from "../types";
 
 interface LocalState {
   isFetchingActivityList: boolean;

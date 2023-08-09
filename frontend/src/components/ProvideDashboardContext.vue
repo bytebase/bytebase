@@ -12,8 +12,8 @@ import {
   useProjectV1Store,
   usePolicyV1Store,
 } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 export default defineComponent({
   name: "ProvideDashboardContext",

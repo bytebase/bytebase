@@ -1,5 +1,5 @@
-import MonacoEditor from "@/components/MonacoEditor";
 import { ref } from "vue";
+import MonacoEditor from "@/components/MonacoEditor";
 
 const EDITOR_MIN_HEIGHT = 120; // ~= 6 lines, a reasonable size to start writing SQL
 

@@ -1,6 +1,22 @@
+import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
-
+import { useI18n } from "vue-i18n";
+import {
+  databaseForTask,
+  notifyNotEditableLegacyIssue,
+  specForTask,
+  useIssueContext,
+} from "@/components/IssueV1/logic";
+import { rolloutServiceClient } from "@/grpcweb";
+import {
+  useCurrentUserV1,
+  experimentalFetchIssueByName,
+  useIssueV1Store,
+  pushNotification,
+} from "@/store";
 import { ComposedIssue, UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   extractUserResourceName,
   flattenTaskV1List,
@@ -8,23 +24,6 @@ import {
   hasWorkspacePermissionV1,
   semverCompare,
 } from "@/utils";
-import {
-  useCurrentUserV1,
-  experimentalFetchIssueByName,
-  useIssueV1Store,
-  pushNotification,
-} from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import {
-  databaseForTask,
-  notifyNotEditableLegacyIssue,
-  specForTask,
-  useIssueContext,
-} from "@/components/IssueV1/logic";
-import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
-import { cloneDeep } from "lodash-es";
-import { rolloutServiceClient } from "@/grpcweb";
-import { useI18n } from "vue-i18n";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
 

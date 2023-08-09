@@ -35,10 +35,10 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
 import { NTooltip } from "naive-ui";
-import { LocalPlan } from "./types";
+import { PropType, computed } from "vue";
 import { getFeatureLocalization } from "@/types";
+import { LocalPlan } from "./types";
 
 const props = defineProps({
   plan: {

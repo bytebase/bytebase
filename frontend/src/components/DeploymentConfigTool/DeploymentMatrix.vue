@@ -38,10 +38,10 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { ComposedDatabase, LabelKeyType } from "@/types";
-import { DeployDatabaseTable } from "../TenantDatabaseTable";
-import { filterDatabaseV1ByKeyword } from "@/utils";
-import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { DeploymentConfig } from "@/types/proto/v1/project_service";
+import { filterDatabaseV1ByKeyword } from "@/utils";
+import { DeployDatabaseTable } from "../TenantDatabaseTable";
 
 const props = withDefaults(
   defineProps<{

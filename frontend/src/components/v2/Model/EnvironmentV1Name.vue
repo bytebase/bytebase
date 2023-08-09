@@ -16,7 +16,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import { Environment } from "@/types/proto/v1/environment_service";
 import { VueClass, environmentV1Name, environmentV1Slug } from "@/utils";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";

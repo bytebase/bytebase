@@ -44,9 +44,9 @@ import { cloneDeep } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
 import { hasFeature, useDBGroupStore } from "@/store";
 import { ComposedProject } from "@/types";
-import DatabaseGroupTable from "./DatabaseGroupTable.vue";
-import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
+import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
+import DatabaseGroupTable from "./DatabaseGroupTable.vue";
 import { ResourceType } from "./common/ExprEditor/context";
 
 interface LocalState {

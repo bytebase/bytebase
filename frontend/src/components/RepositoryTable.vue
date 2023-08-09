@@ -20,10 +20,10 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
-import { useRouter } from "vue-router";
-import { projectSlugV1, projectV1Name } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { ComposedRepository } from "@/types";
+import { projectSlugV1, projectV1Name } from "../utils";
 
 const props = defineProps({
   repositoryList: {

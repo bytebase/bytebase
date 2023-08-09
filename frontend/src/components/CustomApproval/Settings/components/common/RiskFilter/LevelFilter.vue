@@ -25,9 +25,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NCheckbox } from "naive-ui";
-
+import { computed } from "vue";
 import BBBadge, { type BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 import { PresetRiskLevel, PresetRiskLevelList } from "@/types";
 import { levelText } from "../../common";

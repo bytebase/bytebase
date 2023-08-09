@@ -1,4 +1,5 @@
 import { computed, Ref } from "vue";
+import { extractIssueReviewContext } from "@/plugins/issue/logic";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   Issue as LegacyIssue,
@@ -8,6 +9,8 @@ import {
   IssueStatusTransition,
   APPLICABLE_ISSUE_ACTION_LIST,
 } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
+import { Issue } from "@/types/proto/v1/issue_service";
 import {
   activeStage,
   activeTask,
@@ -22,14 +25,11 @@ import {
   isOwnerOfProjectV1,
   isGrantRequestIssueType,
 } from "@/utils";
+import { useIssueLogic } from ".";
 import {
   allowUserToBeAssignee,
   useCurrentRollOutPolicyForActiveEnvironment,
 } from "./";
-import { useIssueLogic } from ".";
-import { User } from "@/types/proto/v1/auth_service";
-import { Issue } from "@/types/proto/v1/issue_service";
-import { extractIssueReviewContext } from "@/plugins/issue/logic";
 
 export const useIssueTransitionLogic = (issue: Ref<LegacyIssue>) => {
   const { create, activeTaskOfPipeline, allowApplyTaskStatusTransition } =

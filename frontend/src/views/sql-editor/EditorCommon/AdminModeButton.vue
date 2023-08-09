@@ -12,15 +12,14 @@
 </template>
 
 <script lang="ts" setup>
+import { last } from "lodash-es";
 import { computed } from "vue";
-
-import { TabMode } from "@/types";
 import { useCurrentUserV1, useTabStore, useWebTerminalStore } from "@/store";
+import { TabMode } from "@/types";
 import {
   getDefaultTabNameFromConnection,
   hasWorkspacePermissionV1,
 } from "@/utils";
-import { last } from "lodash-es";
 
 const emit = defineEmits<{
   (e: "enter"): void;

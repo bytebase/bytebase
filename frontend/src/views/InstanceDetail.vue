@@ -65,21 +65,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { ClientError } from "nice-grpc-web";
-
-import {
-  idFromSlug,
-  hasWorkspacePermissionV1,
-  instanceV1HasCreateDatabase,
-  isMemberOfProjectV1,
-  instanceV1Name,
-} from "@/utils";
+import { computed, reactive, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
-import InstanceForm from "@/components/InstanceForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import { EngineIcon } from "@/components/Icon";
+import InstanceForm from "@/components/InstanceForm/";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
 import {
   pushNotification,
@@ -90,7 +83,13 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
-import { EngineIcon } from "@/components/Icon";
+import {
+  idFromSlug,
+  hasWorkspacePermissionV1,
+  instanceV1HasCreateDatabase,
+  isMemberOfProjectV1,
+  instanceV1Name,
+} from "@/utils";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;

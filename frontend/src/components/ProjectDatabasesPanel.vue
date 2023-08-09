@@ -49,20 +49,19 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed, ref, watchEffect } from "vue";
-import { NInputGroup } from "naive-ui";
 import { uniqBy } from "lodash-es";
-
-import { ComposedDatabase, ComposedInstance, UNKNOWN_ID } from "../types";
-import { filterDatabaseV1ByKeyword, isDatabaseV1Accessible } from "@/utils";
-import { DatabaseV1Table } from "./v2";
-import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
+import { NInputGroup } from "naive-ui";
+import { reactive, PropType, computed, ref, watchEffect } from "vue";
+import { useCurrentUserV1, usePolicyV1Store } from "@/store";
 import {
   Policy,
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { useCurrentUserV1, usePolicyV1Store } from "@/store";
+import { filterDatabaseV1ByKeyword, isDatabaseV1Accessible } from "@/utils";
+import { ComposedDatabase, ComposedInstance, UNKNOWN_ID } from "../types";
+import { DatabaseV1Table } from "./v2";
+import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
 
 interface LocalState {
   environment: string;

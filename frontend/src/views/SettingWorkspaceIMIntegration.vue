@@ -89,8 +89,8 @@
 import { cloneDeep, isEqual } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification } from "@/store";
 import { BBSwitch } from "@/bbkit";
+import { featureToRef, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   AppIMSetting,

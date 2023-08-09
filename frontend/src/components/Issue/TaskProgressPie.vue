@@ -69,12 +69,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
 import { NPopover } from "naive-ui";
+import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBProgressPie } from "@/bbkit";
 import type { Task, TaskProgress } from "@/types";
 import { empty } from "@/types";
-import { BBProgressPie } from "@/bbkit";
 
 type ProgressSummary = TaskProgress & {
   percent: number;

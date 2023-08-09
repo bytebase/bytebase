@@ -1,5 +1,4 @@
 import { computed, nextTick, ref, watch } from "vue";
-
 import { UNKNOWN_ID } from "@/types";
 import { useIssueContext } from "../../../logic";
 import { useTaskSheet } from "../useTaskSheet";

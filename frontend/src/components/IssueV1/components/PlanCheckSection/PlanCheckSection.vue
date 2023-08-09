@@ -18,9 +18,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NButton } from "naive-ui";
-
+import { computed } from "vue";
+import { useIssueContext } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import {
@@ -28,7 +28,6 @@ import {
   hasWorkspacePermissionV1,
   isOwnerOfProjectV1,
 } from "@/utils";
-import { useIssueContext } from "@/components/IssueV1/logic";
 import PlanCheckBar from "./PlanCheckBar";
 
 const currentUser = useCurrentUserV1();

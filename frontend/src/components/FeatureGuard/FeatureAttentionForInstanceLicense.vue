@@ -21,10 +21,10 @@
 
 <script lang="ts" setup>
 import { reactive } from "vue";
-import { FeatureType, instanceLimitFeature } from "@/types";
 import { BBAttentionStyle } from "@/bbkit";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { useSubscriptionV1Store } from "@/store";
+import { FeatureType, instanceLimitFeature } from "@/types";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;

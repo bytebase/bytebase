@@ -48,17 +48,16 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import { UNKNOWN_ID } from "@/types";
-import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
 import {
   databaseForTask,
   stageForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
+import { useDatabaseV1Store } from "@/store";
+import { UNKNOWN_ID } from "@/types";
+import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
 

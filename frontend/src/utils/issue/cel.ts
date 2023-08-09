@@ -1,8 +1,8 @@
 import { cloneDeep, last } from "lodash-es";
+import { celServiceClient } from "@/grpcweb";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 import { DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { celServiceClient } from "@/grpcweb";
 
 interface DatabaseLevelCondition {
   database: string[];

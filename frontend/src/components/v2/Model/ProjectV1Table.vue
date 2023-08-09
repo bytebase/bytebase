@@ -47,17 +47,17 @@
 
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { projectV1Slug, projectV1Name } from "@/utils";
+import { useRouter } from "vue-router";
+import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
 import TenantIcon from "@/components/TenantIcon.vue";
+import { State } from "@/types/proto/v1/common";
 import {
   Project,
   TenantMode,
   Workflow,
 } from "@/types/proto/v1/project_service";
-import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
-import { State } from "@/types/proto/v1/common";
+import { projectV1Slug, projectV1Name } from "@/utils";
 
 export type ProjectGridRow = BBGridRow<Project>;
 

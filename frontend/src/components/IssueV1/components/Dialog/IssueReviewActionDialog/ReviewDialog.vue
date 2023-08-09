@@ -11,16 +11,15 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import {
   IssueReviewAction,
   targetReviewStatusForReviewAction,
   useIssueContext,
 } from "@/components/IssueV1";
+import { issueServiceClient } from "@/grpcweb";
+import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import CommonDialog from "../CommonDialog.vue";
 import ReviewForm from "./ReviewForm.vue";
-import { issueServiceClient } from "@/grpcweb";
 
 type LocalState = {
   loading: boolean;

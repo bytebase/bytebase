@@ -33,15 +33,14 @@
 <script lang="ts" setup>
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { Sheet } from "@/types/proto/v1/sheet_service";
 import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
-import { SheetViewMode, useSheetContextByView, Dropdown } from "../../Sheet";
-import { extractProjectResourceName } from "@/utils";
-import { useUserStore, useProjectV1Store } from "@/store";
-import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { ProjectV1Name } from "@/components/v2";
+import { useUserStore, useProjectV1Store } from "@/store";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
+import { extractProjectResourceName } from "@/utils";
+import { SheetViewMode, useSheetContextByView, Dropdown } from "../../Sheet";
 
 const props = defineProps<{
   view: SheetViewMode;

@@ -28,11 +28,10 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-
-import { useIssueContext } from "../../logic";
-import { extractUserResourceName, extractUserUID } from "@/utils";
-import { useUserStore } from "@/store";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
+import { useUserStore } from "@/store";
+import { extractUserResourceName, extractUserUID } from "@/utils";
+import { useIssueContext } from "../../logic";
 
 const { isCreating, issue } = useIssueContext();
 

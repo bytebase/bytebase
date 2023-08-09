@@ -1,7 +1,7 @@
 import { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-
 import { ComposedIssue } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
@@ -12,7 +12,6 @@ import {
   isOwnerOfProjectV1,
 } from "@/utils";
 import { isTaskFinished } from "..";
-import { User } from "@/types/proto/v1/auth_service";
 
 export type IssueStatusAction = "RESOLVE" | "CANCEL" | "REOPEN";
 

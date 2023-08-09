@@ -40,13 +40,12 @@
 
 <script lang="ts" setup>
 import { NTimeline, NTimelineItem, NPopover } from "naive-ui";
-
-import { ApprovalStep } from "@/types/proto/v1/issue_service";
 import { WrappedReviewStep } from "@/types";
+import { ApprovalStep } from "@/types/proto/v1/issue_service";
 import { approvalNodeText } from "@/utils";
+import Approver from "./Approver.vue";
 import Candidates from "./Candidates.vue";
 import ExternalApprovalSyncButton from "./ExternalApprovalNodeSyncButton.vue";
-import Approver from "./Approver.vue";
 import TimelineIcon from "./TimelineIcon.vue";
 
 defineProps<{

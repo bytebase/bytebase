@@ -37,9 +37,9 @@ import { useInstanceV1Store, useSchemaEditorStore } from "@/store";
 import { SchemaEditorTabType } from "@/types";
 import AsidePanel from "./AsidePanel.vue";
 import EmptyTips from "./EmptyTips.vue";
-import TabsContainer from "./TabsContainer.vue";
 import DatabaseEditor from "./Panels/DatabaseEditor.vue";
 import TableEditor from "./Panels/TableEditor.vue";
+import TabsContainer from "./TabsContainer.vue";
 
 interface LocalState {
   isLoading: boolean;

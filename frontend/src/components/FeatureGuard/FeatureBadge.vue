@@ -33,11 +33,11 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed } from "vue";
-import { FeatureType } from "@/types";
-import { useSubscriptionV1Store } from "@/store";
-import { Instance } from "@/types/proto/v1/instance_service";
 import { NTooltip } from "naive-ui";
+import { reactive, PropType, computed } from "vue";
+import { useSubscriptionV1Store } from "@/store";
+import { FeatureType } from "@/types";
+import { Instance } from "@/types/proto/v1/instance_service";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;

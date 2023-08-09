@@ -14,12 +14,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
-import { useRouter } from "vue-router";
 import { useTitle } from "@vueuse/core";
-import { useI18n } from "vue-i18n";
 import { NSpin } from "naive-ui";
-
+import { computed, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { useActuatorV1Store, useIssueStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { idFromSlug, isGrantRequestIssueType } from "@/utils";

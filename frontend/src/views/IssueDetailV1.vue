@@ -13,18 +13,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { useTitle } from "@vueuse/core";
 import { NSpin } from "naive-ui";
-
-import { UNKNOWN_ID } from "@/types";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   IssueDetailPage,
   provideIssueContext,
   useBaseIssueContext,
   useInitializeIssue,
 } from "@/components/IssueV1";
+import { UNKNOWN_ID } from "@/types";
 
 interface LocalState {
   showFeatureModal: boolean;

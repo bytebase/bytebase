@@ -20,7 +20,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-
+import { experimentalFetchIssueByUID } from "@/store";
 import { RollbackDetail, UNKNOWN_ID, unknownIssue, unknownTask } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
@@ -29,7 +29,6 @@ import {
   extractTaskUID,
   flattenTaskV1List,
 } from "@/utils";
-import { experimentalFetchIssueByUID } from "@/store";
 import {
   databaseForTask,
   getRollbackTaskMappingFromQuery,

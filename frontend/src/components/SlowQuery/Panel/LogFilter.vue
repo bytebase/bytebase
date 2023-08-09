@@ -91,11 +91,15 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { computed } from "vue";
-import { NDatePicker, NInputGroup } from "naive-ui";
 import dayjs from "dayjs";
-
-import { UNKNOWN_ID } from "@/types";
+import { NDatePicker, NInputGroup } from "naive-ui";
+import { computed } from "vue";
+import {
+  ProjectSelect,
+  InstanceSelect,
+  EnvironmentTabFilter,
+  DatabaseSelect,
+} from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -104,15 +108,10 @@ import {
   useProjectV1Store,
   useSlowQueryPolicyList,
 } from "@/store";
+import { UNKNOWN_ID } from "@/types";
+import { Instance } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV1, instanceV1SupportSlowQuery } from "@/utils";
 import type { FilterType, SlowQueryFilterParams } from "./types";
-import {
-  ProjectSelect,
-  InstanceSelect,
-  EnvironmentTabFilter,
-  DatabaseSelect,
-} from "@/components/v2";
-import { Instance } from "@/types/proto/v1/instance_service";
 
 const props = defineProps<{
   params: SlowQueryFilterParams;

@@ -92,12 +92,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, PropType, ref, watch } from "vue";
 import { ColumnDef, Table } from "@tanstack/vue-table";
-
-import useTableColumnWidthLogic from "./useTableResize";
+import { computed, nextTick, PropType, ref, watch } from "vue";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
 import TableCell from "./TableCell.vue";
+import useTableColumnWidthLogic from "./useTableResize";
 
 export type DataTableColumn = {
   key: string;

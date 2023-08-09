@@ -21,19 +21,18 @@ import {
   TreeOption,
 } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
-
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useProjectV1Store,
 } from "@/store";
 import { DatabaseResource } from "@/types";
+import Label from "./Label.vue";
 import {
   flattenTreeOptions,
   mapTreeOptions,
   DatabaseTreeOption,
 } from "./common";
-import Label from "./Label.vue";
 
 const props = defineProps<{
   projectId: string;

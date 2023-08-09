@@ -34,6 +34,7 @@
 </template>
 
 <script lang="ts">
+import { NModal } from "naive-ui";
 import {
   defineComponent,
   h,
@@ -47,8 +48,6 @@ import {
   Ref,
   RenderFunction,
 } from "vue";
-import { NModal } from "naive-ui";
-
 import type { VueClass } from "@/utils";
 
 type Overrides = {

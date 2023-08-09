@@ -220,12 +220,12 @@
 
 <script setup lang="ts">
 /* eslint-disable vue/no-mutating-props */
+import { DataSourceOptions } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import { useInstanceSpecs } from "../specs";
-import { DataSourceOptions } from "@/types";
 
 const props = defineProps<{
   dataSource: EditDataSource;

@@ -38,12 +38,11 @@
 
 <script lang="ts" setup>
 import { Ref, computed, ref } from "vue";
-
-import { useIssueLogic } from "../logic";
+import RequiredStar from "@/components/RequiredStar.vue";
+import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
 import { Issue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
-import RequiredStar from "@/components/RequiredStar.vue";
+import { useIssueLogic } from "../logic";
 
 const props = defineProps<{
   okText: string;

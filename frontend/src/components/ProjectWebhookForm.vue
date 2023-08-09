@@ -284,27 +284,26 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, PropType, watch } from "vue";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
-import { useRouter } from "vue-router";
+import { reactive, computed, PropType, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { projectV1Slug, projectWebhookV1Slug } from "../utils";
+import { useRouter } from "vue-router";
 import {
   pushNotification,
   useProjectWebhookV1Store,
   useGracefulRequest,
 } from "@/store";
 import {
+  projectWebhookV1ActivityItemList,
+  projectWebhookV1TypeItemList,
+} from "@/types";
+import {
   Activity_Type,
   Project,
   Webhook,
   Webhook_Type,
 } from "@/types/proto/v1/project_service";
-import {
-  projectWebhookV1ActivityItemList,
-  projectWebhookV1TypeItemList,
-} from "@/types";
+import { projectV1Slug, projectWebhookV1Slug } from "../utils";
 
 interface LocalState {
   webhook: Webhook;

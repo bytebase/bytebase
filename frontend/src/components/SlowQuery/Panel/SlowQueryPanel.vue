@@ -49,11 +49,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, shallowRef, watch } from "vue";
 import { NButton } from "naive-ui";
+import { computed, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { ComposedSlowQueryLog } from "@/types";
+import { useRouter } from "vue-router";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -62,21 +61,21 @@ import {
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
+import { ComposedSlowQueryLog } from "@/types";
+import {
+  extractInstanceResourceName,
+  extractProjectResourceName,
+  hasWorkspacePermissionV1,
+} from "@/utils";
+import DetailPanel from "./DetailPanel.vue";
+import LogFilter from "./LogFilter.vue";
+import LogTable from "./LogTable.vue";
 import {
   type FilterType,
   type SlowQueryFilterParams,
   FilterTypeList,
   buildListSlowQueriesRequest,
 } from "./types";
-import LogFilter from "./LogFilter.vue";
-import LogTable from "./LogTable.vue";
-import DetailPanel from "./DetailPanel.vue";
-import {
-  extractInstanceResourceName,
-  extractProjectResourceName,
-  hasWorkspacePermissionV1,
-} from "@/utils";
-import { useRouter } from "vue-router";
 
 const props = withDefaults(
   defineProps<{

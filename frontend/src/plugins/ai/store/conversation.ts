@@ -1,12 +1,11 @@
-import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { groupBy, omit } from "lodash-es";
 import { defineStore } from "pinia";
 import PouchDB from "pouchdb";
 import PouchDBFind from "pouchdb-find";
 import { v1 as uuidv1 } from "uuid";
-
-import { Conversation, Message } from "../types";
+import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { Connection, MaybeRef } from "@/types";
+import { Conversation, Message } from "../types";
 
 type RowStatus = "NORMAL" | "ARCHIVED";
 

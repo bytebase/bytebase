@@ -175,22 +175,22 @@
 </template>
 
 <script lang="ts" setup>
+import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import RepositoryTable from "../components/RepositoryTable.vue";
-import isEmpty from "lodash-es/isEmpty";
-import { idFromSlug, getVCSUIType } from "../utils";
-import {
-  openWindowForOAuth,
-  OAuthWindowEventPayload,
-  VCSUIType,
-} from "../types";
 import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
 import {
   OAuthToken,
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
+import RepositoryTable from "../components/RepositoryTable.vue";
+import {
+  openWindowForOAuth,
+  OAuthWindowEventPayload,
+  VCSUIType,
+} from "../types";
+import { idFromSlug, getVCSUIType } from "../utils";
 
 interface LocalState {
   title: string;

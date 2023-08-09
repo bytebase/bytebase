@@ -1,17 +1,16 @@
-import { type Ref, computed } from "vue";
 import type { SelectOption } from "naive-ui";
-
+import { type Ref, computed } from "vue";
 import { ConditionExpr, Factor, SQLTypeList } from "@/plugins/cel";
-import { useExprEditorContext } from "../context";
 import { useEnvironmentV1Store, useProjectV1ListByCurrentUser } from "@/store";
 import { engineName, PresetRiskLevelList, SupportedSourceList } from "@/types";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
-import { levelText } from "../../utils";
 import {
   extractEnvironmentResourceName,
   extractProjectResourceName,
   supportedEngineList,
 } from "@/utils";
+import { levelText } from "../../utils";
+import { useExprEditorContext } from "../context";
 
 export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   const context = useExprEditorContext();

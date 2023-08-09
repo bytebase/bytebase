@@ -125,9 +125,21 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { head, isUndefined } from "lodash-es";
 import { NDrawer, NDrawerContent, NInput } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import DatabaseSelect from "@/components/DatabaseSelect.vue";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
+import { InstanceV1EngineIcon } from "@/components/v2";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useIssueStore,
+  useProjectV1Store,
+} from "@/store";
 import {
   DatabaseResource,
   IssueCreate,
@@ -141,20 +153,8 @@ import {
   issueSlug,
   memberListInProjectV1,
 } from "@/utils";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useIssueStore,
-  useProjectV1Store,
-} from "@/store";
-import RequiredStar from "@/components/RequiredStar.vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
-import DatabaseSelect from "@/components/DatabaseSelect.vue";
-import { head, isUndefined } from "lodash-es";
-import { useRouter } from "vue-router";
-import ExportResourceForm from "./ExportResourceForm/index.vue";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
-import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import ExportResourceForm from "./ExportResourceForm/index.vue";
 
 interface LocalState {
   projectId?: string;
