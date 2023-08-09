@@ -4,7 +4,11 @@
     :title="$t('common.bookmarks')"
     :item-list="
       bookmarkList.map((item) => {
-        return { id: item.name, name: item.title, link: item.link };
+        return {
+          id: item.name,
+          name: item.title,
+          link: item.link,
+        };
       })
     "
     :allow-delete="true"

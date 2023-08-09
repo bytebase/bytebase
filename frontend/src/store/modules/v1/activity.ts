@@ -7,9 +7,10 @@ import { loggingServiceClient } from "@/grpcweb";
 import {
   IdType,
   FindActivityMessage,
-  Issue,
+  Issue as LegacyIssue,
   UNKNOWN_ID,
   EMPTY_ID,
+  ComposedIssue,
 } from "@/types";
 import { userNamePrefix, getLogId, logNamePrefix } from "./common";
 import {
@@ -19,7 +20,11 @@ import {
   logEntity_ActionToJSON,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
-import { isDatabaseRelatedIssueType } from "@/utils";
+import {
+  isDatabaseRelatedIssue,
+  isDatabaseRelatedIssueType,
+  extractRolloutUID,
+} from "@/utils";
 import { useIssueStore } from "../issue";
 import { useCurrentUserV1 } from "../auth";
 
@@ -60,6 +65,7 @@ const buildFilter = (find: FindActivityMessage): string => {
 
 export const useActivityV1Store = defineStore("activity_v1", () => {
   const activityListByIssue = reactive(new Map<IdType, LogEntity[]>());
+  const activityListByIssueV1 = reactive(new Map<string, LogEntity[]>());
 
   const fetchActivityList = async (find: FindActivityMessage) => {
     const resp = await loggingServiceClient.listLogs({
@@ -76,7 +82,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     return activityListByIssue.get(issueId) || [];
   };
 
-  const fetchActivityListForIssue = async (issue: Issue) => {
+  const fetchActivityListForIssue = async (issue: LegacyIssue) => {
     const requests = [
       fetchActivityList({
         resource: `issues/${issue.id}`,
@@ -107,6 +113,42 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     });
 
     activityListByIssue.set(issue.id, mergedList);
+    return mergedList;
+  };
+
+  const getActivityListByIssueV1 = (uid: string): LogEntity[] => {
+    return activityListByIssueV1.get(uid) || [];
+  };
+  const fetchActivityListForIssueV1 = async (issue: ComposedIssue) => {
+    const requests = [
+      fetchActivityList({
+        resource: `issues/${issue.uid}`,
+        order: "asc",
+      }).then((resp) => resp.logEntities),
+    ];
+    if (isDatabaseRelatedIssue(issue) && issue.rollout) {
+      const pipelineUID = extractRolloutUID(issue.rollout);
+      requests.push(
+        fetchActivityList({
+          resource: `pipelines/${pipelineUID}`,
+          order: "asc",
+        }).then((resp) => resp.logEntities)
+      );
+    } else {
+      requests.push(Promise.resolve([]));
+    }
+
+    const [listForIssue, listForPipeline] = await Promise.all(requests);
+    const mergedList = [...listForIssue, ...listForPipeline];
+    mergedList.sort((a, b) => {
+      if (a.createTime !== b.createTime) {
+        return (a.createTime?.getTime() ?? 0) - (b.createTime?.getTime() ?? 0);
+      }
+
+      return getLogId(a.name) - getLogId(b.name);
+    });
+
+    activityListByIssueV1.set(issue.uid, mergedList);
     return mergedList;
   };
 
@@ -153,10 +195,12 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   return {
     fetchActivityList,
     fetchActivityListForIssue,
+    fetchActivityListForIssueV1,
     fetchActivityListByIssueId,
     fetchActivityListForQueryHistory,
     fetchActivityByUID,
     getActivityListByIssue,
+    getActivityListByIssueV1,
     getResourceId,
   };
 });

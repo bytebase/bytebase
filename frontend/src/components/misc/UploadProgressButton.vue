@@ -1,6 +1,7 @@
 <template>
   <NButton
     :disabled="disabled"
+    tag="div"
     style="--n-icon-margin: 3px"
     @click="handleClick"
   >
