@@ -55,23 +55,22 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
+import { useCurrentUserV1 } from "@/store";
+import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import type { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   databaseV1Slug,
   instanceV1HasAlterSchema,
   isTableQueryable,
 } from "@/utils";
-import ExternalLinkButton from "./ExternalLinkButton.vue";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
+import ExternalLinkButton from "./ExternalLinkButton.vue";
 import SchemaDiagramButton from "./SchemaDiagramButton.vue";
-import { Engine } from "@/types/proto/v1/common";
-import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{
   database: ComposedDatabase;

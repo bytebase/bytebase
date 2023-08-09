@@ -133,9 +133,7 @@ import {
 } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
 import { InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
@@ -144,6 +142,8 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
+import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import {
   displayRoleTitle,
   hasPermissionInProjectV1,
@@ -153,11 +153,10 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { ComposedProjectMember, SingleBinding } from "./types";
-import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
-import RoleDescription from "./RoleDescription.vue";
 import EditProjectMemberPanel from "../AddProjectMember/EditProjectMemberPanel.vue";
+import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
+import { ComposedProjectMember, SingleBinding } from "./types";
 
 export type SingleBindingRow = BBGridRow<SingleBinding>;
 

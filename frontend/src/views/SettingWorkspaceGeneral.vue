@@ -8,8 +8,8 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from "vue";
 import { storeToRefs } from "pinia";
+import { onMounted } from "vue";
 import {
   BrandingSetting,
   SecuritySetting,

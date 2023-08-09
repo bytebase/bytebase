@@ -89,8 +89,8 @@
 <script lang="ts">
 import { defineComponent, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { ActivateInfo, RoleType } from "../../types";
 import { useAuthStore } from "@/store";
+import { ActivateInfo, RoleType } from "../../types";
 
 interface LocalState {
   email: string;

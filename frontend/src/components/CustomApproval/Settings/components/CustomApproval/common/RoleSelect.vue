@@ -11,21 +11,20 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { type SelectOption, type SelectGroupOption, NSelect } from "naive-ui";
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { useRoleStore, useSettingV1Store } from "@/store";
+import { isCustomRole } from "@/types";
 import {
   ApprovalNode,
   ApprovalNode_GroupValue,
   ApprovalNode_Type,
 } from "@/types/proto/v1/issue_service";
-import { useCustomApprovalContext } from "../context";
-import { approvalNodeGroupValueText, approvalNodeRoleText } from "@/utils";
-import { useRoleStore, useSettingV1Store } from "@/store";
-import { isCustomRole } from "@/types";
 import { ExternalApprovalSetting } from "@/types/proto/v1/setting_service";
+import { approvalNodeGroupValueText, approvalNodeRoleText } from "@/utils";
+import { useCustomApprovalContext } from "../context";
 
 interface ApprovalNodeSelectOption extends SelectOption {
   value: ApprovalNode_GroupValue | string | undefined;

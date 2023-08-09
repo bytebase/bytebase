@@ -44,12 +44,11 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
+import { useProjectV1Store, useProjectWebhookV1Store } from "@/store";
+import { emptyProjectWebhook } from "@/types";
+import { Webhook_Type } from "@/types/proto/v1/project_service";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
-import { useProjectV1Store, useProjectWebhookV1Store } from "@/store";
-import { Webhook_Type } from "@/types/proto/v1/project_service";
-import { emptyProjectWebhook } from "@/types";
 
 const props = defineProps({
   projectSlug: {

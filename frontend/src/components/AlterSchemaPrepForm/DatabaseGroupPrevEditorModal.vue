@@ -75,13 +75,13 @@
 import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
+import { useDBGroupStore, useNotificationStore, useIssueStore } from "@/store";
 import {
   ComposedDatabaseGroup,
   ComposedSchemaGroup,
   MigrationType,
 } from "@/types";
-import { useDBGroupStore, useNotificationStore, useIssueStore } from "@/store";
-import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;

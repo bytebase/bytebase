@@ -1,9 +1,9 @@
+import { isUndefined, orderBy } from "lodash-es";
 import slug from "slug";
+import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
+import { AffectedTable } from "@/types/changeHistory";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "./database";
-import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
-import { isUndefined, orderBy } from "lodash-es";
-import { AffectedTable } from "@/types/changeHistory";
 
 export const extractChangeHistoryUID = (name: string) => {
   const pattern = /(?:^|\/)(?:changeHistories|migrations)\/([^/]+)(?:$|\/)/;

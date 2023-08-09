@@ -24,8 +24,8 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { ViewMetadata } from "@/types/proto/store/database";
 import { ComposedDatabase } from "@/types";
+import { ViewMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({

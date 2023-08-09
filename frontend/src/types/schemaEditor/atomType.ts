@@ -1,5 +1,5 @@
-import { isGhostTable } from "@/utils";
 import { v1 as uuidv1 } from "uuid";
+import { isGhostTable } from "@/utils";
 import {
   SchemaMetadata,
   TableMetadata,

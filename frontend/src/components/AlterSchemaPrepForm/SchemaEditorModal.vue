@@ -128,6 +128,14 @@ import { head, uniq } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
+import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
+import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
+import {
+  useDatabaseV1Store,
+  useNotificationStore,
+  useSchemaEditorStore,
+} from "@/store";
 import {
   ComposedDatabase,
   DatabaseEdit,
@@ -135,25 +143,17 @@ import {
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { allowGhostMigrationV1 } from "@/utils";
-import {
-  useDatabaseV1Store,
-  useNotificationStore,
-  useSchemaEditorStore,
-} from "@/store";
 import {
   checkHasSchemaChanges,
   diffSchema,
   mergeDiffResults,
 } from "@/utils/schemaEditor/diffSchema";
 import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
-import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
-import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
-import GhostDialog from "./GhostDialog.vue";
-import { Engine } from "@/types/proto/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import MonacoEditor from "../MonacoEditor";
+import GhostDialog from "./GhostDialog.vue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 

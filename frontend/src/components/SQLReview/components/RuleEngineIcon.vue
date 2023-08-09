@@ -3,8 +3,8 @@
 </template>
 
 <script lang="ts" setup>
-import { SchemaRuleEngineType } from "@/types";
 import { computed } from "vue";
+import { SchemaRuleEngineType } from "@/types";
 
 const props = defineProps<{
   engine: SchemaRuleEngineType;

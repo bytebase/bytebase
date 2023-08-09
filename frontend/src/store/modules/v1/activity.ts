@@ -1,8 +1,7 @@
-import { defineStore } from "pinia";
 import dayjs from "dayjs";
-import { reactive } from "vue";
 import utc from "dayjs/plugin/utc";
-
+import { defineStore } from "pinia";
+import { reactive } from "vue";
 import { loggingServiceClient } from "@/grpcweb";
 import {
   IdType,
@@ -12,7 +11,6 @@ import {
   EMPTY_ID,
   ComposedIssue,
 } from "@/types";
-import { userNamePrefix, getLogId, logNamePrefix } from "./common";
 import {
   LogEntity,
   LogEntity_Action,
@@ -25,8 +23,9 @@ import {
   isDatabaseRelatedIssueType,
   extractRolloutUID,
 } from "@/utils";
-import { useIssueStore } from "../issue";
 import { useCurrentUserV1 } from "../auth";
+import { useIssueStore } from "../issue";
+import { userNamePrefix, getLogId, logNamePrefix } from "./common";
 
 dayjs.extend(utc);
 

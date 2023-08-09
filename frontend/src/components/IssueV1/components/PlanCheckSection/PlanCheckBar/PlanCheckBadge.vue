@@ -42,17 +42,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { maxBy } from "lodash-es";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { planCheckRunResultStatus } from "@/components/IssueV1/logic";
 import {
   PlanCheckRun,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
 } from "@/types/proto/v1/rollout_service";
-import { planCheckRunResultStatus } from "@/components/IssueV1/logic";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

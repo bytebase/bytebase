@@ -44,16 +44,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import dayjs from "dayjs";
-
-import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
+import { computed } from "vue";
 import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
-import { useIssueContext } from "../logic";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
+import { useIssueContext } from "../logic";
 
 const { isCreating, issue, reviewContext } = useIssueContext();
 const { status: reviewStatus } = reviewContext;

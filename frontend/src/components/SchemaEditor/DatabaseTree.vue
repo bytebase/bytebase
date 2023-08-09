@@ -65,25 +65,24 @@ import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import TableIcon from "~icons/heroicons-outline/table-cells";
+import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
-
-import { SchemaEditorTabType } from "@/types";
-import { Schema, Table } from "@/types/schemaEditor/atomType";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   useSchemaEditorStore,
   generateUniqueTabId,
   useInstanceV1Store,
   useNotificationStore,
 } from "@/store";
+import { SchemaEditorTabType } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { Schema, Table } from "@/types/schemaEditor/atomType";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
-import { isSchemaChanged } from "./utils/schema";
-import { isTableChanged } from "./utils/table";
 import SchemaNameModal from "./Modals/SchemaNameModal.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
-import { Engine } from "@/types/proto/v1/common";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import { isSchemaChanged } from "./utils/schema";
+import { isTableChanged } from "./utils/table";
 
 interface BaseTreeNode extends TreeOption {
   key: string;

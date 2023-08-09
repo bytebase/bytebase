@@ -1,5 +1,10 @@
-import { ExternalApprovalEvent } from "./externalApproval";
+import {
+  LogEntity_Action,
+  LogEntity_Level,
+} from "@/types/proto/v1/logging_service";
 import { FieldId } from "../plugins";
+import { t } from "../plugins/i18n";
+import { ExternalApprovalEvent } from "./externalApproval";
 import {
   DatabaseId,
   InstanceId,
@@ -12,14 +17,9 @@ import {
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { StageStatusUpdateType, TaskStatus } from "./pipeline";
-import { VCSPushEvent } from "./vcs";
-import { Advice } from "./sqlAdvice";
-import { t } from "../plugins/i18n";
 import { ApprovalEvent } from "./review";
-import {
-  LogEntity_Action,
-  LogEntity_Level,
-} from "@/types/proto/v1/logging_service";
+import { Advice } from "./sqlAdvice";
+import { VCSPushEvent } from "./vcs";
 
 export function activityName(action: LogEntity_Action): string {
   switch (action) {

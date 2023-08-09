@@ -1,3 +1,4 @@
+import { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { candidatesOfApprovalStepV1 } from "@/store";
 import { ComposedIssue } from "@/types";
@@ -7,7 +8,6 @@ import {
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName } from "@/utils";
-import { ButtonProps } from "naive-ui";
 import { ReviewContext } from "../context";
 
 export type IssueReviewAction = "APPROVE" | "SEND_BACK" | "RE_REQUEST";

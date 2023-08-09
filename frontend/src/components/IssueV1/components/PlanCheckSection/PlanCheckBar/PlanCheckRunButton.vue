@@ -25,18 +25,17 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
+import {
+  planCheckRunListForTask,
+  useIssueContext,
+} from "@/components/IssueV1/logic";
 import { ContextMenuButton, ContextMenuButtonAction } from "@/components/v2";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   PlanCheckRun_Status,
   Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
-import {
-  planCheckRunListForTask,
-  useIssueContext,
-} from "@/components/IssueV1/logic";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
 
 type ButtonAction = ContextMenuButtonAction<{
   taskList: Task[];

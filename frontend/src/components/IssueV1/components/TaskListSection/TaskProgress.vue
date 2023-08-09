@@ -19,7 +19,6 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-
 import { BBProgressPie } from "@/bbkit";
 import { Task, Task_Status } from "@/types/proto/v1/rollout_service";
 

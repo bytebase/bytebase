@@ -1,5 +1,5 @@
-import { VCSId } from "./id";
 import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { VCSId } from "./id";
 
 // Backend uses the same ENUM for GitLab/GitHub SaaS and self-hosted. Because they are based on the
 // same codebase.

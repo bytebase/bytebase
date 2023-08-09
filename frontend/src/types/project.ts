@@ -1,12 +1,12 @@
-import { RowStatus } from "./common";
-import { ProjectId } from "./id";
-import { Principal } from "./principal";
-import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
-import { SchemaChange } from "@/types/proto/v1/project_service";
 import {
   OAuthToken,
   ExternalVersionControl,
 } from "@/types/proto/v1/externalvs_service";
+import { SchemaChange } from "@/types/proto/v1/project_service";
+import { RowStatus } from "./common";
+import { ProjectId } from "./id";
+import { Principal } from "./principal";
+import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 
 export type ProjectRoleType =
   | "OWNER"

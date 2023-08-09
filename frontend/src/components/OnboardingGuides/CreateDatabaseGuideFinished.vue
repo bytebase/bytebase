@@ -70,8 +70,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useOnboardingGuideStore } from "@/store";
 import { onMounted } from "vue";
+import { useOnboardingGuideStore } from "@/store";
 
 onMounted(() => {
   const colors = ["#2563eb", "#f43f5e", "#f5a30b", "#f5e10b"];

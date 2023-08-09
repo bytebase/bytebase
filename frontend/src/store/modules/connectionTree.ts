@@ -1,7 +1,6 @@
+import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { reactive, ref, watch } from "vue";
-import { useLocalStorage } from "@vueuse/core";
-
 import {
   Connection,
   ConnectionAtom,
@@ -11,10 +10,10 @@ import {
   ComposedDatabase,
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
-import { emptyConnection } from "@/utils";
+import { Engine } from "@/types/proto/v1/common";
 import { Policy } from "@/types/proto/v1/org_policy_service";
 import { Project } from "@/types/proto/v1/project_service";
-import { Engine } from "@/types/proto/v1/common";
+import { emptyConnection } from "@/utils";
 import {
   useDatabaseV1Store,
   useInstanceV1Store,

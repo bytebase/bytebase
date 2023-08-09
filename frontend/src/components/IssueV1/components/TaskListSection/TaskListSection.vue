@@ -15,7 +15,6 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { useIssueContext } from "../../logic";
 import TaskCard from "./TaskCard.vue";

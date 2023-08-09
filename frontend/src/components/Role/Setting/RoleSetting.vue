@@ -40,13 +40,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from "vue";
 import { NButton } from "naive-ui";
-
-import { RoleTable, RolePanel } from "./components";
+import { computed, onMounted, reactive, ref } from "vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
 import { useWorkspacePermissionV1 } from "@/utils";
+import { RoleTable, RolePanel } from "./components";
 import { provideCustomRoleSettingContext } from "./context";
 
 type LocalState = {

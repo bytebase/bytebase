@@ -1,4 +1,7 @@
 import { merge } from "lodash-es";
+import { getStringFromI18NText, nextI18NText } from "./i18n";
+import * as storage from "./storage";
+import { Position, GuideData, StepData } from "./types";
 import {
   checkUrlPathnameMatched,
   getElementBounding,
@@ -6,9 +9,6 @@ import {
   isNullOrUndefined,
   waitForTargetElement,
 } from "./utils";
-import * as storage from "./storage";
-import { Position, GuideData, StepData } from "./types";
-import { getStringFromI18NText, nextI18NText } from "./i18n";
 
 // validateStepData will check if the step data is valid
 export const validateStepData = (stepData: StepData) => {

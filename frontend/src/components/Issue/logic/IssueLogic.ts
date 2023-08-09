@@ -1,5 +1,5 @@
-import type { Ref } from "vue";
 import { type useDialog } from "naive-ui";
+import type { Ref } from "vue";
 import { IssueTemplate } from "@/plugins";
 import {
   ComposedDatabase,

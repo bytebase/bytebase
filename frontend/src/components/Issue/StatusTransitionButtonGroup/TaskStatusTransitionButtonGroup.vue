@@ -15,7 +15,10 @@
 <script lang="ts" setup>
 import { Ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-
+import {
+  default as BBContextMenuButton,
+  type ButtonAction,
+} from "@/bbkit/BBContextMenuButton.vue";
 import { Issue } from "@/types";
 import {
   StageStatusTransition,
@@ -24,10 +27,6 @@ import {
   taskCheckRunSummary,
 } from "@/utils";
 import { useIssueLogic } from "../logic";
-import {
-  default as BBContextMenuButton,
-  type ButtonAction,
-} from "@/bbkit/BBContextMenuButton.vue";
 import { IssueContext } from "./common";
 
 export type TaskStatusTransitionButtonAction = ButtonAction<{

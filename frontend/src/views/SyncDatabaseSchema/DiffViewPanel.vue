@@ -66,10 +66,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
-import { CodeDiff } from "v-code-diff";
 import { NTabs, NTab } from "naive-ui";
-
+import { CodeDiff } from "v-code-diff";
+import { ref } from "vue";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";

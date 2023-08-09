@@ -61,6 +61,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import {
   nextTick,
   onMounted,
@@ -71,8 +72,6 @@ import {
   computed,
 } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton } from "naive-ui";
-
 import type { Issue } from "@/types";
 import { isGrantRequestIssueType, sizeToFit } from "@/utils";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";

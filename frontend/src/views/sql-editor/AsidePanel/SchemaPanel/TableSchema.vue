@@ -49,15 +49,15 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
+import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import type { ComposedDatabase } from "@/types";
-import AlterSchemaButton from "./AlterSchemaButton.vue";
-import { computed } from "vue";
 import { databaseV1Slug } from "@/utils";
+import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 
 const props = defineProps<{

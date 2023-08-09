@@ -161,11 +161,11 @@
 </template>
 
 <script lang="ts" setup>
+import { first, indexOf } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { first, indexOf } from "lodash-es";
-import { ProcessData } from "../types";
 import useAppStore from "../store";
+import { ProcessData } from "../types";
 import RequestDemoDialog from "./RequestDemoDialog.vue";
 
 const emit = defineEmits(["close"]);

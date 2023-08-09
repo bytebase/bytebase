@@ -42,8 +42,10 @@
 <script lang="ts" setup>
 import { reactive, computed, watch, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-
-import UserAvatar from "./User/UserAvatar.vue";
+import { hasFeature, useUserStore } from "@/store";
+import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
+import { BBComboBox } from "../bbkit";
 import {
   SYSTEM_BOT_ID,
   UNKNOWN_ID,
@@ -52,10 +54,7 @@ import {
   filterUserListByKeyword,
 } from "../types";
 import { extractUserUID } from "../utils";
-import { BBComboBox } from "../bbkit";
-import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
-import { hasFeature, useUserStore } from "@/store";
-import { State } from "@/types/proto/v1/common";
+import UserAvatar from "./User/UserAvatar.vue";
 
 interface LocalState {
   selectedId: string | undefined;

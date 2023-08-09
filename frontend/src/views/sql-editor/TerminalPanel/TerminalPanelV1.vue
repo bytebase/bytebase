@@ -65,20 +65,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, unref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
-
-import { ExecuteConfig, ExecuteOption, WebTerminalQueryItemV1 } from "@/types";
+import { computed, ref, unref, watch } from "vue";
 import { useTabStore, useWebTerminalV1Store } from "@/store";
-import CompactSQLEditor from "./CompactSQLEditor.vue";
+import { ExecuteConfig, ExecuteOption, WebTerminalQueryItemV1 } from "@/types";
 import {
   EditorAction,
   ConnectionPathBar,
   ConnectionHolder,
   ResultViewV1,
 } from "../EditorCommon";
-import { useHistory } from "./useHistory";
+import CompactSQLEditor from "./CompactSQLEditor.vue";
 import { useAttractFocus } from "./useAttractFocus";
+import { useHistory } from "./useHistory";
 
 const tabStore = useTabStore();
 const webTerminalStore = useWebTerminalV1Store();

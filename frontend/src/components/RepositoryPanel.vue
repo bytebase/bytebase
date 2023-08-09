@@ -264,9 +264,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
+import { cloneDeep } from "lodash-es";
 import isEmpty from "lodash-es/isEmpty";
-import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
+import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
@@ -274,14 +274,14 @@ import {
   useProjectV1Store,
   useRepositoryV1Store,
 } from "@/store";
-import { Project, SchemaChange } from "@/types/proto/v1/project_service";
-import { cloneDeep } from "lodash-es";
+import { getVCSUid } from "@/store/modules/v1/common";
 import {
   ProjectGitOpsInfo,
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
-import { getVCSUid } from "@/store/modules/v1/common";
+import { Project, SchemaChange } from "@/types/proto/v1/project_service";
+import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;

@@ -1,5 +1,7 @@
 import { computed, ref, watch } from "vue";
 import { useSheetV1Store } from "@/store";
+import { ESTABLISH_BASELINE_SQL } from "@/types";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   extractSheetUID,
   getSheetStatement,
@@ -7,8 +9,6 @@ import {
   sheetNameOfTaskV1,
 } from "@/utils";
 import { getLocalSheetByName, useIssueContext } from "../../logic";
-import { ESTABLISH_BASELINE_SQL } from "@/types";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
 
 export const useTaskSheet = () => {
   const sheetStore = useSheetV1Store();

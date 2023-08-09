@@ -11,7 +11,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import type { Project } from "@/types";
 import { projectName, projectSlug } from "@/utils";
 

@@ -1,7 +1,7 @@
-import { useCurrentTab } from "@/store";
-import { TabInfo } from "@/types";
 import { last } from "lodash-es";
 import { computed, ref, watch } from "vue";
+import { useCurrentTab } from "@/store";
+import { TabInfo } from "@/types";
 import { useConversationStore } from "../store";
 import { AIChatInfo, Conversation } from "../types";
 import { useAIContext } from "./context";

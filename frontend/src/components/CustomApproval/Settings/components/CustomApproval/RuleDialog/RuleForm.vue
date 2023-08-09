@@ -69,16 +69,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, ref } from "vue";
-import { NInput } from "naive-ui";
 import { cloneDeep } from "lodash-es";
-
+import { NInput } from "naive-ui";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { LocalApprovalRule, SYSTEM_BOT_USER_NAME } from "@/types";
+import { creatorOfRule } from "@/utils";
 import { RequiredStar } from "../../common";
 import { StepsTable } from "../common";
-import { validateApprovalTemplate } from "../logic";
 import { useCustomApprovalContext } from "../context";
-import { creatorOfRule } from "@/utils";
+import { validateApprovalTemplate } from "../logic";
 
 type LocalState = {
   rule: LocalApprovalRule;

@@ -1,8 +1,9 @@
-import { type _RouteLocationBase } from "vue-router";
-import { v4 as uuidv4 } from "uuid";
 import { groupBy, orderBy } from "lodash-es";
+import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
-
+import { type _RouteLocationBase } from "vue-router";
+import { rolloutServiceClient } from "@/grpcweb";
+import { TemplateType } from "@/plugins";
 import {
   useDatabaseV1Store,
   useDeploymentConfigV1Store,
@@ -16,6 +17,7 @@ import {
   TaskTypeListWithStatement,
   UNKNOWN_ID,
 } from "@/types";
+import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -25,10 +27,6 @@ import {
   Stage,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
-import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import { rolloutServiceClient } from "@/grpcweb";
-import { TemplateType } from "@/plugins";
-import { nextUID } from "../base";
 import {
   extractSheetUID,
   getPipelineFromDeploymentScheduleV1,
@@ -37,9 +35,10 @@ import {
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
+import { nextUID } from "../base";
+import { sheetNameForSpec } from "../plan";
 import { getLocalSheetByName } from "../sheet";
 import { trySetDefaultAssignee } from "./assignee";
-import { sheetNameForSpec } from "../plan";
 
 type CreateIssueParams = {
   databaseUIDList: string[];

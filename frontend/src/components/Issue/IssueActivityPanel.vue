@@ -135,14 +135,6 @@ import {
   onMounted,
 } from "vue";
 import { useRoute } from "vue-router";
-import UserAvatar from "../User/UserAvatar.vue";
-import type {
-  Issue,
-  ActivityIssueFieldUpdatePayload,
-  IssueSubscriber,
-  ActivityIssueCommentCreatePayload,
-} from "@/types";
-import { extractUserResourceName } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import {
   useIssueSubscriberStore,
@@ -152,10 +144,18 @@ import {
   useCurrentUserV1,
   useCurrentUser,
 } from "@/store";
-import { useExtraIssueLogic, useIssueLogic } from "./logic";
-import { ActivityItem, DistinctActivity, isSimilarActivity } from "./activity";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { getLogId } from "@/store/modules/v1/common";
+import type {
+  Issue,
+  ActivityIssueFieldUpdatePayload,
+  IssueSubscriber,
+  ActivityIssueCommentCreatePayload,
+} from "@/types";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { extractUserResourceName } from "@/utils";
+import UserAvatar from "../User/UserAvatar.vue";
+import { ActivityItem, DistinctActivity, isSimilarActivity } from "./activity";
+import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
 interface LocalState {
   editCommentMode: boolean;

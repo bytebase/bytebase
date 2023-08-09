@@ -16,9 +16,8 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-
-import { Instance } from "../types";
 import { engineFromJSON } from "@/types/proto/v1/common";
+import { Instance } from "../types";
 
 defineProps<{
   instance: Instance;

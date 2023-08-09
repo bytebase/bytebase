@@ -1,9 +1,9 @@
-import { computed, reactive, ref, watchEffect } from "vue";
 import { defineStore } from "pinia";
+import { computed, reactive, ref, watchEffect } from "vue";
 import { schemaDesignServiceClient } from "@/grpcweb";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
 export const useSchemaDesignStore = defineStore("schema_design", () => {
   const schemaDesignMapByName = reactive(new Map<string, SchemaDesign>());

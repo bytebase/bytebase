@@ -10,7 +10,6 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-
 import { useIssueContext } from "@/components/IssueV1";
 
 const router = useRouter();

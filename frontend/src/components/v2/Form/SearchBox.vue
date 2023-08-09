@@ -14,9 +14,9 @@
 </template>
 
 <script lang="ts" setup>
+import { NInput } from "naive-ui";
 import { computed, onMounted, ref, useAttrs } from "vue";
 import { useI18n } from "vue-i18n";
-import { NInput } from "naive-ui";
 
 const props = withDefaults(
   defineProps<{

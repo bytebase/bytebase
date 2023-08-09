@@ -124,14 +124,13 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { PropType, computed } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
-
-import { ComposedDatabase } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import { PropType, computed } from "vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { Project } from "@/types/proto/v1/project_service";
+import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { Project } from "@/types/proto/v1/project_service";
 import { instanceV1Name } from "@/utils";
 
 export type AlterType = "SINGLE_DB" | "MULTI_DB" | "TENANT";

@@ -19,13 +19,13 @@
 <script setup lang="ts">
 import { escape } from "lodash-es";
 import { computed, h } from "vue";
-import { DatabaseTreeOption } from "./common";
+import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
+import TableIcon from "~icons/heroicons-outline/table-cells";
+import SchemaIcon from "~icons/heroicons-outline/view-columns";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { getHighlightHTMLByRegExp } from "@/utils";
-import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
-import TableIcon from "~icons/heroicons-outline/table-cells";
+import { DatabaseTreeOption } from "./common";
 
 const props = defineProps<{
   option: DatabaseTreeOption;

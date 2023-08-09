@@ -23,11 +23,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import {
   TaskRun_Status,
   taskRun_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
-import { computed } from "vue";
 
 const props = defineProps<{
   status: TaskRun_Status;

@@ -88,7 +88,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import { VueClass } from "@/utils";
 import { BBGridColumn } from "../types";
 import { useResponsiveGridColumns } from "./useResponsiveGridColumns";

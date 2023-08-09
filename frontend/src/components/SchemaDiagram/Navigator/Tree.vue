@@ -17,15 +17,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, h } from "vue";
 import { NTree, type TreeOption } from "naive-ui";
-
-import { useSchemaDiagramContext } from "../common";
-import { TreeNode } from "./types";
-import { Label, Prefix, Suffix } from "./TreeNode";
+import { computed, h } from "vue";
 import { isDescendantOf } from "@/utils";
-import { isTypedNode } from "./utils";
+import { useSchemaDiagramContext } from "../common";
 import { DEFAULT_PADDINGS } from "../common/const";
+import { Label, Prefix, Suffix } from "./TreeNode";
+import { TreeNode } from "./types";
+import { isTypedNode } from "./utils";
 
 const props = withDefaults(
   defineProps<{

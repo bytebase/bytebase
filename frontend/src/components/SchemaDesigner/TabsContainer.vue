@@ -45,8 +45,8 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { computed, nextTick, ref, watch } from "vue";
 import {
   useSchemaDesignerContext,
   TabContext,

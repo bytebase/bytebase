@@ -1,5 +1,5 @@
-import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { inject, provide, type InjectionKey, type Ref } from "vue";
+import { Risk_Source } from "@/types/proto/v1/risk_service";
 
 export type ExprEditorContext = {
   allowAdmin: Ref<boolean>;

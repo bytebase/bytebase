@@ -30,12 +30,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useCustomApprovalContext } from "./context";
-import RulesPanel from "./RulesPanel";
-import FlowsPanel from "./FlowsPanel";
-import ExternalApprovalNodesPanel from "./ExternalApprovalNodesPanel";
-import Toolbar from "./Toolbar.vue";
 import { provideRiskFilter } from "../common/RiskFilter";
+import ExternalApprovalNodesPanel from "./ExternalApprovalNodesPanel";
+import FlowsPanel from "./FlowsPanel";
+import RulesPanel from "./RulesPanel";
+import Toolbar from "./Toolbar.vue";
+import { useCustomApprovalContext } from "./context";
 
 const { tab } = useCustomApprovalContext();
 provideRiskFilter();

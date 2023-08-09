@@ -15,10 +15,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
+import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import type { Environment } from "@/types";
 import { environmentName, environmentSlug } from "@/utils";
-import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 
 const props = withDefaults(
   defineProps<{

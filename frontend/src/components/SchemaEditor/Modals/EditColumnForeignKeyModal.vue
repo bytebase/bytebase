@@ -73,18 +73,18 @@
 
 <script lang="ts" setup>
 import { isUndefined } from "lodash-es";
-import { computed, onMounted, reactive, watch } from "vue";
 import { v1 as uuidv1 } from "uuid";
-import { UNKNOWN_ID } from "@/types";
+import { computed, onMounted, reactive, watch } from "vue";
+import { BBModal, BBSelect } from "@/bbkit";
 import { useSchemaEditorStore } from "@/store";
+import { UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   Column,
   ForeignKey,
   Schema,
   Table,
 } from "@/types/schemaEditor/atomType";
-import { BBModal, BBSelect } from "@/bbkit";
-import { Engine } from "@/types/proto/v1/common";
 
 interface LocalState {
   referencedSchemaId?: string;

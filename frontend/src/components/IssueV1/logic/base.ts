@@ -1,9 +1,10 @@
+import Emittery from "emittery";
+import { first } from "lodash-es";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { first } from "lodash-es";
-import Emittery from "emittery";
-
-import { IssueContext, IssueEvents, IssuePhase } from "./context";
+import { useUIStateStore } from "@/store";
+import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { Stage, Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   activeStageInRollout,
@@ -15,10 +16,8 @@ import {
   stageV1Slug,
   taskV1Slug,
 } from "@/utils";
-import { useUIStateStore } from "@/store";
-import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
+import { IssueContext, IssueEvents, IssuePhase } from "./context";
 import { extractReviewContext } from "./review";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { stageForTask } from "./utils";
 
 const state = {

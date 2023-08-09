@@ -30,10 +30,10 @@
 
 <script lang="ts" setup>
 import { ComposedIssue } from "@/types";
+import { LogEntity } from "@/types/proto/v1/logging_service";
 import ActionIcon from "./ActionIcon.vue";
 import ActivityAction from "./ActivityAction.vue";
 import { DistinctActivity } from "./common";
-import { LogEntity } from "@/types/proto/v1/logging_service";
 
 defineProps<{
   issue: ComposedIssue;

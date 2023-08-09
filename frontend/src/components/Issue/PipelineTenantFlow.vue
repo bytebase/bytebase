@@ -61,14 +61,14 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
+import { useVerticalScrollState } from "@/composables/useScrollState";
+import { useDatabaseV1Store } from "@/store";
 import type { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
 import { activeTask, taskSlug, instanceV1Name } from "@/utils";
-import TaskStatusIcon from "./TaskStatusIcon.vue";
-import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
-import { useDatabaseV1Store } from "@/store";
-import { useIssueLogic } from "./logic";
-import { useVerticalScrollState } from "@/composables/useScrollState";
 import { InstanceV1EngineIcon } from "../v2";
+import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
+import TaskStatusIcon from "./TaskStatusIcon.vue";
+import { useIssueLogic } from "./logic";
 
 const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
   useIssueLogic();

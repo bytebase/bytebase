@@ -1,10 +1,10 @@
 import dayjs from "dayjs";
-import { computed } from "vue";
 import { v1 as uuidv1 } from "uuid";
-import { t } from "../plugins/i18n";
+import { computed } from "vue";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import type { Connection, ConnectionAtom, CoreTabInfo, TabInfo } from "@/types";
 import { UNKNOWN_ID, TabMode } from "@/types";
-import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import { t } from "../plugins/i18n";
 
 export const defaultTabName = computed(() => t("sql-editor.untitled-sheet"));
 

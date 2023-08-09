@@ -16,10 +16,10 @@
 
 <script setup lang="ts">
 import { PropType, ref } from "vue";
-import CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 import { DrawerContent } from "@/components/v2";
-import CreateDatabasePrepButtonGroup from "./CreateDatabasePrepButtonGroup.vue";
 import { Backup } from "@/types/proto/v1/database_service";
+import CreateDatabasePrepButtonGroup from "./CreateDatabasePrepButtonGroup.vue";
+import CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 
 defineProps({
   projectId: {

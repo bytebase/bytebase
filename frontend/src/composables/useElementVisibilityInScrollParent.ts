@@ -1,7 +1,7 @@
-import { computed } from "vue";
 import type { MaybeElementRef } from "@vueuse/core";
 import { unrefElement, useElementVisibility } from "@vueuse/core";
 import getScrollParent from "scrollparent";
+import { computed } from "vue";
 
 export const useElementVisibilityInScrollParent = (
   element: MaybeElementRef
