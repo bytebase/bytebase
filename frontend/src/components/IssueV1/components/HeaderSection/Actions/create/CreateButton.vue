@@ -41,11 +41,14 @@ const { issue } = useIssueContext();
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
+  if (!issue.value.title.trim()) {
+    errorList.push("Missing issue title");
+  }
   if (issue.value.rolloutEntity.stages.some((stage) => !isValidStage(stage))) {
-    errorList.push("Missing SQL statement in some stages.");
+    errorList.push("Missing SQL statement in some stages");
   }
   if (!issue.value.assignee) {
-    errorList.push("Assignee is required.");
+    errorList.push("Assignee is required");
   }
   return errorList;
 });
