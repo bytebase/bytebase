@@ -261,7 +261,8 @@
     "warehouse": "Warehouse",
     "schedule": "Schedule",
     "state": "State",
-    "condition": "Condition"
+    "condition": "Condition",
+    "search-user": "Search user"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -358,7 +359,13 @@
     "execution-time": "Execution time",
     "run-checks": "Run checks",
     "run-checks-in-current-stage": "Run checks in current stage",
-    "action-failed-in-current-stage": "{action} failed tasks in current stage"
+    "database-create": {
+      "pending": "(pending create)",
+      "created": "(created)"
+    },
+    "action-failed-in-current-stage": "{action} failed tasks in current stage",
+    "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
+    "cancel-task": "Cancel task | Cancel tasks"
   },
   "banner": {
     "update-license": "Update license",
@@ -500,6 +507,7 @@
         "scopes-description": "A space-separated list of scopes to be carried when accessing the Auth URL",
         "token-url-description": "The API address for obtaining accessToken",
         "user-info-url-description": "The API address for obtaining user information by accessToken",
+        "security-protocol": "Security protocol",
         "connection-security": "Connection security",
         "connection-security-skip-tls-verify": "Skip TLS verify for self-signed certificates",
         "user-information-mapping": "User information mapping",
@@ -821,7 +829,17 @@
       "export-method": "Export method",
       "please-select-database-first": "Please select database first"
     },
-    "review-sent-back": "Review sent back"
+    "review-sent-back": "Review sent back",
+    "update-statement": {
+      "self": "Update {type}",
+      "apply-current-change-to": "Apply current change to",
+      "target": {
+        "selected-task": "Selected task",
+        "selected-stage": "Selected stage",
+        "all-tasks": "All tasks"
+      }
+    },
+    "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",

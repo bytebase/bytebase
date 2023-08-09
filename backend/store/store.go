@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	cache "github.com/go-pkgz/expirable-cache/v2"
+	"github.com/dgraph-io/ristretto"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
@@ -40,15 +40,23 @@ type Store struct {
 	databaseGroupIDCache           sync.Map // map[int]*DatabaseGroupMessage
 	schemaGroupCache               sync.Map // map[string]*SchemaGroupMessage
 	// sheetStatementCache caches the statement of a sheet.
-	sheetStatementCache cache.Cache[int, string]
-	vcsIDCache          sync.Map // map[int]*ExternalVersionControlMessage
+	sheetStatementCache *ristretto.Cache // map[sheetUID]sheetStatementString
+	vcsIDCache          sync.Map         // map[int]*ExternalVersionControlMessage
 }
 
 // New creates a new instance of Store.
 func New(db *DB) *Store {
+	sheetStatementCache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1000,
+		MaxCost:     1 << 30, // 1 GB
+		BufferItems: 64,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to create sheet statement cache: %v", err))
+	}
 	return &Store{
 		db:                  db,
-		sheetStatementCache: cache.NewCache[int, string](),
+		sheetStatementCache: sheetStatementCache,
 	}
 }
 

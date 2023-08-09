@@ -1,12 +1,5 @@
 <template>
-  <NTooltip
-    v-if="enabled"
-    :disabled="!tooltip"
-    :delay="0"
-    :show-arrow="false"
-    :animated="false"
-    placement="top-start"
-  >
+  <NTooltip v-if="enabled" :disabled="!tooltip" placement="top">
     <template #trigger>
       <heroicons-solid:shield-exclamation
         class="text-control inline-block"

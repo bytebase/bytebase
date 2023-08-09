@@ -1,18 +1,18 @@
 import { defineStore } from "pinia";
-import { computed, ref, unref, watchEffect } from "vue";
+import { computed, ref, unref, watch, watchEffect } from "vue";
 import { isEqual, isUndefined } from "lodash-es";
 
 import { sheetServiceClient } from "@/grpcweb";
+import { getUserEmailFromIdentifier } from "./common";
+import { extractSheetUID, getSheetStatement, isSheetReadableV1 } from "@/utils";
 import {
   Sheet,
   SheetOrganizer,
   Sheet_Source,
 } from "@/types/proto/v1/sheet_service";
-import { extractSheetUID, getSheetStatement, isSheetReadableV1 } from "@/utils";
 import { UNKNOWN_ID, MaybeRef } from "@/types";
 import { useCurrentUserV1 } from "../auth";
 import { useTabStore } from "../tab";
-import { getUserEmailFromIdentifier } from "./common";
 
 const REQUEST_CACHE_BY_UID = new Map<
   string /* uid */,
@@ -77,10 +77,15 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     return sheetsByName.value.get(name);
   };
   const fetchSheetByName = async (name: string) => {
+    const uid = extractSheetUID(name);
+    if (uid.startsWith("-") || !uid) {
+      return undefined;
+    }
     try {
       const sheet = await sheetServiceClient.getSheet({
         name,
       });
+
       setSheetList([sheet]);
       return sheet;
     } catch {
@@ -89,6 +94,9 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   };
   const getOrFetchSheetByName = async (name: string) => {
     const uid = extractSheetUID(name);
+    if (uid.startsWith("-") || !uid) {
+      return undefined;
+    }
     if (uid === String(UNKNOWN_ID)) {
       return undefined;
     }
@@ -120,6 +128,9 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     }
   };
   const fetchSheetByUID = async (uid: string, raw = false) => {
+    if (uid.startsWith("-") || !uid) {
+      return undefined;
+    }
     try {
       const name = `projects/-/sheets/${uid}`;
       const sheet = await sheetServiceClient.getSheet({
@@ -133,6 +144,9 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     }
   };
   const getOrFetchSheetByUID = async (uid: string) => {
+    if (uid.startsWith("-") || !uid) {
+      return undefined;
+    }
     if (uid === String(UNKNOWN_ID)) {
       return undefined;
     }
@@ -332,4 +346,24 @@ export const useSheetStatementByUID = (uid: MaybeRef<string>) => {
     if (!sheet) return "";
     return getSheetStatement(sheet);
   });
+};
+
+export const useSheetByName = (name: MaybeRef<string>) => {
+  const store = useSheetV1Store();
+  const ready = ref(false);
+  const sheet = computed(() => store.getSheetByName(unref(name)));
+  watch(
+    () => unref(name),
+    (name) => {
+      if (!name) return;
+      if (extractSheetUID(name) === String(UNKNOWN_ID)) return;
+
+      ready.value = false;
+      store.getOrFetchSheetByName(name).finally(() => {
+        ready.value = true;
+      });
+    },
+    { immediate: true }
+  );
+  return { ready, sheet };
 };

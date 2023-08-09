@@ -630,14 +630,15 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, 
 
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
-		Name:    fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
-		Uid:     fmt.Sprintf("%d", run.UID),
-		Type:    convertToPlanCheckRunType(run.Type),
-		Status:  convertToPlanCheckRunStatus(run.Status),
-		Target:  "",
-		Sheet:   "",
-		Results: convertToPlanCheckRunResults(run.Result.Results),
-		Error:   run.Result.Error,
+		Name:       fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
+		Uid:        fmt.Sprintf("%d", run.UID),
+		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
+		Type:       convertToPlanCheckRunType(run.Type),
+		Status:     convertToPlanCheckRunStatus(run.Status),
+		Target:     "",
+		Sheet:      "",
+		Results:    convertToPlanCheckRunResults(run.Result.Results),
+		Error:      run.Result.Error,
 	}
 	if run.Config.DatabaseId != 0 {
 		databaseUID := int(run.Config.DatabaseId)

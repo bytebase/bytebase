@@ -19,7 +19,7 @@ CREATE TABLE idp (
   resource_id TEXT NOT NULL,
   name TEXT NOT NULL,
   domain TEXT NOT NULL,
-  type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC')),
+  type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC', 'LDAP')),
   -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
   config JSONB NOT NULL DEFAULT '{}'
 );
