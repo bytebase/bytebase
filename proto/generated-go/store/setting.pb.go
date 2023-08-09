@@ -559,6 +559,53 @@ func (x *SchemaTemplateSetting) GetColumnTypes() []*SchemaTemplateSetting_Column
 	return nil
 }
 
+type DataClassificationSetting struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Configs []*DataClassificationSetting_DataClassificationConfig `protobuf:"bytes,1,rep,name=configs,proto3" json:"configs,omitempty"`
+}
+
+func (x *DataClassificationSetting) Reset() {
+	*x = DataClassificationSetting{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_setting_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DataClassificationSetting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataClassificationSetting) ProtoMessage() {}
+
+func (x *DataClassificationSetting) ProtoReflect() protoreflect.Message {
+	mi := &file_store_setting_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataClassificationSetting.ProtoReflect.Descriptor instead.
+func (*DataClassificationSetting) Descriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DataClassificationSetting) GetConfigs() []*DataClassificationSetting_DataClassificationConfig {
+	if x != nil {
+		return x.Configs
+	}
+	return nil
+}
+
 type WorkspaceApprovalSetting_Rule struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -572,7 +619,7 @@ type WorkspaceApprovalSetting_Rule struct {
 func (x *WorkspaceApprovalSetting_Rule) Reset() {
 	*x = WorkspaceApprovalSetting_Rule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[6]
+		mi := &file_store_setting_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -585,7 +632,7 @@ func (x *WorkspaceApprovalSetting_Rule) String() string {
 func (*WorkspaceApprovalSetting_Rule) ProtoMessage() {}
 
 func (x *WorkspaceApprovalSetting_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[6]
+	mi := &file_store_setting_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -639,7 +686,7 @@ type ExternalApprovalSetting_Node struct {
 func (x *ExternalApprovalSetting_Node) Reset() {
 	*x = ExternalApprovalSetting_Node{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[7]
+		mi := &file_store_setting_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -652,7 +699,7 @@ func (x *ExternalApprovalSetting_Node) String() string {
 func (*ExternalApprovalSetting_Node) ProtoMessage() {}
 
 func (x *ExternalApprovalSetting_Node) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[7]
+	mi := &file_store_setting_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -703,7 +750,7 @@ type SchemaTemplateSetting_FieldTemplate struct {
 func (x *SchemaTemplateSetting_FieldTemplate) Reset() {
 	*x = SchemaTemplateSetting_FieldTemplate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[8]
+		mi := &file_store_setting_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -716,7 +763,7 @@ func (x *SchemaTemplateSetting_FieldTemplate) String() string {
 func (*SchemaTemplateSetting_FieldTemplate) ProtoMessage() {}
 
 func (x *SchemaTemplateSetting_FieldTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[8]
+	mi := &file_store_setting_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -773,7 +820,7 @@ type SchemaTemplateSetting_ColumnType struct {
 func (x *SchemaTemplateSetting_ColumnType) Reset() {
 	*x = SchemaTemplateSetting_ColumnType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[9]
+		mi := &file_store_setting_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -786,7 +833,7 @@ func (x *SchemaTemplateSetting_ColumnType) String() string {
 func (*SchemaTemplateSetting_ColumnType) ProtoMessage() {}
 
 func (x *SchemaTemplateSetting_ColumnType) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[9]
+	mi := &file_store_setting_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -821,6 +868,217 @@ func (x *SchemaTemplateSetting_ColumnType) GetTypes() []string {
 		return x.Types
 	}
 	return nil
+}
+
+type DataClassificationSetting_DataClassificationConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// id is the uuid for classification. Each project can chose one classification config.
+	Id    string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// levels is user defined level list for classification.
+	// The order for the level decides its priority.
+	Levels []*DataClassificationSetting_DataClassificationConfig_Level `protobuf:"bytes,3,rep,name=levels,proto3" json:"levels,omitempty"`
+	// classification is the id - DataClassification map.
+	// The id should in [0-9]+-[0-9]+-[0-9]+ format.
+	Classification map[string]*DataClassificationSetting_DataClassificationConfig_DataClassification `protobuf:"bytes,4,rep,name=classification,proto3" json:"classification,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig) Reset() {
+	*x = DataClassificationSetting_DataClassificationConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_setting_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataClassificationSetting_DataClassificationConfig) ProtoMessage() {}
+
+func (x *DataClassificationSetting_DataClassificationConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_store_setting_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataClassificationSetting_DataClassificationConfig.ProtoReflect.Descriptor instead.
+func (*DataClassificationSetting_DataClassificationConfig) Descriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{6, 0}
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig) GetLevels() []*DataClassificationSetting_DataClassificationConfig_Level {
+	if x != nil {
+		return x.Levels
+	}
+	return nil
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig) GetClassification() map[string]*DataClassificationSetting_DataClassificationConfig_DataClassification {
+	if x != nil {
+		return x.Classification
+	}
+	return nil
+}
+
+type DataClassificationSetting_DataClassificationConfig_Level struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title       string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_Level) Reset() {
+	*x = DataClassificationSetting_DataClassificationConfig_Level{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_setting_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_Level) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataClassificationSetting_DataClassificationConfig_Level) ProtoMessage() {}
+
+func (x *DataClassificationSetting_DataClassificationConfig_Level) ProtoReflect() protoreflect.Message {
+	mi := &file_store_setting_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataClassificationSetting_DataClassificationConfig_Level.ProtoReflect.Descriptor instead.
+func (*DataClassificationSetting_DataClassificationConfig_Level) Descriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{6, 0, 0}
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_Level) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_Level) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_Level) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+type DataClassificationSetting_DataClassificationConfig_DataClassification struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.
+	Id          string  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title       string  `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description string  `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	LevelId     *string `protobuf:"bytes,4,opt,name=level_id,json=levelId,proto3,oneof" json:"level_id,omitempty"`
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) Reset() {
+	*x = DataClassificationSetting_DataClassificationConfig_DataClassification{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_setting_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataClassificationSetting_DataClassificationConfig_DataClassification) ProtoMessage() {}
+
+func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) ProtoReflect() protoreflect.Message {
+	mi := &file_store_setting_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataClassificationSetting_DataClassificationConfig_DataClassification.ProtoReflect.Descriptor instead.
+func (*DataClassificationSetting_DataClassificationConfig_DataClassification) Descriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{6, 0, 1}
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) GetLevelId() string {
+	if x != nil && x.LevelId != nil {
+		return *x.LevelId
+	}
+	return ""
 }
 
 var File_store_setting_proto protoreflect.FileDescriptor
@@ -960,9 +1218,59 @@ var file_store_setting_proto_rawDesc = []byte{
 	0x6e, 0x65, 0x52, 0x06, 0x65, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x65, 0x6e,
 	0x61, 0x62, 0x6c, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x65, 0x6e, 0x61,
 	0x62, 0x6c, 0x65, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x79, 0x70, 0x65, 0x73, 0x18, 0x03, 0x20,
-	0x03, 0x28, 0x09, 0x52, 0x05, 0x74, 0x79, 0x70, 0x65, 0x73, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65,
-	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x03, 0x28, 0x09, 0x52, 0x05, 0x74, 0x79, 0x70, 0x65, 0x73, 0x22, 0x96, 0x06, 0x0a, 0x19, 0x44,
+	0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x5c, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x42, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x43,
+	0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74,
+	0x74, 0x69, 0x6e, 0x67, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66,
+	0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x07, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x1a, 0x9a, 0x05, 0x0a, 0x18, 0x44, 0x61, 0x74, 0x61, 0x43,
+	0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x60, 0x0a, 0x06, 0x6c, 0x65, 0x76,
+	0x65, 0x6c, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x48, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x43,
+	0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74,
+	0x74, 0x69, 0x6e, 0x67, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66,
+	0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x4c, 0x65,
+	0x76, 0x65, 0x6c, 0x52, 0x06, 0x6c, 0x65, 0x76, 0x65, 0x6c, 0x73, 0x12, 0x7e, 0x0a, 0x0e, 0x63,
+	0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x56, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73,
+	0x74, 0x6f, 0x72, 0x65, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66,
+	0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x44,
+	0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69,
+	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0e, 0x63, 0x6c, 0x61,
+	0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x4f, 0x0a, 0x05, 0x4c,
+	0x65, 0x76, 0x65, 0x6c, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65,
+	0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x89, 0x01, 0x0a,
+	0x12, 0x44, 0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74,
+	0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73,
+	0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b,
+	0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1e, 0x0a, 0x08, 0x6c,
+	0x65, 0x76, 0x65, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52,
+	0x07, 0x6c, 0x65, 0x76, 0x65, 0x6c, 0x49, 0x64, 0x88, 0x01, 0x01, 0x42, 0x0b, 0x0a, 0x09, 0x5f,
+	0x6c, 0x65, 0x76, 0x65, 0x6c, 0x5f, 0x69, 0x64, 0x1a, 0x98, 0x01, 0x0a, 0x13, 0x43, 0x6c, 0x61,
+	0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x6e, 0x74, 0x72, 0x79,
+	0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b,
+	0x65, 0x79, 0x12, 0x6b, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x55, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f,
+	0x72, 0x65, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x44, 0x61, 0x74,
+	0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69,
+	0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a,
+	0x02, 0x38, 0x01, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64,
+	0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -978,46 +1286,55 @@ func file_store_setting_proto_rawDescGZIP() []byte {
 }
 
 var file_store_setting_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_store_setting_proto_goTypes = []interface{}{
-	(SMTPMailDeliverySetting_Encryption)(0),     // 0: bytebase.store.SMTPMailDeliverySetting.Encryption
-	(SMTPMailDeliverySetting_Authentication)(0), // 1: bytebase.store.SMTPMailDeliverySetting.Authentication
-	(*WorkspaceProfileSetting)(nil),             // 2: bytebase.store.WorkspaceProfileSetting
-	(*AgentPluginSetting)(nil),                  // 3: bytebase.store.AgentPluginSetting
-	(*WorkspaceApprovalSetting)(nil),            // 4: bytebase.store.WorkspaceApprovalSetting
-	(*ExternalApprovalSetting)(nil),             // 5: bytebase.store.ExternalApprovalSetting
-	(*SMTPMailDeliverySetting)(nil),             // 6: bytebase.store.SMTPMailDeliverySetting
-	(*SchemaTemplateSetting)(nil),               // 7: bytebase.store.SchemaTemplateSetting
-	(*WorkspaceApprovalSetting_Rule)(nil),       // 8: bytebase.store.WorkspaceApprovalSetting.Rule
-	(*ExternalApprovalSetting_Node)(nil),        // 9: bytebase.store.ExternalApprovalSetting.Node
-	(*SchemaTemplateSetting_FieldTemplate)(nil), // 10: bytebase.store.SchemaTemplateSetting.FieldTemplate
-	(*SchemaTemplateSetting_ColumnType)(nil),    // 11: bytebase.store.SchemaTemplateSetting.ColumnType
-	(*durationpb.Duration)(nil),                 // 12: google.protobuf.Duration
-	(*v1alpha1.ParsedExpr)(nil),                 // 13: google.api.expr.v1alpha1.ParsedExpr
-	(*ApprovalTemplate)(nil),                    // 14: bytebase.store.ApprovalTemplate
-	(*expr.Expr)(nil),                           // 15: google.type.Expr
-	(Engine)(0),                                 // 16: bytebase.store.Engine
-	(*ColumnMetadata)(nil),                      // 17: bytebase.store.ColumnMetadata
+	(SMTPMailDeliverySetting_Encryption)(0),                                       // 0: bytebase.store.SMTPMailDeliverySetting.Encryption
+	(SMTPMailDeliverySetting_Authentication)(0),                                   // 1: bytebase.store.SMTPMailDeliverySetting.Authentication
+	(*WorkspaceProfileSetting)(nil),                                               // 2: bytebase.store.WorkspaceProfileSetting
+	(*AgentPluginSetting)(nil),                                                    // 3: bytebase.store.AgentPluginSetting
+	(*WorkspaceApprovalSetting)(nil),                                              // 4: bytebase.store.WorkspaceApprovalSetting
+	(*ExternalApprovalSetting)(nil),                                               // 5: bytebase.store.ExternalApprovalSetting
+	(*SMTPMailDeliverySetting)(nil),                                               // 6: bytebase.store.SMTPMailDeliverySetting
+	(*SchemaTemplateSetting)(nil),                                                 // 7: bytebase.store.SchemaTemplateSetting
+	(*DataClassificationSetting)(nil),                                             // 8: bytebase.store.DataClassificationSetting
+	(*WorkspaceApprovalSetting_Rule)(nil),                                         // 9: bytebase.store.WorkspaceApprovalSetting.Rule
+	(*ExternalApprovalSetting_Node)(nil),                                          // 10: bytebase.store.ExternalApprovalSetting.Node
+	(*SchemaTemplateSetting_FieldTemplate)(nil),                                   // 11: bytebase.store.SchemaTemplateSetting.FieldTemplate
+	(*SchemaTemplateSetting_ColumnType)(nil),                                      // 12: bytebase.store.SchemaTemplateSetting.ColumnType
+	(*DataClassificationSetting_DataClassificationConfig)(nil),                    // 13: bytebase.store.DataClassificationSetting.DataClassificationConfig
+	(*DataClassificationSetting_DataClassificationConfig_Level)(nil),              // 14: bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
+	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 15: bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
+	nil,                         // 16: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	(*durationpb.Duration)(nil), // 17: google.protobuf.Duration
+	(*v1alpha1.ParsedExpr)(nil), // 18: google.api.expr.v1alpha1.ParsedExpr
+	(*ApprovalTemplate)(nil),    // 19: bytebase.store.ApprovalTemplate
+	(*expr.Expr)(nil),           // 20: google.type.Expr
+	(Engine)(0),                 // 21: bytebase.store.Engine
+	(*ColumnMetadata)(nil),      // 22: bytebase.store.ColumnMetadata
 }
 var file_store_setting_proto_depIdxs = []int32{
-	12, // 0: bytebase.store.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
-	8,  // 1: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
-	9,  // 2: bytebase.store.ExternalApprovalSetting.nodes:type_name -> bytebase.store.ExternalApprovalSetting.Node
+	17, // 0: bytebase.store.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
+	9,  // 1: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
+	10, // 2: bytebase.store.ExternalApprovalSetting.nodes:type_name -> bytebase.store.ExternalApprovalSetting.Node
 	0,  // 3: bytebase.store.SMTPMailDeliverySetting.encryption:type_name -> bytebase.store.SMTPMailDeliverySetting.Encryption
 	1,  // 4: bytebase.store.SMTPMailDeliverySetting.authentication:type_name -> bytebase.store.SMTPMailDeliverySetting.Authentication
-	10, // 5: bytebase.store.SchemaTemplateSetting.field_templates:type_name -> bytebase.store.SchemaTemplateSetting.FieldTemplate
-	11, // 6: bytebase.store.SchemaTemplateSetting.column_types:type_name -> bytebase.store.SchemaTemplateSetting.ColumnType
-	13, // 7: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
-	14, // 8: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	15, // 9: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	16, // 10: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
-	17, // 11: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
-	16, // 12: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	11, // 5: bytebase.store.SchemaTemplateSetting.field_templates:type_name -> bytebase.store.SchemaTemplateSetting.FieldTemplate
+	12, // 6: bytebase.store.SchemaTemplateSetting.column_types:type_name -> bytebase.store.SchemaTemplateSetting.ColumnType
+	13, // 7: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
+	18, // 8: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
+	19, // 9: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	20, // 10: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	21, // 11: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
+	22, // 12: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
+	21, // 13: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
+	14, // 14: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
+	16, // 15: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	15, // 16: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }
@@ -1102,7 +1419,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WorkspaceApprovalSetting_Rule); i {
+			switch v := v.(*DataClassificationSetting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1114,7 +1431,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ExternalApprovalSetting_Node); i {
+			switch v := v.(*WorkspaceApprovalSetting_Rule); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1126,7 +1443,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SchemaTemplateSetting_FieldTemplate); i {
+			switch v := v.(*ExternalApprovalSetting_Node); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1138,6 +1455,18 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SchemaTemplateSetting_FieldTemplate); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_setting_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SchemaTemplateSetting_ColumnType); i {
 			case 0:
 				return &v.state
@@ -1149,14 +1478,51 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
+		file_store_setting_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DataClassificationSetting_DataClassificationConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_setting_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DataClassificationSetting_DataClassificationConfig_Level); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_setting_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DataClassificationSetting_DataClassificationConfig_DataClassification); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
+	file_store_setting_proto_msgTypes[13].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_setting_proto_rawDesc,
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
