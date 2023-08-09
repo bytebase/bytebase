@@ -19,7 +19,9 @@
           >{{ creator.title }}</router-link
         >
       </template>
-      <template #time>{{ dayjs(issue.createTime).format("LLL") }}</template>
+      <template #time>
+        <HumanizeDate :date="issue.createTime" />
+      </template>
     </i18n-t>
   </div>
 </template>
@@ -30,6 +32,7 @@ import { computed } from "vue";
 import { useIssueContext } from "../../logic";
 import { extractUserResourceName, extractUserUID } from "@/utils";
 import { useUserStore } from "@/store";
+import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 
 const { isCreating, issue } = useIssueContext();
 
