@@ -34,15 +34,21 @@ import {
   getPipelineFromDeploymentScheduleV1,
   getSheetStatement,
   instanceV1HasAlterSchema,
+  setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
 import { getLocalSheetByName } from "../sheet";
 import { trySetDefaultAssignee } from "./assignee";
+import { sheetNameForSpec } from "../plan";
 
 type CreateIssueParams = {
   databaseUIDList: string[];
   project: ComposedProject;
   route: _RouteLocationBase;
+  initialSQL: {
+    sqlList?: string[];
+    sql?: string;
+  };
 };
 
 export const createIssueSkeleton = async (route: _RouteLocationBase) => {
@@ -68,6 +74,7 @@ export const createIssueSkeleton = async (route: _RouteLocationBase) => {
     databaseUIDList,
     project,
     route,
+    initialSQL: extractInitialSQLListFromQuery(route),
   };
 
   const plan = await buildPlan(params);
@@ -147,6 +154,7 @@ export const buildSteps = async (
   );
 
   const steps: Plan_Step[] = [];
+  let index = 0;
   for (let i = 0; i < stageList.length; i++) {
     const step = Plan_Step.fromJSON({});
     const { databases } = stageList[i];
@@ -154,6 +162,8 @@ export const buildSteps = async (
       const db = databases[j];
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
       step.specs.push(spec);
+      maybeSetInitialSQLForSpec(spec, index, params);
+      index++;
     }
     steps.push(step);
   }
@@ -185,6 +195,7 @@ export const buildStepsViaDeploymentConfig = async (
     deploymentConfig?.schedule
   ).filter((stage) => stage.length > 0);
   const steps: Plan_Step[] = [];
+  let index = 0;
   for (let i = 0; i < stages.length; i++) {
     const step = Plan_Step.fromJSON({});
     const databases = stages[i];
@@ -192,6 +203,9 @@ export const buildStepsViaDeploymentConfig = async (
       const db = databases[j];
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
       step.specs.push(spec);
+      maybeSetInitialSQLForSpec(spec, index, params);
+
+      index++;
     }
     steps.push(step);
   }
@@ -248,6 +262,7 @@ export const buildSpecForTarget = async (
       type: Plan_ChangeDatabaseConfig_Type.BASELINE,
     });
   }
+
   return spec;
 };
 
@@ -270,6 +285,56 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
   });
 
   return reactive(rollout);
+};
+
+const maybeSetInitialSQLForSpec = (
+  spec: Plan_Spec,
+  index: number,
+  params: CreateIssueParams
+) => {
+  const sheet = sheetNameForSpec(spec);
+  if (!sheet) return;
+  const uid = extractSheetUID(sheet);
+  if (!uid.startsWith("-")) {
+    // If the sheet is a remote sheet, ignore initial SQL in URL query
+    return;
+  }
+  // Priority: sqlList[index] -> sql -> nothing
+  const sql = params.initialSQL.sqlList?.[index] ?? params.initialSQL.sql ?? "";
+  if (sql) {
+    const sheetEntity = getLocalSheetByName(sheet);
+    setSheetStatement(sheetEntity, sql);
+  }
+};
+
+const extractInitialSQLListFromQuery = (
+  route: _RouteLocationBase
+): {
+  sqlList?: string[];
+  sql?: string;
+} => {
+  const sqlListJSON = route.query.sqlList as string;
+  if (sqlListJSON && sqlListJSON.startsWith("[") && sqlListJSON.endsWith("]")) {
+    try {
+      const sqlList = JSON.parse(sqlListJSON) as string[];
+      if (Array.isArray(sqlList)) {
+        if (sqlList.every((maybeSQL) => typeof maybeSQL === "string")) {
+          return {
+            sqlList,
+          };
+        }
+      }
+    } catch {
+      // Nothing
+    }
+  }
+  const sql = route.query.sql;
+  if (sql && typeof sql === "string") {
+    return {
+      sql,
+    };
+  }
+  return {};
 };
 
 export const prepareDatabaseList = async (
