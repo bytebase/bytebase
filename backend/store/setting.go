@@ -153,6 +153,26 @@ func (s *Store) GetSchemaTemplateSetting(ctx context.Context) (*storepb.SchemaTe
 	return payload, nil
 }
 
+// GetDataClassificationSetting gets the data classification setting.
+func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.DataClassificationSetting, error) {
+	settingName := api.SettingDataClassification
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return &storepb.DataClassificationSetting{}, nil
+	}
+
+	payload := new(storepb.DataClassificationSetting)
+	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return nil, err
+	}
+	return payload, nil
+}
+
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	s.settingCache = sync.Map{}

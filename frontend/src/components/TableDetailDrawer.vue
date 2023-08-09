@@ -105,13 +105,12 @@
                   </dd>
                 </div>
 
-                <!-- TODO: show table classification -->
-                <div v-if="table.classification" class="col-span-1">
+                <div v-if="tableClassification" class="col-span-1">
                   <dt class="text-sm text-control-light">
                     {{ $t("database.classification.self") }}
                   </dt>
                   <dd class="mt-1 text-lg sm:text-xl font-semibold">
-                    {{ table.classification }}
+                    {{ tableClassification.title }}
                   </dd>
                 </div>
 
@@ -180,6 +179,7 @@
               :table="table"
               :column-list="table.columns"
               :sensitive-data-list="sensitiveDataList"
+              :classification-config="classificationConfig"
             />
           </div>
 
@@ -209,6 +209,7 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useDBSchemaV1Store,
+  useSettingV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
@@ -233,6 +234,7 @@ const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
+const settingStore = useSettingV1Store();
 const table = ref<TableMetadata>();
 
 const database = computed(() => {
@@ -240,6 +242,19 @@ const database = computed(() => {
 });
 const instanceEngine = computed(() => {
   return database.value.instanceEntity.engine;
+});
+
+const classificationConfig = computed(() => {
+  return settingStore.getProjectClassification(
+    database.value.projectEntity.dataClassificationConfigId
+  );
+});
+
+const tableClassification = computed(() => {
+  if (!table.value?.classification) {
+    return;
+  }
+  return classificationConfig.value?.classification[table.value.classification];
 });
 
 const allowQuery = computed(() => {
