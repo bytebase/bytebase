@@ -2187,6 +2187,15 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 										},
 									},
 								},
+								{
+									Name: "MyTable2",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "e",
+											Sensitive: true,
+										},
+									},
+								},
 							},
 						},
 					},
@@ -2200,6 +2209,194 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 		schemaInfo *db.SensitiveSchemaInfo
 		fieldList  []db.SensitiveField
 	}{
+		{
+			// Test for recursive CTE.
+			statement: `WITH cte_01 AS (
+				SELECT a AS c1, b AS c2, c AS c3, 1 AS n FROM MyTable1
+				UNION ALL
+				SELECT c1 * c2, c2 + c1, c3 * c2, n + 1 FROM cte_01 WHERE n < 5
+			)
+			SELECT * FROM cte_01;
+			`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "c1",
+					Sensitive: true,
+				},
+				{
+					Name:      "c2",
+					Sensitive: true,
+				},
+				{
+					Name:      "c3",
+					Sensitive: true,
+				},
+				{
+					Name:      "n",
+					Sensitive: false,
+				},
+			},
+		},
+		// Test for multiple CTE.
+		{
+			statement: `
+WITH tt1(aa, bb) AS (
+	SELECT a, b FROM MyTable1
+),
+tt2(cc, dd) AS (
+	SELECT c, d FROM MyTable1
+),
+tt3(ee) AS (
+	SELECT e FROM MyTable2
+)
+SELECT * FROM tt1 JOIN tt2 ON tt1.aa = tt2.cc JOIN tt3 ON tt2.dd = tt3.ee;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "aa",
+					Sensitive: true,
+				},
+				{
+					Name:      "bb",
+					Sensitive: false,
+				},
+				{
+					Name:      "cc",
+					Sensitive: false,
+				},
+				{
+					Name:      "dd",
+					Sensitive: true,
+				},
+				{
+					Name:      "ee",
+					Sensitive: true,
+				},
+			},
+		},
+		// Test for CTE.
+		{
+			statement: `
+WITH tt1(aa, bb) AS (
+	SELECT a, b FROM MyTable1
+)
+SELECT tt1.aa, bb FROM tt1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "aa",
+					Sensitive: true,
+				},
+				{
+					Name:      "bb",
+					Sensitive: false,
+				},
+			},
+		},
+		// Test for subquery in from cluase with as alias.
+		{
+			statement:  `SELECT tt.a, b FROM (SELECT * FROM MyTable1) AS tt`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+			},
+		},
+		// Table source list.
+		{
+			statement:  `SELECT a, b, c, d, e FROM MyTable1, MyTable2;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+				{
+					Name:      "e",
+					Sensitive: true,
+				},
+			},
+		},
+		// Join
+		{
+			statement:  `SELECT a, b, c, d, e FROM MyTable1 JOIN MyTable2 ON MyTable1.a = MyTable2.e;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+				{
+					Name:      "e",
+					Sensitive: true,
+				},
+			},
+		},
+		// Union
+		{
+			statement:  `SELECT b FROM MyTable1 UNION SELECT e FROM MyTable2;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "b",
+					Sensitive: true,
+				},
+			},
+		},
+		// Subquery in Select list.
+		{
+			statement:  `SELECT (SELECT MAX(e) FROM MyTable2) FROM MyTable1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "MAX(e)",
+					Sensitive: true,
+				},
+			},
+		},
+		// Alias table source.
+		{
+			statement:  `SELECT T1.a FROM MyTable1 AS T1;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+			},
+		},
+		// Asterisk in SELECT list.
 		{
 			statement:  `SELECT * FROM MyTable1;`,
 			schemaInfo: defaultDatabaseSchema,
