@@ -113,8 +113,18 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 
+	switch request.Issue.Type {
+	case v1pb.Issue_TYPE_UNSPECIFIED:
+		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
+	case v1pb.Issue_GRANT_REQUEST:
+		return nil, status.Errorf(codes.Unimplemented, "issue type %q is not implemented yet", request.Issue.Type)
+	case v1pb.Issue_DATABASE_CHANGE:
+		// TODO(p0ny): refactor
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
+	}
+
 	if request.Issue.Plan == "" {
-		// TODO(p0ny): support plan-less issue
 		return nil, status.Errorf(codes.InvalidArgument, "plan is required")
 	}
 
@@ -669,6 +679,20 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				subscribers = append(subscribers, user)
 			}
 			patch.Subscribers = &subscribers
+
+		case "assignee":
+			assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", request.Issue.Assignee, err)
+			}
+			user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", assigneeEmail, err)
+			}
+			if user == nil {
+				return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
+			}
+			patch.Assignee = user
 		}
 	}
 
@@ -932,6 +956,8 @@ func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
 		return v1pb.Issue_DATABASE_CHANGE
 	case api.IssueGrantRequest:
 		return v1pb.Issue_GRANT_REQUEST
+	case api.IssueGeneral:
+		return v1pb.Issue_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
 	}

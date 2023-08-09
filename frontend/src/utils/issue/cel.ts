@@ -115,11 +115,6 @@ export const stringifyConditionExpression = (
   if (conditionExpression.rowLimit !== undefined) {
     expression.push(`request.row_limit == ${conditionExpression.rowLimit}`);
   }
-  if (conditionExpression.exportFormat !== undefined) {
-    expression.push(
-      `request.export_format == "${conditionExpression.exportFormat}"`
-    );
-  }
   return expression.join(" && ");
 };
 
@@ -249,8 +244,6 @@ export const convertFromCELString = async (
           } else if (left === "request.statement") {
             const statement = decodeURIComponent(escape(window.atob(right)));
             conditionExpression.statement = statement;
-          } else if (left === "request.export_format") {
-            conditionExpression.exportFormat = right;
           }
         } else if (typeof right === "number") {
           if (left === "request.row_limit") {
@@ -333,8 +326,6 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
           } else if (left === "request.statement") {
             const statement = decodeURIComponent(escape(window.atob(right)));
             conditionExpression.statement = statement;
-          } else if (left === "request.export_format") {
-            conditionExpression.exportFormat = right;
           }
         } else if (typeof right === "number") {
           if (left === "request.row_limit") {
