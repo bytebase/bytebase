@@ -1,9 +1,9 @@
 <template>
-  <div class="w-[60rem] space-y-2">
+  <div class="w-full space-y-2">
     <NTransfer
       v-if="!loading"
       v-model:value="selectedValueList"
-      style="height: calc(100vh - 380px)"
+      style="height: 512px"
       :options="sourceTransferOptions"
       :render-source-list="renderSourceList"
       :render-target-list="renderTargetList"
