@@ -27,6 +27,7 @@
             :placeholder="$t('task.earliest-allowed-time-unset')"
             :disabled="!allowEditEarliestAllowedTime || isUpdating"
             :loading="isUpdating"
+            :actions="['clear', 'confirm']"
             type="datetime"
             clearable
             @update:value="handleUpdateEarliestAllowedTime"
