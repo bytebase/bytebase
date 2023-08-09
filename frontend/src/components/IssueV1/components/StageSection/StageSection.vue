@@ -1,30 +1,30 @@
 <template>
   <div v-if="show" class="w-full px-4 py-2 flex flex-col gap-y-2">
-    <div class="stage" :class="stageClass(stage)">
+    <div class="stage" :class="stageClass">
       <TaskStatusIcon
         :create="isCreating"
-        :active="isActiveStage(stage)"
-        :status="activeTaskInStageV1(stage).status"
+        :active="isActiveStage"
+        :status="activeTaskInStage.status"
         :ignore-task-check-status="true"
       />
 
       <div class="text">
-        <span class="text-sm min-w-32 lg:min-w-fit with-underline">
-          {{ $t("common.stage") }} - {{ stage.title }}
-        </span>
-        <span class="text-xs flex flex-col gap-1 md:flex-row md:items-center">
+        <div class="text-sm min-w-32 lg:min-w-fit with-underline space-x-1">
+          <heroicons:arrow-small-right
+            v-if="isActiveStage"
+            class="w-5 h-5 inline-block mb-0.5"
+          />
+          <span>{{ $t("common.stage") }} - {{ stage.title }}</span>
+        </div>
+        <div class="text-xs flex flex-col gap-1 md:flex-row md:items-center">
           <div class="whitespace-pre-wrap break-all with-underline">
-            {{ taskTitleOfStage(stage) }}
+            {{ taskTitle }}
           </div>
           <StageSummary :stage="(stage as Stage)" />
-        </span>
+        </div>
       </div>
 
-      <NTooltip
-        v-if="isCreating && !isValidStage(stage)"
-        trigger="hover"
-        placement="top"
-      >
+      <NTooltip v-if="isCreating && !isValid" trigger="hover" placement="top">
         <template #trigger>
           <heroicons:exclamation-circle-solid
             class="w-6 h-6 ml-2 text-error hover:text-error-hover"
@@ -47,59 +47,69 @@ import { computed } from "vue";
 import { NTooltip } from "naive-ui";
 import { first } from "lodash-es";
 
+import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { EMPTY_STAGE_NAME, emptyTask } from "@/types";
+import { activeTaskInStageV1 } from "@/utils";
+import {
+  isTaskFinished,
+  isValidStage,
+  useIssueContext,
+} from "@/components/IssueV1/logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
 import StageInfo from "./StageInfo";
 import Actions from "./Actions";
-import { activeTaskInStageV1, activeTaskInRollout } from "@/utils";
-import { isValidStage, useIssueContext } from "../../logic";
-import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 
-const { isCreating, issue, selectedStage } = useIssueContext();
-
-const stage = selectedStage;
+const { isCreating, activeTask, selectedStage: stage } = useIssueContext();
 
 const show = computed(() => {
   return stage.value.name !== EMPTY_STAGE_NAME;
 });
 
-const isActiveStage = (stage: Stage): boolean => {
+const activeTaskInStage = computed(() => {
+  return activeTaskInStageV1(stage.value);
+});
+
+const isValid = computed(() => {
+  return isValidStage(stage.value);
+});
+
+const isActiveStage = computed(() => {
   if (isCreating.value) {
     // In create mode we don't have an ActiveStage
     return false;
   }
 
-  const activeTask = activeTaskInRollout(issue.value.rolloutEntity);
-  const taskFound = stage.tasks.find((t) => t.uid === activeTask.uid);
-  if (taskFound) {
+  const taskFound = stage.value.tasks.find(
+    (t) => t.uid === activeTask.value.uid
+  );
+  if (taskFound && !isTaskFinished(taskFound)) {
     // A stage is "Active" if the ActiveTaskOfPipeline is inside this stage
     return true;
   }
 
   return false;
-};
+});
 
-const stageClass = (stage: Stage): string[] => {
+const stageClass = computed(() => {
   const classList: string[] = [];
-
   if (isCreating.value) {
     classList.push("create");
-    if (!isValidStage(stage)) {
+    if (!isValid.value) {
       classList.push("invalid");
     }
   }
-  if (isActiveStage(stage)) classList.push("active");
-  const task = activeTaskInStageV1(stage);
+  if (isActiveStage.value) classList.push("active");
+  const task = activeTaskInStage.value;
   classList.push(`status_${task_StatusToJSON(task.status).toLowerCase()}`);
 
   return classList;
-};
+});
 
-const taskTitleOfStage = (stage: Stage) => {
-  const task = isCreating ? first(stage.tasks) : activeTaskInStageV1(stage);
+const taskTitle = computed(() => {
+  const task = isCreating ? first(stage.value.tasks) : activeTaskInStage.value;
   return (task ?? emptyTask()).title;
-};
+});
 </script>
 
 <style scoped lang="postcss">
