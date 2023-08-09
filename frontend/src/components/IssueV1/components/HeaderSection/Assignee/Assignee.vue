@@ -15,7 +15,8 @@
         </template>
       </NTooltip>
 
-      <AssigneeAttentionButton />
+      <!-- AssigneeAttentionButton will be now shown until the feature is re-defined -->
+      <AssigneeAttentionButton v-if="false" />
     </div>
 
     <NTooltip :disabled="allowChangeAssignee">
