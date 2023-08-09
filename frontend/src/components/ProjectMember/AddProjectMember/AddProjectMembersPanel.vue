@@ -8,7 +8,7 @@
     <NDrawerContent
       :title="$t('project.members.add-member')"
       :closable="true"
-      class="w-[30rem] max-w-[100vw] relative"
+      class="w-[50rem] max-w-[100vw] relative"
     >
       <div
         v-for="(binding, index) in state.bindings"
@@ -47,8 +47,8 @@
 import { NDrawer, NDrawerContent, NButton } from "naive-ui";
 import { ComposedProject } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { computed, onMounted } from "vue";
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";
 import { cloneDeep } from "lodash-es";
 import {
@@ -56,7 +56,6 @@ import {
   useProjectIamPolicy,
   useProjectIamPolicyStore,
 } from "@/store";
-import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -72,7 +71,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
-  bindings: [],
+  bindings: [Binding.fromPartial({})],
 });
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
@@ -83,13 +82,10 @@ const filteredBindings = computed(() => {
 
 const allowConfirm = computed(() => {
   for (const binding of filteredBindings.value) {
+    // TODO: check the cel condition expression is valid for querier and exporter.
     if (binding.members.length === 0 || binding.role === "") return false;
   }
   return true;
-});
-
-onMounted(() => {
-  state.bindings = [Binding.fromPartial({})];
 });
 
 const handleAddMore = () => {
