@@ -49,15 +49,16 @@ func (*Store) composeProject(project *ProjectMessage) (*api.Project, error) {
 
 // ProjectMessage is the message for project.
 type ProjectMessage struct {
-	ResourceID       string
-	Title            string
-	Key              string
-	Workflow         api.ProjectWorkflowType
-	Visibility       api.ProjectVisibility
-	TenantMode       api.ProjectTenantMode
-	DBNameTemplate   string
-	SchemaChangeType api.ProjectSchemaChangeType
-	Webhooks         []*ProjectWebhookMessage
+	ResourceID                 string
+	Title                      string
+	Key                        string
+	Workflow                   api.ProjectWorkflowType
+	Visibility                 api.ProjectVisibility
+	TenantMode                 api.ProjectTenantMode
+	DBNameTemplate             string
+	SchemaChangeType           api.ProjectSchemaChangeType
+	Webhooks                   []*ProjectWebhookMessage
+	DataClassificationConfigID string
 	// The following fields are output only and not used for create().
 	UID     int
 	Deleted bool
@@ -77,13 +78,14 @@ type UpdateProjectMessage struct {
 	UpdaterID  int
 	ResourceID string
 
-	Title            *string
-	Key              *string
-	TenantMode       *api.ProjectTenantMode
-	DBNameTemplate   *string
-	Workflow         *api.ProjectWorkflowType
-	SchemaChangeType *api.ProjectSchemaChangeType
-	Delete           *bool
+	Title                      *string
+	Key                        *string
+	TenantMode                 *api.ProjectTenantMode
+	DBNameTemplate             *string
+	Workflow                   *api.ProjectWorkflowType
+	SchemaChangeType           *api.ProjectSchemaChangeType
+	DataClassificationConfigID *string
+	Delete                     *bool
 }
 
 // GetProjectV2 gets project by resource ID.
@@ -290,6 +292,9 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 	if v := patch.SchemaChangeType; v != nil {
 		set, args = append(set, fmt.Sprintf("schema_change_type = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.DataClassificationConfigID; v != nil {
+		set, args = append(set, fmt.Sprintf("data_classification_config_id = $%d", len(args)+1)), append(args, *v)
+	}
 	args = append(args, patch.ResourceID)
 
 	project := &ProjectMessage{}
@@ -308,6 +313,7 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 			tenant_mode,
 			db_name_template,
 			schema_change_type,
+			data_classification_config_id,
 			row_status
 	`, len(args)),
 		args...,
@@ -321,6 +327,7 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 		&project.TenantMode,
 		&project.DBNameTemplate,
 		&project.SchemaChangeType,
+		&project.DataClassificationConfigID,
 		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -361,6 +368,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			tenant_mode,
 			db_name_template,
 			schema_change_type,
+			data_classification_config_id,
 			row_status
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
@@ -384,6 +392,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.TenantMode,
 			&projectMessage.DBNameTemplate,
 			&projectMessage.SchemaChangeType,
+			&projectMessage.DataClassificationConfigID,
 			&rowStatus,
 		); err != nil {
 			return nil, err

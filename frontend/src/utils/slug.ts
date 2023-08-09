@@ -20,10 +20,24 @@ import {
   getVCSUid,
 } from "@/store/modules/v1/common";
 
+export const indexOrUIDFromSlug = (slug: string): number => {
+  const parts = slug.split("-");
+  const indexOrUID = parseInt(parts[parts.length - 1], 10);
+  if (Number.isNaN(indexOrUID) || indexOrUID < 0) {
+    return -1;
+  }
+  return indexOrUID;
+};
+
 export function idFromSlug(slug: string): IdType {
   const parts = slug.split("-");
   return parseInt(parts[parts.length - 1]);
 }
+
+export const uidFromSlug = (slug: string): string => {
+  const parts = slug.split("-");
+  return parts[parts.length - 1];
+};
 
 export function sheetNameFromSlug(slug: string): string {
   const parts = slug.split("-");

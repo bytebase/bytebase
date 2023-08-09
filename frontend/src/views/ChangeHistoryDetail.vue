@@ -27,10 +27,10 @@
                 >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
               >
               <router-link
-                :to="`/issue/${extractIssueId(changeHistory.issue)}`"
+                :to="`/issue/${extractIssueUID(changeHistory.issue)}`"
                 class="normal-link"
               >
-                {{ extractIssueId(changeHistory.issue) }}
+                {{ extractIssueUID(changeHistory.issue) }}
               </router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.duration") }}</dt>
@@ -277,9 +277,9 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
 import {
   changeHistoryLink,
-  extractChangeHistoryUID,
-  extractIssueId,
+  extractIssueUID,
   extractUserResourceName,
+  uidFromSlug,
   getAffectedTablesOfChangeHistory,
 } from "@/utils";
 import {
@@ -323,7 +323,7 @@ const changeHistoryParent = computed(() => {
   return `instances/${props.instance}/databases/${props.database}`;
 });
 const changeHistoryUID = computed(() => {
-  return extractChangeHistoryUID(props.changeHistorySlug);
+  return uidFromSlug(props.changeHistorySlug);
 });
 const changeHistoryName = computed(() => {
   return `${changeHistoryParent.value}/changeHistories/${changeHistoryUID.value}`;

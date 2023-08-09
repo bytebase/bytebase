@@ -257,7 +257,8 @@
     "warehouse": "仓库",
     "schedule": "计划",
     "state": "状态",
-    "condition": "条件"
+    "condition": "条件",
+    "search-user": "搜索用户"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -354,7 +355,13 @@
     "execution-time": "执行时间",
     "run-checks": "运行检查",
     "run-checks-in-current-stage": "运行当前阶段的所有检查",
-    "action-failed-in-current-stage": "{action}当前阶段失败的任务"
+    "database-create": {
+      "pending": "（待创建）",
+      "created": "（已创建）"
+    },
+    "action-failed-in-current-stage": "{action}当前阶段失败的任务",
+    "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
+    "cancel-task": "取消任务"
   },
   "banner": {
     "update-license": "更新证书",
@@ -693,7 +700,7 @@
         "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
-        "resolve": "解决",
+        "resolve": "解决工单",
         "cancel": "取消工单",
         "reopen": "重开"
       },
@@ -818,7 +825,17 @@
       "export-method": "导出方式",
       "please-select-database-first": "请先选择数据库"
     },
-    "review-sent-back": "审核被退回"
+    "review-sent-back": "审核被退回",
+    "update-statement": {
+      "self": "更新{type}",
+      "apply-current-change-to": "应用当前修改到",
+      "target": {
+        "selected-task": "选中的任务",
+        "selected-stage": "选中的阶段",
+        "all-tasks": "所有任务"
+      }
+    },
+    "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",

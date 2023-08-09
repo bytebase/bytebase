@@ -29,7 +29,7 @@ import {
   idFromSlug,
   sheetNameFromSlug,
   isOwnerOfProjectV1,
-  extractChangeHistoryUID,
+  uidFromSlug,
 } from "@/utils";
 import Signin from "@/views/auth/Signin.vue";
 import Signup from "@/views/auth/Signup.vue";
@@ -901,7 +901,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route) => {
                 const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
-                const uid = extractChangeHistoryUID(
+                const uid = uidFromSlug(
                   route.params.changeHistorySlug as string
                 );
                 const name = `${parent}/changeHistories/${uid}`;
@@ -952,7 +952,8 @@ const routes: Array<RouteRecordRaw> = [
               overrideTitle: true,
             },
             components: {
-              content: () => import("../views/IssueDetail.vue"),
+              content: () =>
+                import("../views/IssueDetailCompatibilityLayer.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true },
@@ -1329,7 +1330,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.database.history.detail") {
     const parent = `instances/${to.params.instance}/databases/${to.params.database}`;
-    const uid = extractChangeHistoryUID(to.params.changeHistorySlug as string);
+    const uid = uidFromSlug(to.params.changeHistorySlug as string);
     Promise.all([
       useDatabaseV1Store().getOrFetchDatabaseByName(parent),
       useChangeHistoryStore().fetchChangeHistory({
