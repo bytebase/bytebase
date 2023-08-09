@@ -4,6 +4,7 @@
       v-if="!loading"
       v-model:value="selectedValueList"
       class="select-table-transfer"
+      style="height: 512px"
       :options="sourceTransferOptions"
       :render-source-list="renderSourceList"
       :render-target-list="renderTargetList"
