@@ -7,6 +7,7 @@
     :filter="filterByDatabaseName"
     :filterable="true"
     style="width: 12rem"
+    v-bind="$attrs"
     @update:value="$emit('update:database', $event)"
   />
 </template>

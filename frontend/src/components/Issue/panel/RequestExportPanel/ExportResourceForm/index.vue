@@ -44,7 +44,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch, watchEffect } from "vue";
+import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import {
   DatabaseResource,
@@ -55,6 +56,7 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 
 const props = defineProps<{
   projectId?: string;
@@ -107,14 +109,6 @@ const dialect = computed((): SQLDialect => {
   return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
 });
 
-// Prepare project entity.
-watchEffect(async () => {
-  if (!props.projectId) {
-    return;
-  }
-  await projectStore.getOrFetchProjectByUID(props.projectId);
-});
-
 watch(
   () => [state.exportMethod, state.statement, state.databaseResources],
   () => {
@@ -138,6 +132,9 @@ watch(
       }
       emit("update:database-resources", state.databaseResources);
     }
+  },
+  {
+    immediate: true,
   }
 );
 
