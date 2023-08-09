@@ -122,6 +122,9 @@ message ListIssuesRequest {
   // When paginating, all other parameters provided to `ListIssues` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // Filter is used to filter issues returned in the list.
+  string filter = 4;
 }
 
 message ListIssuesResponse {
