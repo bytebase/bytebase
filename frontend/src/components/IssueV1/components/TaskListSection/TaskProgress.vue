@@ -28,6 +28,6 @@ defineProps<{
 }>();
 
 const percent = computed(() => {
-  return 66; // todo
+  return 0; // TODO
 });
 </script>
