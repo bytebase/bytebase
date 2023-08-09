@@ -1,8 +1,8 @@
 import { Ref } from "vue";
 import { useRoute } from "vue-router";
+import { IssueTemplate } from "@/plugins";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { ComposedDatabase, unknownProject, UNKNOWN_ID } from "@/types";
-import { IssueTemplate } from "@/plugins";
 import { Project } from "@/types/proto/v1/project_service";
 
 // validateOnly: true doesn't support empty SQL

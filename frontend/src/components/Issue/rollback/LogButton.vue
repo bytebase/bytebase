@@ -11,8 +11,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useRollbackLogic } from "./common";
 import { BBSwitch } from "@/bbkit";
+import { useRollbackLogic } from "./common";
 
 const { allowRollback, toggleRollback } = useRollbackLogic();
 

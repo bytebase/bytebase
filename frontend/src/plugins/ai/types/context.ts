@@ -1,8 +1,8 @@
-import type { Ref } from "vue";
 import type Emittery from "emittery";
+import type { Ref } from "vue";
 import type { DatabaseMetadata } from "@/types/proto/store/database";
-import { Conversation } from "./conversation";
 import { Engine } from "@/types/proto/v1/common";
+import { Conversation } from "./conversation";
 
 export type AIContextEvents = Emittery<{
   "apply-statement": { statement: string; run: boolean };

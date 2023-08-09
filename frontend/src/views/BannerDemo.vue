@@ -51,9 +51,9 @@
 </template>
 
 <script lang="ts">
-import { useActuatorV1Store } from "@/store";
 import { storeToRefs } from "pinia";
 import { defineComponent, ref } from "vue";
+import { useActuatorV1Store } from "@/store";
 
 export default defineComponent({
   name: "BannerDemo",

@@ -1,6 +1,5 @@
 /// Define a simplified version (less nested) of CEL Expr.
 /// Convenient for local editing.
-
 import { NumberFactor, StringFactor, TimestampFactor } from "./factor";
 import {
   type LogicalOperator,

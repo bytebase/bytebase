@@ -1,5 +1,5 @@
-import { Parser, AST } from "node-sql-parser";
 import { isObject, isArray } from "lodash-es";
+import { Parser, AST } from "node-sql-parser";
 
 type ParseResult = {
   data: AST | AST[] | null;

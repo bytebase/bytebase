@@ -62,12 +62,10 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton } from "naive-ui";
-
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import RoleSelect from "./RoleSelect.vue";
 import {
   ApprovalFlow,
   ApprovalNode_GroupValue,
@@ -75,9 +73,10 @@ import {
   ApprovalStep,
   ApprovalStep_Type,
 } from "@/types/proto/v1/issue_service";
-import { useCustomApprovalContext } from "../context";
-import { SpinnerButton } from "../../common";
 import { approvalNodeText } from "@/utils";
+import { SpinnerButton } from "../../common";
+import { useCustomApprovalContext } from "../context";
+import RoleSelect from "./RoleSelect.vue";
 
 const props = defineProps<{
   flow: ApprovalFlow;

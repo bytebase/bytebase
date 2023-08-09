@@ -83,16 +83,16 @@
 </template>
 
 <script lang="ts" setup>
+import { useKBarHandler } from "@bytebase/vue-kbar";
 import { computed } from "vue";
+import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
+import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";
+import ProjectListSidePanel from "@/components/ProjectListSidePanel.vue";
 import {
   useCurrentUserIamPolicy,
   useProjectV1ListByCurrentUser,
 } from "@/store";
-import { useKBarHandler } from "@bytebase/vue-kbar";
-import BytebaseLogo from "@/components/BytebaseLogo.vue";
-import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
-import ProjectListSidePanel from "@/components/ProjectListSidePanel.vue";
-import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";
 
 const isMac = navigator.platform.match(/mac/i);
 

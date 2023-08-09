@@ -87,19 +87,18 @@
 
 <script lang="ts">
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { computed, reactive, watchEffect, defineComponent } from "vue";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
-
+import { computed, reactive, watchEffect, defineComponent } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "@/components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
-import { UNKNOWN_ID } from "@/types";
 import { useCurrentUser, useCurrentUserV1, useInboxV1Store } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { UNKNOWN_ID } from "@/types";
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   showMobileMenu: boolean;

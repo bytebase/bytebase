@@ -33,9 +33,8 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
 import { NInput } from "naive-ui";
-
+import { reactive } from "vue";
 import Tree from "./Tree.vue";
 
 type LocalState = {

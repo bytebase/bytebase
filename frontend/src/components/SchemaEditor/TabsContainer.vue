@@ -48,8 +48,8 @@
 
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
-import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { computed, nextTick, ref, watch } from "vue";
 import { useSchemaEditorStore } from "@/store";
 import { TabContext, SchemaEditorTabType } from "@/types";
 import { isTableChanged } from "./utils/table";

@@ -56,8 +56,8 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
-import { BBAttentionSide, BBAttentionStyle } from "./types";
 import { useI18n } from "vue-i18n";
+import { BBAttentionSide, BBAttentionStyle } from "./types";
 
 const props = withDefaults(
   defineProps<{

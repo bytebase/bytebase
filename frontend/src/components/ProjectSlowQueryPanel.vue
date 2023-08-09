@@ -10,7 +10,6 @@
 
 <script lang="ts" setup>
 import { shallowRef, watch } from "vue";
-
 import {
   SlowQueryPanel,
   SlowQueryFilterParams,

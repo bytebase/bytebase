@@ -1,20 +1,20 @@
+import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
+import { Principal, PrincipalType, RoleType } from "@/types";
 import {
   UpdateUserRequest,
   User,
   userRoleToJSON,
   UserType,
 } from "@/types/proto/v1/auth_service";
-import { isEqual, isUndefined } from "lodash-es";
+import { State } from "@/types/proto/v1/common";
+import { extractUserUID } from "@/utils";
 import {
   getUserId,
   userNamePrefix,
   getUserEmailFromIdentifier,
 } from "./v1/common";
-import { Principal, PrincipalType, RoleType } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { extractUserUID } from "@/utils";
 
 interface UserState {
   userMapByName: Map<string, User>;

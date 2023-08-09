@@ -33,9 +33,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from "vue-router";
-import { NInput, NInputGroup, NButton, NTooltip } from "naive-ui";
 import { useLocalStorage } from "@vueuse/core";
+import { NInput, NInputGroup, NButton, NTooltip } from "naive-ui";
+import { useRouter } from "vue-router";
 
 const router = useRouter();
 const dismissed = useLocalStorage<boolean>(

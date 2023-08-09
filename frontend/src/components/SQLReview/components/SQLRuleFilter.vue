@@ -28,15 +28,14 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import {
   convertToCategoryList,
   RuleLevel,
   RuleTemplate,
   SchemaRuleEngineType,
 } from "@/types";
-import type { CategoryFilterItem } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewCategorySummaryFilter from "./SQLReviewCategorySummaryFilter.vue";
+import type { CategoryFilterItem } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
 import { SQLRuleFilterParams } from "./useSQLRuleFilter";
 

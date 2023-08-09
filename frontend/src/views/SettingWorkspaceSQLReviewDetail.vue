@@ -139,12 +139,19 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep } from "lodash-es";
 import { computed, reactive, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { cloneDeep } from "lodash-es";
-
-import { idFromSlug, hasWorkspacePermissionV1 } from "@/utils";
+import { BBTextField } from "@/bbkit";
+import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
+import { EnvironmentV1Name } from "@/components/v2";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useSQLReviewStore,
+  useSubscriptionV1Store,
+} from "@/store";
 import {
   unknown,
   RuleLevel,
@@ -157,21 +164,13 @@ import {
   ruleIsAvailableInSubscription,
   convertRuleTemplateToPolicyRule,
 } from "@/types";
-import { BBTextField } from "@/bbkit";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useSQLReviewStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { idFromSlug, hasWorkspacePermissionV1 } from "@/utils";
 import {
   payloadValueListToComponentList,
   SQLRuleFilter,
   useSQLRuleFilter,
   SQLRuleTable,
 } from "../components/SQLReview/components";
-import { EnvironmentV1Name } from "@/components/v2";
-import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
 
 const props = defineProps({
   sqlReviewPolicySlug: {

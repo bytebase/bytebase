@@ -285,11 +285,11 @@
 <script lang="ts" setup>
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Plan, PLANS, FEATURE_SECTIONS } from "@/types";
 import { useSubscriptionV1Store } from "@/store";
-import { LocalPlan } from "./types";
-import FeatureItem from "./FeatureItem.vue";
+import { Plan, PLANS, FEATURE_SECTIONS } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import FeatureItem from "./FeatureItem.vue";
+import { LocalPlan } from "./types";
 
 interface LocalState {
   isMonthly: boolean;
@@ -328,7 +328,7 @@ const plans = computed((): LocalPlan[] => {
     pricing:
       plan.type === PlanType.ENTERPRISE
         ? t("subscription.contact-us")
-        : `$${plan.pricePerInstancePerMonth}`,
+        : `${plan.pricePerInstancePerMonth}`,
     pricePrefix: "",
     priceSuffix:
       plan.type === PlanType.TEAM

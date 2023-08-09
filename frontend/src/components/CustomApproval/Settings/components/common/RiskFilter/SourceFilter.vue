@@ -9,10 +9,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { BBTabFilter, type BBTabFilterItem } from "@/bbkit";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { SupportedSourceList } from "@/types";
+import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { minmax } from "@/utils";
 import { sourceText } from "../../common";
 import { useRiskFilter } from "./context";

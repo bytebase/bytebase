@@ -194,11 +194,10 @@
 import { reactive, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  activeEnvironment,
-  extractUserUID,
-  isDatabaseRelatedIssueType,
-} from "../utils";
-import { UNKNOWN_ID, Issue, planTypeToString } from "../types";
+  IssueTable,
+  PagedIssueTable,
+  WaitingForMyApprovalIssueTable,
+} from "@/components/Issue/table";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
   useEnvironmentV1Store,
@@ -207,11 +206,12 @@ import {
   featureToRef,
   useCurrentUserV1,
 } from "@/store";
+import { UNKNOWN_ID, Issue, planTypeToString } from "../types";
 import {
-  IssueTable,
-  PagedIssueTable,
-  WaitingForMyApprovalIssueTable,
-} from "@/components/Issue/table";
+  activeEnvironment,
+  extractUserUID,
+  isDatabaseRelatedIssueType,
+} from "../utils";
 
 interface LocalState {
   searchText: string;

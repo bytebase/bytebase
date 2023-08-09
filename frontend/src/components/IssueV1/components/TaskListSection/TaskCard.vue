@@ -56,20 +56,19 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { InstanceV1Name } from "@/components/v2";
 import { TaskTypeListWithProgress } from "@/types";
+import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import {
   Task,
   Task_Type,
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
+import { extractSchemaVersionFromTask } from "@/utils";
 import { databaseForTask, isTaskFinished, useIssueContext } from "../../logic";
-import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
-import { InstanceV1Name } from "@/components/v2";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 import TaskProgress from "./TaskProgress.vue";
-import { extractSchemaVersionFromTask } from "@/utils";
 
 type SecondaryViewMode = "INSTANCE" | "TASK_TITLE";
 

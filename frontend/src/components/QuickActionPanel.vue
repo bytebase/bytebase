@@ -329,9 +329,16 @@ import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-
-import { QuickActionType } from "@/types";
-import { idFromSlug, isDev } from "@/utils";
+import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
+import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import InstanceForm from "@/components/InstanceForm/";
+import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
+import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
+import DesignSchemaPrepForm from "@/components/SchemaDesigner/PrepForm/index.vue";
+import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
+import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
+import { Drawer } from "@/components/v2";
 import {
   useInstanceV1Store,
   useCommandStore,
@@ -339,16 +346,8 @@ import {
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
 } from "@/store";
-import { Drawer } from "@/components/v2";
-import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import InstanceForm from "@/components/InstanceForm/";
-import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
-import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
-import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
-import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
-import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
-import DesignSchemaPrepForm from "@/components/SchemaDesigner/PrepForm/index.vue";
+import { QuickActionType } from "@/types";
+import { idFromSlug, isDev } from "@/utils";
 
 interface LocalState {
   feature?: string;

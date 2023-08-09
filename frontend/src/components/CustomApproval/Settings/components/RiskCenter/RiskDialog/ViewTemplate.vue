@@ -9,7 +9,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { ExprEditor } from "../../common";
 import { type RuleTemplate } from "./template";

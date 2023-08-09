@@ -17,14 +17,13 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import { Issue as LegacyIssue } from "@/types";
-import { Issue } from "@/types/proto/v1/issue_service";
 import {
   extractIssueReviewContext,
   useWrappedReviewSteps,
 } from "@/plugins/issue/logic";
 import { useAuthStore } from "@/store";
+import { Issue as LegacyIssue } from "@/types";
+import { Issue } from "@/types/proto/v1/issue_service";
 
 const props = defineProps<{
   legacyIssue: LegacyIssue;

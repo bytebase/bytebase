@@ -20,10 +20,10 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useUserStore } from "@/store";
 import { SYSTEM_BOT_EMAIL } from "@/types";
 import { LogEntity } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName, extractUserUID } from "@/utils";
-import { useUserStore } from "@/store";
 
 const props = defineProps<{
   activity: LogEntity;

@@ -11,16 +11,15 @@
 </template>
 
 <script lang="ts" setup>
+import { orderBy } from "lodash-es";
 import { computed } from "vue";
-
 import {
   PlanCheckRun,
   PlanCheckRun_Type,
   Task,
 } from "@/types/proto/v1/rollout_service";
-import PlanCheckBadge from "./PlanCheckBadge.vue";
 import { groupBy } from "@/utils/collections";
-import { orderBy } from "lodash-es";
+import PlanCheckBadge from "./PlanCheckBadge.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

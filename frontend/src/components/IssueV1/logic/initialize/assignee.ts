@@ -1,3 +1,4 @@
+import { first } from "lodash-es";
 import { usePolicyV1Store, useUserStore } from "@/store";
 import { ComposedIssue, PresetRoleType } from "@/types";
 import { UserRole } from "@/types/proto/v1/auth_service";
@@ -11,7 +12,6 @@ import {
   hasWorkspacePermissionV1,
   memberListInProjectV1,
 } from "@/utils";
-import { first } from "lodash-es";
 import { extractRollOutPolicyValue } from "../assignee";
 import { databaseForTask } from "../utils";
 

@@ -106,13 +106,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
-import { Splitpanes, Pane } from "splitpanes";
-import { stringify } from "qs";
-import { NDrawer } from "naive-ui";
 import { useWindowSize } from "@vueuse/core";
-
-import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
+import { NDrawer } from "naive-ui";
+import { stringify } from "qs";
+import { Splitpanes, Pane } from "splitpanes";
+import { computed, reactive } from "vue";
+import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
+import { InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -120,20 +120,19 @@ import {
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
+import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
   allowUsingSchemaEditorV1,
   instanceV1HasReadonlyMode,
   isDatabaseV1Queryable,
 } from "@/utils";
-import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
-import { InstanceV1Name } from "@/components/v2";
-import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
+import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
-import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
-import TabList from "./TabList";
 import ResultPanel from "./ResultPanel";
 import { provideSheetContext } from "./Sheet";
+import TabList from "./TabList";
+import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
 
 type LocalState = {
   sidebarExpanded: boolean;

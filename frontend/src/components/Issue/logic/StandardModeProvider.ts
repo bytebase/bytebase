@@ -1,6 +1,6 @@
 import { defineComponent } from "vue";
-import { provideIssueLogic } from "./index";
 import { useCommonLogic } from "./common";
+import { provideIssueLogic } from "./index";
 
 export default defineComponent({
   name: "StandardModeProvider",

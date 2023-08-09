@@ -241,22 +241,22 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { storeToRefs } from "pinia";
-import DashboardHeader from "@/views/DashboardHeader.vue";
-import Breadcrumb from "../components/Breadcrumb.vue";
-import Quickstart from "../components/Quickstart.vue";
-import QuickActionPanel from "../components/QuickActionPanel.vue";
-import { QuickActionType } from "../types";
-import { isDBA, isDeveloper, isOwner } from "../utils";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import DashboardHeader from "@/views/DashboardHeader.vue";
+import Breadcrumb from "../components/Breadcrumb.vue";
+import QuickActionPanel from "../components/QuickActionPanel.vue";
+import Quickstart from "../components/Quickstart.vue";
+import { QuickActionType } from "../types";
+import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
   showMobileOverlay: boolean;

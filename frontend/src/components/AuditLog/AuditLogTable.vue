@@ -62,12 +62,12 @@
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { AuditActivityTypeI18nNameMap } from "@/types";
-import { UserByEmail } from "../v2";
 import {
   LogEntity,
   LogEntity_Level,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
+import { UserByEmail } from "../v2";
 
 defineProps({
   auditLogList: {

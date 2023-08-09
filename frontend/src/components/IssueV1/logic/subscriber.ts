@@ -1,9 +1,9 @@
-import { Issue } from "@/types/proto/v1/issue_service";
-import { issueServiceClient } from "@/grpcweb";
-import { pushNotification } from "@/store";
-import { t } from "@/plugins/i18n";
-import { User } from "@/types/proto/v1/auth_service";
 import { pull } from "lodash-es";
+import { issueServiceClient } from "@/grpcweb";
+import { t } from "@/plugins/i18n";
+import { pushNotification } from "@/store";
+import { User } from "@/types/proto/v1/auth_service";
+import { Issue } from "@/types/proto/v1/issue_service";
 
 export const updateIssueSubscribers = async (
   issue: Issue,

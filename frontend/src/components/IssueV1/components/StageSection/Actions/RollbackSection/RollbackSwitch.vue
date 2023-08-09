@@ -17,8 +17,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useRollbackContext } from "./common";
 import { NSwitch } from "naive-ui";
+import { useRollbackContext } from "./common";
 
 const { allowRollback, rollbackEnabled, toggleRollback } = useRollbackContext();
 </script>

@@ -12,7 +12,6 @@
 
 <script setup lang="ts">
 import { NRadio, NRadioGroup } from "naive-ui";
-
 import { UserRole } from "@/types/proto/v1/auth_service";
 import { roleNameV1 } from "@/utils";
 

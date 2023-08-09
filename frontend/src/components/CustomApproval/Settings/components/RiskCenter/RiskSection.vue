@@ -13,9 +13,9 @@
 </template>
 
 <script lang="ts" setup>
-import RiskTable from "./RiskTable.vue";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
 import { sourceText } from "../common";
+import RiskTable from "./RiskTable.vue";
 
 defineProps<{
   source: Risk_Source;

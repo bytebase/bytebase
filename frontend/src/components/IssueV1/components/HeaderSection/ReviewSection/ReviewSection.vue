@@ -57,16 +57,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
 import { NTooltip } from "naive-ui";
-
-import { isGrantRequestIssue } from "@/utils";
-import { useIssueV1Store } from "@/store";
+import { computed, ref } from "vue";
 import {
   databaseForTask,
   useIssueContext,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1";
+import { useIssueV1Store } from "@/store";
+import { isGrantRequestIssue } from "@/utils";
 import Timeline from "./Timeline.vue";
 
 const { issue, events, reviewContext, selectedTask } = useIssueContext();

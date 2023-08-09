@@ -17,7 +17,6 @@
 
 <script lang="ts" setup>
 import { ref, nextTick, defineEmits } from "vue";
-
 import { useTabStore } from "@/store";
 
 const emit = defineEmits<{

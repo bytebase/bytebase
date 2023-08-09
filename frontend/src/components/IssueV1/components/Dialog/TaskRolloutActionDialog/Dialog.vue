@@ -12,7 +12,6 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-
 import {
   TaskRolloutAction,
   stageForTask,
@@ -20,15 +19,15 @@ import {
   taskRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import CommonDialog from "../CommonDialog.vue";
-import Form from "./Form.vue";
+import { rolloutServiceClient } from "@/grpcweb";
+import { pushNotification } from "@/store";
 import {
   Task,
   TaskRun,
   TaskRun_Status,
 } from "@/types/proto/v1/rollout_service";
-import { rolloutServiceClient } from "@/grpcweb";
-import { pushNotification } from "@/store";
+import CommonDialog from "../CommonDialog.vue";
+import Form from "./Form.vue";
 
 type LocalState = {
   loading: boolean;

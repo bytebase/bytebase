@@ -14,13 +14,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { unknownTask } from "@/types";
 import {
   TaskRun,
   TaskRun_Status,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
-import { unknownTask } from "@/types";
 import {
   changeHistorySlug,
   extractChangeHistoryUID,

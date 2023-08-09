@@ -14,10 +14,9 @@
 
 <script lang="ts" setup>
 import { PropType, computed, ref, watch } from "vue";
-
+import { useInstanceV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
-import { useInstanceV1Store } from "@/store";
 
 const props = defineProps({
   role: {

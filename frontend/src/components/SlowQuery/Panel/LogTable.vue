@@ -116,15 +116,14 @@
 <script lang="ts" setup>
 import { computed, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import type { ComposedSlowQueryLog } from "@/types";
 import {
   DatabaseV1Name,
   InstanceV1Name,
   EnvironmentV1Name,
 } from "@/components/v2";
+import type { ComposedSlowQueryLog } from "@/types";
+import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { instanceV1HasSlowQueryDetail } from "@/utils";
 
 export type SlowQueryLogRow = BBGridRow<ComposedSlowQueryLog>;

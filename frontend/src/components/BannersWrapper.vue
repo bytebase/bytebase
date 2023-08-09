@@ -29,13 +29,13 @@ import {
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store/modules";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1, isDev } from "@/utils";
-import BannerDemo from "@/views/BannerDemo.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
+import BannerDemo from "@/views/BannerDemo.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const actuatorStore = useActuatorV1Store();
 const currentUserV1 = useCurrentUserV1();

@@ -33,22 +33,21 @@
 </template>
 
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { NTooltip } from "naive-ui";
-
-import { AppIMSetting_IMType } from "@/types/proto/v1/setting_service";
-import { Workflow } from "@/types/proto/v1/project_service";
-import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
+import { useIssueContext } from "@/components/IssueV1/logic";
 import { issueServiceClient } from "@/grpcweb";
-import { extractUserResourceName } from "@/utils";
 import {
   useSettingV1Store,
   useCurrentUserV1,
   useUserStore,
   pushNotification,
 } from "@/store";
-import { useIssueContext } from "@/components/IssueV1/logic";
+import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
+import { Workflow } from "@/types/proto/v1/project_service";
+import { AppIMSetting_IMType } from "@/types/proto/v1/setting_service";
+import { extractUserResourceName } from "@/utils";
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();

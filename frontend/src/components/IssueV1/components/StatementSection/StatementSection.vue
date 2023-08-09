@@ -7,9 +7,9 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useIssueContext } from "../../logic";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { TaskTypeListWithStatement } from "@/types";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { useIssueContext } from "../../logic";
 import EditorView from "./EditorView";
 import SDLView from "./SDLView";
 

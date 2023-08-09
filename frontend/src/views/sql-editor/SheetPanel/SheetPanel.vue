@@ -16,7 +16,6 @@
 
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
-
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { useSheetContext, openSheet } from "../Sheet";
 import SheetTable from "./SheetTable";

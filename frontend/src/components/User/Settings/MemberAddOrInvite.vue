@@ -96,20 +96,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
-import { NButton, NInput, NSwitch } from "naive-ui";
 import { cloneDeep } from "lodash-es";
-
-import { emptyUser } from "@/types";
-import { isValidEmail, hasWorkspacePermissionV1, randomString } from "@/utils";
+import { NButton, NInput, NSwitch } from "naive-ui";
+import { computed, reactive } from "vue";
+import { RoleSelect, RoleRadioSelect } from "@/components/v2";
 import {
   useUIStateStore,
   featureToRef,
   useUserStore,
   useCurrentUserV1,
 } from "@/store";
-import { RoleSelect, RoleRadioSelect } from "@/components/v2";
+import { emptyUser } from "@/types";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
+import { isValidEmail, hasWorkspacePermissionV1, randomString } from "@/utils";
 import { copyServiceKeyToClipboardIfNeeded } from "./common";
 
 interface LocalState {

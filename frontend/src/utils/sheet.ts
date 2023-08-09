@@ -1,6 +1,7 @@
 import { uniq } from "lodash-es";
-
+import { flattenTaskList } from "@/components/Issue/logic";
 import { useSheetV1Store } from "@/store";
+import { getSheetPathByLegacyProject } from "@/store/modules/v1/common";
 import {
   Issue,
   SheetId,
@@ -13,8 +14,6 @@ import {
   TaskDatabaseSchemaUpdateSDLPayload,
   UNKNOWN_ID,
 } from "@/types";
-import { flattenTaskList } from "@/components/Issue/logic";
-import { getSheetPathByLegacyProject } from "@/store/modules/v1/common";
 
 export const sheetIdOfTask = (task: Task) => {
   switch (task.type) {

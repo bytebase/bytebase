@@ -22,8 +22,8 @@
 
 <script lang="ts" setup>
 import { watchEffect } from "vue";
-import { useSQLReviewStore } from "@/store";
 import SQLReviewPolicyTable from "@/components/SQLReview/SQLReviewPolicyTable.vue";
+import { useSQLReviewStore } from "@/store";
 
 const store = useSQLReviewStore();
 

@@ -70,17 +70,16 @@ import { escape, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import TableIcon from "~icons/heroicons-outline/table-cells";
+import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
-
-import { Engine } from "@/types/proto/v1/common";
-import { useSchemaDesignerContext, SchemaDesignerTabType } from "./common";
 import { generateUniqueTabId } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
-import { isTableChanged } from "./utils/table";
 import SchemaNameModal from "./Modals/SchemaNameModal.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
+import { useSchemaDesignerContext, SchemaDesignerTabType } from "./common";
+import { isTableChanged } from "./utils/table";
 
 interface BaseTreeNode extends TreeOption {
   key: string;

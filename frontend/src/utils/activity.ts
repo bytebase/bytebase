@@ -1,12 +1,12 @@
-import { useUserStore } from "@/store";
-import { IssueBuiltinFieldId } from "../plugins";
 import { t } from "@/plugins/i18n";
+import { useUserStore } from "@/store";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { IssueBuiltinFieldId } from "../plugins";
 import {
   ActivityIssueFieldUpdatePayload,
   ActivityIssueStatusUpdatePayload,
   unknownUser,
 } from "../types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 export function issueActivityActionSentence(
   activity: LogEntity

@@ -5,9 +5,9 @@
 </template>
 
 <script lang="ts" setup>
-import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { toRef } from "vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
+import { Risk_Source } from "@/types/proto/v1/risk_service";
 import ConditionGroup from "./ConditionGroup.vue";
 import { provideExprEditorContext } from "./context";
 

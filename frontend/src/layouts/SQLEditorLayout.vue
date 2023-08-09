@@ -24,9 +24,9 @@
 </template>
 
 <script lang="ts" setup>
+import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
 import { pushNotification, useActuatorV1Store } from "@/store";
-import BannersWrapper from "@/components/BannersWrapper.vue";
 
 const actuatorStore = useActuatorV1Store();
 

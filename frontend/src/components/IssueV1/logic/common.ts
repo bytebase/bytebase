@@ -1,5 +1,4 @@
 import { RouteLocation } from "vue-router";
-
 import { RollbackDetail, UNKNOWN_ID } from "@/types";
 
 // Try to find out the relationship between databaseId and rollback issue/task

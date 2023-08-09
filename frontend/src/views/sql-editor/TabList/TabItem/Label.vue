@@ -22,9 +22,8 @@
 </template>
 <script lang="ts" setup>
 import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
-
-import type { TabInfo } from "@/types";
 import { useSheetV1Store, useTabStore } from "@/store";
+import type { TabInfo } from "@/types";
 
 type LocalState = {
   editing: boolean;

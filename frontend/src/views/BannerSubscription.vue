@@ -48,11 +48,11 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { useSubscriptionV1Store } from "@/store";
-import { storeToRefs } from "pinia";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();

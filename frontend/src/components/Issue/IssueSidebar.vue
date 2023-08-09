@@ -292,23 +292,23 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, ref, watch, watchEffect } from "vue";
-import { isEqual } from "lodash-es";
-import { NDatePicker, NTooltip } from "naive-ui";
-import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-
-import StageSelect from "./StageSelect.vue";
-import TaskSelect from "./TaskSelect.vue";
-import IssueStatusIcon from "./IssueStatusIcon.vue";
-import { IssueReviewSidebarSection } from "./review";
-import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
-import TaskRollbackView from "./rollback/TaskRollbackView.vue";
-import PrincipalAvatar from "../PrincipalAvatar.vue";
-import MemberSelect from "../MemberSelect.vue";
+import { isEqual } from "lodash-es";
+import { NDatePicker, NTooltip } from "naive-ui";
+import { computed, PropType, reactive, ref, watch, watchEffect } from "vue";
+import { useRouter } from "vue-router";
+import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import { ProjectV1Name } from "@/components/v2";
 import { InputField } from "@/plugins";
+import {
+  featureToRef,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useProjectV1Store,
+} from "@/store";
 import {
   ComposedDatabase,
   Issue,
@@ -320,6 +320,8 @@ import {
   UNKNOWN_ID,
   ComposedInstance,
 } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
+import { Environment } from "@/types/proto/v1/environment_service";
 import {
   allTaskList,
   hasWorkspacePermissionV1,
@@ -334,13 +336,12 @@ import {
   environmentV1Name,
   databaseV1Slug,
 } from "@/utils";
-import {
-  featureToRef,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import MemberSelect from "../MemberSelect.vue";
+import PrincipalAvatar from "../PrincipalAvatar.vue";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
+import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
+import StageSelect from "./StageSelect.vue";
+import TaskSelect from "./TaskSelect.vue";
 import {
   allowUserToBeAssignee,
   allowUserToChangeAssignee,
@@ -348,10 +349,8 @@ import {
   useExtraIssueLogic,
   useIssueLogic,
 } from "./logic";
-import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { ProjectV1Name } from "@/components/v2";
-import { User } from "@/types/proto/v1/auth_service";
+import { IssueReviewSidebarSection } from "./review";
+import TaskRollbackView from "./rollback/TaskRollbackView.vue";
 
 dayjs.extend(isSameOrAfter);
 

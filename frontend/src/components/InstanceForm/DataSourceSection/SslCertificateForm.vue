@@ -52,13 +52,12 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive, watch } from "vue";
-import { NTabs, NTabPane } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
-
-import { DataSource } from "@/types/proto/v1/instance_service";
+import { NTabs, NTabPane } from "naive-ui";
+import { PropType, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
+import { DataSource } from "@/types/proto/v1/instance_service";
 
 const SslTypes = ["NONE", "CA", "CA+KEY+CERT"] as const;
 

@@ -21,10 +21,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
-import { instanceV1Name, instanceV1Slug } from "@/utils";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { instanceV1Name, instanceV1Slug } from "@/utils";
+import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
 
 const props = withDefaults(
   defineProps<{

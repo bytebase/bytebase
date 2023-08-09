@@ -24,10 +24,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import { NButton, NTooltip } from "naive-ui";
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { pushNotification } from "@/store";
 
 const { t } = useI18n();

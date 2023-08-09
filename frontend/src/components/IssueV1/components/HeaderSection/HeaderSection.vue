@@ -37,18 +37,17 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import IssueStatusIcon from "../IssueStatusIcon.vue";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
-import Title from "./Title.vue";
-import Description from "./Description.vue";
-import VCSInfo from "./VCSInfo.vue";
+import IssueStatusIcon from "../IssueStatusIcon.vue";
 import Actions from "./Actions";
-import ReviewSection from "./ReviewSection";
 import Assignee from "./Assignee";
+import Description from "./Description.vue";
+import ReviewSection from "./ReviewSection";
 import RollbackFromTips from "./RollbackFromTips.vue";
+import Title from "./Title.vue";
+import VCSInfo from "./VCSInfo.vue";
 
 const { isCreating, issue } = useIssueContext();
 

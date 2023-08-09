@@ -300,32 +300,29 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
-import { Status } from "nice-grpc-common";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-
-import type { ResourceId, SQLReviewPolicy, ValidatedMessage } from "@/types";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
-import { environmentNamePrefix } from "@/store/modules/v1/common";
-import { getErrorCode } from "@/utils/grpcweb";
+import { Status } from "nice-grpc-common";
+import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBSwitch } from "@/bbkit";
 import { DrawerContent } from "@/components/v2";
-import {
-  extractEnvironmentResourceName,
-  hasWorkspacePermissionV1,
-  sqlReviewPolicySlug,
-} from "@/utils";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
   pushNotification,
   useCurrentUserV1,
   useEnvironmentV1List,
   useSQLReviewStore,
 } from "@/store";
-import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
-import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
+import type { ResourceId, SQLReviewPolicy, ValidatedMessage } from "@/types";
+import { State } from "@/types/proto/v1/common";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
 import {
   Policy,
   PolicyType,
@@ -333,10 +330,12 @@ import {
   ApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
 import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
-import { State } from "@/types/proto/v1/common";
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV1,
+  sqlReviewPolicySlug,
+} from "@/utils";
+import { getErrorCode } from "@/utils/grpcweb";
+import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 
 interface LocalState {
   environment: Environment;

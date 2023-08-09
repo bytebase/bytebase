@@ -14,13 +14,12 @@
 
 <script lang="ts" setup>
 import { shallowRef, watch } from "vue";
-
-import type { ComposedDatabase } from "@/types";
 import {
   type SlowQueryFilterParams,
   SlowQueryPanel,
   defaultSlowQueryFilterParams,
 } from "@/components/SlowQuery";
+import type { ComposedDatabase } from "@/types";
 
 const props = defineProps<{
   database: ComposedDatabase;

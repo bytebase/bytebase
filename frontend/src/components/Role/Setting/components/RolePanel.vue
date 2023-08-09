@@ -69,16 +69,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch, nextTick, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent, NInput } from "naive-ui";
-
-import { Role } from "@/types/proto/v1/role_service";
+import { computed, reactive, watch, nextTick, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
-import { extractRoleResourceName } from "@/utils";
 import { ValidatedMessage } from "@/types";
+import { Role } from "@/types/proto/v1/role_service";
+import { extractRoleResourceName } from "@/utils";
 import { useCustomRoleSettingContext } from "../context";
 
 type LocalState = {

@@ -50,8 +50,8 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { pushNotification, useDatabaseV1Store, useTabStore } from "@/store";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
+import { pushNotification, useDatabaseV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import AdminModeButton from "./AdminModeButton.vue";
 

@@ -70,11 +70,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { NButton, NInput } from "naive-ui";
 import { orderBy } from "lodash-es";
+import { NButton, NInput } from "naive-ui";
+import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
-
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useSheetAndTabStore, useTabStore } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   SheetViewMode,
@@ -82,8 +83,8 @@ import {
   useSheetContextByView,
   Dropdown,
 } from "@/views/sql-editor/Sheet";
-import { useSheetAndTabStore, useTabStore } from "@/store";
-import { storeToRefs } from "pinia";
+import SheetItem from "./SheetItem.vue";
+import TabItem from "./TabItem.vue";
 import {
   DropdownState,
   MergedItem,
@@ -91,8 +92,6 @@ import {
   isSheetItem,
   isTabItem,
 } from "./common";
-import TabItem from "./TabItem.vue";
-import SheetItem from "./SheetItem.vue";
 
 const props = defineProps<{
   view: SheetViewMode;

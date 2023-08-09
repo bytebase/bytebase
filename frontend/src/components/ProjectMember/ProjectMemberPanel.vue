@@ -91,25 +91,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
-import { NButton, NCheckbox, useDialog } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { cloneDeep, orderBy, uniq } from "lodash-es";
-
-import ProjectMemberTable, {
-  ComposedProjectMember,
-} from "./ProjectMemberTable";
-import {
-  ComposedProject,
-  DEFAULT_PROJECT_V1_NAME,
-  PresetRoleType,
-  unknownUser,
-} from "@/types";
-import {
-  extractUserUID,
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
-} from "@/utils";
+import { NButton, NCheckbox, useDialog } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   extractUserEmail,
   pushNotification,
@@ -118,8 +103,22 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
+import {
+  ComposedProject,
+  DEFAULT_PROJECT_V1_NAME,
+  PresetRoleType,
+  unknownUser,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
+import {
+  extractUserUID,
+  hasPermissionInProjectV1,
+  hasWorkspacePermissionV1,
+} from "@/utils";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
+import ProjectMemberTable, {
+  ComposedProjectMember,
+} from "./ProjectMemberTable";
 
 interface LocalState {
   searchText: string;

@@ -92,30 +92,30 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
+import { isEqual, orderBy } from "lodash-es";
 import { computed, onBeforeMount, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTooltipButton } from "@/bbkit";
-import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import {
-  getAffectedTablesOfChangeHistory,
-  instanceV1HasAlterSchema,
-} from "@/utils";
+import { ChangeHistoryTable } from "@/components/ChangeHistory";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
-import { TenantMode } from "@/types/proto/v1/project_service";
+import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { AffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
   ChangeHistory_Status,
   ChangeHistory_Type,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import { ChangeHistoryTable } from "@/components/ChangeHistory";
-import dayjs from "dayjs";
-import { AffectedTable } from "@/types/changeHistory";
-import { isEqual, orderBy } from "lodash-es";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import {
+  getAffectedTablesOfChangeHistory,
+  instanceV1HasAlterSchema,
+} from "@/utils";
 
 const EmptyAffectedTable: AffectedTable = {
   schema: "",
