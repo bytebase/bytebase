@@ -1,4 +1,4 @@
-import SQLEditorButton from "./SQLEditorButton.vue";
 import ExportCenterButton from "./ExportCenterButton.vue";
+import SQLEditorButton from "./SQLEditorButton.vue";
 
 export { SQLEditorButton, ExportCenterButton };

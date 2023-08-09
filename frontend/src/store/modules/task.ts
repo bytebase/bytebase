@@ -1,5 +1,5 @@
-import { defineStore } from "pinia";
 import axios from "axios";
+import { defineStore } from "pinia";
 import {
   empty,
   Instance,
@@ -22,10 +22,10 @@ import {
   TaskStatusPatch,
   unknown,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 import { useLegacyDatabaseStore } from "./database";
 import { useLegacyInstanceStore } from "./instance";
 import { useIssueStore } from "./issue";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convertTaskRun(
   taskRun: ResourceObject,

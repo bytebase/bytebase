@@ -41,15 +41,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import {
   LEVEL_LIST,
   RuleLevel,
   RuleTemplate,
   SchemaRuleEngineType,
 } from "@/types";
-import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
 import { engineFromJSON } from "@/types/proto/v1/common";
+import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
 
 type EngineTypeStats = {
   engine: SchemaRuleEngineType;

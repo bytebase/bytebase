@@ -18,9 +18,8 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { BBGrid, BBGridColumn } from "@/bbkit";
+import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 
 defineProps<{
   instanceRoleList: InstanceRole[];

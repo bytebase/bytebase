@@ -1,3 +1,4 @@
+import { groupBy, maxBy } from "lodash-es";
 import { ComposedIssue } from "@/types";
 import {
   PlanCheckRun,
@@ -7,7 +8,6 @@ import {
   Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
-import { groupBy, maxBy } from "lodash-es";
 import { databaseForTask } from ".";
 
 export const planCheckRunListForTask = (issue: ComposedIssue, task: Task) => {

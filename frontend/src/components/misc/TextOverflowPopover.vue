@@ -28,8 +28,8 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
 import { NPopover, PopoverPlacement } from "naive-ui";
+import { PropType } from "vue";
 import { VueClass } from "@/utils";
 
 defineProps({

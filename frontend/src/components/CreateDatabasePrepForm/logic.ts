@@ -1,8 +1,7 @@
 import { computed, unref, watch } from "vue";
-
 import { MaybeRef } from "@/types";
-import { parseDatabaseLabelValueByTemplate } from "@/utils";
 import { type Project, TenantMode } from "@/types/proto/v1/project_service";
+import { parseDatabaseLabelValueByTemplate } from "@/utils";
 
 export const useDBNameTemplateInputState = (
   project: MaybeRef<Project>,

@@ -11,20 +11,19 @@
 </template>
 
 <script lang="ts" setup>
+import { intersection } from "lodash-es";
+import { NSelect, SelectOption } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { NSelect, SelectOption } from "naive-ui";
-
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID, unknownProject } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import {
   Project,
   TenantMode,
   Workflow,
 } from "@/types/proto/v1/project_service";
-import { State } from "@/types/proto/v1/common";
 import { roleListInProjectV1 } from "@/utils";
-import { intersection } from "lodash-es";
 
 interface ProjectSelectOption extends SelectOption {
   value: string;

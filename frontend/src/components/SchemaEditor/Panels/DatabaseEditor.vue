@@ -207,6 +207,8 @@ import { NEllipsis, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import {
   generateUniqueTabId,
   useDatabaseV1Store,
@@ -219,6 +221,12 @@ import {
   SchemaEditorTabType,
   DatabaseEdit,
 } from "@/types";
+import {
+  ColumnMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
 import { Table } from "@/types/schemaEditor/atomType";
 import { bytesToString } from "@/utils";
 import {
@@ -226,16 +234,8 @@ import {
   diffSchema,
   mergeDiffResults,
 } from "@/utils/schemaEditor/diffSchema";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
-import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
-import {
-  ColumnMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/store/database";
-import { Engine } from "@/types/proto/v1/common";
 
 type SubtabType = "table-list" | "schema-diagram" | "raw-sql";
 

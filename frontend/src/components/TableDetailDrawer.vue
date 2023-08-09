@@ -199,27 +199,27 @@
 import { NDrawer, NDrawerContent } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import {
-  bytesToString,
-  hasWorkspacePermissionV1,
-  isDatabaseV1Queryable,
-  isGhostTable,
-} from "@/utils";
+import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useSettingV1Store,
 } from "@/store";
+import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import ColumnTable from "./ColumnTable.vue";
-import IndexTable from "./IndexTable.vue";
-import { SQLEditorButtonV1 } from "./DatabaseDetail";
-import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
 import { Engine } from "@/types/proto/v1/common";
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
+import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
+import {
+  bytesToString,
+  hasWorkspacePermissionV1,
+  isDatabaseV1Queryable,
+  isGhostTable,
+} from "@/utils";
+import ColumnTable from "./ColumnTable.vue";
+import { SQLEditorButtonV1 } from "./DatabaseDetail";
+import IndexTable from "./IndexTable.vue";
 
 const props = defineProps<{
   // Format: /databases/:databaseName

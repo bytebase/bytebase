@@ -66,10 +66,10 @@
 <script lang="ts" setup>
 import { NPopover } from "naive-ui";
 import { Issue, Stage, StageCreate } from "@/types";
-import TaskStatusIcon from "./TaskStatusIcon.vue";
-import StageSummary from "./StageSummary.vue";
-import { useIssueLogic } from "./logic";
 import { activeTaskInStage } from "@/utils";
+import StageSummary from "./StageSummary.vue";
+import TaskStatusIcon from "./TaskStatusIcon.vue";
+import { useIssueLogic } from "./logic";
 
 const {
   create,

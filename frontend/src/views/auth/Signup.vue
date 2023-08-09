@@ -218,6 +218,7 @@
 </template>
 
 <script lang="ts">
+import { storeToRefs } from "pinia";
 import {
   computed,
   defineComponent,
@@ -226,7 +227,6 @@ import {
   reactive,
 } from "vue";
 import { useRouter } from "vue-router";
-import { storeToRefs } from "pinia";
 import {
   useActuatorV1Store,
   useAuthStore,

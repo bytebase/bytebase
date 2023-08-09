@@ -29,10 +29,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
+import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 import { convertUserToPrincipal, useCurrentUserV1 } from "@/store";
 import { WrappedReviewStep } from "@/types";
-import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 
 const props = defineProps<{
   step: WrappedReviewStep;

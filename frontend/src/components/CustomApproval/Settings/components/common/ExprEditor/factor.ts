@@ -1,5 +1,5 @@
-import { HighLevelFactorList } from "@/plugins/cel";
 import { uniq, without } from "lodash-es";
+import { HighLevelFactorList } from "@/plugins/cel";
 
 export const NumberFactorList = [
   // Risk related factors

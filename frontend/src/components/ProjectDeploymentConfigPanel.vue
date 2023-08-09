@@ -134,6 +134,8 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, isEqual } from "lodash-es";
+import { NPopover, useDialog } from "naive-ui";
 import {
   computed,
   nextTick,
@@ -142,15 +144,7 @@ import {
   watch,
   watchEffect,
 } from "vue";
-import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { NPopover, useDialog } from "naive-ui";
-import { ComposedDatabase } from "../types";
-import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import {
-  extractEnvironmentResourceName,
-  validateDeploymentConfigV1,
-} from "../utils";
 import {
   pushNotification,
   useDeploymentConfigV1Store,
@@ -163,6 +157,12 @@ import {
   OperatorType,
   Project,
 } from "@/types/proto/v1/project_service";
+import { ComposedDatabase } from "../types";
+import {
+  extractEnvironmentResourceName,
+  validateDeploymentConfigV1,
+} from "../utils";
+import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
 
 type LocalState = {
   ready: boolean;

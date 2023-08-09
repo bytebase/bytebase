@@ -10,6 +10,8 @@
 </template>
 
 <script lang="ts" setup>
+import type { useLanguageClient } from "@sql-lsp/client";
+import type { editor as Editor } from "monaco-editor";
 import {
   onMounted,
   ref,
@@ -21,14 +23,12 @@ import {
   onBeforeUnmount,
   watchEffect,
 } from "vue";
-import type { editor as Editor } from "monaco-editor";
 import { ComposedDatabase, Database, Language, SQLDialect } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
-import type { useLanguageClient } from "@sql-lsp/client";
-import type { AdviceOption } from "./types";
 import { useAdvices } from "./plugins/useAdvices";
+import type { AdviceOption } from "./types";
+import { MonacoHelper, useMonaco } from "./useMonaco";
 
 const props = defineProps({
   value: {

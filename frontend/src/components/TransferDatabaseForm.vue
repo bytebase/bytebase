@@ -31,13 +31,22 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive } from "vue";
 import { cloneDeep } from "lodash-es";
+import { computed, onBeforeMount, reactive } from "vue";
+import { toRef } from "vue";
 import {
   TransferMultipleDatabaseForm,
   TransferSource,
   TransferSourceSelector,
 } from "@/components/TransferDatabaseForm";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useProjectV1ByUID,
+  useProjectV1Store,
+} from "@/store";
+import { Project } from "@/types/proto/v1/project_service";
 import {
   DEFAULT_PROJECT_ID,
   ComposedInstance,
@@ -52,15 +61,6 @@ import {
   sortDatabaseV1List,
   useWorkspacePermissionV1,
 } from "../utils";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1ByUID,
-  useProjectV1Store,
-} from "@/store";
-import { toRef } from "vue";
-import { Project } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   transferSource: TransferSource;

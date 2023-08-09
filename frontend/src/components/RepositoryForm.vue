@@ -363,19 +363,19 @@
 <script lang="ts" setup>
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import {
   hasFeature,
   useSubscriptionV1Store,
   useDatabaseV1Store,
 } from "@/store";
+import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 import {
   Project,
   TenantMode,
   SchemaChange,
   schemaChangeToJSON,
 } from "@/types/proto/v1/project_service";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";

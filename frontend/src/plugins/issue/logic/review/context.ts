@@ -1,6 +1,6 @@
+import { inject, provide, type InjectionKey, type Ref } from "vue";
 import { ReviewFlow } from "@/types";
 import { Issue, Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { inject, provide, type InjectionKey, type Ref } from "vue";
 
 export type IssueReviewContext = {
   issue: Ref<Issue>;

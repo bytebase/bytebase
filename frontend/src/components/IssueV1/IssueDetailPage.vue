@@ -45,14 +45,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-
-import {
-  IssueReviewAction,
-  IssueStatusAction,
-  TaskRolloutAction,
-  useIssueContext,
-  usePollIssue,
-} from "./logic";
+import { Task } from "@/types/proto/v1/rollout_service";
 import {
   BannerSection,
   HeaderSection,
@@ -67,7 +60,13 @@ import {
   IssueStatusActionDialog,
   TaskRolloutActionDialog,
 } from "./components";
-import { Task } from "@/types/proto/v1/rollout_service";
+import {
+  IssueReviewAction,
+  IssueStatusAction,
+  TaskRolloutAction,
+  useIssueContext,
+  usePollIssue,
+} from "./logic";
 
 const { isCreating, phase, issue, events } = useIssueContext();
 

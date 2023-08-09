@@ -157,12 +157,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, reactive, watch } from "vue";
-import { NButton, NTooltip, useDialog } from "naive-ui";
-import { useRoute } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
-
+import { NButton, NTooltip, useDialog } from "naive-ui";
+import { computed, h, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
+import { ErrorList } from "@/components/IssueV1/components/common";
+import {
+  databaseForTask,
+  getLocalSheetByName,
+  useIssueContext,
+  allowUserToEditStatementForTask,
+  stageForTask,
+  isTaskEditable,
+  specForTask,
+  createEmptyLocalSheet,
+  notifyNotEditableLegacyIssue,
+} from "@/components/IssueV1/logic";
+import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
+import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
+import { rolloutServiceClient } from "@/grpcweb";
+import {
+  hasFeature,
+  pushNotification,
+  useCurrentUserV1,
+  useSheetV1Store,
+} from "@/store";
 import {
   SQLDialect,
   TaskTypeListWithStatement,
@@ -178,31 +198,10 @@ import {
   sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import {
-  databaseForTask,
-  getLocalSheetByName,
-  useIssueContext,
-  allowUserToEditStatementForTask,
-  stageForTask,
-  isTaskEditable,
-  specForTask,
-  createEmptyLocalSheet,
-  notifyNotEditableLegacyIssue,
-} from "@/components/IssueV1/logic";
-import { ErrorList } from "@/components/IssueV1/components/common";
-import {
-  hasFeature,
-  pushNotification,
-  useCurrentUserV1,
-  useSheetV1Store,
-} from "@/store";
-import { rolloutServiceClient } from "@/grpcweb";
-import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
-import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
-import { EditState, useTempEditState } from "./useTempEditState";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
+import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
+import { EditState, useTempEditState } from "./useTempEditState";
 import { readFileAsync } from "./utils";
 
 type LocalState = EditState & {

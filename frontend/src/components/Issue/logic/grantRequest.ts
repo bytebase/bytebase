@@ -1,7 +1,7 @@
 import { computed, Ref } from "vue";
-import { Issue, IssueCreate, Task, TaskStatus } from "@/types";
 import { useRouter } from "vue-router";
 import { useIssueStore, useProjectV1Store } from "@/store";
+import { Issue, IssueCreate, Task, TaskStatus } from "@/types";
 import { issueSlug } from "@/utils";
 import { maybeCreateBackTraceComments } from "../rollback/common";
 

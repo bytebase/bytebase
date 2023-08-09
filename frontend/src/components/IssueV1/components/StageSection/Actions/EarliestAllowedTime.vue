@@ -44,24 +44,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { useNow } from "@vueuse/core";
-import { NDatePicker, NTooltip } from "naive-ui";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { cloneDeep } from "lodash-es";
+import { NDatePicker, NTooltip } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { rolloutServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1 } from "@/store";
-import { extractUserResourceName } from "@/utils";
 import {
   notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1";
+import { rolloutServiceClient } from "@/grpcweb";
+import { pushNotification, useCurrentUserV1 } from "@/store";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { extractUserResourceName } from "@/utils";
 
 dayjs.extend(isSameOrAfter);
 

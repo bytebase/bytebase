@@ -1,7 +1,6 @@
-import { reactive, ref } from "vue";
-import { defineStore } from "pinia";
 import { uniqueId } from "lodash-es";
-
+import { defineStore } from "pinia";
+import { reactive, ref } from "vue";
 import type { TabInfo, WebTerminalQueryItem } from "@/types";
 
 const createInitialQueryItemByTab = (tab: TabInfo): WebTerminalQueryItem => {

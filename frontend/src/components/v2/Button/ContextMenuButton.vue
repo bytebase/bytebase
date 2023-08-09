@@ -31,11 +31,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NButton, NButtonGroup, NPopselect, SelectOption } from "naive-ui";
-
+import { ref, computed } from "vue";
 import { ContextMenuButtonAction } from "./types";
 
 const STORE_PREFIX = "bb.context-menu-button";

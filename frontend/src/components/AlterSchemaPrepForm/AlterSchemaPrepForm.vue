@@ -307,23 +307,8 @@ import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
 import { NButton, NTabs, NTabPane, NRadio } from "naive-ui";
 import { computed, reactive, PropType, ref } from "vue";
+import { watchEffect } from "vue";
 import { useRouter } from "vue-router";
-
-import {
-  ComposedDatabase,
-  ComposedDatabaseGroup,
-  FeatureType,
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_V1_NAME,
-} from "@/types";
-import {
-  allowGhostMigrationV1,
-  allowUsingSchemaEditorV1,
-  instanceV1HasAlterSchema,
-  filterDatabaseV1ByKeyword,
-  sortDatabaseV1List,
-  projectV1Slug,
-} from "@/utils";
 import {
   hasFeature,
   useCurrentUserV1,
@@ -333,21 +318,35 @@ import {
   useProjectV1Store,
   useDBGroupStore,
 } from "@/store";
-import { DatabaseV1Table, DrawerContent } from "../v2";
-import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import {
+  ComposedDatabase,
+  ComposedDatabaseGroup,
+  FeatureType,
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_V1_NAME,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import {
+  allowGhostMigrationV1,
+  allowUsingSchemaEditorV1,
+  instanceV1HasAlterSchema,
+  filterDatabaseV1ByKeyword,
+  sortDatabaseV1List,
+  projectV1Slug,
+} from "@/utils";
+import SelectDatabaseGroupTable from "../DatabaseGroup/SelectDatabaseGroupTable.vue";
+import { DatabaseV1Table, DrawerContent } from "../v2";
+import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
+import GhostDialog from "./GhostDialog.vue";
 import ProjectStandardView, {
   ProjectStandardViewState,
 } from "./ProjectStandardView.vue";
 import ProjectTenantView, {
   ProjectTenantViewState,
 } from "./ProjectTenantView.vue";
-import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
-import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
-import { watchEffect } from "vue";
-import SelectDatabaseGroupTable from "../DatabaseGroup/SelectDatabaseGroupTable.vue";
-import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
+import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
 
 type LocalState = ProjectStandardViewState &
   ProjectTenantViewState & {

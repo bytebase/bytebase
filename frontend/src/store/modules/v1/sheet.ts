@@ -1,18 +1,17 @@
+import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
-import { isEqual, isUndefined } from "lodash-es";
-
 import { sheetServiceClient } from "@/grpcweb";
-import { getUserEmailFromIdentifier } from "./common";
-import { extractSheetUID, getSheetStatement, isSheetReadableV1 } from "@/utils";
+import { UNKNOWN_ID, MaybeRef } from "@/types";
 import {
   Sheet,
   SheetOrganizer,
   Sheet_Source,
 } from "@/types/proto/v1/sheet_service";
-import { UNKNOWN_ID, MaybeRef } from "@/types";
+import { extractSheetUID, getSheetStatement, isSheetReadableV1 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useTabStore } from "../tab";
+import { getUserEmailFromIdentifier } from "./common";
 
 const REQUEST_CACHE_BY_UID = new Map<
   string /* uid */,

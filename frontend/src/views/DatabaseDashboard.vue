@@ -65,30 +65,15 @@
 </template>
 
 <script lang="ts" setup>
+import { NInputGroup, NTooltip } from "naive-ui";
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { NInputGroup, NTooltip } from "naive-ui";
-
 import {
   EnvironmentTabFilter,
   InstanceSelect,
   DatabaseV1Table,
   SearchBox,
 } from "@/components/v2";
-import {
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
-  UNKNOWN_USER_NAME,
-  ComposedDatabase,
-  ComposedDatabaseGroup,
-  DEFAULT_PROJECT_V1_NAME,
-} from "../types";
-import {
-  filterDatabaseV1ByKeyword,
-  hasWorkspacePermissionV1,
-  sortDatabaseV1List,
-  isDatabaseV1Accessible,
-} from "@/utils";
 import {
   useCurrentUserV1,
   useDBGroupStore,
@@ -103,6 +88,20 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import {
+  filterDatabaseV1ByKeyword,
+  hasWorkspacePermissionV1,
+  sortDatabaseV1List,
+  isDatabaseV1Accessible,
+} from "@/utils";
+import {
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_ID,
+  UNKNOWN_USER_NAME,
+  ComposedDatabase,
+  ComposedDatabaseGroup,
+  DEFAULT_PROJECT_V1_NAME,
+} from "../types";
 
 interface LocalState {
   instanceFilter: string;

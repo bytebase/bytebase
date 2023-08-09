@@ -58,15 +58,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
 import { groupBy } from "lodash-es";
-import { Task } from "@/types/proto/v1/rollout_service";
+import { computed, ref } from "vue";
+import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
 import {
   TaskRolloutAction,
   taskRolloutActionButtonProps,
   taskRolloutActionDialogButtonName,
 } from "@/components/IssueV1/logic";
-import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
+import { Task } from "@/types/proto/v1/rollout_service";
 
 const props = defineProps<{
   action: TaskRolloutAction;

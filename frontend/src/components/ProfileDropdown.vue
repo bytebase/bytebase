@@ -119,10 +119,9 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { storeToRefs } from "pinia";
-import { hasWorkspacePermissionV1, roleNameV1 } from "@/utils";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
@@ -131,6 +130,7 @@ import {
   useCurrentUserV1,
   useUIStateStore,
 } from "@/store";
+import { hasWorkspacePermissionV1, roleNameV1 } from "@/utils";
 import UserAvatar from "./User/UserAvatar.vue";
 
 const actuatorStore = useActuatorV1Store();

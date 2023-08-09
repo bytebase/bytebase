@@ -194,14 +194,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from "vue";
-import { NButton, NInput, NDrawer, NDrawerContent } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
-
+import { NButton, NInput, NDrawer, NDrawerContent } from "naive-ui";
+import { computed, ref, watch, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import { Secret } from "@/types/proto/v1/database_service";
-import { type ComposedDatabase } from "@/types";
 import {
   pushNotification,
   useDatabaseSecretStore,
@@ -209,6 +206,8 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
+import { type ComposedDatabase } from "@/types";
+import { Secret } from "@/types/proto/v1/database_service";
 import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "@/utils";
 
 export type Detail = {

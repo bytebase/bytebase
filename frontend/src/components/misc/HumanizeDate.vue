@@ -9,10 +9,9 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
 import dayjs from "dayjs";
 import { NTooltip } from "naive-ui";
-
+import { PropType, computed } from "vue";
 import { humanizeDate } from "@/utils";
 
 const props = defineProps({

@@ -1,7 +1,6 @@
 import { type Ref } from "vue";
-
-import type { CenterTarget, CenterTargetType, Rect } from "../../types";
 import { DEFAULT_PADDINGS, useSchemaDiagramContext } from "../../common";
+import type { CenterTarget, CenterTargetType, Rect } from "../../types";
 import { fitView } from "../libs/fitView";
 
 export const useSetCenter = (canvas: Ref<Element | undefined>) => {

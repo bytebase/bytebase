@@ -47,16 +47,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, toRef, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
-
+import { ref, toRef, watch } from "vue";
+import { useAIContext } from "../../logic";
 import type { Conversation } from "../../types";
-import type { Mode } from "./types";
-import UserMessageView from "./UserMessageView.vue";
 import AIMessageView from "./AIMessageView.vue";
 import EmptyView from "./EmptyView.vue";
-import { useAIContext } from "../../logic";
+import UserMessageView from "./UserMessageView.vue";
 import { provideChatViewContext } from "./context";
+import type { Mode } from "./types";
 
 const props = withDefaults(
   defineProps<{

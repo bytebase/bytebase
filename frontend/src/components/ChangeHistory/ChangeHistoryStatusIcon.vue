@@ -25,7 +25,6 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-
 import { ChangeHistory_Status } from "@/types/proto/v1/database_service";
 
 const props = defineProps({

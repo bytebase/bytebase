@@ -61,15 +61,15 @@
 </template>
 
 <script lang="ts">
+import { cloneDeep } from "lodash-es";
 import { computed, defineComponent, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
+import { BBTabFilterItem } from "@/bbkit/types";
 import { Task, TaskCheckRun, TaskCheckStatus, TaskCheckType } from "@/types";
+import { humanizeTs } from "@/utils";
+import RunTaskCheckButton from "./RunTaskCheckButton.vue";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import TaskCheckRunPanel from "./TaskCheckRunPanel.vue";
-import RunTaskCheckButton from "./RunTaskCheckButton.vue";
-import { BBTabFilterItem } from "@/bbkit/types";
-import { humanizeTs } from "@/utils";
 
 interface LocalState {
   showModal: boolean;

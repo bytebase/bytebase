@@ -40,13 +40,13 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
+import { DeploymentType } from "@/types/proto/v1/deployment";
 import {
   Policy,
   ApprovalGroup,
   ApprovalStrategy,
   DeploymentApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
-import { DeploymentType } from "@/types/proto/v1/deployment";
 
 type LocalState = {
   assigneeGroup: ApprovalGroup;

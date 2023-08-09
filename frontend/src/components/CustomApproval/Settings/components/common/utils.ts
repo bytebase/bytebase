@@ -1,10 +1,10 @@
+import type { Factor } from "@/plugins/cel";
+import { t, te } from "@/plugins/i18n";
 import {
   Risk,
   Risk_Source,
   risk_SourceToJSON,
 } from "@/types/proto/v1/risk_service";
-import type { Factor } from "@/plugins/cel";
-import { t, te } from "@/plugins/i18n";
 
 export const sourceText = (source: Risk_Source) => {
   if (source === Risk_Source.SOURCE_UNSPECIFIED) {

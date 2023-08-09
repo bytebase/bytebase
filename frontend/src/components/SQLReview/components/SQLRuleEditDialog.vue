@@ -147,7 +147,7 @@
 import { cloneDeep } from "lodash-es";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
+import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
 import {
   getRuleLocalization,
   getRuleLocalizationKey,
@@ -155,9 +155,6 @@ import {
   RuleLevel,
   RuleTemplate,
 } from "@/types/sqlReview";
-import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
-import RuleEngineIcons from "./RuleEngineIcons.vue";
-import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import {
   StringComponent,
   NumberComponent,
@@ -166,6 +163,8 @@ import {
   TemplateComponent,
   PayloadValueType,
 } from "./RuleConfigComponents";
+import RuleEngineIcons from "./RuleEngineIcons.vue";
+import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
   payload: PayloadValueType[];

@@ -1,3 +1,4 @@
+import { isEqual, isUndefined } from "lodash-es";
 import { useSchemaEditorStore } from "@/store";
 import {
   AlterTableContext,
@@ -9,7 +10,6 @@ import {
   RenameTableContext,
 } from "@/types";
 import { Schema } from "@/types/schemaEditor/atomType";
-import { isEqual, isUndefined } from "lodash-es";
 import { diffColumnList } from "./diffColumn";
 import { transformTableToCreateTableContext } from "./transform";
 

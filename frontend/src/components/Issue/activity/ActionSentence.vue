@@ -3,10 +3,11 @@
 </template>
 
 <script lang="ts" setup>
-import { defineComponent, h, PropType, watch } from "vue";
 import dayjs from "dayjs";
+import { defineComponent, h, PropType, watch } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-
+import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
+import { useSheetV1Store, useSheetStatementByUID } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
   ActivityStageStatusUpdatePayload,
@@ -19,17 +20,15 @@ import {
   UNKNOWN_ID,
   empty,
 } from "@/types";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   findStageById,
   findTaskById,
   issueActivityActionSentence,
 } from "@/utils";
-import { useSheetV1Store, useSheetStatementByUID } from "@/store";
-import TaskName from "./TaskName.vue";
-import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
-import StageName from "./StageName.vue";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
+import StageName from "./StageName.vue";
+import TaskName from "./TaskName.vue";
 
 type RenderedContent = string | ReturnType<typeof h>;
 

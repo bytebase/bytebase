@@ -1,6 +1,12 @@
-import { computed, watch, type ComputedRef, unref } from "vue";
 import type Emittery from "emittery";
-
+import { computed, watch, type ComputedRef, unref } from "vue";
+import { useProgressivePoll } from "@/composables/useProgressivePoll";
+import {
+  candidatesOfApprovalStep,
+  useAuthStore,
+  useIssueV1Store,
+  useUserStore,
+} from "@/store";
 import type {
   Issue as LegacyIssue,
   MaybeRef,
@@ -12,15 +18,8 @@ import {
   Issue,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
-import {
-  candidatesOfApprovalStep,
-  useAuthStore,
-  useIssueV1Store,
-  useUserStore,
-} from "@/store";
-import { IssueReviewContext, provideIssueReviewContext } from "./context";
-import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { extractUserResourceName } from "@/utils";
+import { IssueReviewContext, provideIssueReviewContext } from "./context";
 
 export type ReviewEvents = {
   "issue-status-changed": boolean;

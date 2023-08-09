@@ -15,15 +15,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import {
   type DropdownOption,
   NDropdown,
   useDialog,
   DropdownProps,
 } from "naive-ui";
-
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useSheetV1Store, pushNotification, useTabStore } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   Sheet_Visibility,
@@ -31,7 +31,6 @@ import {
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
 import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
-import { useSheetV1Store, pushNotification, useTabStore } from "@/store";
 import { useSheetContext, type SheetViewMode } from "../";
 
 const props = defineProps<{

@@ -829,11 +829,23 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, head, isEqual } from "lodash-es";
-import { ClientError, Status } from "nice-grpc-common";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import { useI18n } from "vue-i18n";
+import { cloneDeep, head, isEqual } from "lodash-es";
+import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { ClientError, Status } from "nice-grpc-common";
 import { computed, reactive, defineProps, ref, onMounted, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { identityProviderClient } from "@/grpcweb";
+import { pushNotification, useActuatorV1Store } from "@/store";
+import { useIdentityProviderStore } from "@/store/modules/idp";
+import {
+  getIdentityProviderResourceId,
+  idpNamePrefix,
+} from "@/store/modules/v1/common";
+import { OAuthWindowEventPayload, ResourceId, ValidatedMessage } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import {
   FieldMapping,
   IdentityProvider,
@@ -844,25 +856,13 @@ import {
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
-import { useIdentityProviderStore } from "@/store/modules/idp";
-import { pushNotification, useActuatorV1Store } from "@/store";
 import {
   IdentityProviderTemplate,
   identityProviderTemplateList,
   identityProviderTypeToString,
   openWindowForSSO,
 } from "@/utils";
-import { OAuthWindowEventPayload, ResourceId, ValidatedMessage } from "@/types";
-import { identityProviderClient } from "@/grpcweb";
-import { State } from "@/types/proto/v1/common";
-import { useRouter } from "vue-router";
-import {
-  getIdentityProviderResourceId,
-  idpNamePrefix,
-} from "@/store/modules/v1/common";
-import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { getErrorCode } from "@/utils/grpcweb";
-import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 
 interface LocalState {
   type: IdentityProviderType;

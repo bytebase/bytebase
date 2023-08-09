@@ -25,17 +25,16 @@
 <script setup lang="ts">
 import { Ref, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { useIssueStore } from "@/store";
 import { Issue, Stage, Task } from "@/types";
-import StatusTransitionForm from "./StatusTransitionForm.vue";
+import { StageStatusTransition, TaskStatusTransition } from "@/utils";
 import {
   isApplicableTransition,
   useExtraIssueLogic,
   useIssueLogic,
   useIssueTransitionLogic,
 } from "../logic";
-import { useIssueStore } from "@/store";
-import { StageStatusTransition, TaskStatusTransition } from "@/utils";
+import StatusTransitionForm from "./StatusTransitionForm.vue";
 
 const props = defineProps<{
   mode: "TASK" | "STAGE";

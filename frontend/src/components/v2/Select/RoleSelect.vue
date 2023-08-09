@@ -8,9 +8,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { type SelectOption, NSelect } from "naive-ui";
-
+import { computed } from "vue";
 import { UserRole } from "@/types/proto/v1/auth_service";
 import { roleNameV1 } from "@/utils";
 

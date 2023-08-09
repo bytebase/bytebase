@@ -37,8 +37,8 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedDatabase } from "@/types";
 import DefinitionView from "@/components/DefinitionView.vue";
+import { ComposedDatabase } from "@/types";
 import {
   TaskMetadata,
   TaskMetadata_State,

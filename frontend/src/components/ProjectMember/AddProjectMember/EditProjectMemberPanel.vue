@@ -54,23 +54,23 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { NDrawer, NDrawerContent, NButton, NDatePicker } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedProject } from "@/types";
 import {
   pushNotification,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
 } from "@/store";
-import {
-  ComposedProjectMember,
-  SingleBinding,
-} from "../ProjectMemberTable/types";
+import { ComposedProject } from "@/types";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Binding } from "@/types/proto/v1/iam_policy";
+import { extractUserUID } from "@/utils";
 import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { extractUserUID } from "@/utils";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import {
+  ComposedProjectMember,
+  SingleBinding,
+} from "../ProjectMemberTable/types";
 
 const props = defineProps<{
   project: ComposedProject;

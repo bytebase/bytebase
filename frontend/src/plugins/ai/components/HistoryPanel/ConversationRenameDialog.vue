@@ -33,14 +33,13 @@
 </template>
 
 <script lang="ts" setup>
+import { head } from "lodash-es";
+import { NButton, NInput } from "naive-ui";
 import { onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton, NInput } from "naive-ui";
-import { head } from "lodash-es";
-
-import type { Conversation } from "../../types";
 import { BBModal } from "@/bbkit";
 import { useConversationStore } from "../../store";
+import type { Conversation } from "../../types";
 
 type LocalState = {
   name: string;

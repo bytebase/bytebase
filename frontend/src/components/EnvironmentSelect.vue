@@ -15,10 +15,10 @@
 
 <script lang="ts">
 import { computed, defineComponent, onMounted, reactive, watch } from "vue";
+import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1List } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { EnvironmentV1Name } from "@/components/v2";
 
 interface LocalState {
   selectedEnvironment?: Environment;

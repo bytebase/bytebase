@@ -31,10 +31,13 @@ import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
 import { reactive, watchEffect, onErrorCaptured, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-
-import { isDev } from "./utils";
-import { BBNotificationItem } from "./bbkit/types";
+import HelpDrawer from "@/components/HelpDrawer";
+import Watermark from "@/components/misc/Watermark.vue";
+import { RouteMapList } from "@/types";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
+import BBModalStack from "./bbkit/BBModalStack.vue";
+import { BBNotificationItem } from "./bbkit/types";
+import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import { t } from "./plugins/i18n";
 import {
   useAuthStore,
@@ -42,11 +45,7 @@ import {
   useUIStateStore,
   useHelpStore,
 } from "./store";
-import { RouteMapList } from "@/types";
-import KBarWrapper from "./components/KBar/KBarWrapper.vue";
-import BBModalStack from "./bbkit/BBModalStack.vue";
-import HelpDrawer from "@/components/HelpDrawer";
-import Watermark from "@/components/misc/Watermark.vue";
+import { isDev } from "./utils";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;

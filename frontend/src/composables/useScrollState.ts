@@ -1,6 +1,6 @@
-import { MaybeRef } from "@/types";
 import { useEventListener, useScroll } from "@vueuse/core";
 import { computed, ref, Ref, unref, watchEffect } from "vue";
+import { MaybeRef } from "@/types";
 
 export const useVerticalScrollState = (
   elemRef: Ref<HTMLElement | undefined>,

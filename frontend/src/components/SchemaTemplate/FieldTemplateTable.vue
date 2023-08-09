@@ -43,9 +43,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useSchemaEditorStore } from "@/store";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn } from "@/bbkit";
+import { useSchemaEditorStore } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import { getDefaultValue } from "./utils";

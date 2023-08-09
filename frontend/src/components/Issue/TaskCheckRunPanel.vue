@@ -91,6 +91,9 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import type { BBTableColumn } from "@/bbkit";
+import { SQLRuleEditDialog } from "@/components/SQLReview/components";
+import { useReviewPolicyByEnvironmentId } from "@/store";
 import {
   TaskCheckStatus,
   TaskCheckRun,
@@ -104,11 +107,8 @@ import {
   Task,
   findRuleTemplate,
 } from "@/types";
-import type { BBTableColumn } from "@/bbkit";
-import { LocalizedSQLRuleErrorCodes } from "./const";
-import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "../SQLReview/components/RuleConfigComponents";
-import { useReviewPolicyByEnvironmentId } from "@/store";
+import { LocalizedSQLRuleErrorCodes } from "./const";
 
 interface ErrorCodeLink {
   title: string;

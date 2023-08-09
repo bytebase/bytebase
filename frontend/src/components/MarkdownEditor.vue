@@ -105,16 +105,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js/lib/core";
-import MarkdownIt from "markdown-it";
-import { sizeToFit } from "@/utils";
 import codeStyle from "highlight.js/styles/github.css";
-import markdownStyle from "../assets/css/github-markdown-style.css";
+import MarkdownIt from "markdown-it";
+import { computed, nextTick, ref, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { Issue } from "@/types";
+import { sizeToFit } from "@/utils";
 import { activeTask, isDatabaseRelatedIssueType } from "@/utils";
+import markdownStyle from "../assets/css/github-markdown-style.css";
 
 const md = new MarkdownIt({
   html: true,

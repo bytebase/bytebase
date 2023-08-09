@@ -25,12 +25,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
-
-import { useIsLoggedIn, useActivityV1Store } from "@/store";
-import { FindActivityMessage } from "@/types";
 import { useSessionStorage } from "@vueuse/core";
 import { stringify } from "qs";
+import { computed, PropType, reactive, watch } from "vue";
+import { useIsLoggedIn, useActivityV1Store } from "@/store";
+import { FindActivityMessage } from "@/types";
 import { LogEntity } from "@/types/proto/v1/logging_service";
 
 type LocalState = {

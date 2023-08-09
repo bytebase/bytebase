@@ -104,18 +104,18 @@
 
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
+import { NPopover } from "naive-ui";
 import { computed, withDefaults } from "vue";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import type { ComposedDatabase, LabelKeyType } from "../../types";
 import {
   hidePrefix,
   getLabelValuesFromDatabaseV1List,
   getPipelineFromDeploymentScheduleV1,
 } from "../../utils";
-import { NPopover } from "naive-ui";
 import { DeploymentStage } from "../DeploymentConfigTool";
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
-import { DeploymentConfig } from "@/types/proto/v1/project_service";
-import { Environment } from "@/types/proto/v1/environment_service";
 
 const props = withDefaults(
   defineProps<{

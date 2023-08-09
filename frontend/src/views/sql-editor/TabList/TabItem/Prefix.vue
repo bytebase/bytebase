@@ -16,10 +16,9 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
-
+import { useSheetV1Store } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { useSheetV1Store } from "@/store";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 
 const props = defineProps({

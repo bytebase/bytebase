@@ -11,7 +11,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import {
   useIssueContext,
   taskRunListForTask,

@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { IssueStatusAction, useIssueContext } from "@/components/IssueV1/logic";
 import CommonDialog from "../CommonDialog.vue";
 import Form from "./Form.vue";

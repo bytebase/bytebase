@@ -25,16 +25,15 @@
 <script setup lang="ts">
 import { Ref, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { useIssueStore } from "@/store";
 import { Issue, IssueStatusTransition } from "@/types";
-import StatusTransitionForm from "./StatusTransitionForm.vue";
 import {
   isApplicableTransition,
   useExtraIssueLogic,
   useIssueLogic,
   useIssueTransitionLogic,
 } from "../logic";
-import { useIssueStore } from "@/store";
+import StatusTransitionForm from "./StatusTransitionForm.vue";
 
 const props = defineProps<{
   transition: IssueStatusTransition;

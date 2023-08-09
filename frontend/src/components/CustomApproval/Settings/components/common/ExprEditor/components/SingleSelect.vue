@@ -12,9 +12,8 @@
 </template>
 
 <script lang="ts" setup>
-import { toRef, watch } from "vue";
 import { NSelect } from "naive-ui";
-
+import { toRef, watch } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
 import { useSelectOptions } from "./common";

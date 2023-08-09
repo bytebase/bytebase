@@ -43,22 +43,21 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { NTooltip } from "naive-ui";
 import { first } from "lodash-es";
-
-import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
-import { EMPTY_STAGE_NAME, emptyTask } from "@/types";
-import { activeTaskInStageV1 } from "@/utils";
+import { NTooltip } from "naive-ui";
+import { computed } from "vue";
 import {
   isTaskFinished,
   isValidStage,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { EMPTY_STAGE_NAME, emptyTask } from "@/types";
+import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
+import { activeTaskInStageV1 } from "@/utils";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
-import StageSummary from "./StageSummary.vue";
-import StageInfo from "./StageInfo";
 import Actions from "./Actions";
+import StageInfo from "./StageInfo";
+import StageSummary from "./StageSummary.vue";
 
 const { isCreating, activeTask, selectedStage: stage } = useIssueContext();
 

@@ -19,9 +19,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { NTooltip, NButton } from "naive-ui";
-
+import { computed } from "vue";
+import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   IssueStatusAction,
   allowUserToApplyIssueStatusAction,
@@ -29,7 +29,6 @@ import {
   issueStatusActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { ErrorList } from "@/components/IssueV1/components/common";
 import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{

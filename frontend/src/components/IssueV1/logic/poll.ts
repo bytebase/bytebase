@@ -1,7 +1,7 @@
+import { computed, watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { experimentalFetchIssueByUID } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { computed, watch } from "vue";
 import { useIssueContext } from "./context";
 
 export const usePollIssue = () => {

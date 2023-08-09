@@ -1,11 +1,9 @@
-import { computed, ref, unref, watch, watchEffect } from "vue";
+import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { computed, ref, unref, watch, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import { ComposedDatabase, MaybeRef, PresetRoleType } from "@/types";
-import { useProjectV1Store } from "./project";
-import { useCurrentUserV1 } from "../auth";
+import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV1,
   isDeveloperOfProjectV1,
@@ -13,7 +11,8 @@ import {
   isOwnerOfProjectV1,
 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
-import { isUndefined } from "lodash-es";
+import { useCurrentUserV1 } from "../auth";
+import { useProjectV1Store } from "./project";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",

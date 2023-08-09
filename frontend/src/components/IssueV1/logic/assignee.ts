@@ -1,6 +1,11 @@
-import { computed, unref } from "vue";
 import { first } from "lodash-es";
-
+import { computed, unref } from "vue";
+import { useEnvironmentV1Store } from "@/store";
+import {
+  usePolicyByParentAndType,
+  defaultApprovalStrategy,
+  usePolicyV1Store,
+} from "@/store/modules/v1/policy";
 import {
   ComposedIssue,
   emptyStage,
@@ -9,6 +14,18 @@ import {
   SYSTEM_BOT_EMAIL,
   unknownEnvironment,
 } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
+import { DeploymentType } from "@/types/proto/v1/deployment";
+import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import {
+  Policy,
+  PolicyType,
+  ApprovalStrategy,
+  ApprovalGroup,
+} from "@/types/proto/v1/org_policy_service";
+import { Project } from "@/types/proto/v1/project_service";
+import { Task, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   isDatabaseRelatedIssue,
   isOwnerOfProjectV1,
@@ -16,24 +33,6 @@ import {
   extractUserResourceName,
   activeTaskInRollout,
 } from "@/utils";
-import {
-  Policy,
-  PolicyType,
-  ApprovalStrategy,
-  ApprovalGroup,
-} from "@/types/proto/v1/org_policy_service";
-import { DeploymentType } from "@/types/proto/v1/deployment";
-import {
-  usePolicyByParentAndType,
-  defaultApprovalStrategy,
-  usePolicyV1Store,
-} from "@/store/modules/v1/policy";
-import { Project } from "@/types/proto/v1/project_service";
-import { User } from "@/types/proto/v1/auth_service";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import { Task, Task_Type } from "@/types/proto/v1/rollout_service";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { useEnvironmentV1Store } from "@/store";
 import { useIssueContext } from "./context";
 import { stageForTask } from "./utils";
 
