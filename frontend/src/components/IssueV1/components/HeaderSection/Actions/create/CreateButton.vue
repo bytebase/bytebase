@@ -24,7 +24,7 @@ import { NTooltip, NButton } from "naive-ui";
 
 import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { useSheetV1Store } from "@/store";
+import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import {
   getLocalSheetByName,
   isValidStage,
@@ -32,12 +32,15 @@ import {
 } from "@/components/IssueV1/logic";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
-import { extractSheetUID } from "@/utils";
-import { ComposedIssue } from "@/types";
+import { extractSheetUID, getSheetStatement, setSheetStatement } from "@/utils";
+import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { useRouter } from "vue-router";
+import formatSQL from "@/components/MonacoEditor/sqlFormatter";
+
+const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const router = useRouter();
-const { issue } = useIssueContext();
+const { issue, formatOnSave } = useIssueContext();
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
@@ -107,6 +110,8 @@ const createSheets = async () => {
       const sheet = getLocalSheetByName(config.sheet);
       sheet.database = config.target;
       pendingCreateSheetMap.set(sheet.name, sheet);
+
+      maybeFormatSQL(sheet, sheet.database);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
@@ -136,5 +141,31 @@ const createPlan = async () => {
     plan,
   });
   return createdPlan;
+};
+
+const maybeFormatSQL = (sheet: Sheet, target: string) => {
+  if (!formatOnSave.value) {
+    return;
+  }
+  const db = useDatabaseV1Store().getDatabaseByName(target);
+  if (!db) {
+    return;
+  }
+  const language = languageOfEngineV1(db.instanceEntity.engine);
+  if (language !== "sql") {
+    return;
+  }
+  const dialect = dialectOfEngineV1(db.instanceEntity.engine);
+
+  const statement = getSheetStatement(sheet);
+  if (statement.length > MAX_FORMATTABLE_STATEMENT_SIZE) {
+    return;
+  }
+  const { error, data: formatted } = formatSQL(statement, dialect);
+  if (error) {
+    return;
+  }
+
+  setSheetStatement(sheet, formatted);
 };
 </script>

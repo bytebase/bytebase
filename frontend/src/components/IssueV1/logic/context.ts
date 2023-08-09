@@ -57,6 +57,7 @@ export type IssueContext = {
   // UI status
   selectedStage: Ref<Stage>;
   selectedTask: Ref<Task>;
+  formatOnSave: Ref<boolean>;
 
   // UI events
   events: IssueEvents;
