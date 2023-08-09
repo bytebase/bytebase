@@ -7,7 +7,7 @@
     :right-bordered="true"
     v-bind="$attrs"
   >
-    <template #body="{ rowData: column }">
+    <template #body="{ rowData: column }: { rowData: ColumnMetadata }">
       <BBTableCell
         v-if="showSensitiveColumn"
         :left-padding="4"
@@ -35,8 +35,11 @@
           />
         </div>
       </BBTableCell>
-      <BBTableCell class="w-16" :left-padding="showSensitiveColumn ? 2 : 4">
+      <BBTableCell class="w-14" :left-padding="showSensitiveColumn ? 2 : 4">
         {{ column.name }}
+      </BBTableCell>
+      <BBTableCell v-if="showClassificationColumn" class="w-10">
+        {{ column.classification }}
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ column.type }}
@@ -84,7 +87,7 @@ import { useI18n } from "vue-i18n";
 import { Column, ComposedDatabase } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV1, isDev } from "@/utils";
 import { BBTableColumn } from "@/bbkit/types";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import {
@@ -152,6 +155,13 @@ const showSensitiveColumn = computed(() => {
   );
 });
 
+const showClassificationColumn = computed(() => {
+  return (
+    (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
+    isDev()
+  );
+});
+
 const currentUserV1 = useCurrentUserV1();
 const allowAdmin = computed(() => {
   if (
@@ -200,6 +210,11 @@ const NORMAL_COLUMN_LIST = computed(() => {
       nowrap: true,
     });
   }
+  if (showClassificationColumn.value) {
+    columnList.splice(1, 0, {
+      title: t("database.classification.self"),
+    });
+  }
   return columnList;
 });
 const POSTGRES_COLUMN_LIST = computed(() => {
@@ -228,6 +243,11 @@ const POSTGRES_COLUMN_LIST = computed(() => {
       title: t("database.sensitive"),
       center: true,
       nowrap: true,
+    });
+  }
+  if (showClassificationColumn.value) {
+    columnList.splice(1, 0, {
+      title: t("database.classification.self"),
     });
   }
   return columnList;

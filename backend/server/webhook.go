@@ -1002,8 +1002,11 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", instance.Engine, err)
 		}
 
-		// TODO(rebelice): support SDL mode for webhook.
-		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisor.SyntaxModeNormal)
+		advisorMode := advisor.SyntaxModeNormal
+		if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
+			advisorMode = advisor.SyntaxModeSDL
+		}
+		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisorMode)
 		if err != nil {
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
 		}

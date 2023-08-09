@@ -582,19 +582,35 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		running, ok := s.stateCfg.RunningTaskRuns.Load(taskRunID)
-		if !ok || !running.(bool) {
-			return nil, status.Errorf(codes.InvalidArgument, "taskRun %s is not running", taskRun)
-		}
 		taskRunIDs = append(taskRunIDs, taskRunID)
 	}
 
-	for _, taskRunID := range taskRunIDs {
-		cancelFunc, ok := s.stateCfg.RunningTaskRunsCancelFunc.Load(taskRunID)
-		if !ok {
-			continue
+	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+		UIDs: &taskRunIDs,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+	}
+
+	for _, taskRun := range taskRuns {
+		switch taskRun.Status {
+		case api.TaskRunPending:
+		case api.TaskRunRunning:
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.Name)
 		}
-		cancelFunc.(context.CancelFunc)()
+	}
+
+	for _, taskRun := range taskRuns {
+		if taskRun.Status == api.TaskRunRunning {
+			if cancelFunc, ok := s.stateCfg.RunningTaskRunsCancelFunc.Load(taskRun.ID); ok {
+				cancelFunc.(context.CancelFunc)()
+			}
+		}
+	}
+
+	if err := s.store.BatchPatchTaskRunStatus(ctx, taskRunIDs, api.TaskRunCanceled, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
 	}
 
 	return &v1pb.BatchCancelTaskRunsResponse{}, nil
@@ -614,14 +630,15 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, 
 
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
-		Name:    fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
-		Uid:     fmt.Sprintf("%d", run.UID),
-		Type:    convertToPlanCheckRunType(run.Type),
-		Status:  convertToPlanCheckRunStatus(run.Status),
-		Target:  "",
-		Sheet:   "",
-		Results: convertToPlanCheckRunResults(run.Result.Results),
-		Error:   run.Result.Error,
+		Name:       fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
+		Uid:        fmt.Sprintf("%d", run.UID),
+		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
+		Type:       convertToPlanCheckRunType(run.Type),
+		Status:     convertToPlanCheckRunStatus(run.Status),
+		Target:     "",
+		Sheet:      "",
+		Results:    convertToPlanCheckRunResults(run.Result.Results),
+		Error:      run.Result.Error,
 	}
 	if run.Config.DatabaseId != 0 {
 		databaseUID := int(run.Config.DatabaseId)

@@ -117,19 +117,29 @@ func (p *IdentityProvider) dial() (*ldap.Conn, error) {
 	return conn, nil
 }
 
-// Authenticate authenticates the user with the given username and password.
-func (p *IdentityProvider) Authenticate(username, password string) (*storepb.IdentityProviderUserInfo, error) {
+// Connect establishes a connection using the bind DN and bind password.
+func (p *IdentityProvider) Connect() (*ldap.Conn, error) {
 	conn, err := p.dial()
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = conn.Close() }()
 
 	// Bind with a system account
 	err = conn.Bind(p.config.BindDN, p.config.BindPassword)
 	if err != nil {
+		_ = conn.Close()
 		return nil, errors.Errorf("bind: %v", err)
 	}
+	return conn, nil
+}
+
+// Authenticate authenticates the user with the given username and password.
+func (p *IdentityProvider) Authenticate(username, password string) (*storepb.IdentityProviderUserInfo, error) {
+	conn, err := p.Connect()
+	if err != nil {
+		return nil, errors.Errorf("connect: %v", err)
+	}
+	defer func() { _ = conn.Close() }()
 
 	sr, err := conn.Search(
 		ldap.NewSearchRequest(

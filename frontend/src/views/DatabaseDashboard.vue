@@ -95,6 +95,7 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   usePolicyV1Store,
+  useProjectV1ListByCurrentUser,
   useUIStateStore,
 } from "@/store";
 import {
@@ -111,10 +112,11 @@ interface LocalState {
   loading: boolean;
 }
 
+const route = useRoute();
+const router = useRouter();
 const uiStateStore = useUIStateStore();
 const environmentV1Store = useEnvironmentV1Store();
-const router = useRouter();
-const route = useRoute();
+const { projectList } = useProjectV1ListByCurrentUser();
 
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
@@ -170,14 +172,22 @@ const prepareDatabaseList = async () => {
     const databaseV1List = await databaseV1Store.searchDatabaseList({
       parent: "instances/-",
     });
-    state.databaseV1List = sortDatabaseV1List(databaseV1List);
+    state.databaseV1List = sortDatabaseV1List(databaseV1List).filter((db) =>
+      projectList.value.map((project) => project.name).includes(db.project)
+    );
     state.loading = false;
   }
 };
 
 const prepareDatabaseGroupList = async () => {
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    state.databaseGroupList = await dbGroupStore.fetchAllDatabaseGroupList();
+    state.databaseGroupList = (
+      await dbGroupStore.fetchAllDatabaseGroupList()
+    ).filter((dbGroup) =>
+      projectList.value
+        .map((project) => project.name)
+        .includes(dbGroup.project.name)
+    );
   }
 };
 

@@ -80,7 +80,9 @@ service InstanceService {
 
   rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/v1/{instance=instances/*}:syncSlowQueries"
+      post: "/v1/{parent=instances/*}:syncSlowQueries"
+      additional_bindings {post: "/v1/{parent=projects/*}:syncSlowQueries"}
+
       body: "*"
     };
   }
@@ -208,8 +210,9 @@ message UpdateDataSourceRequest {
 
 message SyncSlowQueriesRequest {
   // The name of the instance to sync slow queries.
-  // Format: instances/{instance}
-  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+  // Format: instances/{instance} for one instance
+  //      or projects/{project} for one project.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // InstanceOptions is the option for instances.

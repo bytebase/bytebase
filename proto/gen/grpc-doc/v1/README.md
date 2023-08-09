@@ -240,6 +240,7 @@
     - [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest)
     - [IdentityProvider](#bytebase-v1-IdentityProvider)
     - [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig)
+    - [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig)
     - [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest)
     - [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse)
     - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
@@ -330,6 +331,8 @@
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
     - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
     - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
+    - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
+    - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
@@ -618,6 +621,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
+| development_use_v2_scheduler | [bool](#bool) |  | development_use_v2_scheduler flag means if the server uses the v2 task run scheduler. this flag is only used for development purpose and will be removed once we switch to the v2 scheduler. |
 
 
 
@@ -4113,6 +4117,30 @@ reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get
 | ----- | ---- | ----- | ----------- |
 | oauth2_config | [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig) |  |  |
 | oidc_config | [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig) |  |  |
+| ldap_config | [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-LDAPIdentityProviderConfig"></a>
+
+### LDAPIdentityProviderConfig
+LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | Host is the hostname or IP address of the LDAP server, e.g. &#34;ldap.example.com&#34;. |
+| port | [int32](#int32) |  | Port is the port number of the LDAP server, e.g. 389. When not set, the default port of the corresponding security protocol will be used, i.e. 389 for StartTLS and 636 for LDAPS. |
+| skip_tls_verify | [bool](#bool) |  | SkipTLSVerify controls whether to skip TLS certificate verification. |
+| bind_dn | [string](#string) |  | BindDN is the DN of the user to bind as a service account to perform search requests. |
+| bind_password | [string](#string) |  | BindPassword is the password of the user to bind as a service account. |
+| base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g. &#34;ou=users,dc=example,dc=com&#34;. |
+| user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g. &#34;(uid=%s)&#34;. |
+| security_protocol | [string](#string) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. It should be either StartTLS or LDAPS, and cannot be empty. |
+| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | FieldMapping is the mapping of the user attributes returned by the LDAP server. |
 
 
 
@@ -4284,6 +4312,7 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
+| LDAP | 3 |  |
 
 
 
@@ -5008,7 +5037,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to sync slow queries. Format: instances/{instance} |
+| parent | [string](#string) |  | The name of the instance to sync slow queries. Format: instances/{instance} for one instance or projects/{project} for one project. |
 
 
 
@@ -5411,6 +5440,42 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 
 
+<a name="bytebase-v1-SearchIssuesRequest"></a>
+
+### SearchIssuesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project}. Use &#34;projects/-&#34; to search all issues. |
+| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchIssuesResponse"></a>
+
+### SearchIssuesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateIssueCommentRequest"></a>
 
 ### UpdateIssueCommentRequest
@@ -5553,6 +5618,7 @@ ANY means approving any node will proceed.
 | CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) |  |
 | UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
+| SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) |  |
 | CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | BatchUpdateIssues | [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest) | [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse) |  |
@@ -7316,6 +7382,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 | error | [string](#string) |  | error is set if the Status is FAILED. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
