@@ -18,13 +18,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { escape } from "lodash-es";
-
-import { DatabaseTreeOption } from "./common";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { computed } from "vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { getHighlightHTMLByRegExp } from "@/utils";
+import { DatabaseTreeOption } from "./common";
 
 const props = defineProps<{
   option: DatabaseTreeOption;

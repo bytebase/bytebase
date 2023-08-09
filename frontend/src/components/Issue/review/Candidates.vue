@@ -72,14 +72,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { storeToRefs } from "pinia";
 import { NEllipsis, NTooltip } from "naive-ui";
-
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
+import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 import { convertUserToPrincipal, useAuthStore } from "@/store";
 import { WrappedReviewStep } from "@/types";
 import { approvalNodeText } from "@/utils";
-import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 
 const { currentUser } = storeToRefs(useAuthStore());
 

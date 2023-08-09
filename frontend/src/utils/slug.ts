@@ -1,5 +1,14 @@
 import slug from "slug";
 import {
+  getProjectAndSheetId,
+  projectNamePrefix,
+  sheetNamePrefix,
+  getVCSUid,
+} from "@/store/modules/v1/common";
+import { ExternalVersionControl as VCSV1 } from "@/types/proto/v1/externalvs_service";
+import { Project as ProjectV1 } from "@/types/proto/v1/project_service";
+import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
+import {
   Database,
   DataSource,
   Environment,
@@ -10,15 +19,6 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { IdType } from "../types/id";
-import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
-import { Project as ProjectV1 } from "@/types/proto/v1/project_service";
-import { ExternalVersionControl as VCSV1 } from "@/types/proto/v1/externalvs_service";
-import {
-  getProjectAndSheetId,
-  projectNamePrefix,
-  sheetNamePrefix,
-  getVCSUid,
-} from "@/store/modules/v1/common";
 
 export const indexOrUIDFromSlug = (slug: string): number => {
   const parts = slug.split("-");

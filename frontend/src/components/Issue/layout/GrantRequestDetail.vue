@@ -48,13 +48,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, PropType, ref, watchEffect, watch } from "vue";
 import { useDialog } from "naive-ui";
-
-import IssueBanner from "../IssueBanner.vue";
-import IssueHighlightPanel from "../IssueHighlightPanel.vue";
-import IssueDescriptionPanel from "../IssueDescriptionPanel.vue";
-import IssueActivityPanel from "../IssueActivityPanel.vue";
+import { computed, onMounted, PropType, ref, watchEffect, watch } from "vue";
+import { defaultTemplate, templateForType } from "@/plugins";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
+import { useProjectIamPolicyStore, useProjectV1Store } from "@/store";
 import {
   GrantRequestContext,
   GrantRequestPayload,
@@ -62,18 +60,19 @@ import {
   IssueCreate,
   UNKNOWN_ID,
 } from "@/types";
-import { defaultTemplate, templateForType } from "@/plugins";
-import { useProjectIamPolicyStore, useProjectV1Store } from "@/store";
+import GrantRequestIssueSidebar from "../GrantRequestIssueSidebar.vue";
+import IssueActivityPanel from "../IssueActivityPanel.vue";
+import IssueBanner from "../IssueBanner.vue";
+import IssueDescriptionPanel from "../IssueDescriptionPanel.vue";
+import IssueHighlightPanel from "../IssueHighlightPanel.vue";
+import GrantRequestExporterForm from "../form/GrantRequestExporterForm.vue";
+import GrantRequestQuerierForm from "../form/GrantRequestQuerierForm.vue";
 import {
   provideIssueLogic,
   IssueLogic,
   GrantRequestModeProvider,
 } from "../logic";
 import { useGrantRequestIssueLogic } from "../logic/grantRequest";
-import GrantRequestIssueSidebar from "../GrantRequestIssueSidebar.vue";
-import GrantRequestExporterForm from "../form/GrantRequestExporterForm.vue";
-import GrantRequestQuerierForm from "../form/GrantRequestQuerierForm.vue";
-import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 
 const props = defineProps({
   create: {

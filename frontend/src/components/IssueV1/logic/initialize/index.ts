@@ -1,8 +1,7 @@
 import { computed, ref, Ref, watch } from "vue";
 import { useRoute, useRouter, _RouteLocationBase } from "vue-router";
-
-import { ComposedIssue, emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { experimentalFetchIssueByUID } from "@/store";
+import { ComposedIssue, emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { idFromSlug } from "@/utils";
 import { createIssueSkeleton } from "./create";
 

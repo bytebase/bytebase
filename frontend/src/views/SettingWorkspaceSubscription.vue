@@ -154,18 +154,18 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import PricingTable from "../components/PricingTable/";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   pushNotification,
   useCurrentUserV1,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { storeToRefs } from "pinia";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import PricingTable from "../components/PricingTable/";
 
 interface LocalState {
   loading: boolean;

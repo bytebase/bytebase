@@ -73,18 +73,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
-import { useRouter } from "vue-router";
 import { CodeDiff } from "v-code-diff";
+import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTableSectionDataSource } from "../bbkit/types";
-import { UNKNOWN_ENVIRONMENT_NAME } from "../types";
-import {
-  databaseV1Slug,
-  instanceV1Slug,
-  humanizeTs,
-  extractDatabaseResourceName,
-} from "@/utils";
+import { useRouter } from "vue-router";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { useEnvironmentV1Store } from "@/store";
 import {
@@ -92,6 +84,14 @@ import {
   Anomaly_AnomalyType,
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";
+import {
+  databaseV1Slug,
+  instanceV1Slug,
+  humanizeTs,
+  extractDatabaseResourceName,
+} from "@/utils";
+import { BBTableSectionDataSource } from "../bbkit/types";
+import { UNKNOWN_ENVIRONMENT_NAME } from "../types";
 
 type Action = {
   onClick: () => void;

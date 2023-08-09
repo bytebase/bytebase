@@ -1,15 +1,15 @@
 import { isNull } from "lodash-es";
 import { createApp } from "vue";
-import { isDev } from "@/utils";
+import { actuatorServiceClient } from "@/grpcweb";
 import { router } from "@/router";
+import { isDev } from "@/utils";
+import DemoWrapper from "./components/DemoWrapper.vue";
+import { removeGuideDialog } from "./guide";
+import { removeHint } from "./hint";
+import { initLocationListenerForDemo } from "./listener";
 import * as storage from "./storage";
 import { piniaInstance } from "./store";
-import { initLocationListenerForDemo } from "./listener";
-import DemoWrapper from "./components/DemoWrapper.vue";
-import { removeHint } from "./hint";
-import { removeGuideDialog } from "./guide";
 import { waitBodyLoaded } from "./utils";
-import { actuatorServiceClient } from "@/grpcweb";
 
 const initDemo = async (demoName: string) => {
   await waitBodyLoaded();

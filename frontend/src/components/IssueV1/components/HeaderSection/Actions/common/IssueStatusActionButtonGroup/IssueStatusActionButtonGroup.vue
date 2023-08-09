@@ -38,11 +38,9 @@
 </template>
 
 <script setup lang="ts">
-import { VNode, computed, h } from "vue";
 import { NButton, NDropdown, DropdownOption } from "naive-ui";
-
-import { Task } from "@/types/proto/v1/rollout_service";
-import { ExtraActionOption } from "../types";
+import { VNode, computed, h } from "vue";
+import { DropdownItemWithErrorList } from "@/components/IssueV1/components/common";
 import {
   IssueStatusAction,
   TaskRolloutAction,
@@ -50,9 +48,10 @@ import {
   issueStatusActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import IssueStatusActionButton from "./IssueStatusActionButton.vue";
 import { useCurrentUserV1 } from "@/store";
-import { DropdownItemWithErrorList } from "@/components/IssueV1/components/common";
+import { Task } from "@/types/proto/v1/rollout_service";
+import { ExtraActionOption } from "../types";
+import IssueStatusActionButton from "./IssueStatusActionButton.vue";
 
 const props = defineProps<{
   displayMode: "BUTTON" | "DROPDOWN";

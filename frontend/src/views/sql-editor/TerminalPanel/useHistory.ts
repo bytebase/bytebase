@@ -1,7 +1,6 @@
 import { computed, unref, watch } from "vue";
-
-import { TabMode, WebTerminalQueryItem } from "@/types";
 import { useTabStore, useWebTerminalV1Store } from "@/store";
+import { TabMode, WebTerminalQueryItem } from "@/types";
 import { minmax } from "@/utils";
 
 const MAX_HISTORY_ITEM_COUNT = 1000;

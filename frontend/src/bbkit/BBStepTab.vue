@@ -107,8 +107,8 @@
 
 <script lang="ts" setup>
 import { reactive, withDefaults } from "vue";
-import { BBStepTabItem } from "./types";
 import { VueClass } from "@/utils/types";
+import { BBStepTabItem } from "./types";
 
 interface LocalState {
   done: boolean;

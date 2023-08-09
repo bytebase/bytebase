@@ -1,8 +1,7 @@
-import { useEnvironmentV1Store } from "@/store";
 import { uniq } from "lodash-es";
-
-import { extractEnvironmentResourceName } from "./environment";
+import { useEnvironmentV1Store } from "@/store";
 import { Database } from "@/types/proto/v1/database_service";
+import { extractEnvironmentResourceName } from "./environment";
 
 export const getLabelValuesFromDatabaseV1List = (
   key: string,

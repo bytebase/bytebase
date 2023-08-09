@@ -41,9 +41,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
 import { NButton } from "naive-ui";
-
+import { computed, ref } from "vue";
 import { BBProgressPie } from "@/bbkit";
 
 type Tick = (p: number) => void;

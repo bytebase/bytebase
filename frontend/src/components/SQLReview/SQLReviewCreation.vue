@@ -49,7 +49,15 @@
 import { reactive, computed, withDefaults, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAlertDialog, BBStepTab } from "@/bbkit";
 import { BBStepTabItem } from "@/bbkit/types";
+import {
+  useCurrentUserV1,
+  pushNotification,
+  useSQLReviewStore,
+  useSubscriptionV1Store,
+  useEnvironmentV1List,
+} from "@/store";
 import {
   RuleLevel,
   RuleTemplate,
@@ -60,19 +68,11 @@ import {
   SQLReviewPolicyTemplate,
   SQLReviewPolicy,
 } from "@/types";
-import { BBAlertDialog, BBStepTab } from "@/bbkit";
-import SQLReviewInfo from "./SQLReviewInfo.vue";
-import SQLReviewConfig from "./SQLReviewConfig.vue";
-import {
-  useCurrentUserV1,
-  pushNotification,
-  useSQLReviewStore,
-  useSubscriptionV1Store,
-  useEnvironmentV1List,
-} from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
-import { rulesToTemplate } from "./components";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
+import SQLReviewConfig from "./SQLReviewConfig.vue";
+import SQLReviewInfo from "./SQLReviewInfo.vue";
+import { rulesToTemplate } from "./components";
 
 interface LocalState {
   currentStep: number;

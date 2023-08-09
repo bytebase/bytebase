@@ -1,6 +1,15 @@
 import { cloneDeep, isNumber } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
-
+import {
+  buildCELExpr,
+  EqualityExpr,
+  LogicalExpr,
+  resolveCELExpr,
+  SimpleExpr,
+} from "@/plugins/cel";
+import { t, te } from "@/plugins/i18n";
+import { useSettingV1Store, useUserStore } from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import {
   DEFAULT_RISK_LEVEL,
   ParsedApprovalRule,
@@ -10,17 +19,15 @@ import {
   UnrecognizedApprovalRule,
 } from "@/types";
 import {
-  ParsedExpr,
-  Expr as CELExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
-import {
   LocalApprovalConfig,
   LocalApprovalRule,
   PresetRiskLevelList,
   SupportedSourceList,
 } from "@/types";
-import { t, te } from "@/plugins/i18n";
+import {
+  ParsedExpr,
+  Expr as CELExpr,
+} from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import {
   ApprovalNode,
   ApprovalNode_GroupValue,
@@ -28,20 +35,12 @@ import {
   ApprovalNode_Type,
   ApprovalStep_Type,
 } from "@/types/proto/v1/issue_service";
-import { useSettingV1Store, useUserStore } from "@/store";
-import {
-  buildCELExpr,
-  EqualityExpr,
-  LogicalExpr,
-  resolveCELExpr,
-  SimpleExpr,
-} from "@/plugins/cel";
-import { displayRoleTitle } from "./role";
+import { Risk_Source } from "@/types/proto/v1/risk_service";
 import {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
 } from "@/types/proto/v1/setting_service";
-import { userNamePrefix } from "@/store/modules/v1/common";
+import { displayRoleTitle } from "./role";
 import {
   convertCELStringToParsedExpr,
   convertParsedExprToCELString,

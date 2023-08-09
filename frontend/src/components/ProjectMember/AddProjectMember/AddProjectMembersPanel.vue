@@ -44,18 +44,18 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep } from "lodash-es";
 import { NDrawer, NDrawerContent, NButton } from "naive-ui";
-import { ComposedProject } from "@/types";
-import { Binding } from "@/types/proto/v1/iam_policy";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import AddProjectMemberForm from "./AddProjectMemberForm.vue";
-import { cloneDeep } from "lodash-es";
 import {
   pushNotification,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
 } from "@/store";
+import { ComposedProject } from "@/types";
+import { Binding } from "@/types/proto/v1/iam_policy";
+import AddProjectMemberForm from "./AddProjectMemberForm.vue";
 
 const props = defineProps<{
   project: ComposedProject;

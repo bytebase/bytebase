@@ -52,18 +52,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, h, nextTick, watch } from "vue";
-import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { useMounted, useThrottleFn } from "@vueuse/core";
-
-import type { ConnectionAtom, CoreTabInfo, DatabaseId } from "@/types";
-import {
-  ConnectionTreeMode,
-  ConnectionTreeState,
-  TabMode,
-  UNKNOWN_ID,
-} from "@/types";
+import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
+import { ref, computed, h, nextTick, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   isConnectableAtom,
   useConnectionTreeStore,
@@ -72,6 +64,13 @@ import {
   useIsLoggedIn,
   useTabStore,
 } from "@/store";
+import type { ConnectionAtom, CoreTabInfo, DatabaseId } from "@/types";
+import {
+  ConnectionTreeMode,
+  ConnectionTreeState,
+  TabMode,
+  UNKNOWN_ID,
+} from "@/types";
 import {
   emptyConnection,
   getDefaultTabNameFromConnection,

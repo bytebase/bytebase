@@ -105,18 +105,11 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watch, computed, Ref } from "vue";
 import { head } from "lodash-es";
+import { reactive, watch, computed, Ref } from "vue";
 import { useRouter } from "vue-router";
-
-import IssueStatusIcon from "./IssueStatusIcon.vue";
-import {
-  activeTask,
-  connectionV1Slug,
-  extractUserUID,
-  isDatabaseRelatedIssueType,
-  isGrantRequestIssueType,
-} from "@/utils";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
+import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
 import {
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseDataUpdatePayload,
@@ -126,12 +119,18 @@ import {
   GrantRequestPayload,
   UNKNOWN_ID,
 } from "@/types";
+import {
+  activeTask,
+  connectionV1Slug,
+  extractUserUID,
+  isDatabaseRelatedIssueType,
+  isGrantRequestIssueType,
+} from "@/utils";
+import { convertFromCELString } from "@/utils/issue/cel";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
+import { CombinedRolloutButtonGroup } from "./StatusTransitionButtonGroup";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { IssueReviewButtonGroup } from "./review";
-import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
-import { CombinedRolloutButtonGroup } from "./StatusTransitionButtonGroup";
-import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
-import { convertFromCELString } from "@/utils/issue/cel";
 
 interface LocalState {
   editing: boolean;

@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { policyServiceClient } from "@/grpcweb";
+import { policyNamePrefix } from "@/store/modules/v1/common";
+import { MaybeRef, UNKNOWN_USER_NAME } from "@/types";
 import {
   Policy,
   PolicyType,
@@ -9,9 +11,7 @@ import {
   BackupPlanSchedule,
   ApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
-import { MaybeRef, UNKNOWN_USER_NAME } from "@/types";
 import { useCurrentUserV1 } from "../auth";
-import { policyNamePrefix } from "@/store/modules/v1/common";
 
 interface PolicyState {
   policyMapByName: Map<string, Policy>;

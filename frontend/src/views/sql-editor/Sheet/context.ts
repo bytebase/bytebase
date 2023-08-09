@@ -1,17 +1,16 @@
+import Emittery from "emittery";
 import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
-import Emittery from "emittery";
-
 import {
   pushNotification,
   useInstanceV1Store,
   useSheetV1Store,
   useTabStore,
 } from "@/store";
+import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
+import { UNKNOWN_ID } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { emptyConnection, isSheetReadableV1 } from "@/utils";
-import { UNKNOWN_ID } from "@/types";
-import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
 import { SheetViewMode } from "./types";
 
 type SheetEvents = Emittery<{

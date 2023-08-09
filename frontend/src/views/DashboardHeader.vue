@@ -201,16 +201,10 @@
 
 <script lang="ts">
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { storeToRefs } from "pinia";
 import { computed, reactive, watchEffect, defineComponent } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-
-import BytebaseLogo from "../components/BytebaseLogo.vue";
-import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
-import ProfileDropdown from "../components/ProfileDropdown.vue";
-import { UNKNOWN_ID } from "../types";
-import { hasWorkspacePermissionV1, isDev } from "../utils";
-import { useLanguage } from "../composables/useLanguage";
+import { useRoute, useRouter } from "vue-router";
 import {
   useCurrentUser,
   useActuatorV1Store,
@@ -218,8 +212,13 @@ import {
   useInboxV1Store,
   useCurrentUserV1,
 } from "@/store";
-import { storeToRefs } from "pinia";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import BytebaseLogo from "../components/BytebaseLogo.vue";
+import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
+import ProfileDropdown from "../components/ProfileDropdown.vue";
+import { useLanguage } from "../composables/useLanguage";
+import { UNKNOWN_ID } from "../types";
+import { hasWorkspacePermissionV1, isDev } from "../utils";
 
 interface LocalState {
   showMobileMenu: boolean;

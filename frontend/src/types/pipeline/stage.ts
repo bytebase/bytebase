@@ -1,5 +1,4 @@
 // The database belongs to an instance which in turns belongs to an environment.
-
 import { Environment } from "../environment";
 import { EnvironmentId, StageId } from "../id";
 import { Pipeline } from "./pipeline";

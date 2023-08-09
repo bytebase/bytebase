@@ -108,10 +108,8 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { BBSwitch, BBGrid, type BBGridColumn } from "@/bbkit";
-import RuleLevelSwitch from "./RuleLevelSwitch.vue";
-import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
+import { useCurrentPlan } from "@/store";
 import {
   convertToCategoryList,
   getRuleLocalization,
@@ -121,7 +119,8 @@ import {
   RuleTemplate,
 } from "@/types";
 import { PayloadValueType } from "./RuleConfigComponents";
-import { useCurrentPlan } from "@/store";
+import RuleLevelSwitch from "./RuleLevelSwitch.vue";
+import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
 
 type LocalState = {
   activeRule: RuleTemplate | undefined;

@@ -17,13 +17,12 @@
 </template>
 
 <script setup lang="ts">
-import { CSSProperties, computed, reactive, watch } from "vue";
 import { NInput } from "naive-ui";
+import { CSSProperties, computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1 } from "@/store";
+import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
 import { useIssueContext } from "../../logic";
 

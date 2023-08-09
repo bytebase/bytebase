@@ -1,5 +1,5 @@
-import PlanCheckSection from "./PlanCheckSection.vue";
 import PlanCheckBar from "./PlanCheckBar";
+import PlanCheckSection from "./PlanCheckSection.vue";
 
 export default PlanCheckSection;
 

@@ -34,8 +34,8 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useRoute } from "vue-router";
-import { useIdentityProviderStore } from "@/store/modules/idp";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
+import { useIdentityProviderStore } from "@/store/modules/idp";
 import { State } from "@/types/proto/v1/common";
 
 interface LocalState {

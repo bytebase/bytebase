@@ -22,18 +22,17 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
+import {
+  useConnectionTreeStore,
+  useDatabaseV1Store,
+  useInstanceV1Store,
+} from "@/store";
 import {
   ConnectionAtom,
   ConnectionTreeMode,
   unknownInstance,
   unknownDatabase,
 } from "@/types";
-import {
-  useConnectionTreeStore,
-  useDatabaseV1Store,
-  useInstanceV1Store,
-} from "@/store";
 import InstancePrefix from "./InstancePrefix.vue";
 
 const props = defineProps<{

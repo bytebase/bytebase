@@ -1,7 +1,7 @@
 import type { editor as Editor } from "monaco-editor";
 import { SQLDialect } from "@/types";
-import sqlFormatter from "./sqlFormatter";
 import { ExtractPromiseType } from "@/utils";
+import sqlFormatter from "./sqlFormatter";
 import { getBBTheme } from "./themes/bb";
 import { getBBDarkTheme } from "./themes/bb-dark";
 

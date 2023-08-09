@@ -33,16 +33,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-
+import { computed, reactive, ref, watch } from "vue";
+import { useDatabaseV1ByUID, useDBSchemaV1Store, useTabStore } from "@/store";
 import { DatabaseId } from "@/types";
 import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import { useDatabaseV1ByUID, useDBSchemaV1Store, useTabStore } from "@/store";
 import DatabaseSchema from "./DatabaseSchema.vue";
 import TableSchema from "./TableSchema.vue";
 

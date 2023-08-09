@@ -189,17 +189,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
 import { isEqual } from "lodash-es";
+import { computed, reactive } from "vue";
 import { DrawerContent } from "@/components/v2";
+import { useSchemaEditorStore } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
+import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   getDataTypeSuggestionList,
   engineNameV1,
   useWorkspacePermissionV1,
 } from "@/utils";
-import { Engine } from "@/types/proto/v1/common";
-import { useSchemaEditorStore } from "@/store";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import { engineList, getDefaultValue } from "./utils";
 
 const props = defineProps<{

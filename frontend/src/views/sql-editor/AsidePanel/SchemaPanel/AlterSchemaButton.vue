@@ -17,12 +17,11 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-
+import type { ComposedDatabase } from "@/types";
 import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import type { ComposedDatabase } from "@/types";
 
 defineProps<{
   database: ComposedDatabase;

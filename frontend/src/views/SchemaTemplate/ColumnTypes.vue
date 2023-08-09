@@ -112,20 +112,20 @@
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
 import { cloneDeep, isEqual, uniq, uniqBy } from "lodash-es";
 import { NSelect, NRadioGroup, NRadio } from "naive-ui";
 import { onMounted, ref } from "vue";
-import { Engine } from "@/types/proto/v1/common";
+import EngineIcon from "@/components/Icon/EngineIcon.vue";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_ColumnType,
   SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
-import EngineIcon from "@/components/Icon/EngineIcon.vue";
-import ColumnTypesUpdateFailedModal from "./ColumnTypesUpdateFailedModal.vue";
 import { useWorkspacePermissionV1 } from "@/utils";
-import { useDebounceFn } from "@vueuse/core";
+import ColumnTypesUpdateFailedModal from "./ColumnTypesUpdateFailedModal.vue";
 
 interface LocalState {
   showFeatureModal: boolean;

@@ -22,9 +22,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, toRef, watch } from "vue";
 import { NCheckbox, NSelect } from "naive-ui";
-
+import { computed, toRef, watch } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
 import { useSelectOptions } from "./common";

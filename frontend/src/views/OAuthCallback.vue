@@ -18,10 +18,9 @@
 </template>
 
 <script lang="ts" setup>
+import { parse } from "qs";
 import { onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { parse } from "qs";
-
 import { useAuthStore } from "@/store";
 import { OAuthState, OAuthWindowEventPayload } from "../types";
 

@@ -1,5 +1,5 @@
-import { defineStore } from "pinia";
 import { useLocalStorage } from "@vueuse/core";
+import { defineStore } from "pinia";
 
 type OnboardingState = {
   isOnboarding: boolean;

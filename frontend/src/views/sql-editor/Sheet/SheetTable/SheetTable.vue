@@ -44,21 +44,20 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import dayjs from "dayjs";
-
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import { SheetViewMode } from "../types";
-import Dropdown from "./Dropdown.vue";
 import { useRouter } from "vue-router";
+import { useUserStore, useProjectV1Store } from "@/store";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import {
   extractProjectResourceName,
   projectV1Name,
   sheetSlugV1,
 } from "@/utils";
-import { useUserStore, useProjectV1Store } from "@/store";
-import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
+import { SheetViewMode } from "../types";
+import Dropdown from "./Dropdown.vue";
 
 const props = withDefaults(
   defineProps<{

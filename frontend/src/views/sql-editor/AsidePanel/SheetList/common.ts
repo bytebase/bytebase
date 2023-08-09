@@ -1,5 +1,4 @@
 import { escape } from "lodash-es";
-
 import { TabInfo } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractSheetUID, getHighlightHTMLByRegExp } from "@/utils";

@@ -26,8 +26,8 @@
 
 <script lang="ts" setup>
 import { computed, defineProps } from "vue";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 
 const props = defineProps<{

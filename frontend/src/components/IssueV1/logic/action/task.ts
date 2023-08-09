@@ -1,10 +1,10 @@
+import { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { ComposedIssue } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { extractUserResourceName } from "@/utils";
-import { ButtonProps } from "naive-ui";
 import {
   allowUserToBeAssignee,
   getCurrentRolloutPolicyForTask,

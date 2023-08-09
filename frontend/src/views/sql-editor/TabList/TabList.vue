@@ -54,20 +54,19 @@
 </template>
 
 <script lang="ts" setup>
+import { useResizeObserver } from "@vueuse/core";
+import { useDialog, NButton } from "naive-ui";
+import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useDialog, NButton } from "naive-ui";
 import Draggable from "vuedraggable";
-import scrollIntoView from "scroll-into-view-if-needed";
-import { useResizeObserver } from "@vueuse/core";
-
+import { Drawer, DrawerContent } from "@/components/v2";
+import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { useTabStore } from "@/store";
-import { Drawer, DrawerContent } from "@/components/v2";
-import TabItem from "./TabItem";
-import SheetPanel from "../SheetPanel";
 import { useSheetContext } from "../Sheet";
+import SheetPanel from "../SheetPanel";
+import TabItem from "./TabItem";
 
 type LocalState = {
   dragging: boolean;

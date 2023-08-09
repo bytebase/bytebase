@@ -18,17 +18,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, Ref } from "vue";
 import { cloneDeep } from "lodash-es";
-
-import { isGrantRequestIssueType } from "@/utils";
-import type { Issue, IssueStatusTransition } from "@/types";
-import { convertUserToPrincipal, useCurrentUserV1 } from "@/store";
-import { useIssueTransitionLogic, useIssueLogic } from "../logic";
+import { computed, ref, Ref } from "vue";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
+import { convertUserToPrincipal, useCurrentUserV1 } from "@/store";
+import type { Issue, IssueStatusTransition } from "@/types";
+import { isGrantRequestIssueType } from "@/utils";
+import { useIssueTransitionLogic, useIssueLogic } from "../logic";
 import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
-import { IssueContext } from "./common";
 import IssueStatusTransitionDialog from "./IssueStatusTransitionDialog.vue";
+import { IssueContext } from "./common";
 
 defineProps<{
   displayMode: "BUTTON" | "DROPDOWN";

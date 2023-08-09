@@ -15,11 +15,10 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
+import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 import type { Database } from "@/types";
 import { ConnectionTreeMode, DEFAULT_PROJECT_ID, UNKNOWN_ID } from "@/types";
 import { connectionSlug, hasWorkspacePermissionV1 } from "@/utils";
-import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 
 const props = withDefaults(
   defineProps<{

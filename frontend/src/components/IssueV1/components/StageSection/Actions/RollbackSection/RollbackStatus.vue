@@ -65,26 +65,25 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { NTooltip } from "naive-ui";
-
+import { databaseForTask, useIssueContext } from "@/components/IssueV1";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { useActivityV1Store, useSheetV1Store } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
   TaskRollbackBy,
   UNKNOWN_ID,
   unknownIssue,
 } from "@/types";
-import { extractSheetUID } from "@/utils";
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
-import { useActivityV1Store, useSheetV1Store } from "@/store";
 import { Task_DatabaseDataUpdate_RollbackSqlStatus as RollbackSqlStatus } from "@/types/proto/v1/rollout_service";
+import { extractSheetUID } from "@/utils";
+import IssueStatusIcon from "../../../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1";
 import { useRollbackContext } from "./common";
-import IssueStatusIcon from "../../../IssueStatusIcon.vue";
 
 type LocalState = {
   loading: boolean;

@@ -72,7 +72,8 @@
 
 <script lang="ts" setup>
 import { computed, reactive, Ref } from "vue";
-
+import { useI18n } from "vue-i18n";
+import { BBTooltipButton } from "@/bbkit";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 import {
   candidatesOfApprovalStep,
@@ -80,13 +81,11 @@ import {
   useIssueV1Store,
 } from "@/store";
 import { Issue } from "@/types";
-import { BBTooltipButton } from "@/bbkit";
+import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import { extractUserUID, taskCheckRunSummary } from "@/utils";
+import { StandaloneIssueStatusTransitionButtonGroup } from "../StatusTransitionButtonGroup";
 import { useIssueLogic } from "../logic";
 import IssueReviewForm from "./IssueReviewForm.vue";
-import { extractUserUID, taskCheckRunSummary } from "@/utils";
-import { useI18n } from "vue-i18n";
-import { StandaloneIssueStatusTransitionButtonGroup } from "../StatusTransitionButtonGroup";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 
 type LocalState = {
   modal?: {

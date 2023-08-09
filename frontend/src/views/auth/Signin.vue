@@ -240,10 +240,9 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { storeToRefs } from "pinia";
-import { isValidEmail, openWindowForSSO } from "@/utils";
 import {
   useActuatorV1Store,
   useAuthStore,
@@ -253,6 +252,7 @@ import {
   IdentityProvider,
   IdentityProviderType,
 } from "@/types/proto/v1/idp_service";
+import { isValidEmail, openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 
 interface LocalState {

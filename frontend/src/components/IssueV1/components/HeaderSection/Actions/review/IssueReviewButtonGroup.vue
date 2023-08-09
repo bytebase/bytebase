@@ -19,15 +19,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import { useCurrentUserV1 } from "@/store";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName } from "@/utils";
 import {
   IssueReviewAction,
   getApplicableIssueStatusActionList,
   useIssueContext,
 } from "@/components/IssueV1";
+import { useCurrentUserV1 } from "@/store";
+import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import { extractUserResourceName } from "@/utils";
 import { IssueStatusActionButtonGroup } from "../common";
 import ReviewActionButton from "./ReviewActionButton.vue";
 

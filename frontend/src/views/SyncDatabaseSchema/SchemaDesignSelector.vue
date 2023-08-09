@@ -81,18 +81,18 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { NButton } from "naive-ui";
+import { NRadio } from "naive-ui";
 import { computed, ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton } from "naive-ui";
 import { BBGridColumn } from "@/bbkit";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
-import { useProjectV1Store, useUserStore } from "@/store";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { projectV1Name } from "@/utils";
-import { useSchemaDesignList } from "@/store/modules/schemaDesign";
-import { NRadio } from "naive-ui";
 import CreateSchemaDesignPanel from "@/components/SchemaDesigner/CreateSchemaDesignPanel.vue";
 import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
+import { useProjectV1Store, useUserStore } from "@/store";
+import { useSchemaDesignList } from "@/store/modules/schemaDesign";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { projectV1Name } from "@/utils";
 
 interface LocalState {
   showCreatePanel: boolean;

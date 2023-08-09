@@ -144,7 +144,6 @@ import {
   useSheetV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { isGroupingChangeIssue, useIssueLogic } from "./logic";
 import {
   ComposedDatabase,
   dialectOfEngineV1,
@@ -155,22 +154,23 @@ import {
   TaskId,
   UNKNOWN_ID,
 } from "@/types";
+import { TableMetadata } from "@/types/proto/store/database";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 import {
   extractSheetUID,
   getBacktracePayloadWithIssue,
   sheetNameOfTask,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
-import UploadProgressButton from "../misc/UploadProgressButton.vue";
 import DownloadSheetButton from "../Sheet/DownloadSheetButton.vue";
-import {
-  Sheet_Visibility,
-  Sheet_Source,
-  Sheet_Type,
-} from "@/types/proto/v1/sheet_service";
+import UploadProgressButton from "../misc/UploadProgressButton.vue";
+import { isGroupingChangeIssue, useIssueLogic } from "./logic";
+import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 
 interface LocalState {
   taskSheetName?: string;

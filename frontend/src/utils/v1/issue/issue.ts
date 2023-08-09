@@ -1,5 +1,4 @@
 import slug from "slug";
-
 import { ComposedIssue, EMPTY_ROLLOUT_NAME } from "@/types";
 import { Plan, Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
 

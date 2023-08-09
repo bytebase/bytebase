@@ -43,10 +43,8 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-
-import { computed, watch } from "vue";
 import { isNumber } from "lodash-es";
-
+import { computed, watch } from "vue";
 import {
   type ConditionExpr,
   isEqualityOperator,
@@ -56,11 +54,11 @@ import {
   isNumberFactor,
   isStringFactor,
 } from "@/plugins/cel";
-import NumberInput from "./NumberInput.vue";
-import StringInput from "./StringInput.vue";
-import SingleSelect from "./SingleSelect.vue";
 import MultiSelect from "./MultiSelect.vue";
 import MultiStringInput from "./MultiStringInput.vue";
+import NumberInput from "./NumberInput.vue";
+import SingleSelect from "./SingleSelect.vue";
+import StringInput from "./StringInput.vue";
 import { factorSupportDropdown } from "./common";
 
 type InputType = "INPUT" | "SINGLE-SELECT" | "MULTI-SELECT" | "MULTI-INPUT";

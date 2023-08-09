@@ -14,10 +14,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import type { Risk_Source } from "@/types/proto/v1/risk_service";
 import { useRiskStore } from "@/store";
 import { DEFAULT_RISK_LEVEL } from "@/types";
+import type { Risk_Source } from "@/types/proto/v1/risk_service";
 
 const props = defineProps<{
   level: number;

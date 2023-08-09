@@ -102,17 +102,16 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, watch } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import { useI18n } from "vue-i18n";
 import { NTooltip } from "naive-ui";
-
-import type { Message } from "../../types";
+import { reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import MonacoEditor from "@/components/MonacoEditor";
+import { pushNotification } from "@/store";
 import { minmax } from "@/utils";
 import { useAIContext } from "../../logic";
-import { pushNotification } from "@/store";
 import { useConversationStore } from "../../store";
+import type { Message } from "../../types";
 
 type LocalState = {
   code: string;

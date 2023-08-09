@@ -1,3 +1,5 @@
+import { useTitle } from "@vueuse/core";
+import { pull, startCase } from "lodash-es";
 import { nextTick, ref } from "vue";
 import {
   createRouter,
@@ -5,37 +7,15 @@ import {
   RouteLocationNormalized,
   RouteRecordRaw,
 } from "vue-router";
-import { useTitle } from "@vueuse/core";
-import { pull, startCase } from "lodash-es";
-
 import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
-import SplashLayout from "@/layouts/SplashLayout.vue";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 import SheetDashboardLayout from "@/layouts/SheetDashboardLayout.vue";
+import SplashLayout from "@/layouts/SplashLayout.vue";
+import { useConversationStore } from "@/plugins/ai/store";
 import { t } from "@/plugins/i18n";
-import {
-  DEFAULT_PROJECT_ID,
-  DEFAULT_PROJECT_V1_NAME,
-  QuickActionType,
-  unknownUser,
-  UNKNOWN_ID,
-} from "@/types";
-import {
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
-  idFromSlug,
-  sheetNameFromSlug,
-  isOwnerOfProjectV1,
-  uidFromSlug,
-} from "@/utils";
-import Signin from "@/views/auth/Signin.vue";
-import Signup from "@/views/auth/Signup.vue";
-import MultiFactor from "@/views/auth/MultiFactor.vue";
-import DashboardSidebar from "@/views/DashboardSidebar.vue";
-import Home from "@/views/Home.vue";
 import {
   hasFeature,
   useVCSV1Store,
@@ -60,8 +40,27 @@ import {
   useDatabaseV1Store,
   useChangeHistoryStore,
 } from "@/store";
-import { useConversationStore } from "@/plugins/ai/store";
+import {
+  DEFAULT_PROJECT_ID,
+  DEFAULT_PROJECT_V1_NAME,
+  QuickActionType,
+  unknownUser,
+  UNKNOWN_ID,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
+import {
+  hasPermissionInProjectV1,
+  hasWorkspacePermissionV1,
+  idFromSlug,
+  sheetNameFromSlug,
+  isOwnerOfProjectV1,
+  uidFromSlug,
+} from "@/utils";
+import DashboardSidebar from "@/views/DashboardSidebar.vue";
+import Home from "@/views/Home.vue";
+import MultiFactor from "@/views/auth/MultiFactor.vue";
+import Signin from "@/views/auth/Signin.vue";
+import Signup from "@/views/auth/Signup.vue";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";

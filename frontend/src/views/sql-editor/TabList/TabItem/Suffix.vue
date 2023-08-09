@@ -19,10 +19,9 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-
+import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { useTabStore } from "@/store";
 
 type LocalState = {
   hovering: boolean;

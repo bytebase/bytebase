@@ -175,9 +175,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { hasWorkspacePermissionV1 } from "../utils";
-import { useCurrentUserV1, useRouterStore } from "@/store";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import { useCurrentUserV1, useRouterStore } from "@/store";
+import { hasWorkspacePermissionV1 } from "../utils";
 
 const routerStore = useRouterStore();
 const route = useRoute();

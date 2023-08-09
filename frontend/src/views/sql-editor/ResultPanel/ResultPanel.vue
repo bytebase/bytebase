@@ -9,9 +9,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import { ResultViewV1 } from "../EditorCommon/";
 import { useTabStore } from "@/store";
+import { ResultViewV1 } from "../EditorCommon/";
 
 const tabStore = useTabStore();
 

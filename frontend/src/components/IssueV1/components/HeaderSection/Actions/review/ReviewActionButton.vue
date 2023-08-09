@@ -18,10 +18,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { NButton, NTooltip } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   IssueReviewAction,
   issueReviewActionDisplayName,
@@ -29,7 +29,6 @@ import {
   allowUserToApplyReviewAction,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { ErrorList } from "@/components/IssueV1/components/common";
 import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{

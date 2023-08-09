@@ -26,13 +26,17 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, onUnmounted, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
+import { reactive, computed, onUnmounted, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { pushNotification, useVCSV1Store } from "@/store";
+import {
+  OAuthToken,
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
 import { BBStepTabItem } from "../bbkit/types";
-import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
-import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
-import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
 import {
   isValidVCSApplicationIdOrSecret,
   VCSConfig,
@@ -40,13 +44,9 @@ import {
   OAuthWindowEventPayload,
 } from "../types";
 import { isUrl } from "../utils";
-import { useI18n } from "vue-i18n";
-import { pushNotification, useVCSV1Store } from "@/store";
-import {
-  OAuthToken,
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
+import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
+import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
+import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;

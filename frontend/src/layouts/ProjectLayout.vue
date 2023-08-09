@@ -40,26 +40,25 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, reactive, watch } from "vue";
-import { useRouter } from "vue-router";
 import { startCase } from "lodash-es";
+import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import {
-  idFromSlug,
-  hasWorkspacePermissionV1,
-  hasPermissionInProjectV1,
-} from "@/utils";
-import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import { useRouter } from "vue-router";
 import { BBTabFilterItem } from "@/bbkit/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import {
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useProjectV1Store,
 } from "@/store";
-import { TenantMode } from "@/types/proto/v1/project_service";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import {
+  idFromSlug,
+  hasWorkspacePermissionV1,
+  hasPermissionInProjectV1,
+} from "@/utils";
 
 type ProjectTabItem = {
   name: string;

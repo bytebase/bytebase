@@ -29,11 +29,11 @@
 <script lang="ts" setup>
 import { NRadio } from "naive-ui";
 import { ref, watch, reactive, computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { BBGridColumn } from "@/bbkit";
 import { useDBGroupStore } from "@/store";
 import { ComposedDatabaseGroup } from "@/types";
 import { SchemaGroup } from "@/types/proto/v1/project_service";
-import { BBGridColumn } from "@/bbkit";
-import { useI18n } from "vue-i18n";
 
 interface LocalState {
   selectedDatabaseGroupName?: string;

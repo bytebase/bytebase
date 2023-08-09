@@ -83,19 +83,18 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-
 import dayjs from "dayjs";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import ExporterDatabaseResourceForm from "@/components/Issue/panel/RequestExportPanel/ExportResourceForm/index.vue";
+import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
+import { DatabaseSelect } from "@/components/v2";
+import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 import { useUserStore } from "@/store";
 import { ComposedProject, DatabaseResource } from "@/types";
-import { Binding } from "@/types/proto/v1/iam_policy";
 import { Expr } from "@/types/proto/google/type/expr";
-import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
-import ExpirationSelector from "@/components/ExpirationSelector.vue";
-import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import ExporterDatabaseResourceForm from "@/components/Issue/panel/RequestExportPanel/ExportResourceForm/index.vue";
-import { DatabaseSelect } from "@/components/v2";
+import { Binding } from "@/types/proto/v1/iam_policy";
 
 const props = defineProps<{
   project: ComposedProject;

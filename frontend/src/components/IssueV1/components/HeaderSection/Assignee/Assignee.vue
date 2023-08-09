@@ -39,25 +39,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { NTooltip } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { User } from "@/types/proto/v1/auth_service";
-import { Issue } from "@/types/proto/v1/issue_service";
-import { issueServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
-import { SYSTEM_BOT_EMAIL, SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
-import { extractUserResourceName, extractUserUID } from "@/utils";
-import { UserSelect } from "@/components/v2";
 import {
   allowUserToChangeAssignee,
   allowUserToBeAssignee,
   useCurrentRolloutPolicyForActiveEnvironment,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
+import { UserSelect } from "@/components/v2";
+import { issueServiceClient } from "@/grpcweb";
+import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
+import { SYSTEM_BOT_EMAIL, SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
+import { Issue } from "@/types/proto/v1/issue_service";
+import { extractUserResourceName, extractUserUID } from "@/utils";
 import { ErrorList } from "../../common";
+import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const { t } = useI18n();
 const userStore = useUserStore();

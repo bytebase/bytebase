@@ -116,22 +116,21 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
-
-import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
-import { doSubscribeIssue, useIssueContext } from "../../logic";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   DistinctActivity,
   isSimilarActivity,
 } from "@/components/Issue/activity";
+import MarkdownEditor from "@/components/MarkdownEditor.vue";
+import { IssueBuiltinFieldId } from "@/plugins";
+import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
+import { getLogId } from "@/store/modules/v1/common";
 import {
   ActivityIssueCommentCreatePayload,
   ActivityIssueFieldUpdatePayload,
 } from "@/types";
-import { IssueBuiltinFieldId } from "@/plugins";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
-import { getLogId } from "@/store/modules/v1/common";
-import MarkdownEditor from "@/components/MarkdownEditor.vue";
+import { doSubscribeIssue, useIssueContext } from "../../logic";
 import { ActivityItem } from "./Activity";
 
 interface LocalState {

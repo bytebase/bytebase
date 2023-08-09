@@ -19,23 +19,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { NTooltip, NButton } from "naive-ui";
-
-import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import { useDatabaseV1Store, useSheetV1Store } from "@/store";
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   getLocalSheetByName,
   isValidStage,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { ErrorList } from "@/components/IssueV1/components/common";
-import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
-import { extractSheetUID, getSheetStatement, setSheetStatement } from "@/utils";
-import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import { useRouter } from "vue-router";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
+import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
+import { useDatabaseV1Store, useSheetV1Store } from "@/store";
+import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
+import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import { extractSheetUID, getSheetStatement, setSheetStatement } from "@/utils";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 

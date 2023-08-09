@@ -1,7 +1,7 @@
+import { Ref } from "vue";
 import { Schema, Table } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { Ref } from "vue";
 
 export enum SchemaDesignerTabType {
   TabForTable = "table",

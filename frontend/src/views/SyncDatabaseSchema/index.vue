@@ -75,22 +75,22 @@ import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBStepTab } from "@/bbkit";
 import { useProjectV1Store } from "@/store";
+import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
+import RawSQLEditor from "./RawSQLEditor.vue";
+import SchemaDesignSelector from "./SchemaDesignSelector.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
 import {
   ChangeHistorySourceSchema,
   RawSQLState,
   SourceSchemaType,
 } from "./types";
-import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
-import SchemaDesignSelector from "./SchemaDesignSelector.vue";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { BBStepTab } from "@/bbkit";
-import RawSQLEditor from "./RawSQLEditor.vue";
-import { Engine } from "@/types/proto/v1/common";
 
 const SELECT_SOURCE_SCHEMA = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;

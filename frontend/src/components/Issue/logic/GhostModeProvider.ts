@@ -1,12 +1,11 @@
-import { computed, defineComponent } from "vue";
 import { cloneDeep } from "lodash-es";
-import { provideIssueLogic, useIssueLogic } from "./index";
+import { computed, defineComponent } from "vue";
 import {
-  flattenTaskList,
-  maybeFormatStatementOnSave,
-  TaskTypeWithStatement,
-  useCommonLogic,
-} from "./common";
+  useSheetV1Store,
+  useSheetStatementByUID,
+  useTaskStore,
+  useDatabaseV1Store,
+} from "@/store";
 import {
   Issue,
   IssueCreate,
@@ -19,17 +18,18 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
-  useSheetV1Store,
-  useSheetStatementByUID,
-  useTaskStore,
-  useDatabaseV1Store,
-} from "@/store";
-import { extractSheetUID, sheetIdOfTask } from "@/utils";
-import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
+import { extractSheetUID, sheetIdOfTask } from "@/utils";
+import {
+  flattenTaskList,
+  maybeFormatStatementOnSave,
+  TaskTypeWithStatement,
+  useCommonLogic,
+} from "./common";
+import { provideIssueLogic, useIssueLogic } from "./index";
 
 export default defineComponent({
   name: "GhostModeProvider",

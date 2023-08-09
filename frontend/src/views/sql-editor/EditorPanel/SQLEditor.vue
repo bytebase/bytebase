@@ -19,7 +19,7 @@
 
 <script lang="ts" setup>
 import { computed, defineEmits, nextTick, ref, watch, watchEffect } from "vue";
-
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   useTabStore,
   useSQLEditorStore,
@@ -29,7 +29,6 @@ import {
   useInstanceV1ByUID,
   useSheetAndTabStore,
 } from "@/store";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   ComposedDatabase,
   dialectOfEngineV1,

@@ -15,7 +15,6 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import { Role } from "@/types/proto/v1/role_service";
 import RoleTableRow from "./RoleTableRow.vue";
