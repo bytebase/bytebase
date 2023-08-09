@@ -125,6 +125,7 @@ const props = defineProps({
   },
   classificationConfig: {
     required: false,
+    default: undefined,
     type: Object as PropType<
       DataClassificationSetting_DataClassificationConfig | undefined
     >,
