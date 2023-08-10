@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-x-3">
+  <div v-if="shouldShowEarliestAllowedTime" class="flex items-center gap-x-3">
     <h2 class="flex flex-col items-end">
       <NTooltip>
         <template #trigger>
@@ -69,6 +69,13 @@ const currentUser = useCurrentUserV1();
 const { isCreating, issue, isTenantMode, selectedTask, events } =
   useIssueContext();
 const isUpdating = ref(false);
+
+const shouldShowEarliestAllowedTime = computed(() => {
+  if (isTenantMode.value) {
+    return false;
+  }
+  return true;
+});
 
 // `null` to "Unset"
 const earliestAllowedTime = computed(() => {
