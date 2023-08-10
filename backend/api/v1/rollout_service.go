@@ -1717,6 +1717,19 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	return taskCreates, nil, nil
 }
 
+func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+	// possible target:
+	// 1. instances/{instance}/databases/{database}
+	// 2. projects/{project}/databaseGroups/{databaseGroup}
+	if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
+		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
+	}
+	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
+		return getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx, s, spec, c, project, registerEnvironmentID)
+	}
+	return nil, nil, errors.Errorf("unknown target %q", c.Target)
+}
+
 func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
 	if err != nil {
@@ -2239,19 +2252,6 @@ func convertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error
 		return parser.OceanBase, nil
 	}
 	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)
-}
-
-func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
-	// possible target:
-	// 1. instances/{instance}/databases/{database}
-	// 2. projects/{project}/databaseGroups/{databaseGroup}
-	if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
-		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
-	}
-	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
-		return getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx, s, spec, c, project, registerEnvironmentID)
-	}
-	return nil, nil, errors.Errorf("unknown target %q", c.Target)
 }
 
 func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
