@@ -45,7 +45,7 @@
 
 <script lang="ts" setup>
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import {
@@ -107,6 +107,12 @@ const allowSelectTableResource = computed(() => {
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
   return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
+});
+
+onMounted(() => {
+  if (props.databaseResources && props.databaseResources.length > 0) {
+    state.exportMethod = "DATABASE";
+  }
 });
 
 watch(

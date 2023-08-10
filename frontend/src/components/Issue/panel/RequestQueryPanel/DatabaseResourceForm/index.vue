@@ -36,7 +36,7 @@
 
 <script lang="ts" setup>
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useProjectV1Store } from "@/store";
 import { DatabaseResource } from "@/types";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
@@ -77,6 +77,12 @@ const handleSelectedDatabaseResourceChanged = (
 ) => {
   state.databaseResources = databaseResourceList;
 };
+
+onMounted(() => {
+  if (props.databaseResources && props.databaseResources.length > 0) {
+    state.allDatabases = false;
+  }
+});
 
 watch(
   () => [state.allDatabases, state.databaseResources],
