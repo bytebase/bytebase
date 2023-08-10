@@ -233,18 +233,6 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	return matches[2], nil
 }
 
-func (driver *Driver) getPGStatStatementsVersion(ctx context.Context) (string, error) {
-	query := "select extversion from pg_extension where extname = 'pg_stat_statements'"
-	var version string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	return version, nil
-}
-
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {

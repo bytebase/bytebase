@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -443,143 +440,10 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 
 // SyncSlowQuery syncs the slow query.
 func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	var now time.Time
-	getNow := `SELECT NOW();`
-	nowRows, err := driver.db.QueryContext(ctx, getNow)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, getNow)
-	}
-	defer nowRows.Close()
-	for nowRows.Next() {
-		if err := nowRows.Scan(&now); err != nil {
-			return nil, util.FormatErrorWithQuery(err, getNow)
-		}
-	}
-	if err := nowRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, getNow)
-	}
-
-	result := make(map[string]*storepb.SlowQueryStatistics)
-	version, err := driver.getPGStatStatementsVersion(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var query string
-	// pg_stat_statements version 1.8 changed the column names of pg_stat_statements.
-	// version is a string in the form of "major.minor".
-	// We need to check if the major version is greater than or equal to 1 and the minor version is greater than or equal to 8.
-	versions := strings.Split(version, ".")
-	if len(versions) == 2 && ((versions[0] == "1" && versions[1] >= "8") || versions[0] > "1") {
-		query = `
-		SELECT
-			pg_database.datname,
-			query,
-			calls,
-			total_exec_time,
-			max_exec_time,
-			rows
-		FROM
-			pg_stat_statements
-			JOIN pg_database ON pg_database.oid = pg_stat_statements.dbid
-		WHERE max_exec_time >= 1000;
-	`
-	} else {
-		query = `
-		SELECT
-			pg_database.datname,
-			query,
-			calls,
-			total_time,
-			max_time,
-			rows
-		FROM
-			pg_stat_statements
-			JOIN pg_database ON pg_database.oid = pg_stat_statements.dbid
-		WHERE max_time >= 1000;
-		`
-	}
-
-	slowQueryStatisticsRows, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	defer slowQueryStatisticsRows.Close()
-	for slowQueryStatisticsRows.Next() {
-		var database string
-		var fingerprint string
-		var calls int64
-		var totalExecTime float64
-		var maxExecTime float64
-		var rows int64
-		if err := slowQueryStatisticsRows.Scan(&database, &fingerprint, &calls, &totalExecTime, &maxExecTime, &rows); err != nil {
-			return nil, err
-		}
-		if len(fingerprint) > db.SlowQueryMaxLen {
-			fingerprint = fingerprint[:db.SlowQueryMaxLen]
-		}
-		item := storepb.SlowQueryStatisticsItem{
-			SqlFingerprint:   fingerprint,
-			Count:            calls,
-			LatestLogTime:    timestamppb.New(now.UTC()),
-			TotalQueryTime:   durationpb.New(time.Duration(totalExecTime * float64(time.Millisecond))),
-			MaximumQueryTime: durationpb.New(time.Duration(maxExecTime * float64(time.Millisecond))),
-			TotalRowsSent:    rows,
-		}
-		if statistics, exists := result[database]; exists {
-			statistics.Items = append(statistics.Items, &item)
-		} else {
-			result[database] = &storepb.SlowQueryStatistics{
-				Items: []*storepb.SlowQueryStatisticsItem{&item},
-			}
-		}
-	}
-	if err := slowQueryStatisticsRows.Err(); err != nil {
-		return nil, err
-	}
-
-	reset := `SELECT pg_stat_statements_reset();`
-	if _, err := driver.db.ExecContext(ctx, reset); err != nil {
-		return nil, util.FormatErrorWithQuery(err, reset)
-	}
-	return result, nil
+	return nil, errors.Errorf("not implemented")
 }
 
 // CheckSlowQueryLogEnabled checks if slow query log is enabled.
 func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
-	showSharedPreloadLibraries := `SELECT setting FROM pg_settings WHERE name = 'shared_preload_libraries';`
-
-	sharedPreloadLibrariesRows, err := driver.db.QueryContext(ctx, showSharedPreloadLibraries)
-	if err != nil {
-		return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
-	}
-	defer sharedPreloadLibrariesRows.Close()
-	for sharedPreloadLibrariesRows.Next() {
-		var sharedPreloadLibraries string
-		if err := sharedPreloadLibrariesRows.Scan(&sharedPreloadLibraries); err != nil {
-			return err
-		}
-		if !strings.Contains(sharedPreloadLibraries, "pg_stat_statements") {
-			return errors.New("pg_stat_statements is not loaded")
-		}
-	}
-	if err := sharedPreloadLibrariesRows.Err(); err != nil {
-		return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
-	}
-
-	checkPGStatStatements := `SELECT count(*) FROM pg_stat_statements limit 10;`
-
-	pgStatStatementsInfoRows, err := driver.db.QueryContext(ctx, checkPGStatStatements)
-	if err != nil {
-		return util.FormatErrorWithQuery(err, checkPGStatStatements)
-	}
-	defer pgStatStatementsInfoRows.Close()
-	// no need to scan rows, just check if there is any row
-	if !pgStatStatementsInfoRows.Next() {
-		return errors.New("pg_stat_statements is empty")
-	}
-	if err := pgStatStatementsInfoRows.Err(); err != nil {
-		return util.FormatErrorWithQuery(err, checkPGStatStatements)
-	}
-
-	return nil
+	return errors.Errorf("not implemented")
 }
