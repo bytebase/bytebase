@@ -1562,7 +1562,8 @@
       "never-expires": "永不过期",
       "role-never-expires": "此角色没有过期时间。",
       "add-more": "增加更多",
-      "role-name": "角色名称"
+      "role-name": "角色名称",
+      "revoke-members": "撤销成员"
     },
     "mode": {
       "standard": "标准模式",

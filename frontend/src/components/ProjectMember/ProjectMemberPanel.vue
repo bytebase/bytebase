@@ -326,7 +326,7 @@ const handleRevokeSelectedMembers = () => {
   }
 
   dialog.create({
-    title: "Revoke these members",
+    title: t("project.members.revoke-members"),
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {

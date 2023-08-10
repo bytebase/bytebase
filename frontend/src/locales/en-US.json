@@ -1569,7 +1569,8 @@
       "never-expires": "Never",
       "role-never-expires": "This role never expires.",
       "add-more": "Add more",
-      "role-name": "Role name"
+      "role-name": "Role name",
+      "revoke-members": "Revoke these members"
     },
     "mode": {
       "standard": "Standard Mode",
