@@ -176,6 +176,10 @@ export function projectRoleName(role: ProjectRoleType): string {
       return "Owner";
     case "DEVELOPER":
       return "Developer";
+    case "QUERIER":
+      return "Querier";
+    case "EXPORTER":
+      return "Exporter";
   }
   return role;
 }
