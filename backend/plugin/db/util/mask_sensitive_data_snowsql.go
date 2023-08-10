@@ -174,10 +174,8 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 		return nil, nil
 	}
 
-	var fromFieldList []fieldInfo
-	var err error
 	if ctx.Select_optional_clauses().From_clause() != nil {
-		fromFieldList, err = extractor.extractSnowsqlSensitiveFieldsFromClause(ctx.Select_optional_clauses().From_clause())
+		fromFieldList, err := extractor.extractSnowsqlSensitiveFieldsFromClause(ctx.Select_optional_clauses().From_clause())
 		if err != nil {
 			return nil, err
 		}
