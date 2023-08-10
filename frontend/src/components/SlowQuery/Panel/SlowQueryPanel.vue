@@ -71,7 +71,11 @@ import {
 import LogFilter from "./LogFilter.vue";
 import LogTable from "./LogTable.vue";
 import DetailPanel from "./DetailPanel.vue";
-import { extractInstanceResourceName, hasWorkspacePermissionV1 } from "@/utils";
+import {
+  extractInstanceResourceName,
+  extractProjectResourceName,
+  hasWorkspacePermissionV1,
+} from "@/utils";
 import { useRouter } from "vue-router";
 
 const props = withDefaults(
@@ -143,17 +147,28 @@ const syncNow = async () => {
   syncing.value = true;
   try {
     await useGracefulRequest(async () => {
-      const policyList = await useSlowQueryPolicyStore().fetchPolicyList();
-      const requestList = policyList
-        .filter((policy) => {
-          return policy.slowQueryPolicy?.active;
-        })
-        .map(async (policy) => {
-          return slowQueryStore.syncSlowQueriesByInstance(
-            `instances/${extractInstanceResourceName(policy.name)}`
-          );
-        });
-      await Promise.all(requestList);
+      if (props.filter.instance) {
+        await slowQueryStore.syncSlowQueries(
+          `instances/${extractInstanceResourceName(props.filter.instance.name)}`
+        );
+      } else if (props.filter.project) {
+        await slowQueryStore.syncSlowQueries(
+          `projects/${extractProjectResourceName(props.filter.project.name)}`
+        );
+      } else {
+        const policyList = await useSlowQueryPolicyStore().fetchPolicyList();
+        const requestList = policyList
+          .filter((policy) => {
+            return policy.slowQueryPolicy?.active;
+          })
+          .map(async (policy) => {
+            return slowQueryStore.syncSlowQueries(
+              `instances/${extractInstanceResourceName(policy.name)}`
+            );
+          });
+        await Promise.all(requestList);
+      }
+
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

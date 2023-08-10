@@ -278,9 +278,17 @@ Below diagram describes a typical mapping between an engineering org and the cor
    git clone https://github.com/bytebase/bytebase
    ```
 
+1. Create an external Postgres database on localhost.
+
+  ```sql
+  CREATE USER bbdev SUPERUSER;
+  CREATE DATABASE bbdev;
+  ```
+
 1. Start backend using air (with live reload).
 
    ```bash
+   PG_URL=postgresql://bbdev@localhost/bbdev
    air -c scripts/.air.toml
    ```
 

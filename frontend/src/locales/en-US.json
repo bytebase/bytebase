@@ -500,6 +500,7 @@
         "scopes-description": "A space-separated list of scopes to be carried when accessing the Auth URL",
         "token-url-description": "The API address for obtaining accessToken",
         "user-info-url-description": "The API address for obtaining user information by accessToken",
+        "security-protocol": "Security protocol",
         "connection-security": "Connection security",
         "connection-security-skip-tls-verify": "Skip TLS verify for self-signed certificates",
         "user-information-mapping": "User information mapping",
@@ -1329,7 +1330,10 @@
       },
       "select-target-project": "Select target project"
     },
-    "transfer-database-from-to": "Transfer database from source project to target project"
+    "transfer-database-from-to": "Transfer database from source project to target project",
+    "classification": {
+      "self": "Classification"
+    }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

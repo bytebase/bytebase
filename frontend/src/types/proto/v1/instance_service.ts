@@ -195,9 +195,10 @@ export interface UpdateDataSourceRequest {
 export interface SyncSlowQueriesRequest {
   /**
    * The name of the instance to sync slow queries.
-   * Format: instances/{instance}
+   * Format: instances/{instance} for one instance
+   *      or projects/{project} for one project.
    */
-  instance: string;
+  parent: string;
 }
 
 /** InstanceOptions is the option for instances. */
@@ -1134,13 +1135,13 @@ export const UpdateDataSourceRequest = {
 };
 
 function createBaseSyncSlowQueriesRequest(): SyncSlowQueriesRequest {
-  return { instance: "" };
+  return { parent: "" };
 }
 
 export const SyncSlowQueriesRequest = {
   encode(message: SyncSlowQueriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.instance !== "") {
-      writer.uint32(10).string(message.instance);
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
     }
     return writer;
   },
@@ -1157,7 +1158,7 @@ export const SyncSlowQueriesRequest = {
             break;
           }
 
-          message.instance = reader.string();
+          message.parent = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1169,12 +1170,12 @@ export const SyncSlowQueriesRequest = {
   },
 
   fromJSON(object: any): SyncSlowQueriesRequest {
-    return { instance: isSet(object.instance) ? String(object.instance) : "" };
+    return { parent: isSet(object.parent) ? String(object.parent) : "" };
   },
 
   toJSON(message: SyncSlowQueriesRequest): unknown {
     const obj: any = {};
-    message.instance !== undefined && (obj.instance = message.instance);
+    message.parent !== undefined && (obj.parent = message.parent);
     return obj;
   },
 
@@ -1184,7 +1185,7 @@ export const SyncSlowQueriesRequest = {
 
   fromPartial(object: DeepPartial<SyncSlowQueriesRequest>): SyncSlowQueriesRequest {
     const message = createBaseSyncSlowQueriesRequest();
-    message.instance = object.instance ?? "";
+    message.parent = object.parent ?? "";
     return message;
   },
 };
@@ -2289,25 +2290,66 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              47,
+              88,
               58,
               1,
               42,
+              90,
+              41,
               34,
-              42,
+              39,
               47,
               118,
               49,
               47,
               123,
-              105,
-              110,
-              115,
-              116,
+              112,
               97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              58,
+              115,
+              121,
               110,
               99,
+              83,
+              108,
+              111,
+              119,
+              81,
+              117,
               101,
+              114,
+              105,
+              101,
+              115,
+              34,
+              40,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
               61,
               105,
               110,

@@ -28,79 +28,23 @@
             {{ $t("common.databases") }}
             <RequiredStar />
           </span>
-          <div class="w-full mb-2">
-            <NRadioGroup
-              v-model:value="state.allDatabases"
-              class="w-full !flex flex-row justify-start items-center gap-4"
-              name="export-method"
-            >
-              <NTooltip trigger="hover">
-                <template #trigger>
-                  <NRadio
-                    :value="true"
-                    :label="$t('issue.grant-request.all-databases')"
-                  />
-                </template>
-                {{ $t("issue.grant-request.all-databases-tip") }}
-              </NTooltip>
-              <NRadio
-                class="!leading-6"
-                :value="false"
-                :disabled="!state.projectId"
-                :label="$t('issue.grant-request.manually-select')"
-              />
-            </NRadioGroup>
-          </div>
-          <div
-            v-if="!state.allDatabases"
-            class="w-full flex flex-row justify-start items-center"
-          >
-            <SelectDatabaseResourceForm
-              v-if="state.projectId"
-              :project-id="state.projectId"
-              :selected-database-resource-list="
-                state.selectedDatabaseResourceList
-              "
-              @update="handleSelectedDatabaseResourceChanged"
-            />
-          </div>
+          <DatabaseResourceForm
+            :project-id="state.projectId"
+            :database-resources="state.databaseResources"
+            @update:condition="state.databaseResourceCondition = $event"
+            @update:database-resources="state.databaseResources = $event"
+          />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-start textlabel mb-4">
-            {{ $t("issue.grant-request.expire-days") }}
+            {{ $t("common.expiration") }}
             <RequiredStar />
           </span>
-          <div>
-            <NRadioGroup
-              v-model:value="state.expireDays"
-              class="!grid grid-cols-4 gap-4"
-              name="radiogroup"
-            >
-              <div
-                v-for="day in expireDaysOptions"
-                :key="day.value"
-                class="col-span-1 flex flex-row justify-start items-center"
-              >
-                <NRadio :value="day.value" :label="day.label" />
-              </div>
-              <div class="col-span-2 flex flex-row justify-start items-center">
-                <NRadio
-                  :value="-1"
-                  :label="$t('issue.grant-request.customize')"
-                />
-                <NInputNumber
-                  v-model:value="state.customDays"
-                  class="!w-24 ml-2"
-                  :disabled="state.expireDays !== -1"
-                  :min="1"
-                  :show-button="false"
-                  :placeholder="''"
-                >
-                  <template #suffix>{{ $t("common.date.days") }}</template>
-                </NInputNumber>
-              </div>
-            </NRadioGroup>
-          </div>
+          <ExpirationSelector
+            class="grid-cols-4"
+            :options="expireDaysOptions"
+            :value="state.expireDays"
+          />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">{{
@@ -131,17 +75,12 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  NDrawer,
-  NDrawerContent,
-  NRadioGroup,
-  NRadio,
-  NInputNumber,
-  NInput,
-  NTooltip,
-} from "naive-ui";
+import dayjs from "dayjs";
+import { head, isUndefined, uniq } from "lodash-es";
+import { NDrawer, NDrawerContent, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import {
   ComposedDatabase,
   DatabaseResource,
@@ -158,18 +97,14 @@ import {
   useProjectV1Store,
 } from "@/store";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { head, uniq } from "lodash-es";
-import { useRouter } from "vue-router";
-import dayjs from "dayjs";
-import { stringifyDatabaseResources } from "@/utils/issue/cel";
-import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
+import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
 
 interface LocalState {
   projectId?: string;
-  allDatabases: boolean;
-  selectedDatabaseResourceList: DatabaseResource[];
+  databaseResourceCondition?: string;
+  databaseResources: DatabaseResource[];
   expireDays: number;
-  customDays: number;
   description: string;
 }
 
@@ -182,20 +117,18 @@ defineEmits<{
   (event: "close"): void;
 }>();
 
-const extractDatabaseResourceFromProps = (): Pick<
+const extractDatabaseResourcesFromProps = (): Pick<
   LocalState,
-  "allDatabases" | "selectedDatabaseResourceList"
+  "databaseResources"
 > => {
   const { database } = props;
   if (!database || database.uid === String(UNKNOWN_ID)) {
     return {
-      allDatabases: true,
-      selectedDatabaseResourceList: [],
+      databaseResources: [],
     };
   }
   return {
-    allDatabases: false,
-    selectedDatabaseResourceList: [
+    databaseResources: [
       {
         databaseName: database.name,
       },
@@ -209,9 +142,8 @@ const databaseStore = useDatabaseV1Store();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   projectId: props.projectId,
-  ...extractDatabaseResourceFromProps(),
+  ...extractDatabaseResourcesFromProps(),
   expireDays: 7,
-  customDays: 365,
   description: "",
 });
 
@@ -247,20 +179,17 @@ const allowCreate = computed(() => {
     return false;
   }
 
-  if (!state.allDatabases) {
-    return state.selectedDatabaseResourceList.length > 0;
+  // If all database selected, the condition is an empty string.
+  // If some databases selected, the condition is a string.
+  // If no database selected, the condition is undefined.
+  if (isUndefined(state.databaseResourceCondition)) {
+    return false;
   }
   return true;
 });
 
 const handleProjectSelect = async (projectId: string) => {
   state.projectId = projectId;
-};
-
-const handleSelectedDatabaseResourceChanged = (
-  databaseResourceList: DatabaseResource[]
-) => {
-  state.selectedDatabaseResourceList = databaseResourceList;
 };
 
 const doCreateIssue = async () => {
@@ -293,16 +222,14 @@ const doCreateIssue = async () => {
   }
 
   const expression: string[] = [];
-  const expireDays =
-    state.expireDays === -1 ? state.customDays : state.expireDays;
+  const expireDays = state.expireDays;
   expression.push(
     `request.time < timestamp("${dayjs()
       .add(expireDays, "days")
       .toISOString()}")`
   );
-  if (!state.allDatabases) {
-    const cel = stringifyDatabaseResources(state.selectedDatabaseResourceList);
-    expression.push(cel);
+  if (state.databaseResourceCondition) {
+    expression.push(state.databaseResourceCondition);
   }
 
   const celExpressionString = expression.join(" && ");
@@ -326,11 +253,11 @@ const generateIssueName = () => {
     throw new Error("No project selected");
   }
 
-  if (state.allDatabases) {
+  if (state.databaseResources.length === 0) {
     return `Request query for all database`;
   } else {
     const databaseNames = uniq(
-      state.selectedDatabaseResourceList.map(
+      state.databaseResources.map(
         (databaseResource) => databaseResource.databaseName
       )
     );
