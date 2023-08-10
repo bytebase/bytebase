@@ -218,6 +218,7 @@ message Plan {
   message ChangeDatabaseConfig {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}.
+    // Format: projects/{project}/databaseGroups/{databaseGroup}
     string target = 1;
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
