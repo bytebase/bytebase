@@ -161,11 +161,11 @@ const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const columnList = computed(() => {
   const ACCOUNT: BBGridColumn = {
-    title: t("settings.members.table.account"),
+    title: t("common.user"),
     width: hasRBACFeature.value ? "minmax(auto, 18rem)" : "1fr",
   };
   const ROLE: BBGridColumn = {
-    title: t("settings.members.table.roles"),
+    title: t("common.role.self"),
     width: "1fr",
   };
   const EXPIRATION: BBGridColumn = {
