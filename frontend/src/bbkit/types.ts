@@ -104,4 +104,4 @@ export type BBAttentionStyle = "INFO" | "WARN" | "CRITICAL";
 
 export type BBAttentionSide = "BETWEEN" | "CENTER";
 
-export type BBAvatarSizeType = "SMALL" | "NORMAL" | "LARGE" | "HUGE";
+export type BBAvatarSizeType = "TINY" | "SMALL" | "NORMAL" | "LARGE" | "HUGE";

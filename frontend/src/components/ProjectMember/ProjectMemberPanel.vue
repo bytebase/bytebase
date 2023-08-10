@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-3xl w-full mx-auto">
+  <div class="max-w-4xl w-full mx-auto">
     <FeatureAttention custom-class="my-5" feature="bb.feature.rbac" />
 
     <div class="mb-4 w-full flex flex-row justify-between items-center">
@@ -12,6 +12,7 @@
       </div>
       <div v-if="allowAdmin" class="flex gap-x-2">
         <NButton
+          v-if="state.selectedTab === 'users'"
           :disabled="state.selectedMemberNameList.size === 0"
           @click="handleRevokeSelectedMembers"
         >
@@ -26,61 +27,70 @@
       </div>
     </div>
 
-    <ProjectMemberTable
-      :iam-policy="iamPolicy"
-      :project="project"
-      :ready="ready"
-      :editable="true"
-      :member-list="renderedComposedMemberList"
-      :show-selection-column="allowAdmin"
-    >
-      <template #selection-all="{ memberList }">
-        <input
-          v-if="renderedComposedMemberList.length > 0"
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          v-bind="getAllSelectionState(memberList)"
-          @input="
-            toggleAllMembersSelection(
-              memberList,
-              ($event.target as HTMLInputElement).checked
-            )
-          "
-        />
-      </template>
-      <template #selection="{ member }">
-        <input
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          :checked="isMemeberSelected(member)"
-          @input="(e: any) => toggleMemberSelection(member, e.target.checked)"
-        />
-      </template>
-    </ProjectMemberTable>
+    <NTabs v-model:value="state.selectedTab" type="bar">
+      <NTabPane name="users" tab="Users">
+        <ProjectMemberTable
+          :project="project"
+          :ready="ready"
+          :editable="true"
+          :member-list="renderedComposedMemberList"
+          :show-selection-column="allowAdmin"
+        >
+          <template #selection-all="{ memberList }">
+            <input
+              v-if="renderedComposedMemberList.length > 0"
+              type="checkbox"
+              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+              v-bind="getAllSelectionState(memberList)"
+              @input="
+                toggleAllMembersSelection(
+                  memberList,
+                  ($event.target as HTMLInputElement).checked
+                )
+              "
+            />
+          </template>
+          <template #selection="{ member }">
+            <input
+              type="checkbox"
+              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+              :checked="isMemeberSelected(member)"
+              @input="(e: any) => toggleMemberSelection(member, e.target.checked)"
+            />
+          </template>
+        </ProjectMemberTable>
 
-    <div v-if="inactiveComposedMemberList.length > 0" class="mt-4 ml-2">
-      <NCheckbox v-model:checked="state.showInactiveMemberList">
-        <span class="textinfolabel">
-          {{ $t("project.members.show-inactive") }}
-        </span>
-      </NCheckbox>
-    </div>
+        <div v-if="inactiveComposedMemberList.length > 0" class="mt-4 ml-2">
+          <NCheckbox v-model:checked="state.showInactiveMemberList">
+            <span class="textinfolabel">
+              {{ $t("project.members.show-inactive") }}
+            </span>
+          </NCheckbox>
+        </div>
 
-    <div v-if="state.showInactiveMemberList" class="my-4 space-y-2">
-      <div class="text-lg font-medium leading-7 text-main">
-        <span>{{ $t("project.members.inactive-members") }}</span>
-        <span class="ml-1 font-normal text-control-light">
-          ({{ inactiveComposedMemberList.length }})
-        </span>
-      </div>
-      <ProjectMemberTable
-        :iam-policy="iamPolicy"
-        :project="project"
-        :ready="ready"
-        :editable="false"
-        :member-list="inactiveComposedMemberList"
-      />
-    </div>
+        <div v-if="state.showInactiveMemberList" class="my-4 space-y-2">
+          <div class="text-lg font-medium leading-7 text-main">
+            <span>{{ $t("project.members.inactive-members") }}</span>
+            <span class="ml-1 font-normal text-control-light">
+              ({{ inactiveComposedMemberList.length }})
+            </span>
+          </div>
+          <ProjectMemberTable
+            :project="project"
+            :ready="ready"
+            :editable="false"
+            :member-list="inactiveComposedMemberList"
+          />
+        </div>
+      </NTabPane>
+      <NTabPane name="roles" tab="Roles">
+        <ProjectRoleTable
+          :project="project"
+          :search-text="state.searchText"
+          :ready="ready"
+        />
+      </NTabPane>
+    </NTabs>
   </div>
 
   <AddProjectMembersPanel
@@ -92,7 +102,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, orderBy, uniq } from "lodash-es";
-import { NButton, NCheckbox, useDialog } from "naive-ui";
+import { NButton, NCheckbox, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -119,9 +129,11 @@ import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vu
 import ProjectMemberTable, {
   ComposedProjectMember,
 } from "./ProjectMemberTable";
+import ProjectRoleTable from "./ProjectRoleTable";
 
 interface LocalState {
   searchText: string;
+  selectedTab: "users" | "roles";
   selectedMemberNameList: Set<string>;
   showInactiveMemberList: boolean;
   showAddMemberPanel: boolean;
@@ -139,6 +151,7 @@ const { policy: iamPolicy, ready } = useProjectIamPolicy(projectResourceName);
 
 const state = reactive<LocalState>({
   searchText: "",
+  selectedTab: "users",
   selectedMemberNameList: new Set(),
   showInactiveMemberList: false,
   showAddMemberPanel: false,
@@ -317,7 +330,7 @@ const handleRevokeSelectedMembers = () => {
   }
 
   dialog.create({
-    title: "Revoke these members",
+    title: t("project.members.revoke-members"),
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {

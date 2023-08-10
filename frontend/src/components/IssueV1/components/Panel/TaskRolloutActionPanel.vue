@@ -1,20 +1,83 @@
 <template>
-  <CommonDialog :title="title" :loading="state.loading" @close="$emit('close')">
-    <Form
-      :action="action"
-      :task-list="taskList"
-      @cancel="$emit('close')"
-      @confirm="handleConfirm"
-    />
-  </CommonDialog>
+  <CommonDrawer
+    :show="action !== undefined"
+    :title="title"
+    :loading="state.loading"
+    @close="$emit('close')"
+  >
+    <template #default>
+      <div v-if="action" class="flex flex-col gap-y-4">
+        <div class="text-sm">
+          <label v-if="taskList.length > 1" class="textlabel">
+            {{ $t("common.tasks") }}
+          </label>
+          <ul class="mt-1 max-h-[45vh] overflow-y-auto">
+            <li
+              v-for="item in distinctTaskList"
+              :key="item.task.uid"
+              class="text-sm textinfolabel"
+            >
+              <span class="textinfolabel">
+                {{ item.task.title }}
+              </span>
+              <span v-if="item.similar.length > 0" class="ml-2 text-gray-400">
+                {{
+                  $t("task.n-similar-tasks", {
+                    count: item.similar.length + 1,
+                  })
+                }}
+              </span>
+            </li>
+          </ul>
+          <PlanCheckBar
+            v-if="taskList.length === 1 && action === 'ROLLOUT'"
+            :allow-run-checks="false"
+            :task="taskList[0]"
+            class="pt-2"
+          />
+        </div>
+        <div class="flex flex-col gap-y-1">
+          <p class="textlabel">
+            {{ $t("common.comment") }}
+          </p>
+          <NInput
+            v-model:value="comment"
+            type="textarea"
+            :placeholder="$t('issue.leave-a-comment')"
+            :autosize="{
+              minRows: 3,
+              maxRows: 10,
+            }"
+          />
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div v-if="action" class="flex justify-end gap-x-4">
+        <NButton @click="$emit('close')">
+          {{ $t("common.cancel") }}
+        </NButton>
+        <NButton
+          v-bind="taskRolloutActionButtonProps(action)"
+          @click="handleConfirm(action, comment)"
+        >
+          {{ taskRolloutActionDialogButtonName(action, taskList) }}
+        </NButton>
+      </div>
+    </template>
+  </CommonDrawer>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from "vue";
+import { groupBy } from "lodash-es";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
 import {
   TaskRolloutAction,
   stageForTask,
+  taskRolloutActionButtonProps,
+  taskRolloutActionDialogButtonName,
   taskRolloutActionDisplayName,
   taskRunListForTask,
   useIssueContext,
@@ -26,15 +89,13 @@ import {
   TaskRun,
   TaskRun_Status,
 } from "@/types/proto/v1/rollout_service";
-import CommonDialog from "../CommonDialog.vue";
-import Form from "./Form.vue";
 
 type LocalState = {
   loading: boolean;
 };
 
 const props = defineProps<{
-  action: TaskRolloutAction;
+  action?: TaskRolloutAction;
   taskList: Task[];
 }>();
 const emit = defineEmits<{
@@ -46,13 +107,26 @@ const state = reactive<LocalState>({
   loading: false,
 });
 const { issue, events } = useIssueContext();
+const comment = ref("");
 
 const title = computed(() => {
+  if (!props.action) return "";
+
   const action = taskRolloutActionDisplayName(props.action);
   if (props.taskList.length > 1) {
     return t("task.action-all-tasks-in-current-stage", { action });
   }
   return action;
+});
+
+const distinctTaskList = computed(() => {
+  type DistinctTaskList = { task: Task; similar: Task[] };
+  const groups = groupBy(props.taskList, (task) => task.title);
+
+  return Object.keys(groups).map<DistinctTaskList>((taskName) => {
+    const [task, ...similar] = groups[taskName];
+    return { task, similar };
+  });
 });
 
 const handleConfirm = async (

@@ -9,14 +9,22 @@ import {
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import {
+  extractDatabaseGroupName,
   extractUserResourceName,
   flattenTaskV1List,
   hasWorkspacePermissionV1,
 } from "@/utils";
-import { planCheckRunSummaryForTask } from ".";
+import { planCheckRunSummaryForTask, specForTask } from ".";
 
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
-  return false; // TODO
+  const spec = specForTask(issue.planEntity, task);
+  if (!spec) {
+    return false; // Not sure actually, but doesn't matter.
+  }
+  const databaseGroup = extractDatabaseGroupName(
+    spec.changeDatabaseConfig?.target ?? ""
+  );
+  return databaseGroup !== "";
 };
 
 export const allowUserToEditStatementForTask = (
@@ -25,10 +33,6 @@ export const allowUserToEditStatementForTask = (
   user: User
 ): string[] => {
   const denyReasons: string[] = [];
-
-  if (isGroupingChangeTaskV1(issue, task)) {
-    denyReasons.push("Cannot edit database group change issue");
-  }
 
   if (isTaskV1TriggeredByVCS(issue, task)) {
     // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
@@ -57,6 +61,10 @@ export const allowUserToEditStatementForTask = (
   }
 
   if (issue.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
+    if (isGroupingChangeTaskV1(issue, task)) {
+      return ["Cannot edit statement in grouping mode"];
+    }
+
     const tasks = flattenTaskV1List(issue.rolloutEntity);
     if (!tasks.every((task) => isTaskEditable(issue, task).length === 0)) {
       denyReasons.push("Some of the tasks are not editable in batch mode");

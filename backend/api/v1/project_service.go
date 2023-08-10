@@ -2108,6 +2108,40 @@ func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 	}
 	return matches, unmatches, nil
 }
+func getMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
+	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var matched []string
+	var unmatched []string
+
+	for _, schema := range dbSchema.Metadata.Schemas {
+		for _, table := range schema.Tables {
+			res, _, err := prog.ContextEval(ctx, map[string]any{
+				"resource": map[string]any{
+					"table_name": table.Name,
+				},
+			})
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, err.Error())
+			}
+
+			val, err := res.ConvertToNative(reflect.TypeOf(false))
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+			}
+
+			if boolVal, ok := val.(bool); ok && boolVal {
+				matched = append(matched, table.Name)
+			} else {
+				unmatched = append(unmatched, table.Name)
+			}
+		}
+	}
+	return matched, unmatched, nil
+}
 
 func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{

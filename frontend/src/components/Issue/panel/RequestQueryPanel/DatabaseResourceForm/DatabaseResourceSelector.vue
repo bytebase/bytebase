@@ -46,7 +46,6 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-
 const selectedValueList = ref<string[]>(
   props.databaseResources.map((databaseResource) => {
     const database = databaseStore.getDatabaseByName(
@@ -149,6 +148,19 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     },
     pattern,
     checkedKeys: selectedValueList.value,
+    defaultExpandedKeys: selectedValueList.value
+      .map((key) => {
+        if (key.startsWith("t-")) {
+          const [_, database, schema] = key.split("-");
+          return [`d-${database}`, `s-${database}-${schema}`];
+        } else if (key.startsWith("s-")) {
+          const [_, database] = key.split("-");
+          return [`d-${database}`];
+        } else {
+          return [];
+        }
+      })
+      .flat(),
     showIrrelevantNodes: false,
     onUpdateCheckedKeys: (checkedKeys: string[]) => {
       onCheck(checkedKeys);
