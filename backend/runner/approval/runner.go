@@ -413,16 +413,6 @@ func getReportResult(ctx context.Context, s *store.Store, task *store.TaskMessag
 }
 
 func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
-	// higher risks go first
-	sort.Slice(risks, func(i, j int) bool {
-		return risks[i].Level > risks[j].Level
-	})
-
-	e, err := cel.NewEnv(common.RiskFactors...)
-	if err != nil {
-		return 0, store.RiskSourceUnknown, false, err
-	}
-
 	payload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to unmarshal issue payload")
@@ -439,6 +429,21 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 		riskSource = store.RiskRequestQuery
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown grant request role %v", payload.GrantRequest.Role)
+	}
+
+	// fast path, no risks so return the DEFAULT risk level "0"
+	if len(risks) == 0 {
+		return 0, riskSource, true, nil
+	}
+
+	// higher risks go first
+	sort.Slice(risks, func(i, j int) bool {
+		return risks[i].Level > risks[j].Level
+	})
+
+	e, err := cel.NewEnv(common.RiskFactors...)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, err
 	}
 
 	factors, err := common.GetQueryExportFactors(payload.GrantRequest.Condition.Expression)
