@@ -142,9 +142,8 @@ func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
 // guessDSN will guess a valid DB connection and its database name.
 func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.ConnConfig, error) {
-	// Some postgres server default behavior is to use username as the database name if not specified,
-	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
-	guesses := []string{"postgres", username, "template1"}
+	// RisingWave creates the default `dev` database.
+	guesses := []string{"dev"}
 	for _, guessDatabase := range guesses {
 		connConfig := *baseConnConfig
 		connConfig.Database = guessDatabase
