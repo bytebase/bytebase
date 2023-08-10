@@ -365,7 +365,8 @@ const getColumnSensitiveLevel = (classificationId: string) => {
   if (!classification) {
     return;
   }
-  return props.classificationConfig?.levels.find((level) => level.id === classification.levelId);
+  return (props.classificationConfig?.levels ?? []).find(
+    (level) => level.id === classification.levelId
+  );
 };
-
 </script>
