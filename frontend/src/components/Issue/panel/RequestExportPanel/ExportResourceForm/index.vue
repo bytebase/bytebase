@@ -44,6 +44,7 @@
 </template>
 
 <script lang="ts" setup>
+import { isUndefined } from "lodash-es";
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
@@ -110,7 +111,11 @@ const dialect = computed((): SQLDialect => {
 });
 
 onMounted(() => {
-  if (props.databaseResources && props.databaseResources.length > 0) {
+  if (
+    props.databaseResources &&
+    props.databaseResources.length > 0 &&
+    isUndefined(props.statement)
+  ) {
     state.exportMethod = "DATABASE";
   }
 });
