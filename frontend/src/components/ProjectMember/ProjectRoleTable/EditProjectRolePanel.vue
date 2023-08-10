@@ -214,7 +214,8 @@ const allowConfirm = computed(() => {
 
 onMounted(() => {
   const binding = props.binding;
-  state.title = binding.condition?.title || "";
+  // Set the display title with the role name.
+  state.title = binding.condition?.title || displayRoleTitle(binding.role);
   state.description = binding.condition?.description || "";
 
   if (binding.parsedExpr?.expr) {
