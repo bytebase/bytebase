@@ -101,9 +101,7 @@ import {
   SensitiveData,
   SensitiveDataMaskType,
 } from "@/types/proto/v1/org_policy_service";
-import {
-  DataClassificationSetting_DataClassificationConfig,
-} from "@/types/proto/v1/setting_service";
+import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1, isDev } from "@/utils";
 
 type LocalState = {
@@ -363,11 +361,11 @@ const getColumnClassification = (classificationId: string) => {
 };
 
 const getColumnSensitiveLevel = (classificationId: string) => {
-  const classification = getColumnClassification(classificationId)
+  const classification = getColumnClassification(classificationId);
   if (!classification) {
-    return
+    return;
   }
-  return props.classificationConfig?.levels.find(level => level.id === classification.levelId)
-}
+  return props.classificationConfig?.levels.find((level) => level.id === classification.levelId);
+};
 
 </script>
