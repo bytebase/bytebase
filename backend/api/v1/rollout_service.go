@@ -1501,12 +1501,10 @@ func isSpecSheetUpdated(specA *v1pb.Plan_Spec, specB *v1pb.Plan_Spec) bool {
 func validateSteps(_ []*v1pb.Plan_Step) error {
 	// FIXME: impl this func
 	// targets should be unique
-	// if deploymentConfig is used, only one spec is allowed.
 	return nil
 }
 
 func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-	// FIXME: handle deploymentConfig
 	pipelineCreate := &store.PipelineMessage{
 		Name: "Rollout Pipeline",
 	}
