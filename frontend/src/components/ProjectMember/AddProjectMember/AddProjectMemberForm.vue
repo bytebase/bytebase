@@ -59,11 +59,9 @@
         <span class="mb-2">
           {{ $t("issue.grant-request.export-rows") }}
         </span>
-        <input
+        <NInputNumber
           v-model="state.maxRowCount"
           required
-          type="number"
-          class="textfield"
           placeholder="Max row count"
         />
       </div>
@@ -84,6 +82,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
+import { NInputNumber } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
