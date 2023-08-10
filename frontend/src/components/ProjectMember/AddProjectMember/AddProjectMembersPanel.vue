@@ -83,7 +83,12 @@ const filteredBindings = computed(() => {
 const allowConfirm = computed(() => {
   for (const binding of filteredBindings.value) {
     // TODO: check the cel condition expression is valid for querier and exporter.
-    if (binding.members.length === 0 || binding.role === "") return false;
+    if (
+      binding.members.length === 0 ||
+      binding.role === "" ||
+      !binding.condition?.title
+    )
+      return false;
   }
   return true;
 });
