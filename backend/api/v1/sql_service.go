@@ -41,6 +41,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -1186,6 +1187,11 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		DatabaseList:        []db.DatabaseSchema{},
 	}
+
+	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find classification setting")
+	}
 	for _, name := range databaseList {
 		databaseName := name
 		if name == "" {
@@ -1214,10 +1220,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Failed to find sensitive data policy for database %q in instance %q: %v", databaseName, instance.Title, err)
-		}
-		if len(policy.SensitiveDataList) == 0 {
-			// If there is no sensitive data policy, return nil to skip mask sensitive data.
-			return nil, nil
 		}
 
 		columnMap := make(sensitiveDataMap)
@@ -1290,6 +1292,13 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						Table:  table.Name,
 						Column: column.Name,
 					}]
+					if !sensitive {
+						classificationIsSensitive, err := s.getSensitiveForClassification(ctx, column.Classification, database.ProjectID, classificationSetting)
+						if err != nil {
+							return nil, err
+						}
+						sensitive = classificationIsSensitive
+					}
 					tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
 						Name:      column.Name,
 						Sensitive: sensitive,
@@ -1323,6 +1332,44 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		result = nil
 	}
 	return result, nil
+}
+
+func (s *SQLService) getSensitiveForClassification(ctx context.Context, classificationID string, projectID string, classificationSetting *storepb.DataClassificationSetting) (bool, error) {
+	if classificationID == "" || projectID == "" {
+		return false, nil
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return false, status.Errorf(codes.Internal, "Failed to find project %q: %v", projectID, err)
+	}
+
+	if project.DataClassificationConfigID == "" {
+		return false, nil
+	}
+
+	for _, setting := range classificationSetting.Configs {
+		if setting.Id != project.DataClassificationConfigID {
+			continue
+		}
+		classification, ok := setting.Classification[classificationID]
+		if !ok {
+			return false, nil
+		}
+		if classification.LevelId == nil {
+			return false, nil
+		}
+
+		for _, level := range setting.Levels {
+			if level.Id == *classification.LevelId {
+				return level.Sensitive, nil
+			}
+		}
+		return false, nil
+	}
+
+	return false, nil
 }
 
 func isExcludeDatabase(dbType db.Type, database string) bool {

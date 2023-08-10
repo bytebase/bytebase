@@ -272,6 +272,7 @@ message DataClassificationSetting {
       string id = 1;
       string title = 2;
       string description = 3;
+      bool sensitive = 4;
     }
 
     // levels is user defined level list for classification.

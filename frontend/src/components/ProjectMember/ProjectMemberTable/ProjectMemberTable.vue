@@ -104,7 +104,7 @@ import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
 import { ComposedProject } from "@/types";
-import { Binding, IamPolicy } from "@/types/proto/v1/iam_policy";
+import { Binding } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV1,
   displayRoleTitle,
@@ -120,7 +120,6 @@ export type ProjectMemberRow = BBGridRow<ComposedProjectMember>;
 
 const props = defineProps<{
   project: ComposedProject;
-  iamPolicy: IamPolicy;
   editable: boolean;
   memberList: ComposedProjectMember[];
   ready?: boolean;
