@@ -827,6 +827,16 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
+	case db.MSSQL:
+		databaseList, err := parser.ExtractDatabaseList(parser.MSSQL, request.Statement, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
+		}
+
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+		}
 	}
 
 	// Create export activity.
@@ -1122,6 +1132,16 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
+		case db.MSSQL:
+			databaseList, err := parser.ExtractDatabaseList(parser.MSSQL, request.Statement, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
+			}
+
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+			}
 		}
 	}
 
@@ -1295,17 +1315,17 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						Sensitive: sensitive,
 					})
 				}
-				if instance.Engine == db.Snowflake {
+				if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
 					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
 				} else {
 					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
 				}
 			}
-			if instance.Engine == db.Snowflake {
+			if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
 				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 			}
 		}
-		if instance.Engine == db.Snowflake {
+		if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
 			if len(databaseSchema.SchemaList) > 0 {
 				isEmpty = false
 			}

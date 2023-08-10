@@ -604,7 +604,7 @@ func IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
 		// In fact, SQL Server is possible to create a case-sensitive database and case-insensitive database on one instance.
 		// https://www.webucator.com/article/how-to-check-case-sensitivity-in-sql-server/
 		// But by default, SQL Server is case-insensitive.
-		return false
+		return true
 	default:
 		return false
 	}

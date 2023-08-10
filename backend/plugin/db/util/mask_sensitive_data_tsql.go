@@ -532,10 +532,10 @@ func (l *sensitiveFieldExtractor) tsqlFindTableSchema(fullTableName tsqlparser.I
 		// TODO(zp): How do we handle the linked server?
 		return "", db.TableSchema{}, fmt.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
 	}
-	// For snowflake, we should find the table schema in cteOuterSchemaInfo by ascending order.
+	// For tsql, we should find the table schema in cteOuterSchemaInfo by ascending order.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
 		for _, tableSchema := range l.cteOuterSchemaInfo {
-			if normalizedTableName == tableSchema.Name {
+			if l.isIdentifierEqual(normalizedTableName, tableSchema.Name) {
 				return normalizedDatabaseName, tableSchema, nil
 			}
 		}
