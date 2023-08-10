@@ -1969,6 +1969,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 			return nil, nil, errors.Errorf("matched databases are in different environments")
 		}
 	}
+	if err := registerEnvironmentID(environmentID); err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to register environment id %q", environmentID)
+	}
 
 	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
 	if err != nil {
@@ -1983,6 +1986,8 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 		return nil, nil, errors.Wrapf(err, "failed to get sheet statement %q", sheetUID)
 	}
 
+	var taskCreatesMatrix [][]*store.TaskMessage
+	var taskIndexDAGsMatrix [][]store.TaskIndexDAG
 	for _, db := range matchedDatabases {
 		dbSchema, err := s.GetDBSchema(ctx, db.UID)
 		if err != nil {
@@ -2015,12 +2020,28 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 			return nil, nil, errors.Wrapf(err, "failed to get statements from schema groups")
 		}
 
-		_ = statements
-		_ = schemaGroupNames
+		taskCreates, err := getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db, instance, spec, c, statements, schemaGroupNames)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get task creates from change database config database group statements")
+		}
+		var taskIndexDAGs []store.TaskIndexDAG
+		for i := 1; i < len(taskIndexDAGs); i++ {
+			taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
+				FromIndex: i - 1,
+				ToIndex:   i,
+			})
+		}
 
+		taskCreatesMatrix = append(taskCreatesMatrix, taskCreates)
+		taskIndexDAGsMatrix = append(taskIndexDAGsMatrix, taskIndexDAGs)
 	}
 
-	return nil, nil, nil
+	creates, dags, err := utils.MergeTaskCreateLists(taskCreatesMatrix, taskIndexDAGsMatrix)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to merge task create lists")
+	}
+
+	return creates, dags, nil
 }
 
 func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.DatabaseMessage, instance *store.InstanceMessage, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, statements []string, schemaGroupNames []string) ([]*store.TaskMessage, error) {
@@ -2067,7 +2088,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 
 			bytes, err := json.Marshal(payload)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to marshal database data update payload")
+				return nil, errors.Wrapf(err, "failed to marshal database data update payload")
 			}
 			payloadString := string(bytes)
 			taskCreate := &store.TaskMessage{
