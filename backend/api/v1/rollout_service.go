@@ -2010,12 +2010,13 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 			return nil, nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
 		}
 
-		statements, err := getStatementsFromSchemaGroups(sheetStatement, parserEngineType, schemaGroups, schemaGroupsMatchedTables)
+		statements, schemaGroupNames, err := getStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, c.Target, schemaGroups, schemaGroupsMatchedTables)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get statements from schema groups")
 		}
 
 		_ = statements
+		_ = schemaGroupNames
 
 	}
 
@@ -2088,36 +2089,38 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 
 // input: statement, parserEngineType
 // output: rendered statement list
-func getStatementsFromSchemaGroups(statement string, parserEngineType parser.EngineType, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, error) {
-	flush := func(emptyStatementBuilder *strings.Builder, statementBuilder *strings.Builder, placeHolder string, matchedTables []string) []string {
+func getStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngineType parser.EngineType, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
+	flush := func(emptyStatementBuilder *strings.Builder, statementBuilder *strings.Builder, schemaGroup *store.SchemaGroupMessage, matchedTables []string) ([]string, []string) {
 		if statementBuilder.Len() == 0 {
-			return nil
+			return nil, nil
 		}
-		var resultStatements []string
+		var resultStatements, schemaGroupNames []string
 		if len(matchedTables) > 0 {
 			for _, tableName := range matchedTables {
 				statement := emptyStatementBuilder.String() +
-					strings.ReplaceAll(statementBuilder.String(), placeHolder, tableName)
+					strings.ReplaceAll(statementBuilder.String(), schemaGroup.Placeholder, tableName)
 				resultStatements = append(resultStatements, statement)
+				schemaGroupNames = append(schemaGroupNames, fmt.Sprintf("%s/%s%s", schemaGroupParent, common.SchemaGroupNamePrefix, schemaGroup.ResourceID))
 			}
 		} else {
 			statement := emptyStatementBuilder.String() + statementBuilder.String()
 			resultStatements = append(resultStatements, statement)
+			schemaGroupNames = append(schemaGroupNames, "")
 		}
 		emptyStatementBuilder.Reset()
 		statementBuilder.Reset()
-		return resultStatements
+		return resultStatements, schemaGroupNames
 	}
 
 	singleStatements, err := parser.SplitMultiSQL(parserEngineType, statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split sql")
+		return nil, nil, errors.Wrapf(err, "failed to split sql")
 	}
 	if len(singleStatements) == 0 {
-		return nil, errors.Errorf("no sql statement found")
+		return nil, nil, errors.Errorf("no sql statement found")
 	}
 
-	var resultStatements []string
+	var resultStatements, schemaGroupNames []string
 	var emptyStatementBuilder, statementBuilder strings.Builder
 
 	var preMatch, curMatch *store.SchemaGroupMessage
@@ -2140,13 +2143,19 @@ func getStatementsFromSchemaGroups(statement string, parserEngineType parser.Eng
 		}
 
 		if preMatch == nil && curMatch != nil {
-			resultStatements = append(resultStatements, flush(&emptyStatementBuilder, &statementBuilder, "", nil)...)
+			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, nil, nil)
+			resultStatements = append(resultStatements, statements...)
+			schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
 		}
 		if preMatch != nil && curMatch == nil {
-			resultStatements = append(resultStatements, flush(&emptyStatementBuilder, &statementBuilder, preMatch.Placeholder, schemaGroupMatchedTables[preMatch.ResourceID])...)
+			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
+			resultStatements = append(resultStatements, statements...)
+			schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
 		}
 		if preMatch != nil && curMatch != nil && preMatch.ResourceID != curMatch.ResourceID {
-			resultStatements = append(resultStatements, flush(&emptyStatementBuilder, &statementBuilder, preMatch.Placeholder, schemaGroupMatchedTables[preMatch.ResourceID])...)
+			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
+			resultStatements = append(resultStatements, statements...)
+			schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
 		}
 
 		_, _ = statementBuilder.WriteString(singleStatement.Text)
@@ -2157,16 +2166,20 @@ func getStatementsFromSchemaGroups(statement string, parserEngineType parser.Eng
 	}
 
 	if preMatch != nil {
-		resultStatements = append(resultStatements, flush(&emptyStatementBuilder, &statementBuilder, preMatch.Placeholder, schemaGroupMatchedTables[preMatch.ResourceID])...)
+		statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
+		resultStatements = append(resultStatements, statements...)
+		schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
 	} else {
-		resultStatements = append(resultStatements, flush(&emptyStatementBuilder, &statementBuilder, "", nil)...)
+		statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, nil, nil)
+		resultStatements = append(resultStatements, statements...)
+		schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
 	}
 
 	if emptyStatementBuilder.Len() > 0 && len(resultStatements) > 0 {
 		resultStatements[len(resultStatements)-1] += emptyStatementBuilder.String()
 	}
 
-	return resultStatements, nil
+	return resultStatements, schemaGroupNames, nil
 }
 
 func convertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
