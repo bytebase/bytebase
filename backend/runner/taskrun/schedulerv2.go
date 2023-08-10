@@ -2,6 +2,7 @@ package taskrun
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -167,7 +168,6 @@ func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 }
 
 func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
-	// TODO(p0ny): check blocking tasks
 	task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
@@ -175,6 +175,27 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	if task.EarliestAllowedTs != 0 && time.Now().Before(time.Unix(task.EarliestAllowedTs, 0)) {
 		return nil
 	}
+	for _, blockingTaskUID := range task.BlockedBy {
+		blockingTask, err := s.store.GetTaskV2ByID(ctx, blockingTaskUID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get blocking task %v", blockingTaskUID)
+		}
+
+		skipped := struct {
+			Skipped bool `json:"skipped"`
+		}{}
+		if err := json.Unmarshal([]byte(blockingTask.Payload), &skipped); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal payload")
+		}
+		if skipped.Skipped {
+			continue
+		}
+
+		if blockingTask.LatestTaskRunStatus == nil || *blockingTask.LatestTaskRunStatus != api.TaskRunDone {
+			return nil
+		}
+	}
+
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
 		ID:        taskRun.ID,
 		UpdaterID: api.SystemBotID,
