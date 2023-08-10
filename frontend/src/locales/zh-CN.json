@@ -317,7 +317,7 @@
       "warn": "警告",
       "error": "错误"
     },
-    "earliest-allowed-time-no-modify": "您无法修改此字段因为您不是该工单的审核人或者它不在待执行状态。",
+    "earliest-allowed-time-no-modify": "您无法修改此字段，因为您不是该工单的审核人或者它不在待执行状态。",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表",
