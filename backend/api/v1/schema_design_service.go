@@ -588,7 +588,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		columns = append(columns, column)
 	}
 	sort.Slice(columns, func(i, j int) bool {
-		return columns[i].name < columns[j].name
+		return columns[i].id < columns[j].id
 	})
 	for i, column := range columns {
 		if i > 0 {
@@ -606,7 +606,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		indexes = append(indexes, index)
 	}
 	sort.Slice(indexes, func(i, j int) bool {
-		return indexes[i].name < indexes[j].name
+		return indexes[i].id < indexes[j].id
 	})
 
 	for i, index := range indexes {
@@ -625,7 +625,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		foreignKeys = append(foreignKeys, fk)
 	}
 	sort.Slice(foreignKeys, func(i, j int) bool {
-		return foreignKeys[i].name < foreignKeys[j].name
+		return foreignKeys[i].id < foreignKeys[j].id
 	})
 
 	for i, fk := range foreignKeys {
@@ -952,7 +952,9 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 		switch strings.ToUpper(ctx.GetType_().GetText()) {
 		case "PRIMARY":
 			list := extractKeyListVariants(ctx.KeyListVariants())
-			t.state.schemas[""].tables[t.currentTable].indexes["PRIMARY"] = &indexState{
+			table := t.state.schemas[""].tables[t.currentTable]
+			table.indexes["PRIMARY"] = &indexState{
+				id:      len(table.indexes),
 				name:    "PRIMARY",
 				keys:    list,
 				primary: true,
@@ -973,6 +975,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			}
 			referencedTable, referencedColumns := extractReference(ctx.References())
 			fk := &foreignKeyState{
+				id:                len(table.foreignKeys),
 				name:              name,
 				columns:           keys,
 				referencedTable:   referencedTable,
@@ -1047,6 +1050,7 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		return
 	}
 	columnState := &columnState{
+		id:           len(table.columns),
 		name:         columnName,
 		tp:           dataType,
 		defaultValue: nil,
@@ -1107,11 +1111,13 @@ func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (str
 		return "", listener.err
 	}
 
+	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
 		schemaState, ok := toState.schemas[schema.Name]
 		if !ok {
 			continue
 		}
+		// Follow the order of the input tables.
 		for _, table := range schema.Tables {
 			table, ok := schemaState.tables[table.Name]
 			if !ok {
@@ -1189,7 +1195,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		columnList = append(columnList, column)
 	}
 	sort.Slice(columnList, func(i, j int) bool {
-		return columnList[i].name < columnList[j].name
+		return columnList[i].id < columnList[j].id
 	})
 	for _, column := range columnList {
 		if g.firstElementInTable {
@@ -1225,7 +1231,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		fks = append(fks, fk)
 	}
 	sort.Slice(fks, func(i, j int) bool {
-		return fks[i].name < fks[j].name
+		return fks[i].id < fks[j].id
 	})
 	for _, fk := range fks {
 		if g.firstElementInTable {
