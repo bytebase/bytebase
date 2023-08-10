@@ -84,7 +84,11 @@
         </div>
       </NTabPane>
       <NTabPane name="roles" tab="Roles">
-        <ProjectRoleTable :project="project" :ready="ready" />
+        <ProjectRoleTable
+          :project="project"
+          :search-text="state.searchText"
+          :ready="ready"
+        />
       </NTabPane>
     </NTabs>
   </div>
