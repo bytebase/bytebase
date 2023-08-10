@@ -49,6 +49,7 @@
                 :project-id="project.uid"
                 :database-id="state.databaseId"
                 :database-resources="state.databaseResources"
+                :statement="state.statement"
                 @update:condition="state.databaseResourceCondition = $event"
                 @update:database-resources="state.databaseResources = $event"
               />
@@ -102,15 +103,26 @@
         </div>
       </div>
       <template #footer>
-        <div class="flex items-center justify-end gap-x-2">
-          <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
-          <NButton
-            type="primary"
-            :disabled="!allowConfirm"
-            @click="handleUpdateRole"
-          >
-            {{ $t("common.ok") }}
-          </NButton>
+        <div class="w-full flex flex-row justify-between items-center">
+          <div>
+            <BBButtonConfirm
+              v-if="showDeleteButton"
+              :style="'DELETE'"
+              :button-text="$t('common.delete')"
+              :require-confirm="true"
+              @confirm="handleDeleteRole"
+            />
+          </div>
+          <div class="flex items-center justify-end gap-x-2">
+            <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
+            <NButton
+              type="primary"
+              :disabled="!allowConfirm"
+              @click="handleUpdateRole"
+            >
+              {{ $t("common.ok") }}
+            </NButton>
+          </div>
         </div>
       </template>
     </NDrawerContent>
@@ -147,8 +159,9 @@ import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, extractUserUID } from "@/utils";
 import {
+  convertFromCELString,
   convertFromExpr,
-  stringifyConditionExpression,
+  stringifyDatabaseResources,
 } from "@/utils/issue/cel";
 
 const props = defineProps<{
@@ -191,13 +204,18 @@ const panelTitle = computed(() => {
   return displayRoleTitle(props.binding.role);
 });
 
+const showDeleteButton = computed(() => {
+  return props.binding.role !== "roles/OWNER";
+});
+
 const allowConfirm = computed(() => {
   return state.title && state.userUidList.length > 0;
 });
 
 onMounted(() => {
   const binding = props.binding;
-  state.title = binding.condition?.title || "";
+  // Set the display title with the role name.
+  state.title = binding.condition?.title || displayRoleTitle(binding.role);
   state.description = binding.condition?.description || "";
 
   if (binding.parsedExpr?.expr) {
@@ -227,6 +245,7 @@ onMounted(() => {
     }
   }
 
+  // Extract user list from members.
   const userList = [];
   for (const member of binding.members) {
     const userEmail = extractUserEmail(member);
@@ -236,6 +255,7 @@ onMounted(() => {
     }
   }
   state.userUidList = userList.map((user) => extractUserUID(user.name));
+
   isLoading.value = false;
 });
 
@@ -248,6 +268,18 @@ const getUserList = () => {
     }
   });
   return users;
+};
+
+const handleDeleteRole = async () => {
+  const policy = cloneDeep(iamPolicy.value);
+  policy.bindings = policy.bindings.filter(
+    (binding) => !isEqual(binding, props.binding)
+  );
+  await useProjectIamPolicyStore().updateProjectIamPolicy(
+    projectResourceName.value,
+    policy
+  );
+  emit("close");
 };
 
 const handleUpdateRole = async () => {
@@ -279,19 +311,32 @@ const handleUpdateRole = async () => {
   if (props.binding.role === "roles/EXPORTER") {
     if (state.databaseResourceCondition) {
       expression.push(state.databaseResourceCondition);
+
+      // Check if the statement export method is selected.
+      const condition = await convertFromCELString(
+        state.databaseResourceCondition
+      );
+      if (condition.statement) {
+        if (!state.databaseId) {
+          throw new Error("Database ID is not set.");
+        }
+        const database = databaseStore.getDatabaseByUID(state.databaseId);
+        expression.push(
+          stringifyDatabaseResources([
+            {
+              databaseName: database.name,
+            },
+          ])
+        );
+      }
     }
     if (state.maxRowCount) {
-      expression.push(`request.rows_limit <= ${state.maxRowCount}`);
+      expression.push(`request.row_limit == ${state.maxRowCount}`);
     }
   }
   if (expression.length > 0) {
     newBinding.condition.expression = expression.join(" && ");
   }
-  newBinding.condition.expression = stringifyConditionExpression({
-    expiredTime: state.expirationTimestamp
-      ? new Date(state.expirationTimestamp).toISOString()
-      : undefined,
-  });
 
   const policy = cloneDeep(iamPolicy.value);
   policy.bindings = policy.bindings.filter(
