@@ -1922,6 +1922,13 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 }
 
 func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+	switch c.Type {
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+	default:
+		return nil, nil, errors.Errorf("unsupported change database config type %q for database group target", c.Type)
+	}
+
 	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", c.Target)
@@ -2013,6 +2020,70 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 	}
 
 	return nil, nil, nil
+}
+
+func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.DatabaseMessage, instance *store.InstanceMessage, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, statements []string, schemaGroupNames []string) ([]*store.TaskMessage, error) {
+	var creates []*store.TaskMessage
+	for idx, statement := range statements {
+		schemaVersionSuffix := fmt.Sprintf("-%03d", idx)
+		schemaGroupName := schemaGroupNames[idx]
+		switch c.Type {
+		case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+			payload := api.TaskDatabaseSchemaUpdatePayload{
+				SpecID:          spec.Id,
+				SheetID:         0,
+				SchemaVersion:   getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
+				VCSPushEvent:    nil,
+				SchemaGroupName: schemaGroupName,
+			}
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
+			}
+			payloadString := string(bytes)
+			taskCreate := &store.TaskMessage{
+				Name:              fmt.Sprintf("DDL(schema) for database %q", db.DatabaseName),
+				InstanceID:        instance.UID,
+				DatabaseID:        &db.UID,
+				Status:            api.TaskPendingApproval,
+				Type:              api.TaskDatabaseSchemaUpdate,
+				EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
+				Payload:           payloadString,
+				Statement:         statement,
+			}
+			creates = append(creates, taskCreate)
+
+		case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+			payload := api.TaskDatabaseDataUpdatePayload{
+				SpecID:            spec.Id,
+				SheetID:           0,
+				SchemaVersion:     getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
+				VCSPushEvent:      nil,
+				RollbackEnabled:   c.RollbackEnabled,
+				RollbackSQLStatus: api.RollbackSQLStatusPending,
+				SchemaGroupName:   schemaGroupName,
+			}
+
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Failed to marshal database data update payload")
+			}
+			payloadString := string(bytes)
+			taskCreate := &store.TaskMessage{
+				Name:              fmt.Sprintf("DML(data) for database %q", db.DatabaseName),
+				InstanceID:        instance.UID,
+				DatabaseID:        &db.UID,
+				Status:            api.TaskPendingApproval,
+				Type:              api.TaskDatabaseDataUpdate,
+				EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
+				Payload:           payloadString,
+				Statement:         statement,
+			}
+			creates = append(creates, taskCreate)
+		}
+	}
+
+	return creates, nil
 }
 
 // input: statement, parserEngineType
@@ -2799,6 +2870,13 @@ func getOrDefaultSchemaVersion(v string) string {
 		return v
 	}
 	return common.DefaultMigrationVersion()
+}
+
+func getOrDefaultSchemaVersionWithSuffix(v string, suffix string) string {
+	if v != "" {
+		return v + suffix
+	}
+	return common.DefaultMigrationVersion() + suffix
 }
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
