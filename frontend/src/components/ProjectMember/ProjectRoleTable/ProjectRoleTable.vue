@@ -80,6 +80,7 @@ import {
   useUserStore,
 } from "@/store";
 import { ComposedProject } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { hasWorkspacePermissionV1, hasPermissionInProjectV1 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -155,7 +156,7 @@ const getUserList = (binding: Binding) => {
   for (const member of binding.members) {
     const userEmail = extractUserEmail(member);
     const user = userStore.getUserByEmail(userEmail);
-    if (user) {
+    if (user && user.state === State.ACTIVE) {
       userList.push(user);
     }
   }
