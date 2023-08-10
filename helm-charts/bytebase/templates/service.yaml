@@ -5,7 +5,7 @@ metadata:
   name: bytebase-entrypoint
   namespace: {{ template "bytebase.namespace" . }}
   labels:
-    app.kubernetes.io/managed-by: helm
+    {{- include "bytebase.labels" . | nindent 4}}
 spec:
   type: LoadBalancer
   selector:
