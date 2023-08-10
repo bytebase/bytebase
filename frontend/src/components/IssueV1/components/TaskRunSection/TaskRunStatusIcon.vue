@@ -3,12 +3,20 @@
     class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
     :class="classes"
   >
-    <template v-if="status === TaskRun_Status.RUNNING">
-      <span
-        class="h-2.5 w-2.5 bg-info rounded-full"
-        style="animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite"
-        aria-hidden="true"
-      />
+    <template v-if="status === TaskRun_Status.PENDING">
+      <span class="h-1.5 w-1.5 bg-info rounded-full" aria-hidden="true" />
+    </template>
+    <template v-else-if="status === TaskRun_Status.RUNNING">
+      <div class="flex h-2.5 w-2.5 relative overflow-visible">
+        <span
+          class="w-full h-full rounded-full z-0 absolute animate-ping-slow bg-blue-600/50"
+          aria-hidden="true"
+        />
+        <span
+          class="w-full h-full rounded-full z-[1] bg-info"
+          aria-hidden="true"
+        />
+      </div>
     </template>
     <template v-else-if="status === TaskRun_Status.DONE">
       <heroicons-outline:check class="w-5 h-5" />
@@ -35,6 +43,8 @@ const props = defineProps<{
 
 const classes = computed(() => {
   switch (props.status) {
+    case TaskRun_Status.PENDING:
+      return "bg-white border-2 border-info text-info";
     case TaskRun_Status.RUNNING:
       return "bg-white border-2 border-info text-info";
     case TaskRun_Status.DONE:
