@@ -1,5 +1,8 @@
 <template>
-  <div v-if="rollbackUIType !== 'NONE'" class="flex items-center gap-x-3">
+  <div
+    v-if="rollbackUIType !== 'NONE'"
+    class="flex items-center gap-x-3 min-h-[34px]"
+  >
     <NTooltip>
       <template #trigger>
         <div class="textlabel flex items-center">

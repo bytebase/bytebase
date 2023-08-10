@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-x-3">
+  <div class="flex items-center gap-x-3 min-h-[34px]">
     <NTooltip :disabled="!showApprovalTooltip">
       <template #trigger>
         <div class="textlabel flex items-center gap-x-1">
