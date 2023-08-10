@@ -76,7 +76,7 @@ func (s *ActuatorService) ListDebugLog(_ context.Context, _ *v1pb.ListDebugLogRe
 }
 
 // DeleteCache deletes the cache.
-func (s *SettingService) DeleteCache(_ context.Context, _ *v1pb.DeleteCacheRequest) (*emptypb.Empty, error) {
+func (s *ActuatorService) DeleteCache(_ context.Context, _ *v1pb.DeleteCacheRequest) (*emptypb.Empty, error) {
 	s.store.DeleteCache()
 	return &emptypb.Empty{}, nil
 }
