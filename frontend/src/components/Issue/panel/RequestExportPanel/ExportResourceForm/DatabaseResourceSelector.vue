@@ -48,18 +48,20 @@ const emit = defineEmits<{
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const selectedValueList = ref<string[]>(
-  props.databaseResources.map((databaseResource) => {
-    const database = databaseStore.getDatabaseByName(
-      databaseResource.databaseName
-    );
-    if (databaseResource.table !== undefined) {
-      return `t-${database.uid}-${databaseResource.schema}-${databaseResource.table}`;
-    } else if (databaseResource.schema !== undefined) {
-      return `s-${database.uid}-${databaseResource.schema}`;
-    } else {
-      return `d-${database.uid}`;
-    }
-  })
+  props.databaseResources
+    .map((databaseResource) => {
+      const database = databaseStore.getDatabaseByName(
+        databaseResource.databaseName
+      );
+      if (databaseResource.table !== undefined) {
+        return `t-${database.uid}-${databaseResource.schema}-${databaseResource.table}`;
+      } else if (databaseResource.schema !== undefined) {
+        return `s-${database.uid}-${databaseResource.schema}`;
+      } else {
+        return "";
+      }
+    })
+    .filter((item) => item !== "")
 );
 const databaseResourceMap = ref<Map<string, DatabaseResource>>(new Map());
 const loading = ref(false);
