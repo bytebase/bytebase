@@ -193,6 +193,25 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to list pending tasks")
 	}
 
+	// Find the minimum task ID for each database.
+	// We only run the first (i.e. which has the minimum task ID) task for each database.
+	minTaskIDForDatabase := map[int]int{}
+	for _, taskRun := range taskRuns {
+		task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
+		if err != nil {
+			log.Error("failed to get task", zap.Int("task id", taskRun.TaskUID), zap.Error(err))
+			continue
+		}
+		if task.DatabaseID == nil {
+			continue
+		}
+		if _, ok := minTaskIDForDatabase[*task.DatabaseID]; !ok {
+			minTaskIDForDatabase[*task.DatabaseID] = task.ID
+		} else if minTaskIDForDatabase[*task.DatabaseID] > task.ID {
+			minTaskIDForDatabase[*task.DatabaseID] = task.ID
+		}
+	}
+
 	for _, taskRun := range taskRuns {
 		// Skip the task run if it is already executing.
 		if _, ok := s.stateCfg.RunningTaskRuns.Load(taskRun.ID); ok {
@@ -201,6 +220,9 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 		if err != nil {
 			log.Error("failed to get task", zap.Int("task id", taskRun.TaskUID), zap.Error(err))
+			continue
+		}
+		if task.DatabaseID != nil && minTaskIDForDatabase[*task.DatabaseID] != task.ID {
 			continue
 		}
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
