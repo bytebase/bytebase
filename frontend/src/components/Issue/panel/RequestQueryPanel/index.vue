@@ -44,6 +44,7 @@
             class="grid-cols-4"
             :options="expireDaysOptions"
             :value="state.expireDays"
+            @update="state.expireDays = $event"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
