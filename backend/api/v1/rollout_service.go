@@ -2120,7 +2120,7 @@ func getStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngine
 		return nil, nil, errors.Errorf("no sql statement found")
 	}
 
-	var resultStatements, schemaGroupNames []string
+	var resultStatements, resultSchemaGroupNames []string
 	var emptyStatementBuilder, statementBuilder strings.Builder
 
 	var preMatch, curMatch *store.SchemaGroupMessage
@@ -2145,17 +2145,17 @@ func getStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngine
 		if preMatch == nil && curMatch != nil {
 			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, nil, nil)
 			resultStatements = append(resultStatements, statements...)
-			schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
+			resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
 		}
 		if preMatch != nil && curMatch == nil {
 			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
 			resultStatements = append(resultStatements, statements...)
-			schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
+			resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
 		}
 		if preMatch != nil && curMatch != nil && preMatch.ResourceID != curMatch.ResourceID {
 			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
 			resultStatements = append(resultStatements, statements...)
-			schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
+			resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
 		}
 
 		_, _ = statementBuilder.WriteString(singleStatement.Text)
@@ -2168,18 +2168,18 @@ func getStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngine
 	if preMatch != nil {
 		statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
 		resultStatements = append(resultStatements, statements...)
-		schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
+		resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
 	} else {
 		statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, nil, nil)
 		resultStatements = append(resultStatements, statements...)
-		schemaGroupNames = append(schemaGroupNames, schemaGroupNames...)
+		resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
 	}
 
 	if emptyStatementBuilder.Len() > 0 && len(resultStatements) > 0 {
 		resultStatements[len(resultStatements)-1] += emptyStatementBuilder.String()
 	}
 
-	return resultStatements, schemaGroupNames, nil
+	return resultStatements, resultSchemaGroupNames, nil
 }
 
 func convertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
