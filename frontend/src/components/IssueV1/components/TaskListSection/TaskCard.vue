@@ -1,6 +1,6 @@
 <template>
   <div
-    class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
+    class="task px-2 py-1 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
     :class="taskClass"
     :data-task-uid="isCreating ? '-creating-' : task.uid"
     @click="onClickTask(task)"
@@ -57,7 +57,6 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1Name } from "@/components/v2";
-import { TaskTypeListWithProgress } from "@/types";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import {
   Task,
@@ -125,7 +124,9 @@ const taskClass = computed(() => {
 });
 
 const shouldShowTaskProgress = computed(() => {
-  return TaskTypeListWithProgress.includes(props.task.type);
+  return false; // TODO: not implemented yet
+
+  // return TaskTypeListWithProgress.includes(props.task.type);
 });
 
 const taskTitle = computed(() => {
