@@ -39,6 +39,11 @@
             >
               <UserAvatar size="TINY" :user="user" />
               <span class="ml-1">{{ user.title }}</span>
+              <span
+                v-if="currentUserV1.name === user.name"
+                class="ml-1 inline-flex items-center px-1 rounded-md text-xs font-semibold bg-green-100 text-green-800"
+                >{{ $t("common.you") }}</span
+              >
             </div>
           </div>
         </div>
