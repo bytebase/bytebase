@@ -296,7 +296,7 @@ const handleUpdateRole = async () => {
   );
 
   const expression: string[] = [];
-  if (state.expirationTimestamp !== undefined) {
+  if (state.expirationTimestamp) {
     expression.push(
       `request.time < timestamp("${new Date(
         state.expirationTimestamp
