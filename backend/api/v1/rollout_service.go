@@ -1703,6 +1703,9 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 
 func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
+	}
 
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
