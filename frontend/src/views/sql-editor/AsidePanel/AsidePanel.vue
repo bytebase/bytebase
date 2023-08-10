@@ -70,22 +70,21 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watchEffect } from "vue";
 import { NTabs, NTabPane } from "naive-ui";
 import { Splitpanes, Pane } from "splitpanes";
-
+import { computed, ref, watchEffect } from "vue";
 import {
   useConnectionTreeStore,
   useCurrentUserV1,
   useInstanceV1Store,
   useTabStore,
 } from "@/store";
+import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SchemaPanel from "./SchemaPanel/";
-import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
-import { hasWorkspacePermissionV1 } from "@/utils";
-import { Engine } from "@/types/proto/v1/common";
 import SheetList from "./SheetList";
 
 defineEmits<{

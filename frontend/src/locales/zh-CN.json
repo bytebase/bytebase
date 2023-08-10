@@ -257,7 +257,8 @@
     "warehouse": "仓库",
     "schedule": "计划",
     "state": "状态",
-    "condition": "条件"
+    "condition": "条件",
+    "search-user": "搜索用户"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -316,7 +317,7 @@
       "warn": "警告",
       "error": "错误"
     },
-    "earliest-allowed-time-no-modify": "您无法修改此字段因为您不是该工单的审核人或者它不在待执行状态。",
+    "earliest-allowed-time-no-modify": "您无法修改此字段，因为您不是该工单的审核人或者它不在待执行状态。",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表",
@@ -354,7 +355,13 @@
     "execution-time": "执行时间",
     "run-checks": "运行检查",
     "run-checks-in-current-stage": "运行当前阶段的所有检查",
-    "action-failed-in-current-stage": "{action}当前阶段失败的任务"
+    "database-create": {
+      "pending": "（待创建）",
+      "created": "（已创建）"
+    },
+    "action-failed-in-current-stage": "{action}当前阶段失败的任务",
+    "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
+    "cancel-task": "取消任务"
   },
   "banner": {
     "update-license": "更新证书",
@@ -487,7 +494,7 @@
         "resource-id-description": "唯一的字符串，有效字符为 /[a-z][0-9]-/",
         "domain": "域名",
         "domain-description": "OAuth 提供商的域名",
-        "identity-provider-information": "OAuth 提供商信息",
+        "identity-provider-information": "身份提供商信息",
         "identity-provider-information-description": "这些信息是由您的身份提供商提供的。",
         "identity-provider-needed-information": "用以下信息创建您的 SSO 应用程序。",
         "endpoints": "链接信息",
@@ -498,6 +505,7 @@
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
+        "security-protocol": "安全协议",
         "connection-security": "安全性选项",
         "connection-security-skip-tls-verify": "跳过自签名证书验证",
         "identifier": "Bytebase 用户的邮箱",
@@ -692,7 +700,7 @@
         "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
-        "resolve": "解决",
+        "resolve": "解决工单",
         "cancel": "取消工单",
         "reopen": "重开"
       },
@@ -817,7 +825,17 @@
       "export-method": "导出方式",
       "please-select-database-first": "请先选择数据库"
     },
-    "review-sent-back": "审核被退回"
+    "review-sent-back": "审核被退回",
+    "update-statement": {
+      "self": "更新{type}",
+      "apply-current-change-to": "应用当前修改到",
+      "target": {
+        "selected-task": "选中的任务",
+        "selected-stage": "选中的阶段",
+        "all-tasks": "所有任务"
+      }
+    },
+    "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1322,7 +1340,10 @@
       },
       "select-target-project": "选择目标项目"
     },
-    "transfer-database-from-to": "将数据库从源项目转移到目标项目"
+    "transfer-database-from-to": "将数据库从源项目转移到目标项目",
+    "classification": {
+      "self": "分类分级"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1540,7 +1561,9 @@
       "assign-role": "分配角色",
       "never-expires": "永不过期",
       "role-never-expires": "此角色没有过期时间。",
-      "add-more": "增加更多"
+      "add-more": "增加更多",
+      "role-name": "角色名称",
+      "revoke-members": "撤销成员"
     },
     "mode": {
       "standard": "标准模式",

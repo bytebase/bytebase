@@ -119,25 +119,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
-import { NInput, NPagination } from "naive-ui";
-import { useI18n } from "vue-i18n";
-import { useDebounceFn } from "@vueuse/core";
 import {
   ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
+import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-
-import {
-  createExplainToken,
-  extractEnvironmentNameListFromExpr,
-  extractSQLRowValue,
-  hasWorkspacePermissionV1,
-  instanceV1HasStructuredQueryResult,
-} from "@/utils";
+import { NInput, NPagination } from "naive-ui";
+import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import { resolveCELExpr } from "@/plugins/cel";
 import {
   useInstanceV1Store,
   useTabStore,
@@ -149,12 +143,6 @@ import {
   usePolicyV1Store,
   useDatabaseV1ByUID,
 } from "@/store";
-import DataTable from "./DataTable";
-import EmptyView from "./EmptyView.vue";
-import ErrorView from "./ErrorView.vue";
-import { useSQLResultViewContext } from "./context";
-import { Engine } from "@/types/proto/v1/common";
-import { QueryResult } from "@/types/proto/v1/sql_service";
 import {
   ExecuteConfig,
   ExecuteOption,
@@ -162,10 +150,21 @@ import {
   TabMode,
   UNKNOWN_ID,
 } from "@/types";
-import { useExportData } from "./useExportData";
-import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import { resolveCELExpr } from "@/plugins/cel";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Engine } from "@/types/proto/v1/common";
+import { QueryResult } from "@/types/proto/v1/sql_service";
+import {
+  createExplainToken,
+  extractEnvironmentNameListFromExpr,
+  extractSQLRowValue,
+  hasWorkspacePermissionV1,
+  instanceV1HasStructuredQueryResult,
+} from "@/utils";
+import DataTable from "./DataTable";
+import EmptyView from "./EmptyView.vue";
+import ErrorView from "./ErrorView.vue";
+import { useSQLResultViewContext } from "./context";
+import { useExportData } from "./useExportData";
 
 type LocalState = {
   search: string;

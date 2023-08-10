@@ -1,19 +1,19 @@
 import { cloneDeep, first } from "lodash-es";
-import {
-  DataSource,
-  DataSourceType,
-  Instance,
-} from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
-import { Engine, State } from "@/types/proto/v1/common";
 import { t } from "@/plugins/i18n";
+import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
 import {
   emptyDataSource,
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
-import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
+import { Engine, State } from "@/types/proto/v1/common";
+import {
+  DataSource,
+  DataSourceType,
+  Instance,
+} from "@/types/proto/v1/instance_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
 

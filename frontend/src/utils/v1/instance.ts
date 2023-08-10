@@ -1,12 +1,11 @@
-import slug from "slug";
 import { keyBy, orderBy } from "lodash-es";
-
+import slug from "slug";
 import { useI18n } from "vue-i18n";
-import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
+import { useSubscriptionV1Store } from "@/store";
+import { ComposedInstance } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { ComposedInstance } from "@/types";
-import { useSubscriptionV1Store } from "@/store";
+import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 export const instanceV1Slug = (instance: Instance): string => {
@@ -197,6 +196,7 @@ export const instanceV1HasCollationAndCharacterSet = (
     Engine.CLICKHOUSE,
     Engine.SNOWFLAKE,
     Engine.REDSHIFT,
+    Engine.RISINGWAVE,
   ];
   return !excludedList.includes(engine);
 };

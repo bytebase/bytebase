@@ -218,6 +218,7 @@ message Plan {
   message ChangeDatabaseConfig {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}.
+    // Format: projects/{project}/databaseGroups/{databaseGroup}
     string target = 1;
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
@@ -386,6 +387,8 @@ message PlanCheckRun {
   repeated Result results = 7;
   // error is set if the Status is FAILED.
   string error = 8;
+
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message Result {
     enum Status {
@@ -655,8 +658,8 @@ message TaskRun {
   string creator = 3;
   // Format: user/hello@world.com
   string updater = 4;
-  google.protobuf.Timestamp create_time = 5;
-  google.protobuf.Timestamp update_time = 6;
+  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 7;
 

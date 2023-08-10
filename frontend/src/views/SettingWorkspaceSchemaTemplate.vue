@@ -19,8 +19,8 @@
 import { NTabs, NTabPane } from "naive-ui";
 import { reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import ColumnTypes from "@/views/SchemaTemplate/ColumnTypes.vue";
+import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 
 interface LocalState {
   selectedTab: "FIELD_TEMPLATE" | "COLUMN_TYPE_RESTRICTION";

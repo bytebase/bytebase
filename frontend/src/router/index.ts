@@ -1,3 +1,5 @@
+import { useTitle } from "@vueuse/core";
+import { pull, startCase } from "lodash-es";
 import { nextTick, ref } from "vue";
 import {
   createRouter,
@@ -5,37 +7,15 @@ import {
   RouteLocationNormalized,
   RouteRecordRaw,
 } from "vue-router";
-import { useTitle } from "@vueuse/core";
-import { pull, startCase } from "lodash-es";
-
 import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
-import SplashLayout from "@/layouts/SplashLayout.vue";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 import SheetDashboardLayout from "@/layouts/SheetDashboardLayout.vue";
+import SplashLayout from "@/layouts/SplashLayout.vue";
+import { useConversationStore } from "@/plugins/ai/store";
 import { t } from "@/plugins/i18n";
-import {
-  DEFAULT_PROJECT_ID,
-  DEFAULT_PROJECT_V1_NAME,
-  QuickActionType,
-  unknownUser,
-  UNKNOWN_ID,
-} from "@/types";
-import {
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
-  idFromSlug,
-  sheetNameFromSlug,
-  isOwnerOfProjectV1,
-  extractChangeHistoryUID,
-} from "@/utils";
-import Signin from "@/views/auth/Signin.vue";
-import Signup from "@/views/auth/Signup.vue";
-import MultiFactor from "@/views/auth/MultiFactor.vue";
-import DashboardSidebar from "@/views/DashboardSidebar.vue";
-import Home from "@/views/Home.vue";
 import {
   hasFeature,
   useVCSV1Store,
@@ -60,8 +40,27 @@ import {
   useDatabaseV1Store,
   useChangeHistoryStore,
 } from "@/store";
-import { useConversationStore } from "@/plugins/ai/store";
+import {
+  DEFAULT_PROJECT_ID,
+  DEFAULT_PROJECT_V1_NAME,
+  QuickActionType,
+  unknownUser,
+  UNKNOWN_ID,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
+import {
+  hasPermissionInProjectV1,
+  hasWorkspacePermissionV1,
+  idFromSlug,
+  sheetNameFromSlug,
+  isOwnerOfProjectV1,
+  uidFromSlug,
+} from "@/utils";
+import DashboardSidebar from "@/views/DashboardSidebar.vue";
+import Home from "@/views/Home.vue";
+import MultiFactor from "@/views/auth/MultiFactor.vue";
+import Signin from "@/views/auth/Signin.vue";
+import Signup from "@/views/auth/Signup.vue";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -901,7 +900,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route) => {
                 const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
-                const uid = extractChangeHistoryUID(
+                const uid = uidFromSlug(
                   route.params.changeHistorySlug as string
                 );
                 const name = `${parent}/changeHistories/${uid}`;
@@ -952,7 +951,8 @@ const routes: Array<RouteRecordRaw> = [
               overrideTitle: true,
             },
             components: {
-              content: () => import("../views/IssueDetail.vue"),
+              content: () =>
+                import("../views/IssueDetailCompatibilityLayer.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true },
@@ -1329,7 +1329,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.database.history.detail") {
     const parent = `instances/${to.params.instance}/databases/${to.params.database}`;
-    const uid = extractChangeHistoryUID(to.params.changeHistorySlug as string);
+    const uid = uidFromSlug(to.params.changeHistorySlug as string);
     Promise.all([
       useDatabaseV1Store().getOrFetchDatabaseByName(parent),
       useChangeHistoryStore().fetchChangeHistory({

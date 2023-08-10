@@ -69,12 +69,12 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTableColumn } from "@/bbkit";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { ComposedDatabase } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { bytesToString, isGhostTable } from "@/utils";
-import EllipsisText from "@/components/EllipsisText.vue";
 import { Engine } from "@/types/proto/v1/common";
-import { BBTableColumn } from "@/bbkit";
+import { bytesToString, isGhostTable } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {

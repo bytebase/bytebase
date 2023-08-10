@@ -93,9 +93,9 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { reactive } from "vue";
+import BBLoader from "@/bbkit/BBLoader.vue";
 import { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
-import BBLoader from "@/bbkit/BBLoader.vue";
 
 interface LocalState {
   showMatchedDatabaseList: boolean;

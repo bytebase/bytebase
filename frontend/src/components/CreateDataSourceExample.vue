@@ -143,13 +143,13 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
+import { languageOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { languageOfEngineV1 } from "@/types";
 import { engineNameV1 } from "@/utils";
 
 interface LocalState {

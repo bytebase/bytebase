@@ -100,19 +100,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
-import { storeToRefs } from "pinia";
 import { NCheckbox } from "naive-ui";
+import { storeToRefs } from "pinia";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   featureToRef,
   pushNotification,
   useCurrentUserV1,
   useActuatorV1Store,
 } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
-import { useI18n } from "vue-i18n";
-import { FeatureType } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { FeatureType } from "@/types";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {

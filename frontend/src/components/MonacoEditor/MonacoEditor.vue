@@ -1,12 +1,17 @@
 <template>
-  <div ref="editorContainerRef" v-bind="$attrs"></div>
-  <BBSpin
-    v-if="!isEditorLoaded"
-    class="h-full w-full flex items-center justify-center"
-  />
+  <div ref="editorContainerRef" v-bind="$attrs" class="relative">
+    <div
+      v-if="!isEditorLoaded"
+      class="absolute inset-0 flex flex-col items-center justify-center"
+    >
+      <BBSpin />
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
+import type { useLanguageClient } from "@sql-lsp/client";
+import type { editor as Editor } from "monaco-editor";
 import {
   onMounted,
   ref,
@@ -18,14 +23,12 @@ import {
   onBeforeUnmount,
   watchEffect,
 } from "vue";
-import type { editor as Editor } from "monaco-editor";
 import { ComposedDatabase, Database, Language, SQLDialect } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
-import type { useLanguageClient } from "@sql-lsp/client";
-import type { AdviceOption } from "./types";
 import { useAdvices } from "./plugins/useAdvices";
+import type { AdviceOption } from "./types";
+import { MonacoHelper, useMonaco } from "./useMonaco";
 
 const props = defineProps({
   value: {

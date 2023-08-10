@@ -1,12 +1,12 @@
 import { IssueType } from "../../types";
 import { FieldId, FieldInfo, IssueTemplate } from "../types";
 import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
+import DatabaseDataUpdateTemplate from "./DatabaseDataUpdateTemplate";
 import DatabaseGrantTemplate from "./DatabaseGrantTemplate";
 import DatabaseSchemaBaselineTemplate from "./DatabaseSchemaBaselineTemplate";
 import DatabaseSchemaUpdateTemplate from "./DatabaseSchemaUpdateTemplate";
-import DatabaseDataUpdateTemplate from "./DatabaseDataUpdateTemplate";
-import GrantRequestTemplate from "./GrantRequestTemplate";
 import DefaultTemplate from "./DefaultTemplate";
+import GrantRequestTemplate from "./GrantRequestTemplate";
 
 export type TemplateType = IssueType | "bb.issue.database.schema.baseline";
 

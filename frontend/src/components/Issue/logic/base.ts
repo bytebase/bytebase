@@ -1,6 +1,15 @@
-import { computed, Ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
 import { isEmpty } from "lodash-es";
+import { v4 as uuidv4 } from "uuid";
+import { computed, Ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  useIssueStore,
+  useProjectV1Store,
+  useSheetV1Store,
+  useSheetStatementByUID,
+  useDatabaseV1Store,
+} from "@/store";
+import { sheetNamePrefix } from "@/store/modules/v1/common";
 import {
   Issue,
   IssueCreate,
@@ -12,7 +21,12 @@ import {
   TaskStatus,
   UNKNOWN_ID,
 } from "@/types";
-import { useRoute, useRouter } from "vue-router";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 import {
   activeStage,
   activeTaskInStage,
@@ -25,22 +39,8 @@ import {
   stageSlug,
   taskSlug,
 } from "@/utils";
-import {
-  useIssueStore,
-  useProjectV1Store,
-  useSheetV1Store,
-  useSheetStatementByUID,
-  useDatabaseV1Store,
-} from "@/store";
-import { flattenTaskList, TaskTypeWithStatement } from "./common";
 import { maybeCreateBackTraceComments } from "../rollback/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
-import { sheetNamePrefix } from "@/store/modules/v1/common";
-import {
-  Sheet_Visibility,
-  Sheet_Source,
-  Sheet_Type,
-} from "@/types/proto/v1/sheet_service";
+import { flattenTaskList, TaskTypeWithStatement } from "./common";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;

@@ -9,10 +9,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import dayjs from "dayjs";
 import { NTooltip } from "naive-ui";
-
+import { computed } from "vue";
 import { humanizeTs } from "@/utils";
 
 const props = defineProps({

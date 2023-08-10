@@ -894,6 +894,19 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
+	// initial data classification setting
+	dataClassificationSettingValue, err := protojson.Marshal(&storepb.DataClassificationSetting{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal initial data classification setting")
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingDataClassification,
+		Value:       string(dataClassificationSettingValue),
+		Description: "The data classification setting",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	// initial workspace approval setting
 	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
 	if err != nil {

@@ -87,11 +87,17 @@
 </template>
 
 <script lang="ts" setup>
+import { NInputGroup, NButton } from "naive-ui";
 import { reactive, computed, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { NInputGroup, NButton } from "naive-ui";
-
+import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 import { EnvironmentTabFilter, UserSelect, SearchBox } from "@/components/v2";
+import {
+  useCurrentUserV1,
+  useEnvironmentV1Store,
+  useProjectV1Store,
+} from "@/store";
+import { Environment } from "@/types/proto/v1/environment_service";
 import { IssueTable } from "../components/Issue";
 import { type Issue, UNKNOWN_ID } from "../types";
 import {
@@ -101,13 +107,6 @@ import {
   isDatabaseRelatedIssueType,
   projectV1Slug,
 } from "../utils";
-import {
-  useCurrentUserV1,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
-import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
-import { Environment } from "@/types/proto/v1/environment_service";
 
 interface LocalState {
   searchText: string;

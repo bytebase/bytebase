@@ -1,11 +1,11 @@
 import { useI18n } from "vue-i18n";
-import { PolicyId } from "./id";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PolicyId } from "./id";
 import sqlReviewSchema from "./sql-review-schema.yaml";
-import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
-import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
+import sqlReviewProdTemplate from "./sql-review.prod.yaml";
+import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 
 // The engine type for rule template
 export type SchemaRuleEngineType =

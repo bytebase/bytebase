@@ -13,9 +13,9 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
+import { VueClass } from "@/utils";
 import { hashCode } from "./BBUtil";
 import { BBAvatarSizeType } from "./types";
-import { VueClass } from "@/utils";
 
 const BACKGROUND_COLOR_LIST: string[] = [
   "#64748B",
@@ -37,6 +37,7 @@ const BACKGROUND_COLOR_LIST: string[] = [
 ];
 
 const sizeClassMap: Map<BBAvatarSizeType, string> = new Map([
+  ["TINY", "w-5 h-5 font-medium"],
   ["SMALL", "w-6 h-6 font-medium"],
   ["NORMAL", "w-8 h-8 font-medium"],
   ["LARGE", "w-24 h-24 font-medium"],

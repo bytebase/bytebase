@@ -137,8 +137,8 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
 import { State } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
 import { InstanceV1Name } from "./v2";
 
 type LocalState = {

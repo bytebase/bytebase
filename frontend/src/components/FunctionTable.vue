@@ -27,10 +27,10 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
+import DefinitionView from "@/components/DefinitionView.vue";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { ComposedDatabase } from "@/types";
 import { FunctionMetadata } from "@/types/proto/store/database";
-import EllipsisText from "@/components/EllipsisText.vue";
-import DefinitionView from "@/components/DefinitionView.vue";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({

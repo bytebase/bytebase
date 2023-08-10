@@ -104,6 +104,7 @@
 </template>
 
 <script lang="ts">
+import { onClickOutside, useElementBounding } from "@vueuse/core";
 import {
   reactive,
   PropType,
@@ -114,7 +115,6 @@ import {
   computed,
 } from "vue";
 import { VBinder, VTarget, VFollower } from "vueuc";
-import { onClickOutside, useElementBounding } from "@vueuse/core";
 
 interface LocalState {
   showMenu: boolean;

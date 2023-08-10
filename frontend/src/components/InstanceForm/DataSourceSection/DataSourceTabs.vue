@@ -46,14 +46,13 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
-import { NTabs, NTab, TabsInst, NButton } from "naive-ui";
-
-import { BBButtonConfirm } from "@/bbkit";
-import { useInstanceFormContext } from "../context";
-import { EditDataSource } from "../common";
 import { pullAt } from "lodash-es";
+import { NTabs, NTab, TabsInst, NButton } from "naive-ui";
+import { nextTick, ref, watch } from "vue";
+import { BBButtonConfirm } from "@/bbkit";
 import { useInstanceV1Store } from "@/store";
+import { EditDataSource } from "../common";
+import { useInstanceFormContext } from "../context";
 
 defineEmits<{
   (event: "add-readonly-datasource"): void;

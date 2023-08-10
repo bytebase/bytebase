@@ -1,5 +1,5 @@
 import type { User } from "./proto/v1/auth_service";
-import type {
+import {
   ApprovalStep,
   ApprovalTemplate,
   Issue_Approver,
@@ -21,4 +21,12 @@ export type WrappedReviewStep = {
   status: "APPROVED" | "REJECTED" | "CURRENT" | "PENDING";
   approver: User | undefined;
   candidates: User[];
+};
+
+export const emptyFlow = (): ReviewFlow => {
+  return {
+    template: ApprovalTemplate.fromJSON({}),
+    approvers: [],
+    currentStepIndex: -1,
+  };
 };

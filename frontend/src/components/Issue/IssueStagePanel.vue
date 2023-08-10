@@ -28,8 +28,8 @@
 
 <script lang="ts" setup>
 import { computed, Ref } from "vue";
-import TaskRunTable from "./TaskRunTable.vue";
 import { Stage, Task, unknown } from "@/types";
+import TaskRunTable from "./TaskRunTable.vue";
 import { useIssueLogic } from "./logic";
 
 type Mode = "normal" | "single" | "merged";

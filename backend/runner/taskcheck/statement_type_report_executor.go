@@ -216,14 +216,17 @@ func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charse
 		}
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
 		var changedResources []byte
-		if engine != db.TiDB {
-			changedResources, err = getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
-		} else {
-			changedResources, err = marshalChangedResources(resources)
+		if !isDML(sqlType) {
+			if engine != db.TiDB {
+				changedResources, err = getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
+			} else {
+				changedResources, err = marshalChangedResources(resources)
+			}
+			if err != nil {
+				log.Error("failed to get statement changed resources", zap.Error(err))
+			}
 		}
-		if err != nil {
-			log.Error("failed to get statement changed resources", zap.Error(err))
-		}
+
 		result = append(result, api.TaskCheckResult{
 			Status:           api.TaskCheckStatusSuccess,
 			Namespace:        api.BBNamespace,
@@ -235,6 +238,15 @@ func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charse
 	}
 
 	return result, nil
+}
+
+func isDML(tp string) bool {
+	switch tp {
+	case "REPLACE", "INSERT", "UPDATE", "DELETE":
+		return true
+	default:
+		return false
+	}
 }
 
 func marshalChangedResources(resources []parser.SchemaResource) ([]byte, error) {
@@ -393,6 +405,9 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 	// DML
 
 	case *tidbast.InsertStmt:
+		if n.IsReplace {
+			return "REPLACE", result
+		}
 		return "INSERT", result
 	case *tidbast.DeleteStmt:
 		return "DELETE", result

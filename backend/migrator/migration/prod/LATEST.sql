@@ -19,7 +19,7 @@ CREATE TABLE idp (
   resource_id TEXT NOT NULL,
   name TEXT NOT NULL,
   domain TEXT NOT NULL,
-  type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC')),
+  type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC', 'LDAP')),
   -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
   config JSONB NOT NULL DEFAULT '{}'
 );
@@ -223,7 +223,8 @@ CREATE TABLE project (
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
-    resource_id TEXT NOT NULL
+    resource_id TEXT NOT NULL,
+    data_classification_config_id TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);

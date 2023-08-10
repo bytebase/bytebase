@@ -20,6 +20,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
+
 defineComponent({
   inheritAttrs: false,
 });

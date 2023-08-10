@@ -1,10 +1,10 @@
-import { User } from "@/types/proto/v1/auth_service";
-import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import { keyBy } from "lodash-es";
+import { User } from "@/types/proto/v1/auth_service";
+import { Engine } from "@/types/proto/v1/common";
+import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import type { Database, DataSourceType, Environment } from "../types";
 import { hasWorkspacePermissionV1 } from "./role";
 import { isDev, semverCompare } from "./util";
-import { Engine } from "@/types/proto/v1/common";
 
 export function allowDatabaseAccess(
   database: Database,

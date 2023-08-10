@@ -94,18 +94,24 @@
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
+import { head } from "lodash-es";
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useDebounceFn } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 import {
   ConditionGroupExpr,
   emptySimpleExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
-import ExprEditor from "./common/ExprEditor";
-import { ResourceType } from "./common/ExprEditor/context";
-import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
+import {
+  databaseGroupNamePrefix,
+  getProjectNameAndDatabaseGroupName,
+  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
+  schemaGroupNamePrefix,
+} from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   ComposedSchemaGroupTable,
   ComposedDatabase,
@@ -114,22 +120,16 @@ import {
   ResourceId,
   ValidatedMessage,
 } from "@/types";
+import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
-import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../EnvironmentSelect.vue";
+import { ResourceIdField } from "../v2";
+import DatabaseGroupSelect from "./DatabaseGroupSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import MatchedTableView from "./MatchedTableView.vue";
-import DatabaseGroupSelect from "./DatabaseGroupSelect.vue";
-import {
-  databaseGroupNamePrefix,
-  getProjectNameAndDatabaseGroupName,
-  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
-  schemaGroupNamePrefix,
-} from "@/store/modules/v1/common";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { ResourceIdField } from "../v2";
-import { head } from "lodash-es";
+import ExprEditor from "./common/ExprEditor";
+import { ResourceType } from "./common/ExprEditor/context";
 
 const props = defineProps<{
   project: ComposedProject;

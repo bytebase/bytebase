@@ -22,6 +22,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/store"
@@ -630,14 +631,15 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, 
 
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
-		Name:    fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
-		Uid:     fmt.Sprintf("%d", run.UID),
-		Type:    convertToPlanCheckRunType(run.Type),
-		Status:  convertToPlanCheckRunStatus(run.Status),
-		Target:  "",
-		Sheet:   "",
-		Results: convertToPlanCheckRunResults(run.Result.Results),
-		Error:   run.Result.Error,
+		Name:       fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
+		Uid:        fmt.Sprintf("%d", run.UID),
+		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
+		Type:       convertToPlanCheckRunType(run.Type),
+		Status:     convertToPlanCheckRunStatus(run.Status),
+		Target:     "",
+		Sheet:      "",
+		Results:    convertToPlanCheckRunResults(run.Result.Results),
+		Error:      run.Result.Error,
 	}
 	if run.Config.DatabaseId != 0 {
 		databaseUID := int(run.Config.DatabaseId)
@@ -971,6 +973,14 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if database == nil {
 		return nil, errors.Errorf("database not found")
 	}
+
+	// HACK: task.Statement is not empty means that the statement comes from a database group target.
+	// we don't want to create new sheets every time so we pass the statement as sheet.
+	sheet := getResourceNameForSheet(project, payload.SheetID)
+	if task.Statement != "" {
+		sheet = task.Statement
+	}
+
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
@@ -983,7 +993,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
-				Sheet:         getResourceNameForSheet(project, payload.SheetID),
+				Sheet:         sheet,
 				SchemaVersion: payload.SchemaVersion,
 			},
 		},
@@ -1040,6 +1050,14 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if database == nil {
 		return nil, errors.Errorf("database not found")
 	}
+
+	// HACK: task.Statement is not empty means that the statement comes from a database group target.
+	// we don't want to create new sheets every time so we pass the statement as sheet.
+	sheet := getResourceNameForSheet(project, payload.SheetID)
+	if task.Statement != "" {
+		sheet = task.Statement
+	}
+
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
@@ -1054,7 +1072,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:             getResourceNameForSheet(project, payload.SheetID),
+			Sheet:             sheet,
 			SchemaVersion:     payload.SchemaVersion,
 			RollbackEnabled:   payload.RollbackEnabled,
 			RollbackSqlStatus: convertToRollbackSQLStatus(payload.RollbackSQLStatus),
@@ -1483,12 +1501,10 @@ func isSpecSheetUpdated(specA *v1pb.Plan_Spec, specB *v1pb.Plan_Spec) bool {
 func validateSteps(_ []*v1pb.Plan_Step) error {
 	// FIXME: impl this func
 	// targets should be unique
-	// if deploymentConfig is used, only one spec is allowed.
 	return nil
 }
 
 func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-	// FIXME: handle deploymentConfig
 	pipelineCreate := &store.PipelineMessage{
 		Name: "Rollout Pipeline",
 	}
@@ -1699,13 +1715,25 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	return taskCreates, nil, nil
 }
 
-func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
+	// 2. projects/{project}/databaseGroups/{databaseGroup}
+	if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
+		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
+	}
+	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
+		return getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx, s, spec, c, project, registerEnvironmentID)
+	}
+	return nil, nil, errors.Errorf("unknown target %q", c.Target)
+}
+
+func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get instance database id from target %q", c.Target)
+		return nil, nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
 	}
+
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
@@ -1918,6 +1946,310 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	default:
 		return nil, nil, errors.Errorf("unsupported change database config type %q", c.Type)
 	}
+}
+
+func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+	switch c.Type {
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+	default:
+		return nil, nil, errors.Errorf("unsupported change database config type %q for database group target", c.Type)
+	}
+
+	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", c.Target)
+	}
+	if projectID != project.ResourceID {
+		return nil, nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, c.Target, project.ResourceID)
+	}
+	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
+	}
+	if databaseGroup == nil {
+		return nil, nil, errors.Errorf("database group %q not found", databaseGroupID)
+	}
+	schemaGroups, err := s.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to list schema groups for database group %q", databaseGroupID)
+	}
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+	}
+
+	matchedDatabases, _, err := getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
+	}
+	if len(matchedDatabases) == 0 {
+		return nil, nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
+	}
+
+	var environmentID string
+	for _, db := range matchedDatabases {
+		if environmentID == "" {
+			environmentID = db.EffectiveEnvironmentID
+		}
+		if environmentID != db.EffectiveEnvironmentID {
+			return nil, nil, errors.Errorf("matched databases are in different environments")
+		}
+	}
+	if err := registerEnvironmentID(environmentID); err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to register environment id %q", environmentID)
+	}
+
+	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+	}
+	sheetUID, err := strconv.Atoi(sheetUIDStr)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetUIDStr)
+	}
+	sheetStatement, err := s.GetSheetStatementByID(ctx, sheetUID)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get sheet statement %q", sheetUID)
+	}
+
+	var taskCreatesMatrix [][]*store.TaskMessage
+	var taskIndexDAGsMatrix [][]store.TaskIndexDAG
+	for _, db := range matchedDatabases {
+		dbSchema, err := s.GetDBSchema(ctx, db.UID)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get db schema %q", db.UID)
+		}
+		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &db.InstanceID})
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get instance %q", db.InstanceID)
+		}
+		if instance == nil {
+			return nil, nil, errors.Errorf("instance %q not found", db.InstanceID)
+		}
+
+		schemaGroupsMatchedTables := map[string][]string{}
+		for _, schemaGroup := range schemaGroups {
+			matches, _, err := getMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
+			}
+			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
+		}
+
+		parserEngineType, err := convertDatabaseToParserEngineType(instance.Engine)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
+		}
+
+		statements, schemaGroupNames, err := getStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, c.Target, schemaGroups, schemaGroupsMatchedTables)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get statements from schema groups")
+		}
+
+		taskCreates, err := getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db, instance, spec, c, statements, schemaGroupNames)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get task creates from change database config database group statements")
+		}
+		var taskIndexDAGs []store.TaskIndexDAG
+		for i := 1; i < len(taskCreates); i++ {
+			taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
+				FromIndex: i - 1,
+				ToIndex:   i,
+			})
+		}
+
+		taskCreatesMatrix = append(taskCreatesMatrix, taskCreates)
+		taskIndexDAGsMatrix = append(taskIndexDAGsMatrix, taskIndexDAGs)
+	}
+
+	creates, dags, err := utils.MergeTaskCreateLists(taskCreatesMatrix, taskIndexDAGsMatrix)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to merge task create lists")
+	}
+
+	return creates, dags, nil
+}
+
+func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.DatabaseMessage, instance *store.InstanceMessage, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, statements []string, schemaGroupNames []string) ([]*store.TaskMessage, error) {
+	var creates []*store.TaskMessage
+	for idx, statement := range statements {
+		schemaVersionSuffix := fmt.Sprintf("-%03d", idx)
+		schemaGroupName := schemaGroupNames[idx]
+		switch c.Type {
+		case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+			payload := api.TaskDatabaseSchemaUpdatePayload{
+				SpecID:          spec.Id,
+				SheetID:         0,
+				SchemaVersion:   getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
+				VCSPushEvent:    nil,
+				SchemaGroupName: schemaGroupName,
+			}
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
+			}
+			payloadString := string(bytes)
+			taskCreate := &store.TaskMessage{
+				Name:              fmt.Sprintf("DDL(schema) for database %q", db.DatabaseName),
+				InstanceID:        instance.UID,
+				DatabaseID:        &db.UID,
+				Status:            api.TaskPendingApproval,
+				Type:              api.TaskDatabaseSchemaUpdate,
+				EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
+				Payload:           payloadString,
+				Statement:         statement,
+			}
+			creates = append(creates, taskCreate)
+
+		case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+			payload := api.TaskDatabaseDataUpdatePayload{
+				SpecID:            spec.Id,
+				SheetID:           0,
+				SchemaVersion:     getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
+				VCSPushEvent:      nil,
+				RollbackEnabled:   c.RollbackEnabled,
+				RollbackSQLStatus: api.RollbackSQLStatusPending,
+				SchemaGroupName:   schemaGroupName,
+			}
+
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to marshal database data update payload")
+			}
+			payloadString := string(bytes)
+			taskCreate := &store.TaskMessage{
+				Name:              fmt.Sprintf("DML(data) for database %q", db.DatabaseName),
+				InstanceID:        instance.UID,
+				DatabaseID:        &db.UID,
+				Status:            api.TaskPendingApproval,
+				Type:              api.TaskDatabaseDataUpdate,
+				EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
+				Payload:           payloadString,
+				Statement:         statement,
+			}
+			creates = append(creates, taskCreate)
+		}
+	}
+
+	return creates, nil
+}
+
+// input: statement, parserEngineType
+// output: rendered statement list
+func getStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngineType parser.EngineType, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
+	flush := func(emptyStatementBuilder *strings.Builder, statementBuilder *strings.Builder, schemaGroup *store.SchemaGroupMessage, matchedTables []string) ([]string, []string) {
+		if statementBuilder.Len() == 0 {
+			return nil, nil
+		}
+		var resultStatements, schemaGroupNames []string
+		if len(matchedTables) > 0 {
+			for _, tableName := range matchedTables {
+				statement := emptyStatementBuilder.String() +
+					strings.ReplaceAll(statementBuilder.String(), schemaGroup.Placeholder, tableName)
+				resultStatements = append(resultStatements, statement)
+				schemaGroupNames = append(schemaGroupNames, fmt.Sprintf("%s/%s%s", schemaGroupParent, common.SchemaGroupNamePrefix, schemaGroup.ResourceID))
+			}
+		} else {
+			statement := emptyStatementBuilder.String() + statementBuilder.String()
+			resultStatements = append(resultStatements, statement)
+			schemaGroupNames = append(schemaGroupNames, "")
+		}
+		emptyStatementBuilder.Reset()
+		statementBuilder.Reset()
+		return resultStatements, schemaGroupNames
+	}
+
+	singleStatements, err := parser.SplitMultiSQL(parserEngineType, statement)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to split sql")
+	}
+	if len(singleStatements) == 0 {
+		return nil, nil, errors.Errorf("no sql statement found")
+	}
+
+	var resultStatements, resultSchemaGroupNames []string
+	var emptyStatementBuilder, statementBuilder strings.Builder
+
+	var preMatch, curMatch *store.SchemaGroupMessage
+	for _, singleStatement := range singleStatements {
+		if singleStatement.Empty {
+			_, _ = emptyStatementBuilder.WriteString(singleStatement.Text)
+			continue
+		}
+		for _, schemaGroup := range schemaGroups {
+			if strings.Contains(singleStatement.Text, schemaGroup.Placeholder) {
+				curMatch = schemaGroup
+				break
+			}
+		}
+
+		// discard statement that matches the placeholder but has no matched tables
+		if curMatch != nil && len(schemaGroupMatchedTables[curMatch.ResourceID]) == 0 {
+			curMatch = nil
+			continue
+		}
+
+		if preMatch == nil && curMatch != nil {
+			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, nil, nil)
+			resultStatements = append(resultStatements, statements...)
+			resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
+		}
+		if preMatch != nil && curMatch == nil {
+			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
+			resultStatements = append(resultStatements, statements...)
+			resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
+		}
+		if preMatch != nil && curMatch != nil && preMatch.ResourceID != curMatch.ResourceID {
+			statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
+			resultStatements = append(resultStatements, statements...)
+			resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
+		}
+
+		_, _ = statementBuilder.WriteString(singleStatement.Text)
+		_, _ = statementBuilder.WriteString("\n")
+
+		preMatch = curMatch
+		curMatch = nil
+	}
+
+	if preMatch != nil {
+		statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, preMatch, schemaGroupMatchedTables[preMatch.ResourceID])
+		resultStatements = append(resultStatements, statements...)
+		resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
+	} else {
+		statements, schemaGroupNames := flush(&emptyStatementBuilder, &statementBuilder, nil, nil)
+		resultStatements = append(resultStatements, statements...)
+		resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
+	}
+
+	if emptyStatementBuilder.Len() > 0 && len(resultStatements) > 0 {
+		resultStatements[len(resultStatements)-1] += emptyStatementBuilder.String()
+	}
+
+	return resultStatements, resultSchemaGroupNames, nil
+}
+
+func convertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
+	switch engine {
+	case db.Oracle:
+		return parser.Oracle, nil
+	case db.MSSQL:
+		return parser.MSSQL, nil
+	case db.Postgres:
+		return parser.Postgres, nil
+	case db.Redshift:
+		return parser.Redshift, nil
+	case db.MySQL:
+		return parser.MySQL, nil
+	case db.TiDB:
+		return parser.TiDB, nil
+	case db.MariaDB:
+		return parser.MariaDB, nil
+	case db.OceanBase:
+		return parser.OceanBase, nil
+	}
+	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)
 }
 
 func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
@@ -2417,6 +2749,13 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		if owner == "" {
 			return errors.Errorf("database owner is required for Redshift")
 		}
+	case db.RisingWave:
+		if characterSet != "" {
+			return errors.Errorf("RisingWave does not support character set, but got %s", characterSet)
+		}
+		if collation != "" {
+			return errors.Errorf("RisingWave does not support collation, but got %s", collation)
+		}
 	case db.SQLite, db.MongoDB, db.MSSQL:
 		// no-op.
 	default:
@@ -2556,6 +2895,49 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 			c.CreatorID = creatorID
 			c.PipelineID = pipelineCreated.ID
 			c.StageID = createdStage.ID
+
+			// HACK: statement is present because the task came from a database group target plan spec.
+			// we need to create the sheet and update payload.SheetID.
+			if c.Statement != "" {
+				sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
+					CreatorID:  api.SystemBotID,
+					ProjectUID: project.UID,
+					Name:       fmt.Sprintf("Sheet for task %v", c.Name),
+					Statement:  c.Statement,
+					Visibility: store.ProjectSheet,
+					Source:     store.SheetFromBytebaseArtifact,
+					Type:       store.SheetForSQL,
+					Payload:    "{}",
+				})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to create sheet for task %v", c.Name)
+				}
+				switch c.Type {
+				case api.TaskDatabaseSchemaUpdate:
+					payload := &api.TaskDatabaseSchemaUpdatePayload{}
+					if err := json.Unmarshal([]byte(c.Payload), payload); err != nil {
+						return nil, errors.Wrapf(err, "failed to unmarshal payload for task %v", c.Name)
+					}
+					payload.SheetID = sheet.UID
+					payloadBytes, err := json.Marshal(payload)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to marshal payload for task %v", c.Name)
+					}
+					c.Payload = string(payloadBytes)
+				case api.TaskDatabaseDataUpdate:
+					payload := &api.TaskDatabaseDataUpdatePayload{}
+					if err := json.Unmarshal([]byte(c.Payload), payload); err != nil {
+						return nil, errors.Wrapf(err, "failed to unmarshal payload for task %v", c.Name)
+					}
+					payload.SheetID = sheet.UID
+					payloadBytes, err := json.Marshal(payload)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to marshal payload for task %v", c.Name)
+					}
+					c.Payload = string(payloadBytes)
+				}
+			}
+
 			taskCreateList = append(taskCreateList, c)
 		}
 		tasks, err := s.store.CreateTasksV2(ctx, taskCreateList...)
@@ -2586,6 +2968,13 @@ func getOrDefaultSchemaVersion(v string) string {
 		return v
 	}
 	return common.DefaultMigrationVersion()
+}
+
+func getOrDefaultSchemaVersionWithSuffix(v string, suffix string) string {
+	if v != "" {
+		return v + suffix
+	}
+	return common.DefaultMigrationVersion() + suffix
 }
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.

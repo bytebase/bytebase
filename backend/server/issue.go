@@ -1861,6 +1861,13 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		if owner == "" {
 			return errors.Errorf("database owner is required for Redshift")
 		}
+	case db.RisingWave:
+		if characterSet != "" {
+			return errors.Errorf("RisingWave does not support character set, but got %s", characterSet)
+		}
+		if collation != "" {
+			return errors.Errorf("RisingWave does not support collation, but got %s", collation)
+		}
 	case db.SQLite, db.MongoDB, db.MSSQL:
 		// no-op.
 	default:

@@ -147,6 +147,7 @@ export interface Plan_ChangeDatabaseConfig {
   /**
    * The resource name of the target.
    * Format: instances/{instance-id}/databases/{database-name}.
+   * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
   target: string;
   /**
@@ -374,6 +375,7 @@ export interface PlanCheckRun {
   results: PlanCheckRun_Result[];
   /** error is set if the Status is FAILED. */
   error: string;
+  createTime?: Date | undefined;
 }
 
 export enum PlanCheckRun_Type {
@@ -2940,7 +2942,17 @@ export const BatchCancelTaskRunsResponse = {
 };
 
 function createBasePlanCheckRun(): PlanCheckRun {
-  return { name: "", uid: "", type: 0, status: 0, target: "", sheet: "", results: [], error: "" };
+  return {
+    name: "",
+    uid: "",
+    type: 0,
+    status: 0,
+    target: "",
+    sheet: "",
+    results: [],
+    error: "",
+    createTime: undefined,
+  };
 }
 
 export const PlanCheckRun = {
@@ -2968,6 +2980,9 @@ export const PlanCheckRun = {
     }
     if (message.error !== "") {
       writer.uint32(66).string(message.error);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -3035,6 +3050,13 @@ export const PlanCheckRun = {
 
           message.error = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3054,6 +3076,7 @@ export const PlanCheckRun = {
       sheet: isSet(object.sheet) ? String(object.sheet) : "",
       results: Array.isArray(object?.results) ? object.results.map((e: any) => PlanCheckRun_Result.fromJSON(e)) : [],
       error: isSet(object.error) ? String(object.error) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
     };
   },
 
@@ -3071,6 +3094,7 @@ export const PlanCheckRun = {
       obj.results = [];
     }
     message.error !== undefined && (obj.error = message.error);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
     return obj;
   },
 
@@ -3088,6 +3112,7 @@ export const PlanCheckRun = {
     message.sheet = object.sheet ?? "";
     message.results = object.results?.map((e) => PlanCheckRun_Result.fromPartial(e)) || [];
     message.error = object.error ?? "";
+    message.createTime = object.createTime ?? undefined;
     return message;
   },
 };

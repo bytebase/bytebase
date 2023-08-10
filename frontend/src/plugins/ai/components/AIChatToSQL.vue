@@ -4,22 +4,21 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, toRef } from "vue";
-import Emittery from "emittery";
 import { useLocalStorage } from "@vueuse/core";
-
-import type { AIContextEvents } from "../types";
-import { useChatByTab, provideAIContext } from "../logic";
+import Emittery from "emittery";
+import { computed, reactive, toRef } from "vue";
 import {
   useCurrentTab,
   useInstanceV1ByUID,
   useDatabaseV1ByUID,
   useMetadata,
 } from "@/store";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { Connection } from "@/types";
+import { useChatByTab, provideAIContext } from "../logic";
+import type { AIContextEvents } from "../types";
 import ChatPanel from "./ChatPanel.vue";
 import MockInputPlaceholder from "./MockInputPlaceholder.vue";
-import { Connection } from "@/types";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 type LocalState = {
   showHistoryDialog: boolean;

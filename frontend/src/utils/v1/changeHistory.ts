@@ -1,14 +1,14 @@
+import { isUndefined, orderBy } from "lodash-es";
 import slug from "slug";
-import { UNKNOWN_ID } from "@/types";
+import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
+import { AffectedTable } from "@/types/changeHistory";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "./database";
-import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
-import { isUndefined, orderBy } from "lodash-es";
-import { AffectedTable } from "@/types/changeHistory";
 
-export const extractChangeHistoryUID = (changeHistorySlug: string) => {
-  const parts = changeHistorySlug.split("-");
-  return parts[parts.length - 1] ?? String(UNKNOWN_ID);
+export const extractChangeHistoryUID = (name: string) => {
+  const pattern = /(?:^|\/)(?:changeHistories|migrations)\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
 };
 
 export const extractDatabaseNameAndChangeHistoryUID = (

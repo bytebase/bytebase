@@ -52,18 +52,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { onKeyStroke, useClipboard } from "@vueuse/core";
 import { escape, get } from "lodash-es";
 import { NButton } from "naive-ui";
-import { onKeyStroke, useClipboard } from "@vueuse/core";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { DrawerContent } from "@/components/v2";
-import { useSQLResultViewContext } from "./context";
-import { SQLResultSetV1 } from "@/types";
-import { extractSQLRowValue } from "@/utils";
-import { QueryResult, RowValue } from "@/types/proto/v1/sql_service";
 import { pushNotification } from "@/store";
+import { SQLResultSetV1 } from "@/types";
+import { QueryResult, RowValue } from "@/types/proto/v1/sql_service";
+import { extractSQLRowValue } from "@/utils";
+import { useSQLResultViewContext } from "./context";
 
 const props = defineProps<{
   resultSet?: SQLResultSetV1;

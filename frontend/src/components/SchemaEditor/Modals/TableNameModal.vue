@@ -32,20 +32,20 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { UNKNOWN_ID, SchemaEditorTabType } from "@/types";
 import {
   useSchemaEditorStore,
   useNotificationStore,
   generateUniqueTabId,
   useDatabaseV1Store,
 } from "@/store";
+import { UNKNOWN_ID, SchemaEditorTabType } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
 import {
   convertColumnMetadataToColumn,
   convertTableMetadataToTable,
   Schema,
 } from "@/types/schemaEditor/atomType";
-import { Engine } from "@/types/proto/v1/common";
 
 const tableNameFieldRegexp = /^\S+$/;
 

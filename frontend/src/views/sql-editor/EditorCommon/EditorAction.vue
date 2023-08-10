@@ -117,9 +117,9 @@ import {
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
-import SharePopover from "./SharePopover.vue";
-import AdminModeButton from "./AdminModeButton.vue";
 import { formatEngineV1, keyboardShortcutStr } from "@/utils";
+import AdminModeButton from "./AdminModeButton.vue";
+import SharePopover from "./SharePopover.vue";
 
 interface LocalState {
   requiredFeatureName?: FeatureType;

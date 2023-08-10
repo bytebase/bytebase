@@ -42,23 +42,22 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton, useDialog } from "naive-ui";
-
 import { BBGrid, type BBGridColumn } from "@/bbkit";
+import { buildCELExpr, ConditionGroupExpr } from "@/plugins/cel";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/type/expr";
+import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+import { convertParsedExprToCELString, defer } from "@/utils";
+import { useRiskCenterContext } from "../context";
+import ViewTemplate from "./ViewTemplate.vue";
 import {
   type RuleTemplate,
   useRuleTemplates,
   titleOfTemplate,
 } from "./template";
-import { useRiskCenterContext } from "../context";
-import { Expr } from "@/types/proto/google/type/expr";
-import { convertParsedExprToCELString, defer } from "@/utils";
-import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
-import { buildCELExpr, ConditionGroupExpr } from "@/plugins/cel";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import ViewTemplate from "./ViewTemplate.vue";
 
 const props = defineProps<{
   dirty?: boolean;

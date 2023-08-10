@@ -1,6 +1,5 @@
-import { ref } from "vue";
 import { defineStore } from "pinia";
-
+import { ref } from "vue";
 import { riskServiceClient } from "@/grpcweb";
 import { Risk } from "@/types/proto/v1/risk_service";
 

@@ -1,16 +1,19 @@
 import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
-import { createApp } from "vue";
 import Long from "long";
 import protobufjs from "protobufjs";
-protobufjs.util.Long = Long;
-protobufjs.configure();
-
+import { createApp } from "vue";
+import App from "./App.vue";
+import "./assets/css/github-markdown-style.css";
+import "./assets/css/inter.css";
+import "./assets/css/tailwind.css";
+import dataSourceType from "./directives/data-source-type";
+import dayjs from "./plugins/dayjs";
+import mountDemoApp from "./plugins/demo";
+import "./plugins/demo/style.css";
+import highlight from "./plugins/highlight";
 import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
-import dayjs from "./plugins/dayjs";
-import highlight from "./plugins/highlight";
-import mountDemoApp from "./plugins/demo";
 import { isSilent } from "./plugins/silent-request";
 import { router } from "./router";
 import {
@@ -39,12 +42,9 @@ import {
   sizeToFit,
   urlfy,
 } from "./utils";
-import dataSourceType from "./directives/data-source-type";
-import App from "./App.vue";
-import "./assets/css/inter.css";
-import "./assets/css/tailwind.css";
-import "./assets/css/github-markdown-style.css";
-import "./plugins/demo/style.css";
+
+protobufjs.util.Long = Long;
+protobufjs.configure();
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());

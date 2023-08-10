@@ -3,10 +3,11 @@
 </template>
 
 <script lang="ts" setup>
-import { defineComponent, h, PropType, watch } from "vue";
 import dayjs from "dayjs";
+import { defineComponent, h, PropType, watch } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-
+import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
+import { useSheetV1Store, useSheetStatementByUID } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
   ActivityStageStatusUpdatePayload,
@@ -16,19 +17,18 @@ import {
   ActivityTaskStatusUpdatePayload,
   Issue,
   SYSTEM_BOT_EMAIL,
+  UNKNOWN_ID,
   empty,
 } from "@/types";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   findStageById,
   findTaskById,
   issueActivityActionSentence,
 } from "@/utils";
-import { useSheetV1Store, useSheetStatementByUID } from "@/store";
-import TaskName from "./TaskName.vue";
-import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
-import StageName from "./StageName.vue";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
+import StageName from "./StageName.vue";
+import TaskName from "./TaskName.vue";
 
 type RenderedContent = string | ReturnType<typeof h>;
 
@@ -211,11 +211,11 @@ const renderActionSentence = () => {
         activity.payload
       ) as ActivityTaskStatementUpdatePayload;
       const oldStatement =
-        useSheetStatementByUID(String(payload.oldSheetId)).value ||
-        payload.oldStatement;
+        useSheetStatementByUID(String(payload.oldSheetId || UNKNOWN_ID))
+          .value || payload.oldStatement;
       const newStatement =
-        useSheetStatementByUID(String(payload.newSheetId)).value ||
-        payload.newStatement;
+        useSheetStatementByUID(String(payload.newSheetId || UNKNOWN_ID))
+          .value || payload.newStatement;
       return h(
         "span",
         {},
@@ -308,13 +308,13 @@ watch(
       sheetV1Store.getOrFetchSheetByUID(
         String(
           (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
-            .newSheetId
+            .newSheetId || UNKNOWN_ID
         )
       );
       sheetV1Store.getOrFetchSheetByUID(
         String(
           (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
-            .oldSheetId
+            .oldSheetId || UNKNOWN_ID
         )
       );
     }

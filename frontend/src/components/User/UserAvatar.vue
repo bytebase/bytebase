@@ -9,7 +9,6 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
-
 import { BBAvatar } from "@/bbkit";
 import { BBAvatarSizeType } from "@/bbkit/types";
 import { UNKNOWN_ID, unknownUser } from "@/types";

@@ -6,3 +6,5 @@ export type ContextMenuButtonAction<T = unknown> = {
   props?: ButtonProps;
   params: T;
 };
+
+export type TooltipMode = "ALWAYS" | "DISABLED-ONLY";

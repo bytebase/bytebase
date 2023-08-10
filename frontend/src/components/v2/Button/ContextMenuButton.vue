@@ -1,15 +1,14 @@
 <template>
-  <NButtonGroup size="small">
+  <NButtonGroup v-if="currentAction" size="small">
     <NButton
-      v-if="currentAction"
       v-bind="currentAction.props"
       @click="$emit('click', currentAction)"
     >
       <template #icon>
-        <slot name="icon" :action="currentAction!" />
+        <slot name="icon" :action="currentAction" />
       </template>
-      <slot name="default" :action="currentAction!">
-        {{ currentAction?.text }}
+      <slot name="default" :action="currentAction">
+        {{ currentAction.text }}
       </slot>
     </NButton>
 
@@ -21,7 +20,10 @@
       trigger="click"
       @update:value="changeActionKey"
     >
-      <NButton style="--n-padding: 0 6px" v-bind="currentAction?.props">
+      <NButton
+        :style="dropdownButtonStyle(currentAction)"
+        v-bind="currentAction.props"
+      >
         <heroicons-outline:chevron-down />
       </NButton>
     </NPopselect>
@@ -29,11 +31,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NButton, NButtonGroup, NPopselect, SelectOption } from "naive-ui";
-
+import { ref, computed } from "vue";
 import { ContextMenuButtonAction } from "./types";
 
 const STORE_PREFIX = "bb.context-menu-button";
@@ -100,5 +101,16 @@ const changeActionKey = (key: string) => {
     }
   }
   currentActionKey.value = key;
+};
+
+const dropdownButtonStyle = (action: ContextMenuButtonAction) => {
+  const style: Record<string, any> = {
+    "--n-padding": "0 6px",
+  };
+  if (action.props?.type === "primary") {
+    style["--n-padding"] = "0 8px";
+    style["border-left"] = "0.5px solid var(--color-accent-hover)";
+  }
+  return style;
 };
 </script>

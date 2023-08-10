@@ -1,49 +1,33 @@
 <template>
-  <NButton quaternary size="tiny" @click="state.showConfirmModal = true">
-    <heroicons-outline:document-download class="w-5 h-auto" />
-  </NButton>
-
-  <BBModal
-    v-if="state.showConfirmModal"
-    :title="$t('common.export')"
-    header-class="overflow-hidden"
-    @close="state.showConfirmModal = false"
+  <NDropdown
+    trigger="hover"
+    :options="exportDropdownOptions"
+    @select="handleExportData"
   >
-    <div class="w-128 mb-6">
-      {{ $t("issue.grant-request.data-export-attention") }}
-    </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
-      <button
-        type="button"
-        class="btn-cancel"
-        @click="state.showConfirmModal = false"
-      >
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        class="btn-primary"
-        :disabled="state.isRequesting"
-        @click="handleExportData"
-      >
-        <BBSpin v-if="state.isRequesting" class="mr-2" color="text-white" />
-        {{ $t("common.confirm") }}
-      </button>
-    </div>
-  </BBModal>
+    <NButton
+      quaternary
+      size="tiny"
+      :loading="state.isRequesting"
+      :disabled="state.isRequesting"
+    >
+      <heroicons-outline:document-download class="h-5 w-5" />
+    </NButton>
+  </NDropdown>
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
-import { ExportRecord } from "./types";
-import { reactive } from "vue";
+import dayjs from "dayjs";
+import { NButton, NDropdown } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   getExportFileType,
-  getExportRequestFormat,
   pushNotification,
   useProjectIamPolicyStore,
   useSQLStore,
 } from "@/store";
-import dayjs from "dayjs";
+import { ExportRequest_Format } from "@/types/proto/v1/sql_service";
+import { ExportRecord } from "./types";
 
 interface LocalState {
   showConfirmModal: boolean;
@@ -54,6 +38,7 @@ const props = defineProps<{
   exportRecord: ExportRecord;
 }>();
 
+const { t } = useI18n();
 const sqlStore = useSQLStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const state = reactive<LocalState>({
@@ -61,7 +46,26 @@ const state = reactive<LocalState>({
   isRequesting: false,
 });
 
-const handleExportData = async () => {
+const exportDropdownOptions = computed(() => [
+  {
+    label: t("sql-editor.download-as-file", { file: "CSV" }),
+    key: ExportRequest_Format.CSV,
+  },
+  {
+    label: t("sql-editor.download-as-file", { file: "JSON" }),
+    key: ExportRequest_Format.JSON,
+  },
+  {
+    label: t("sql-editor.download-as-file", { file: "SQL" }),
+    key: ExportRequest_Format.SQL,
+  },
+  {
+    label: t("sql-editor.download-as-file", { file: "XLSX" }),
+    key: ExportRequest_Format.XLSX,
+  },
+]);
+
+const handleExportData = async (format: ExportRequest_Format) => {
   if (state.isRequesting) {
     return;
   }
@@ -77,7 +81,7 @@ const handleExportData = async () => {
       connectionDatabase: database.databaseName,
       statement: exportRecord.statement,
       limit: exportRecord.maxRowCount,
-      format: getExportRequestFormat(exportRecord.exportFormat),
+      format: format,
       admin: false,
     });
 

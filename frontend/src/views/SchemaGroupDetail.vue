@@ -100,8 +100,13 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, watch, ref } from "vue";
 import { useDebounceFn } from "@vueuse/core";
+import { reactive, computed, watch, ref } from "vue";
+import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
+import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
+import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
+import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
+import { ConditionGroupExpr } from "@/plugins/cel";
 import {
   useDBGroupStore,
   useProjectV1Store,
@@ -112,13 +117,8 @@ import {
   projectNamePrefix,
   schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
-import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
-import { ConditionGroupExpr } from "@/plugins/cel";
-import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
-import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
-import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
-import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import { ComposedSchemaGroupTable } from "@/types";
+import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 
 interface LocalState {
   isLoaded: boolean;

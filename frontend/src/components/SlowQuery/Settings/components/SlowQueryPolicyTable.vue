@@ -31,15 +31,14 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { type BBGridColumn, BBGrid } from "@/bbkit";
-import type { ComposedInstance, ComposedSlowQueryPolicy } from "@/types";
 import {
   InstanceV1Name,
   EnvironmentV1Name,
   SpinnerSwitch,
 } from "@/components/v2";
 import { useCurrentUserV1 } from "@/store";
+import type { ComposedInstance, ComposedSlowQueryPolicy } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 defineProps<{

@@ -6,12 +6,11 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
-import { useIssueLogic } from "../logic";
-import { Issue } from "@/types";
-import ApprovalTimeline from "./ApprovalTimeline.vue";
 import { useWrappedReviewSteps } from "@/plugins/issue/logic";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
+import { Issue } from "@/types";
+import { useIssueLogic } from "../logic";
+import ApprovalTimeline from "./ApprovalTimeline.vue";
 
 const issueLogic = useIssueLogic();
 const issue = computed(() => issueLogic.issue.value as Issue);

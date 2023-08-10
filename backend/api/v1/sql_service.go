@@ -41,6 +41,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -827,6 +828,16 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
+	case db.MSSQL:
+		databaseList, err := parser.ExtractDatabaseList(parser.MSSQL, request.Statement, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
+		}
+
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+		}
 	}
 
 	// Create export activity.
@@ -1122,6 +1133,16 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
+		case db.MSSQL:
+			databaseList, err := parser.ExtractDatabaseList(parser.MSSQL, request.Statement, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
+			}
+
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+			if err != nil {
+				return nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+			}
 		}
 	}
 
@@ -1186,6 +1207,11 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		DatabaseList:        []db.DatabaseSchema{},
 	}
+
+	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find classification setting")
+	}
 	for _, name := range databaseList {
 		databaseName := name
 		if name == "" {
@@ -1214,10 +1240,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Failed to find sensitive data policy for database %q in instance %q: %v", databaseName, instance.Title, err)
-		}
-		if len(policy.SensitiveDataList) == 0 {
-			// If there is no sensitive data policy, return nil to skip mask sensitive data.
-			return nil, nil
 		}
 
 		columnMap := make(sensitiveDataMap)
@@ -1290,22 +1312,29 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						Table:  table.Name,
 						Column: column.Name,
 					}]
+					if !sensitive {
+						classificationIsSensitive, err := s.getSensitiveForClassification(ctx, column.Classification, database.ProjectID, classificationSetting)
+						if err != nil {
+							return nil, err
+						}
+						sensitive = classificationIsSensitive
+					}
 					tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
 						Name:      column.Name,
 						Sensitive: sensitive,
 					})
 				}
-				if instance.Engine == db.Snowflake {
+				if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
 					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
 				} else {
 					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
 				}
 			}
-			if instance.Engine == db.Snowflake {
+			if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
 				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 			}
 		}
-		if instance.Engine == db.Snowflake {
+		if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
 			if len(databaseSchema.SchemaList) > 0 {
 				isEmpty = false
 			}
@@ -1323,6 +1352,44 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		result = nil
 	}
 	return result, nil
+}
+
+func (s *SQLService) getSensitiveForClassification(ctx context.Context, classificationID string, projectID string, classificationSetting *storepb.DataClassificationSetting) (bool, error) {
+	if classificationID == "" || projectID == "" {
+		return false, nil
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return false, status.Errorf(codes.Internal, "Failed to find project %q: %v", projectID, err)
+	}
+
+	if project.DataClassificationConfigID == "" {
+		return false, nil
+	}
+
+	for _, setting := range classificationSetting.Configs {
+		if setting.Id != project.DataClassificationConfigID {
+			continue
+		}
+		classification, ok := setting.Classification[classificationID]
+		if !ok {
+			return false, nil
+		}
+		if classification.LevelId == nil {
+			return false, nil
+		}
+
+		for _, level := range setting.Levels {
+			if level.Id == *classification.LevelId {
+				return level.Sensitive, nil
+			}
+		}
+		return false, nil
+	}
+
+	return false, nil
 }
 
 func isExcludeDatabase(dbType db.Type, database string) bool {
@@ -2063,7 +2130,6 @@ func (s *SQLService) checkQueryRights(
 		return err
 	}
 
-	var conditionExpression string
 	isExport := exportFormat != v1pb.ExportRequest_FORMAT_UNSPECIFIED
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
@@ -2076,79 +2142,22 @@ func (s *SQLService) checkQueryRights(
 			"request.row_limit": limit,
 		}
 
-		switch exportFormat {
-		case v1pb.ExportRequest_FORMAT_UNSPECIFIED:
-			attributes["request.export_format"] = "QUERY"
-		case v1pb.ExportRequest_CSV:
-			attributes["request.export_format"] = "CSV"
-		case v1pb.ExportRequest_JSON:
-			attributes["request.export_format"] = "JSON"
-		case v1pb.ExportRequest_SQL:
-			attributes["request.export_format"] = "SQL"
-		case v1pb.ExportRequest_XLSX:
-			attributes["request.export_format"] = "XLSX"
-		default:
-			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
-		}
-
-		ok, expression, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
+		ok, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
 		if !ok {
 			return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", resource.Pretty())
 		}
-		conditionExpression = expression
 	}
 
-	if isExport {
-		newPolicy := removeExportBinding(user.ID, conditionExpression, projectPolicy)
-		if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, api.SystemBotID, project.UID); err != nil {
-			return err
-		}
-		// Post project IAM policy update activity.
-		if _, err := s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: project.UID,
-			Type:         api.ActivityProjectMemberCreate,
-			Level:        api.ActivityInfo,
-			Comment:      fmt.Sprintf("Granted %s to %s (%s).", user.Name, user.Email, api.Role(common.ProjectExporter)),
-		}, &activity.Metadata{}); err != nil {
-			log.Warn("Failed to create project activity", zap.Error(err))
-		}
-	}
 	return nil
 }
 
-func removeExportBinding(principalID int, usedExpression string, projectPolicy *store.IAMPolicyMessage) *store.IAMPolicyMessage {
-	var newPolicy store.IAMPolicyMessage
-	for _, binding := range projectPolicy.Bindings {
-		if binding.Role != api.Role(common.ProjectExporter) || binding.Condition.Expression != usedExpression {
-			newPolicy.Bindings = append(newPolicy.Bindings, binding)
-			continue
-		}
-
-		var newMembers []*store.UserMessage
-		for _, member := range binding.Members {
-			if member.ID != principalID {
-				newMembers = append(newMembers, member)
-			}
-		}
-		if len(newMembers) == 0 {
-			continue
-		}
-		newBinding := *binding
-		newBinding.Members = newMembers
-		newPolicy.Bindings = append(newPolicy.Bindings, &newBinding)
-	}
-	return &newPolicy
-}
-
-func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, string, error) {
+func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
-	usedExpression := ""
 	for _, binding := range projectPolicy.Bindings {
 		// Project owner has all permissions.
 		if binding.Role == api.Role(common.ProjectOwner) {
@@ -2173,7 +2182,6 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 			}
 			if ok {
 				pass = true
-				usedExpression = binding.Condition.Expression
 				break
 			}
 		}
@@ -2181,7 +2189,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 			break
 		}
 	}
-	return pass, usedExpression, nil
+	return pass, nil
 }
 
 func evaluateCondition(expression string, attributes map[string]any) (bool, error) {

@@ -91,12 +91,11 @@
 
 <script lang="ts" setup>
 import { computed, watch } from "vue";
-
+import { EnvironmentV1Name } from "@/components/v2";
+import { useSQLReviewPolicyList } from "@/store";
 import { SQLReviewPolicyTemplate } from "@/types";
 import { TEMPLATE_LIST as builtInTemplateList, RuleLevel } from "@/types";
-import { useSQLReviewPolicyList } from "@/store";
 import { rulesToTemplate } from "./utils";
-import { EnvironmentV1Name } from "@/components/v2";
 
 const props = withDefaults(
   defineProps<{

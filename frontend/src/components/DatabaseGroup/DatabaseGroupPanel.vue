@@ -45,26 +45,26 @@ import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
 import { ClientError } from "nice-grpc-common";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  ComposedDatabaseGroup,
-  ComposedProject,
-  ComposedSchemaGroup,
-} from "@/types";
-import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { Expr } from "@/types/proto/google/type/expr";
-import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
+import { useRouter } from "vue-router";
+import { buildCELExpr } from "@/plugins/cel/logic";
 import {
   pushNotification,
   useDBGroupStore,
   useEnvironmentV1Store,
 } from "@/store";
-import { ResourceType } from "./common/ExprEditor/context";
-import DatabaseGroupForm from "./DatabaseGroupForm.vue";
-import { buildCELExpr } from "@/plugins/cel/logic";
-import { useRouter } from "vue-router";
-import { convertParsedExprToCELString, projectV1Slug } from "@/utils";
 import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
+import {
+  ComposedDatabaseGroup,
+  ComposedProject,
+  ComposedSchemaGroup,
+} from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/type/expr";
+import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import { convertParsedExprToCELString, projectV1Slug } from "@/utils";
+import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
+import DatabaseGroupForm from "./DatabaseGroupForm.vue";
+import { ResourceType } from "./common/ExprEditor/context";
 
 const props = defineProps<{
   project: ComposedProject;
