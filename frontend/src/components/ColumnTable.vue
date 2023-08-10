@@ -39,7 +39,13 @@
         {{ column.name }}
       </BBTableCell>
       <BBTableCell v-if="showClassificationColumn" class="w-10">
-        {{ getColumnClassification(column.classification) }}
+        {{ getColumnClassification(column.classification)?.title }}
+        <span
+          v-if="getColumnSensitiveLevel(column.classification)?.sensitive"
+          class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-red-100 text-red-800"
+        >
+          {{ $t("database.sensitive") }}
+        </span>
       </BBTableCell>
       <BBTableCell class="w-8">
         {{ column.type }}
@@ -349,9 +355,18 @@ const toggleSensitiveColumn = (
 
 const getColumnClassification = (classificationId: string) => {
   if (!classificationId || !props.classificationConfig) {
-    return "";
+    return;
   }
-  const config = props.classificationConfig.classification[classificationId];
-  return config?.title ?? "";
+  return props.classificationConfig.classification[classificationId];
+};
+
+const getColumnSensitiveLevel = (classificationId: string) => {
+  const classification = getColumnClassification(classificationId);
+  if (!classification) {
+    return;
+  }
+  return (props.classificationConfig?.levels ?? []).find(
+    (level) => level.id === classification.levelId
+  );
 };
 </script>
