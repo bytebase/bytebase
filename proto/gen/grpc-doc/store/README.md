@@ -1901,6 +1901,7 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
+| sensitive | [bool](#bool) |  |  |
 
 
 
