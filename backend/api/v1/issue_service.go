@@ -142,17 +142,27 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	}
 	planUID = &plan.UID
 
+	assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
+	}
+	if assignee == nil {
+		return nil, status.Errorf(codes.NotFound, "assignee not found for email: %q", assigneeEmail)
+	}
+
 	issueCreateMessage := &store.IssueMessage{
-		Project:     project,
-		PlanUID:     planUID,
-		PipelineUID: nil,
-		Title:       request.Issue.Title,
-		Status:      api.IssueOpen,
-		Type:        api.IssueDatabaseGeneral,
-		Description: request.Issue.Description,
-		Assignee: &store.UserMessage{
-			ID: api.SystemBotID,
-		},
+		Project:       project,
+		PlanUID:       planUID,
+		PipelineUID:   nil,
+		Title:         request.Issue.Title,
+		Status:        api.IssueOpen,
+		Type:          api.IssueDatabaseGeneral,
+		Description:   request.Issue.Description,
+		Assignee:      assignee,
 		NeedAttention: false,
 	}
 
