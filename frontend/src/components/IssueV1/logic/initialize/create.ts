@@ -24,6 +24,7 @@ import {
   Plan_ChangeDatabaseConfig_Type,
   Plan_Spec,
   Plan_Step,
+  Rollout,
   Stage,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
@@ -32,12 +33,13 @@ import {
   getPipelineFromDeploymentScheduleV1,
   getSheetStatement,
   instanceV1HasAlterSchema,
+  setSheetNameForTask,
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
 import { nextUID } from "../base";
 import { sheetNameForSpec } from "../plan";
-import { getLocalSheetByName } from "../sheet";
+import { createEmptyLocalSheet, getLocalSheetByName } from "../sheet";
 import { trySetDefaultAssignee } from "./assignee";
 
 type CreateIssueParams = {
@@ -107,8 +109,14 @@ export const buildPlan = async (params: CreateIssueParams) => {
     // build tenant plan
     if (databaseUIDList.length === 0) {
       // evaluate DeploymentConfig and generate steps/specs
-      if (route.query.databaseGroupName) {
-        alert("databaseGroup not implemented yet");
+      if (
+        route.query.databaseGroupName &&
+        typeof route.query.databaseGroupName === "string"
+      ) {
+        plan.steps = await buildStepsForDatabaseGroup(
+          params,
+          route.query.databaseGroupName as string
+        );
       } else {
         plan.steps = await buildStepsViaDeploymentConfig(params, sheetUID);
       }
@@ -169,6 +177,33 @@ export const buildSteps = async (
   return steps;
 };
 
+export const buildStepsForDatabaseGroup = async (
+  params: CreateIssueParams,
+  databaseGroupName: string
+) => {
+  // Create sheet from SQL template in URL query
+  // The sheet will be used when previewing rollout
+  const sql = params.initialSQL.sql ?? "";
+  const sheetCreate = {
+    ...createEmptyLocalSheet(),
+  };
+  setSheetStatement(sheetCreate, sql);
+  const sheet = await useSheetV1Store().createSheet(
+    params.project.name,
+    sheetCreate
+  );
+
+  const spec = await buildSpecForTarget(
+    databaseGroupName,
+    params,
+    extractSheetUID(sheet.name)
+  );
+  const step = Plan_Step.fromJSON({
+    specs: [spec],
+  });
+  return [step];
+};
+
 export const buildStepsViaDeploymentConfig = async (
   params: CreateIssueParams,
   sheetUID: string
@@ -209,12 +244,6 @@ export const buildStepsViaDeploymentConfig = async (
     steps.push(step);
   }
   return steps;
-};
-
-export const buildSpecForDatabaseGroup = async (params: CreateIssueParams) => {
-  const group = (params.route.query.databaseGroupName as string) || "";
-  const target = group ? group : `${params.project.name}/deploymentConfig`;
-  return buildSpecForTarget(target, params);
 };
 
 export const buildSpecForTarget = async (
@@ -283,7 +312,42 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
     });
   });
 
+  await maybeWrapStatementsAsSheets(plan, rollout, params);
+
   return reactive(rollout);
+};
+
+const maybeWrapStatementsAsSheets = (
+  plan: Plan,
+  rollout: Rollout,
+  params: CreateIssueParams
+) => {
+  const { route } = params;
+  if (
+    !route.query.databaseGroupName ||
+    typeof route.query.databaseGroupName !== "string"
+  ) {
+    return;
+  }
+  const { stages } = rollout;
+  for (let i = 0; i < stages.length; i++) {
+    const stage = stages[i];
+    const { tasks } = stage;
+    for (let j = 0; j < tasks.length; j++) {
+      const task = tasks[j];
+      // For database group changes, tasks returned by previewRollout
+      // have `sheet` fields actually generated SQL statements instead
+      // of sheet names.
+      // So we create a local sheet for each task and set the statement
+      // to the local task.
+      const statement = sheetNameOfTaskV1(task);
+      const sheetName = `${params.project.name}/sheets/${nextUID()}`;
+      const sheet = getLocalSheetByName(sheetName);
+      sheet.database = task.target;
+      setSheetStatement(sheet, statement);
+      setSheetNameForTask(task, sheetName);
+    }
+  }
 };
 
 const maybeSetInitialSQLForSpec = (
