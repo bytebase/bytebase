@@ -46,7 +46,6 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-
 const selectedValueList = ref<string[]>(
   props.databaseResources.map((databaseResource) => {
     const database = databaseStore.getDatabaseByName(

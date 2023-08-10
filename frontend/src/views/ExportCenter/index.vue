@@ -57,7 +57,6 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
 import { NButton, NInputGroup } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -160,8 +159,11 @@ watchEffect(async () => {
       }
 
       const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
-      const databaseResource = head(conditionExpr.databaseResources);
-      if (databaseResource) {
+      if (!conditionExpr.databaseResources) {
+        continue;
+      }
+
+      for (const databaseResource of conditionExpr.databaseResources) {
         const description = binding.condition?.description || "";
         const issueId = description.match(issueDescriptionRegexp)?.[1];
         const database = await databaseStore.getOrFetchDatabaseByName(

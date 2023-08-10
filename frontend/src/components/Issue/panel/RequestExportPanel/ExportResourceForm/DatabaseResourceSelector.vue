@@ -14,7 +14,6 @@
 </template>
 
 <script setup lang="ts">
-import { last } from "lodash-es";
 import {
   NTransfer,
   TransferRenderSourceList,
@@ -55,8 +54,6 @@ const selectedValueList = ref<string[]>(
       );
       if (databaseResource.table !== undefined) {
         return `t-${database.uid}-${databaseResource.schema}-${databaseResource.table}`;
-      } else if (databaseResource.schema !== undefined) {
-        return `s-${database.uid}-${databaseResource.schema}`;
       } else {
         return "";
       }
@@ -137,12 +134,7 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     checkedKeys: selectedValueList.value,
     showIrrelevantNodes: false,
     onUpdateCheckedKeys: (checkedKeys: string[]) => {
-      // NOTE: we only allow to select one resource(table).
-      if (checkedKeys.length > 0) {
-        onCheck([last(checkedKeys)!]);
-      } else {
-        onCheck([]);
-      }
+      onCheck(checkedKeys);
     },
   });
 };
@@ -172,6 +164,14 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
     },
   });
 };
+
+// Clear selectedValueList when projectId changed.
+watch(
+  () => props.projectId,
+  () => {
+    selectedValueList.value = [];
+  }
+);
 
 watch(
   () => [props.projectId, props.databaseId],
