@@ -93,6 +93,7 @@
             class="grid-cols-6"
             :options="expireDaysOptions"
             :value="state.expireDays"
+            @update="state.expireDays = $event"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
@@ -341,15 +342,18 @@ const generateIssueName = () => {
   if (state.databaseResources.length === 0) {
     return `Request data export for "${database.databaseName} (${database.instanceEntity.title})"`;
   } else {
-    const tableResource = state.databaseResources[0] as DatabaseResource;
-    const nameList = [database.databaseName];
-    if (tableResource.schema) {
-      nameList.push(tableResource.schema);
+    const sections: string[] = [];
+    for (const databaseResource of state.databaseResources) {
+      const nameList = [database.databaseName];
+      if (databaseResource.schema) {
+        nameList.push(databaseResource.schema);
+      }
+      if (databaseResource.table) {
+        nameList.push(databaseResource.table);
+      }
+      sections.push(nameList.join("."));
     }
-    if (tableResource.table) {
-      nameList.push(tableResource.table);
-    }
-    return `Request data export for "${nameList.join(".")} (${
+    return `Request data export for "${sections.join(".")} (${
       database.instanceEntity.title
     })"`;
   }

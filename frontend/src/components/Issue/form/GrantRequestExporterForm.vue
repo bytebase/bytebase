@@ -8,9 +8,7 @@
       </span>
       <DatabaseResourceTable
         class="w-full"
-        :database-resource-list="
-          selectedDatabaseResource ? [selectedDatabaseResource] : []
-        "
+        :database-resource-list="selectedDatabaseResources"
       />
     </div>
     <div
@@ -25,7 +23,6 @@
           :value="state.statement"
           :auto-focus="false"
           :language="'sql'"
-          :dialect="dialect"
         />
       </div>
     </div>
@@ -58,26 +55,15 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { head } from "lodash-es";
 import { computed, onMounted, reactive, ref } from "vue";
 import MonacoEditor from "@/components/MonacoEditor";
-import { useDatabaseV1Store } from "@/store";
-import {
-  GrantRequestPayload,
-  Issue,
-  PresetRoleType,
-  SQLDialect,
-  UNKNOWN_ID,
-  dialectOfEngineV1,
-} from "@/types";
+import { GrantRequestPayload, Issue, PresetRoleType } from "@/types";
 import { DatabaseResource } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import { convertFromCELString } from "@/utils/issue/cel";
 import { useIssueLogic } from "../logic";
 import DatabaseResourceTable from "../table/DatabaseResourceTable.vue";
 
 interface LocalState {
-  databaseId?: string;
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";
   statement: string;
@@ -85,28 +71,16 @@ interface LocalState {
 }
 
 const { issue } = useIssueLogic();
-const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   maxRowCount: 1000,
   exportFormat: "CSV",
   statement: "",
   expiredAt: "",
 });
-const selectedDatabaseResource = ref<DatabaseResource | undefined>(undefined);
-
-const selectedDatabase = computed(() => {
-  return databaseStore.getDatabaseByName(
-    selectedDatabaseResource.value?.databaseName ?? String(UNKNOWN_ID)
-  );
-});
+const selectedDatabaseResources = ref<DatabaseResource[]>([]);
 
 const exportMethod = computed(() => {
   return state.statement === "" ? "DATABASE" : "SQL";
-});
-
-const dialect = computed((): SQLDialect => {
-  const db = selectedDatabase.value;
-  return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
 });
 
 onMounted(async () => {
@@ -123,14 +97,7 @@ onMounted(async () => {
     conditionExpression.databaseResources !== undefined &&
     conditionExpression.databaseResources.length > 0
   ) {
-    const resource = head(conditionExpression.databaseResources);
-    if (resource) {
-      const database = await databaseStore.getOrFetchDatabaseByName(
-        resource.databaseName
-      );
-      state.databaseId = database.uid;
-      selectedDatabaseResource.value = resource;
-    }
+    selectedDatabaseResources.value = conditionExpression.databaseResources;
   }
   if (conditionExpression.expiredTime !== undefined) {
     state.expiredAt = dayjs(new Date(conditionExpression.expiredTime)).format(

@@ -156,12 +156,6 @@ const handleStatementChange = (value: string) => {
 const handleTableResourceUpdate = (
   databaseResourceList: DatabaseResource[]
 ) => {
-  if (databaseResourceList.length > 1) {
-    throw new Error("Only one table can be selected");
-  } else if (databaseResourceList.length === 0) {
-    state.databaseResources = [];
-  } else {
-    state.databaseResources = databaseResourceList;
-  }
+  state.databaseResources = databaseResourceList;
 };
 </script>
