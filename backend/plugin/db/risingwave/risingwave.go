@@ -215,11 +215,10 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 
 // getVersion gets the version of Postgres server.
 func (driver *Driver) getVersion(ctx context.Context) (string, error) {
-	// SHOW server_version_num returns an integer such as 100005, which means 10.0.5.
-	// It is more convenient to use SHOW server_version to get the version string.
-	// PostgreSQL supports it since 8.2.
-	// https://www.postgresql.org/docs/current/functions-info.html
-	query := "SHOW server_version_num"
+	// Likes PostgreSQL 9.5-RisingWave-1.1.0 (f41ff20612323dc56f654939cfa3be9ca684b52f)
+	// We will return 1.1.0
+	regexp := regexp.MustCompile(`(?m)PostgreSQL (?P<PG_VERSION>.*)-RisingWave-(?P<RISINGWAVE_VERSION>\d+\.\d+\.\d+) \((?P<BUILD_SHA>.*)\)$`)
+	query := "SELECT version();"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
@@ -227,7 +226,11 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		}
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	return version, nil
+	matches := regexp.FindStringSubmatch(version)
+	if len(matches) != 4 {
+		return "", errors.Errorf("cannot parse version %q", version)
+	}
+	return matches[2], nil
 }
 
 func (driver *Driver) getPGStatStatementsVersion(ctx context.Context) (string, error) {
