@@ -23,7 +23,7 @@
     </template>
     <template #item="{ item }: ProjectRoleRow">
       <div class="bb-grid-cell gap-x-2">
-        {{ item.role }}
+        {{ displayRoleTitle(item.role) }}
       </div>
       <div class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
         {{ getExpiredTime(item) || "*" }}
@@ -82,7 +82,11 @@ import {
 import { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { hasWorkspacePermissionV1, hasPermissionInProjectV1 } from "@/utils";
+import {
+  hasWorkspacePermissionV1,
+  hasPermissionInProjectV1,
+  displayRoleTitle,
+} from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 

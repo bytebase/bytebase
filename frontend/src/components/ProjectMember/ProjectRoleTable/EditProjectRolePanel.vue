@@ -145,7 +145,7 @@ import { Expr } from "@/types/proto/google/type/expr";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { extractUserUID } from "@/utils";
+import { displayRoleTitle, extractUserUID } from "@/utils";
 import {
   convertFromExpr,
   stringifyConditionExpression,
@@ -188,7 +188,7 @@ const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const panelTitle = computed(() => {
-  return props.binding.role;
+  return displayRoleTitle(props.binding.role);
 });
 
 const allowConfirm = computed(() => {
