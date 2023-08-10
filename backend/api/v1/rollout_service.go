@@ -2054,7 +2054,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 			return nil, nil, errors.Wrapf(err, "failed to get task creates from change database config database group statements")
 		}
 		var taskIndexDAGs []store.TaskIndexDAG
-		for i := 1; i < len(taskIndexDAGs); i++ {
+		for i := 1; i < len(taskCreates); i++ {
 			taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
 				FromIndex: i - 1,
 				ToIndex:   i,
