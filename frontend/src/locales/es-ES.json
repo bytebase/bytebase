@@ -1565,7 +1565,9 @@
       "assign-role": "Asignar rol",
       "never-expires": "Nunca caduca",
       "role-never-expires": "Este rol nunca expira.",
-      "add-more": "Más información"
+      "add-more": "Más información",
+      "role-name": "Nombre del rol",
+      "revoke-members": "Revocar miembros"
     },
     "mode": {
       "standard": "Modo Estándar",
