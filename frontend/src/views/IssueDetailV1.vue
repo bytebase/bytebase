@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full relative">
+  <div class="w-full h-full relative overflow-x-hidden">
     <IssueDetailPage v-if="ready" />
     <div v-else class="w-full h-full flex flex-col items-center justify-center">
       <NSpin />
