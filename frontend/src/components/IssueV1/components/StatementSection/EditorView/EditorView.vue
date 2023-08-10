@@ -244,9 +244,17 @@ const { markers } = useSQLAdviceMarkers();
 
 const allowEditStatementWhenCreating = computed(() => {
   if (route.query.sheetId) {
+    // Not allowed to edit pre-generated sheets
+    // E.g., rollback DML
+    return false;
+  }
+  if (route.query.databaseGroupName) {
+    // Not allowed to edit SQL for grouping changes.
     return false;
   }
   if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
+    // A baseline issue has actually no SQL statement.
+    // "-- Establish baseline using current schema" is just a comment.
     return false;
   }
   return true;

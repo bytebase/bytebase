@@ -120,6 +120,16 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
   );
 };
 
+export const setSheetNameForTask = (task: Task, sheetName: string) => {
+  if (task.databaseCreate) {
+    task.databaseCreate.sheet = sheetName;
+  } else if (task.databaseDataUpdate) {
+    task.databaseDataUpdate.sheet = sheetName;
+  } else if (task.databaseSchemaUpdate) {
+    task.databaseSchemaUpdate.sheet = sheetName;
+  }
+};
+
 export const buildIssueV1LinkWithTask = (
   issue: ComposedIssue,
   task: Task,
