@@ -17,6 +17,17 @@ interface PolicyState {
   policyMapByName: Map<string, Policy>;
 }
 
+const replacePolicyTypeNameToLowerCase = (name: string) => {
+  const pattern = /(^|\/)policies\/([^/]+)($|\/)/;
+  const replaced = name.replace(
+    pattern,
+    (_: string, left: string, policyType: string, right: string) => {
+      return `${left}policies/${policyType.toLowerCase()}${right}`;
+    }
+  );
+  return replaced;
+};
+
 const getPolicyParentByResourceType = (
   resourceType: PolicyResourceType
 ): string => {
@@ -98,13 +109,15 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       policyType: PolicyType;
       refresh?: boolean;
     }) {
-      const name = `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-        policyType
-      ).toLowerCase()}`;
+      const name = replacePolicyTypeNameToLowerCase(
+        `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policyType)}`
+      );
       return this.getOrFetchPolicyByName(name, refresh);
     },
     async getOrFetchPolicyByName(name: string, refresh = false) {
-      const cachedData = this.getPolicyByName(name.toLowerCase());
+      const cachedData = this.getPolicyByName(
+        replacePolicyTypeNameToLowerCase(name)
+      );
       if (cachedData && !refresh) {
         return cachedData;
       }
@@ -126,13 +139,13 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       parentPath: string;
       policyType: PolicyType;
     }) {
-      const name = `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-        policyType
-      ).toLowerCase()}`;
+      const name = replacePolicyTypeNameToLowerCase(
+        `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policyType)}`
+      );
       return this.getPolicyByName(name);
     },
     getPolicyByName(name: string) {
-      return this.policyMapByName.get(name.toLowerCase());
+      return this.policyMapByName.get(replacePolicyTypeNameToLowerCase(name));
     },
     async createPolicy(parent: string, policy: Partial<Policy>) {
       const createdPolicy = await policyServiceClient.createPolicy({
@@ -162,9 +175,9 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       if (!policy.type) {
         throw new Error("policy type is required");
       }
-      policy.name = `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-        policy.type
-      ).toLowerCase()}`;
+      policy.name = replacePolicyTypeNameToLowerCase(
+        `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policy.type)}`
+      );
       const updatedPolicy = await policyServiceClient.updatePolicy({
         policy,
         updateMask,
@@ -221,11 +234,10 @@ export const usePolicyByParentAndType = (
 
   return computed(() => {
     const { parentPath, policyType } = unref(params);
-    const res = store.getPolicyByName(
-      `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-        policyType
-      ).toLowerCase()}`
+    const name = replacePolicyTypeNameToLowerCase(
+      `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policyType)}`
     );
+    const res = store.getPolicyByName(name);
     return res;
   });
 };
@@ -236,10 +248,13 @@ export const getDefaultBackupPlanPolicy = (
   parentPath: string,
   resourceType: PolicyResourceType
 ): Policy => {
-  return {
-    name: `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
+  const name = replacePolicyTypeNameToLowerCase(
+    `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
       PolicyType.BACKUP_PLAN
-    ).toLowerCase()}`,
+    )}`
+  );
+  return {
+    name,
     uid: "",
     resourceUid: "",
     inheritFromParent: false,
@@ -258,10 +273,13 @@ export const getDefaultDeploymentApprovalPolicy = (
   parentPath: string,
   resourceType: PolicyResourceType
 ): Policy => {
-  return {
-    name: `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
+  const name = replacePolicyTypeNameToLowerCase(
+    `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
       PolicyType.DEPLOYMENT_APPROVAL
-    ).toLowerCase()}`,
+    )}`
+  );
+  return {
+    name,
     uid: "",
     resourceUid: "",
     inheritFromParent: false,
