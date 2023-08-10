@@ -21,7 +21,7 @@ docker buildx build -f ./scripts/Dockerfile \
     --build-arg BUILD_USER="$(id -u -n)" \
     --sbom=false \
     --push \
-    -t bytebase/bytebase:latest .
+    -t bytebase/bytebase:${VERSION} .
 
 echo "${GREEN}Completed building Bytebase docker image ${VERSION}.${NC}"
 echo ""
