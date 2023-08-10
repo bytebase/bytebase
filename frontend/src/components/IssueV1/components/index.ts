@@ -8,7 +8,7 @@ import StatementSection from "./StatementSection";
 import TaskListSection from "./TaskListSection";
 import TaskRunSection from "./TaskRunSection";
 
-export * from "./Dialog";
+export * from "./Panel";
 export {
   BannerSection,
   HeaderSection,
