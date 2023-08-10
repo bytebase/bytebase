@@ -227,8 +227,7 @@ SELECT
 	cols.is_nullable,
 	cols.collation_name,
 	cols.udt_schema,
-	cols.udt_name,
-	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
+	cols.udt_name
 FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
 WHERE cols.table_schema NOT IN (%s)
 ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, systemSchemas)
@@ -244,8 +243,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	for rows.Next() {
 		column := &storepb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
-		var defaultStr, collation, udtSchema, udtName, comment sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &comment); err != nil {
+		var defaultStr, collation, udtSchema, udtName sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName); err != nil {
 			return nil, err
 		}
 		if defaultStr.Valid {
@@ -263,7 +262,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			column.Type = udtName.String
 		}
 		column.Collation = collation.String
-		column.Comment = comment.String
+		column.Comment = ""
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		columnsMap[key] = append(columnsMap[key], column)
