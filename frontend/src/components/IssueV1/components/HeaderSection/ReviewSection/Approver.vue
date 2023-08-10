@@ -4,8 +4,11 @@
     :class="step.approver?.name === currentUser.name && 'font-bold'"
   >
     <span>{{ step.approver?.title }}</span>
-    <span v-if="step.approver?.name === currentUser.name">
-      ({{ $t("custom-approval.issue-review.you") }})
+    <span
+      v-if="step.approver?.name === currentUser.name"
+      class="ml-1 inline-flex items-center px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+    >
+      {{ $t("custom-approval.issue-review.you") }}
     </span>
     <span
       v-if="step.approver?.name === SYSTEM_BOT_USER_NAME"

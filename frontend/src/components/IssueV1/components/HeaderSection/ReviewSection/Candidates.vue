@@ -7,7 +7,7 @@
     v-else
     class="min-w-[8rem] max-w-[12rem] max-h-[18rem] flex flex-col text-control-light overflow-y-hidden"
   >
-    <div class="flex-1 overflow-auto text-xs">
+    <div class="flex-1 overflow-auto text-sm">
       <div
         v-for="user in candidates"
         :key="user.name"
@@ -19,8 +19,11 @@
           size="SMALL"
         />
         <span class="whitespace-nowrap">{{ user.title }}</span>
-        <span v-if="user.name === currentUser.name">
-          ({{ $t("custom-approval.issue-review.you") }})
+        <span
+          v-if="currentUser.name === user.name"
+          class="inline-flex items-center px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+        >
+          {{ $t("custom-approval.issue-review.you") }}
         </span>
       </div>
     </div>
