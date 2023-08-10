@@ -101,6 +101,7 @@ export type ProjectRoleRow = BBGridRow<Binding>;
 
 const props = defineProps<{
   project: ComposedProject;
+  searchText: string;
   ready?: boolean;
 }>();
 
@@ -135,6 +136,28 @@ const columnList = computed(() => {
 const roleGroup = computed(() => {
   let roleMap = new Map<string, Binding[]>();
   for (const binding of iamPolicy.value.bindings) {
+    // Filter by search text.
+    if (props.searchText !== "") {
+      let isMatch = false;
+      for (const member of binding.members) {
+        const userEmail = extractUserEmail(member);
+        const user = userStore.getUserByEmail(userEmail);
+        if (!user) {
+          continue;
+        }
+        if (
+          user.title.toLowerCase().includes(props.searchText.toLowerCase()) ||
+          user.email.toLowerCase().includes(props.searchText.toLowerCase())
+        ) {
+          isMatch = true;
+          break;
+        }
+      }
+      if (!isMatch) {
+        continue;
+      }
+    }
+
     const role = binding.role;
     if (!roleMap.has(role)) {
       roleMap.set(role, []);
