@@ -384,34 +384,6 @@ func getDatabaseChangeIssueRisk(ctx context.Context, s *store.Store, issue *stor
 	return maxRiskLevel, riskSource, true, nil
 }
 
-func getReportResult(ctx context.Context, s *store.Store, task *store.TaskMessage, taskCheckType api.TaskCheckType) ([]api.TaskCheckResult, bool, error) {
-	reports, err := s.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{
-		TaskID: &task.ID,
-		Type:   &taskCheckType,
-	})
-	if err != nil {
-		return nil, false, err
-	}
-	if len(reports) == 0 {
-		return nil, false, nil
-	}
-	lastReport := reports[0]
-	for i, report := range reports {
-		if report.ID > lastReport.ID {
-			lastReport = reports[i]
-		}
-	}
-	if lastReport.Status != api.TaskCheckRunDone {
-		return nil, false, nil
-	}
-
-	payload := &api.TaskCheckRunResultPayload{}
-	if err := json.Unmarshal([]byte(lastReport.Result), payload); err != nil {
-		return nil, false, err
-	}
-	return payload.ResultList, true, nil
-}
-
 func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
 	payload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
@@ -570,6 +542,34 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 	}
 
 	return maxRisk, riskSource, true, nil
+}
+
+func getReportResult(ctx context.Context, s *store.Store, task *store.TaskMessage, taskCheckType api.TaskCheckType) ([]api.TaskCheckResult, bool, error) {
+	reports, err := s.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{
+		TaskID: &task.ID,
+		Type:   &taskCheckType,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	if len(reports) == 0 {
+		return nil, false, nil
+	}
+	lastReport := reports[0]
+	for i, report := range reports {
+		if report.ID > lastReport.ID {
+			lastReport = reports[i]
+		}
+	}
+	if lastReport.Status != api.TaskCheckRunDone {
+		return nil, false, nil
+	}
+
+	payload := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(lastReport.Result), payload); err != nil {
+		return nil, false, err
+	}
+	return payload.ResultList, true, nil
 }
 
 func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, task *store.TaskMessage, risks []*store.RiskMessage, riskSource store.RiskSource) (int64, bool, error) {
