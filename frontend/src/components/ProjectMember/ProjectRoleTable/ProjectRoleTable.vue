@@ -78,7 +78,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import {
@@ -133,7 +132,41 @@ const columnList = computed(() => {
   return [ROLE_NAME, EXPIRATION, USERS, OPERATIONS];
 });
 
-const roleGroup = ref<Map<string, Binding[]>>(new Map());
+const roleGroup = computed(() => {
+  let roleMap = new Map<string, Binding[]>();
+  for (const binding of iamPolicy.value.bindings) {
+    const role = binding.role;
+    if (!roleMap.has(role)) {
+      roleMap.set(role, []);
+    }
+    roleMap.get(role)?.push(binding);
+  }
+  // Sort by role type.
+  roleMap = new Map(
+    [...roleMap].sort((a, b) => {
+      if (!PresetRoleTypeList.includes(a[0])) return -1;
+      if (!PresetRoleTypeList.includes(b[0])) return 1;
+      return (
+        PresetRoleTypeList.indexOf(a[0]) - PresetRoleTypeList.indexOf(b[0])
+      );
+    })
+  );
+  // Sort by expiration time.
+  for (const role of roleMap.keys()) {
+    roleMap.set(
+      role,
+      roleMap.get(role)?.sort((a, b) => {
+        if (!getExpiredTime(a)) return -1;
+        if (!getExpiredTime(b)) return 1;
+        return (
+          new Date(getExpiredTime(b)!).getTime() -
+          new Date(getExpiredTime(a)!).getTime()
+        );
+      }) || []
+    );
+  }
+  return roleMap;
+});
 
 const allowAdmin = computed(() => {
   if (
@@ -156,26 +189,6 @@ const allowAdmin = computed(() => {
   }
 
   return false;
-});
-
-onMounted(() => {
-  const roleMap = new Map<string, Binding[]>();
-  for (const binding of iamPolicy.value.bindings) {
-    const role = binding.role;
-    if (!roleMap.has(role)) {
-      roleMap.set(role, []);
-    }
-    roleMap.get(role)?.push(binding);
-  }
-  roleGroup.value = new Map(
-    [...roleMap].sort((a, b) => {
-      if (!PresetRoleTypeList.includes(a[0])) return -1;
-      if (!PresetRoleTypeList.includes(b[0])) return 1;
-      return (
-        PresetRoleTypeList.indexOf(a[0]) - PresetRoleTypeList.indexOf(b[0])
-      );
-    })
-  );
 });
 
 const getUserList = (binding: Binding) => {
