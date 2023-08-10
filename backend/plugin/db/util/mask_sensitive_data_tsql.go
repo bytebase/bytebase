@@ -82,17 +82,17 @@ func (l *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementS
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `query_specification` in `query_expression`")
 				}
-				if allSqlUnions := queryExpression.AllSql_union(); len(allSqlUnions) > 0 {
+				if allSQLUnions := queryExpression.AllSql_union(); len(allSQLUnions) > 0 {
 					recursiveCTE = true
-					for i := 0; i < len(allSqlUnions)-1; i++ {
+					for i := 0; i < len(allSQLUnions)-1; i++ {
 						// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
 						// So we only need to extract the sensitive fields of the right part.
-						right, err := l.extractTSqlSensitiveFieldsFromQuerySpecification(allSqlUnions[i].Query_specification())
+						right, err := l.extractTSqlSensitiveFieldsFromQuerySpecification(allSQLUnions[i].Query_specification())
 						if err != nil {
-							return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, allSqlUnions[i].GetStart().GetLine())
+							return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, allSQLUnions[i].GetStart().GetLine())
 						}
 						if len(fieldsInAnchorClause) != len(right) {
-							return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(fieldsInAnchorClause), i+1, allSqlUnions[i].GetStart().GetLine(), len(right))
+							return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(fieldsInAnchorClause), i+1, allSQLUnions[i].GetStart().GetLine(), len(right))
 						}
 						for j := range right {
 							if !fieldsInAnchorClause[j].sensitive {
@@ -218,8 +218,8 @@ func (l *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `query_specification` in `query_expression`")
 		}
-		if allSqlUnion := ctx.AllSql_union(); len(allSqlUnion) > 0 {
-			for i, sqlUnion := range allSqlUnion {
+		if allSQLUnions := ctx.AllSql_union(); len(allSQLUnions) > 0 {
+			for i, sqlUnion := range allSQLUnions {
 				// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
 				// So we only need to extract the sensitive fields of the right part.
 				right, err := l.extractTSqlSensitiveFieldsFromQuerySpecification(sqlUnion.Query_specification())
@@ -290,7 +290,7 @@ func (l *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuerySpecificati
 		if asterisk := selectListElem.Asterisk(); asterisk != nil {
 			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName string
 			if tableName := asterisk.Table_name(); tableName != nil {
-				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = l.splitTableNameIntoNormalizedParts(tableName)
+				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = splitTableNameIntoNormalizedParts(tableName)
 			}
 			left, err := l.tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 			if err != nil {
@@ -452,8 +452,10 @@ func (l *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(
 		for i := 0; i < len(result); i++ {
 			if allColumnAlias[i].Id_() != nil {
 				result[i].name = parser.NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
+				continue
 			} else if allColumnAlias[i].STRING() != nil {
 				result[i].name = allColumnAlias[i].STRING().GetText()
+				continue
 			}
 			panic("never reach here")
 		}
@@ -515,6 +517,7 @@ func (l *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableValueConstr
 				sensitive: sensitive,
 			})
 		}
+		return result, nil
 	}
 	panic("never reach here")
 }
@@ -524,10 +527,10 @@ func (l *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx tsq
 }
 
 func (l *sensitiveFieldExtractor) tsqlFindTableSchema(fullTableName tsqlparser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := l.normalizeFullTableName(fullTableName, "", "", "")
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(fullTableName, "", "", "")
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
-		return "", db.TableSchema{}, errors.New(fmt.Sprintf("linked server is not supported yet, but found %q", fullTableName.GetText()))
+		return "", db.TableSchema{}, fmt.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
 	}
 	// For snowflake, we should find the table schema in cteOuterSchemaInfo by ascending order.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
@@ -537,10 +540,10 @@ func (l *sensitiveFieldExtractor) tsqlFindTableSchema(fullTableName tsqlparser.I
 			}
 		}
 	}
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = l.normalizeFullTableName(fullTableName, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableName(fullTableName, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
-		return "", db.TableSchema{}, errors.New(fmt.Sprintf("linked server is not supported yet, but found %q", fullTableName.GetText()))
+		return "", db.TableSchema{}, fmt.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
 	}
 	for _, databaseSchema := range l.schemaInfo.DatabaseList {
 		if normalizedDatabaseName != "" && !l.isIdentifierEqual(normalizedDatabaseName, databaseSchema.Name) {
@@ -558,11 +561,11 @@ func (l *sensitiveFieldExtractor) tsqlFindTableSchema(fullTableName tsqlparser.I
 			}
 		}
 	}
-	return "", db.TableSchema{}, errors.New(fmt.Sprintf("table %s.%s.%s is not found", normalizedDatabaseName, normalizedSchemaName, normalizedTableName))
+	return "", db.TableSchema{}, fmt.Errorf("table %s.%s.%s is not found", normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 }
 
 // splitTableNameIntoNormalizedParts splits the table name into normalized 3 parts: database, schema, table.
-func (l *sensitiveFieldExtractor) splitTableNameIntoNormalizedParts(tableName tsqlparser.ITable_nameContext) (string, string, string) {
+func splitTableNameIntoNormalizedParts(tableName tsqlparser.ITable_nameContext) (string, string, string) {
 	var database string
 	if d := tableName.GetDatabase(); d != nil {
 		normalizedD := parser.NormalizeTSQLIdentifier(d)
@@ -590,7 +593,7 @@ func (l *sensitiveFieldExtractor) splitTableNameIntoNormalizedParts(tableName ts
 }
 
 // normalizeFullTableName normalizes the each part of the full table name, returns (linkedServer, database, schema, table).
-func (l *sensitiveFieldExtractor) normalizeFullTableName(fullTableName tsqlparser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
+func normalizeFullTableName(fullTableName tsqlparser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
 	if fullTableName == nil {
 		return "", "", "", ""
 	}
@@ -669,9 +672,9 @@ func (l *sensitiveFieldExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normal
 }
 
 func (l *sensitiveFieldExtractor) tsqlIsFullColumnNameSensitive(ctx tsqlparser.IFull_column_nameContext) (fieldInfo, error) {
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := l.normalizeFullTableName(ctx.Full_table_name(), "", "", "")
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(ctx.Full_table_name(), "", "", "")
 	if normalizedLinkedServer != "" {
-		return fieldInfo{}, errors.New(fmt.Sprintf("linked server is not supported yet, but found %q", ctx.GetText()))
+		return fieldInfo{}, fmt.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
 	}
 	normalizedColumnName := parser.NormalizeTSQLIdentifier(ctx.Id_())
 
@@ -811,8 +814,8 @@ func (l *sensitiveFieldExtractor) isExpressionElemSensitive(ctx antlr.RuleContex
 		if modifyCall := ctx.Modify_call(); modifyCall != nil {
 			return l.isExpressionElemSensitive(modifyCall)
 		}
-		if hierarchyIdCall := ctx.Hierarchyid_call(); hierarchyIdCall != nil {
-			return l.isExpressionElemSensitive(hierarchyIdCall)
+		if hierarchyIDCall := ctx.Hierarchyid_call(); hierarchyIDCall != nil {
+			return l.isExpressionElemSensitive(hierarchyIDCall)
 		}
 		if caseExpression := ctx.Case_expression(); caseExpression != nil {
 			return l.isExpressionElemSensitive(caseExpression)
@@ -1082,8 +1085,8 @@ func (l *sensitiveFieldExtractor) isExpressionElemSensitive(ctx antlr.RuleContex
 				return ctx.GetText(), true, nil
 			}
 		}
-		if row_or_range_clause := ctx.Row_or_range_clause(); row_or_range_clause != nil {
-			_, sensitive, err := l.isExpressionElemSensitive(row_or_range_clause)
+		if rowOrRangeClause := ctx.Row_or_range_clause(); rowOrRangeClause != nil {
+			_, sensitive, err := l.isExpressionElemSensitive(rowOrRangeClause)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
