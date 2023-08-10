@@ -189,13 +189,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		userEmail := strings.TrimPrefix(payload.GrantRequest.User, "users/")
-		newUser, err := r.store.GetUser(ctx, &store.FindUserMessage{Email: &userEmail})
+		userID, err := strconv.Atoi(strings.TrimPrefix(payload.GrantRequest.User, "users/"))
 		if err != nil {
 			return false, err
 		}
-		if newUser == nil {
-			return false, errors.Errorf("user %s not found", userEmail)
+		newUser, err := r.store.GetUserByID(ctx, userID)
+		if err != nil {
+			return false, err
 		}
 		// Post project IAM policy update activity.
 		if _, err := r.activityManager.CreateActivity(ctx, &store.ActivityMessage{
