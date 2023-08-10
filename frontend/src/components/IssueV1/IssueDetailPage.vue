@@ -20,20 +20,17 @@
 
     <ActivitySection v-if="!isCreating" />
 
-    <IssueReviewActionDialog
-      v-if="ongoingIssueReviewAction"
-      :action="ongoingIssueReviewAction.action"
+    <IssueReviewActionPanel
+      :action="ongoingIssueReviewAction?.action"
       @close="ongoingIssueReviewAction = undefined"
     />
-    <IssueStatusActionDialog
-      v-if="ongoingIssueStatusAction"
-      :action="ongoingIssueStatusAction.action"
+    <IssueStatusActionPanel
+      :action="ongoingIssueStatusAction?.action"
       @close="ongoingIssueStatusAction = undefined"
     />
-    <TaskRolloutActionDialog
-      v-if="ongoingTaskRolloutAction"
-      :action="ongoingTaskRolloutAction.action"
-      :task-list="ongoingTaskRolloutAction.taskList"
+    <TaskRolloutActionPanel
+      :action="ongoingTaskRolloutAction?.action"
+      :task-list="ongoingTaskRolloutAction?.taskList ?? []"
       @close="ongoingTaskRolloutAction = undefined"
     />
   </div>
@@ -56,9 +53,9 @@ import {
   StatementSection,
   DescriptionSection,
   ActivitySection,
-  IssueReviewActionDialog,
-  IssueStatusActionDialog,
-  TaskRolloutActionDialog,
+  IssueReviewActionPanel,
+  IssueStatusActionPanel,
+  TaskRolloutActionPanel,
 } from "./components";
 import {
   IssueReviewAction,
