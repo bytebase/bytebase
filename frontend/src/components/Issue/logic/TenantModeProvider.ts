@@ -27,6 +27,7 @@ import {
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
 import {
+  extractSheetUID,
   extractUserUID,
   getBacktracePayloadWithIssue,
   hasWorkspacePermissionV1,
@@ -140,7 +141,7 @@ export default defineComponent({
             ),
           }
         );
-        updateSheetId(Number(extractUserUID(sheet.name)));
+        updateSheetId(Number(extractSheetUID(sheet.name)));
       }
     };
 
@@ -230,7 +231,7 @@ export default defineComponent({
           payload: "{}",
         });
         detail.statement = "";
-        detail.sheetId = Number(extractUserUID(sheet.name));
+        detail.sheetId = Number(extractSheetUID(sheet.name));
       }
       for (const detailItem of context.detailList) {
         detailItem.statement = "";

@@ -250,7 +250,7 @@ export const useCommonLogic = () => {
       });
 
       const patchRequestList = patchingTaskList.map((task) => {
-        patchTask(task.id, { sheetId: Number(extractUserUID(sheet.name)) });
+        patchTask(task.id, { sheetId: Number(extractSheetUID(sheet.name)) });
       });
       await Promise.allSettled(patchRequestList);
     }
