@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	v1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -150,7 +151,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return true, nil
 	}
 
-	riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, issue, risks)
+	riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, r.licenseService, r.dbFactory, issue, risks)
 	if err != nil {
 		err = errors.Wrap(err, "failed to get issue risk level")
 		if updateErr := updateIssuePayload(ctx, r.store, issue, &storepb.IssuePayload{
@@ -329,7 +330,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 	return nil, nil
 }
 
-func getIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
+func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
 	switch issue.Type {
 	case api.IssueGrantRequest:
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
@@ -338,13 +339,152 @@ func getIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage
 	case api.IssueDatabaseRestorePITR:
 		return 0, store.RiskSourceUnknown, true, nil
 	case api.IssueDatabaseGeneral:
-		// TODO(p0ny): implement
-		return 0, store.RiskSourceUnknown, true, nil
+		return getDatabaseGeneralIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
 	case api.IssueGeneral:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unsupported issue type %v", issue.Type)
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
+}
+
+func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
+	if issue.PlanUID == nil {
+		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+	}
+	plan, err := s.GetPlan(ctx, *issue.PlanUID)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+	}
+	if plan == nil {
+		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+	}
+
+	pipelineCreate, err := v1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
+	}
+
+	// Conclude risk source from task types.
+	seenTaskType := map[api.TaskType]bool{}
+	for _, stage := range pipelineCreate.Stages {
+		for _, task := range stage.TaskList {
+			switch task.Type {
+			case
+				api.TaskDatabaseCreate,
+				api.TaskDatabaseSchemaUpdate,
+				api.TaskDatabaseSchemaUpdateSDL,
+				api.TaskDatabaseSchemaUpdateGhostSync,
+				api.TaskDatabaseSchemaUpdateGhostCutover,
+				api.TaskDatabaseDataUpdate:
+			default:
+				return 0, store.RiskSourceUnknown, false, errors.Errorf("unexpected task type %v", task.Type)
+			}
+			seenTaskType[task.Type] = true
+		}
+	}
+	riskSource := func() store.RiskSource {
+		if seenTaskType[api.TaskDatabaseCreate] {
+			return store.RiskSourceDatabaseCreate
+		}
+		if seenTaskType[api.TaskDatabaseSchemaUpdate] || seenTaskType[api.TaskDatabaseSchemaUpdateSDL] || seenTaskType[api.TaskDatabaseSchemaUpdateGhostSync] {
+			return store.RiskSourceDatabaseSchemaUpdate
+		}
+		if seenTaskType[api.TaskDatabaseDataUpdate] {
+			return store.RiskSourceDatabaseDataUpdate
+		}
+		return store.RiskSourceUnknown
+	}()
+	if riskSource == store.RiskSourceUnknown {
+		return 0, store.RiskSourceUnknown, false, errors.Errorf("failed to conclude risk source from seen task types %v", seenTaskType)
+	}
+
+	e, err := cel.NewEnv(common.RiskFactors...)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, err
+	}
+
+	var maxRiskLevel int64
+	for _, stage := range pipelineCreate.Stages {
+		for _, task := range stage.TaskList {
+			instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				UID: &task.InstanceID,
+			})
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
+			}
+
+			var databaseName string
+			if task.Type == api.TaskDatabaseCreate {
+				payload := &api.TaskDatabaseCreatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return 0, store.RiskSourceUnknown, false, err
+				}
+				databaseName = payload.DatabaseName
+			} else {
+				database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					UID: task.DatabaseID,
+				})
+				if err != nil {
+					return 0, store.RiskSourceUnknown, false, err
+				}
+				databaseName = database.DatabaseName
+			}
+
+			risk, err := func() (int64, error) {
+				for _, risk := range risks {
+					if !risk.Active {
+						continue
+					}
+					if risk.Source != riskSource {
+						continue
+					}
+					if risk.Expression == nil || risk.Expression.Expression == "" {
+						continue
+					}
+					ast, issues := e.Parse(risk.Expression.Expression)
+					if issues != nil && issues.Err() != nil {
+						return 0, errors.Errorf("failed to parse expression: %v", issues.Err())
+					}
+					prg, err := e.Program(ast)
+					if err != nil {
+						return 0, err
+					}
+					// TODO(p0ny): implement sql type and affected rows
+					args := map[string]any{
+						"environment_id": instance.EnvironmentID,
+						"project_id":     issue.Project.ResourceID,
+						"database_name":  databaseName,
+						// convert to string type otherwise cel-go will complain that db.Type is not string type.
+						"db_engine":     string(instance.Engine),
+						"sql_type":      "UNKNOWN",
+						"affected_rows": 0,
+					}
+
+					res, _, err := prg.Eval(args)
+					if err != nil {
+						return 0, err
+					}
+					val, err := res.ConvertToNative(reflect.TypeOf(false))
+					if err != nil {
+						return 0, errors.Wrap(err, "expect bool result")
+					}
+					if boolVal, ok := val.(bool); ok && boolVal {
+						return risk.Level, nil
+					}
+				}
+				return 0, nil
+			}()
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
+			}
+
+			if maxRiskLevel < risk {
+				maxRiskLevel = risk
+			}
+		}
+	}
+
+	return maxRiskLevel, riskSource, true, nil
 }
 
 func getDatabaseChangeIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {

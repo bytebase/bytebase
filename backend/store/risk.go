@@ -107,6 +107,7 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 }
 
 // ListRisks lists risks.
+// returned risks are sorted by source, level DESC, id.
 func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 	if risks, ok := s.risksCache.Load(0); ok {
 		return risks.([]*RiskMessage), nil
