@@ -1,4 +1,4 @@
-package plancheck
+package v1
 
 import (
 	"context"
