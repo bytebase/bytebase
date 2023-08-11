@@ -16,29 +16,29 @@ import (
 type Store struct {
 	db *DB
 
-	userIDCache                    sync.Map // map[int]*UserMessage
-	environmentCache               sync.Map // map[string]*EnvironmentMessage
-	environmentIDCache             sync.Map // map[int]*EnvironmentMessage
-	instanceCache                  sync.Map // map[string]*InstanceMessage
-	instanceIDCache                sync.Map // map[int]*InstanceMessage
-	databaseCache                  sync.Map // map[string]*DatabaseMessage
-	databaseIDCache                sync.Map // map[int]*DatabaseMessage
-	projectCache                   sync.Map // map[string]*ProjectMessage
-	projectIDCache                 sync.Map // map[int]*ProjectMessage
-	projectPolicyCache             sync.Map // map[string]*IAMPolicyMessage
-	projectIDPolicyCache           sync.Map // map[int]*IAMPolicyMessage
-	policyCache                    sync.Map // map[string]*PolicyMessage
-	issueCache                     sync.Map // map[int]*IssueMessage
-	issueByPipelineCache           sync.Map // map[int]*IssueMessage
-	pipelineCache                  sync.Map // map[int]*PipelineMessage
-	dbSchemaCache                  sync.Map // map[int]*DBSchema
-	settingCache                   sync.Map // map[string]*SettingMessage
-	idpCache                       sync.Map // map[string]*IdentityProvider
-	projectIDDeploymentConfigCache sync.Map // map[int]*DeploymentConfigMessage
-	risksCache                     sync.Map // []*RiskMessage, use 0 as the key
-	databaseGroupCache             sync.Map // map[string]*DatabaseGroupMessage
-	databaseGroupIDCache           sync.Map // map[int]*DatabaseGroupMessage
-	schemaGroupCache               sync.Map // map[string]*SchemaGroupMessage
+	userIDCache                    sync.Map         // map[int]*UserMessage
+	environmentCache               sync.Map         // map[string]*EnvironmentMessage
+	environmentIDCache             sync.Map         // map[int]*EnvironmentMessage
+	instanceCache                  sync.Map         // map[string]*InstanceMessage
+	instanceIDCache                sync.Map         // map[int]*InstanceMessage
+	databaseCache                  sync.Map         // map[string]*DatabaseMessage
+	databaseIDCache                sync.Map         // map[int]*DatabaseMessage
+	projectCache                   sync.Map         // map[string]*ProjectMessage
+	projectIDCache                 sync.Map         // map[int]*ProjectMessage
+	projectPolicyCache             sync.Map         // map[string]*IAMPolicyMessage
+	projectIDPolicyCache           sync.Map         // map[int]*IAMPolicyMessage
+	policyCache                    sync.Map         // map[string]*PolicyMessage
+	issueCache                     sync.Map         // map[int]*IssueMessage
+	issueByPipelineCache           sync.Map         // map[int]*IssueMessage
+	pipelineCache                  sync.Map         // map[int]*PipelineMessage
+	dbSchemaCache                  *ristretto.Cache // map[int]*DBSchema
+	settingCache                   sync.Map         // map[string]*SettingMessage
+	idpCache                       sync.Map         // map[string]*IdentityProvider
+	projectIDDeploymentConfigCache sync.Map         // map[int]*DeploymentConfigMessage
+	risksCache                     sync.Map         // []*RiskMessage, use 0 as the key
+	databaseGroupCache             sync.Map         // map[string]*DatabaseGroupMessage
+	databaseGroupIDCache           sync.Map         // map[int]*DatabaseGroupMessage
+	schemaGroupCache               sync.Map         // map[string]*SchemaGroupMessage
 	// sheetStatementCache caches the statement of a sheet.
 	sheetStatementCache *ristretto.Cache // map[sheetUID]sheetStatementString
 	vcsIDCache          sync.Map         // map[int]*ExternalVersionControlMessage
@@ -47,8 +47,16 @@ type Store struct {
 // New creates a new instance of Store.
 func New(db *DB) *Store {
 	sheetStatementCache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 1000,
-		MaxCost:     1 << 30, // 1 GB
+		NumCounters: 1_000,
+		MaxCost:     1_000_000_000, // ~1GB
+		BufferItems: 64,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to create sheet statement cache: %v", err))
+	}
+	dbsCache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 10_000,
+		MaxCost:     1_000_000, // ~1MB
 		BufferItems: 64,
 	})
 	if err != nil {
@@ -57,7 +65,17 @@ func New(db *DB) *Store {
 	return &Store{
 		db:                  db,
 		sheetStatementCache: sheetStatementCache,
+		dbSchemaCache:       dbsCache,
 	}
+}
+
+// RefreshSwap updates the cache.
+func (s *Store) RefreshSwap(refresh bool) {
+	cost := int64(1_000_000)
+	if refresh {
+		cost = 500_000_000
+	}
+	s.dbSchemaCache.UpdateMaxCost(cost)
 }
 
 // Close closes underlying db.
