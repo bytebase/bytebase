@@ -19,18 +19,17 @@
   </NTooltip>
 
   <Teleport v-if="loading" to="body">
+    <!-- prevent clicking the page -->
     <div
       v-zindexable="{ enabled: true }"
-      class="fixed inset-0 pointer-events-auto flex flex-col items-center justify-center bg-white/50"
+      class="fixed inset-0 pointer-events-auto flex flex-col items-center justify-center"
       @click.stop.prevent
-    >
-      <NSpin />
-    </div>
+    />
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { NTooltip, NButton, NSpin } from "naive-ui";
+import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
