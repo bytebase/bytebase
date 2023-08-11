@@ -7,7 +7,7 @@ bytebase:
     port: 8080
     existingPgURLSecret: ""
     existingPgURLSecretKey: ""
-    pg:
+    pg: postgresql://user:secret@host:port/dbname
     data: /var/opt/bytebase
     external-url: "https://www.bytebase.com/docs/get-started/install/external-url"
     disable-sample: false
