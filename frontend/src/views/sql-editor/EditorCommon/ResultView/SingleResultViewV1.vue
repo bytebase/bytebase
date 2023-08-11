@@ -131,17 +131,13 @@ import { NInput, NPagination } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import { resolveCELExpr } from "@/plugins/cel";
 import {
   useInstanceV1Store,
   useTabStore,
   RESULT_ROWS_LIMIT,
   featureToRef,
-  useCurrentUserIamPolicy,
   useDatabaseV1Store,
   useCurrentUserV1,
-  usePolicyV1Store,
-  useDatabaseV1ByUID,
 } from "@/store";
 import {
   ExecuteConfig,
@@ -150,12 +146,10 @@ import {
   TabMode,
   UNKNOWN_ID,
 } from "@/types";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Engine } from "@/types/proto/v1/common";
 import { QueryResult } from "@/types/proto/v1/sql_service";
 import {
   createExplainToken,
-  extractEnvironmentNameListFromExpr,
   extractSQLRowValue,
   hasWorkspacePermissionV1,
   instanceV1HasStructuredQueryResult,
@@ -200,9 +194,6 @@ const currentUserV1 = useCurrentUserV1();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 const { isExportingData, exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
-const { database } = useDatabaseV1ByUID(
-  computed(() => currentTab.value.connection.databaseId)
-);
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -250,26 +241,7 @@ const allowToExportData = computed(() => {
     return true;
   }
 
-  const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
-  if (database.value && policy) {
-    const bindings = policy.workspaceIamPolicy?.bindings;
-    if (bindings) {
-      const querierBinding = bindings.find(
-        (binding) => binding.role === "roles/EXPORTER"
-      );
-      if (querierBinding) {
-        const simpleExpr = resolveCELExpr(
-          querierBinding.parsedExpr?.expr || Expr.fromPartial({})
-        );
-        const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-        if (envNameList.includes(database.value.instanceEntity.environment)) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return useCurrentUserIamPolicy().allowToExportDatabaseV1(database.value);
+  return currentTab.value.sqlResultSet?.allowExport || false;
 });
 
 // use a debounced value to improve performance when typing rapidly

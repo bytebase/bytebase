@@ -113,7 +113,7 @@ export const stringifyConditionExpression = (
     );
   }
   if (conditionExpression.rowLimit !== undefined) {
-    expression.push(`request.row_limit == ${conditionExpression.rowLimit}`);
+    expression.push(`request.row_limit <= ${conditionExpression.rowLimit}`);
   }
   return expression.join(" && ");
 };
@@ -328,6 +328,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             conditionExpression.statement = statement;
           }
         } else if (typeof right === "number") {
+          // Deprecated. Use _<=_ instead.
           if (left === "request.row_limit") {
             conditionExpression.rowLimit = right;
           }
@@ -337,6 +338,13 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
       const [left, right] = expr.args;
       if (left === "request.time") {
         conditionExpression.expiredTime = (right as Date).toISOString();
+      }
+    } else if (expr.operator === "_<=_") {
+      const [left, right] = expr.args;
+      if (left === "request.row_limit" && typeof right === "number") {
+        if (left === "request.row_limit") {
+          conditionExpression.rowLimit = right;
+        }
       }
     }
   }
