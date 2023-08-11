@@ -7,7 +7,7 @@
         <SearchBox
           v-model:value="state.searchText"
           style="width: 12rem"
-          :placeholder="'Search member'"
+          :placeholder="$t('project.members.search-member')"
         />
       </div>
       <div v-if="allowAdmin" class="flex gap-x-2">
@@ -28,7 +28,7 @@
     </div>
 
     <NTabs v-model:value="state.selectedTab" type="bar">
-      <NTabPane name="users" tab="Users">
+      <NTabPane name="users" :tab="$t('project.members.users')">
         <ProjectMemberTable
           :project="project"
           :ready="ready"
@@ -83,7 +83,7 @@
           />
         </div>
       </NTabPane>
-      <NTabPane name="roles" tab="Roles">
+      <NTabPane name="roles" :tab="$t('project.members.roles')">
         <ProjectRoleTable
           :project="project"
           :search-text="state.searchText"

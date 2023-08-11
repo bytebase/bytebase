@@ -1570,6 +1570,9 @@
       "role-never-expires": "This role never expires.",
       "add-more": "Add more",
       "role-name": "Role name",
+      "users": "Users",
+      "roles": "Roles",
+      "search-member": "Search member",
       "revoke-members": "Revoke these members"
     },
     "mode": {
