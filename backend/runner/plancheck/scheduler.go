@@ -67,19 +67,6 @@ func (s *Scheduler) Register(planCheckRunType store.PlanCheckRunType, executor E
 	s.executors[planCheckRunType] = executor
 }
 
-// SchedulePlanChecksForPlan schedules plan checks for the given plan.
-func (s *Scheduler) SchedulePlanChecksForPlan(ctx context.Context, planUID int64) error {
-	plan, err := s.store.GetPlan(ctx, planUID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get plan by UID %v", planUID)
-	}
-	planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get plan check runs for plan")
-	}
-	return s.store.CreatePlanCheckRuns(ctx, planCheckRuns...)
-}
-
 func (s *Scheduler) runOnce(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
