@@ -246,9 +246,9 @@ const clickRow = (
   row: number,
   e: MouseEvent
 ) => {
-  let url = `/db/${databaseV1Slug(item.database)}/table/${item.table}`;
+  let url = `/db/${databaseV1Slug(item.database)}?table=${item.table}`;
   if (item.schema != "") {
-    url += `?schema=${item.schema}`;
+    url += `&schema=${item.schema}`;
   }
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");

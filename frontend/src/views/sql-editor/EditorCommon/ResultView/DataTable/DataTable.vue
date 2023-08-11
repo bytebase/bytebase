@@ -39,12 +39,19 @@
                     v-if="isSensitiveColumn(header.index)"
                     class="ml-0.5 shrink-0"
                   />
-                  <FeatureBadgeForInstanceLicense
-                    v-else-if="isColumnMissingSensitive(header.index)"
-                    :show="true"
-                    custom-class="ml-0.5 shrink-0"
-                    feature="bb.feature.sensitive-data"
-                  />
+                  <template v-else-if="isColumnMissingSensitive(header.index)">
+                    <FeatureBadgeForInstanceLicense
+                      v-if="hasSensitiveFeature"
+                      :show="true"
+                      custom-class="ml-0.5 shrink-0"
+                      feature="bb.feature.sensitive-data"
+                    />
+                    <FeatureBadge
+                      v-else
+                      feature="bb.feature.sensitive-data"
+                      custom-class="ml-0.5 shrink-0"
+                    />
+                  </template>
                 </div>
 
                 <!-- The drag-to-resize handler -->
@@ -94,6 +101,7 @@
 <script lang="ts" setup>
 import { ColumnDef, Table } from "@tanstack/vue-table";
 import { computed, nextTick, PropType, ref, watch } from "vue";
+import { useSubscriptionV1Store } from "@/store";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
@@ -140,6 +148,7 @@ const props = defineProps({
 
 const scrollerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
+const subscriptionStore = useSubscriptionV1Store();
 
 const tableResize = useTableColumnWidthLogic({
   tableRef,
@@ -149,6 +158,10 @@ const tableResize = useTableColumnWidthLogic({
 });
 
 const data = computed(() => props.data);
+
+const hasSensitiveFeature = computed(() => {
+  return subscriptionStore.hasFeature("bb.feature.sensitive-data");
+});
 
 const isSensitiveColumn = (index: number): boolean => {
   return props.masked[index] ?? false;
