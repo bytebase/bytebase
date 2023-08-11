@@ -1,6 +1,9 @@
 <template>
   <div class="flex items-start gap-x-4">
-    <div class="textlabel h-[26px] inline-flex items-center">
+    <div
+      class="textlabel h-[26px] inline-flex items-center"
+      :class="labelClass"
+    >
       {{ $t("task.task-checks") }}
     </div>
 
@@ -35,6 +38,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { PlanCheckRun_Type, Task } from "@/types/proto/v1/rollout_service";
+import { VueClass } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckPanel from "./PlanCheckPanel.vue";
 import PlanCheckRunButton from "./PlanCheckRunButton.vue";
@@ -42,6 +46,7 @@ import PlanCheckRunButton from "./PlanCheckRunButton.vue";
 const props = defineProps<{
   allowRunChecks?: boolean;
   task: Task;
+  labelClass?: VueClass;
 }>();
 
 const { issue, events } = useIssueContext();
