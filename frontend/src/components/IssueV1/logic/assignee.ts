@@ -110,13 +110,10 @@ export const useCurrentRolloutPolicyForActiveEnvironment = () => {
   return useCurrentRolloutPolicyForTask(activeTask);
 };
 
-export const extractRollOutPolicyValue = (
+export const extractRollOutPolicyValueByDeploymentType = (
   policy: Policy | undefined,
-  taskType: Task_Type
-): {
-  policy: ApprovalStrategy;
-  assigneeGroup?: ApprovalGroup;
-} => {
+  type: DeploymentType
+) => {
   if (!policy || !policy.deploymentApprovalPolicy) {
     return {
       policy: defaultApprovalStrategy,
@@ -131,10 +128,9 @@ export const extractRollOutPolicyValue = (
     return { policy: ApprovalStrategy.AUTOMATIC };
   }
 
-  const deploymentType = taskTypeToDeploymentType(taskType);
   const assigneeGroup =
     policy.deploymentApprovalPolicy.deploymentApprovalStrategies.find(
-      (group) => group.deploymentType === deploymentType
+      (group) => group.deploymentType === type
     );
 
   if (
@@ -151,6 +147,17 @@ export const extractRollOutPolicyValue = (
     policy: ApprovalStrategy.MANUAL,
     assigneeGroup: ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER,
   };
+};
+
+export const extractRollOutPolicyValue = (
+  policy: Policy | undefined,
+  taskType: Task_Type
+): {
+  policy: ApprovalStrategy;
+  assigneeGroup?: ApprovalGroup;
+} => {
+  const deploymentType = taskTypeToDeploymentType(taskType);
+  return extractRollOutPolicyValueByDeploymentType(policy, deploymentType);
 };
 
 export const allowUserToBeAssignee = (
@@ -230,7 +237,9 @@ export const allowProjectOwnerToApprove = (
   );
 };
 
-const taskTypeToDeploymentType = (taskType: Task_Type): DeploymentType => {
+export const taskTypeToDeploymentType = (
+  taskType: Task_Type
+): DeploymentType => {
   switch (taskType) {
     case Task_Type.DATABASE_CREATE:
       return DeploymentType.DATABASE_CREATE;

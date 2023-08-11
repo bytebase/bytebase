@@ -140,6 +140,7 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, PropType, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -155,20 +156,19 @@ import {
 import EllipsisText from "@/components/EllipsisText.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useSubscriptionV1Store, useIssueStore } from "@/store";
-import {
-  ComposedDatabase,
-  IssueCreate,
-  PITRContext,
-  SYSTEM_BOT_ID,
-} from "@/types";
+import { experimentalCreateIssueByPlan, useSubscriptionV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   Backup,
   Backup_BackupState,
   Backup_BackupType,
 } from "@/types/proto/v1/database_service";
-import { issueSlug, extractBackupResourceName } from "@/utils";
+import { DeploymentType } from "@/types/proto/v1/deployment";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
+import { extractBackupResourceName } from "@/utils";
+import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
 
 export type BackupRow = BBGridRow<Backup>;
 
@@ -340,27 +340,33 @@ const doRestoreInPlace = async () => {
       )}]`,
     ];
 
-    const issueStore = useIssueStore();
-    const createContext: PITRContext = {
-      databaseId: Number(database.uid),
-      backupId: Number(backup.uid),
+    const restoreDatabaseSpec: Plan_Spec = {
+      id: uuidv4(),
+      restoreDatabaseConfig: {
+        backup: backup.name,
+        target: database.name, // in-place
+      },
     };
-    const issueCreate: IssueCreate = {
-      name: issueNameParts.join(" "),
-      type: "bb.issue.database.restore.pitr",
-      description: "",
-      assigneeId: SYSTEM_BOT_ID,
-      projectId: Number(database.projectEntity.uid),
-      payload: {},
-      createContext,
-    };
+    const planCreate = Plan.fromJSON({
+      steps: [{ specs: [restoreDatabaseSpec] }],
+    });
+    const issueCreate = Issue.fromJSON({
+      title: issueNameParts.join(" "),
+      type: Issue_Type.DATABASE_CHANGE,
+    });
+    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+      issueCreate,
+      database.projectEntity,
+      database.instanceEntity.environment,
+      DeploymentType.DATABASE_RESTORE_PITR
+    );
+    const { createdIssue } = await experimentalCreateIssueByPlan(
+      database.projectEntity,
+      issueCreate,
+      planCreate
+    );
 
-    await issueStore.validateIssue(issueCreate);
-
-    const issue = await issueStore.createIssue(issueCreate);
-
-    const slug = issueSlug(issue.name, issue.id);
-    router.push(`/issue/${slug}`);
+    router.push(`/issue/${createdIssue.uid}`);
   } catch {
     state.creatingRestoreIssue = false;
   }

@@ -217,6 +217,7 @@
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, PropType, watchEffect, ref, toRef } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
@@ -226,22 +227,18 @@ import MemberSelect from "@/components/MemberSelect.vue";
 import ProjectSelect from "@/components/ProjectSelect.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
+  experimentalCreateIssueByPlan,
   hasFeature,
   useCurrentUserV1,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
-  useIssueStore,
   useProjectV1Store,
 } from "@/store";
 import {
-  IssueCreate,
   SYSTEM_BOT_ID,
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
-  CreateDatabaseContext,
   UNKNOWN_ID,
-  PITRContext,
   ComposedInstance,
   unknownInstance,
 } from "@/types";
@@ -249,8 +246,15 @@ import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { UserRole } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
 import { Backup } from "@/types/proto/v1/database_service";
+import { DeploymentType } from "@/types/proto/v1/deployment";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import {
+  Plan,
+  Plan_CreateDatabaseConfig,
+  Plan_Spec,
+} from "@/types/proto/v1/rollout_service";
 import {
   extractBackupResourceName,
   extractDatabaseResourceName,
@@ -258,8 +262,8 @@ import {
   hasWorkspacePermissionV1,
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
-  issueSlug,
 } from "@/utils";
+import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
 import {
   DatabaseLabelForm,
   DatabaseNameTemplateTips,
@@ -474,8 +478,6 @@ const create = async () => {
     return;
   }
 
-  let newIssue: IssueCreate;
-
   const databaseName = state.databaseName;
   const tableName = state.tableName;
   const instanceId = Number(state.instanceId);
@@ -493,19 +495,15 @@ const create = async () => {
       return;
     }
   }
-  // Do not submit non-selected optional labels
-  const labels = Object.keys(state.labels)
-    .map((key) => {
-      const value = state.labels[key];
-      return { key, value };
-    })
-    .filter((kv) => !!kv.value);
 
-  const createDatabaseContext: CreateDatabaseContext = {
-    instanceId,
-    databaseName: databaseName,
-    tableName: tableName,
-    owner,
+  const instance = useInstanceV1Store().getInstanceByUID(String(instanceId));
+  const specs: Plan_Spec[] = [];
+  const createDatabaseConfig: Plan_CreateDatabaseConfig = {
+    target: instance.name,
+    database: databaseName,
+    table: tableName,
+    labels: state.labels,
+
     characterSet:
       state.characterSet ||
       defaultCharsetOfEngineV1(selectedInstance.value.engine),
@@ -513,65 +511,53 @@ const create = async () => {
       state.collation ||
       defaultCollationOfEngineV1(selectedInstance.value.engine),
     cluster: state.cluster,
-    labels: JSON.stringify(labels),
+    owner,
+    backup: "",
   };
+  const spec: Plan_Spec = {
+    id: uuidv4(),
+  };
+  specs.push(spec);
+
+  const issueCreate = Issue.fromJSON({
+    type: Issue_Type.DATABASE_CHANGE,
+  });
 
   if (props.backup) {
-    // If props.backup is specified, we create a PITR issue
-    // with createDatabaseContext
-    const { instance, database } = extractDatabaseResourceName(
-      props.backup.name
-    );
-    const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
-      `instances/${instance}/databases/${database}`
-    );
-    const createContext: PITRContext = {
-      databaseId: Number(db.uid),
-      backupId: Number(props.backup.uid),
-      createDatabaseContext,
+    spec.restoreDatabaseConfig = {
+      backup: props.backup.name,
+      createDatabaseConfig,
+      // `target` here is the original db
+      target: extractDatabaseResourceName(props.backup.name).full,
     };
     const backupTitle = extractBackupResourceName(props.backup.name);
-    newIssue = {
-      name: `Create database '${databaseName}' from backup '${backupTitle}'`,
-      type: "bb.issue.database.restore.pitr",
-      description: `Creating database '${databaseName}' from backup '${backupTitle}'`,
-      assigneeId: parseInt(state.assigneeId!, 10),
-      projectId: parseInt(state.projectId!, 10),
-      pipeline: {
-        stageList: [],
-        name: "",
-      },
-      createContext,
-      payload: {},
-    };
+    issueCreate.title = `Create database '${databaseName}' from backup '${backupTitle}'`;
+    issueCreate.description = `Creating database '${databaseName}' from backup '${backupTitle}'`;
   } else {
-    // Otherwise we create a simple database.create issue.
-    newIssue = {
-      name: `Create database '${databaseName}'`,
-      type: "bb.issue.database.create",
-      description: "",
-      assigneeId: parseInt(state.assigneeId!, 10),
-      projectId: parseInt(state.projectId!, 10),
-      pipeline: {
-        stageList: [],
-        name: "",
-      },
-      createContext: createDatabaseContext,
-      payload: {},
-    };
+    issueCreate.title = `Create database '${databaseName}'`;
+    spec.createDatabaseConfig = createDatabaseConfig;
   }
 
   state.creating = true;
-  useIssueStore()
-    .createIssue(newIssue)
-    .then(
-      (createdIssue) => {
-        router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-      },
-      () => {
-        state.creating = false;
-      }
+  try {
+    const planCreate = Plan.fromJSON({
+      steps: [{ specs: [spec] }],
+    });
+    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+      issueCreate,
+      project.value,
+      instance.environment,
+      DeploymentType.DATABASE_CREATE
     );
+    const { createdIssue } = await experimentalCreateIssueByPlan(
+      project.value,
+      issueCreate,
+      planCreate
+    );
+    router.push(`/issue/${createdIssue.uid}`);
+  } finally {
+    state.creating = false;
+  }
 };
 
 // update `state.labelList` when selected Environment changed
