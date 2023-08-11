@@ -7,6 +7,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "v1/common.proto";
+import "v1/database_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -32,6 +33,24 @@ service SQLService {
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {get: "/v1:adminExecute"};
   }
+  rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
+    option (google.api.http) = {
+      post: "/v1/sql/differPreview"
+      body: "*"
+    };
+  }
+}
+
+message DifferPreviewRequest {
+  Engine engine = 1;
+
+  string old_schema = 2;
+
+  DatabaseMetadata new_metadata = 3;
+}
+
+message DifferPreviewResponse {
+  string schema = 1;
 }
 
 message AdminExecuteRequest {

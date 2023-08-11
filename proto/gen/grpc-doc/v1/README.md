@@ -573,6 +573,8 @@
     - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
     - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
     - [Advice](#bytebase-v1-Advice)
+    - [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest)
+    - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
@@ -9089,6 +9091,38 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+<a name="bytebase-v1-DifferPreviewRequest"></a>
+
+### DifferPreviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| old_schema | [string](#string) |  |  |
+| new_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DifferPreviewResponse"></a>
+
+### DifferPreviewResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ExportRequest"></a>
 
 ### ExportRequest
@@ -9300,6 +9334,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
+| DifferPreview | [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest) | [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse) |  |
 
  
 

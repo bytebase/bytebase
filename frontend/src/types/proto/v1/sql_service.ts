@@ -5,8 +5,19 @@ import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
+
+export interface DifferPreviewRequest {
+  engine: Engine;
+  oldSchema: string;
+  newMetadata?: DatabaseMetadata | undefined;
+}
+
+export interface DifferPreviewResponse {
+  schema: string;
+}
 
 export interface AdminExecuteRequest {
   /**
@@ -265,6 +276,149 @@ export interface PrettyResponse {
   /** The expected SDL schema after normalizing. */
   expectedSchema: string;
 }
+
+function createBaseDifferPreviewRequest(): DifferPreviewRequest {
+  return { engine: 0, oldSchema: "", newMetadata: undefined };
+}
+
+export const DifferPreviewRequest = {
+  encode(message: DifferPreviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.engine !== 0) {
+      writer.uint32(8).int32(message.engine);
+    }
+    if (message.oldSchema !== "") {
+      writer.uint32(18).string(message.oldSchema);
+    }
+    if (message.newMetadata !== undefined) {
+      DatabaseMetadata.encode(message.newMetadata, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DifferPreviewRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDifferPreviewRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.oldSchema = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.newMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DifferPreviewRequest {
+    return {
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      oldSchema: isSet(object.oldSchema) ? String(object.oldSchema) : "",
+      newMetadata: isSet(object.newMetadata) ? DatabaseMetadata.fromJSON(object.newMetadata) : undefined,
+    };
+  },
+
+  toJSON(message: DifferPreviewRequest): unknown {
+    const obj: any = {};
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.oldSchema !== undefined && (obj.oldSchema = message.oldSchema);
+    message.newMetadata !== undefined &&
+      (obj.newMetadata = message.newMetadata ? DatabaseMetadata.toJSON(message.newMetadata) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DifferPreviewRequest>): DifferPreviewRequest {
+    return DifferPreviewRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DifferPreviewRequest>): DifferPreviewRequest {
+    const message = createBaseDifferPreviewRequest();
+    message.engine = object.engine ?? 0;
+    message.oldSchema = object.oldSchema ?? "";
+    message.newMetadata = (object.newMetadata !== undefined && object.newMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.newMetadata)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDifferPreviewResponse(): DifferPreviewResponse {
+  return { schema: "" };
+}
+
+export const DifferPreviewResponse = {
+  encode(message: DifferPreviewResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DifferPreviewResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDifferPreviewResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DifferPreviewResponse {
+    return { schema: isSet(object.schema) ? String(object.schema) : "" };
+  },
+
+  toJSON(message: DifferPreviewResponse): unknown {
+    const obj: any = {};
+    message.schema !== undefined && (obj.schema = message.schema);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DifferPreviewResponse>): DifferPreviewResponse {
+    return DifferPreviewResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DifferPreviewResponse>): DifferPreviewResponse {
+    const message = createBaseDifferPreviewResponse();
+    message.schema = object.schema ?? "";
+    return message;
+  },
+};
 
 function createBaseAdminExecuteRequest(): AdminExecuteRequest {
   return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined };
@@ -1685,6 +1839,48 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    differPreview: {
+      name: "DifferPreview",
+      requestType: DifferPreviewRequest,
+      requestStream: false,
+      responseType: DifferPreviewResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              26,
+              58,
+              1,
+              42,
+              34,
+              21,
+              47,
+              118,
+              49,
+              47,
+              115,
+              113,
+              108,
+              47,
+              100,
+              105,
+              102,
+              102,
+              101,
+              114,
+              80,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -1696,6 +1892,10 @@ export interface SQLServiceImplementation<CallContextExt = {}> {
     request: AsyncIterable<AdminExecuteRequest>,
     context: CallContext & CallContextExt,
   ): ServerStreamingMethodResult<DeepPartial<AdminExecuteResponse>>;
+  differPreview(
+    request: DifferPreviewRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<DifferPreviewResponse>>;
 }
 
 export interface SQLServiceClient<CallOptionsExt = {}> {
@@ -1706,6 +1906,10 @@ export interface SQLServiceClient<CallOptionsExt = {}> {
     request: AsyncIterable<DeepPartial<AdminExecuteRequest>>,
     options?: CallOptions & CallOptionsExt,
   ): AsyncIterable<AdminExecuteResponse>;
+  differPreview(
+    request: DeepPartial<DifferPreviewRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<DifferPreviewResponse>;
 }
 
 declare const self: any | undefined;
