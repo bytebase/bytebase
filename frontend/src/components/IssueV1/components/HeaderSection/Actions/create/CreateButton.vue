@@ -5,10 +5,11 @@
         type="primary"
         size="large"
         tag="div"
-        :disabled="issueCreateErrorList.length > 0"
+        :disabled="issueCreateErrorList.length > 0 || loading"
+        :loading="loading"
         @click="doCreateIssue"
       >
-        {{ $t("common.create") }}
+        {{ loading ? $t("common.creating") : $t("common.create") }}
       </NButton>
     </template>
 
@@ -16,11 +17,22 @@
       <ErrorList :errors="issueCreateErrorList" />
     </template>
   </NTooltip>
+
+  <Teleport v-if="loading" to="body">
+    <div
+      v-zindexable="{ enabled: true }"
+      class="fixed inset-0 pointer-events-auto flex flex-col items-center justify-center bg-white/50"
+      @click.stop.prevent
+    >
+      <NSpin />
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { NTooltip, NButton } from "naive-ui";
-import { computed } from "vue";
+import { NTooltip, NButton, NSpin } from "naive-ui";
+import { zindexable as vZindexable } from "vdirs";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -40,6 +52,7 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const router = useRouter();
 const { issue, formatOnSave } = useIssueContext();
+const loading = ref(false);
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
@@ -56,35 +69,40 @@ const issueCreateErrorList = computed(() => {
 });
 
 const doCreateIssue = async () => {
-  await createSheets();
-  const createdPlan = await createPlan();
-  if (!createdPlan) return;
+  loading.value = true;
+  try {
+    await createSheets();
+    const createdPlan = await createPlan();
+    if (!createdPlan) return;
 
-  issue.value.plan = createdPlan.name;
-  issue.value.planEntity = createdPlan;
+    issue.value.plan = createdPlan.name;
+    issue.value.planEntity = createdPlan;
 
-  const createdIssue = await issueServiceClient.createIssue({
-    parent: issue.value.project,
-    issue: issue.value,
-  });
+    const createdIssue = await issueServiceClient.createIssue({
+      parent: issue.value.project,
+      issue: issue.value,
+    });
 
-  const createdRollout = await rolloutServiceClient.createRollout({
-    parent: issue.value.project,
-    plan: createdPlan.name,
-  });
+    const createdRollout = await rolloutServiceClient.createRollout({
+      parent: issue.value.project,
+      plan: createdPlan.name,
+    });
 
-  createdIssue.rollout = createdRollout.name;
+    createdIssue.rollout = createdRollout.name;
 
-  const composedIssue: ComposedIssue = {
-    ...issue.value,
-    ...createdIssue,
-    planEntity: createdPlan,
-    rolloutEntity: createdRollout,
-  };
+    const composedIssue: ComposedIssue = {
+      ...issue.value,
+      ...createdIssue,
+      planEntity: createdPlan,
+      rolloutEntity: createdRollout,
+    };
 
-  router.push(`/issue/${composedIssue.uid}`);
+    router.push(`/issue/${composedIssue.uid}`);
 
-  return composedIssue;
+    return composedIssue;
+  } catch {
+    loading.value = false;
+  }
 };
 
 // Create sheets for spec configs and update their resource names.
