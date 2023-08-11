@@ -722,6 +722,79 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	return issueV1, nil
 }
 
+// BatchUpdateIssues batch updates issues.
+func (s *IssueService) BatchUpdateIssues(ctx context.Context, request *v1pb.BatchUpdateIssuesRequest) (*v1pb.BatchUpdateIssuesResponse, error) {
+	var issueIDs []int
+	var prevStatus api.IssueStatus
+	var err error
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+
+	// Validate the request.
+	for i, request := range request.Requests {
+		if request.UpdateMask == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+		}
+
+		for _, path := range request.UpdateMask.Paths {
+			switch path {
+			case "status":
+				if i == 0 {
+					prevStatus, err = convertToAPIIssueStatus(request.Issue.Status)
+					if err != nil {
+						return nil, status.Errorf(codes.InvalidArgument, "invalid status %v, err: %v", request.Issue.Status, err)
+					}
+				} else {
+					cs, err := convertToAPIIssueStatus(request.Issue.Status)
+					if err != nil {
+						return nil, status.Errorf(codes.InvalidArgument, "invalid status %v, err: %v", request.Issue.Status, err)
+					}
+					if cs != prevStatus {
+						return nil, status.Errorf(codes.InvalidArgument, "cannot batch update issues with different status")
+					}
+				}
+				issue, err := s.getIssueMessage(ctx, request.Issue.Name)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to find issue %v, err: %v", request.Issue.Name, err)
+				}
+				if issue == nil {
+					return nil, status.Errorf(codes.NotFound, "cannot find issue %v", request.Issue.Name)
+				}
+				issueIDs = append(issueIDs, issue.UID)
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, "unsupported update_mask path %v in BatchUpdateIssues", path)
+			}
+		}
+	}
+
+	if len(issueIDs) == 0 {
+		return &v1pb.BatchUpdateIssuesResponse{}, nil
+	}
+
+	if err := s.store.BatchUpdateIssueStatuses(ctx, issueIDs, prevStatus, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to batch update issues, err: %v", err)
+	}
+
+	var result []*v1pb.Issue
+	for _, issueID := range issueIDs {
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+			UID: &issueID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get issue %v, err: %v", issueID, err)
+		}
+		issueV1, err := convertToIssue(ctx, s.store, issue)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+		}
+		result = append(result, issueV1)
+	}
+
+	return &v1pb.BatchUpdateIssuesResponse{
+		Issues: result,
+	}, nil
+}
+
 // CreateIssueComment creates the issue comment.
 func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.CreateIssueCommentRequest) (*v1pb.IssueComment, error) {
 	if request.IssueComment.Comment == "" {
@@ -970,6 +1043,19 @@ func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
 		return v1pb.Issue_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToAPIIssueStatus(status v1pb.IssueStatus) (api.IssueStatus, error) {
+	switch status {
+	case v1pb.IssueStatus_OPEN:
+		return api.IssueOpen, nil
+	case v1pb.IssueStatus_DONE:
+		return api.IssueDone, nil
+	case v1pb.IssueStatus_CANCELED:
+		return api.IssueCanceled, nil
+	default:
+		return api.IssueStatus(""), errors.Errorf("invalid issue status %v", status)
 	}
 }
 
