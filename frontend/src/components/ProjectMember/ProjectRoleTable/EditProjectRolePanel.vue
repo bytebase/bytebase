@@ -331,7 +331,7 @@ const handleUpdateRole = async () => {
       }
     }
     if (state.maxRowCount) {
-      expression.push(`request.row_limit == ${state.maxRowCount}`);
+      expression.push(`request.row_limit <= ${state.maxRowCount}`);
     }
   }
   if (expression.length > 0) {
