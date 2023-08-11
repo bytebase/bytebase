@@ -32,6 +32,7 @@ export const useSQLStore = defineStore("sql", () => {
         error,
         results: [],
         advices: [],
+        allowExport: false,
         status,
       };
     }

@@ -301,7 +301,7 @@ const doCreateIssue = async () => {
       .add(expireDays, "days")
       .toISOString()}")`
   );
-  expression.push(`request.row_limit == ${state.maxRowCount}`);
+  expression.push(`request.row_limit <= ${state.maxRowCount}`);
   if (state.databaseResourceCondition) {
     expression.push(state.databaseResourceCondition);
   }

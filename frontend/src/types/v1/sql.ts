@@ -5,5 +5,6 @@ export type SQLResultSetV1 = {
   error: string; // empty if no error occurred
   results: QueryResult[];
   advices: Advice[];
+  allowExport: boolean;
   status?: Status;
 };
