@@ -166,10 +166,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 		NeedAttention: false,
 	}
 
-	// TODO(p0ny): find approval template
 	issueCreatePayload := &storepb.IssuePayload{
 		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: true,
+			ApprovalFindingDone: false,
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
@@ -184,6 +183,8 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
 	}
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
 	createActivityPayload := api.ActivityIssueCreatePayload{
 		IssueName: issue.Title,
 	}
