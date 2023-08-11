@@ -1,7 +1,9 @@
 import { first } from "lodash-es";
 import { usePolicyV1Store, useUserStore } from "@/store";
-import { ComposedIssue, PresetRoleType } from "@/types";
+import { ComposedIssue, ComposedProject, PresetRoleType } from "@/types";
 import { UserRole } from "@/types/proto/v1/auth_service";
+import { DeploymentType } from "@/types/proto/v1/deployment";
+import { Issue } from "@/types/proto/v1/issue_service";
 import {
   ApprovalGroup,
   ApprovalStrategy,
@@ -12,22 +14,24 @@ import {
   hasWorkspacePermissionV1,
   memberListInProjectV1,
 } from "@/utils";
-import { extractRollOutPolicyValue } from "../assignee";
+import {
+  extractRollOutPolicyValueByDeploymentType,
+  taskTypeToDeploymentType,
+} from "../assignee";
 import { databaseForTask } from "../utils";
 
-export const trySetDefaultAssignee = async (issue: ComposedIssue) => {
-  const firstTask = first(flattenTaskV1List(issue.rolloutEntity));
-  // The pipeline is accidentally empty, so we won't go further
-  if (!firstTask) return;
-
-  const database = databaseForTask(issue, firstTask);
-
+export const trySetDefaultAssigneeByEnvironmentAndDeploymentType = async (
+  issue: Issue,
+  project: ComposedProject,
+  environment: string,
+  type: DeploymentType
+) => {
   const policy = await usePolicyV1Store().getOrFetchPolicyByParentAndType({
-    parentPath: database.instanceEntity.environment,
+    parentPath: environment,
     policyType: PolicyType.DEPLOYMENT_APPROVAL,
   });
 
-  const rollOutPolicy = extractRollOutPolicyValue(policy, firstTask.type);
+  const rollOutPolicy = extractRollOutPolicyValueByDeploymentType(policy, type);
 
   if (rollOutPolicy.policy === ApprovalStrategy.AUTOMATIC) {
     // We don't need to approve manually.
@@ -41,7 +45,7 @@ export const trySetDefaultAssignee = async (issue: ComposedIssue) => {
 
     if (assigneeGroup === ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER) {
       // Assign to the project owner if needed.
-      assignToProjectOwner(issue);
+      assignToProjectOwner(issue, project);
       return;
     }
 
@@ -52,12 +56,26 @@ export const trySetDefaultAssignee = async (issue: ComposedIssue) => {
   }
 };
 
+export const trySetDefaultAssignee = async (issue: ComposedIssue) => {
+  const firstTask = first(flattenTaskV1List(issue.rolloutEntity));
+  // The pipeline is accidentally empty, so we won't go further
+  if (!firstTask) return;
+
+  const database = databaseForTask(issue, firstTask);
+
+  return trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+    issue,
+    issue.projectEntity,
+    database.instanceEntity.environment,
+    taskTypeToDeploymentType(firstTask.type)
+  );
+};
+
 // Since we are assigning a project owner, we try to find a more dedicated project owner wearing a
 // developer hat to offload DBA workload, thus the searching order is:
 // 1. Project owner who is a workspace Developer.
 // 2. Project owner who is not a workspace Developer.
-const assignToProjectOwner = (issue: ComposedIssue) => {
-  const project = issue.projectEntity;
+const assignToProjectOwner = (issue: Issue, project: ComposedProject) => {
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const projectOwnerList = memberList.filter((member) => {
     return member.roleList.includes(PresetRoleType.OWNER);
@@ -83,7 +101,7 @@ const assignToProjectOwner = (issue: ComposedIssue) => {
     }
   }
 };
-const assignToWorkspaceOwnerOrDBA = (issue: ComposedIssue) => {
+const assignToWorkspaceOwnerOrDBA = (issue: Issue) => {
   const memberList = useUserStore().userList;
   // Find the workspace owner or DBA, the first one we found is okay.
   const ownerOrDBA = memberList.find((user) => {

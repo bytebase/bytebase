@@ -13,7 +13,7 @@
           :disabled="pitrButtonDisabled"
           @pointerenter="showTooltip"
           @pointerleave="hideTooltip"
-          @click="(action: PITRButtonAction) => onClickPITRButton(action)"
+          @click="(action) => onClickPITRButton(action)"
         >
           <template #default="{ action }">
             <span>{{ action.text }}</span>
@@ -146,6 +146,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NButton, NDatePicker } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, PropType, reactive, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -154,10 +155,22 @@ import BBContextMenuButton, {
 } from "@/bbkit/BBContextMenuButton.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePITRLogic } from "@/plugins";
-import { useSubscriptionV1Store } from "@/store";
-import { CreateDatabaseContext, ComposedDatabase } from "@/types";
+import {
+  experimentalCreateIssueByPlan,
+  useActuatorV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
+import { ComposedDatabase, CreateDatabaseContext } from "@/types";
+import { DeploymentType } from "@/types/proto/v1/deployment";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import {
+  Plan,
+  Plan_RestoreDatabaseConfig,
+  Plan_Spec,
+} from "@/types/proto/v1/rollout_service";
 import { issueSlug } from "@/utils";
 import RestoreTargetForm from "../DatabaseBackup/RestoreTargetForm.vue";
+import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
 import ChangeHistoryBrief from "./ChangeHistoryBrief.vue";
 import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
 import { CreatePITRDatabaseContext } from "./utils";
@@ -204,6 +217,9 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
+const developmentUseV1IssueUI = computed(() => {
+  return !!useActuatorV1Store().serverInfo?.developmentUseV2Scheduler;
+});
 const createDatabaseForm = ref<InstanceType<typeof CreatePITRDatabaseForm>>();
 
 const hasPITRFeature = computed(() => {
@@ -239,11 +255,11 @@ const buttonActionList = computed((): PITRButtonAction[] => {
   ];
 });
 
-const onClickPITRButton = (action: PITRButtonAction) => {
+const onClickPITRButton = (action: ButtonAction) => {
   if (!hasPITRFeature.value) {
     return;
   }
-  const { step, mode } = action.params;
+  const { step, mode } = (action as PITRButtonAction).params;
   openDialog(step, mode);
 };
 
@@ -324,7 +340,86 @@ const initLastChangeParams = () => {
   state.step = "PITR_FORM";
 };
 
-const onConfirm = async () => {
+const onConfirmV1 = async () => {
+  if (!hasPITRFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+
+  if (!isValidParams.value) {
+    return;
+  }
+
+  state.loading = true;
+
+  try {
+    const { target, createContext: context } = state;
+    const { database } = props;
+    const restoreDatabaseConfig: Plan_RestoreDatabaseConfig = {
+      target: database.name,
+      pointInTime: dayjs
+        .unix(Math.floor(state.pitrTimestampMS / 1000))
+        .toDate(),
+    };
+    if (target === "NEW" && context) {
+      restoreDatabaseConfig.createDatabaseConfig = {
+        target: database.instance,
+        database: context.databaseName,
+        table: "",
+        backup: "",
+        characterSet: context.characterSet,
+        collation: context.collation,
+        owner: "",
+        cluster: "",
+        labels: { ...database.labels },
+      };
+    }
+    const spec: Plan_Spec = {
+      id: uuidv4(),
+      restoreDatabaseConfig,
+    };
+
+    const planCreate = Plan.fromJSON({
+      steps: [{ specs: [spec] }],
+    });
+
+    const issueNameParts: string[] = [
+      `Restore database [${props.database.databaseName}]`,
+    ];
+    if (state.mode === "CUSTOM") {
+      const datetime = dayjs(state.pitrTimestampMS).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
+      issueNameParts.push(`to [${datetime} ${timezone.value}]`);
+    } else {
+      issueNameParts.push(
+        `before migration version [${lastChangeHistory.value!.version}]`
+      );
+    }
+    const issueCreate = Issue.fromJSON({
+      title: issueNameParts.join(" "),
+      type: Issue_Type.DATABASE_CHANGE,
+    });
+    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+      issueCreate,
+      database.projectEntity,
+      database.instanceEntity.environment,
+      DeploymentType.DATABASE_RESTORE_PITR
+    );
+    const { createdIssue } = await experimentalCreateIssueByPlan(
+      database.projectEntity,
+      issueCreate,
+      planCreate
+    );
+
+    router.push(`/issue/${createdIssue.uid}`);
+  } catch (ex) {
+    // TODO: error handling
+  } finally {
+    resetUI();
+  }
+};
+const onConfirmLegacy = async () => {
   if (!hasPITRFeature.value) {
     state.showFeatureModal = true;
     return;
@@ -387,6 +482,14 @@ const onConfirm = async () => {
     // TODO: error handling
   } finally {
     resetUI();
+  }
+};
+
+const onConfirm = async () => {
+  if (developmentUseV1IssueUI.value) {
+    await onConfirmV1();
+  } else {
+    await onConfirmLegacy();
   }
 };
 </script>
