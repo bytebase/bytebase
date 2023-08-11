@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -139,8 +140,15 @@ func (s *DBSchema) FindIndex(schemaName string, tableName string, indexName stri
 
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, error) {
-	if dbSchema, ok := s.dbSchemaCache.Load(databaseID); ok {
-		return dbSchema.(*DBSchema), nil
+	instanceCount := 0
+	s.instanceCache.Range(func(key, value any) bool {
+		instanceCount++
+		return true
+	})
+	if s.dbSchemaCache.MaxCost() != 1_000_000 || instanceCount <= 10 {
+		if dbSchema, ok := s.dbSchemaCache.Get(databaseID); ok {
+			return dbSchema.(*DBSchema), nil
+		}
 	}
 
 	// Build WHERE clause.
@@ -182,7 +190,7 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	}
 	dbSchema.Metadata = &databaseSchema
 
-	s.dbSchemaCache.Store(databaseID, dbSchema)
+	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
 	return dbSchema, nil
 }
 
@@ -227,6 +235,6 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 		return err
 	}
 
-	s.dbSchemaCache.Store(databaseID, dbSchema)
+	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
 	return nil
 }
