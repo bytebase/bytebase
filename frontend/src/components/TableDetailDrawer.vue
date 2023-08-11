@@ -270,7 +270,9 @@ const allowQuery = computed(() => {
   return isDatabaseV1Queryable(database.value, currentUserV1.value);
 });
 const hasSchemaProperty = computed(
-  () => instanceEngine.value === Engine.POSTGRES
+  () =>
+    instanceEngine.value === Engine.POSTGRES ||
+    instanceEngine.value === Engine.RISINGWAVE
 );
 const shouldShowColumnTable = computed(() => {
   return instanceEngine.value !== Engine.MONGODB;

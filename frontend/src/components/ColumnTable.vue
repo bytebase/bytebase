@@ -166,7 +166,8 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.REDSHIFT ||
       engine.value === Engine.ORACLE ||
       engine.value === Engine.SNOWFLAKE ||
-      engine.value === Engine.MSSQL)
+      engine.value === Engine.MSSQL ||
+      engine.value === Engine.RISINGWAVE)
   );
 });
 
