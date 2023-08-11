@@ -77,6 +77,7 @@
     "updated": "已更新",
     "visit": "访问",
     "role": {
+      "self": "角色",
       "dba": "DBA",
       "owner": "所有者",
       "developer": "开发者",
@@ -1563,6 +1564,9 @@
       "role-never-expires": "此角色没有过期时间。",
       "add-more": "增加更多",
       "role-name": "角色名称",
+      "users": "用户",
+      "roles": "角色",
+      "search-member": "搜索成员",
       "revoke-members": "撤销成员"
     },
     "mode": {

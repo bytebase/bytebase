@@ -77,13 +77,13 @@
     "updated": "Actualizado",
     "visit": "Visitar",
     "role": {
+      "self": "Rol",
       "dba": "DBA",
       "owner": "Propietario",
       "developer": "Desarrollador",
       "member": "Miembro",
       "exporter": "exportador",
-      "querier": "querier",
-      "self": "Rol"
+      "querier": "querier"
     },
     "assignee": "Asignado",
     "revert": "Revertir",
@@ -1567,6 +1567,9 @@
       "role-never-expires": "Este rol nunca expira.",
       "add-more": "Más información",
       "role-name": "Nombre del rol",
+      "users": "Usuarios",
+      "roles": "Roles",
+      "search-member": "Buscar miembro",
       "revoke-members": "Revocar miembros"
     },
     "mode": {
