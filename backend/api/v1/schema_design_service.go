@@ -1515,7 +1515,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	// compare column type
 	typeCtx := ctx.FieldDefinition().DataType()
 	columnType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(typeCtx)
-	if columnType != column.tp {
+	if !strings.EqualFold(columnType, column.tp) {
 		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 			Start: ctx.GetStart().GetTokenIndex(),
 			Stop:  typeCtx.GetStart().GetTokenIndex() - 1,
@@ -1523,7 +1523,8 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 			g.err = err
 			return
 		}
-		if _, err := g.columnDefine.WriteString(column.tp); err != nil {
+		// write lower case column type for MySQL
+		if _, err := g.columnDefine.WriteString(strings.ToLower(column.tp)); err != nil {
 			g.err = err
 			return
 		}
