@@ -640,6 +640,21 @@ func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPat
 	return updatedTask, nil
 }
 
+// BatchSkipTasks batch skip tasks.
+func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment string, updaterUID int) error {
+	query := `
+	UPDATE task
+	SET updater_id = $1, payload = payload || jsonb_build_object('skipped', to_jsonb($2::BOOLEAN)) || jsonb_build_object('skippedReason', to_jsonb($3::TEXT))
+	WHERE id = ANY($4)`
+	args := []any{updaterUID, true, comment, taskUIDs}
+
+	if _, err := s.db.db.ExecContext(ctx, query, args...); err != nil {
+		return errors.Wrapf(err, "failed to batch skip tasks")
+	}
+
+	return nil
+}
+
 // ListTasksWithNoTaskRun returns tasks that have no task run.
 func (s *Store) ListTasksWithNoTaskRun(ctx context.Context) ([]int, error) {
 	rows, err := s.db.db.QueryContext(ctx, `

@@ -503,6 +503,24 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	return &v1pb.BatchRunTasksResponse{}, nil
 }
 
+// BatchSkipTasks skips tasks in batch.
+func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.BatchSkipTasksRequest) (*v1pb.BatchSkipTasksResponse, error) {
+	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
+	var taskUIDs []int
+	for _, task := range request.Tasks {
+		_, _, _, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		taskUIDs = append(taskUIDs, taskID)
+	}
+
+	if err := s.store.BatchSkipTasks(ctx, taskUIDs, "", updaterID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
+	}
+	return &v1pb.BatchSkipTasksResponse{}, nil
+}
+
 // BatchCancelTaskRuns cancels a list of task runs.
 // TODO(p0ny): forbid cancel noncancellable task runs.
 func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
