@@ -183,7 +183,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	}
 	steps := convertPlanSteps(request.Plan.Steps)
 
-	rollout, err := getPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, steps, project)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, steps, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -254,7 +254,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 
-	pipelineCreate, err := getPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, plan.Config.Steps, project)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, plan.Config.Steps, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -786,7 +786,8 @@ func validateSteps(_ []*v1pb.Plan_Step) error {
 	return nil
 }
 
-func getPipelineCreate(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+// GetPipelineCreate gets a pipeline create message from a plan.
+func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	pipelineCreate := &store.PipelineMessage{
 		Name: "Rollout Pipeline",
 	}
