@@ -1,6 +1,7 @@
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import {
   ComposedIssue,
+  ComposedProject,
   emptyIssue,
   emptyRollout,
   EMPTY_ID,
@@ -10,6 +11,8 @@ import {
   UNKNOWN_ID,
   UNKNOWN_ISSUE_NAME,
 } from "@/types";
+import { Issue } from "@/types/proto/v1/issue_service";
+import { Plan, Rollout } from "@/types/proto/v1/rollout_service";
 import { extractProjectResourceName } from "@/utils";
 import { useProjectV1Store } from "./project";
 
@@ -115,4 +118,37 @@ export const experimentalFetchIssueByName = async (name: string) => {
   await new Promise((r) => setTimeout(r, 500));
 
   return issue;
+};
+
+export type CreateIssueHooks = {
+  planCreated: (plan: Plan) => Promise<any>;
+  issueCreated: (issue: Issue, plan: Plan) => Promise<any>;
+  rolloutCreated: (issue: Issue, plan: Plan, rollout: Rollout) => Promise<any>;
+};
+export const experimentalCreateIssueByPlan = async (
+  project: ComposedProject,
+  issueCreate: Issue,
+  planCreate: Plan,
+  hooks?: Partial<CreateIssueHooks>
+) => {
+  const createdPlan = await rolloutServiceClient.createPlan({
+    parent: project.name,
+    plan: planCreate,
+  });
+  issueCreate.plan = createdPlan.name;
+  await hooks?.planCreated?.(planCreate);
+
+  const createdIssue = await issueServiceClient.createIssue({
+    parent: project.name,
+    issue: issueCreate,
+  });
+  await hooks?.issueCreated?.(createdIssue, createdPlan);
+  const createdRollout = await rolloutServiceClient.createRollout({
+    parent: project.name,
+    plan: createdPlan.name,
+  });
+  createdIssue.rollout = createdRollout.name;
+  await hooks?.rolloutCreated?.(createdIssue, createdPlan, createdRollout);
+
+  return { createdPlan, createdIssue, createdRollout };
 };
