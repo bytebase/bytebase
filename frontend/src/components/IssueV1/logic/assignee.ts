@@ -112,7 +112,7 @@ export const useCurrentRolloutPolicyForActiveEnvironment = () => {
 
 export const extractRollOutPolicyValueByDeploymentType = (
   policy: Policy | undefined,
-  type: DeploymentType
+  deploymentType: DeploymentType
 ) => {
   if (!policy || !policy.deploymentApprovalPolicy) {
     return {
@@ -130,7 +130,7 @@ export const extractRollOutPolicyValueByDeploymentType = (
 
   const assigneeGroup =
     policy.deploymentApprovalPolicy.deploymentApprovalStrategies.find(
-      (group) => group.deploymentType === type
+      (group) => group.deploymentType === deploymentType
     );
 
   if (
