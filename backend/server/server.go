@@ -964,14 +964,17 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 	if !s.profile.Readonly {
-		if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
-			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
-		}
 		// runnerWG waits for all goroutines to complete.
 		if s.profile.DevelopmentUseV2Scheduler {
+			if err := s.TaskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
+				return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
+			}
 			s.runnerWG.Add(1)
 			go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
 		} else {
+			if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
+				return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
+			}
 			s.runnerWG.Add(1)
 			go s.TaskScheduler.Run(ctx, &s.runnerWG)
 		}

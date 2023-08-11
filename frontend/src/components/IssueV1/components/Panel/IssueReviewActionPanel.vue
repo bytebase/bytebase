@@ -7,23 +7,34 @@
   >
     <template #default>
       <div v-if="action" class="flex flex-col gap-y-4">
-        <p class="textlabel">
-          {{ $t("common.comment") }}
-          <RequiredStar v-show="props.action === 'SEND_BACK'" />
-        </p>
-        <NInput
-          v-model:value="comment"
-          type="textarea"
-          :placeholder="$t('issue.leave-a-comment')"
-          :autosize="{
-            minRows: 3,
-            maxRows: 10,
-          }"
-        />
+        <div class="flex flex-col gap-y-1">
+          <div class="font-medium text-control">
+            {{ $t("common.issue") }}
+          </div>
+          <div class="textinfolabel">
+            {{ issue.title }}
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-y-1">
+          <p class="font-medium text-control">
+            {{ $t("common.comment") }}
+            <RequiredStar v-show="props.action === 'SEND_BACK'" />
+          </p>
+          <NInput
+            v-model:value="comment"
+            type="textarea"
+            :placeholder="$t('issue.leave-a-comment')"
+            :autosize="{
+              minRows: 3,
+              maxRows: 10,
+            }"
+          />
+        </div>
       </div>
     </template>
     <template #footer>
-      <div v-if="action" class="py-1 flex justify-end gap-x-3">
+      <div v-if="action" class="flex justify-end gap-x-3">
         <NButton @click="$emit('close')">
           {{ $t("common.cancel") }}
         </NButton>

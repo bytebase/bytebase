@@ -7,11 +7,17 @@
   >
     <template #default>
       <div v-if="action" class="flex flex-col gap-y-4">
-        <div class="text-sm">
-          {{ issue.title }}
-        </div>
         <div class="flex flex-col gap-y-1">
-          <p class="textlabel">
+          <div class="font-medium text-control">
+            {{ $t("common.issue") }}
+          </div>
+          <div class="textinfolabel">
+            {{ issue.title }}
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-y-1">
+          <p class="font-medium text-control">
             {{ $t("common.comment") }}
           </p>
           <NInput
@@ -27,7 +33,7 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="action" class="py-1 flex justify-end gap-x-3">
+      <div v-if="action" class="flex justify-end gap-x-3">
         <NButton @click="$emit('close')">
           {{ $t("common.cancel") }}
         </NButton>
