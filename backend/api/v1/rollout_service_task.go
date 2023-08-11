@@ -22,8 +22,8 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
-	if s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+	if licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
 			return nil, nil, errors.Errorf(api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
@@ -31,11 +31,11 @@ func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *store
 
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s.store, s.licenseService, s.dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, licenseService, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-		return getTaskCreatesFromChangeDatabaseConfig(ctx, s.store, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
-		return getTaskCreatesFromRestoreDatabaseConfig(ctx, s.store, s.licenseService, s.dbFactory, spec, config.RestoreDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromRestoreDatabaseConfig(ctx, s, licenseService, dbFactory, spec, config.RestoreDatabaseConfig, project, registerEnvironmentID)
 	}
 
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
