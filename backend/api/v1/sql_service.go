@@ -2356,3 +2356,15 @@ func encodeToBase64String(statement string) string {
 	base64Encoded := base64.StdEncoding.EncodeToString([]byte(statement))
 	return base64Encoded
 }
+
+// DifferPreview returns the diff preview of the given SQL statement and metadata.
+func (s *SQLService) DifferPreview(ctx context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
+	schema, err := getDesignSchema(request.Engine, request.OldSchema, request.NewMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1pb.DifferPreviewResponse{
+		Schema: schema,
+	}, nil
+}

@@ -1087,7 +1087,11 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
 	switch engine {
 	case v1pb.Engine_MYSQL:
-		return getMySQLDesignSchema(baselineSchema, to)
+		result, err := getMySQLDesignSchema(baselineSchema, to)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, "failed to generate design schema: %v", err)
+		}
+		return result, nil
 	default:
 		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 	}
