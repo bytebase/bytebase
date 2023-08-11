@@ -164,7 +164,8 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { computed, reactive, watchEffect, PropType } from "vue";
+import { computed, reactive, watchEffect, PropType, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
@@ -188,9 +189,16 @@ const props = defineProps({
     type: Object as PropType<ComposedDatabase>,
   },
 });
-
+const route = useRoute();
 const state = reactive<LocalState>({
   selectedSchemaName: "",
+});
+
+onMounted(() => {
+  const schema = route.query.schema as string;
+  if (schema) {
+    state.selectedSchemaName = schema;
+  }
 });
 
 const dbSchemaStore = useDBSchemaV1Store();

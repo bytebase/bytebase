@@ -67,8 +67,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import { computed, PropType, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import { BBTableColumn } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { ComposedDatabase } from "@/types";
@@ -98,9 +99,16 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-
+const route = useRoute();
 const state = reactive<LocalState>({
   showReservedTableList: false,
+});
+
+onMounted(() => {
+  const table = route.query.table as string;
+  if (table) {
+    state.selectedTableName = table;
+  }
 });
 
 const engine = computed(() => props.database.instanceEntity.engine);

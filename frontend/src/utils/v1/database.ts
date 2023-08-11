@@ -30,6 +30,7 @@ export const extractDatabaseResourceName = (
 ): {
   instance: string;
   database: string;
+  full: string;
 } => {
   const pattern =
     /(?:^|\/)instances\/(?<instance>[^/]+)\/databases\/(?<database>[^/]+)(?:$|\/)/;
@@ -40,11 +41,13 @@ export const extractDatabaseResourceName = (
     return {
       instance,
       database,
+      full: `instances/${instance}/databases/${database}`,
     };
   }
   return {
     instance: String(UNKNOWN_ID),
     database: "",
+    full: `instances/${UNKNOWN_ID}/databases/`,
   };
 };
 

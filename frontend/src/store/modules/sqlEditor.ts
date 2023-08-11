@@ -108,7 +108,7 @@ export const mockAffectedRows0 = (): SingleSQLResult => {
 };
 
 export const mockAffectedV1Rows0 = (): QueryResult => {
-  return {
+  return QueryResult.fromPartial({
     columnNames: ["Affected Rows"],
     columnTypeNames: ["BIGINT"],
     masked: [false],
@@ -123,5 +123,5 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
         ],
       },
     ],
-  };
+  });
 };

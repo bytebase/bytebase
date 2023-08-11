@@ -40,7 +40,7 @@ $ helm -n bytebase \
 --set "bytebase.option.port"=443 \
 --set "bytebase.option.pg"="postgresql://bytebase:bytebase@database.bytebase.ap-east-1.rds.amazonaws.com/bytebase" \
 --set "bytebase.option.external-url"="https://bytebase.ngrok-free.app" \
---set "bytebase.version"=2.4.1 \
+--set "bytebase.version"=2.5.0 \
 --set "bytebase.persistence.enabled"="true" \
 --set "bytebase.persistence.storage"="10Gi" \
 --set "bytebase.persistence.storageClass"="csi-disk" \
@@ -78,7 +78,7 @@ upgrade bytebase-release bytebase-repo/bytebase
 |      bytebase.option.external-url      | The address for users to visit Bytebase, visit [our docs](https://www.bytebase.com/docs/get-started/install/external-url/) to get more details |            "<https://www.bytebase.com/docs/get-started/install/external-url>"             |
 |  bytebase.option.existingPgURLSecret   |                                          Existing secret with external PostgreSQL connection string.                                           |                                            ""                                             |
 | bytebase.option.existingPgURLSecretKey |      Existing secret key with external PostgreSQL connection(must specfied if you specify `bytebase.option.existingPgURLSecret`) string.       |                                            ""                                             |
-|            bytebase.version            |                                                             The Bytebase version.                                                              |                                          "2.4.1"                                          |
+|            bytebase.version            |                                                             The Bytebase version.                                                              |                                          "2.5.0"                                          |
 |      bytebase.persistence.enabled      |                                                         Persist bytebase data switch.                                                          |                                           false                                           |
 |   bytebase.persistence.storageClass    |                                                    The storage class used by Bytebase PVC.                                                     |                                            ""                                             |
 |      bytebase.persistence.storage      |                                                     The storage size of Bytebase PVC used.                                                     |                                           "2Gi"                                           |

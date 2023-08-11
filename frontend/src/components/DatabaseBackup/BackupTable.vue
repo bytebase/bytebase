@@ -140,6 +140,7 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, PropType, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -155,7 +156,12 @@ import {
 import EllipsisText from "@/components/EllipsisText.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useSubscriptionV1Store, useIssueStore } from "@/store";
+import {
+  experimentalCreateIssueByPlan,
+  useActuatorV1Store,
+  useIssueStore,
+  useSubscriptionV1Store,
+} from "@/store";
 import {
   ComposedDatabase,
   IssueCreate,
@@ -168,7 +174,11 @@ import {
   Backup_BackupState,
   Backup_BackupType,
 } from "@/types/proto/v1/database_service";
-import { issueSlug, extractBackupResourceName } from "@/utils";
+import { DeploymentType } from "@/types/proto/v1/deployment";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
+import { extractBackupResourceName, issueSlug } from "@/utils";
+import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
 
 export type BackupRow = BBGridRow<Backup>;
 
@@ -206,6 +216,9 @@ const props = defineProps({
 
 const router = useRouter();
 const { t } = useI18n();
+const developmentUseV1IssueUI = computed(() => {
+  return !!useActuatorV1Store().serverInfo?.developmentUseV2Scheduler;
+});
 
 const state = reactive<LocalState>({
   restoreBackupContext: undefined,
@@ -316,7 +329,62 @@ const showRestoreDialog = (backup: Backup) => {
   };
 };
 
-const doRestoreInPlace = async () => {
+const doRestoreInPlaceV1 = async () => {
+  const { restoreBackupContext } = state;
+  if (!restoreBackupContext) {
+    return;
+  }
+
+  if (!hasPITRFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+
+  state.creatingRestoreIssue = true;
+
+  try {
+    const { backup } = restoreBackupContext;
+    const { database } = props;
+
+    const issueNameParts: string[] = [
+      `Restore database [${database.databaseName}]`,
+      `to backup snapshot [${extractBackupResourceName(
+        restoreBackupContext.backup.name
+      )}]`,
+    ];
+
+    const restoreDatabaseSpec: Plan_Spec = {
+      id: uuidv4(),
+      restoreDatabaseConfig: {
+        backup: backup.name,
+        target: database.name, // in-place
+      },
+    };
+    const planCreate = Plan.fromJSON({
+      steps: [{ specs: [restoreDatabaseSpec] }],
+    });
+    const issueCreate = Issue.fromJSON({
+      title: issueNameParts.join(" "),
+      type: Issue_Type.DATABASE_CHANGE,
+    });
+    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+      issueCreate,
+      database.projectEntity,
+      database.instanceEntity.environment,
+      DeploymentType.DATABASE_RESTORE_PITR
+    );
+    const { createdIssue } = await experimentalCreateIssueByPlan(
+      database.projectEntity,
+      issueCreate,
+      planCreate
+    );
+
+    router.push(`/issue/${createdIssue.uid}`);
+  } catch {
+    state.creatingRestoreIssue = false;
+  }
+};
+const doRestoreInPlaceLegacy = async () => {
   const { restoreBackupContext } = state;
   if (!restoreBackupContext) {
     return;
@@ -363,6 +431,14 @@ const doRestoreInPlace = async () => {
     router.push(`/issue/${slug}`);
   } catch {
     state.creatingRestoreIssue = false;
+  }
+};
+
+const doRestoreInPlace = async () => {
+  if (developmentUseV1IssueUI.value) {
+    await doRestoreInPlaceV1();
+  } else {
+    await doRestoreInPlaceLegacy();
   }
 };
 </script>

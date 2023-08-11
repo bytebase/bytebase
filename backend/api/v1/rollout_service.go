@@ -183,7 +183,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	}
 	steps := convertPlanSteps(request.Plan.Steps)
 
-	rollout, err := s.getPipelineCreate(ctx, steps, project)
+	rollout, err := getPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, steps, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -254,7 +254,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 
-	pipelineCreate, err := s.getPipelineCreate(ctx, plan.Config.Steps, project)
+	pipelineCreate, err := getPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, plan.Config.Steps, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -335,9 +335,15 @@ func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPla
 	if plan == nil {
 		return nil, status.Errorf(codes.NotFound, "plan not found")
 	}
-	if err := s.planCheckScheduler.SchedulePlanChecksForPlan(ctx, planUID); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to run plan checks, error: %v", err)
+
+	planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 	}
+	if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+	}
+
 	return &v1pb.RunPlanChecksResponse{}, nil
 }
 
@@ -786,7 +792,7 @@ func validateSteps(_ []*v1pb.Plan_Step) error {
 	return nil
 }
 
-func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func getPipelineCreate(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	pipelineCreate := &store.PipelineMessage{
 		Name: "Rollout Pipeline",
 	}
@@ -806,7 +812,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb
 		}
 
 		for _, spec := range step.Specs {
-			taskCreates, taskIndexDAGCreates, err := s.getTaskCreatesFromSpec(ctx, spec, project, registerEnvironmentID)
+			taskCreates, taskIndexDAGCreates, err := getTaskCreatesFromSpec(ctx, s, licenseService, dbFactory, spec, project, registerEnvironmentID)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to get task creates from spec")
 			}
@@ -820,7 +826,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb
 			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
 
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &stageEnvironmentID})
+		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &stageEnvironmentID})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get environment")
 		}

@@ -140,6 +140,9 @@ message QueryResponse {
 
   // The query advices.
   repeated Advice advices = 2;
+
+  // The query is allowed to be exported or not.
+  bool allow_export = 3;
 }
 
 message QueryResult {
