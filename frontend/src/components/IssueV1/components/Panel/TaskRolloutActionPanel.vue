@@ -6,38 +6,45 @@
     @close="$emit('close')"
   >
     <template #default>
-      <div v-if="action" class="flex flex-col gap-y-4">
-        <div class="text-sm">
-          <label v-if="taskList.length > 1" class="textlabel">
-            {{ $t("common.tasks") }}
+      <div v-if="action" class="flex flex-col gap-y-4 h-full overflow-y-hidden">
+        <div
+          class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
+        >
+          <label class="font-medium text-control">
+            <template v-if="taskList.length === 1">
+              {{ $t("common.task") }}
+            </template>
+            <template v-else>{{ $t("common.tasks") }}</template>
           </label>
-          <ul class="mt-1 max-h-[45vh] overflow-y-auto">
-            <li
-              v-for="item in distinctTaskList"
-              :key="item.task.uid"
-              class="text-sm textinfolabel"
+          <div class="flex-1 overflow-y-auto">
+            <ul
+              class="textinfolabel space-y-1"
+              :class="[distinctTaskList.length > 1 && 'list-disc pl-4']"
             >
-              <span class="textinfolabel">
-                {{ item.task.title }}
-              </span>
-              <span v-if="item.similar.length > 0" class="ml-2 text-gray-400">
-                {{
-                  $t("task.n-similar-tasks", {
-                    count: item.similar.length + 1,
-                  })
-                }}
-              </span>
-            </li>
-          </ul>
-          <PlanCheckBar
-            v-if="taskList.length === 1 && action === 'ROLLOUT'"
-            :allow-run-checks="false"
-            :task="taskList[0]"
-            class="pt-2"
-          />
+              <li v-for="item in distinctTaskList" :key="item.task.uid">
+                <span class="break-all">
+                  {{ item.task.title }}
+                </span>
+                <span v-if="item.similar.length > 0" class="ml-1 text-gray-400">
+                  {{
+                    $t("task.n-similar-tasks", {
+                      count: item.similar.length + 1,
+                    })
+                  }}
+                </span>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div class="flex flex-col gap-y-1">
-          <p class="textlabel">
+        <PlanCheckBar
+          v-if="taskList.length === 1 && action === 'ROLLOUT'"
+          :allow-run-checks="false"
+          :task="taskList[0]"
+          class="shrink-0 flex-col gap-y-1"
+          label-class="!text-base"
+        />
+        <div class="flex flex-col gap-y-1 shrink-0">
+          <p class="font-medium text-control">
             {{ $t("common.comment") }}
           </p>
           <NInput
@@ -53,7 +60,7 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="action" class="flex justify-end gap-x-4">
+      <div v-if="action" class="flex justify-end gap-x-3">
         <NButton @click="$emit('close')">
           {{ $t("common.cancel") }}
         </NButton>
