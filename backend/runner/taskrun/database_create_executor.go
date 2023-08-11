@@ -291,7 +291,7 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
 	case db.MSSQL:
 		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil
-	case db.Postgres:
+	case db.Postgres, db.RisingWave:
 		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
 	case db.ClickHouse:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil

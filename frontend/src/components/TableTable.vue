@@ -113,7 +113,9 @@ onMounted(() => {
 
 const engine = computed(() => props.database.instanceEntity.engine);
 
-const isPostgres = computed(() => engine.value === Engine.POSTGRES);
+const isPostgres = computed(
+  () => engine.value === Engine.POSTGRES || engine.value === Engine.RISINGWAVE
+);
 
 const hasSchemaProperty = computed(() => {
   return (

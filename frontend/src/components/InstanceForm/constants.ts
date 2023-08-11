@@ -51,6 +51,8 @@ export const EngineIconPath: Record<number, string> = {
   [Engine.MARIADB]: new URL("@/assets/db-mariadb.png", import.meta.url).href,
   [Engine.OCEANBASE]: new URL("@/assets/db-oceanbase.png", import.meta.url)
     .href,
+  [Engine.RISINGWAVE]: new URL("@/assets/db-risingwave.png", import.meta.url)
+    .href,
 };
 
 export const MongoDBConnectionStringSchemaList = [
