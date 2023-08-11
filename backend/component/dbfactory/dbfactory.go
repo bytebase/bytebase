@@ -105,7 +105,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dat
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		// TODO(d): use maria mysqlbinlog for MariaDB.
 		dbBinDir = d.mysqlBinDir
-	case db.Postgres:
+	case db.Postgres, db.RisingWave:
 		dbBinDir = d.pgBinDir
 	case db.MongoDB:
 		dbBinDir = d.mongoBinDir
