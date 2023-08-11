@@ -499,8 +499,6 @@ const deleteWebhook = () => {
 
 const testWebhook = () => {
   useGracefulRequest(async () => {
-    console.log("Barny1", props.project);
-    console.log("Barny2", state.webhook);
     const result = await useProjectWebhookV1Store().testProjectWebhook(
       props.project,
       state.webhook
