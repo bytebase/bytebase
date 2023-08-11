@@ -116,7 +116,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 
 	driver.databaseName = config.Database
 	if config.Database == "" {
-		databaseName, cfg, err := guessDSN(connConfig, config.Username)
+		databaseName, cfg, err := guessDSN(connConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +141,7 @@ func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
 func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
 // guessDSN will guess a valid DB connection and its database name.
-func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.ConnConfig, error) {
+func guessDSN(baseConnConfig *pgx.ConnConfig) (string, *pgx.ConnConfig, error) {
 	// RisingWave creates the default `dev` database.
 	guesses := []string{"dev"}
 	for _, guessDatabase := range guesses {
