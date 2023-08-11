@@ -13,8 +13,7 @@ metadata:
   name: bytebase
   namespace: {{ template "bytebase.namespace" . }}
   labels:
-    app.kubernetes.io/managed-by: helm
-    app: bytebase
+    {{- include "bytebase.labels" . | nindent 4}}
 spec:
   selector:
     matchLabels:
@@ -107,8 +106,7 @@ metadata:
   name: bytebase-volume
   namespace: {{ template "bytebase.namespace" . }}
   labels:
-    app.kubernetes.io/managed-by: helm
-    app: bytebase
+    {{- include "bytebase.labels" . | nindent 4}}
 spec:
   storageClassName: {{ .Values.bytebase.persistence.storageClass | quote }}
   accessModes:
