@@ -1012,6 +1012,10 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 		return errors.Wrapf(err, "failed to scan")
 	}
 
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit")
+	}
+
 	for _, issueID := range issueIDs {
 		s.issueCache.Delete(issueID)
 	}
