@@ -15,7 +15,19 @@ import { isTaskFinished } from "..";
 
 export type IssueStatusAction = "RESOLVE" | "CANCEL" | "REOPEN";
 
-export const IssueStatusActionMap: Record<IssueStatus, IssueStatusAction[]> = {
+export const IssueStatusActionToIssueStatusMap: Record<
+  IssueStatusAction,
+  IssueStatus
+> = {
+  CANCEL: IssueStatus.CANCELED,
+  REOPEN: IssueStatus.OPEN,
+  RESOLVE: IssueStatus.DONE,
+};
+
+export const PossibleIssueStatusActionMap: Record<
+  IssueStatus,
+  IssueStatusAction[]
+> = {
   [IssueStatus.OPEN]: ["RESOLVE", "CANCEL"],
   [IssueStatus.DONE]: ["REOPEN"],
   [IssueStatus.CANCELED]: ["REOPEN"],
@@ -28,7 +40,7 @@ export const IssueStatusActionMap: Record<IssueStatus, IssueStatusAction[]> = {
 export const getApplicableIssueStatusActionList = (
   issue: ComposedIssue
 ): IssueStatusAction[] => {
-  const list = IssueStatusActionMap[issue.status];
+  const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
     if (isGrantRequestIssue(issue)) {
       // Don't show RESOLVE or REOPEN for request granting issues.

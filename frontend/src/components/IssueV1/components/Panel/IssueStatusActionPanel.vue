@@ -38,7 +38,7 @@
           {{ $t("common.cancel") }}
         </NButton>
         <NButton
-          v-bind="issueStatusActionButtonProps(action) !== undefined"
+          v-bind="issueStatusActionButtonProps(action)"
           @click="handleConfirm(action, comment)"
         >
           {{ issueStatusActionDisplayName(action) }}
@@ -56,8 +56,11 @@ import {
   useIssueContext,
   issueStatusActionButtonProps,
   issueStatusActionDisplayName,
+  IssueStatusActionToIssueStatusMap,
 } from "@/components/IssueV1/logic";
+import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
+import { Issue } from "@/types/proto/v1/issue_service";
 import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {
@@ -97,9 +100,17 @@ const handleConfirm = async (
   comment: string | undefined
 ) => {
   state.loading = true;
-  // TODO
   try {
-    await new Promise((r) => setTimeout(r, 1000));
+    const issuePatch = Issue.fromJSON({
+      ...issue.value,
+      status: IssueStatusActionToIssueStatusMap[action],
+    });
+    const response = await issueServiceClient.batchUpdateIssues({
+      parent: issue.value.project,
+      requests: [{ issue: issuePatch, updateMask: ["status"] }],
+    });
+    const updatedIssue = response.issues[0];
+    Object.assign(issue.value, updatedIssue);
 
     // notify the issue logic to update issue status
     events.emit("status-changed", { eager: true });
@@ -109,24 +120,9 @@ const handleConfirm = async (
       style: "SUCCESS",
       title: t("common.updated"),
     });
+    emit("close");
   } finally {
     state.loading = false;
-    emit("close");
   }
-
-  // Trying to avoid some kind of concurrency and race condition, we fetch the
-  // latest snapshot of issue from the server-side and check whether this
-  // transition is applicable again.
-  // const latestIssue = await useIssueStore().fetchIssueById(issue.value.id);
-
-  // const { action: transition } = props;
-  // const applicableList = getApplicableIssueStatusTransitionList(latestIssue);
-  // if (!isApplicableTransition(transition, applicableList)) {
-  //   return cleanup();
-  // }
-
-  // changeIssueStatus(transition.to, comment);
-  // isTransiting.value = false;
-  // emit("updated");
 };
 </script>
