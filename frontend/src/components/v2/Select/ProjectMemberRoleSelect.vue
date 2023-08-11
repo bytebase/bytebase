@@ -4,7 +4,7 @@
     :value="role"
     :options="roleOptions"
     :max-tag-count="'responsive'"
-    :placeholder="'Select role'"
+    :placeholder="$t('role.select')"
     :render-label="renderLabel"
     @update:value="changeRole"
   />
