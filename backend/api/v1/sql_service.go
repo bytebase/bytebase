@@ -2145,10 +2145,7 @@ func (s *SQLService) checkQueryRights(
 			"resource.schema":   resource.Schema,
 			"resource.table":    resource.Table,
 			"request.statement": encodeToBase64String(statement),
-		}
-		// When checking access rights for export, we don't need to check row limit.
-		if limit > 0 {
-			attributes["request.row_limit"] = limit
+			"request.row_limit": limit,
 		}
 
 		ok, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
