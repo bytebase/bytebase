@@ -771,6 +771,14 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, nil, nil, nil, err
 	}
+ 
+	// dataShare must be false when connecting to instance (not database) in sql editor
+	// dataShare must be false when engine is not redshift
+	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
+	dataShare := false
+	if database != nil {
+		dataShare = database.DataShare
+	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
 		// Check if the caller is admin for exporting with admin mode.
@@ -785,7 +793,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		}
 		if !result {
 			// Check if the user has permission to execute the export.
-			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, true); err != nil {
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, dataShare, request.Statement, request.Limit, user, instance, true); err != nil {
 				return nil, nil, nil, nil, err
 			}
 		}
@@ -1118,6 +1126,14 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, nil, nil, advisor.Success, nil, nil, nil, err
 	}
+ 
+	// dataShare must be false when connecting to instance (not database) in sql editor
+	// dataShare must be false when engine is not redshift
+	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
+	dataShare := false
+	if database != nil {
+		dataShare = database.DataShare
+	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
 		// Check if the environment is open for query privileges.
@@ -1127,7 +1143,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		}
 		if !result {
 			// Check if the user has permission to execute the query.
-			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, false); err != nil {
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, dataShare, request.Statement, request.Limit, user, instance, false); err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, err
 			}
 		}
@@ -1223,11 +1239,15 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	case advisor.Warn:
 		level = api.ActivityWarn
 	}
+	databaseID := 0
+	if database != nil {
+		databaseID = database.UID
+	}
 	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             database.UID,
+		DatabaseID:             databaseID,
 		DatabaseName:           request.ConnectionDatabase,
 		// TODO: here we should use []*v1pb.Advice instead of []advisor.Advice
 		// This should fix when we migrate to v1 activity API
