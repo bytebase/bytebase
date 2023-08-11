@@ -349,7 +349,7 @@ const sourceDatabaseSchema = computed(() => {
   } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
     const databaseId = state.selectedDatabaseId || "";
     return schemaDesignPreviewCache[
-      databaseId + selectedSchemaDesign.value?.name
+      databaseId + "|" + selectedSchemaDesign.value?.name
     ];
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
@@ -506,8 +506,9 @@ watch(
       newMetadata: selectedSchemaDesign.value?.schemaMetadata,
     });
     const databaseId = state.selectedDatabaseId || "";
-    schemaDesignPreviewCache[databaseId + selectedSchemaDesign.value?.name] =
-      schema.schema;
+    schemaDesignPreviewCache[
+      databaseId + "|" + selectedSchemaDesign.value?.name
+    ] = schema.schema;
   }
 );
 
