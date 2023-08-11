@@ -1105,11 +1105,25 @@ func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (str
 	}
 
 	listener := &mysqlDesignSchemaGenerator{
-		to: toState,
+		lastTokenIndex: 0,
+		to:             toState,
 	}
 
 	for _, stmt := range list {
+		listener.lastTokenIndex = 0
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
+		if listener.err != nil {
+			break
+		}
+
+		if _, err := listener.result.WriteString(
+			stmt.Tokens.GetTextFromInterval(antlr.Interval{
+				Start: listener.lastTokenIndex,
+				Stop:  stmt.Tokens.Size() - 1,
+			}),
+		); err != nil {
+			return "", err
+		}
 	}
 	if listener.err != nil {
 		return "", listener.err
@@ -1146,6 +1160,8 @@ type mysqlDesignSchemaGenerator struct {
 	columnDefine        strings.Builder
 	tableConstraints    strings.Builder
 	err                 error
+
+	lastTokenIndex int
 }
 
 // EnterCreateTable is called when production createTable is entered.
@@ -1166,6 +1182,17 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 
 	table, ok := schema.tables[tableName]
 	if !ok {
+		g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+		return
+	}
+
+	if _, err := g.result.WriteString(
+		ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  ctx.GetStart().GetTokenIndex() - 1,
+		}),
+	); err != nil {
+		g.err = err
 		return
 	}
 
@@ -1175,10 +1202,6 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 	g.tableConstraints.Reset()
 
 	delete(schema.tables, tableName)
-	if _, err := g.result.WriteString("CREATE "); err != nil {
-		g.err = err
-		return
-	}
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: ctx.GetStart().GetTokenIndex(),
 		Stop:  ctx.TableElementList().GetStart().GetTokenIndex() - 1,
@@ -1270,13 +1293,9 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		return
 	}
 
-	if _, err := g.result.WriteString(";\n"); err != nil {
-		g.err = err
-		return
-	}
-
 	g.currentTable = nil
 	g.firstElementInTable = false
+	g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
 }
 
 type columnAttr struct {
