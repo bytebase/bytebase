@@ -88,6 +88,7 @@ export const supportedEngineV1List = () => {
     Engine.MARIADB,
     Engine.MSSQL,
     Engine.REDSHIFT,
+    Engine.RISINGWAVE,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -195,6 +196,7 @@ export const instanceV1HasCollationAndCharacterSet = (
     Engine.CLICKHOUSE,
     Engine.SNOWFLAKE,
     Engine.REDSHIFT,
+    Engine.RISINGWAVE,
   ];
   return !excludedList.includes(engine);
 };
@@ -236,6 +238,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "OceanBase";
     case Engine.DM:
       return "DM";
+    case Engine.RISINGWAVE:
+      return "RisingWave";
   }
   return "";
 };

@@ -55,6 +55,8 @@ const (
 	MariaDB Type = "MARIADB"
 	// DM is the database type for DM.
 	DM Type = "DM"
+	// RisingWave is the database type for RisingWave.
+	RisingWave Type = "RISINGWAVE"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
