@@ -503,6 +503,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	return &v1pb.BatchRunTasksResponse{}, nil
 }
 
+// BatchSkipTasks skips tasks in batch.
 func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.BatchSkipTasksRequest) (*v1pb.BatchSkipTasksResponse, error) {
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	var taskUIDs []int
