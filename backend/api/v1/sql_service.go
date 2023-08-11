@@ -2358,7 +2358,7 @@ func encodeToBase64String(statement string) string {
 }
 
 // DifferPreview returns the diff preview of the given SQL statement and metadata.
-func (s *SQLService) DifferPreview(ctx context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
+func (*SQLService) DifferPreview(ctx context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
 	schema, err := getDesignSchema(request.Engine, request.OldSchema, request.NewMetadata)
 	if err != nil {
 		return nil, err
