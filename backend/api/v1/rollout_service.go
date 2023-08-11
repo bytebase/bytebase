@@ -1501,12 +1501,10 @@ func isSpecSheetUpdated(specA *v1pb.Plan_Spec, specB *v1pb.Plan_Spec) bool {
 func validateSteps(_ []*v1pb.Plan_Step) error {
 	// FIXME: impl this func
 	// targets should be unique
-	// if deploymentConfig is used, only one spec is allowed.
 	return nil
 }
 
 func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-	// FIXME: handle deploymentConfig
 	pipelineCreate := &store.PipelineMessage{
 		Name: "Rollout Pipeline",
 	}
@@ -2054,7 +2052,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 			return nil, nil, errors.Wrapf(err, "failed to get task creates from change database config database group statements")
 		}
 		var taskIndexDAGs []store.TaskIndexDAG
-		for i := 1; i < len(taskIndexDAGs); i++ {
+		for i := 1; i < len(taskCreates); i++ {
 			taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
 				FromIndex: i - 1,
 				ToIndex:   i,

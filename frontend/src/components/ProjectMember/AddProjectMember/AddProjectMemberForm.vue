@@ -22,6 +22,14 @@
       <span>{{ $t("project.members.assign-role") }}</span>
       <ProjectMemberRoleSelect v-model:role="state.role" class="mt-2" />
     </div>
+    <div class="w-full">
+      <span>{{ $t("project.members.role-name") }}</span>
+      <NInput
+        v-model:value="state.roleTitle"
+        class="mt-2"
+        :placeholder="$t('project.members.role-name')"
+      />
+    </div>
 
     <div v-if="state.role === 'roles/QUERIER'" class="w-full">
       <span class="block mb-2">{{ $t("common.databases") }}</span>
@@ -82,7 +90,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
-import { NInputNumber } from "naive-ui";
+import { NInputNumber, NInput } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
@@ -108,6 +116,7 @@ defineEmits<{
 interface LocalState {
   userUidList: string[];
   role?: string;
+  roleTitle: string;
   expireDays: number;
   // Querier and exporter options.
   databaseResourceCondition?: string;
@@ -121,6 +130,7 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   userUidList: [],
+  roleTitle: "",
   expireDays: 7,
   // Exporter options.
   maxRowCount: 1000,
@@ -228,6 +238,7 @@ watch(
     }
     if (expression.length > 0) {
       props.binding.condition = Expr.create({
+        title: state.roleTitle,
         expression: expression.join(" && "),
       });
     }

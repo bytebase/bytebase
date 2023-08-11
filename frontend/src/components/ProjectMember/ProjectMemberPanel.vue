@@ -84,7 +84,11 @@
         </div>
       </NTabPane>
       <NTabPane name="roles" tab="Roles">
-        <ProjectRoleTable :project="project" :ready="ready" />
+        <ProjectRoleTable
+          :project="project"
+          :search-text="state.searchText"
+          :ready="ready"
+        />
       </NTabPane>
     </NTabs>
   </div>
@@ -326,7 +330,7 @@ const handleRevokeSelectedMembers = () => {
   }
 
   dialog.create({
-    title: "Revoke these members",
+    title: t("project.members.revoke-members"),
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {

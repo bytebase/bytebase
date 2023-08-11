@@ -55,7 +55,7 @@ export const issueReviewActionButtonProps = (
   }
 };
 
-export const allowUserToApplyReviewAction = async (
+export const allowUserToApplyReviewAction = (
   issue: ComposedIssue,
   context: ReviewContext,
   user: User,

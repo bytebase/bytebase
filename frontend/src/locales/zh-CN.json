@@ -317,7 +317,7 @@
       "warn": "警告",
       "error": "错误"
     },
-    "earliest-allowed-time-no-modify": "您无法修改此字段因为您不是该工单的审核人或者它不在待执行状态。",
+    "earliest-allowed-time-no-modify": "您无法修改此字段，因为您不是该工单的审核人或者它不在待执行状态。",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表",
@@ -1561,7 +1561,9 @@
       "assign-role": "分配角色",
       "never-expires": "永不过期",
       "role-never-expires": "此角色没有过期时间。",
-      "add-more": "增加更多"
+      "add-more": "增加更多",
+      "role-name": "角色名称",
+      "revoke-members": "撤销成员"
     },
     "mode": {
       "standard": "标准模式",

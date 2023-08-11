@@ -812,9 +812,25 @@ func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormal
 		return extractMySQLDatabaseList(statement)
 	case Snowflake:
 		return extractSnowSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
+	case MSSQL:
+		return extractMSSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
+}
+
+func extractMSSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
+	schemaPlaceholder := "dbo"
+	schemaResource, err := extractMSSQLNormalizedResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, resource := range schemaResource {
+		result = append(result, resource.Database)
+	}
+	return result, nil
 }
 
 // extractSnowSQLNormalizedDatabaseList extracts all databases from statement, and normalizes the database name.
