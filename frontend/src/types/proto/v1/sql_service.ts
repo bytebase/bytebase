@@ -139,6 +139,8 @@ export interface QueryResponse {
   results: QueryResult[];
   /** The query advices. */
   advices: Advice[];
+  /** The query is allowed to be exported or not. */
+  allowExport: boolean;
 }
 
 export interface QueryResult {
@@ -731,7 +733,7 @@ export const QueryRequest = {
 };
 
 function createBaseQueryResponse(): QueryResponse {
-  return { results: [], advices: [] };
+  return { results: [], advices: [], allowExport: false };
 }
 
 export const QueryResponse = {
@@ -741,6 +743,9 @@ export const QueryResponse = {
     }
     for (const v of message.advices) {
       Advice.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.allowExport === true) {
+      writer.uint32(24).bool(message.allowExport);
     }
     return writer;
   },
@@ -766,6 +771,13 @@ export const QueryResponse = {
 
           message.advices.push(Advice.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.allowExport = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -779,6 +791,7 @@ export const QueryResponse = {
     return {
       results: Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [],
       advices: Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
+      allowExport: isSet(object.allowExport) ? Boolean(object.allowExport) : false,
     };
   },
 
@@ -794,6 +807,7 @@ export const QueryResponse = {
     } else {
       obj.advices = [];
     }
+    message.allowExport !== undefined && (obj.allowExport = message.allowExport);
     return obj;
   },
 
@@ -805,6 +819,7 @@ export const QueryResponse = {
     const message = createBaseQueryResponse();
     message.results = object.results?.map((e) => QueryResult.fromPartial(e)) || [];
     message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
+    message.allowExport = object.allowExport ?? false;
     return message;
   },
 };

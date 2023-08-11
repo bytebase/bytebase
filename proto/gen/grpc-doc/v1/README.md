@@ -9185,6 +9185,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | ----- | ---- | ----- | ----------- |
 | results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
 | advices | [Advice](#bytebase-v1-Advice) | repeated | The query advices. |
+| allow_export | [bool](#bool) |  | The query is allowed to be exported or not. |
 
 
 
