@@ -969,3 +969,59 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 
 	return issues, nil
 }
+
+// BatchUpdateIssueStatuses updates the status of multiple issues.
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status api.IssueStatus, updaterID int) error {
+	var ids []string
+	for _, id := range issueUIDs {
+		ids = append(ids, fmt.Sprintf("%d", id))
+	}
+	query := fmt.Sprintf(`
+		UPDATE issue
+		SET status = $1, updater_id = $2
+		WHERE id IN (%s)
+		RETURNING id, pipeline_id;
+	`, strings.Join(ids, ","))
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, status, updaterID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to query")
+	}
+	defer rows.Close()
+
+	var issueIDs []int
+	var pipelineIDs []int
+	for rows.Next() {
+		var issueID int
+		var pipelineID sql.NullInt32
+		if err := rows.Scan(&issueID, &pipelineID); err != nil {
+			return errors.Wrapf(err, "failed to scan")
+		}
+		issueIDs = append(issueIDs, issueID)
+		if pipelineID.Valid {
+			pipelineIDs = append(pipelineIDs, int(pipelineID.Int32))
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return errors.Wrapf(err, "failed to scan")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit")
+	}
+
+	for _, issueID := range issueIDs {
+		s.issueCache.Delete(issueID)
+	}
+	for _, pipelineID := range pipelineIDs {
+		s.issueByPipelineCache.Delete(pipelineID)
+	}
+
+	return nil
+}
