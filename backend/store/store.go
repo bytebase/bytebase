@@ -47,7 +47,7 @@ type Store struct {
 // New creates a new instance of Store.
 func New(db *DB) *Store {
 	sheetStatementCache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 1000,
+		NumCounters: 1_000,
 		MaxCost:     1_000_000_000, // ~1GB
 		BufferItems: 64,
 	})
@@ -55,7 +55,7 @@ func New(db *DB) *Store {
 		panic(fmt.Sprintf("failed to create sheet statement cache: %v", err))
 	}
 	dbsCache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 1000,
+		NumCounters: 10_000,
 		MaxCost:     1_000_000, // ~1MB
 		BufferItems: 64,
 	})
