@@ -217,7 +217,7 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	// Likes PostgreSQL 9.5-RisingWave-1.1.0 (f41ff20612323dc56f654939cfa3be9ca684b52f)
 	// We will return 1.1.0
-	regexp := regexp.MustCompile(`(?m)PostgreSQL (?P<PG_VERSION>.*)-RisingWave-(?P<RISINGWAVE_VERSION>\d+\.\d+\.\d+) \((?P<BUILD_SHA>.*)\)$`)
+	regexp := regexp.MustCompile(`(?m)PostgreSQL (?P<PG_VERSION>.*)-RisingWave-(?P<RISINGWAVE_VERSION>.*) \((?P<BUILD_SHA>.*)\)$`)
 	query := "SELECT version();"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
