@@ -550,6 +550,10 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	if instance == nil {
 		return "", errors.Errorf("cannot found instance %d", task.InstanceID)
 	}
+	if instance.Engine == db.RisingWave {
+		return "", nil
+	}
+
 	if err := license.IsFeatureEnabledForInstance(api.FeatureVCSSchemaWriteBack, instance); err != nil {
 		log.Debug(err.Error(), zap.String("instance", instance.ResourceID))
 		return "", nil
