@@ -1979,7 +1979,7 @@
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "successfully-upgrade-trial": "成功升级为{plan}试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
-    "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，但是{startTrial}。",
+    "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，{startTrial}。",
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
@@ -2102,7 +2102,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
-        "desc": "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
+        "desc": "检测非预期的 schema 变更并且报告 schema 偏差。"
       },
       "bb-feature-branding": {
         "title": "自定义品牌信息",

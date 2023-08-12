@@ -2108,7 +2108,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
-        "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection."
+        "desc": "Detect out-of-band schema changes and report schema drift."
       },
       "bb-feature-branding": {
         "title": "Branding",
