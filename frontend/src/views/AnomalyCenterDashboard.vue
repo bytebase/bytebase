@@ -1,21 +1,27 @@
 <template>
   <div class="flex flex-col px-4 pb-4">
-    <BBAttention
-      :style="'INFO'"
-      :title="$t('anomaly.attention-title')"
-      :description="$t('anomaly.attention-desc')"
-    />
-
     <FeatureAttentionForInstanceLicense
       v-if="hasSchemaDriftFeature"
-      custom-class="mt-5"
+      custom-class="my-4"
       feature="bb.feature.schema-drift"
     />
     <FeatureAttention
       v-else
-      custom-class="mt-5"
+      custom-class="my-4"
       feature="bb.feature.schema-drift"
     />
+
+    <div class="textinfolabel">
+      {{ $t("anomaly.attention-desc") }}
+      <a
+        href="https://www.bytebase.com/docs/administration/anomaly-center/"
+        target="_blank"
+        class="normal-link inline-flex flex-row items-center"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
+    </div>
 
     <div class="mt-4 space-y-4">
       <div
@@ -34,7 +40,7 @@
           :class="`lg:grid-cols-${item.length}`"
         >
           <template v-for="(summary, index) in item" :key="index">
-            <div class="p-4 shadow rounded-lg tooltip-wrapper">
+            <div class="px-4 py-2 border tooltip-wrapper">
               <span class="text-sm tooltip">
                 {{
                   $t("anomaly.tooltip", {
@@ -45,29 +51,31 @@
                   })
                 }}
               </span>
-              <dt class="textlabel">
-                {{ summary.environmentName }}
-              </dt>
-              <dd class="flex flex-row mt-1 text-xl text-main space-x-2">
-                <span class="flex flex-row items-center">
-                  <heroicons-outline:exclamation-circle
-                    class="w-5 h-5 mr-1 text-error"
-                  />
-                  {{ summary.criticalCount }}
-                </span>
-                <span class="flex flex-row items-center">
-                  <heroicons-outline:exclamation
-                    class="w-5 h-5 mr-1 text-warning"
-                  />
-                  {{ summary.highCount }}
-                </span>
-                <span class="flex flex-row items-center">
-                  <heroicons-outline:information-circle
-                    class="w-5 h-5 mr-1 text-info"
-                  />
-                  {{ summary.mediumCount }}
-                </span>
-              </dd>
+              <div class="flex justify-between items-center">
+                <dt class="textlabel">
+                  {{ summary.environmentName }}
+                </dt>
+                <dd class="flex flex-row text-main space-x-2">
+                  <span class="flex flex-row items-center">
+                    <heroicons-outline:exclamation-circle
+                      class="w-4 h-4 mr-1 text-error"
+                    />
+                    {{ summary.criticalCount }}
+                  </span>
+                  <span class="flex flex-row items-center">
+                    <heroicons-outline:exclamation
+                      class="w-4 h-4 mr-1 text-warning"
+                    />
+                    {{ summary.highCount }}
+                  </span>
+                  <span class="flex flex-row items-center">
+                    <heroicons-outline:information-circle
+                      class="w-4 h-4 mr-1 text-info"
+                    />
+                    {{ summary.mediumCount }}
+                  </span>
+                </dd>
+              </div>
             </div>
           </template>
         </dl>
