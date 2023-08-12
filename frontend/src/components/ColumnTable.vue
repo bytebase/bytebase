@@ -172,10 +172,7 @@ const showSensitiveColumn = computed(() => {
 });
 
 const showClassificationColumn = computed(() => {
-  return (
-    (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
-    isDev()
-  );
+  return engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES;
 });
 
 const currentUserV1 = useCurrentUserV1();
