@@ -89,7 +89,7 @@
             @click="state.showViewRawSQLPanel = true"
           >
             <EngineIcon class="mr-1" :engine="engine" />
-            <span>{{ "Raw SQL" }}</span>
+            <span>{{ $t("schema-editor.raw-sql") }}</span>
           </span>
         </div>
       </template>

@@ -29,7 +29,7 @@
               :value="'SCHEMA_DESIGN'"
               :label="$t('schema-designer.schema-design')"
             />
-            <NRadio :value="'RAW_SQL'" :label="'Raw SQL'" />
+            <NRadio :value="'RAW_SQL'" :label="$t('schema-editor.raw-sql')" />
           </NRadioGroup>
         </div>
         <DatabaseSchemaSelector
