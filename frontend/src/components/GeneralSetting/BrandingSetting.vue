@@ -8,8 +8,8 @@
         {{ $t("settings.general.workspace.only-owner-can-edit") }}
       </span>
     </div>
-    <div class="flex-1 lg:px-5">
-      <div class="mb-5 mt-5 lg:mt-0">
+    <div class="flex-1 lg:px-4">
+      <div class="mb-4 mt-4 lg:mt-0">
         <p>
           {{ $t("settings.general.workspace.logo") }}
         </p>
@@ -20,7 +20,7 @@
           class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-48"
         >
           <div
-            class="w-full bg-no-repeat bg-contain bg-center rounded-md pointer-events-none m-5"
+            class="w-full bg-no-repeat bg-contain bg-center rounded-md pointer-events-none m-4"
             :style="`background-image: url(${state.logoUrl});`"
           ></div>
           <SingleFileSelector

@@ -16,7 +16,7 @@
           {{ $t(`subscription.features.${featureKey}.title`) }}
         </h3>
       </div>
-      <div class="mt-5">
+      <div class="mt-4">
         <p class="whitespace-pre-wrap">
           {{ $t(`subscription.features.${featureKey}.desc`) }}
         </p>

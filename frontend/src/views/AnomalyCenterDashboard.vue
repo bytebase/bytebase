@@ -30,7 +30,7 @@
           {{ i == 0 ? $t("common.database") : $t("common.instance") }}
         </h3>
         <dl
-          class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+          class="grid grid-cols-1 gap-4 sm:grid-cols-2"
           :class="`lg:grid-cols-${item.length}`"
         >
           <template v-for="(summary, index) in item" :key="index">

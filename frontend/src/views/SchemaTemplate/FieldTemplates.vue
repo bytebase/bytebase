@@ -20,7 +20,7 @@
         </div>
       </div>
     </div>
-    <div class="flex items-center gap-x-5 my-5 pb-5 border-b">
+    <div class="flex items-center gap-x-5 my-4 pb-5 border-b">
       <label
         v-for="item in engineList"
         :key="item"
