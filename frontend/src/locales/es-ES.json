@@ -2105,7 +2105,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Desviación de esquema",
-        "desc": "@:{'subscription.upgrade'} para desbloquear la detección automática de desviación de esquema."
+        "desc": "Detecte cambios de esquema fuera de banda e informe la desviación del esquema."
       },
       "bb-feature-branding": {
         "title": "Personalización",
