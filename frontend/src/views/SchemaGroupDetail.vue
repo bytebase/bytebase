@@ -63,7 +63,7 @@
 
       <FeatureAttentionForInstanceLicense
         v-if="existMatchedUnactivateInstance"
-        custom-class="m-5"
+        custom-class="m-4"
         :style="`WARN`"
         feature="bb.feature.database-grouping"
       />

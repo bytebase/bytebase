@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-7 mt-5 lg:mt-0" @click="handleValueFieldClick">
+  <div class="mb-7 mt-4 lg:mt-0" @click="handleValueFieldClick">
     <p class="font-medium flex flex-row justify-start items-center">
       <span class="mr-2">{{
         $t("settings.general.workspace.sign-in-frequency.self")

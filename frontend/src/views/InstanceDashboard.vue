@@ -2,11 +2,11 @@
   <div class="flex flex-col">
     <FeatureAttention
       v-if="remainingInstanceCount <= 3"
-      custom-class="m-5"
+      custom-class="m-4"
       feature="bb.feature.instance-count"
       :description="instanceCountAttention"
     />
-    <div class="px-5 py-2 flex justify-between items-center">
+    <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
         :include-all="true"

@@ -131,7 +131,7 @@
       </div>
 
       <div
-        class="w-full mt-5 pt-4 flex justify-end border-t border-block-border"
+        class="w-full mt-4 pt-4 flex justify-end border-t border-block-border"
       >
         <button
           type="button"
