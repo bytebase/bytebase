@@ -2636,7 +2636,6 @@
   "slow-query": {
     "self": "Consulta lenta",
     "slow-queries": "Consultas lentas",
-    "report-slow-query": "Reportar consulta lenta",
     "report": "Reportar",
     "last-query-time": "Hora de la última consulta",
     "database-name": "Nombre de la base de datos",
@@ -2656,7 +2655,7 @@
     "rows-sent": "Filas enviadas",
     "lock-time": "Tiempo de bloqueo",
     "query-time": "Tiempo de consulta",
-    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias.\nPara una instancia de MySQL, {slow_query} debe estar habilitado primero.\nPara una instancia de PostgreSQL, {pg_stat_statements} debe estar habilitado primero en cada base de datos.",
+    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias. Para una instancia de MySQL, slow_query debe estar habilitado primero. Para una instancia de PostgreSQL, solo se recopilarán las consultas lentas si se habilita pg_stat_statements en la base de datos.",
     "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
     "detail": "Detalles de la consulta lenta",
     "filter": {

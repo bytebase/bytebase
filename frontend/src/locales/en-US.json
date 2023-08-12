@@ -2638,7 +2638,6 @@
   "slow-query": {
     "self": "Slow query",
     "slow-queries": "Slow queries",
-    "report-slow-query": "Report slow query",
     "report": "Report",
     "last-query-time": "Last query time",
     "database-name": "Database name",
@@ -2658,7 +2657,7 @@
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
     "query-time": "Query time",
-    "attention-description": "Bytebase periodically syncs slow query logs from instances.\nFor MySQL instance, {slow_query} must be enabled first.\nFor PostgreSQL instance, {pg_stat_statements} must be enabled first in each database.",
+    "attention-description": "Bytebase periodically syncs slow query logs from instances. For MySQL instance, slow_query must be enabled first. For PostgreSQL instance, only databases with pg_stat_statements enabled will collect slow queries.",
     "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
     "detail": "Slow Query Detail",
     "filter": {
