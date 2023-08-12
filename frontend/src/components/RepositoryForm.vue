@@ -326,7 +326,7 @@
         "
         class="my-4"
         :style="`WARN`"
-        :title="$t('subscription.features.bb-feature-sql-review.title')"
+        :title="$t('subscription.features.bb-feature-vcs-sql-review.title')"
         :description="
           $t('subscription.instance-assignment.missing-license-for-instances', {
             count: instanceWithoutLicense.length,
