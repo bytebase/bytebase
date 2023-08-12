@@ -22,7 +22,7 @@
 
 .bb-guide-dialog,
 .bb-hint-dialog {
-  @apply fixed bg-white w-auto m-1 my-2 p-3 px-5 text-slate-900 rounded-lg text-left -top-full -left-full;
+  @apply fixed bg-white w-auto m-1 my-2 p-3 px-4 text-slate-900 rounded-lg text-left -top-full -left-full;
   z-index: 10000;
   max-width: 300px;
   box-shadow: 0 4px 36px rgb(33 33 33 / 40%);

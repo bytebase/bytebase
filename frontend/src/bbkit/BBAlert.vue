@@ -90,7 +90,7 @@
             <slot name="default" />
           </div>
         </div>
-        <div class="mt-5 flex flex-col space-y-4">
+        <div class="mt-4 flex flex-col space-y-4">
           <div class="flex justify-end">
             <button
               type="button"

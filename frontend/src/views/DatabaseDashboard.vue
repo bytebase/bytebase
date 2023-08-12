@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col relative">
-    <div class="px-5 py-2 flex justify-between items-center">
+    <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
         :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
