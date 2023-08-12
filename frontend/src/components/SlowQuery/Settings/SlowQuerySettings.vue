@@ -35,8 +35,6 @@
 import { orderBy } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBAttention } from "@/bbkit";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
   pushNotification,
