@@ -1,6 +1,9 @@
 # Development Guide
 
-This guide describes some development conventions we adopt at Bytebase.
+## Tips
+
+* Use [Code Inspector](https://en.inspector.fe-dev.cn/guide/start.html#method1-recommend) to locate
+frontend code from UI. Hold `Option + Shift` on Mac or `Alt + Shift` on Windows
 
 ## Branch Management
 
