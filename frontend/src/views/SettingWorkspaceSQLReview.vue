@@ -11,7 +11,6 @@
         <heroicons-outline:external-link class="w-4 h-4" />
       </a>
     </div>
-    <FeatureAttentionForInstanceLicense feature="bb.feature.sql-review" />
 
     <SQLReviewPolicyTable class="my-4" />
   </div>
