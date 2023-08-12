@@ -2,7 +2,7 @@
   <div class="w-full">
     <FeatureAttentionForInstanceLicense
       v-if="existMatchedUnactivateInstance"
-      custom-class="mb-5"
+      custom-class="mb-4"
       :style="`WARN`"
       feature="bb.feature.database-grouping"
     />

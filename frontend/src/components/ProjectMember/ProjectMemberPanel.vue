@@ -1,6 +1,6 @@
 <template>
   <div class="max-w-4xl w-full mx-auto">
-    <FeatureAttention custom-class="my-5" feature="bb.feature.rbac" />
+    <FeatureAttention custom-class="my-4" feature="bb.feature.rbac" />
 
     <div class="mb-4 w-full flex flex-row justify-between items-center">
       <div>

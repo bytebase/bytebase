@@ -16,7 +16,7 @@
             class="h-full pt-8 px-6 align-top"
           >
             <div class="flex-1">
-              <img :src="plan.image" class="hidden lg:block p-5" />
+              <img :src="plan.image" class="hidden lg:block p-4" />
 
               <div class="flex flex-row items-center h-10">
                 <h3 class="text-xl font-semibold text-gray-900">
@@ -118,7 +118,7 @@
             class="hover:bg-gray-50"
           >
             <th
-              class="py-5 px-6 text-sm font-normal text-gray-500 text-left"
+              class="py-4 px-6 text-sm font-normal text-gray-500 text-left"
               scope="row"
             >
               {{
@@ -139,7 +139,7 @@
       <tfoot>
         <tr class="border-t border-gray-200">
           <th class="sr-only" scope="row">Choose your plan</th>
-          <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
+          <td v-for="plan in plans" :key="plan.type" class="py-4 px-6">
             <button
               v-if="plan.buttonText"
               class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
@@ -251,7 +251,7 @@
               class="hover:bg-gray-50"
             >
               <th
-                class="py-5 px-6 text-sm font-normal text-gray-500 text-left"
+                class="py-4 px-6 text-sm font-normal text-gray-500 text-left"
                 scope="row"
               >
                 {{

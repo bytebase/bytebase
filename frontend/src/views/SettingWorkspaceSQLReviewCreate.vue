@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <FeatureAttention custom-class="mb-5" feature="bb.feature.sql-review" />
+    <FeatureAttention custom-class="mb-4" feature="bb.feature.sql-review" />
     <SQLReviewCreation
       :selected-rule-list="[]"
       :selected-environment="environment"
