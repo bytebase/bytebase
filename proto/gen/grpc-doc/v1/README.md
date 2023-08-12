@@ -520,6 +520,7 @@
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
+    - [Announcement](#bytebase-v1-Announcement)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
     - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
@@ -545,6 +546,7 @@
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
     - [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting)
   
+    - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [AppIMSetting.IMType](#bytebase-v1-AppIMSetting-IMType)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
@@ -8292,6 +8294,23 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 
 
 
+<a name="bytebase-v1-Announcement"></a>
+
+### Announcement
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel) |  | The alert level of announcemnt |
+| text | [string](#string) |  | The text of announcemnt |
+| link | [string](#string) |  | The optional link, user can follow the link to check extra details |
+
+
+
+
+
+
 <a name="bytebase-v1-AppIMSetting"></a>
 
 ### AppIMSetting
@@ -8688,6 +8707,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
 | gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
 | refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. |
+| announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
 
 
 
@@ -8714,6 +8734,19 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 
 
  
+
+
+<a name="bytebase-v1-Announcement-AlertLevel"></a>
+
+### Announcement.AlertLevel
+We support three levels of AlertLevel: INFO, WARNING, and ERROR.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ALERTLEVEL_INFO | 0 |  |
+| ALERTLEVEL_WARNING | 1 |  |
+| ALERTLEVEL_ERROR | 2 |  |
+
 
 
 <a name="bytebase-v1-AppIMSetting-IMType"></a>

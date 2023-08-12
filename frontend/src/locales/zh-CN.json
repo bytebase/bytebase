@@ -582,7 +582,24 @@
               "description": "提供私有化部署的 OpenAI API Endpoint。"
             }
           }
-        }
+        },
+        "announcement": "公告",
+        "announcement-alert-level": {
+          "description": "等级",
+          "field": {
+            "info": "普通",
+            "warning": "警告",
+            "error": "重要",
+          },
+        },
+        "announcement-text": {
+          "self": "标题",
+          "placeholder": "输入公告标题",
+        },
+        "extra-link": {
+          "self": "链接",
+          "placeholder": "输入公告链接",
+        },
       }
     },
     "sensitive-data": {
@@ -2147,6 +2164,10 @@
       "bb-feature-shared-sql-script": {
         "title": "共享 SQL 脚本",
         "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
+      },
+      "bb-feature-custom-announcement": {
+        "title": "自定义公告",
+        "desc": "配置公告横幅。"
       },
       "bb-feature-encrypted-secrets": {
         "title": "保密变量",

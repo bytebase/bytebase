@@ -289,7 +289,60 @@ export interface WorkspaceProfileSetting {
   /** The webhook URL for the GitOps workflow. */
   gitopsWebhookUrl: string;
   /** The duration for refresh token. */
-  refreshTokenDuration?: Duration | undefined;
+  refreshTokenDuration?:
+    | Duration
+    | undefined;
+  /** The setting of custom announcement */
+  announcement?: Announcement | undefined;
+}
+
+export interface Announcement {
+  /** The alert level of announcemnt */
+  level: Announcement_AlertLevel;
+  /** The text of announcemnt */
+  text: string;
+  /** The optional link, user can follow the link to check extra details */
+  link: string;
+}
+
+/** We support three levels of AlertLevel: INFO, WARNING, and ERROR. */
+export enum Announcement_AlertLevel {
+  ALERTLEVEL_INFO = 0,
+  ALERTLEVEL_WARNING = 1,
+  ALERTLEVEL_ERROR = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function announcement_AlertLevelFromJSON(object: any): Announcement_AlertLevel {
+  switch (object) {
+    case 0:
+    case "ALERTLEVEL_INFO":
+      return Announcement_AlertLevel.ALERTLEVEL_INFO;
+    case 1:
+    case "ALERTLEVEL_WARNING":
+      return Announcement_AlertLevel.ALERTLEVEL_WARNING;
+    case 2:
+    case "ALERTLEVEL_ERROR":
+      return Announcement_AlertLevel.ALERTLEVEL_ERROR;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Announcement_AlertLevel.UNRECOGNIZED;
+  }
+}
+
+export function announcement_AlertLevelToJSON(object: Announcement_AlertLevel): string {
+  switch (object) {
+    case Announcement_AlertLevel.ALERTLEVEL_INFO:
+      return "ALERTLEVEL_INFO";
+    case Announcement_AlertLevel.ALERTLEVEL_WARNING:
+      return "ALERTLEVEL_WARNING";
+    case Announcement_AlertLevel.ALERTLEVEL_ERROR:
+      return "ALERTLEVEL_ERROR";
+    case Announcement_AlertLevel.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface WorkspaceApprovalSetting {
@@ -1494,6 +1547,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     outboundIpList: [],
     gitopsWebhookUrl: "",
     refreshTokenDuration: undefined,
+    announcement: undefined,
   };
 }
 
@@ -1516,6 +1570,9 @@ export const WorkspaceProfileSetting = {
     }
     if (message.refreshTokenDuration !== undefined) {
       Duration.encode(message.refreshTokenDuration, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.announcement !== undefined) {
+      Announcement.encode(message.announcement, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -1569,6 +1626,13 @@ export const WorkspaceProfileSetting = {
 
           message.refreshTokenDuration = Duration.decode(reader, reader.uint32());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.announcement = Announcement.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1588,6 +1652,7 @@ export const WorkspaceProfileSetting = {
       refreshTokenDuration: isSet(object.refreshTokenDuration)
         ? Duration.fromJSON(object.refreshTokenDuration)
         : undefined,
+      announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
     };
   },
 
@@ -1605,6 +1670,8 @@ export const WorkspaceProfileSetting = {
     message.refreshTokenDuration !== undefined && (obj.refreshTokenDuration = message.refreshTokenDuration
       ? Duration.toJSON(message.refreshTokenDuration)
       : undefined);
+    message.announcement !== undefined &&
+      (obj.announcement = message.announcement ? Announcement.toJSON(message.announcement) : undefined);
     return obj;
   },
 
@@ -1622,6 +1689,93 @@ export const WorkspaceProfileSetting = {
     message.refreshTokenDuration = (object.refreshTokenDuration !== undefined && object.refreshTokenDuration !== null)
       ? Duration.fromPartial(object.refreshTokenDuration)
       : undefined;
+    message.announcement = (object.announcement !== undefined && object.announcement !== null)
+      ? Announcement.fromPartial(object.announcement)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAnnouncement(): Announcement {
+  return { level: 0, text: "", link: "" };
+}
+
+export const Announcement = {
+  encode(message: Announcement, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.level !== 0) {
+      writer.uint32(8).int32(message.level);
+    }
+    if (message.text !== "") {
+      writer.uint32(18).string(message.text);
+    }
+    if (message.link !== "") {
+      writer.uint32(26).string(message.link);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Announcement {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAnnouncement();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.level = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.text = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.link = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Announcement {
+    return {
+      level: isSet(object.level) ? announcement_AlertLevelFromJSON(object.level) : 0,
+      text: isSet(object.text) ? String(object.text) : "",
+      link: isSet(object.link) ? String(object.link) : "",
+    };
+  },
+
+  toJSON(message: Announcement): unknown {
+    const obj: any = {};
+    message.level !== undefined && (obj.level = announcement_AlertLevelToJSON(message.level));
+    message.text !== undefined && (obj.text = message.text);
+    message.link !== undefined && (obj.link = message.link);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Announcement>): Announcement {
+    return Announcement.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Announcement>): Announcement {
+    const message = createBaseAnnouncement();
+    message.level = object.level ?? 0;
+    message.text = object.text ?? "";
+    message.link = object.link ?? "";
     return message;
   },
 };
