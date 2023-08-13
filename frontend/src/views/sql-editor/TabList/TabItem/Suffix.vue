@@ -71,7 +71,7 @@ const icon = computed((): IconType | undefined => {
   @apply flex items-center min-w-[1.25rem];
 }
 .icon {
-  @apply block w-5 h-5 p-0.5 text-gray-300 hover:text-gray-500 hover:bg-gray-200 rounded;
+  @apply block w-5 h-5 p-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded;
 }
 .suffix.admin .icon {
   @apply text-gray-400 hover:text-gray-300 hover:bg-gray-400/30;
