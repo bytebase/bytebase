@@ -775,6 +775,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, project
 	if instance.Engine == db.Oracle {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Creating Oracle database is not supported")
 	}
+	// TODO(d): support create database with environment override.
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return nil, err

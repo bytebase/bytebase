@@ -793,10 +793,20 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+		environmentID := instance.EnvironmentID
+		// TODO(d): support creating database with environment override.
+		if task.DatabaseID != nil {
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+			if err != nil {
+				return err
+			}
+			environmentID = database.EffectiveEnvironmentID
+		}
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 		if err != nil {
 			return err
 		}
+
 		policy, err := s.store.GetPipelineApprovalPolicy(ctx, environment.UID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get approval policy for environment ID %d", environment.UID)
