@@ -209,10 +209,10 @@
           {{ instanceV1Name(instance) }}
         </span>
         <router-link
-          :to="`/environment/${environmentV1Slug(environment)}`"
+          :to="`/environment/${environmentV1Slug(instance.environmentEntity)}`"
           class="col-span-2 text-sm font-medium text-main hover:underline"
         >
-          ({{ environmentV1Name(environment) }})
+          ({{ environmentV1Name(instance.environmentEntity) }})
         </router-link>
       </div>
 
