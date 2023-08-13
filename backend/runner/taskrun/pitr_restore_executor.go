@@ -513,7 +513,7 @@ func downloadBackupFileFromCloud(ctx context.Context, s3Client *bbs3.Client, bac
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
 func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, targetInstance *store.InstanceMessage, sourceDatabase, targetDatabase *store.DatabaseMessage, backup *store.BackupMessage, task *store.TaskMessage) (string, string, error) {
-	targetInstanceEnvironment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &targetInstance.EnvironmentID})
+	targetInstanceEnvironment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &targetDatabase.EffectiveEnvironmentID})
 	if err != nil {
 		return "", "", err
 	}
