@@ -404,8 +404,11 @@ const previewSchemaChangeMessage = computed(() => {
   if (!database) {
     return "";
   }
+  const environment = environmentV1Store.getEnvironmentByName(
+    database.effectiveEnvironment
+  );
   return t("database.sync-schema.schema-change-preview", {
-    database: `${database.databaseName} (${database.instanceEntity.environmentEntity.title} - ${database.instanceEntity.title})`,
+    database: `${database.databaseName} (${environment?.title} - ${database.instanceEntity.title})`,
   });
 });
 const databaseListWithDiff = computed(() => {

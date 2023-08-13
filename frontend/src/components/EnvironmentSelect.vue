@@ -8,7 +8,15 @@
     @select-item="(env: Environment) => $emit('select-environment-id', env.uid)"
   >
     <template #menuItem="{ item: environment }">
-      <EnvironmentV1Name :environment="environment" :link="false" />
+      <EnvironmentV1Name
+        :environment="environment"
+        :link="false"
+        :suffiux="
+          defaultEnvironment == environment.name
+            ? `(${$t('common.default')})`
+            : ''
+        "
+      />
     </template>
   </BBSelect>
 </template>
@@ -39,6 +47,10 @@ export default defineComponent({
     disabled: {
       default: false,
       type: Boolean,
+    },
+    defaultEnvironment: {
+      default: "",
+      type: String,
     },
   },
   emits: ["select-environment-id"],
