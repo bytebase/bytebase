@@ -413,6 +413,8 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
 			}
 
+			// TODO(d): support create database with environment override.
+			environmentID := instance.EnvironmentID
 			var databaseName string
 			if task.Type == api.TaskDatabaseCreate {
 				payload := &api.TaskDatabaseCreatePayload{}
@@ -428,6 +430,11 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				databaseName = database.DatabaseName
+				environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+				if err != nil {
+					return 0, store.RiskSourceUnknown, false, err
+				}
+				environmentID = environment.ResourceID
 			}
 
 			risk, err := func() (int64, error) {
@@ -451,7 +458,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					}
 					// TODO(p0ny): implement sql type and affected rows
 					args := map[string]any{
-						"environment_id": instance.EnvironmentID,
+						"environment_id": environmentID,
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
 						// convert to string type otherwise cel-go will complain that db.Type is not string type.
@@ -750,6 +757,8 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		return 0, false, errors.New("affected rows report result and statement type report result length mismatch")
 	}
 
+	// TODO(d): support create database with environment override.
+	environmentID := instance.EnvironmentID
 	var databaseName string
 	if task.Type == api.TaskDatabaseCreate {
 		payload := &api.TaskDatabaseCreatePayload{}
@@ -765,6 +774,11 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 			return 0, false, err
 		}
 		databaseName = database.DatabaseName
+		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+		if err != nil {
+			return 0, false, err
+		}
+		environmentID = environment.ResourceID
 	}
 
 	e, err := cel.NewEnv(common.RiskFactors...)
@@ -797,7 +811,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 			return 0, false, err
 		}
 		args := map[string]any{
-			"environment_id": instance.EnvironmentID,
+			"environment_id": environmentID,
 			"project_id":     issue.Project.ResourceID,
 			"database_name":  databaseName,
 			// convert to string type otherwise cel-go will complain that db.Type is not string type.
