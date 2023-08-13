@@ -99,11 +99,7 @@ const databaseListByEnvironment = computed(() => {
     return a.name.localeCompare(b.name);
   });
   for (const database of list) {
-    const dbList = envToDbMap.get(
-      String(
-        database.environment || database.instanceEntity.environmentEntity.name
-      )
-    )!;
+    const dbList = envToDbMap.get(String(database.effectiveEnvironment))!;
     // dbList may be undefined if the environment is archived
     if (dbList) {
       dbList.push({
