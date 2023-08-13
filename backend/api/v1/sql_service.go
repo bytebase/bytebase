@@ -1613,14 +1613,6 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 		return nil, nil, nil, nil, err
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
-	if err != nil {
-		return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch environment: %v", err)
-	}
-	if environment == nil {
-		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", instance.EnvironmentID)
-	}
-
 	var database *store.DatabaseMessage
 	if databaseName != "" {
 		database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -1631,6 +1623,14 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+	if err != nil {
+		return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch environment: %v", err)
+	}
+	if environment == nil {
+		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", database.EffectiveEnvironmentID)
 	}
 
 	return user, environment, instance, database, nil
