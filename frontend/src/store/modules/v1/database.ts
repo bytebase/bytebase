@@ -95,7 +95,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
   const databaseListByEnvironment = (environment: string) => {
     return databaseList.value.filter(
-      (db) => db.instanceEntity.environment === environment
+      (db) => db.effectiveEnvironment === environment
     );
   };
   const getDatabaseByName = (name: string) => {
