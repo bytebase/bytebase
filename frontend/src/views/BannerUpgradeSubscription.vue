@@ -94,7 +94,7 @@ import {
   useActuatorV1Store,
 } from "@/store";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
-import { FeatureType, planTypeToString } from "@/types";
+import { FeatureType, planTypeToString, refreshTokenDurationInHours } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -153,8 +153,7 @@ watch(
       set.add("bb.feature.2fa");
     }
     if (
-      (settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds ||
-        0) === 0
+      settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds != refreshTokenDurationInHours
     ) {
       set.add("bb.feature.secure-token");
     }

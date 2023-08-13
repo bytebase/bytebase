@@ -9,3 +9,5 @@ export type SettingName =
   | "bb.plugin.openai.endpoint"
   | "bb.enterprise.trial"
   | "bb.workspace.schema-template";
+
+export const refreshTokenDurationInHours = 7 * 24;
