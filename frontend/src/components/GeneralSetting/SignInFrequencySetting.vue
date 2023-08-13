@@ -45,12 +45,12 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { FeatureType } from "@/types";
+import { FeatureType, refreshTokenDurationInHours } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
-    inputValue: 7,
+    inputValue: refreshTokenDurationInHours / 7,
     timeFormat: "DAYS",
   };
   const seconds =
