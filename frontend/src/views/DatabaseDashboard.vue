@@ -220,9 +220,7 @@ const filteredDatabaseList = computed(() => {
     );
   const environment = selectedEnvironment.value;
   if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
-    list = list.filter(
-      (db) => db.instanceEntity.environment === environment.name
-    );
+    list = list.filter((db) => db.effectiveEnvironment === environment.name);
   }
   if (state.instanceFilter !== String(UNKNOWN_ID)) {
     list = list.filter(
