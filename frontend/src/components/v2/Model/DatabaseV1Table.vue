@@ -276,7 +276,7 @@ const mixedDataList = computed(() => {
   }
   return sortBy(dataList, (d) => {
     if (isDatabase(d)) {
-      return (d as ComposedDatabase).instanceEntity.environmentEntity.name;
+      return (d as ComposedDatabase).effectiveEnvironment;
     } else {
       return (d as ComposedDatabaseGroup).environment.name;
     }
