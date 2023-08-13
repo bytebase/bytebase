@@ -31,9 +31,9 @@
           v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
           class="flex items-center"
         >
-          <span class="">{{ selectedInstance.environmentEntity.title }}</span>
+          <span class="">{{ selectedEnvironment.title }}</span>
           <ProductionEnvironmentV1Icon
-            :environment="selectedInstance.environmentEntity"
+            :environment="selectedEnvironment"
             class="ml-1"
             :class="[isProductionEnvironment && '~!text-yellow-700']"
           />
@@ -82,14 +82,20 @@ import {
   InstanceV1EngineIcon,
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
-import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
-import { TabMode, UNKNOWN_ID } from "@/types";
+import {
+  useTabStore,
+  useDatabaseV1ByUID,
+  useInstanceV1ByUID,
+  useEnvironmentV1Store,
+} from "@/store";
+import { TabMode, UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { instanceV1Slug } from "@/utils";
 
 const router = useRouter();
 const tabStore = useTabStore();
+const environmentStore = useEnvironmentV1Store();
 
 const connection = computed(() => tabStore.currentTab.connection);
 
@@ -101,9 +107,16 @@ const { database: selectedDatabaseV1 } = useDatabaseV1ByUID(
   computed(() => String(connection.value.databaseId))
 );
 
+const selectedEnvironment = computed(() => {
+  return (
+    environmentStore.getEnvironmentByName(
+      selectedDatabaseV1.value.effectiveEnvironment
+    ) ?? unknownEnvironment()
+  );
+});
+
 const isProductionEnvironment = computed(() => {
-  const instance = selectedInstance.value;
-  return instance.environmentEntity.tier === EnvironmentTier.PROTECTED;
+  return selectedEnvironment.value.tier === EnvironmentTier.PROTECTED;
 });
 
 const isAdminMode = computed(() => {
