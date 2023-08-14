@@ -55,7 +55,7 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
   return orderBy(
     databaseList,
     [
-      (db) => db.instanceEntity.environmentEntity.order,
+      (db) => db.effectiveEnvironmentEntity.order,
       (db) => Number(db.instanceEntity.uid),
       (db) => Number(db.projectEntity.uid),
       (db) => db.databaseName,
@@ -73,7 +73,7 @@ export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
   if (db.instanceEntity.state === State.DELETED) {
     return true;
   }
-  if (db.instanceEntity.environmentEntity.state === State.DELETED) {
+  if (db.effectiveEnvironmentEntity.state === State.DELETED) {
     return true;
   }
   return false;
@@ -174,7 +174,7 @@ export const isDatabaseV1Queryable = (
             querierBinding.parsedExpr?.expr || Expr.fromPartial({})
           );
           const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.instanceEntity.environment)) {
+          if (envNameList.includes(database.effectiveEnvironment)) {
             return true;
           }
         }
@@ -229,7 +229,7 @@ export const isTableQueryable = (
             querierBinding.parsedExpr?.expr || Expr.fromPartial({})
           );
           const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.instanceEntity.environment)) {
+          if (envNameList.includes(database.effectiveEnvironment)) {
             return true;
           }
         }
@@ -297,7 +297,7 @@ export function filterDatabaseV1ByKeyword(
 
   if (
     columns.includes("environment") &&
-    db.instanceEntity.environmentEntity.title.toLowerCase().includes(keyword)
+    db.effectiveEnvironmentEntity.title.toLowerCase().includes(keyword)
   ) {
     return true;
   }

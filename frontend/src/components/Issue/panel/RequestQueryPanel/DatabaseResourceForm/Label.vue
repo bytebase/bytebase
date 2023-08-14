@@ -44,7 +44,7 @@ const database = computed(() => {
 const environment = computed(() => {
   const { option } = props;
   if (option.level !== "database") return undefined;
-  return database.value?.instanceEntity.environmentEntity;
+  return database.value?.effectiveEnvironmentEntity;
 });
 
 const Prefix = () => {

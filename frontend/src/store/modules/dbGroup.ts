@@ -225,7 +225,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       const database = await databaseStore.getOrFetchDatabaseByName(item.name);
       if (
         database &&
-        database.instanceEntity.environmentEntity.uid === environmentId
+        database.effectiveEnvironmentEntity.uid === environmentId
       ) {
         unmatchedDatabaseList.push(database);
       }

@@ -37,7 +37,7 @@
 
             <router-link
               class="normal-link text-sm"
-              :to="`/environment/${database.instanceEntity.environmentEntity.uid}`"
+              :to="`/environment/${database.effectiveEnvironmentEntity.uid}`"
             >
               {{
                 $t(

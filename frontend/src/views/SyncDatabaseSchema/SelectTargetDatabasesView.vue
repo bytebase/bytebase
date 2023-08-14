@@ -163,7 +163,7 @@
               />
               <NEllipsis :tooltip="false">
                 <span class="mx-0.5 text-gray-400"
-                  >({{ database.instanceEntity.environmentEntity.title }})</span
+                  >({{ database.effectiveEnvironmentEntity.title }})</span
                 >
                 <span>{{ database.databaseName }}</span>
                 <span class="ml-0.5 text-gray-400"

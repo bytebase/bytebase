@@ -38,7 +38,7 @@
   </div>
   <div v-if="showEnvironmentColumn" class="bb-grid-cell">
     <EnvironmentV1Name
-      :environment="environment ?? database.instanceEntity.environmentEntity"
+      :environment="environment ?? database.effectiveEnvironmentEntity"
       :link="false"
       tag="div"
     />

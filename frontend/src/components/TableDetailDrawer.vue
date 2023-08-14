@@ -49,7 +49,7 @@
                     >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
                   >
                   <EnvironmentV1Name
-                    :environment="database.instanceEntity.environmentEntity"
+                    :environment="database.effectiveEnvironmentEntity"
                     icon-class="textinfolabel"
                   />
                 </dd>

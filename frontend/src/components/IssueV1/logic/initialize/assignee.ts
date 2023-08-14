@@ -66,7 +66,7 @@ export const trySetDefaultAssignee = async (issue: ComposedIssue) => {
   return trySetDefaultAssigneeByEnvironmentAndDeploymentType(
     issue,
     issue.projectEntity,
-    database.instanceEntity.environment,
+    database.effectiveEnvironment,
     taskTypeToDeploymentType(firstTask.type)
   );
 };
