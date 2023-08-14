@@ -99,6 +99,8 @@ export const provideSheetContext = () => {
   });
 
   provide(KEY, context);
+
+  return context;
 };
 
 export const openSheet = async (sheet: Sheet, forceNewTab = false) => {

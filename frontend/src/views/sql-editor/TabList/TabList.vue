@@ -44,12 +44,6 @@
         {{ $t("sql-editor.sheet.choose-sheet") }}
       </NButton>
     </div>
-
-    <Drawer v-model:show="showSheetPanel">
-      <DrawerContent :title="$t('sql-editor.sheet.self')">
-        <SheetPanel @close="showSheetPanel = false" />
-      </DrawerContent>
-    </Drawer>
   </div>
 </template>
 
@@ -60,12 +54,10 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
-import { Drawer, DrawerContent } from "@/components/v2";
 import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import { useSheetContext } from "../Sheet";
-import SheetPanel from "../SheetPanel";
 import TabItem from "./TabItem";
 
 type LocalState = {
