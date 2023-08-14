@@ -817,7 +817,7 @@
     "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
     "grant-request": {
-      "export-rows": "Export rows",
+      "export-rows": "Max export rows",
       "export-format": "Export format",
       "expire-days": "Expire days",
       "expired-at": "Expired at",
