@@ -181,19 +181,25 @@ const allowToUpdateColumnTypeTemplateForMySQL = computed(() => {
   const setting = settingStore.getSettingByName("bb.workspace.schema-template");
   const columnTypes =
     setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
-  const mysqlColumnTypes = columnTypes.find(
-    (item) => item.engine === Engine.MYSQL
-  );
-  if (
-    isEqual(mysqlColumnTypes, {
-      ...columnTypeTemplateForMySQL.value,
-      types: columnTypesForMySQL.value
-        .split("\n")
-        .map((item) => item.trim())
-        .filter(Boolean),
-    })
-  ) {
-    return false;
+  const originTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    engine: Engine.MYSQL,
+    ...columnTypes.find((item) => item.engine === Engine.MYSQL),
+  });
+  const newTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    ...columnTypeTemplateForMySQL.value,
+    engine: Engine.MYSQL,
+    types: columnTypesForMySQL.value
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+  if (isEqual(originTemplate.enabled, newTemplate.enabled)) {
+    if (!newTemplate.enabled) {
+      return false;
+    }
+    if (isEqual(originTemplate.types, newTemplate.types)) {
+      return false;
+    }
   }
   return true;
 });
@@ -205,19 +211,25 @@ const allowToUpdateColumnTypeTemplateForPostgreSQL = computed(() => {
   const setting = settingStore.getSettingByName("bb.workspace.schema-template");
   const columnTypes =
     setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
-  const postgresColumnTypes = columnTypes.find(
-    (item) => item.engine === Engine.POSTGRES
-  );
-  if (
-    isEqual(postgresColumnTypes, {
-      ...columnTypeTemplateForPostgreSQL.value,
-      types: columnTypesForPostgreSQL.value
-        .split("\n")
-        .map((item) => item.trim())
-        .filter(Boolean),
-    })
-  ) {
-    return false;
+  const originTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    engine: Engine.POSTGRES,
+    ...columnTypes.find((item) => item.engine === Engine.POSTGRES),
+  });
+  const newTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    ...columnTypeTemplateForPostgreSQL.value,
+    engine: Engine.POSTGRES,
+    types: columnTypesForPostgreSQL.value
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+  if (isEqual(originTemplate.enabled, newTemplate.enabled)) {
+    if (!newTemplate.enabled) {
+      return false;
+    }
+    if (isEqual(originTemplate.types, newTemplate.types)) {
+      return false;
+    }
   }
   return true;
 });
@@ -270,11 +282,13 @@ const handleSaveAllUnmatchedFieldTemplates = (
       columnTypesForMySQL.value +
       "\n" +
       fieldTemplates.map((item) => item.column?.type || "").join("\n");
+    handleMySQLTypesChange();
   } else if (engine === Engine.POSTGRES) {
     columnTypesForPostgreSQL.value =
       columnTypesForPostgreSQL.value +
       "\n" +
       fieldTemplates.map((item) => item.column?.type || "").join("\n");
+    handlePostgreSQLTypesChange();
   }
   unmatchedFieldTemplates.value = [];
 };
@@ -292,11 +306,14 @@ const handleMySQLEnabledChange = (event: InputEvent) => {
 };
 
 const handleMySQLTypesChange = async () => {
-  columnTypesForMySQL.value = columnTypesForMySQL.value.toUpperCase();
-  columnTypeTemplateForMySQL.value.types = columnTypesForMySQL.value
+  columnTypesForMySQL.value = columnTypesForMySQL.value
+    .toUpperCase()
     .split("\n")
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .join("\n");
+  columnTypeTemplateForMySQL.value.types =
+    columnTypesForMySQL.value.split("\n");
 
   const { fieldTemplates } = await getOrFetchSchemaTemplate();
   const mysqlFieldTemplates = uniq(
@@ -380,9 +397,14 @@ const handlePostgreSQLEnabledChange = (event: InputEvent) => {
 };
 
 const handlePostgreSQLTypesChange = async () => {
-  columnTypeTemplateForPostgreSQL.value.types = columnTypesForPostgreSQL.value
+  columnTypesForPostgreSQL.value = columnTypesForPostgreSQL.value
+    .toUpperCase()
     .split("\n")
-    .map((item) => item.trim().toUpperCase());
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join("\n");
+  columnTypeTemplateForPostgreSQL.value.types =
+    columnTypesForPostgreSQL.value.split("\n");
 
   const { fieldTemplates, postgresqlColumnTypes } =
     await getOrFetchSchemaTemplate();
