@@ -14,7 +14,6 @@
   <template v-else-if="atom.type === 'database'">
     <span class="flex items-center gap-x-1">
       <InstancePrefix
-        v-if="connectionTreeStore.tree.mode === ConnectionTreeMode.PROJECT"
         :instance="database.instanceEntity"
         :environment="environment"
         :disabled="atom.disabled"
@@ -28,14 +27,12 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import {
-  useConnectionTreeStore,
   useDatabaseV1Store,
   useInstanceV1Store,
   useEnvironmentV1Store,
 } from "@/store";
 import {
   ConnectionAtom,
-  ConnectionTreeMode,
   unknownInstance,
   unknownDatabase,
   unknownEnvironment,
@@ -49,7 +46,6 @@ const props = defineProps<{
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const environmentStore = useEnvironmentV1Store();
-const connectionTreeStore = useConnectionTreeStore();
 
 const instance = computed(() => {
   const { atom } = props;
@@ -69,6 +65,10 @@ const database = computed(() => {
 });
 
 const environment = computed(() => {
+  const { atom } = props;
+  if (atom.type === "instance") {
+    return instance.value.environmentEntity;
+  }
   return (
     environmentStore.getEnvironmentByName(
       database.value.effectiveEnvironment
