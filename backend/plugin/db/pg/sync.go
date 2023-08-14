@@ -22,6 +22,19 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+// SystemSchemaList is the list of system schemas that we will exclude from the schema sync.
+var SystemSchemaList = []string{
+	"information_schema",
+	"pg_catalog",
+	"pg_toast",
+	"_timescaledb_cache",
+	"_timescaledb_catalog",
+	"_timescaledb_internal",
+	"_timescaledb_config",
+	"timescaledb_information",
+	"timescaledb_experimental",
+}
+
 const systemSchemas = "'information_schema', 'pg_catalog', 'pg_toast', '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_internal', '_timescaledb_config', 'timescaledb_information', 'timescaledb_experimental'"
 
 // SyncInstance syncs the instance.

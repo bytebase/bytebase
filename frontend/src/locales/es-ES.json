@@ -2687,7 +2687,8 @@
       "save-all": "Guardar todo",
       "messages": {
         "unable-to-update": "No se puede actualizar la restricción",
-        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos."
+        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos.",
+        "one-allowed-type-per-line": "Un tipo permitido por línea"
       }
     },
     "add-field": "Agregar plantilla de campo",

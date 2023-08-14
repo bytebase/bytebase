@@ -1,4 +1,4 @@
-import { isUndefined, orderBy } from "lodash-es";
+import { isUndefined, orderBy, uniqBy } from "lodash-es";
 import slug from "slug";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import { AffectedTable } from "@/types/changeHistory";
@@ -43,24 +43,27 @@ export const getAffectedTablesOfChangeHistory = (
   );
   const database = useDatabaseV1Store().getDatabaseByName(databaseName);
   const metadata = useDBSchemaV1Store().getDatabaseMetadata(database.name);
-  return orderBy(
-    changeHistory.changedResources?.databases
-      .find((db) => db.name === database.databaseName)
-      ?.schemas.map((schema) => {
-        return schema.tables.map((table) => {
-          const dropped = isUndefined(
-            metadata.schemas
-              .find((s) => s.name === schema.name)
-              ?.tables.find((t) => t.name === table.name)
-          );
-          return {
-            schema: schema.name,
-            table: table.name,
-            dropped,
-          };
-        });
-      })
-      .flat() || [],
-    ["dropped"]
+  return uniqBy(
+    orderBy(
+      changeHistory.changedResources?.databases
+        .find((db) => db.name === database.databaseName)
+        ?.schemas.map((schema) => {
+          return schema.tables.map((table) => {
+            const dropped = isUndefined(
+              metadata.schemas
+                .find((s) => s.name === schema.name)
+                ?.tables.find((t) => t.name === table.name)
+            );
+            return {
+              schema: schema.name,
+              table: table.name,
+              dropped,
+            };
+          });
+        })
+        .flat() || [],
+      ["dropped"]
+    ),
+    (affectedTable) => `${affectedTable.schema}.${affectedTable.table}`
   );
 };
