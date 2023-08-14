@@ -79,7 +79,7 @@
                   <template #trigger>
                     <button
                       class="cursor-pointer opacity-60 hover:opacity-100"
-                      @click="editingBinding = item"
+                      @click="editingBinding = item.rawBinding"
                     >
                       <heroicons-outline:pencil class="w-4 h-4" />
                     </button>
@@ -103,21 +103,30 @@
         </template>
       </div>
       <template #footer>
-        <div class="flex items-center justify-end gap-x-2">
-          <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" @click="$emit('close')">
-            {{ $t("common.ok") }}
-          </NButton>
+        <div class="w-full flex flex-row justify-between items-center">
+          <div>
+            <BBButtonConfirm
+              :style="'DELETE'"
+              :button-text="$t('project.members.revoke-member')"
+              :require-confirm="true"
+              @confirm="handleDeleteMember"
+            />
+          </div>
+          <div class="flex items-center justify-end gap-x-2">
+            <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
+            <NButton type="primary" @click="$emit('close')">
+              {{ $t("common.ok") }}
+            </NButton>
+          </div>
         </div>
       </template>
     </NDrawerContent>
   </NDrawer>
 
-  <EditProjectMemberPanel
+  <EditProjectRolePanel
     v-if="editingBinding"
     :project="project"
-    :member="member"
-    :single-binding="editingBinding"
+    :binding="editingBinding"
     @close="editingBinding = null"
   />
 </template>
@@ -133,9 +142,7 @@ import {
 } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
 import { InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
@@ -144,6 +151,9 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
+import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
+import { State } from "@/types/proto/v1/common";
+import { Binding } from "@/types/proto/v1/iam_policy";
 import {
   displayRoleTitle,
   hasPermissionInProjectV1,
@@ -153,11 +163,10 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { ComposedProjectMember, SingleBinding } from "./types";
-import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
+import EditProjectRolePanel from "../ProjectRoleTable/EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";
-import EditProjectMemberPanel from "../AddProjectMember/EditProjectMemberPanel.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
+import { ComposedProjectMember, SingleBinding } from "./types";
 
 export type SingleBindingRow = BBGridRow<SingleBinding>;
 
@@ -184,7 +193,7 @@ const roleList = ref<
     singleBindingList: SingleBinding[];
   }[]
 >([]);
-const editingBinding = ref<SingleBinding | null>(null);
+const editingBinding = ref<Binding | null>(null);
 
 const panelTitle = computed(() => {
   return t("project.members.edit", {
@@ -374,6 +383,23 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
       );
     },
   });
+};
+
+const handleDeleteMember = async () => {
+  const user = `user:${props.member.user.email}`;
+  const policy = cloneDeep(iamPolicy.value);
+  for (const binding of policy.bindings) {
+    binding.members = binding.members.filter((member) => {
+      return member !== user;
+    });
+  }
+  policy.bindings = policy.bindings.filter(
+    (binding) => binding.members.length > 0
+  );
+  await projectIamPolicyStore.updateProjectIamPolicy(
+    projectResourceName.value,
+    policy
+  );
 };
 
 const extractDatabaseName = (databaseResource?: DatabaseResource) => {

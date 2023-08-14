@@ -41,12 +41,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
-import { ComposedDatabase } from "../types";
-import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { isEmpty } from "lodash-es";
 import slug from "slug";
+import { computed, PropType, reactive } from "vue";
+import { ComposedDatabase } from "../types";
 
 dayjs.extend(utc);
 
@@ -67,7 +67,7 @@ const buildBackupName = (database: ComposedDatabase) => {
   // The default format is consistent with the default automatic backup name format used in the server.
   return [
     slug(props.database.projectEntity.title),
-    slug(props.database.instanceEntity.environmentEntity.title),
+    slug(props.database.effectiveEnvironmentEntity.title),
     dayjs.utc().local().format("YYYYMMDDTHHmmss"),
   ].join("-");
 };

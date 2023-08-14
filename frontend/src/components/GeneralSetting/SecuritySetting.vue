@@ -8,8 +8,8 @@
         {{ $t("settings.general.workspace.only-owner-can-edit") }}
       </span>
     </div>
-    <div class="flex-1 lg:px-5">
-      <div class="mb-7 mt-5 lg:mt-0">
+    <div class="flex-1 lg:px-4">
+      <div class="mb-7 mt-4 lg:mt-0">
         <label
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
@@ -36,7 +36,7 @@
           {{ $t("settings.general.workspace.watermark.description") }}
         </div>
       </div>
-      <div v-if="!isSaaSMode" class="mb-7 mt-5 lg:mt-0">
+      <div v-if="!isSaaSMode" class="mb-7 mt-4 lg:mt-0">
         <label
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
@@ -63,7 +63,7 @@
           {{ $t("settings.general.workspace.disallow-signup.description") }}
         </div>
       </div>
-      <div class="mb-7 mt-5 lg:mt-0">
+      <div class="mb-7 mt-4 lg:mt-0">
         <label
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
@@ -100,19 +100,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
-import { storeToRefs } from "pinia";
 import { NCheckbox } from "naive-ui";
+import { storeToRefs } from "pinia";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   featureToRef,
   pushNotification,
   useCurrentUserV1,
   useActuatorV1Store,
 } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
-import { useI18n } from "vue-i18n";
-import { FeatureType } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { FeatureType } from "@/types";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {

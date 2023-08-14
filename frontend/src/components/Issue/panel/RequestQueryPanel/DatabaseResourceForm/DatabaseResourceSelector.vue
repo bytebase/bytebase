@@ -1,9 +1,9 @@
 <template>
-  <div class="w-[60rem] space-y-2">
+  <div class="w-full space-y-2">
     <NTransfer
       v-if="!loading"
       v-model:value="selectedValueList"
-      style="height: calc(100vh - 380px)"
+      style="height: 512px"
       :options="sourceTransferOptions"
       :render-source-list="renderSourceList"
       :render-target-list="renderTargetList"
@@ -21,19 +21,18 @@ import {
   TreeOption,
 } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
-
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useProjectV1Store,
 } from "@/store";
 import { DatabaseResource } from "@/types";
+import Label from "./Label.vue";
 import {
   flattenTreeOptions,
   mapTreeOptions,
   DatabaseTreeOption,
 } from "./common";
-import Label from "./Label.vue";
 
 const props = defineProps<{
   projectId: string;
@@ -47,7 +46,6 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-
 const selectedValueList = ref<string[]>(
   props.databaseResources.map((databaseResource) => {
     const database = databaseStore.getDatabaseByName(
@@ -150,6 +148,19 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     },
     pattern,
     checkedKeys: selectedValueList.value,
+    defaultExpandedKeys: selectedValueList.value
+      .map((key) => {
+        if (key.startsWith("t-")) {
+          const [_, database, schema] = key.split("-");
+          return [`d-${database}`, `s-${database}-${schema}`];
+        } else if (key.startsWith("s-")) {
+          const [_, database] = key.split("-");
+          return [`d-${database}`];
+        } else {
+          return [];
+        }
+      })
+      .flat(),
     showIrrelevantNodes: false,
     onUpdateCheckedKeys: (checkedKeys: string[]) => {
       onCheck(checkedKeys);

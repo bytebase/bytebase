@@ -22,8 +22,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NTooltip } from "naive-ui";
+import { computed } from "vue";
 import { useRollbackLogic } from "./common";
 
 const { allowRollback, toggleRollback } = useRollbackLogic();

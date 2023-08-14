@@ -51,10 +51,10 @@
 </template>
 
 <script lang="ts" setup>
-import { pushNotification } from "@/store";
-import { computed, defineComponent, nextTick, PropType, ref, VNode } from "vue";
 import dayjs from "dayjs";
-
+import { computed, defineComponent, nextTick, PropType, ref, VNode } from "vue";
+import Watermark from "@/components/misc/Watermark.vue";
+import { pushNotification } from "@/store";
 import { minmax } from "@/utils";
 import {
   calcBBox,
@@ -62,7 +62,6 @@ import {
   provideSchemaDiagramContext,
   useSchemaDiagramContext,
 } from "../common";
-import Watermark from "@/components/misc/Watermark.vue";
 
 const props = defineProps({
   renderDesktop: {

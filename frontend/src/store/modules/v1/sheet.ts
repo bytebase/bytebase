@@ -1,15 +1,14 @@
-import { defineStore } from "pinia";
-import { computed, ref, unref, watchEffect } from "vue";
 import { isEqual, isUndefined } from "lodash-es";
-
+import { defineStore } from "pinia";
+import { computed, ref, unref, watch, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
+import { UNKNOWN_ID, MaybeRef } from "@/types";
 import {
   Sheet,
   SheetOrganizer,
   Sheet_Source,
 } from "@/types/proto/v1/sheet_service";
 import { extractSheetUID, getSheetStatement, isSheetReadableV1 } from "@/utils";
-import { UNKNOWN_ID, MaybeRef } from "@/types";
 import { useCurrentUserV1 } from "../auth";
 import { useTabStore } from "../tab";
 import { getUserEmailFromIdentifier } from "./common";
@@ -85,6 +84,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
       const sheet = await sheetServiceClient.getSheet({
         name,
       });
+
       setSheetList([sheet]);
       return sheet;
     } catch {
@@ -283,7 +283,7 @@ export const useSheetAndTabStore = defineStore("sheet_and_tab", () => {
   const isCreator = computed(() => {
     const sheet = currentSheet.value;
     if (!sheet) return false;
-    return getUserEmailFromIdentifier(sheet.name) === me.value.email;
+    return getUserEmailFromIdentifier(sheet.creator) === me.value.email;
   });
 
   const isReadOnly = computed(() => {
@@ -345,4 +345,24 @@ export const useSheetStatementByUID = (uid: MaybeRef<string>) => {
     if (!sheet) return "";
     return getSheetStatement(sheet);
   });
+};
+
+export const useSheetByName = (name: MaybeRef<string>) => {
+  const store = useSheetV1Store();
+  const ready = ref(false);
+  const sheet = computed(() => store.getSheetByName(unref(name)));
+  watch(
+    () => unref(name),
+    (name) => {
+      if (!name) return;
+      if (extractSheetUID(name) === String(UNKNOWN_ID)) return;
+
+      ready.value = false;
+      store.getOrFetchSheetByName(name).finally(() => {
+        ready.value = true;
+      });
+    },
+    { immediate: true }
+  );
+  return { ready, sheet };
 };

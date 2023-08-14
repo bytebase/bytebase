@@ -137,12 +137,12 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { reactive, computed, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { storeToRefs } from "pinia";
-
 import type { BBTableColumn, BBTableSectionDataSource } from "@/bbkit/types";
-import { instanceV1Slug, instanceV1Name, hostPortOfInstanceV1 } from "@/utils";
+import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useInstanceV1Store,
@@ -152,8 +152,7 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { ComposedInstance } from "@/types";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { instanceV1Slug, instanceV1Name, hostPortOfInstanceV1 } from "@/utils";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 defineProps({

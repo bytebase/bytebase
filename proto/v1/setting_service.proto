@@ -105,6 +105,7 @@ message Value {
     WorkspaceTrialSetting workspace_trial_setting_value = 7;
     ExternalApprovalSetting external_approval_setting_value = 8;
     SchemaTemplateSetting schema_template_setting_value = 9;
+    DataClassificationSetting data_classification_setting_value = 10;
   }
 }
 
@@ -262,13 +263,33 @@ message WorkspaceTrialSetting {
 }
 
 message DataClassificationSetting {
-  // Hard-coded schema comment format: [0-9]+-[0-9]+-[0-9]+
   message DataClassificationConfig {
+    // id is the uuid for classification. Each project can chose one classification config.
     string id = 1;
     string title = 2;
-    // Maps classification to level.
-    map<string, string> classification_level = 3;
-    // TODO(ed): store the actual config.
+
+    message Level {
+      string id = 1;
+      string title = 2;
+      string description = 3;
+      bool sensitive = 4;
+    }
+
+    // levels is user defined level list for classification.
+    // The order for the level decides its priority.
+    repeated Level levels = 3;
+
+    message DataClassification {
+      // id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.
+      string id = 1;
+      string title = 2;
+      string description = 3;
+      optional string level_id = 4;
+    }
+
+    // classification is the id - DataClassification map.
+    // The id should in [0-9]+-[0-9]+-[0-9]+ format.
+    map<string, DataClassification> classification = 4;
   }
   repeated DataClassificationConfig configs = 1;
 }

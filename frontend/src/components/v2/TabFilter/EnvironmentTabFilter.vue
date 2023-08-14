@@ -14,12 +14,11 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { useEnvironmentV1List } from "@/store";
 import { UNKNOWN_ID, unknownEnvironment } from "@/types";
-import { TabFilterItem } from "./types";
-import { EnvironmentV1Name } from "../Model";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "../Model";
+import { TabFilterItem } from "./types";
 
 interface EnvironmentTabFilterItem extends TabFilterItem<string> {
   environment: Environment;

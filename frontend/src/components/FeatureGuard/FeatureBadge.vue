@@ -14,16 +14,31 @@
     </NTooltip>
   </div>
   <template v-else-if="!hasFeature">
-    <router-link
-      v-if="clickable"
-      to="/setting/subscription"
-      exact-active-class=""
-    >
-      <heroicons-solid:sparkles class="text-accent w-5 h-5" />
-    </router-link>
-    <span v-else>
-      <heroicons-solid:sparkles class="text-accent w-5 h-5" />
-    </span>
+    <NTooltip :show-arrow="true">
+      <template #trigger>
+        <router-link
+          v-if="clickable"
+          to="/setting/subscription"
+          exact-active-class=""
+        >
+          <heroicons-solid:sparkles class="text-accent w-5 h-5" />
+        </router-link>
+        <span v-else>
+          <heroicons-solid:sparkles class="text-accent w-5 h-5" />
+        </span>
+      </template>
+      <span class="w-56 text-sm">
+        {{
+          $t("subscription.require-subscription", {
+            requiredPlan: $t(
+              `subscription.plan.${planTypeToString(
+                subscriptionStore.getMinimumRequiredPlan(feature)
+              )}.title`
+            ),
+          })
+        }}
+      </span>
+    </NTooltip>
   </template>
   <InstanceAssignment
     v-if="instanceMissingLicense"
@@ -33,11 +48,11 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed } from "vue";
-import { FeatureType } from "@/types";
-import { useSubscriptionV1Store } from "@/store";
-import { Instance } from "@/types/proto/v1/instance_service";
 import { NTooltip } from "naive-ui";
+import { reactive, PropType, computed } from "vue";
+import { useSubscriptionV1Store } from "@/store";
+import { FeatureType, planTypeToString } from "@/types";
+import { Instance } from "@/types/proto/v1/instance_service";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;

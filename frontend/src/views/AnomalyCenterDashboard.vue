@@ -1,21 +1,27 @@
 <template>
   <div class="flex flex-col px-4 pb-4">
-    <BBAttention
-      :style="'INFO'"
-      :title="$t('anomaly.attention-title')"
-      :description="$t('anomaly.attention-desc')"
-    />
-
     <FeatureAttentionForInstanceLicense
       v-if="hasSchemaDriftFeature"
-      custom-class="mt-5"
+      custom-class="my-4"
       feature="bb.feature.schema-drift"
     />
     <FeatureAttention
       v-else
-      custom-class="mt-5"
+      custom-class="my-4"
       feature="bb.feature.schema-drift"
     />
+
+    <div class="textinfolabel">
+      {{ $t("anomaly.attention-desc") }}
+      <a
+        href="https://www.bytebase.com/docs/administration/anomaly-center/"
+        target="_blank"
+        class="normal-link inline-flex flex-row items-center"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
+    </div>
 
     <div class="mt-4 space-y-4">
       <div
@@ -30,11 +36,11 @@
           {{ i == 0 ? $t("common.database") : $t("common.instance") }}
         </h3>
         <dl
-          class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+          class="grid grid-cols-1 gap-4 sm:grid-cols-2"
           :class="`lg:grid-cols-${item.length}`"
         >
           <template v-for="(summary, index) in item" :key="index">
-            <div class="p-4 shadow rounded-lg tooltip-wrapper">
+            <div class="px-4 py-2 border tooltip-wrapper">
               <span class="text-sm tooltip">
                 {{
                   $t("anomaly.tooltip", {
@@ -45,29 +51,31 @@
                   })
                 }}
               </span>
-              <dt class="textlabel">
-                {{ summary.environmentName }}
-              </dt>
-              <dd class="flex flex-row mt-1 text-xl text-main space-x-2">
-                <span class="flex flex-row items-center">
-                  <heroicons-outline:exclamation-circle
-                    class="w-5 h-5 mr-1 text-error"
-                  />
-                  {{ summary.criticalCount }}
-                </span>
-                <span class="flex flex-row items-center">
-                  <heroicons-outline:exclamation
-                    class="w-5 h-5 mr-1 text-warning"
-                  />
-                  {{ summary.highCount }}
-                </span>
-                <span class="flex flex-row items-center">
-                  <heroicons-outline:information-circle
-                    class="w-5 h-5 mr-1 text-info"
-                  />
-                  {{ summary.mediumCount }}
-                </span>
-              </dd>
+              <div class="flex justify-between items-center">
+                <dt class="textlabel">
+                  {{ summary.environmentName }}
+                </dt>
+                <dd class="flex flex-row text-main space-x-2">
+                  <span class="flex flex-row items-center">
+                    <heroicons-outline:exclamation-circle
+                      class="w-4 h-4 mr-1 text-error"
+                    />
+                    {{ summary.criticalCount }}
+                  </span>
+                  <span class="flex flex-row items-center">
+                    <heroicons-outline:exclamation
+                      class="w-4 h-4 mr-1 text-warning"
+                    />
+                    {{ summary.highCount }}
+                  </span>
+                  <span class="flex flex-row items-center">
+                    <heroicons-outline:information-circle
+                      class="w-4 h-4 mr-1 text-info"
+                    />
+                    {{ summary.mediumCount }}
+                  </span>
+                </dd>
+              </div>
             </div>
           </template>
         </dl>
@@ -130,20 +138,11 @@
 </template>
 
 <script lang="ts">
+import { cloneDeep } from "lodash-es";
 import { computed, defineComponent, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
-
-import AnomalyTable from "@/components/AnomalyTable.vue";
-import { UNKNOWN_USER_NAME } from "../types";
-import {
-  databaseV1Slug,
-  instanceV1Slug,
-  hasWorkspacePermissionV1,
-  sortDatabaseV1List,
-  sortInstanceV1List,
-} from "@/utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "@/bbkit/types";
+import AnomalyTable from "@/components/AnomalyTable.vue";
 import {
   featureToRef,
   useAnomalyV1List,
@@ -156,6 +155,14 @@ import {
   Anomaly,
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";
+import {
+  databaseV1Slug,
+  instanceV1Slug,
+  hasWorkspacePermissionV1,
+  sortDatabaseV1List,
+  sortInstanceV1List,
+} from "@/utils";
+import { UNKNOWN_USER_NAME } from "../types";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -222,7 +229,7 @@ export default defineComponent({
               database.databaseName
                 .toLowerCase()
                 .includes(state.searchText.toLowerCase()) ||
-              database.instanceEntity.environmentEntity.title
+              database.effectiveEnvironmentEntity.title
                 .toLowerCase()
                 .includes(state.searchText.toLowerCase())
             ) {
@@ -240,7 +247,7 @@ export default defineComponent({
 
           if (anomalyListOfDatabase.length > 0) {
             sectionList.push({
-              title: `${database.databaseName} (${database.instanceEntity.environmentEntity.title})`,
+              title: `${database.databaseName} (${database.effectiveEnvironmentEntity.title})`,
               link: `/db/${databaseV1Slug(database)}`,
               list: anomalyListOfDatabase,
             });
@@ -311,16 +318,14 @@ export default defineComponent({
               break;
           }
         }
-        const summary = envMap.get(
-          database.instanceEntity.environmentEntity.uid
-        );
+        const summary = envMap.get(database.effectiveEnvironmentEntity.uid);
         if (summary) {
           summary.criticalCount += criticalCount;
           summary.highCount += highCount;
           summary.mediumCount += mediumCount;
         } else {
-          envMap.set(String(database.instanceEntity.environmentEntity.uid), {
-            environmentName: database.instanceEntity.environmentEntity.title,
+          envMap.set(String(database.effectiveEnvironmentEntity.uid), {
+            environmentName: database.effectiveEnvironmentEntity.title,
             criticalCount,
             highCount,
             mediumCount,

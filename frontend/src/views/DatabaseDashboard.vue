@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col relative">
-    <div class="px-5 py-2 flex justify-between items-center">
+    <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
         :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
@@ -65,30 +65,15 @@
 </template>
 
 <script lang="ts" setup>
+import { NInputGroup, NTooltip } from "naive-ui";
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { NInputGroup, NTooltip } from "naive-ui";
-
 import {
   EnvironmentTabFilter,
   InstanceSelect,
   DatabaseV1Table,
   SearchBox,
 } from "@/components/v2";
-import {
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
-  UNKNOWN_USER_NAME,
-  ComposedDatabase,
-  ComposedDatabaseGroup,
-  DEFAULT_PROJECT_V1_NAME,
-} from "../types";
-import {
-  filterDatabaseV1ByKeyword,
-  hasWorkspacePermissionV1,
-  sortDatabaseV1List,
-  isDatabaseV1Accessible,
-} from "@/utils";
 import {
   useCurrentUserV1,
   useDBGroupStore,
@@ -103,6 +88,20 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import {
+  filterDatabaseV1ByKeyword,
+  hasWorkspacePermissionV1,
+  sortDatabaseV1List,
+  isDatabaseV1Accessible,
+} from "@/utils";
+import {
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_ID,
+  UNKNOWN_USER_NAME,
+  ComposedDatabase,
+  ComposedDatabaseGroup,
+  DEFAULT_PROJECT_V1_NAME,
+} from "../types";
 
 interface LocalState {
   instanceFilter: string;
@@ -221,9 +220,7 @@ const filteredDatabaseList = computed(() => {
     );
   const environment = selectedEnvironment.value;
   if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
-    list = list.filter(
-      (db) => db.instanceEntity.environment === environment.name
-    );
+    list = list.filter((db) => db.effectiveEnvironment === environment.name);
   }
   if (state.instanceFilter !== String(UNKNOWN_ID)) {
     list = list.filter(

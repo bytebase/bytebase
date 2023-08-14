@@ -1,7 +1,6 @@
-import { computed, reactive, ref, unref, watch } from "vue";
-import { defineStore } from "pinia";
 import { uniq } from "lodash-es";
-
+import { defineStore } from "pinia";
+import { computed, reactive, ref, unref, watch } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import {
   ComposedInstance,
@@ -15,6 +14,7 @@ import {
   UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
 import {
   Database,
   ListDatabasesRequest,
@@ -26,10 +26,9 @@ import {
   hasWorkspacePermissionV1,
   isMemberOfProjectV1,
 } from "@/utils";
+import { useEnvironmentV1Store } from "./environment";
 import { useInstanceV1Store } from "./instance";
 import { useProjectV1Store } from "./project";
-import { User } from "@/types/proto/v1/auth_service";
-import { useEnvironmentV1Store } from "./environment";
 
 export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
@@ -96,7 +95,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
   const databaseListByEnvironment = (environment: string) => {
     return databaseList.value.filter(
-      (db) => db.instanceEntity.environment === environment
+      (db) => db.effectiveEnvironment === environment
     );
   };
   const getDatabaseByName = (name: string) => {
@@ -287,6 +286,9 @@ const batchComposeDatabase = async (databaseList: Database[]) => {
         unknownEnvironment(),
     };
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
+    composed.effectiveEnvironmentEntity =
+      environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
+      unknownEnvironment();
     return composed;
   });
 };

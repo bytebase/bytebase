@@ -51,8 +51,8 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import EllipsisText from "../EllipsisText.vue";
 import { DebugLog } from "@/types/proto/v1/actuator_service";
+import EllipsisText from "../EllipsisText.vue";
 
 defineProps({
   debugLogList: {

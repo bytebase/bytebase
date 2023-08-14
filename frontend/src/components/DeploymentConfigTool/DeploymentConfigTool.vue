@@ -19,11 +19,10 @@
 
 <script lang="ts">
 /* eslint-disable vue/no-mutating-props */
-
 import { defineComponent, PropType } from "vue";
-import DeploymentStage from "./DeploymentStage.vue";
 import { ComposedDatabase } from "@/types";
 import { Schedule, ScheduleDeployment } from "@/types/proto/v1/project_service";
+import DeploymentStage from "./DeploymentStage.vue";
 
 export default defineComponent({
   name: "DeploymentConfigTool",

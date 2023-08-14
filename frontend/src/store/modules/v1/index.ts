@@ -11,6 +11,7 @@ export * from "./policy";
 export * from "./setting";
 export * from "./instance";
 export * from "./issue";
+export * from "./experimental-issue";
 export * from "./subscription";
 export * from "./actuator";
 export * from "./sql";

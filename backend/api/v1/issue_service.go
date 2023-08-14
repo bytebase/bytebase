@@ -113,8 +113,18 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 
+	switch request.Issue.Type {
+	case v1pb.Issue_TYPE_UNSPECIFIED:
+		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
+	case v1pb.Issue_GRANT_REQUEST:
+		return nil, status.Errorf(codes.Unimplemented, "issue type %q is not implemented yet", request.Issue.Type)
+	case v1pb.Issue_DATABASE_CHANGE:
+		// TODO(p0ny): refactor
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
+	}
+
 	if request.Issue.Plan == "" {
-		// TODO(p0ny): support plan-less issue
 		return nil, status.Errorf(codes.InvalidArgument, "plan is required")
 	}
 
@@ -132,24 +142,33 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	}
 	planUID = &plan.UID
 
+	assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
+	}
+	if assignee == nil {
+		return nil, status.Errorf(codes.NotFound, "assignee not found for email: %q", assigneeEmail)
+	}
+
 	issueCreateMessage := &store.IssueMessage{
-		Project:     project,
-		PlanUID:     planUID,
-		PipelineUID: nil,
-		Title:       request.Issue.Title,
-		Status:      api.IssueOpen,
-		Type:        api.IssueDatabaseGeneral,
-		Description: request.Issue.Description,
-		Assignee: &store.UserMessage{
-			ID: api.SystemBotID,
-		},
+		Project:       project,
+		PlanUID:       planUID,
+		PipelineUID:   nil,
+		Title:         request.Issue.Title,
+		Status:        api.IssueOpen,
+		Type:          api.IssueDatabaseGeneral,
+		Description:   request.Issue.Description,
+		Assignee:      assignee,
 		NeedAttention: false,
 	}
 
-	// TODO(p0ny): find approval template
 	issueCreatePayload := &storepb.IssuePayload{
 		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: true,
+			ApprovalFindingDone: false,
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
@@ -164,6 +183,8 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
 	}
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
 	createActivityPayload := api.ActivityIssueCreatePayload{
 		IssueName: issue.Title,
 	}
@@ -669,6 +690,20 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				subscribers = append(subscribers, user)
 			}
 			patch.Subscribers = &subscribers
+
+		case "assignee":
+			assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", request.Issue.Assignee, err)
+			}
+			user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", assigneeEmail, err)
+			}
+			if user == nil {
+				return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
+			}
+			patch.Assignee = user
 		}
 	}
 
@@ -686,6 +721,79 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return issueV1, nil
+}
+
+// BatchUpdateIssues batch updates issues.
+func (s *IssueService) BatchUpdateIssues(ctx context.Context, request *v1pb.BatchUpdateIssuesRequest) (*v1pb.BatchUpdateIssuesResponse, error) {
+	var issueIDs []int
+	var prevStatus api.IssueStatus
+	var err error
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+
+	// Validate the request.
+	for i, request := range request.Requests {
+		if request.UpdateMask == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+		}
+
+		for _, path := range request.UpdateMask.Paths {
+			switch path {
+			case "status":
+				if i == 0 {
+					prevStatus, err = convertToAPIIssueStatus(request.Issue.Status)
+					if err != nil {
+						return nil, status.Errorf(codes.InvalidArgument, "invalid status %v, err: %v", request.Issue.Status, err)
+					}
+				} else {
+					cs, err := convertToAPIIssueStatus(request.Issue.Status)
+					if err != nil {
+						return nil, status.Errorf(codes.InvalidArgument, "invalid status %v, err: %v", request.Issue.Status, err)
+					}
+					if cs != prevStatus {
+						return nil, status.Errorf(codes.InvalidArgument, "cannot batch update issues with different status")
+					}
+				}
+				issue, err := s.getIssueMessage(ctx, request.Issue.Name)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to find issue %v, err: %v", request.Issue.Name, err)
+				}
+				if issue == nil {
+					return nil, status.Errorf(codes.NotFound, "cannot find issue %v", request.Issue.Name)
+				}
+				issueIDs = append(issueIDs, issue.UID)
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, "unsupported update_mask path %v in BatchUpdateIssues", path)
+			}
+		}
+	}
+
+	if len(issueIDs) == 0 {
+		return &v1pb.BatchUpdateIssuesResponse{}, nil
+	}
+
+	if err := s.store.BatchUpdateIssueStatuses(ctx, issueIDs, prevStatus, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to batch update issues, err: %v", err)
+	}
+
+	var result []*v1pb.Issue
+	for _, issueID := range issueIDs {
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+			UID: &issueID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get issue %v, err: %v", issueID, err)
+		}
+		issueV1, err := convertToIssue(ctx, s.store, issue)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+		}
+		result = append(result, issueV1)
+	}
+
+	return &v1pb.BatchUpdateIssuesResponse{
+		Issues: result,
+	}, nil
 }
 
 // CreateIssueComment creates the issue comment.
@@ -932,8 +1040,23 @@ func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
 		return v1pb.Issue_DATABASE_CHANGE
 	case api.IssueGrantRequest:
 		return v1pb.Issue_GRANT_REQUEST
+	case api.IssueGeneral:
+		return v1pb.Issue_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToAPIIssueStatus(status v1pb.IssueStatus) (api.IssueStatus, error) {
+	switch status {
+	case v1pb.IssueStatus_OPEN:
+		return api.IssueOpen, nil
+	case v1pb.IssueStatus_DONE:
+		return api.IssueDone, nil
+	case v1pb.IssueStatus_CANCELED:
+		return api.IssueCanceled, nil
+	default:
+		return api.IssueStatus(""), errors.Errorf("invalid issue status %v", status)
 	}
 }
 

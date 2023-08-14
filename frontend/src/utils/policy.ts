@@ -1,15 +1,15 @@
-import { hasFeature, useCurrentUserIamPolicy, usePolicyV1Store } from "@/store";
-import type { ComposedDatabase, Instance } from "@/types";
-import { hasWorkspacePermissionV1 } from "./role";
-import { User } from "@/types/proto/v1/auth_service";
 import { resolveCELExpr } from "@/plugins/cel";
-import { extractEnvironmentNameListFromExpr } from "./v1";
+import { hasFeature, useCurrentUserIamPolicy, usePolicyV1Store } from "@/store";
+import { policyNamePrefix } from "@/store/modules/v1/common";
+import type { ComposedDatabase, Instance } from "@/types";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { User } from "@/types/proto/v1/auth_service";
 import {
   PolicyType,
   policyTypeToJSON,
 } from "@/types/proto/v1/org_policy_service";
-import { policyNamePrefix } from "@/store/modules/v1/common";
+import { hasWorkspacePermissionV1 } from "./role";
+import { extractEnvironmentNameListFromExpr } from "./v1";
 
 export const isInstanceAccessible = (instance: Instance, user: User) => {
   if (!hasFeature("bb.feature.access-control")) {
@@ -69,7 +69,7 @@ export const isDatabaseAccessible = (
             querierBinding.parsedExpr?.expr || Expr.fromPartial({})
           );
           const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.instanceEntity.environment)) {
+          if (envNameList.includes(database.effectiveEnvironment)) {
             return true;
           }
         }

@@ -36,7 +36,7 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 
 	var engine parser.EngineType
 	switch instance.Engine {
-	case db.Postgres:
+	case db.Postgres, db.RisingWave:
 		engine = parser.Postgres
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		engine = parser.MySQL

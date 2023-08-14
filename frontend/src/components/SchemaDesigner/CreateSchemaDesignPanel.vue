@@ -3,6 +3,7 @@
     :show="true"
     width="auto"
     :auto-focus="false"
+    :trap-focus="false"
     :close-on-esc="true"
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
@@ -68,21 +69,21 @@ import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  ChangeHistory,
-  DatabaseMetadata,
-} from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import {
   pushNotification,
   useDatabaseV1Store,
   useProjectV1ByUID,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { databaseNamePrefix } from "@/store/modules/v1/common";
-import { mergeSchemaEditToMetadata } from "./common/util";
-import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
-import SchemaDesigner from "./index.vue";
 import { UNKNOWN_ID } from "@/types";
+import {
+  ChangeHistory,
+  DatabaseMetadata,
+} from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
+import { mergeSchemaEditToMetadata } from "./common/util";
+import SchemaDesigner from "./index.vue";
 
 interface BaselineSchema {
   // The uid of project.
@@ -98,7 +99,7 @@ interface LocalState {
   schemaDesign: SchemaDesign;
 }
 
-defineProps({
+const props = defineProps({
   projectId: {
     type: String,
     default: undefined,
@@ -115,7 +116,9 @@ const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const state = reactive<LocalState>({
   schemaDesignName: "",
-  baselineSchema: {},
+  baselineSchema: {
+    projectId: props.projectId,
+  },
   schemaDesign: SchemaDesign.fromPartial({}),
 });
 const refreshId = ref<string>("");

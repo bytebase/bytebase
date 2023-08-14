@@ -79,6 +79,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("Creating database is not supported")
 	}
 
+	// TODO(d): support create database with environment override.
 	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return true, nil, err
@@ -291,7 +292,7 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
 	case db.MSSQL:
 		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil
-	case db.Postgres:
+	case db.Postgres, db.RisingWave:
 		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
 	case db.ClickHouse:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil

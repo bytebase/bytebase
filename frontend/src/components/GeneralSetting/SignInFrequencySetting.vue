@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-7 mt-5 lg:mt-0" @click="handleValueFieldClick">
+  <div class="mb-7 mt-4 lg:mt-0" @click="handleValueFieldClick">
     <p class="font-medium flex flex-row justify-start items-center">
       <span class="mr-2">{{
         $t("settings.general.workspace.sign-in-frequency.self")
@@ -40,17 +40,17 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
+import { NInputNumber, NRadioGroup, NRadio } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { NInputNumber, NRadioGroup, NRadio } from "naive-ui";
 import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
-import { FeatureType } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { FeatureType, refreshTokenDurationInHours } from "@/types";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
-    inputValue: 7,
+    inputValue: refreshTokenDurationInHours / 7,
     timeFormat: "DAYS",
   };
   const seconds =

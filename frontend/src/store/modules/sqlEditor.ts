@@ -7,11 +7,11 @@ import {
   SingleSQLResult,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
+import { QueryResult } from "@/types/proto/v1/sql_service";
 import { useLegacySQLStore } from "./sql";
 import { useTabStore } from "./tab";
-import { useDatabaseV1Store } from "./v1/database";
 import { useInstanceV1Store, useSQLStore, useActivityV1Store } from "./v1";
-import { QueryResult } from "@/types/proto/v1/sql_service";
+import { useDatabaseV1Store } from "./v1/database";
 
 // set the limit to 1000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
@@ -108,7 +108,7 @@ export const mockAffectedRows0 = (): SingleSQLResult => {
 };
 
 export const mockAffectedV1Rows0 = (): QueryResult => {
-  return {
+  return QueryResult.fromPartial({
     columnNames: ["Affected Rows"],
     columnTypeNames: ["BIGINT"],
     masked: [false],
@@ -123,5 +123,5 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
         ],
       },
     ],
-  };
+  });
 };

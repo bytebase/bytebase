@@ -20,7 +20,7 @@
         </div>
       </div>
     </div>
-    <div class="flex items-center gap-x-5 my-5 pb-5 border-b">
+    <div class="flex items-center gap-x-5 my-4 pb-5 border-b">
       <label
         v-for="item in engineList"
         :key="item"
@@ -70,17 +70,16 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, onMounted } from "vue";
 import { NButton } from "naive-ui";
-import { Drawer } from "@/components/v2";
 import { v1 as uuidv1 } from "uuid";
-
-import { featureToRef, useSchemaEditorStore } from "@/store";
-import { useWorkspacePermissionV1 } from "@/utils";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import { Engine } from "@/types/proto/v1/common";
+import { reactive, computed, onMounted } from "vue";
 import { engineList } from "@/components/SchemaTemplate/utils";
+import { Drawer } from "@/components/v2";
+import { featureToRef, useSchemaEditorStore } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import { useWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   template: SchemaTemplateSetting_FieldTemplate;

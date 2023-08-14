@@ -775,6 +775,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, project
 	if instance.Engine == db.Oracle {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Creating Oracle database is not supported")
 	}
+	// TODO(d): support create database with environment override.
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return nil, err
@@ -1774,6 +1775,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 			stmt = fmt.Sprintf("%s WITH\n\t%s", stmt, strings.Join(list, "\n\t"))
 		}
 		return fmt.Sprintf("%s;", stmt), nil
+	case db.RisingWave:
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }
@@ -1858,6 +1861,13 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	case db.Redshift:
 		if owner == "" {
 			return errors.Errorf("database owner is required for Redshift")
+		}
+	case db.RisingWave:
+		if characterSet != "" {
+			return errors.Errorf("RisingWave does not support character set, but got %s", characterSet)
+		}
+		if collation != "" {
+			return errors.Errorf("RisingWave does not support collation, but got %s", collation)
 		}
 	case db.SQLite, db.MongoDB, db.MSSQL:
 		// no-op.

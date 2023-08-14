@@ -106,6 +106,7 @@
                 placeholder="column type"
                 class="textfield w-full"
                 :disabled="!allowEdit"
+                :readonly="schemaTemplateColumnTypes.length > 0"
               />
               <NDropdown
                 trigger="click"
@@ -189,17 +190,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
 import { isEqual } from "lodash-es";
+import { computed, reactive } from "vue";
 import { DrawerContent } from "@/components/v2";
+import { useSchemaEditorStore, useSettingV1Store } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
+import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   getDataTypeSuggestionList,
   engineNameV1,
   useWorkspacePermissionV1,
 } from "@/utils";
-import { Engine } from "@/types/proto/v1/common";
-import { useSchemaEditorStore } from "@/store";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import { engineList, getDefaultValue } from "./utils";
 
 const props = defineProps<{
@@ -219,6 +220,7 @@ const state = reactive<LocalState>({
   category: props.template.category,
   column: Object.assign({}, props.template.column),
 });
+const settingStore = useSettingV1Store();
 const store = useSchemaEditorStore();
 const allowEdit = computed(() => {
   return (
@@ -228,6 +230,15 @@ const allowEdit = computed(() => {
 });
 
 const dataTypeOptions = computed(() => {
+  if (schemaTemplateColumnTypes.value.length > 0) {
+    return schemaTemplateColumnTypes.value.map((columnType) => {
+      return {
+        label: columnType,
+        key: columnType,
+      };
+    });
+  }
+
   return getDataTypeSuggestionList(state.engine).map((dataType) => {
     return {
       label: dataType,
@@ -250,6 +261,20 @@ const categoryOptions = computed(() => {
     });
   }
   return options;
+});
+
+const schemaTemplateColumnTypes = computed(() => {
+  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const columnTypes = setting?.value?.schemaTemplateSettingValue?.columnTypes;
+  if (columnTypes && columnTypes.length > 0) {
+    const columnType = columnTypes.find(
+      (columnType) => columnType.engine === state.engine
+    );
+    if (columnType && columnType.enabled) {
+      return columnType.types;
+    }
+  }
+  return [];
 });
 
 const changeEngine = (engine: Engine) => {

@@ -72,16 +72,16 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	if err != nil {
 		return nil, err
 	}
-	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
-	if err != nil {
-		return nil, err
-	}
 	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
 	if database == nil {
 		return nil, errors.Errorf("database not found")
+	}
+	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+	if err != nil {
+		return nil, err
 	}
 
 	mi := &db.MigrationInfo{
@@ -550,6 +550,10 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	if instance == nil {
 		return "", errors.Errorf("cannot found instance %d", task.InstanceID)
 	}
+	if instance.Engine == db.RisingWave {
+		return "", nil
+	}
+
 	if err := license.IsFeatureEnabledForInstance(api.FeatureVCSSchemaWriteBack, instance); err != nil {
 		log.Debug(err.Error(), zap.String("instance", instance.ResourceID))
 		return "", nil

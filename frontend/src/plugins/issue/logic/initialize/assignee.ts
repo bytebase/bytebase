@@ -1,18 +1,18 @@
-import { IssueCreate, PresetRoleType } from "@/types";
-import { useInstanceV1Store, useProjectV1Store, useUserStore } from "@/store";
-import {
-  extractUserUID,
-  hasWorkspacePermissionV1,
-  memberListInProjectV1,
-} from "@/utils";
 import { extractRollOutPolicyValue } from "@/components/Issue/logic";
+import { useInstanceV1Store, useProjectV1Store, useUserStore } from "@/store";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { IssueCreate, PresetRoleType } from "@/types";
+import { UserRole } from "@/types/proto/v1/auth_service";
 import {
   PolicyType,
   ApprovalStrategy,
   ApprovalGroup,
 } from "@/types/proto/v1/org_policy_service";
-import { UserRole } from "@/types/proto/v1/auth_service";
+import {
+  extractUserUID,
+  hasWorkspacePermissionV1,
+  memberListInProjectV1,
+} from "@/utils";
 
 export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
   const firstTask = issueCreate.pipeline?.stageList[0]?.taskList[0];

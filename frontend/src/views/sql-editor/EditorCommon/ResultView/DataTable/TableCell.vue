@@ -13,16 +13,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { NButton } from "naive-ui";
 import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
-
-import { useSQLResultViewContext } from "../context";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { NButton } from "naive-ui";
+import { computed, ref } from "vue";
 import { useDatabaseV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { getHighlightHTMLByRegExp } from "@/utils";
+import { useSQLResultViewContext } from "../context";
 
 const props = defineProps<{
   value: unknown;

@@ -1,24 +1,15 @@
 <template>
   <div class="space-y-4 pb-4 max-w-full">
-    <div>
-      <BBAttention :style="'WARN'" :title="$t('slow-query.report-slow-query')">
-        <i18n-t
-          keypath="slow-query.attention-description"
-          tag="div"
-          class="text-yellow-700 whitespace-pre-wrap mt-2 text-sm"
-        >
-          <template #slow_query>
-            <code>slow_query</code>
-          </template>
-          <template #pg_stat_statements>
-            <code>pg_stat_statements</code>
-          </template>
-        </i18n-t>
-        <div v-if="false" class="mt-2">
-          <!-- TODO: update docs link -->
-          <LearnMoreLink url="https://www.bytebase.com/404?source=console" />
-        </div>
-      </BBAttention>
+    <div class="textinfolabel">
+      {{ $t("slow-query.attention-description") }}
+      <a
+        href="https://www.bytebase.com/docs/slow-query/overview?source=console"
+        target="_blank"
+        class="normal-link inline-flex flex-row items-center"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
     </div>
     <div class="flex items-center justify-between">
       <EnvironmentTabFilter
@@ -41,11 +32,10 @@
 </template>
 
 <script lang="ts" setup>
+import { orderBy } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { orderBy } from "lodash-es";
-
-import { BBAttention } from "@/bbkit";
+import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
   pushNotification,
   useEnvironmentV1List,
@@ -53,13 +43,11 @@ import {
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
-import { ComposedInstance, ComposedSlowQueryPolicy, UNKNOWN_ID } from "@/types";
-import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
-import { SlowQueryPolicyTable } from "./components";
-import { instanceV1SupportSlowQuery } from "@/utils";
 import { useGracefulRequest } from "@/store/modules/utils";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { ComposedInstance, ComposedSlowQueryPolicy, UNKNOWN_ID } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { instanceV1SupportSlowQuery } from "@/utils";
+import { SlowQueryPolicyTable } from "./components";
 
 type LocalState = {
   ready: boolean;

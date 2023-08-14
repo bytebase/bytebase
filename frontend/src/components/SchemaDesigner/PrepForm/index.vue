@@ -34,6 +34,7 @@
 
   <CreateSchemaDesignPanel
     v-if="state.showCreatePanel"
+    :project-id="projectId"
     @dismiss="state.showCreatePanel = false"
     @created="
       (schemaDesign) => {
@@ -53,17 +54,21 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { reactive } from "vue";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { useSchemaDesignList } from "@/store/modules/schemaDesign";
-import SchemaDesignTable from "./SchemaDesignTable.vue";
 import { DrawerContent } from "@/components/v2";
+import { useSchemaDesignList } from "@/store/modules/schemaDesign";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import CreateSchemaDesignPanel from "../CreateSchemaDesignPanel.vue";
 import EditSchemaDesignPanel from "../EditSchemaDesignPanel.vue";
+import SchemaDesignTable from "./SchemaDesignTable.vue";
 
 interface LocalState {
   showCreatePanel: boolean;
   selectedSchemaDesignName?: string;
 }
+
+defineProps<{
+  projectId?: string;
+}>();
 
 const { schemaDesignList, ready } = useSchemaDesignList();
 const state = reactive<LocalState>({

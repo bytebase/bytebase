@@ -49,7 +49,7 @@
                     >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
                   >
                   <EnvironmentV1Name
-                    :environment="database.instanceEntity.environmentEntity"
+                    :environment="database.effectiveEnvironmentEntity"
                     icon-class="textinfolabel"
                   />
                 </dd>
@@ -105,13 +105,12 @@
                   </dd>
                 </div>
 
-                <!-- TODO: show table classification -->
-                <div v-if="table.classification" class="col-span-1">
+                <div v-if="tableClassification" class="col-span-1">
                   <dt class="text-sm text-control-light">
                     {{ $t("database.classification.self") }}
                   </dt>
                   <dd class="mt-1 text-lg sm:text-xl font-semibold">
-                    {{ table.classification }}
+                    {{ tableClassification.title }}
                   </dd>
                 </div>
 
@@ -180,6 +179,7 @@
               :table="table"
               :column-list="table.columns"
               :sensitive-data-list="sensitiveDataList"
+              :classification-config="classificationConfig"
             />
           </div>
 
@@ -199,26 +199,27 @@
 import { NDrawer, NDrawerContent } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+  useSettingV1Store,
+} from "@/store";
+import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
+import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
+import { TableMetadata } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
+import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
 import {
   bytesToString,
   hasWorkspacePermissionV1,
   isDatabaseV1Queryable,
   isGhostTable,
 } from "@/utils";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-} from "@/store";
-import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
-import { TableMetadata } from "@/types/proto/store/database";
 import ColumnTable from "./ColumnTable.vue";
-import IndexTable from "./IndexTable.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
-import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
-import { Engine } from "@/types/proto/v1/common";
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
+import IndexTable from "./IndexTable.vue";
 
 const props = defineProps<{
   // Format: /databases/:databaseName
@@ -233,6 +234,7 @@ const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
+const settingStore = useSettingV1Store();
 const table = ref<TableMetadata>();
 
 const database = computed(() => {
@@ -240,6 +242,19 @@ const database = computed(() => {
 });
 const instanceEngine = computed(() => {
   return database.value.instanceEntity.engine;
+});
+
+const classificationConfig = computed(() => {
+  return settingStore.getProjectClassification(
+    database.value.projectEntity.dataClassificationConfigId
+  );
+});
+
+const tableClassification = computed(() => {
+  if (!table.value?.classification) {
+    return;
+  }
+  return classificationConfig.value?.classification[table.value.classification];
 });
 
 const allowQuery = computed(() => {
@@ -255,7 +270,9 @@ const allowQuery = computed(() => {
   return isDatabaseV1Queryable(database.value, currentUserV1.value);
 });
 const hasSchemaProperty = computed(
-  () => instanceEngine.value === Engine.POSTGRES
+  () =>
+    instanceEngine.value === Engine.POSTGRES ||
+    instanceEngine.value === Engine.RISINGWAVE
 );
 const shouldShowColumnTable = computed(() => {
   return instanceEngine.value !== Engine.MONGODB;

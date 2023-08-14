@@ -4,9 +4,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import { ConnectionAtom, UNKNOWN_ID } from "@/types";
 import { useTabStore } from "@/store";
+import { ConnectionAtom, UNKNOWN_ID } from "@/types";
 
 const props = defineProps<{
   atom: ConnectionAtom;

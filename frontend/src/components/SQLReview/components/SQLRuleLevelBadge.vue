@@ -5,9 +5,8 @@
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { RuleLevel } from "@/types/sqlReview";
 import { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
+import { RuleLevel } from "@/types/sqlReview";
 
 const props = defineProps({
   level: {

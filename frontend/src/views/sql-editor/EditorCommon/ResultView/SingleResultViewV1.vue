@@ -119,42 +119,26 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
-import { NInput, NPagination } from "naive-ui";
-import { useI18n } from "vue-i18n";
-import { useDebounceFn } from "@vueuse/core";
 import {
   ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
+import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-
-import {
-  createExplainToken,
-  extractEnvironmentNameListFromExpr,
-  extractSQLRowValue,
-  hasWorkspacePermissionV1,
-  instanceV1HasStructuredQueryResult,
-} from "@/utils";
+import { NInput, NPagination } from "naive-ui";
+import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import {
   useInstanceV1Store,
   useTabStore,
   RESULT_ROWS_LIMIT,
   featureToRef,
-  useCurrentUserIamPolicy,
   useDatabaseV1Store,
   useCurrentUserV1,
-  usePolicyV1Store,
-  useDatabaseV1ByUID,
 } from "@/store";
-import DataTable from "./DataTable";
-import EmptyView from "./EmptyView.vue";
-import ErrorView from "./ErrorView.vue";
-import { useSQLResultViewContext } from "./context";
-import { Engine } from "@/types/proto/v1/common";
-import { QueryResult } from "@/types/proto/v1/sql_service";
 import {
   ExecuteConfig,
   ExecuteOption,
@@ -162,10 +146,19 @@ import {
   TabMode,
   UNKNOWN_ID,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { QueryResult } from "@/types/proto/v1/sql_service";
+import {
+  createExplainToken,
+  extractSQLRowValue,
+  hasWorkspacePermissionV1,
+  instanceV1HasStructuredQueryResult,
+} from "@/utils";
+import DataTable from "./DataTable";
+import EmptyView from "./EmptyView.vue";
+import ErrorView from "./ErrorView.vue";
+import { useSQLResultViewContext } from "./context";
 import { useExportData } from "./useExportData";
-import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import { resolveCELExpr } from "@/plugins/cel";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 
 type LocalState = {
   search: string;
@@ -201,9 +194,6 @@ const currentUserV1 = useCurrentUserV1();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 const { isExportingData, exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
-const { database } = useDatabaseV1ByUID(
-  computed(() => currentTab.value.connection.databaseId)
-);
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -251,26 +241,7 @@ const allowToExportData = computed(() => {
     return true;
   }
 
-  const policy = usePolicyV1Store().getPolicyByName("policies/WORKSPACE_IAM");
-  if (database.value && policy) {
-    const bindings = policy.workspaceIamPolicy?.bindings;
-    if (bindings) {
-      const querierBinding = bindings.find(
-        (binding) => binding.role === "roles/EXPORTER"
-      );
-      if (querierBinding) {
-        const simpleExpr = resolveCELExpr(
-          querierBinding.parsedExpr?.expr || Expr.fromPartial({})
-        );
-        const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-        if (envNameList.includes(database.value.instanceEntity.environment)) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return useCurrentUserIamPolicy().allowToExportDatabaseV1(database.value);
+  return currentTab.value.sqlResultSet?.allowExport || false;
 });
 
 // use a debounced value to improve performance when typing rapidly

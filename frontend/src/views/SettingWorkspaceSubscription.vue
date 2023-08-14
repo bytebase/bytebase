@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto">
-    <div class="textinfolabel">
+    <div class="textinfolabel my-4">
       {{ $t("subscription.description") }}
       <a
         class="text-accent"
@@ -16,7 +16,7 @@
         </span>
       </span>
     </div>
-    <dl class="text-left grid grid-cols-2 gap-x-6 my-5 xl:grid-cols-4">
+    <dl class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-4">
       <div class="my-3">
         <dt class="flex text-gray-400">
           {{ $t("subscription.current") }}
@@ -116,7 +116,7 @@
         </dd>
       </div>
     </dl>
-    <div v-if="canManageSubscription" class="w-full mt-5 flex flex-col">
+    <div v-if="canManageSubscription" class="w-full mt-4 flex flex-col">
       <textarea
         id="license"
         v-model="state.license"
@@ -135,7 +135,7 @@
         {{ $t("subscription.upload-license") }}
       </button>
     </div>
-    <div class="sm:flex sm:flex-col sm:align-center pt-5 mt-5 border-t">
+    <div class="sm:flex sm:flex-col sm:align-center pt-5 mt-4 border-t">
       <div class="textinfolabel">
         {{ $t("subscription.plan-compare") }}
       </div>
@@ -154,18 +154,18 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import PricingTable from "../components/PricingTable/";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   pushNotification,
   useCurrentUserV1,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { storeToRefs } from "pinia";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import PricingTable from "../components/PricingTable/";
 
 interface LocalState {
   loading: boolean;

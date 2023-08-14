@@ -132,6 +132,16 @@
                   comment: ""
                   classification: ""
                   usercomment: ""
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -181,8 +191,10 @@
       PRIMARY KEY (`a`, `b`, `c`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
     );
+
     CREATE TABLE `t2` (
       `b` int NULL,
+      `a` int NULL,
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );

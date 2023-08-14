@@ -82,8 +82,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
+import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
@@ -92,8 +92,8 @@ import {
   useSheetAndTabStore,
 } from "@/store";
 import { AccessOption } from "@/types";
-import { sheetSlugV1 } from "@/utils";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
+import { sheetSlugV1 } from "@/utils";
 
 const { t } = useI18n();
 

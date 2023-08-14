@@ -44,7 +44,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch, watchEffect } from "vue";
+import { isUndefined } from "lodash-es";
+import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { computed, onMounted, reactive, watch } from "vue";
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import {
   DatabaseResource,
@@ -107,12 +110,14 @@ const dialect = computed((): SQLDialect => {
   return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
 });
 
-// Prepare project entity.
-watchEffect(async () => {
-  if (!props.projectId) {
-    return;
+onMounted(() => {
+  if (
+    props.databaseResources &&
+    props.databaseResources.length > 0 &&
+    isUndefined(props.statement)
+  ) {
+    state.exportMethod = "DATABASE";
   }
-  await projectStore.getOrFetchProjectByUID(props.projectId);
 });
 
 watch(
@@ -138,6 +143,9 @@ watch(
       }
       emit("update:database-resources", state.databaseResources);
     }
+  },
+  {
+    immediate: true,
   }
 );
 
@@ -148,12 +156,6 @@ const handleStatementChange = (value: string) => {
 const handleTableResourceUpdate = (
   databaseResourceList: DatabaseResource[]
 ) => {
-  if (databaseResourceList.length > 1) {
-    throw new Error("Only one table can be selected");
-  } else if (databaseResourceList.length === 0) {
-    state.databaseResources = [];
-  } else {
-    state.databaseResources = databaseResourceList;
-  }
+  state.databaseResources = databaseResourceList;
 };
 </script>

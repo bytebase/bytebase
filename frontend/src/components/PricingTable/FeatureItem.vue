@@ -10,7 +10,7 @@
       style="margin-bottom: -1rem"
     >
       <template #trigger>
-        <div class="flex justify-center py-5 px-6">
+        <div class="flex justify-center py-4 px-6">
           <template v-if="featureDetail">
             <span v-if="featureDetail.content" class="block text-sm">{{
               $t(featureDetail.content ?? "")
@@ -35,10 +35,10 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
 import { NTooltip } from "naive-ui";
-import { LocalPlan } from "./types";
+import { PropType, computed } from "vue";
 import { getFeatureLocalization } from "@/types";
+import { LocalPlan } from "./types";
 
 const props = defineProps({
   plan: {

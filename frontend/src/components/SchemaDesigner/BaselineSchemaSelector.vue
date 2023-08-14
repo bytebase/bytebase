@@ -96,10 +96,15 @@
 </template>
 
 <script lang="ts" setup>
+import { head, isNull, isUndefined } from "lodash-es";
+import { NEllipsis } from "naive-ui";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
   useDatabaseV1Store,
+  useEnvironmentV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -108,10 +113,7 @@ import {
   ChangeHistoryView,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
-import { head, isNull, isUndefined } from "lodash-es";
-import { computed, onMounted, reactive, ref, watch } from "vue";
 import { instanceV1Name } from "@/utils";
-import { InstanceV1EngineIcon } from "@/components/v2";
 
 interface BaselineSchema {
   projectId?: string;
@@ -138,6 +140,7 @@ const state = reactive<LocalState>({});
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
+const environmentStore = useEnvironmentV1Store();
 const fullViewChangeHistoryCache = ref<Map<string, ChangeHistory>>(new Map());
 
 const database = computed(() => {
@@ -166,11 +169,13 @@ onMounted(async () => {
       );
       state.projectId = props.baselineSchema.projectId;
       state.databaseId = database.uid;
-      state.environmentId = database.instanceEntity.environmentEntity.uid;
+      state.environmentId = database.effectiveEnvironmentEntity.uid;
       state.changeHistory = props.baselineSchema.changeHistory;
     } catch (error) {
       // do nothing.
     }
+  } else if (props.baselineSchema?.projectId) {
+    state.projectId = props.baselineSchema.projectId;
   }
 });
 
@@ -260,8 +265,12 @@ const handleDatabaseSelect = async (databaseId: string) => {
     if (!database) {
       return;
     }
+
+    const environment = environmentStore.getEnvironmentByName(
+      database.effectiveEnvironment
+    );
     state.projectId = database.projectEntity.uid;
-    state.environmentId = database.instanceEntity.environmentEntity.uid;
+    state.environmentId = environment?.uid;
     state.databaseId = databaseId;
     dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
   }

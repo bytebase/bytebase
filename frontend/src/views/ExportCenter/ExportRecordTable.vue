@@ -28,7 +28,7 @@
       </div>
       <div class="bb-grid-cell">
         <EnvironmentV1Name
-          :environment="item.database.instanceEntity.environmentEntity"
+          :environment="item.database.effectiveEnvironmentEntity"
         />
       </div>
       <div class="bb-grid-cell">
@@ -64,13 +64,13 @@
 import dayjs from "dayjs";
 import { computed, shallowRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExportRecord } from "./types";
 import { BBGridColumn } from "@/bbkit";
-import ExportDataButton from "./ExportDataButton.vue";
+import { InstanceV1Name } from "@/components/v2";
 import { pushNotification, useIssueStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { issueSlug } from "@/utils";
-import { InstanceV1Name } from "@/components/v2";
+import ExportDataButton from "./ExportDataButton.vue";
+import { ExportRecord } from "./types";
 
 defineProps<{
   exportRecords: ExportRecord[];

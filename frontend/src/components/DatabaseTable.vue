@@ -220,31 +220,31 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import { NTooltip, NPagination } from "naive-ui";
-import { useI18n } from "vue-i18n";
-import cloneDeep from "lodash-es/cloneDeep";
-import {
-  databaseSlug,
-  isDatabaseAccessible,
-  isPITRDatabase,
-  VueClass,
-} from "../utils";
-import { Database } from "../types";
-import { BBGridColumn } from "../bbkit/types";
-import InstanceEngineIcon from "./InstanceEngineIcon.vue";
-import TenantIcon from "./TenantIcon.vue";
-import DatabaseName from "@/components/DatabaseName.vue";
-import { SQLEditorButton } from "@/components/DatabaseDetail";
-import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
 import {
   ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
+import cloneDeep from "lodash-es/cloneDeep";
+import { NTooltip, NPagination } from "naive-ui";
+import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { SQLEditorButton } from "@/components/DatabaseDetail";
+import DatabaseName from "@/components/DatabaseName.vue";
 import { getScrollParent } from "@/plugins/demo/utils";
+import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { BBGridColumn } from "../bbkit/types";
+import { Database } from "../types";
+import {
+  databaseSlug,
+  isDatabaseAccessible,
+  isPITRDatabase,
+  VueClass,
+} from "../utils";
+import InstanceEngineIcon from "./InstanceEngineIcon.vue";
+import TenantIcon from "./TenantIcon.vue";
 
 type Mode =
   | "ALL"

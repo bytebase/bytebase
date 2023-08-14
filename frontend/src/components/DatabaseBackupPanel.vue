@@ -15,7 +15,7 @@
             <router-link
               v-if="hasBackupPolicyViolation"
               class="flex items-center normal-link text-sm"
-              :to="`/environment/${database.instanceEntity.environmentEntity.uid}`"
+              :to="`/environment/${database.effectiveEnvironmentEntity.uid}`"
             >
               <heroicons-outline:exclamation-circle class="w-4 h-4 mr-1" />
               <span>{{ $t("database.backup-policy-violation") }}</span>
@@ -162,6 +162,7 @@
 </template>
 
 <script lang="ts" setup>
+import { isEqual } from "lodash-es";
 import {
   computed,
   watchEffect,
@@ -170,22 +171,7 @@ import {
   PropType,
   onBeforeMount,
 } from "vue";
-import { isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
-
-import {
-  ComposedDatabase,
-  NORMAL_POLL_INTERVAL,
-  POLL_JITTER,
-  MINIMUM_POLL_INTERVAL,
-} from "@/types";
-import DatabaseBackupCreateForm from "@/components/DatabaseBackupCreateForm.vue";
-import PITRRestoreButton from "@/components/DatabaseDetail/PITRRestoreButton.vue";
-import {
-  pushNotification,
-  useBackupV1Store,
-  useGracefulRequest,
-} from "@/store";
 import {
   DatabaseBackupSettingForm,
   BackupTable,
@@ -193,22 +179,35 @@ import {
   localFromUTC,
   parseScheduleFromBackupSetting,
 } from "@/components/DatabaseBackup/";
+import DatabaseBackupCreateForm from "@/components/DatabaseBackupCreateForm.vue";
+import PITRRestoreButton from "@/components/DatabaseDetail/PITRRestoreButton.vue";
+import { Drawer } from "@/components/v2";
+import {
+  pushNotification,
+  useBackupV1Store,
+  useGracefulRequest,
+} from "@/store";
 import {
   usePolicyV1Store,
   defaultBackupSchedule,
 } from "@/store/modules/v1/policy";
 import {
-  PolicyType,
-  BackupPlanSchedule,
-} from "@/types/proto/v1/org_policy_service";
-import { instanceV1HasBackupRestore } from "@/utils";
+  ComposedDatabase,
+  NORMAL_POLL_INTERVAL,
+  POLL_JITTER,
+  MINIMUM_POLL_INTERVAL,
+} from "@/types";
 import {
   Backup,
   BackupSetting,
   Backup_BackupState,
   Backup_BackupType,
 } from "@/types/proto/v1/database_service";
-import { Drawer } from "@/components/v2";
+import {
+  PolicyType,
+  BackupPlanSchedule,
+} from "@/types/proto/v1/org_policy_service";
+import { instanceV1HasBackupRestore } from "@/utils";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -270,7 +269,7 @@ watchEffect(prepareBackupList);
 
 const prepareBackupPolicy = () => {
   policyV1Store.getOrFetchPolicyByParentAndType({
-    parentPath: props.database.instanceEntity.environment,
+    parentPath: props.database.effectiveEnvironment,
     policyType: PolicyType.BACKUP_PLAN,
   });
 };
@@ -363,7 +362,7 @@ const autoBackupRetentionDays = computed(() => {
 
 const backupPolicy = computed((): BackupPlanSchedule => {
   const policy = policyV1Store.getPolicyByParentAndType({
-    parentPath: props.database.instanceEntity.environment,
+    parentPath: props.database.effectiveEnvironment,
     policyType: PolicyType.BACKUP_PLAN,
   });
   return policy?.backupPlanPolicy?.schedule ?? defaultBackupSchedule;

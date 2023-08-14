@@ -67,14 +67,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import { computed, PropType, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
+import { BBTableColumn } from "@/bbkit";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { ComposedDatabase } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { bytesToString, isGhostTable } from "@/utils";
-import EllipsisText from "@/components/EllipsisText.vue";
 import { Engine } from "@/types/proto/v1/common";
-import { BBTableColumn } from "@/bbkit";
+import { bytesToString, isGhostTable } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {
@@ -98,14 +99,23 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-
+const route = useRoute();
 const state = reactive<LocalState>({
   showReservedTableList: false,
 });
 
+onMounted(() => {
+  const table = route.query.table as string;
+  if (table) {
+    state.selectedTableName = table;
+  }
+});
+
 const engine = computed(() => props.database.instanceEntity.engine);
 
-const isPostgres = computed(() => engine.value === Engine.POSTGRES);
+const isPostgres = computed(
+  () => engine.value === Engine.POSTGRES || engine.value === Engine.RISINGWAVE
+);
 
 const hasSchemaProperty = computed(() => {
   return (

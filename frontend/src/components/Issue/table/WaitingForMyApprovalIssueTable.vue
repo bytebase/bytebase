@@ -8,12 +8,12 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import type { Issue as LegacyIssue } from "@/types";
-import { useAuthStore } from "@/store";
 import {
   extractIssueReviewContext,
   useWrappedReviewSteps,
 } from "@/plugins/issue/logic";
+import { useAuthStore } from "@/store";
+import type { Issue as LegacyIssue } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
 
 const currentUserName = computed(() => useAuthStore().currentUser.name);

@@ -16,7 +16,7 @@
       <div class="bb-grid-cell">
         <EnvironmentV1Name
           :environment="
-            extractComposedDatabase(item).instanceEntity.environmentEntity
+            extractComposedDatabase(item).effectiveEnvironmentEntity
           "
         />
       </div>
@@ -31,13 +31,13 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
-import { DatabaseGroup } from "@/types/proto/v1/project_service";
-import { DatabaseResource } from "@/types";
-import { watch } from "vue";
-import { useDatabaseV1Store } from "@/store";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
+import { useDatabaseV1Store } from "@/store";
+import { DatabaseResource } from "@/types";
+import { DatabaseGroup } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
   databaseResourceList: DatabaseResource[];

@@ -1,12 +1,12 @@
-import { useUserStore } from "@/store";
-import { IssueBuiltinFieldId } from "../plugins";
 import { t } from "@/plugins/i18n";
+import { useUserStore } from "@/store";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { IssueBuiltinFieldId } from "../plugins";
 import {
   ActivityIssueFieldUpdatePayload,
   ActivityIssueStatusUpdatePayload,
   unknownUser,
 } from "../types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 export function issueActivityActionSentence(
   activity: LogEntity
@@ -39,10 +39,10 @@ export function issueActivityActionSentence(
           if (update.oldValue && update.newValue) {
             const oldName = (
               userStore.getUserById(String(update.oldValue)) ?? unknownUser()
-            ).name;
+            ).title;
             const newName = (
               userStore.getUserById(String(update.newValue)) ?? unknownUser()
-            ).name;
+            ).title;
             return [
               "activity.sentence.reassigned-issue",
               {
@@ -53,7 +53,7 @@ export function issueActivityActionSentence(
           } else if (!update.oldValue && update.newValue) {
             const newName = (
               userStore.getUserById(String(update.newValue)) ?? unknownUser()
-            ).name;
+            ).title;
             return [
               "activity.sentence.assigned-issue",
               {
@@ -63,7 +63,7 @@ export function issueActivityActionSentence(
           } else if (update.oldValue && !update.newValue) {
             const oldName = (
               userStore.getUserById(String(update.oldValue)) ?? unknownUser()
-            ).name;
+            ).title;
             return [
               "activity.sentence.unassigned-issue",
               {

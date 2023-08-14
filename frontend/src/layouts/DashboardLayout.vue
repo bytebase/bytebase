@@ -25,9 +25,9 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { pushNotification, useActuatorV1Store } from "@/store";
-import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
+import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
 
 export default defineComponent({

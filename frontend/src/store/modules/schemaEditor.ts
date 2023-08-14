@@ -1,6 +1,6 @@
 import axios from "axios";
-import { defineStore } from "pinia";
 import { cloneDeep, isUndefined, uniqueId, pullAt } from "lodash-es";
+import { defineStore } from "pinia";
 import {
   ComposedDatabase,
   TabContext,
@@ -10,19 +10,19 @@ import {
   DatabaseEdit,
   ResourceObject,
 } from "@/types";
+import { SchemaMetadata } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
+import {
+  SchemaTemplateSetting,
+  SchemaTemplateSetting_FieldTemplate,
+} from "@/types/proto/v1/setting_service";
 import { DatabaseEditResult } from "@/types/schemaEditor";
 import {
   convertSchemaMetadataList,
   convertSchemaMetadataToSchema,
   Table,
 } from "@/types/schemaEditor/atomType";
-import { SchemaMetadata } from "@/types/proto/store/database";
 import { useDatabaseV1Store, useDBSchemaV1Store, useSettingV1Store } from ".";
-import { Engine } from "@/types/proto/v1/common";
-import {
-  SchemaTemplateSetting,
-  SchemaTemplateSetting_FieldTemplate,
-} from "@/types/proto/v1/setting_service";
 
 export const generateUniqueTabId = () => {
   return uniqueId();

@@ -137,8 +137,8 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
 import { State } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
 import { InstanceV1Name } from "./v2";
 
 type LocalState = {
@@ -178,7 +178,7 @@ const databaseListGroupByEnvironment = computed(() => {
     .filter((db) => db.databaseName.includes(state.searchText));
   const listByEnv = environmentV1Store.environmentList.map((environment) => {
     const list = databaseList.filter(
-      (db) => db.instanceEntity.environment === environment.name
+      (db) => db.effectiveEnvironment === environment.name
     );
     return {
       environment,
@@ -217,7 +217,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList
-    .filter((db) => db.instanceEntity.environment === environment.name)
+    .filter((db) => db.effectiveEnvironment === environment.name)
     .forEach((db) => toggleDatabaseSelected(db.uid, on));
 };
 
@@ -227,7 +227,7 @@ const getAllSelectionStateForEnvironment = (
 ): { checked: boolean; indeterminate: boolean } => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instanceEntity.environment === environment.name)
+      .filter((db) => db.effectiveEnvironment === environment.name)
       .map((db) => db.uid)
   );
   const checked = databaseList.every((db) => set.has(db.uid));
@@ -245,7 +245,7 @@ const getSelectionStateSummaryForEnvironment = (
 ) => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instanceEntity.environment === environment.uid)
+      .filter((db) => db.effectiveEnvironment === environment.name)
       .map((db) => db.uid)
   );
   const selected = databaseList.filter((db) => set.has(db.uid)).length;

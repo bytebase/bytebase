@@ -312,6 +312,12 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
    Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
 
+### Tips
+
+* Use [Code Inspector](https://en.inspector.fe-dev.cn/guide/start.html#method1-recommend) to locate
+frontend code from UI. Hold `Option + Shift` on Mac or `Alt + Shift` on Windows
+
+
 <br />
 
 # Bytebase vs Flyway, Liquibase

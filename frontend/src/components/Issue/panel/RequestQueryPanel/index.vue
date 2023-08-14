@@ -44,6 +44,7 @@
             class="grid-cols-4"
             :options="expireDaysOptions"
             :value="state.expireDays"
+            @update="state.expireDays = $event"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
@@ -81,6 +82,14 @@ import { NDrawer, NDrawerContent, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useIssueStore,
+  useProjectV1Store,
+} from "@/store";
 import {
   ComposedDatabase,
   DatabaseResource,
@@ -90,15 +99,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { extractUserUID, issueSlug, memberListInProjectV1 } from "@/utils";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useIssueStore,
-  useProjectV1Store,
-} from "@/store";
-import RequiredStar from "@/components/RequiredStar.vue";
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
-import ExpirationSelector from "@/components/ExpirationSelector.vue";
 
 interface LocalState {
   projectId?: string;

@@ -31,9 +31,9 @@
           v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
           class="flex items-center"
         >
-          <span class="">{{ selectedInstance.environmentEntity.title }}</span>
+          <span class="">{{ selectedEnvironment.title }}</span>
           <ProductionEnvironmentV1Icon
-            :environment="selectedInstance.environmentEntity"
+            :environment="selectedEnvironment"
             class="ml-1"
             :class="[isProductionEnvironment && '~!text-yellow-700']"
           />
@@ -75,19 +75,18 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NPopover } from "naive-ui";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
-
-import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
-import { TabMode, UNKNOWN_ID } from "@/types";
-import { instanceV1Slug } from "@/utils";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import {
   InstanceV1EngineIcon,
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
+import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
+import { TabMode, UNKNOWN_ID } from "@/types";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { instanceV1Slug } from "@/utils";
 
 const router = useRouter();
 const tabStore = useTabStore();
@@ -102,9 +101,14 @@ const { database: selectedDatabaseV1 } = useDatabaseV1ByUID(
   computed(() => String(connection.value.databaseId))
 );
 
+const selectedEnvironment = computed(() => {
+  return connection.value.databaseId === `${UNKNOWN_ID}`
+    ? selectedInstance.value.environmentEntity
+    : selectedDatabaseV1.value.effectiveEnvironmentEntity;
+});
+
 const isProductionEnvironment = computed(() => {
-  const instance = selectedInstance.value;
-  return instance.environmentEntity.tier === EnvironmentTier.PROTECTED;
+  return selectedEnvironment.value.tier === EnvironmentTier.PROTECTED;
 });
 
 const isAdminMode = computed(() => {

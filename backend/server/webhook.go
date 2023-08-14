@@ -981,7 +981,7 @@ func (s *Server) sqlAdviceForFile(
 			continue
 		}
 
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 		if err != nil {
 			return nil, err
 		}

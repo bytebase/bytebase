@@ -1,8 +1,7 @@
-import { computed } from "vue";
 import { maxBy } from "lodash-es";
-
-import type { Task, TaskCheckRun, TaskCheckType } from "@/types";
+import { computed } from "vue";
 import type { AdviceOption } from "@/components/MonacoEditor";
+import type { Task, TaskCheckRun, TaskCheckType } from "@/types";
 import { useIssueLogic } from ".";
 
 export const useSQLAdviceMarkers = () => {

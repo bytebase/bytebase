@@ -88,7 +88,7 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 	case Oracle:
 		// The resource list for Oracle may contains table, view and temporary table.
 		return extractOracleResourceList(currentDatabase, currentSchema, sql)
-	case Postgres:
+	case Postgres, RisingWave:
 		// The resource list for Postgres may contains table, view and temporary table.
 		return extractPostgresResourceList(currentDatabase, "public", sql)
 	case Snowflake:
@@ -438,7 +438,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	case MSSQL:
 		t := newTokenizer(statement)
 		list, err = t.splitStandardMultiSQL()
-	case Postgres, Redshift:
+	case Postgres, Redshift, RisingWave:
 		t := newTokenizer(statement)
 		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
@@ -602,7 +602,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	case MSSQL:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitStandardMultiSQL()
-	case Postgres, Redshift:
+	case Postgres, Redshift, RisingWave:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
@@ -812,9 +812,25 @@ func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormal
 		return extractMySQLDatabaseList(statement)
 	case Snowflake:
 		return extractSnowSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
+	case MSSQL:
+		return extractMSSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
+}
+
+func extractMSSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
+	schemaPlaceholder := "dbo"
+	schemaResource, err := extractMSSQLNormalizedResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, resource := range schemaResource {
+		result = append(result, resource.Database)
+	}
+	return result, nil
 }
 
 // extractSnowSQLNormalizedDatabaseList extracts all databases from statement, and normalizes the database name.

@@ -75,9 +75,9 @@
 import { isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, watch } from "vue";
 import { BBModal, BBSelect } from "@/bbkit";
+import { Column, ForeignKey } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { useSchemaDesignerContext } from "../common";
-import { Column, ForeignKey } from "@/types";
 
 interface LocalState {
   referencedSchemaId?: string;

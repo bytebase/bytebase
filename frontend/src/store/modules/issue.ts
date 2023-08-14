@@ -1,6 +1,6 @@
+import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, WatchCallback, watchEffect } from "vue";
-import axios from "axios";
 import {
   empty,
   EMPTY_ID,
@@ -22,9 +22,9 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { isDatabaseRelatedIssueType } from "@/utils";
-import { getPrincipalFromIncludedList } from "./principal";
 import { useLegacyDatabaseStore } from "./database";
 import { usePipelineStore } from "./pipeline";
+import { getPrincipalFromIncludedList } from "./principal";
 import { useLegacyProjectStore } from "./project";
 import { convertEntityList } from "./utils";
 import {

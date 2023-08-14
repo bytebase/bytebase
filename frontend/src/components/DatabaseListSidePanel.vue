@@ -9,20 +9,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, h, watchEffect } from "vue";
-import { cloneDeep } from "lodash-es";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { cloneDeep } from "lodash-es";
+import { computed, h, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import type { BBOutlineItem } from "@/bbkit/types";
-import { DEFAULT_PROJECT_V1_NAME, UNKNOWN_USER_NAME } from "@/types";
-import {
-  databaseV1Slug,
-  environmentV1Name,
-  projectV1Slug,
-  isDatabaseV1Accessible,
-  extractProjectResourceName,
-} from "@/utils";
 import {
   useEnvironmentV1List,
   useDatabaseV1Store,
@@ -31,12 +23,20 @@ import {
   useDBGroupStore,
   useProjectV1ListByCurrentUser,
 } from "@/store";
+import { DEFAULT_PROJECT_V1_NAME, UNKNOWN_USER_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import {
+  databaseV1Slug,
+  environmentV1Name,
+  projectV1Slug,
+  isDatabaseV1Accessible,
+  extractProjectResourceName,
+} from "@/utils";
 import DatabaseGroupIcon from "./DatabaseGroupIcon.vue";
 
 const { t } = useI18n();
@@ -99,11 +99,7 @@ const databaseListByEnvironment = computed(() => {
     return a.name.localeCompare(b.name);
   });
   for (const database of list) {
-    const dbList = envToDbMap.get(
-      String(
-        database.environment || database.instanceEntity.environmentEntity.name
-      )
-    )!;
+    const dbList = envToDbMap.get(String(database.effectiveEnvironment))!;
     // dbList may be undefined if the environment is archived
     if (dbList) {
       dbList.push({

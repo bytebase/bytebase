@@ -18,8 +18,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, withDefaults } from "vue";
 import { capitalize } from "lodash-es";
+import { computed, withDefaults } from "vue";
 import { LabelKeyType } from "../../types";
 import {
   hidePrefix,

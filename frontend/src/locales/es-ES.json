@@ -77,13 +77,13 @@
     "updated": "Actualizado",
     "visit": "Visitar",
     "role": {
+      "self": "Rol",
       "dba": "DBA",
       "owner": "Propietario",
       "developer": "Desarrollador",
       "member": "Miembro",
       "exporter": "exportador",
-      "querier": "querier",
-      "self": "Rol"
+      "querier": "querier"
     },
     "assignee": "Asignado",
     "revert": "Revertir",
@@ -260,7 +260,8 @@
     "warehouse": "Almacén",
     "schedule": "Horario",
     "state": "Estado",
-    "condition": "Condición"
+    "condition": "Condición",
+    "search-user": "Buscar usuario"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -357,7 +358,13 @@
     "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
     "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual",
-    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual"
+    "database-create": {
+      "pending": "(pendiente de crear)",
+      "created": "(creado)"
+    },
+    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual",
+    "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
+    "cancel-task": "Cancelar tarea | Cancelar tareas"
   },
   "banner": {
     "update-license": "Actualizar licencia",
@@ -820,7 +827,17 @@
       "export-method": "Método de exportación",
       "please-select-database-first": "Por favor, seleccione primero la base de datos"
     },
-    "review-sent-back": "Revisión devuelta"
+    "review-sent-back": "Revisión devuelta",
+    "update-statement": {
+      "self": "Actualizar {type}",
+      "apply-current-change-to": "Aplicar el cambio actual a",
+      "target": {
+        "selected-task": "Tarea seleccionada",
+        "selected-stage": "Etapa seleccionada",
+        "all-tasks": "Todas las tareas"
+      }
+    },
+    "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1548,7 +1565,12 @@
       "assign-role": "Asignar rol",
       "never-expires": "Nunca caduca",
       "role-never-expires": "Este rol nunca expira.",
-      "add-more": "Más información"
+      "add-more": "Más información",
+      "role-name": "Nombre del rol",
+      "users": "Usuarios",
+      "roles": "Roles",
+      "search-member": "Buscar miembro",
+      "revoke-members": "Revocar miembros"
     },
     "mode": {
       "standard": "Modo Estándar",
@@ -2083,7 +2105,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Desviación de esquema",
-        "desc": "@:{'subscription.upgrade'} para desbloquear la detección automática de desviación de esquema."
+        "desc": "Detecte cambios de esquema fuera de banda e informe la desviación del esquema."
       },
       "bb-feature-branding": {
         "title": "Personalización",
@@ -2614,7 +2636,6 @@
   "slow-query": {
     "self": "Consulta lenta",
     "slow-queries": "Consultas lentas",
-    "report-slow-query": "Reportar consulta lenta",
     "report": "Reportar",
     "last-query-time": "Hora de la última consulta",
     "database-name": "Nombre de la base de datos",
@@ -2634,7 +2655,7 @@
     "rows-sent": "Filas enviadas",
     "lock-time": "Tiempo de bloqueo",
     "query-time": "Tiempo de consulta",
-    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias.\nPara una instancia de MySQL, {slow_query} debe estar habilitado primero.\nPara una instancia de PostgreSQL, {pg_stat_statements} debe estar habilitado primero en cada base de datos.",
+    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias. Para una instancia de MySQL, slow_query debe estar habilitado primero. Para una instancia de PostgreSQL, solo se recopilarán las consultas lentas si se habilita pg_stat_statements en la base de datos.",
     "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
     "detail": "Detalles de la consulta lenta",
     "filter": {
@@ -2666,7 +2687,8 @@
       "save-all": "Guardar todo",
       "messages": {
         "unable-to-update": "No se puede actualizar la restricción",
-        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos."
+        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos.",
+        "one-allowed-type-per-line": "Un tipo permitido por línea"
       }
     },
     "add-field": "Agregar plantilla de campo",

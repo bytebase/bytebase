@@ -38,7 +38,7 @@
   </div>
   <div v-if="showEnvironmentColumn" class="bb-grid-cell">
     <EnvironmentV1Name
-      :environment="environment ?? database.instanceEntity.environmentEntity"
+      :environment="environment ?? database.effectiveEnvironmentEntity"
       :link="false"
       tag="div"
     />
@@ -140,12 +140,12 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
+import { useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import { isPITRDatabaseV1 } from "@/utils";
-import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
-import { useEnvironmentV1Store } from "@/store";
 
 const props = defineProps<{
   database: ComposedDatabase;

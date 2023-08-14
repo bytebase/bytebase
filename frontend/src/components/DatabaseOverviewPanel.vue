@@ -164,16 +164,17 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { computed, reactive, watchEffect, PropType } from "vue";
-import { ComposedDatabase, DataSource } from "../types";
+import { computed, reactive, watchEffect, PropType, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
+import { Anomaly } from "@/types/proto/v1/anomaly_service";
+import { Engine, State } from "@/types/proto/v1/common";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyTable.vue";
+import FunctionTable from "../components/FunctionTable.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
-import FunctionTable from "../components/FunctionTable.vue";
-import { Engine, State } from "@/types/proto/v1/common";
-import { Anomaly } from "@/types/proto/v1/anomaly_service";
+import { ComposedDatabase, DataSource } from "../types";
 import StreamTable from "./StreamTable.vue";
 import TaskTable from "./TaskTable.vue";
 
@@ -188,9 +189,16 @@ const props = defineProps({
     type: Object as PropType<ComposedDatabase>,
   },
 });
-
+const route = useRoute();
 const state = reactive<LocalState>({
   selectedSchemaName: "",
+});
+
+onMounted(() => {
+  const schema = route.query.schema as string;
+  if (schema) {
+    state.selectedSchemaName = schema;
+  }
 });
 
 const dbSchemaStore = useDBSchemaV1Store();
@@ -206,7 +214,8 @@ const hasSchemaProperty = computed(() => {
     databaseEngine.value === Engine.ORACLE ||
     databaseEngine.value === Engine.DM ||
     databaseEngine.value === Engine.MSSQL ||
-    databaseEngine.value === Engine.REDSHIFT
+    databaseEngine.value === Engine.REDSHIFT ||
+    databaseEngine.value === Engine.RISINGWAVE
   );
 });
 

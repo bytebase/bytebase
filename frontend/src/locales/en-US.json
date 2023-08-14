@@ -261,7 +261,8 @@
     "warehouse": "Warehouse",
     "schedule": "Schedule",
     "state": "State",
-    "condition": "Condition"
+    "condition": "Condition",
+    "search-user": "Search user"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -358,7 +359,13 @@
     "execution-time": "Execution time",
     "run-checks": "Run checks",
     "run-checks-in-current-stage": "Run checks in current stage",
-    "action-failed-in-current-stage": "{action} failed tasks in current stage"
+    "database-create": {
+      "pending": "(pending create)",
+      "created": "(created)"
+    },
+    "action-failed-in-current-stage": "{action} failed tasks in current stage",
+    "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
+    "cancel-task": "Cancel task | Cancel tasks"
   },
   "banner": {
     "update-license": "Update license",
@@ -822,7 +829,17 @@
       "export-method": "Export method",
       "please-select-database-first": "Please select database first"
     },
-    "review-sent-back": "Review sent back"
+    "review-sent-back": "Review sent back",
+    "update-statement": {
+      "self": "Update {type}",
+      "apply-current-change-to": "Apply current change to",
+      "target": {
+        "selected-task": "Selected task",
+        "selected-stage": "Selected stage",
+        "all-tasks": "All tasks"
+      }
+    },
+    "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1551,7 +1568,12 @@
       "assign-role": "Assign role",
       "never-expires": "Never",
       "role-never-expires": "This role never expires.",
-      "add-more": "Add more"
+      "add-more": "Add more",
+      "role-name": "Role name",
+      "users": "Users",
+      "roles": "Roles",
+      "search-member": "Search member",
+      "revoke-members": "Revoke these members"
     },
     "mode": {
       "standard": "Standard Mode",
@@ -2086,7 +2108,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
-        "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection."
+        "desc": "Detect out-of-band schema changes and report schema drift."
       },
       "bb-feature-branding": {
         "title": "Branding",
@@ -2616,7 +2638,6 @@
   "slow-query": {
     "self": "Slow query",
     "slow-queries": "Slow queries",
-    "report-slow-query": "Report slow query",
     "report": "Report",
     "last-query-time": "Last query time",
     "database-name": "Database name",
@@ -2636,7 +2657,7 @@
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
     "query-time": "Query time",
-    "attention-description": "Bytebase periodically syncs slow query logs from instances.\nFor MySQL instance, {slow_query} must be enabled first.\nFor PostgreSQL instance, {pg_stat_statements} must be enabled first in each database.",
+    "attention-description": "Bytebase periodically syncs slow query logs from instances. For MySQL instance, slow_query must be enabled first. For PostgreSQL instance, only databases with pg_stat_statements enabled will collect slow queries.",
     "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
     "detail": "Slow Query Detail",
     "filter": {
@@ -2668,7 +2689,8 @@
       "save-all": "Save all",
       "messages": {
         "unable-to-update": "Unable to update restriction",
-        "following-column-types-are-used": "Following column types are still used by field tempalte"
+        "following-column-types-are-used": "Following column types are still used by field tempalte",
+        "one-allowed-type-per-line": "One allowed data type per line"
       }
     },
     "add-field": "Add field template",

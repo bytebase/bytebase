@@ -15,8 +15,8 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
 import { NTooltip } from "naive-ui";
+import { PropType } from "vue";
 import { Instance } from "@/types/proto/v1/instance_service";
 
 defineProps({

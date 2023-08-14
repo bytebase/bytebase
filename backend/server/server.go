@@ -111,6 +111,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	// Register dm driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
+	// Register risingwave driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/risingwave"
 
 	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"
@@ -892,6 +894,19 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
+	// initial data classification setting
+	dataClassificationSettingValue, err := protojson.Marshal(&storepb.DataClassificationSetting{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal initial data classification setting")
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingDataClassification,
+		Value:       string(dataClassificationSettingValue),
+		Description: "The data classification setting",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	// initial workspace approval setting
 	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
 	if err != nil {
@@ -949,14 +964,17 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 	if !s.profile.Readonly {
-		if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
-			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
-		}
 		// runnerWG waits for all goroutines to complete.
 		if s.profile.DevelopmentUseV2Scheduler {
+			if err := s.TaskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
+				return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
+			}
 			s.runnerWG.Add(1)
 			go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
 		} else {
+			if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
+				return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
+			}
 			s.runnerWG.Add(1)
 			go s.TaskScheduler.Run(ctx, &s.runnerWG)
 		}

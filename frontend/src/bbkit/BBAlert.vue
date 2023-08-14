@@ -90,7 +90,7 @@
             <slot name="default" />
           </div>
         </div>
-        <div class="mt-5 flex flex-col space-y-4">
+        <div class="mt-4 flex flex-col space-y-4">
           <div class="flex justify-end">
             <button
               type="button"
@@ -123,8 +123,8 @@
 
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
-import { withDefaults, computed } from "vue";
 import { zindexable as vZindexable } from "vdirs";
+import { withDefaults, computed } from "vue";
 import { BBAlertStyle } from "./types";
 
 type Payload = string | number | boolean | any;

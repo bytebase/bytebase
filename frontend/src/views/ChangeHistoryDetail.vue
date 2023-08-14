@@ -27,10 +27,10 @@
                 >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
               >
               <router-link
-                :to="`/issue/${extractIssueId(changeHistory.issue)}`"
+                :to="`/issue/${extractIssueUID(changeHistory.issue)}`"
                 class="normal-link"
               >
-                {{ extractIssueId(changeHistory.issue) }}
+                {{ extractIssueUID(changeHistory.issue) }}
               </router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.duration") }}</dt>
@@ -140,88 +140,90 @@
           class="border px-2 whitespace-pre-wrap w-full"
           :code="changeHistory.statement"
         />
-        <a
-          id="schema"
-          href="#schema"
-          class="flex items-center text-lg text-main mt-6 hover:underline capitalize"
-        >
-          Schema {{ $t("common.snapshot") }}
-          <button
-            tabindex="-1"
-            class="btn-icon ml-1"
-            @click.prevent="copySchema"
+        <template v-if="showSchemaSnapshot">
+          <a
+            id="schema"
+            href="#schema"
+            class="flex items-center text-lg text-main mt-6 hover:underline capitalize"
           >
-            <heroicons-outline:clipboard class="w-6 h-6" />
-          </button>
-        </a>
-
-        <div v-if="hasDrift" class="flex items-center space-x-2 mt-2">
-          <div class="flex items-center text-sm font-normal">
-            <heroicons-outline:exclamation-circle
-              class="w-5 h-5 mr-0.5 text-error"
-            />
-            <span>{{ $t("change-history.schema-drift-detected") }}</span>
-          </div>
-          <div
-            class="normal-link text-sm"
-            data-label="bb-change-history-view-drift-button"
-            @click="state.viewDrift = true"
-          >
-            {{ $t("change-history.view-drift") }}
-          </div>
-        </div>
-
-        <div class="flex flex-row items-center space-x-2 mt-2">
-          <BBSwitch
-            v-if="allowShowDiff"
-            :label="$t('change-history.show-diff')"
-            :value="state.showDiff"
-            data-label="bb-change-history-diff-switch"
-            @toggle="state.showDiff = $event"
-          />
-          <div class="textinfolabel">
-            <i18n-t
-              v-if="state.showDiff"
-              tag="span"
-              keypath="change-history.left-vs-right"
+            Schema {{ $t("common.snapshot") }}
+            <button
+              tabindex="-1"
+              class="btn-icon ml-1"
+              @click.prevent="copySchema"
             >
-              <template #prevLink>
-                <router-link
-                  v-if="previousHistory"
-                  class="normal-link"
-                  :to="previousHistoryLink"
-                >
-                  ({{ previousHistory.version }})
-                </router-link>
-              </template>
-            </i18n-t>
-            <template v-else>
-              {{ $t("change-history.schema-snapshot-after-change") }}
-            </template>
-          </div>
-          <div v-if="!allowShowDiff" class="text-sm font-normal text-accent">
-            ({{ $t("change-history.no-schema-change") }})
-          </div>
-        </div>
+              <heroicons-outline:clipboard class="w-6 h-6" />
+            </button>
+          </a>
 
-        <code-diff
-          v-if="state.showDiff"
-          class="mt-4 w-full"
-          :old-string="changeHistory.prevSchema"
-          :new-string="changeHistory.schema"
-          output-format="side-by-side"
-          data-label="bb-change-history-code-diff-block"
-        />
-        <template v-else>
-          <highlight-code-block
-            v-if="changeHistory.schema"
-            class="border mt-2 px-2 whitespace-pre-wrap w-full"
-            :code="changeHistory.schema"
-            data-label="bb-change-history-code-block"
-          />
-          <div v-else class="mt-2">
-            {{ $t("change-history.current-schema-empty") }}
+          <div v-if="hasDrift" class="flex items-center space-x-2 mt-2">
+            <div class="flex items-center text-sm font-normal">
+              <heroicons-outline:exclamation-circle
+                class="w-5 h-5 mr-0.5 text-error"
+              />
+              <span>{{ $t("change-history.schema-drift-detected") }}</span>
+            </div>
+            <div
+              class="normal-link text-sm"
+              data-label="bb-change-history-view-drift-button"
+              @click="state.viewDrift = true"
+            >
+              {{ $t("change-history.view-drift") }}
+            </div>
           </div>
+
+          <div class="flex flex-row items-center space-x-2 mt-2">
+            <BBSwitch
+              v-if="allowShowDiff"
+              :label="$t('change-history.show-diff')"
+              :value="state.showDiff"
+              data-label="bb-change-history-diff-switch"
+              @toggle="state.showDiff = $event"
+            />
+            <div class="textinfolabel">
+              <i18n-t
+                v-if="state.showDiff"
+                tag="span"
+                keypath="change-history.left-vs-right"
+              >
+                <template #prevLink>
+                  <router-link
+                    v-if="previousHistory"
+                    class="normal-link"
+                    :to="previousHistoryLink"
+                  >
+                    ({{ previousHistory.version }})
+                  </router-link>
+                </template>
+              </i18n-t>
+              <template v-else>
+                {{ $t("change-history.schema-snapshot-after-change") }}
+              </template>
+            </div>
+            <div v-if="!allowShowDiff" class="text-sm font-normal text-accent">
+              ({{ $t("change-history.no-schema-change") }})
+            </div>
+          </div>
+
+          <code-diff
+            v-if="state.showDiff"
+            class="mt-4 w-full"
+            :old-string="changeHistory.prevSchema"
+            :new-string="changeHistory.schema"
+            output-format="side-by-side"
+            data-label="bb-change-history-code-diff-block"
+          />
+          <template v-else>
+            <highlight-code-block
+              v-if="changeHistory.schema"
+              class="border mt-2 px-2 whitespace-pre-wrap w-full"
+              :code="changeHistory.schema"
+              data-label="bb-change-history-code-block"
+            />
+            <div v-else class="mt-2">
+              {{ $t("change-history.current-schema-empty") }}
+            </div>
+          </template>
         </template>
       </div>
     </main>
@@ -272,23 +274,21 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch, ref } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
-import {
-  changeHistoryLink,
-  extractChangeHistoryUID,
-  extractIssueId,
-  extractUserResourceName,
-  getAffectedTablesOfChangeHistory,
-} from "@/utils";
+import { computed, reactive, watch, ref } from "vue";
+import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
+import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import {
   pushNotification,
   useChangeHistoryStore,
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useUserStore,
+  useInstanceV1Store,
 } from "@/store";
+import { AffectedTable } from "@/types/changeHistory";
+import { Engine } from "@/types/proto/v1/common";
 import {
   ChangeHistory,
   ChangeHistory_Type,
@@ -296,9 +296,13 @@ import {
   changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
 import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
-import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
-import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
-import { AffectedTable } from "@/types/changeHistory";
+import {
+  changeHistoryLink,
+  extractIssueUID,
+  extractUserResourceName,
+  uidFromSlug,
+  getAffectedTablesOfChangeHistory,
+} from "@/utils";
 
 interface LocalState {
   showDiff: boolean;
@@ -313,8 +317,13 @@ const props = defineProps<{
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
+const instanceStore = useInstanceV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
+
+const v1Instance = computed(() => {
+  return instanceStore.getInstanceByName(`instances/${props.instance}`);
+});
 
 const database = computed(() => {
   return databaseStore.getDatabaseByName(changeHistoryParent.value);
@@ -323,7 +332,7 @@ const changeHistoryParent = computed(() => {
   return `instances/${props.instance}/databases/${props.database}`;
 });
 const changeHistoryUID = computed(() => {
-  return extractChangeHistoryUID(props.changeHistorySlug);
+  return uidFromSlug(props.changeHistorySlug);
 });
 const changeHistoryName = computed(() => {
   return `${changeHistoryParent.value}/changeHistories/${changeHistoryUID.value}`;
@@ -334,6 +343,10 @@ const affectedTables = computed(() => {
     return [];
   }
   return getAffectedTablesOfChangeHistory(changeHistory.value);
+});
+
+const showSchemaSnapshot = computed(() => {
+  return v1Instance.value.engine !== Engine.RISINGWAVE;
 });
 
 watch(

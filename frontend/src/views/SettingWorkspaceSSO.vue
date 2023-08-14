@@ -23,7 +23,6 @@
         </button>
       </div>
     </div>
-    <hr />
     <div
       v-if="identityProviderList.length === 0"
       class="w-full flex flex-col justify-center items-center"
@@ -94,10 +93,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
+import { featureToRef } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderTypeToString } from "@/utils";
-import { featureToRef } from "@/store";
 
 interface LocalState {
   showFeatureModal: boolean;

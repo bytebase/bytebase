@@ -1,26 +1,25 @@
 import { orderBy } from "lodash-es";
 import slug from "slug";
-
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
   usePolicyV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { hasWorkspacePermissionV1 } from "../role";
-import { Engine, State } from "@/types/proto/v1/common";
-import { isDev, semverCompare } from "../util";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
-import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
 import { policyNamePrefix } from "@/store/modules/v1/common";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { User } from "@/types/proto/v1/auth_service";
+import { Engine, State } from "@/types/proto/v1/common";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {
   PolicyType,
   policyTypeToJSON,
 } from "@/types/proto/v1/org_policy_service";
+import { hasWorkspacePermissionV1 } from "../role";
+import { isDev, semverCompare } from "../util";
+import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
@@ -31,6 +30,7 @@ export const extractDatabaseResourceName = (
 ): {
   instance: string;
   database: string;
+  full: string;
 } => {
   const pattern =
     /(?:^|\/)instances\/(?<instance>[^/]+)\/databases\/(?<database>[^/]+)(?:$|\/)/;
@@ -41,11 +41,13 @@ export const extractDatabaseResourceName = (
     return {
       instance,
       database,
+      full: `instances/${instance}/databases/${database}`,
     };
   }
   return {
     instance: String(UNKNOWN_ID),
     database: "",
+    full: `instances/${UNKNOWN_ID}/databases/`,
   };
 };
 
@@ -53,7 +55,7 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
   return orderBy(
     databaseList,
     [
-      (db) => db.instanceEntity.environmentEntity.order,
+      (db) => db.effectiveEnvironmentEntity.order,
       (db) => Number(db.instanceEntity.uid),
       (db) => Number(db.projectEntity.uid),
       (db) => db.databaseName,
@@ -71,7 +73,7 @@ export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
   if (db.instanceEntity.state === State.DELETED) {
     return true;
   }
-  if (db.instanceEntity.environmentEntity.state === State.DELETED) {
+  if (db.effectiveEnvironmentEntity.state === State.DELETED) {
     return true;
   }
   return false;
@@ -172,7 +174,7 @@ export const isDatabaseV1Queryable = (
             querierBinding.parsedExpr?.expr || Expr.fromPartial({})
           );
           const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.instanceEntity.environment)) {
+          if (envNameList.includes(database.effectiveEnvironment)) {
             return true;
           }
         }
@@ -227,7 +229,7 @@ export const isTableQueryable = (
             querierBinding.parsedExpr?.expr || Expr.fromPartial({})
           );
           const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.instanceEntity.environment)) {
+          if (envNameList.includes(database.effectiveEnvironment)) {
             return true;
           }
         }
@@ -295,7 +297,7 @@ export function filterDatabaseV1ByKeyword(
 
   if (
     columns.includes("environment") &&
-    db.instanceEntity.environmentEntity.title.toLowerCase().includes(keyword)
+    db.effectiveEnvironmentEntity.title.toLowerCase().includes(keyword)
   ) {
     return true;
   }

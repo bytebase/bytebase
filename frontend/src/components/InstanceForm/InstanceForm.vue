@@ -266,7 +266,7 @@
 
         <BBAttention
           v-if="outboundIpList && actuatorStore.isSaaSMode"
-          class="my-5 border-none"
+          class="my-4 border-none"
           :style="'INFO'"
           :title="$t('instance.sentence.outbound-ip-list')"
           :description="outboundIpList"
@@ -354,6 +354,9 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, isEqual, omit } from "lodash-es";
+import { NButton } from "naive-ui";
+import { Status } from "nice-grpc-common";
 import {
   computed,
   reactive,
@@ -363,27 +366,13 @@ import {
   onMounted,
   toRef,
 } from "vue";
-import { cloneDeep, isEqual, omit } from "lodash-es";
-import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
-
-import {
-  isDev,
-  isValidSpannerHost,
-  extractInstanceResourceName,
-  engineNameV1,
-  instanceV1Slug,
-  calcUpdateMask,
-} from "@/utils";
-import {
-  UNKNOWN_ID,
-  ResourceId,
-  ValidatedMessage,
-  unknownEnvironment,
-  ComposedInstance,
-} from "@/types";
+import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
+import { InstanceArchiveRestoreButton } from "@/components/Instance";
+import { DrawerContent, InstanceV1EngineIcon } from "@/components/v2";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { instanceServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useSettingV1Store,
@@ -393,25 +382,36 @@ import {
   useSubscriptionV1Store,
   useGracefulRequest,
 } from "@/store";
-import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
-import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
-import OracleSyncModeInput from "./OracleSyncModeInput.vue";
-import SpannerHostInput from "./SpannerHostInput.vue";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
-import { DrawerContent, InstanceV1EngineIcon } from "@/components/v2";
-import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { InstanceArchiveRestoreButton } from "@/components/Instance";
+import {
+  UNKNOWN_ID,
+  ResourceId,
+  ValidatedMessage,
+  unknownEnvironment,
+  ComposedInstance,
+} from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   DataSource,
   DataSourceType,
   Instance,
   InstanceOptions,
 } from "@/types/proto/v1/instance_service";
-import { Engine } from "@/types/proto/v1/common";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import {
+  isDev,
+  isValidSpannerHost,
+  extractInstanceResourceName,
+  engineNameV1,
+  instanceV1Slug,
+  calcUpdateMask,
+} from "@/utils";
+import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
+import OracleSyncModeInput from "./OracleSyncModeInput.vue";
+import SpannerHostInput from "./SpannerHostInput.vue";
 import { EditDataSource, extractDataSourceEditState } from "./common";
-import { provideInstanceFormContext } from "./context";
+import { extractBasicInfo } from "./common";
 import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,
@@ -419,9 +419,8 @@ import {
   EngineIconPath,
   EngineList,
 } from "./constants";
+import { provideInstanceFormContext } from "./context";
 import { useInstanceSpecs } from "./specs";
-import { instanceServiceClient } from "@/grpcweb";
-import { extractBasicInfo } from "./common";
 
 const props = defineProps({
   instance: {

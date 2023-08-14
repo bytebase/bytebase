@@ -8,11 +8,10 @@
 
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
+import { debounce } from "lodash-es";
 import { onMounted, reactive, ref, watch } from "vue";
-
 import { useVModel } from "@/composables/useVModel";
 import { sizeToFit } from "@/utils";
-import { debounce } from "lodash-es";
 
 type LocalState = {
   value: string | undefined;

@@ -1,11 +1,12 @@
 import { defineStore } from "pinia";
 import { settingServiceClient } from "@/grpcweb";
+import { settingNamePrefix } from "@/store/modules/v1/common";
 import {
   Setting,
   Value as SettingValue,
   WorkspaceProfileSetting,
+  DataClassificationSetting_DataClassificationConfig,
 } from "@/types/proto/v1/setting_service";
-import { settingNamePrefix } from "@/store/modules/v1/common";
 import { SettingName } from "@/types/setting";
 import { useActuatorV1Store } from "./actuator";
 
@@ -32,6 +33,16 @@ export const useSettingV1Store = defineStore("setting_v1", {
     },
   },
   actions: {
+    getProjectClassification(
+      classificationId: string
+    ): DataClassificationSetting_DataClassificationConfig | undefined {
+      const setting = this.settingMapByName.get(
+        `${settingNamePrefix}bb.workspace.data-classification`
+      );
+      return setting?.value?.dataClassificationSettingValue?.configs.find(
+        (config) => config.id === classificationId
+      );
+    },
     async fetchSettingByName(name: SettingName, silent = false) {
       const setting = await settingServiceClient.getSetting(
         {

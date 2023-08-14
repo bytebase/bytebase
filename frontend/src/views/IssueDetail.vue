@@ -29,11 +29,26 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, computed, reactive, watch } from "vue";
-import { useRoute, _RouteLocationBase } from "vue-router";
+import { useTitle } from "@vueuse/core";
+import Emittery from "emittery";
 import { NSpin } from "naive-ui";
+import { onMounted, computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { useRoute, _RouteLocationBase } from "vue-router";
+import DatabaseRelatedDetail from "@/components/Issue/layout/DatabaseRelatedDetail.vue";
+import GrantRequestDetail from "@/components/Issue/layout/GrantRequestDetail.vue";
+import {
+  useInitializeIssue,
+  provideIssueReview,
+  usePollIssue,
+  ReviewEvents,
+} from "@/plugins/issue/logic";
+import {
+  hasFeature,
+  useIssueStore,
+  useProjectV1Store,
+  useUIStateStore,
+} from "@/store";
 import {
   IssueType,
   NORMAL_POLL_INTERVAL,
@@ -42,24 +57,8 @@ import {
   Issue,
   unknownProject,
 } from "@/types";
-import {
-  hasFeature,
-  useIssueStore,
-  useProjectV1Store,
-  useUIStateStore,
-} from "@/store";
-import {
-  useInitializeIssue,
-  provideIssueReview,
-  usePollIssue,
-  ReviewEvents,
-} from "@/plugins/issue/logic";
-import { useTitle } from "@vueuse/core";
-import Emittery from "emittery";
-import { isDatabaseRelatedIssueType, isGrantRequestIssueType } from "@/utils";
-import DatabaseRelatedDetail from "@/components/Issue/layout/DatabaseRelatedDetail.vue";
-import GrantRequestDetail from "@/components/Issue/layout/GrantRequestDetail.vue";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import { isDatabaseRelatedIssueType, isGrantRequestIssueType } from "@/utils";
 
 interface LocalState {
   showFeatureModal: boolean;

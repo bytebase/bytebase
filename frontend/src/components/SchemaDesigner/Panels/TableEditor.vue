@@ -14,6 +14,15 @@
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
             {{ $t("schema-editor.actions.add-column") }}
           </button>
+          <button
+            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="disableChangeTable"
+            @click="state.showSchemaTemplateDrawer = true"
+          >
+            <FeatureBadge feature="bb.feature.schema-template" />
+            <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+            {{ $t("schema-editor.actions.add-from-template") }}
+          </button>
         </div>
       </div>
       <div class="flex justify-end items-center">
@@ -260,16 +269,41 @@
     :column-id="editForeignKeyColumn.id"
     @close="state.showEditColumnForeignKeyModal = false"
   />
+
+  <Drawer
+    :show="state.showSchemaTemplateDrawer"
+    @close="state.showSchemaTemplateDrawer = false"
+  >
+    <DrawerContent :title="$t('schema-template.field-template.self')">
+      <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
+        <FieldTemplates :engine="engine" @apply="handleApplyColumnTemplate" />
+      </div>
+    </DrawerContent>
+  </Drawer>
+  <FeatureModal
+    feature="bb.feature.schema-template"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { isUndefined, flatten } from "lodash-es";
+import { NDropdown } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { NDropdown } from "naive-ui";
-import { generateUniqueTabId, useSettingV1Store } from "@/store/modules";
+import { BBCheckbox, BBSpin } from "@/bbkit";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import { Drawer, DrawerContent } from "@/components/v2";
+import {
+  hasFeature,
+  generateUniqueTabId,
+  useSettingV1Store,
+} from "@/store/modules";
 import { ColumnMetadata } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
+import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   Column,
   Table,
@@ -278,10 +312,8 @@ import {
   ForeignKey,
 } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
-import { BBCheckbox, BBSpin } from "@/bbkit";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
-import { Engine } from "@/types/proto/v1/common";
 import {
   SchemaDesignerTabType,
   TableTabContext,
@@ -296,6 +328,8 @@ interface LocalState {
   isFetchingDDL: boolean;
   statement: string;
   showEditColumnForeignKeyModal: boolean;
+  showSchemaTemplateDrawer: boolean;
+  showFeatureModal: boolean;
 }
 
 const { t } = useI18n();
@@ -309,6 +343,8 @@ const state = reactive<LocalState>({
   isFetchingDDL: false,
   statement: "",
   showEditColumnForeignKeyModal: false,
+  showSchemaTemplateDrawer: false,
+  showFeatureModal: false,
 });
 
 const schema = computed(() => {
@@ -527,6 +563,31 @@ const handleAddColumn = () => {
       ) as HTMLInputElement
     )?.focus();
   });
+};
+
+const handleApplyColumnTemplate = (
+  template: SchemaTemplateSetting_FieldTemplate
+) => {
+  if (!hasFeature("bb.feature.schema-template")) {
+    state.showFeatureModal = true;
+    return;
+  }
+  if (template.engine !== engine.value || !template.column) {
+    return;
+  }
+  const column = convertColumnMetadataToColumn(
+    ColumnMetadata.fromPartial({
+      name: template.column.name,
+      type: template.column.type,
+      nullable: template.column.nullable,
+      comment: template.column.comment,
+      userComment: template.column.userComment,
+      default: template.column.default,
+    })
+  );
+  column.status = "created";
+  table.value.columnList.push(column);
+  state.showSchemaTemplateDrawer = false;
 };
 
 const handleColumnDefaultFieldChange = (

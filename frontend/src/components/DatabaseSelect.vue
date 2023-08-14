@@ -21,13 +21,6 @@
 </template>
 
 <script lang="ts">
-import { isNullOrUndefined } from "@/plugins/demo/utils";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useInstanceV1Store,
-} from "@/store";
 import {
   computed,
   reactive,
@@ -36,12 +29,19 @@ import {
   PropType,
   defineComponent,
 } from "vue";
+import { isNullOrUndefined } from "@/plugins/demo/utils";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useInstanceV1Store,
+} from "@/store";
+import { Engine, State } from "@/types/proto/v1/common";
 import {
   UNKNOWN_ID,
   ComposedDatabase,
   DEFAULT_PROJECT_V1_NAME,
 } from "../types";
-import { Engine, State } from "@/types/proto/v1/common";
 
 interface LocalState {
   selectedId?: string;
@@ -174,9 +174,11 @@ export default defineComponent({
       }
 
       if (props.environmentId !== String(UNKNOWN_ID)) {
+        const environment = useEnvironmentV1Store().getEnvironmentByUID(
+          props.environmentId
+        );
         list = list.filter(
-          (db) =>
-            db.instanceEntity.environmentEntity.uid === props.environmentId
+          (db) => db.effectiveEnvironment === environment.name
         );
       }
       if (props.instanceId !== String(UNKNOWN_ID)) {

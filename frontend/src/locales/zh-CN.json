@@ -77,6 +77,7 @@
     "updated": "已更新",
     "visit": "访问",
     "role": {
+      "self": "角色",
       "dba": "DBA",
       "owner": "所有者",
       "developer": "开发者",
@@ -257,7 +258,8 @@
     "warehouse": "仓库",
     "schedule": "计划",
     "state": "状态",
-    "condition": "条件"
+    "condition": "条件",
+    "search-user": "搜索用户"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -316,7 +318,7 @@
       "warn": "警告",
       "error": "错误"
     },
-    "earliest-allowed-time-no-modify": "您无法修改此字段因为您不是该工单的审核人或者它不在待执行状态。",
+    "earliest-allowed-time-no-modify": "您无法修改此字段，因为您不是该工单的审核人或者它不在待执行状态。",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表",
@@ -354,7 +356,13 @@
     "execution-time": "执行时间",
     "run-checks": "运行检查",
     "run-checks-in-current-stage": "运行当前阶段的所有检查",
-    "action-failed-in-current-stage": "{action}当前阶段失败的任务"
+    "database-create": {
+      "pending": "（待创建）",
+      "created": "（已创建）"
+    },
+    "action-failed-in-current-stage": "{action}当前阶段失败的任务",
+    "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
+    "cancel-task": "取消任务"
   },
   "banner": {
     "update-license": "更新证书",
@@ -693,7 +701,7 @@
         "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
-        "resolve": "解决",
+        "resolve": "解决工单",
         "cancel": "取消工单",
         "reopen": "重开"
       },
@@ -818,7 +826,17 @@
       "export-method": "导出方式",
       "please-select-database-first": "请先选择数据库"
     },
-    "review-sent-back": "审核被退回"
+    "review-sent-back": "审核被退回",
+    "update-statement": {
+      "self": "更新{type}",
+      "apply-current-change-to": "应用当前修改到",
+      "target": {
+        "selected-task": "选中的任务",
+        "selected-stage": "选中的阶段",
+        "all-tasks": "所有任务"
+      }
+    },
+    "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1544,7 +1562,12 @@
       "assign-role": "分配角色",
       "never-expires": "永不过期",
       "role-never-expires": "此角色没有过期时间。",
-      "add-more": "增加更多"
+      "add-more": "增加更多",
+      "role-name": "角色名称",
+      "users": "用户",
+      "roles": "角色",
+      "search-member": "搜索成员",
+      "revoke-members": "撤销成员"
     },
     "mode": {
       "standard": "标准模式",
@@ -1956,7 +1979,7 @@
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "successfully-upgrade-trial": "成功升级为{plan}试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
-    "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，但是{startTrial}。",
+    "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，{startTrial}。",
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
@@ -2079,7 +2102,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
-        "desc": "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
+        "desc": "检测非预期的 schema 变更并且报告 schema 偏差。"
       },
       "bb-feature-branding": {
         "title": "自定义品牌信息",
@@ -2608,7 +2631,6 @@
   "slow-query": {
     "self": "慢查询",
     "slow-queries": "慢查询",
-    "report-slow-query": "报告慢查询",
     "report": "报告",
     "last-query-time": "最近执行时间",
     "database-name": "数据库名",
@@ -2627,7 +2649,7 @@
     "rows-sent": "返回行数",
     "lock-time": "持有锁时长",
     "query-time": "执行时长",
-    "attention-description": "Bytebase 定期从实例上同步慢查询日志。\n对 MySQL 实例，需要先开启 {slow_query}。\n对 PostgreSQL 实例，需要先在各个数据库中开启 {pg_stat_statements}。",
+    "attention-description": "Bytebase 定期从实例上同步慢查询日志。对 MySQL 实例，需要先开启 slow_query。对 PostgreSQL 实例，只有开启 pg_stat_statements 的数据库才会收集慢查询。",
     "sync-job-started": "同步作业已启动。请等待同步完成。",
     "detail": "慢查询详情",
     "filter": {
@@ -2659,7 +2681,8 @@
       "save-all": "保存所有",
       "messages": {
         "unable-to-update": "无法更新限制",
-        "following-column-types-are-used": "以下列类型仍在字段模板中使用。"
+        "following-column-types-are-used": "以下列类型仍在字段模板中使用。",
+        "one-allowed-type-per-line": "每行放一个允许的数据类型"
       }
     },
     "add-field": "新增字段模板",

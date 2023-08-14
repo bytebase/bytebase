@@ -4,7 +4,7 @@
     :value="role"
     :options="roleOptions"
     :max-tag-count="'responsive'"
-    :placeholder="'Select role'"
+    :placeholder="$t('role.select')"
     :render-label="renderLabel"
     @update:value="changeRole"
   />
@@ -16,15 +16,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref } from "vue";
 import { type SelectOption, NSelect } from "naive-ui";
-
-import { featureToRef, useRoleStore } from "@/store";
-import { PresetRoleType, ProjectRoleType } from "@/types";
-import { displayRoleTitle } from "@/utils";
+import { computed, h, ref } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
+import { featureToRef, useRoleStore } from "@/store";
+import { PresetRoleType, ProjectRoleType } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
+import { displayRoleTitle } from "@/utils";
 
 type ProjectRoleSelectOption = SelectOption & {
   value: string;

@@ -224,7 +224,8 @@ CREATE TABLE project (
     db_name_template TEXT NOT NULL,
     schema_version_type TEXT NOT NULL CHECK (schema_version_type IN ('TIMESTAMP', 'SEMANTIC')) DEFAULT 'TIMESTAMP',
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
-    resource_id TEXT NOT NULL
+    resource_id TEXT NOT NULL,
+    data_classification_config_id TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);

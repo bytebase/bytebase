@@ -82,17 +82,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { Issue, IssueCreate } from "@/types";
+import { computed } from "vue";
 import { useProjectV1Store } from "@/store";
-import { useExtraIssueLogic, useIssueLogic } from "./logic";
-import { IssueReviewSidebarSection } from "./review";
-import IssueStatusIcon from "./IssueStatusIcon.vue";
-import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
+import { Issue, IssueCreate } from "@/types";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import { ProjectV1Name } from "../v2";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
+import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
+import { useExtraIssueLogic, useIssueLogic } from "./logic";
+import { IssueReviewSidebarSection } from "./review";
 
 dayjs.extend(isSameOrAfter);
 

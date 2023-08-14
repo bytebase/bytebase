@@ -1,3 +1,4 @@
+export * from "./collections";
 export * from "./activity";
 export * from "./database";
 export * from "./environment";

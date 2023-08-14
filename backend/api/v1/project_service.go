@@ -143,6 +143,24 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		case "schema_change":
 			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			patch.SchemaChangeType = &schemaChange
+		case "data_classification_config_id":
+			setting, err := s.store.GetDataClassificationSetting(ctx)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get data classification setting")
+			}
+			existConfig := false
+			for _, config := range setting.Configs {
+				if config.Id == request.Project.DataClassificationConfigId {
+					existConfig = true
+					break
+				}
+			}
+			if !existConfig {
+				return nil, status.Errorf(codes.InvalidArgument, "data classification %s not exists", request.Project.DataClassificationConfigId)
+			}
+			patch.DataClassificationConfigID = &request.Project.DataClassificationConfigId
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
 	}
 
@@ -2090,6 +2108,40 @@ func getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 	}
 	return matches, unmatches, nil
 }
+func getMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
+	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var matched []string
+	var unmatched []string
+
+	for _, schema := range dbSchema.Metadata.Schemas {
+		for _, table := range schema.Tables {
+			res, _, err := prog.ContextEval(ctx, map[string]any{
+				"resource": map[string]any{
+					"table_name": table.Name,
+				},
+			})
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, err.Error())
+			}
+
+			val, err := res.ConvertToNative(reflect.TypeOf(false))
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+			}
+
+			if boolVal, ok := val.(bool); ok && boolVal {
+				matched = append(matched, table.Name)
+			} else {
+				unmatched = append(unmatched, table.Name)
+			}
+		}
+	}
+	return matched, unmatched, nil
+}
 
 func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
@@ -2583,17 +2635,18 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 
 	return &v1pb.Project{
-		Name:           fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
-		Uid:            fmt.Sprintf("%d", projectMessage.UID),
-		State:          convertDeletedToState(projectMessage.Deleted),
-		Title:          projectMessage.Title,
-		Key:            projectMessage.Key,
-		Workflow:       workflow,
-		Visibility:     visibility,
-		TenantMode:     tenantMode,
-		DbNameTemplate: projectMessage.DBNameTemplate,
-		SchemaChange:   schemaChange,
-		Webhooks:       projectWebhooks,
+		Name:                       fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
+		Uid:                        fmt.Sprintf("%d", projectMessage.UID),
+		State:                      convertDeletedToState(projectMessage.Deleted),
+		Title:                      projectMessage.Title,
+		Key:                        projectMessage.Key,
+		Workflow:                   workflow,
+		Visibility:                 visibility,
+		TenantMode:                 tenantMode,
+		DbNameTemplate:             projectMessage.DBNameTemplate,
+		SchemaChange:               schemaChange,
+		Webhooks:                   projectWebhooks,
+		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 	}
 }
 

@@ -4,10 +4,9 @@
 </template>
 
 <script lang="ts" setup>
+import { escape } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { escape } from "lodash-es";
-
 import { ConnectionAtom, DEFAULT_PROJECT_ID } from "@/types";
 import { getHighlightHTMLByRegExp } from "@/utils";
 

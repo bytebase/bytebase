@@ -85,24 +85,6 @@
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
-            {{ $t("issue.grant-request.export-format") }}
-            <RequiredStar />
-          </span>
-          <div>
-            <NRadioGroup
-              v-model:value="state.exportFormat"
-              class="w-full !flex flex-row justify-start items-center gap-4"
-              name="export-format"
-            >
-              <NRadio :value="'CSV'" label="CSV" />
-              <NRadio :value="'JSON'" label="JSON" />
-              <NRadio :value="'SQL'" label="SQL" />
-              <NRadio :value="'XLSX'" label="XLSX" />
-            </NRadioGroup>
-          </div>
-        </div>
-        <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-start textlabel mb-2">
             {{ $t("common.expiration") }}
             <RequiredStar />
@@ -111,6 +93,7 @@
             class="grid-cols-6"
             :options="expireDaysOptions"
             :value="state.expireDays"
+            @update="state.expireDays = $event"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
@@ -143,9 +126,21 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { NDrawer, NDrawerContent, NRadioGroup, NRadio, NInput } from "naive-ui";
+import { head, isUndefined } from "lodash-es";
+import { NDrawer, NDrawerContent, NInput } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import DatabaseSelect from "@/components/DatabaseSelect.vue";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
+import { InstanceV1EngineIcon } from "@/components/v2";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useIssueStore,
+  useProjectV1Store,
+} from "@/store";
 import {
   DatabaseResource,
   IssueCreate,
@@ -159,20 +154,8 @@ import {
   issueSlug,
   memberListInProjectV1,
 } from "@/utils";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useIssueStore,
-  useProjectV1Store,
-} from "@/store";
-import RequiredStar from "@/components/RequiredStar.vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
-import DatabaseSelect from "@/components/DatabaseSelect.vue";
-import { head, isUndefined } from "lodash-es";
-import { useRouter } from "vue-router";
-import ExportResourceForm from "./ExportResourceForm/index.vue";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
-import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import ExportResourceForm from "./ExportResourceForm/index.vue";
 
 interface LocalState {
   projectId?: string;
@@ -182,7 +165,6 @@ interface LocalState {
   databaseResources: DatabaseResource[];
   expireDays: number;
   maxRowCount: number;
-  exportFormat: "CSV" | "JSON" | "SQL" | "XLSX";
   statement: string;
   description: string;
 }
@@ -204,7 +186,6 @@ const state = reactive<LocalState>({
   databaseResources: [],
   expireDays: 1,
   maxRowCount: 1000,
-  exportFormat: "CSV",
   statement: "",
   description: "",
 });
@@ -267,7 +248,7 @@ const handleEnvironmentSelect = (environmentId: string) => {
   if (
     database &&
     database.uid !== String(UNKNOWN_ID) &&
-    database.instanceEntity.environmentEntity.uid !== state.environmentId
+    database.effectiveEnvironmentEntity.uid !== state.environmentId
   ) {
     state.databaseId = undefined;
   }
@@ -280,7 +261,7 @@ const handleDatabaseSelect = (databaseId: string) => {
   );
   if (database && database.uid !== String(UNKNOWN_ID)) {
     handleProjectSelect(database.projectEntity.uid);
-    handleEnvironmentSelect(database.instanceEntity.environmentEntity.uid);
+    handleEnvironmentSelect(database.effectiveEnvironmentEntity.uid);
   }
 };
 
@@ -320,8 +301,7 @@ const doCreateIssue = async () => {
       .add(expireDays, "days")
       .toISOString()}")`
   );
-  expression.push(`request.export_format == "${state.exportFormat}"`);
-  expression.push(`request.row_limit == ${state.maxRowCount}`);
+  expression.push(`request.row_limit <= ${state.maxRowCount}`);
   if (state.databaseResourceCondition) {
     expression.push(state.databaseResourceCondition);
   }
@@ -362,15 +342,18 @@ const generateIssueName = () => {
   if (state.databaseResources.length === 0) {
     return `Request data export for "${database.databaseName} (${database.instanceEntity.title})"`;
   } else {
-    const tableResource = state.databaseResources[0] as DatabaseResource;
-    const nameList = [database.databaseName];
-    if (tableResource.schema) {
-      nameList.push(tableResource.schema);
+    const sections: string[] = [];
+    for (const databaseResource of state.databaseResources) {
+      const nameList = [database.databaseName];
+      if (databaseResource.schema) {
+        nameList.push(databaseResource.schema);
+      }
+      if (databaseResource.table) {
+        nameList.push(databaseResource.table);
+      }
+      sections.push(nameList.join("."));
     }
-    if (tableResource.table) {
-      nameList.push(tableResource.table);
-    }
-    return `Request data export for "${nameList.join(".")} (${
+    return `Request data export for "${sections.join(".")} (${
       database.instanceEntity.title
     })"`;
   }

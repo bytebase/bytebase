@@ -20,7 +20,7 @@
                   {{ database.databaseName }}
 
                   <ProductionEnvironmentV1Icon
-                    :environment="database.instanceEntity.environmentEntity"
+                    :environment="environment"
                     :tooltip="true"
                     class="w-5 h-5"
                   />
@@ -45,9 +45,7 @@
                 >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
               >
               <EnvironmentV1Name
-                :environment="
-                  environment || database.instanceEntity.environmentEntity
-                "
+                :environment="environment"
                 icon-class="textinfolabel"
               />
             </dd>
@@ -243,23 +241,48 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, watch, ref } from "vue";
-import { useRouter } from "vue-router";
 import dayjs from "dayjs";
-import { useI18n } from "vue-i18n";
 import { startCase } from "lodash-es";
 import { ClientError } from "nice-grpc-web";
-
+import { computed, onMounted, reactive, watch, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { BBTabFilterItem } from "@/bbkit/types";
+import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
 import DatabaseChangeHistoryPanel from "@/components/DatabaseChangeHistoryPanel.vue";
-import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
-import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
 import {
   DatabaseSettingsPanel,
   SQLEditorButtonV1,
 } from "@/components/DatabaseDetail";
-import { TransferSingleDatabase } from "@/components/TransferDatabaseForm";
 import { DatabaseLabelProps } from "@/components/DatabaseLabels";
+import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
+import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
+import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import { TransferSingleDatabase } from "@/components/TransferDatabaseForm";
+import {
+  EnvironmentV1Name,
+  InstanceV1Name,
+  ProductionEnvironmentV1Icon,
+  ProjectV1Name,
+} from "@/components/v2";
+import {
+  pushNotification,
+  useCurrentUserIamPolicy,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+  useGracefulRequest,
+  useEnvironmentV1Store,
+} from "@/store";
+import {
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_V1_NAME,
+  ComposedDatabase,
+  unknownEnvironment,
+} from "@/types";
+import { State } from "@/types/proto/v1/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
@@ -274,27 +297,6 @@ import {
   isDatabaseV1Queryable,
   allowUsingSchemaEditorV1,
 } from "@/utils";
-import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME, ComposedDatabase } from "@/types";
-import { BBTabFilterItem } from "@/bbkit/types";
-import { GhostDialog } from "@/components/AlterSchemaPrepForm";
-import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
-import {
-  pushNotification,
-  useCurrentUserIamPolicy,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-  useGracefulRequest,
-  useEnvironmentV1Store,
-} from "@/store";
-import {
-  EnvironmentV1Name,
-  InstanceV1Name,
-  ProductionEnvironmentV1Icon,
-  ProjectV1Name,
-} from "@/components/v2";
-import { TenantMode } from "@/types/proto/v1/project_service";
-import { State } from "@/types/proto/v1/common";
 
 type DatabaseTabItem = {
   name: string;
@@ -683,8 +685,10 @@ const syncDatabaseSchema = async () => {
 };
 
 const environment = computed(() => {
-  return useEnvironmentV1Store().getEnvironmentByName(
-    database.value.environment
+  return (
+    useEnvironmentV1Store().getEnvironmentByName(
+      database.value.effectiveEnvironment
+    ) ?? unknownEnvironment()
   );
 });
 </script>

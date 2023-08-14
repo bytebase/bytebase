@@ -130,6 +130,15 @@
 
 <script lang="ts" setup>
 import {
+  ColumnDef,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useVueTable,
+} from "@tanstack/vue-table";
+import { has, sortBy } from "lodash-es";
+import cloneDeep from "lodash-es/cloneDeep";
+import { NPagination } from "naive-ui";
+import {
   computed,
   nextTick,
   PropType,
@@ -138,36 +147,26 @@ import {
   watch,
   watchEffect,
 } from "vue";
-import { useRouter } from "vue-router";
-import { NPagination } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import cloneDeep from "lodash-es/cloneDeep";
+import { useRouter } from "vue-router";
+import { BBGridColumn } from "@/bbkit/types";
+import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
+import { getScrollParent } from "@/plugins/demo/utils";
+import { useCurrentUserV1 } from "@/store";
+import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import {
-  ColumnDef,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useVueTable,
-} from "@tanstack/vue-table";
-
+  Policy,
+  PolicyType,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
 import {
   databaseV1Slug,
   isDatabaseV1Queryable,
   isPITRDatabaseV1,
   VueClass,
 } from "@/utils";
-import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
-import { BBGridColumn } from "@/bbkit/types";
-import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
-import { useCurrentUserV1 } from "@/store";
-import { getScrollParent } from "@/plugins/demo/utils";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import {
-  Policy,
-  PolicyType,
-  PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
-import { has, sortBy } from "lodash-es";
-import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
 
 type Mode =
@@ -277,7 +276,7 @@ const mixedDataList = computed(() => {
   }
   return sortBy(dataList, (d) => {
     if (isDatabase(d)) {
-      return (d as ComposedDatabase).instanceEntity.environmentEntity.name;
+      return (d as ComposedDatabase).effectiveEnvironment;
     } else {
       return (d as ComposedDatabaseGroup).environment.name;
     }

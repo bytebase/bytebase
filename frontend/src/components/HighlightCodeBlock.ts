@@ -1,5 +1,5 @@
-import { h, defineComponent } from "vue";
 import hljs from "highlight.js/lib/core";
+import { h, defineComponent } from "vue";
 
 export default defineComponent({
   name: "HighlightCodeBlock",

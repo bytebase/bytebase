@@ -1,8 +1,8 @@
 import { cloneDeep, last } from "lodash-es";
+import { celServiceClient } from "@/grpcweb";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 import { DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { celServiceClient } from "@/grpcweb";
 
 interface DatabaseLevelCondition {
   database: string[];
@@ -113,12 +113,7 @@ export const stringifyConditionExpression = (
     );
   }
   if (conditionExpression.rowLimit !== undefined) {
-    expression.push(`request.row_limit == ${conditionExpression.rowLimit}`);
-  }
-  if (conditionExpression.exportFormat !== undefined) {
-    expression.push(
-      `request.export_format == "${conditionExpression.exportFormat}"`
-    );
+    expression.push(`request.row_limit <= ${conditionExpression.rowLimit}`);
   }
   return expression.join(" && ");
 };
@@ -249,8 +244,6 @@ export const convertFromCELString = async (
           } else if (left === "request.statement") {
             const statement = decodeURIComponent(escape(window.atob(right)));
             conditionExpression.statement = statement;
-          } else if (left === "request.export_format") {
-            conditionExpression.exportFormat = right;
           }
         } else if (typeof right === "number") {
           if (left === "request.row_limit") {
@@ -333,10 +326,9 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
           } else if (left === "request.statement") {
             const statement = decodeURIComponent(escape(window.atob(right)));
             conditionExpression.statement = statement;
-          } else if (left === "request.export_format") {
-            conditionExpression.exportFormat = right;
           }
         } else if (typeof right === "number") {
+          // Deprecated. Use _<=_ instead.
           if (left === "request.row_limit") {
             conditionExpression.rowLimit = right;
           }
@@ -346,6 +338,13 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
       const [left, right] = expr.args;
       if (left === "request.time") {
         conditionExpression.expiredTime = (right as Date).toISOString();
+      }
+    } else if (expr.operator === "_<=_") {
+      const [left, right] = expr.args;
+      if (left === "request.row_limit" && typeof right === "number") {
+        if (left === "request.row_limit") {
+          conditionExpression.rowLimit = right;
+        }
       }
     }
   }
