@@ -13,8 +13,7 @@
       <div class="w-full flex flex-col justify-start items-start gap-y-4 pb-12">
         <div class="w-full">
           <p class="mb-2">
-            <span>{{ $t("common.name") }}</span>
-            <span class="text-red-600">*</span>
+            <span>{{ $t("project.members.condition-name") }}</span>
           </p>
           <NInput v-model:value="state.title" type="text" placeholder="" />
         </div>
@@ -141,7 +140,6 @@ import {
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { onMounted } from "vue";
-import { useI18n } from "vue-i18n";
 import ExporterDatabaseResourceForm from "@/components/Issue/panel/RequestExportPanel/ExportResourceForm/index.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
 import { DatabaseSelect } from "@/components/v2";
@@ -187,7 +185,6 @@ interface LocalState {
   databaseId?: string;
 }
 
-const _ = useI18n();
 const databaseStore = useDatabaseV1Store();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
@@ -209,7 +206,7 @@ const showDeleteButton = computed(() => {
 });
 
 const allowConfirm = computed(() => {
-  return state.title && state.userUidList.length > 0;
+  return state.userUidList.length > 0;
 });
 
 onMounted(() => {

@@ -1551,6 +1551,8 @@
     "members": {
       "add-member": "添加成员",
       "revoke-member": "撤销成员",
+      "revoke-access": "撤销访问",
+      "grant-access": "授权访问",
       "edit": "编辑成员 - {member}",
       "view-by-principals": "按负责人查看",
       "view-by-roles": "按角色查看",
@@ -1564,6 +1566,7 @@
       "role-never-expires": "此角色没有过期时间。",
       "add-more": "增加更多",
       "role-name": "角色名称",
+      "condition-name": "条件名称",
       "users": "用户",
       "roles": "角色",
       "search-member": "搜索成员",
