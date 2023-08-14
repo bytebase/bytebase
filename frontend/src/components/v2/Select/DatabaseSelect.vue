@@ -120,7 +120,7 @@ const renderLabel: SelectRenderLabel = (option) => {
   return h(
     "div",
     {
-      class: "flex flex-row justify-start items-center",
+      class: "w-full flex flex-row justify-start items-center truncate",
     },
     [
       h(InstanceV1EngineIcon, {
