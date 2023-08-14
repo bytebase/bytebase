@@ -283,7 +283,7 @@ export const useSheetAndTabStore = defineStore("sheet_and_tab", () => {
   const isCreator = computed(() => {
     const sheet = currentSheet.value;
     if (!sheet) return false;
-    return getUserEmailFromIdentifier(sheet.name) === me.value.email;
+    return getUserEmailFromIdentifier(sheet.creator) === me.value.email;
   });
 
   const isReadOnly = computed(() => {
