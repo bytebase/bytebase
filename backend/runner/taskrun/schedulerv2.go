@@ -110,7 +110,16 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	if err != nil {
 		return err
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	// TODO(p0ny): support create database with environment override.
+	environmentID := instance.EnvironmentID
+	if task.DatabaseID != nil {
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+		if err != nil {
+			return err
+		}
+		environmentID = database.EffectiveEnvironmentID
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {
 		return err
 	}

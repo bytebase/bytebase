@@ -265,7 +265,10 @@ const handleDatabaseSelect = async (databaseId: string) => {
     if (!database) {
       return;
     }
-    const environment = environmentStore.getEnvironmentByName(database.effectiveEnvironment)
+
+    const environment = environmentStore.getEnvironmentByName(
+      database.effectiveEnvironment
+    );
     state.projectId = database.projectEntity.uid;
     state.environmentId = environment?.uid;
     state.databaseId = databaseId;

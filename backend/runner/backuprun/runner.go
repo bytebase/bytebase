@@ -346,7 +346,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		if instance.Engine == db.ClickHouse || instance.Engine == db.Snowflake || instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis || instance.Engine == db.Oracle {
 			continue
 		}
-		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 		if err != nil {
 			log.Error("Failed to get environment", zap.Error(err))
 		}
@@ -409,7 +409,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	if instance.Deleted {
 		return nil, errors.Errorf("instance %q deleted", database.InstanceID)
 	}
-	environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 	if err != nil {
 		return nil, err
 	}
