@@ -68,9 +68,9 @@
           {{ $t("issue.grant-request.export-rows") }}
         </span>
         <NInputNumber
-          v-model="state.maxRowCount"
+          v-model:value="state.maxRowCount"
           required
-          placeholder="Max row count"
+          :placeholder="$t('issue.grant-request.export-rows')"
         />
       </div>
     </template>
@@ -240,6 +240,11 @@ watch(
       props.binding.condition = Expr.create({
         title: state.roleTitle,
         expression: expression.join(" && "),
+      });
+    } else {
+      props.binding.condition = Expr.create({
+        title: state.roleTitle,
+        expression: undefined,
       });
     }
   },
