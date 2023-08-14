@@ -35,6 +35,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
@@ -1108,10 +1109,19 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, false, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
-		case db.Postgres, db.Redshift, db.RisingWave:
+		case db.Redshift, db.RisingWave:
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, advisor.Success, nil, nil, nil, false, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
+			}
+		case db.Postgres:
+			if allPostgresSystemObjects(request.Statement) {
+				sensitiveSchemaInfo = nil
+			} else {
+				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
+				if err != nil {
+					return nil, nil, advisor.Success, nil, nil, nil, false, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
+				}
 			}
 		case db.Oracle, db.DM:
 			if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -1190,6 +1200,35 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	}
 
 	return instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, activity, allowExport, nil
+}
+
+func allPostgresSystemObjects(statement string) bool {
+	// We need to distinguish between specified public schema and by default.
+	resources, err := parser.ExtractResourceList(parser.Postgres, "", "", statement)
+	if err != nil {
+		log.Debug("Failed to extract resource list from statement", zap.String("statement", statement), zap.Error(err))
+		return false
+	}
+	systemSchemas := make(map[string]bool)
+	for _, schema := range pg.SystemSchemaList {
+		systemSchemas[schema] = true
+	}
+	systemTables := make(map[string]bool)
+	for _, table := range pg.SystemTableList {
+		systemTables[table] = true
+	}
+	for _, resource := range resources {
+		if systemSchemas[resource.Schema] {
+			continue
+		}
+		// If schema is not specified, user can access the pg_catalog schema if the table is pg_catalog's system table.
+		// So we need to check this case.
+		if resource.Schema == "" && systemTables[resource.Table] {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) (*store.ActivityMessage, error) {
