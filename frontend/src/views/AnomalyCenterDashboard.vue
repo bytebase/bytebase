@@ -229,7 +229,7 @@ export default defineComponent({
               database.databaseName
                 .toLowerCase()
                 .includes(state.searchText.toLowerCase()) ||
-              database.instanceEntity.environmentEntity.title
+              database.effectiveEnvironmentEntity.title
                 .toLowerCase()
                 .includes(state.searchText.toLowerCase())
             ) {
@@ -247,7 +247,7 @@ export default defineComponent({
 
           if (anomalyListOfDatabase.length > 0) {
             sectionList.push({
-              title: `${database.databaseName} (${database.instanceEntity.environmentEntity.title})`,
+              title: `${database.databaseName} (${database.effectiveEnvironmentEntity.title})`,
               link: `/db/${databaseV1Slug(database)}`,
               list: anomalyListOfDatabase,
             });
@@ -318,16 +318,14 @@ export default defineComponent({
               break;
           }
         }
-        const summary = envMap.get(
-          database.instanceEntity.environmentEntity.uid
-        );
+        const summary = envMap.get(database.effectiveEnvironmentEntity.uid);
         if (summary) {
           summary.criticalCount += criticalCount;
           summary.highCount += highCount;
           summary.mediumCount += mediumCount;
         } else {
-          envMap.set(String(database.instanceEntity.environmentEntity.uid), {
-            environmentName: database.instanceEntity.environmentEntity.title,
+          envMap.set(String(database.effectiveEnvironmentEntity.uid), {
+            environmentName: database.effectiveEnvironmentEntity.title,
             criticalCount,
             highCount,
             mediumCount,

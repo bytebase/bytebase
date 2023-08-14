@@ -168,7 +168,7 @@ onMounted(async () => {
       );
       state.projectId = props.baselineSchema.projectId;
       state.databaseId = database.uid;
-      state.environmentId = database.instanceEntity.environmentEntity.uid;
+      state.environmentId = database.effectiveEnvironmentEntity.uid;
       state.changeHistory = props.baselineSchema.changeHistory;
     } catch (error) {
       // do nothing.

@@ -67,7 +67,7 @@ const fetchChangeHistory = async (databaseList: ComposedDatabase[]) => {
     if (changeHistoryList.length > 0) {
       state.databaseSectionList.push(database);
 
-      const title = `${database.databaseName} (${database.instanceEntity.environmentEntity.title})`;
+      const title = `${database.databaseName} (${database.effectiveEnvironmentEntity.title})`;
       const index = state.changeHistorySectionList.findIndex(
         (item: BBTableSectionDataSource<ChangeHistory>) => {
           return item.title == title;
