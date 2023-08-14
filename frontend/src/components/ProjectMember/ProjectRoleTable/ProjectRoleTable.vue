@@ -115,8 +115,8 @@ const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const columnList = computed(() => {
   const ROLE_NAME: BBGridColumn = {
-    title: t("common.name"),
-    width: "1fr",
+    title: t("project.members.condition-name"),
+    width: "1.5fr",
   };
   const EXPIRATION: BBGridColumn = {
     title: t("common.expiration"),
