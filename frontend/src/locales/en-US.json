@@ -2686,10 +2686,11 @@
       "description": "You can restrict the allowed column types for each database engine.",
       "allow-all": "Allow all",
       "allow-limited-types": "Allow limited types",
-      "save-all": "Save all",
+      "back-to-edit": "Back to edit",
+      "add-and-save": "Add and save",
       "messages": {
         "unable-to-update": "Unable to update restriction",
-        "following-column-types-are-used": "Following column types are still used by field tempalte",
+        "following-column-types-are-used": "Following column types are still used by field template",
         "one-allowed-type-per-line": "One allowed data type per line"
       }
     },
