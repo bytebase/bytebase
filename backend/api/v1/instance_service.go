@@ -269,11 +269,18 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 		}
 		defer driver.Close(ctx)
 		if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
-			return status.Errorf(codes.FailedPrecondition, "slow query log is not enabled: %s", err.Error())
+			log.Warn("slow query log is not enabled", zap.String("instance", instance.ResourceID), zap.Error(err))
+			return nil
 		}
 
 		// Sync slow queries for instance.
-		s.stateCfg.InstanceSlowQuerySyncChan <- instance.ResourceID
+		message := &state.InstanceSlowQuerySyncMessage{
+			InstanceID: instance.ResourceID,
+		}
+		if project != nil {
+			message.ProjectID = project.ResourceID
+		}
+		s.stateCfg.InstanceSlowQuerySyncChan <- message
 	case db.Postgres:
 		findDatabase := &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
@@ -314,7 +321,13 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 		}
 
 		// Sync slow queries for instance.
-		s.stateCfg.InstanceSlowQuerySyncChan <- instance.ResourceID
+		message := &state.InstanceSlowQuerySyncMessage{
+			InstanceID: instance.ResourceID,
+		}
+		if project != nil {
+			message.ProjectID = project.ResourceID
+		}
+		s.stateCfg.InstanceSlowQuerySyncChan <- message
 	default:
 		return status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Engine)
 	}

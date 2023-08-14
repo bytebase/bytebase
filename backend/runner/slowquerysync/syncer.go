@@ -58,9 +58,9 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			log.Debug("Slow query syncer received context cancellation")
 			return
-		case instanceResourceID := <-s.stateCfg.InstanceSlowQuerySyncChan:
-			log.Debug("Slow query syncer received instance slow query sync request", zap.String("instance", instanceResourceID))
-			s.syncSlowQuery(ctx, &instanceResourceID)
+		case message := <-s.stateCfg.InstanceSlowQuerySyncChan:
+			log.Debug("Slow query syncer received instance slow query sync request", zap.String("instance", message.InstanceID), zap.String("project", message.ProjectID))
+			s.syncSlowQuery(ctx, message)
 		case <-ticker.C:
 			log.Debug("Slow query syncer received tick")
 			s.syncSlowQuery(ctx, nil)
@@ -68,7 +68,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *Syncer) syncSlowQuery(ctx context.Context, instanceResourceID *string) {
+func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQuerySyncMessage) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -80,8 +80,10 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, instanceResourceID *string) 
 	}()
 
 	find := &store.FindInstanceMessage{}
-	if instanceResourceID != nil {
-		find.ResourceID = instanceResourceID
+	project := ""
+	if message != nil {
+		find.ResourceID = &message.InstanceID
+		project = message.ProjectID
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
@@ -97,7 +99,7 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, instanceResourceID *string) 
 		instanceWG.Add(1)
 		go func(instance *store.InstanceMessage) {
 			defer instanceWG.Done()
-			if err := s.syncInstanceSlowQuery(ctx, instance); err != nil {
+			if err := s.syncInstanceSlowQuery(ctx, instance, project); err != nil {
 				log.Debug("Failed to sync instance slow query",
 					zap.String("instance", instance.ResourceID),
 					zap.Error(err))
@@ -107,7 +109,7 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, instanceResourceID *string) 
 	instanceWG.Wait()
 }
 
-func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
+func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.InstanceMessage, project string) error {
 	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
 	if err != nil {
 		return err
@@ -120,13 +122,13 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 	case db.MySQL:
 		return s.syncMySQLSlowQuery(ctx, instance)
 	case db.Postgres:
-		return s.syncPostgreSQLSlowQuery(ctx, instance)
+		return s.syncPostgreSQLSlowQuery(ctx, instance, project)
 	default:
 		return errors.Errorf("unsupported database engine: %s", instance.Engine)
 	}
 }
 
-func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
+func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage, project string) error {
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 
 	earliestDate := today.AddDate(0, 0, -retentionCycle)
@@ -135,9 +137,13 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		return err
 	}
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+	findDatabases := &store.FindDatabaseMessage{
 		InstanceID: &instance.ResourceID,
-	})
+	}
+	if project != "" {
+		findDatabases.ProjectID = &project
+	}
+	databases, err := s.store.ListDatabases(ctx, findDatabases)
 	if err != nil {
 		return err
 	}
