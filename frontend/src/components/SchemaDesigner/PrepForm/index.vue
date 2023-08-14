@@ -34,6 +34,7 @@
 
   <CreateSchemaDesignPanel
     v-if="state.showCreatePanel"
+    :project-id="projectId"
     @dismiss="state.showCreatePanel = false"
     @created="
       (schemaDesign) => {
@@ -64,6 +65,10 @@ interface LocalState {
   showCreatePanel: boolean;
   selectedSchemaDesignName?: string;
 }
+
+defineProps<{
+  projectId?: string;
+}>();
 
 const { schemaDesignList, ready } = useSchemaDesignList();
 const state = reactive<LocalState>({

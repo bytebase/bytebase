@@ -98,7 +98,7 @@ interface LocalState {
   schemaDesign: SchemaDesign;
 }
 
-defineProps({
+const props = defineProps({
   projectId: {
     type: String,
     default: undefined,
@@ -115,7 +115,9 @@ const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const state = reactive<LocalState>({
   schemaDesignName: "",
-  baselineSchema: {},
+  baselineSchema: {
+    projectId: props.projectId,
+  },
   schemaDesign: SchemaDesign.fromPartial({}),
 });
 const refreshId = ref<string>("");
