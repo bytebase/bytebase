@@ -12,7 +12,7 @@
   err:
     type: 407
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
-    line: 3
+    line: 2
     payload: null
 - statement: '      CREATE TABLE t(a TEXT DEFAULT ''1'')'
   want: null
@@ -28,7 +28,7 @@
   err:
     type: 406
     content: Invalid default value for column `a`
-    line: 3
+    line: 2
     payload: null
 - statement: '      CREATE TABLE t(a INT NOT NULL DEFAULT NULL)'
   want: null
@@ -49,65 +49,63 @@
   err:
     type: 404
     content: There can be only one auto column for table `t`
-    line: 2
+    line: 1
     payload: null
 - statement: '      CREATE TABLE t as select * from t1;'
   want: null
   err:
     type: 303
-    content: |-
-        Disallow the CREATE TABLE AS statement but "CREATE TABLE t as select * from t1
-        ;" uses
-    line: 2
+    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t as select * from t1;" uses
+    line: 1
     payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tCREATE INDEX idx_c on t(c);\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
-    line: 4
+    line: 3
     payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t MODIFY COLUMN c int;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
-    line: 4
+    line: 3
     payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t CHANGE COLUMN c aa int;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
-    line: 4
+    line: 3
     payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t DROP COLUMN c;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
-    line: 4
+    line: 3
     payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t RENAME COLUMN c TO cc;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
-    line: 4
+    line: 3
     payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t RENAME COLUMN c TO cc;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
-    line: 4
+    line: 3
     payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t ALTER COLUMN c DROP DEFAULT;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
-    line: 4
+    line: 3
     payload: null
 - statement: |-
     ALTER DATABASE CHARACTER SET = utf8mb4;
@@ -119,10 +117,13 @@
           tables: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: utf8mb4
     collation: utf8mb4_polish_ci
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE t(
@@ -152,6 +153,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -160,6 +163,8 @@
                   characterset: utf8mb4
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 3
                   default: null
@@ -168,6 +173,8 @@
                   characterset: ""
                   collation: ""
                   comment: This is a comment
+                  classification: ""
+                  usercomment: ""
                 - name: d
                   position: 4
                   default: null
@@ -176,6 +183,8 @@
                   characterset: ""
                   collation: utf8mb4_polish_ci
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -237,6 +246,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
             - name: t_copy
               columns:
@@ -249,6 +260,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -257,6 +270,8 @@
                   characterset: utf8mb4
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 3
                   default: null
@@ -265,6 +280,8 @@
                   characterset: ""
                   collation: ""
                   comment: This is a comment
+                  classification: ""
+                  usercomment: ""
                 - name: d
                   position: 4
                   default: null
@@ -273,6 +290,8 @@
                   characterset: ""
                   collation: utf8mb4_polish_ci
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -334,13 +353,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE t(
@@ -369,6 +393,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -377,6 +403,8 @@
                   characterset: utf8mb4
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 3
                   default: null
@@ -385,6 +413,8 @@
                   characterset: ""
                   collation: ""
                   comment: This is a comment
+                  classification: ""
+                  usercomment: ""
                 - name: d
                   position: 4
                   default: null
@@ -393,6 +423,8 @@
                   characterset: ""
                   collation: utf8mb4_polish_ci
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -454,13 +486,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE t(
@@ -483,6 +520,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -491,6 +530,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -509,13 +550,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE t1(a int, b int, c int);
@@ -528,17 +574,20 @@
           tables: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: '      DROP TABLE t1, t2'
   want: null
   err:
     type: 302
     content: Table `t1` does not exist
-    line: 2
+    line: 1
     payload: null
 - statement: |-
     CREATE TABLE t(a int);
@@ -550,10 +599,13 @@
           tables: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE t(a int);
@@ -573,6 +625,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -582,13 +636,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: |-
     -- this is comment
@@ -598,7 +657,7 @@
   err:
     type: 202
     content: Database `test` is deleted
-    line: 4
+    line: 3
     payload: null
 - statement: |-
     CREATE TABLE t(
@@ -640,6 +699,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: a_copy
                   position: 2
                   default: null
@@ -648,6 +709,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: a1
                   position: 3
                   default: null
@@ -656,6 +719,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: d_copy
                   position: 4
                   default: null
@@ -664,6 +729,8 @@
                   characterset: ""
                   collation: utf8mb4_polish_ci
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: e
                   position: 5
                   default: null
@@ -672,6 +739,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: b_3
                   expressions:
@@ -724,13 +793,18 @@
               datafree: 0
               createoptions: ""
               comment: This is a table comment
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE t(
@@ -759,6 +833,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -767,6 +843,8 @@
                   characterset: utf8mb4
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 3
                   default: null
@@ -775,6 +853,8 @@
                   characterset: ""
                   collation: ""
                   comment: This is a comment
+                  classification: ""
+                  usercomment: ""
                 - name: d
                   position: 4
                   default: null
@@ -783,6 +863,8 @@
                   characterset: ""
                   collation: utf8mb4_polish_ci
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -844,13 +926,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE t(
@@ -874,6 +961,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -882,6 +971,8 @@
                   characterset: utf8mb4
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -899,11 +990,16 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
+    servicename: ""
   err: null
