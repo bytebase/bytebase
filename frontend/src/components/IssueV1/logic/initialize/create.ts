@@ -145,7 +145,7 @@ export const buildSteps = async (
 
   const databaseListGroupByEnvironment = groupBy(
     databaseList,
-    (db) => db.effectiveEnvironment
+    (db) => db.instanceEntity.environment
   );
   const stageList = orderBy(
     Object.keys(databaseListGroupByEnvironment).map((env) => {

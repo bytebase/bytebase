@@ -20,12 +20,13 @@ export interface ComposedDatabase extends Database {
 export const emptyDatabase = (): ComposedDatabase => {
   const projectEntity = emptyProject();
   const instanceEntity = emptyInstance();
+  const effectiveEnvironmentEntity = instanceEntity.environmentEntity;
   const database = Database.fromJSON({
     name: `${instanceEntity.name}/databases/${EMPTY_ID}`,
     uid: String(EMPTY_ID),
     syncState: State.ACTIVE,
     project: projectEntity.name,
-    effectiveEnvironment: instanceEntity.name,
+    effectiveEnvironment: effectiveEnvironmentEntity.name,
   });
   return {
     ...database,
@@ -33,19 +34,20 @@ export const emptyDatabase = (): ComposedDatabase => {
     instance: instanceEntity.name,
     instanceEntity,
     projectEntity,
-    effectiveEnvironmentEntity: instanceEntity.environmentEntity,
+    effectiveEnvironmentEntity,
   };
 };
 
 export const unknownDatabase = (): ComposedDatabase => {
   const projectEntity = unknownProject();
   const instanceEntity = unknownInstance();
+  const effectiveEnvironmentEntity = instanceEntity.environmentEntity;
   const database = Database.fromJSON({
     name: `${instanceEntity.name}/databases/${UNKNOWN_ID}`,
     uid: String(UNKNOWN_ID),
     syncState: State.ACTIVE,
     project: projectEntity.name,
-    effectiveEnvironment: instanceEntity.environmentEntity.name,
+    effectiveEnvironment: effectiveEnvironmentEntity.name,
   });
   return {
     ...database,
