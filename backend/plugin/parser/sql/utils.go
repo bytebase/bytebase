@@ -90,7 +90,7 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		return extractOracleResourceList(currentDatabase, currentSchema, sql)
 	case Postgres, RisingWave:
 		// The resource list for Postgres may contains table, view and temporary table.
-		return extractPostgresResourceList(currentDatabase, "public", sql)
+		return extractPostgresResourceList(currentDatabase, currentSchema, sql)
 	case Snowflake:
 		return extractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
 	case MSSQL:
