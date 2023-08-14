@@ -1,5 +1,5 @@
 <template>
-  <BBBadge :text="text" :can-remove="false" :style="style" />
+  <BBBadge :text="text" :can-remove="false" :badge-style="style" />
 </template>
 
 <script lang="ts" setup>
