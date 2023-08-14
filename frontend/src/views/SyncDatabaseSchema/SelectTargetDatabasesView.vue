@@ -265,6 +265,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import { sqlServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -331,6 +332,7 @@ const databaseDiffCache = reactive<
     }
   >
 >({});
+const schemaDesignPreviewCache = reactive<Record<string, string>>({});
 const project = computed(() => {
   return useProjectV1Store().getProjectByUID(props.projectId);
 });
@@ -345,7 +347,10 @@ const sourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return props.databaseSourceSchema?.changeHistory.schema || "";
   } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
-    return selectedSchemaDesign.value?.schema || "";
+    const databaseId = state.selectedDatabaseId || "";
+    return schemaDesignPreviewCache[
+      databaseId + "|" + selectedSchemaDesign.value?.name
+    ];
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
     if (props.rawSqlState?.sheetId) {
@@ -492,6 +497,21 @@ watch(
   () => state.selectedDatabaseId,
   () => {
     diffViewerRef.value?.scrollTo(0, 0);
+  }
+);
+
+watch(
+  () => [state.selectedDatabaseId, selectedSchemaDesign.value],
+  async () => {
+    const schema = await sqlServiceClient.differPreview({
+      engine: engine.value,
+      oldSchema: targetDatabaseSchema.value,
+      newMetadata: selectedSchemaDesign.value?.schemaMetadata,
+    });
+    const databaseId = state.selectedDatabaseId || "";
+    schemaDesignPreviewCache[
+      databaseId + "|" + selectedSchemaDesign.value?.name
+    ] = schema.schema;
   }
 );
 
