@@ -135,23 +135,32 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return true, nil
 	}
 
-	// no need to find if
-	// - feature is not enabled
-	// - approval setting rules are empty
-	if r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil || len(approvalSetting.Rules) == 0 {
-		if err := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: true,
-			ApprovalTemplates:   nil,
-			Approvers:           nil,
-		}); err != nil {
-			return false, errors.Wrap(err, "failed to update issue payload")
+	approvalTemplate, done, err := func() (*storepb.ApprovalTemplate, bool, error) {
+		// no need to find if
+		// - feature is not enabled
+		// - approval setting rules are empty
+		if r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil || len(approvalSetting.Rules) == 0 {
+			// nolint:nilerr
+			return nil, true, nil
 		}
-		return true, nil
-	}
 
-	riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, r.licenseService, r.dbFactory, issue, risks)
+		riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, r.licenseService, r.dbFactory, issue, risks)
+		if err != nil {
+			err = errors.Wrap(err, "failed to get issue risk level")
+			return nil, false, err
+		}
+		if !done {
+			return nil, false, nil
+		}
+
+		approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, riskSource)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
+		}
+
+		return approvalTemplate, false, err
+	}()
 	if err != nil {
-		err = errors.Wrap(err, "failed to get issue risk level")
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
 			ApprovalFindingDone:  true,
 			ApprovalFindingError: err.Error(),
@@ -162,18 +171,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 	if !done {
 		return false, nil
-	}
-
-	approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, riskSource)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
-		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
-			ApprovalFindingDone:  true,
-			ApprovalFindingError: err.Error(),
-		}); updateErr != nil {
-			return false, multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
-		}
-		return false, err
 	}
 
 	// Grant privilege and close issue similar to actions on issue approval.
