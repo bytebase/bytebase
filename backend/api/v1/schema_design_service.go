@@ -1129,6 +1129,8 @@ func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (str
 		return "", listener.err
 	}
 
+	firstTable := true
+
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
 		schemaState, ok := toState.schemas[schema.Name]
@@ -1140,6 +1142,12 @@ func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (str
 			table, ok := schemaState.tables[table.Name]
 			if !ok {
 				continue
+			}
+			if firstTable {
+				firstTable = false
+				if _, err := listener.result.WriteString("\n\n"); err != nil {
+					return "", err
+				}
 			}
 			if err := table.toString(&listener.result); err != nil {
 				return "", err
@@ -1182,7 +1190,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 
 	table, ok := schema.tables[tableName]
 	if !ok {
-		g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
 		return
 	}
 
@@ -1287,7 +1295,9 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: ctx.TableElementList().GetStop().GetTokenIndex() + 1,
-		Stop:  ctx.GetStop().GetTokenIndex(),
+		// Write all tokens until the end of the statement.
+		// Because we listen one statement at a time, we can safely use the last token index.
+		Stop: ctx.GetParser().GetTokenStream().Size() - 1,
 	})); err != nil {
 		g.err = err
 		return
@@ -1295,7 +1305,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 
 	g.currentTable = nil
 	g.firstElementInTable = false
-	g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+	g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
 }
 
 type columnAttr struct {
