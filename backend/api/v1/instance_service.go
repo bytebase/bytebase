@@ -310,9 +310,6 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 		}
 
 		if len(enabledDatabases) == 0 {
-			if project == nil {
-				return status.Errorf(codes.FailedPrecondition, "no database enabled pg_stat_statements")
-			}
 			return nil
 		}
 
