@@ -336,6 +336,8 @@ const handleUpdateRole = async () => {
   }
   if (expression.length > 0) {
     newBinding.condition.expression = expression.join(" && ");
+  } else {
+    newBinding.condition.expression = "";
   }
 
   const policy = cloneDeep(iamPolicy.value);
