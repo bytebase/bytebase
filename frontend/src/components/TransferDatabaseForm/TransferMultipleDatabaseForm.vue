@@ -196,7 +196,7 @@ const gridColumnList = computed((): BBGridColumn[] => {
 const databaseListGroupByEnvironment = computed(() => {
   const listByEnv = environmentList.value.map((environment) => {
     const databaseList = props.databaseList.filter(
-      (db) => db.instanceEntity.environment === environment.name
+      (db) => db.effectiveEnvironment === environment.name
     );
     return {
       environment,
@@ -287,7 +287,7 @@ const getSelectionStateSummaryForEnvironment = (
 };
 
 const handleClickRow = (db: ComposedDatabase) => {
-  const environment = db.instanceEntity.environmentEntity;
+  const environment = db.effectiveEnvironmentEntity;
   toggleDatabaseIdForEnvironment(
     db.uid,
     environment.uid,

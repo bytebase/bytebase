@@ -67,7 +67,7 @@ const rawDatabaseList = computed(() => {
 
   return list.filter((db) => {
     if (props.environment && props.environment !== String(UNKNOWN_ID)) {
-      if (db.instanceEntity.environmentEntity.uid !== props.environment) {
+      if (db.effectiveEnvironmentEntity.uid !== props.environment) {
         return false;
       }
     }

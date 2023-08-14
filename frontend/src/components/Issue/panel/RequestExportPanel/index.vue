@@ -248,7 +248,7 @@ const handleEnvironmentSelect = (environmentId: string) => {
   if (
     database &&
     database.uid !== String(UNKNOWN_ID) &&
-    database.instanceEntity.environmentEntity.uid !== state.environmentId
+    database.effectiveEnvironmentEntity.uid !== state.environmentId
   ) {
     state.databaseId = undefined;
   }
@@ -261,7 +261,7 @@ const handleDatabaseSelect = (databaseId: string) => {
   );
   if (database && database.uid !== String(UNKNOWN_ID)) {
     handleProjectSelect(database.projectEntity.uid);
-    handleEnvironmentSelect(database.instanceEntity.environmentEntity.uid);
+    handleEnvironmentSelect(database.effectiveEnvironmentEntity.uid);
   }
 };
 

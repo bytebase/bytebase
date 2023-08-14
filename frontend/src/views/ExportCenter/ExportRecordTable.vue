@@ -28,7 +28,7 @@
       </div>
       <div class="bb-grid-cell">
         <EnvironmentV1Name
-          :environment="item.database.instanceEntity.environmentEntity"
+          :environment="item.database.effectiveEnvironmentEntity"
         />
       </div>
       <div class="bb-grid-cell">

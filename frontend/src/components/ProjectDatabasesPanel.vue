@@ -101,7 +101,7 @@ const filteredDatabaseList = computed(() => {
   );
   if (state.environment !== String(UNKNOWN_ID)) {
     list = list.filter(
-      (db) => db.instanceEntity.environmentEntity.uid === state.environment
+      (db) => db.effectiveEnvironmentEntity.uid === state.environment
     );
   }
   if (state.instance !== String(UNKNOWN_ID)) {
