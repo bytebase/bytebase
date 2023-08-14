@@ -98,28 +98,41 @@
             <div
               class="relative flex flex-row justify-between items-center mt-1"
             >
-              <input
-                v-model="state.column!.type"
-                required
-                name="column-type"
-                type="text"
+              <BBSelect
+                v-if="schemaTemplateColumnTypes.length > 0"
+                :selected-item="state.column!.type"
+                :item-list="schemaTemplateColumnTypes"
+                :show-prefix-item="false"
                 placeholder="column type"
-                class="textfield w-full"
-                :disabled="!allowEdit"
-                :readonly="schemaTemplateColumnTypes.length > 0"
-              />
-              <NDropdown
-                trigger="click"
-                :options="dataTypeOptions"
-                :disabled="!allowEdit"
-                @select="(dataType: string) => (state.column!.type = dataType)"
+                @select-item="(item: string) => state.column!.type = item"
               >
-                <button class="absolute right-5">
-                  <heroicons-solid:chevron-up-down
-                    class="w-4 h-auto text-gray-400"
-                  />
-                </button>
-              </NDropdown>
+                <template #menuItem="{ item }">
+                  {{ item }}
+                </template>
+              </BBSelect>
+              <template v-else>
+                <input
+                  v-model="state.column!.type"
+                  required
+                  name="column-type"
+                  type="text"
+                  placeholder="column type"
+                  class="textfield w-full"
+                  :disabled="!allowEdit"
+                />
+                <NDropdown
+                  trigger="click"
+                  :options="dataTypeOptions"
+                  :disabled="!allowEdit"
+                  @select="(dataType: string) => (state.column!.type = dataType)"
+                >
+                  <button class="absolute right-5">
+                    <heroicons-solid:chevron-up-down
+                      class="w-4 h-auto text-gray-400"
+                    />
+                  </button>
+                </NDropdown>
+              </template>
             </div>
           </div>
 
@@ -230,15 +243,6 @@ const allowEdit = computed(() => {
 });
 
 const dataTypeOptions = computed(() => {
-  if (schemaTemplateColumnTypes.value.length > 0) {
-    return schemaTemplateColumnTypes.value.map((columnType) => {
-      return {
-        label: columnType,
-        key: columnType,
-      };
-    });
-  }
-
   return getDataTypeSuggestionList(state.engine).map((dataType) => {
     return {
       label: dataType,
