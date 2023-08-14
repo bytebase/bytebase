@@ -233,7 +233,7 @@ watch(
         expression.push(state.databaseResourceCondition);
       }
       if (state.maxRowCount) {
-        expression.push(`request.rows_limit <= ${state.maxRowCount}`);
+        expression.push(`request.row_limit <= ${state.maxRowCount}`);
       }
     }
     if (expression.length > 0) {
