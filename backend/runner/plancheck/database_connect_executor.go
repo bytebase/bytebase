@@ -29,18 +29,21 @@ type DatabaseConnectExecutor struct {
 }
 
 // Run runs the executor.
-func (e *DatabaseConnectExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) (results []*storepb.PlanCheckRunResult_Result, err error) {
+func (e *DatabaseConnectExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
 	databaseID := int(planCheckRun.Config.DatabaseId)
 	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database ID %v", databaseID)
 	}
 	if database == nil {
-		return nil, errors.Wrapf(err, "database ID not found %v", databaseID)
+		return nil, errors.Errorf("database not found %v", databaseID)
 	}
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %v", database.InstanceID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found %v", database.InstanceID)
 	}
 
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
