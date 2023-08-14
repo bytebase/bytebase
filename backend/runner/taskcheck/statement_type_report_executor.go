@@ -298,6 +298,7 @@ func reportStatementTypeForPostgres(database, statement string) ([]api.TaskCheck
 		if sqlType == "COMMENT" {
 			resources, err = postgresExtractResourcesFromCommentStatement(database, "public", stmt.Text())
 			if err != nil {
+				log.Debug("failed to extract resources from comment statement", zap.Error(err))
 				return []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
