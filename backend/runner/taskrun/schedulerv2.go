@@ -110,6 +110,9 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	if err != nil {
 		return err
 	}
+	if instance.Deleted {
+		return nil
+	}
 	// TODO(p0ny): support create database with environment override.
 	environmentID := instance.EnvironmentID
 	if task.DatabaseID != nil {
