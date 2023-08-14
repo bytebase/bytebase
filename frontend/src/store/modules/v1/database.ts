@@ -286,6 +286,9 @@ const batchComposeDatabase = async (databaseList: Database[]) => {
         unknownEnvironment(),
     };
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
+    composed.effectiveEnvironmentEntity =
+      environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
+      unknownEnvironment();
     return composed;
   });
 };
