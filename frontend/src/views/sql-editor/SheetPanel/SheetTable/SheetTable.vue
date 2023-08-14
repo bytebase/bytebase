@@ -1,7 +1,7 @@
 <template>
   <BBGrid
     :column-list="columns"
-    :data-source="sheetList"
+    :data-source="sortedSheetList"
     :show-placeholder="true"
     :ready="!isLoading"
     row-key="name"
@@ -31,6 +31,7 @@
 </template>
 
 <script lang="ts" setup>
+import { orderBy } from "lodash-es";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
@@ -95,6 +96,10 @@ const columns = computed(() => {
   }
   columns.push(UPDATED, OPERATION);
   return columns;
+});
+
+const sortedSheetList = computed(() => {
+  return orderBy<Sheet>(sheetList.value, [(sheet) => sheet.title], ["asc"]);
 });
 
 const projectForSheet = (sheet: Sheet) => {

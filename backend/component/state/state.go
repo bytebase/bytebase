@@ -15,7 +15,7 @@ type State struct {
 	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
 	InstanceDatabaseSyncChan chan *store.InstanceMessage
 	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
-	InstanceSlowQuerySyncChan chan string
+	InstanceSlowQuerySyncChan chan *InstanceSlowQuerySyncMessage
 
 	// RollbackGenerate is the set of tasks for generating rollback statements.
 	RollbackGenerate sync.Map // map[task.ID]*store.TaskMessage
@@ -52,4 +52,14 @@ type State struct {
 	IssueExternalApprovalRelayCancelChan chan int
 
 	sync.Mutex
+}
+
+// InstanceSlowQuerySyncMessage is the message for synchronizing slow query logs for instances.
+type InstanceSlowQuerySyncMessage struct {
+	InstanceID string
+
+	// ProjectID is used to filter the database list.
+	// If ProjectID is empty, then all databases will be synced.
+	// If ProjectID is not empty, then only databases belong to the project will be synced.
+	ProjectID string
 }

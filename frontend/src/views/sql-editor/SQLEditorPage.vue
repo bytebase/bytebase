@@ -95,6 +95,12 @@
 
     <Quickstart />
 
+    <Drawer v-model:show="showSheetPanel">
+      <DrawerContent :title="$t('sql-editor.sheet.self')">
+        <SheetPanel @close="showSheetPanel = false" />
+      </DrawerContent>
+    </Drawer>
+
     <SchemaEditorModal
       v-if="alterSchemaState.showModal"
       :database-id-list="alterSchemaState.databaseIdList.map((id) => `${id}`)"
@@ -112,7 +118,7 @@ import { stringify } from "qs";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, reactive } from "vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
-import { InstanceV1Name } from "@/components/v2";
+import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -131,6 +137,7 @@ import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import ResultPanel from "./ResultPanel";
 import { provideSheetContext } from "./Sheet";
+import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
 import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
 
@@ -151,6 +158,8 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
+// provide context for sheets
+const { showPanel: showSheetPanel } = provideSheetContext();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
@@ -216,9 +225,6 @@ const handleAlterSchema = async (params: {
     window.open(url, "_blank");
   }
 };
-
-// provide context for sheets
-provideSheetContext();
 </script>
 
 <style>

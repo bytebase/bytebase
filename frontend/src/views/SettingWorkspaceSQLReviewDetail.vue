@@ -28,7 +28,7 @@
           <BBBadge
             :text="$t('sql-review.disabled')"
             :can-remove="false"
-            :style="'DISABLED'"
+            ::badge-style="'DISABLED'"
           />
         </div>
         <BBTextField
