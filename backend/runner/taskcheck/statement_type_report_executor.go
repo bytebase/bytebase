@@ -11,6 +11,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	pgquery "github.com/pganalyze/pg_query_go/v4"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -293,6 +295,20 @@ func reportStatementTypeForPostgres(database, statement string) ([]api.TaskCheck
 
 	for _, stmt := range stmts {
 		sqlType, resources := getStatementTypeAndResourcesFromAstNode(database, "public", stmt)
+		if sqlType == "COMMENT" {
+			resources, err = postgresExtractResourcesFromCommentStatement(database, "public", stmt.Text())
+			if err != nil {
+				return []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementSyntaxError.Int(),
+						Title:     "Syntax error",
+						Content:   err.Error(),
+					},
+				}, nil
+			}
+		}
 		changedResource, err := marshalChangedResources(resources)
 		if err != nil {
 			log.Error("failed to marshal changed resources", zap.Error(err))
@@ -308,6 +324,138 @@ func reportStatementTypeForPostgres(database, statement string) ([]api.TaskCheck
 	}
 
 	return result, nil
+}
+
+func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]parser.SchemaResource, error) {
+	res, err := pgquery.Parse(statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Stmts) != 1 {
+		return nil, errors.New("expect to get one node from parser")
+	}
+	for _, stmt := range res.Stmts {
+		if comment, ok := stmt.Stmt.Node.(*pgquery.Node_CommentStmt); ok {
+			switch comment.CommentStmt.Objtype {
+			case pgquery.ObjectType_OBJECT_COLUMN:
+				switch node := comment.CommentStmt.Object.Node.(type) {
+				case *pgquery.Node_List:
+					schemaName, tableName, _, err := convertColumnName(node)
+					if err != nil {
+						return nil, err
+					}
+					resource := parser.SchemaResource{
+						Database: database,
+						Schema:   schemaName,
+						Table:    tableName,
+					}
+					if resource.Schema == "" {
+						resource.Schema = defaultSchema
+					}
+					return []parser.SchemaResource{resource}, nil
+				default:
+					return nil, errors.Errorf("expect to get a list node but got %T", node)
+				}
+			case pgquery.ObjectType_OBJECT_TABCONSTRAINT:
+				resource := parser.SchemaResource{
+					Database: database,
+					Schema:   defaultSchema,
+				}
+				switch node := comment.CommentStmt.Object.Node.(type) {
+				case *pgquery.Node_List:
+					schemaName, tableName, _, err := convertConstraintName(node)
+					if err != nil {
+						return nil, err
+					}
+					if schemaName != "" {
+						resource.Schema = schemaName
+					}
+					resource.Table = tableName
+					return []parser.SchemaResource{resource}, nil
+				default:
+					return nil, errors.Errorf("expect to get a list node but got %T", node)
+				}
+			case pgquery.ObjectType_OBJECT_TABLE:
+				resource := parser.SchemaResource{
+					Database: database,
+					Schema:   defaultSchema,
+				}
+				switch node := comment.CommentStmt.Object.Node.(type) {
+				case *pgquery.Node_List:
+					schemaName, tableName, err := convertTableName(node)
+					if err != nil {
+						return nil, err
+					}
+					if schemaName != "" {
+						resource.Schema = schemaName
+					}
+					resource.Table = tableName
+					return []parser.SchemaResource{resource}, nil
+				default:
+					return nil, errors.Errorf("expect to get a list node but got %T", node)
+				}
+			}
+		}
+	}
+	return nil, nil
+}
+
+func convertNodeList(node *pgquery.Node_List) ([]string, error) {
+	var list []string
+	for _, item := range node.List.Items {
+		switch s := item.Node.(type) {
+		case *pgquery.Node_String_:
+			list = append(list, s.String_.Sval)
+		default:
+			return nil, errors.Errorf("expect to get a string node but got %T", s)
+		}
+	}
+	return list, nil
+}
+
+func convertTableName(node *pgquery.Node_List) (string, string, error) {
+	list, err := convertNodeList(node)
+	if err != nil {
+		return "", "", err
+	}
+	switch len(list) {
+	case 2:
+		return list[0], list[1], nil
+	case 1:
+		return "", list[0], nil
+	default:
+		return "", "", errors.Errorf("expect to get 1 or 2 items but got %d", len(list))
+	}
+}
+
+func convertConstraintName(node *pgquery.Node_List) (string, string, string, error) {
+	list, err := convertNodeList(node)
+	if err != nil {
+		return "", "", "", err
+	}
+	switch len(list) {
+	case 3:
+		return list[0], list[1], list[2], nil
+	case 2:
+		return "", list[0], list[1], nil
+	default:
+		return "", "", "", errors.Errorf("expect to get 2 or 3 items but got %d", len(list))
+	}
+}
+
+func convertColumnName(node *pgquery.Node_List) (string, string, string, error) {
+	list, err := convertNodeList(node)
+	if err != nil {
+		return "", "", "", err
+	}
+	switch len(list) {
+	case 3:
+		return list[0], list[1], list[2], nil
+	case 2:
+		return "", list[0], list[1], nil
+	default:
+		return "", "", "", errors.Errorf("expect to get 2 or 3 items but got %d", len(list))
+	}
 }
 
 func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (string, []parser.SchemaResource) {
@@ -569,6 +717,9 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			result = append(result, newResource)
 			return "RENAME_TABLE", result
 		}
+
+	case *ast.CommentStmt:
+		return "COMMENT", result
 
 	// DML
 
