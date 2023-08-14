@@ -793,6 +793,9 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		if instance.Deleted {
+			continue
+		}
 		environmentID := instance.EnvironmentID
 		// TODO(d): support creating database with environment override.
 		if task.DatabaseID != nil {

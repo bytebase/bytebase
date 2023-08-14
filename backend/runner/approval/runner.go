@@ -401,6 +401,9 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
 			}
+			if instance.Deleted {
+				continue
+			}
 
 			// TODO(d): support create database with environment override.
 			environmentID := instance.EnvironmentID
@@ -419,11 +422,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				databaseName = database.DatabaseName
-				environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-				if err != nil {
-					return 0, store.RiskSourceUnknown, false, err
-				}
-				environmentID = environment.ResourceID
+				environmentID = database.EffectiveEnvironmentID
 			}
 
 			risk, err := func() (int64, error) {
