@@ -1554,6 +1554,8 @@
     "members": {
       "add-member": "Agregar miembro",
       "revoke-member": "Revocar miembro",
+      "revoke-access": "Revocar acceso",
+      "grant-access": "Conceder acceso",
       "edit": "Editar miembro - {member}",
       "view-by-principals": "Ver por responsables",
       "view-by-roles": "Ver por roles",
@@ -1567,6 +1569,7 @@
       "role-never-expires": "Este rol nunca expira.",
       "add-more": "Más información",
       "role-name": "Nombre del rol",
+      "condition-name": "Nombre de la condición",
       "users": "Usuarios",
       "roles": "Roles",
       "search-member": "Buscar miembro",
