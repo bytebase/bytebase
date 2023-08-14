@@ -7,9 +7,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -684,47 +686,114 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			return nil, status.Errorf(codes.Internal, "failed to list tasks: %v", err)
 		}
 		for _, task := range tasks {
-			switch task.Type {
-			case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
-				var taskPayload struct {
-					SpecID  string `json:"specId"`
-					SheetID int    `json:"sheetId"`
+			doUpdate := false
+			taskPatch := &api.TaskPatch{
+				ID:        task.ID,
+				UpdaterID: updaterID,
+			}
+
+			var taskSpecID struct {
+				SpecID string `json:"specId"`
+			}
+			if err := json.Unmarshal([]byte(task.Payload), &taskSpecID); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+			}
+			spec, ok := updatedByID[taskSpecID.SpecID]
+			if !ok {
+				continue
+			}
+
+			// EarliestAllowedTs
+			if spec.EarliestAllowedTime.GetSeconds() != task.EarliestAllowedTs {
+				taskPatch.EarliestAllowedTs = &spec.EarliestAllowedTime.Seconds
+				doUpdate = true
+			}
+
+			// RollbackEnabled
+			if err := func() error {
+				if task.Type != api.TaskDatabaseDataUpdate {
+					return nil
 				}
-				if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-				}
-				spec, ok := updatedByID[taskPayload.SpecID]
-				if !ok {
-					continue
+				payload := &api.TaskDatabaseDataUpdatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 				}
 				config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
 				if !ok {
-					continue
+					return nil
 				}
-				_, sheetIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
+				if config.ChangeDatabaseConfig.RollbackEnabled != payload.RollbackEnabled {
+					taskPatch.RollbackEnabled = &config.ChangeDatabaseConfig.RollbackEnabled
+					doUpdate = true
 				}
-				sheetID, err := strconv.Atoi(sheetIDStr)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
+			// Sheet
+			if err := func() error {
+				switch task.Type {
+				case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+					var taskPayload struct {
+						SpecID  string `json:"specId"`
+						SheetID int    `json:"sheetId"`
+					}
+					if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
+						return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+					}
+					config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+					if !ok {
+						return nil
+					}
+					_, sheetIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+					if err != nil {
+						return status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
+					}
+					sheetID, err := strconv.Atoi(sheetIDStr)
+					if err != nil {
+						return status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
+					}
+					sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
+						UID: &sheetID,
+					}, api.SystemBotID)
+					if err != nil {
+						return status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
+					}
+					if sheet == nil {
+						return status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
+					}
+					doUpdate = true
+					// TODO(p0ny): update schema version
+					taskPatch.SheetID = &sheet.UID
 				}
-				sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-					UID: &sheetID,
-				}, api.SystemBotID)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
-				}
-				if sheet == nil {
-					return nil, status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
-				}
-				// TODO(p0ny): update schema version
-				if _, err := s.store.UpdateTaskV2(ctx, &api.TaskPatch{
-					ID:        task.ID,
-					UpdaterID: updaterID,
-					SheetID:   &sheet.UID,
-				}); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
+			if !doUpdate {
+				continue
+			}
+
+			taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+			}
+
+			// enqueue or cancel after it's written to the database.
+			if taskPatch.RollbackEnabled != nil {
+				// Enqueue the rollback sql generation if the task done.
+				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus != nil && *taskPatched.LatestTaskRunStatus == api.TaskRunDone {
+					s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
+				} else if !*taskPatch.RollbackEnabled {
+					// Cancel running rollback sql generation.
+					if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
+						if cancel, ok := v.(context.CancelFunc); ok {
+							cancel()
+						}
+					}
+					// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
 				}
 			}
 		}
@@ -783,25 +852,13 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 	for _, step := range newSteps {
 		for _, spec := range step.Specs {
 			if oldSpec, ok := oldSpecs[spec.Id]; ok {
-				if isSpecSheetUpdated(oldSpec, spec) {
+				if !cmp.Equal(oldSpec, spec, protocmp.Transform()) {
 					updated = append(updated, spec)
 				}
 			}
 		}
 	}
 	return removed, added, updated
-}
-
-func isSpecSheetUpdated(specA *v1pb.Plan_Spec, specB *v1pb.Plan_Spec) bool {
-	configA, ok := specA.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-	if !ok {
-		return false
-	}
-	configB, ok := specB.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-	if !ok {
-		return false
-	}
-	return configA.ChangeDatabaseConfig.Sheet != configB.ChangeDatabaseConfig.Sheet
 }
 
 func validateSteps(_ []*v1pb.Plan_Step) error {
