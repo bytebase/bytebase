@@ -82,20 +82,14 @@ import {
   InstanceV1EngineIcon,
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
-import {
-  useTabStore,
-  useDatabaseV1ByUID,
-  useInstanceV1ByUID,
-  useEnvironmentV1Store,
-} from "@/store";
-import { TabMode, UNKNOWN_ID, unknownEnvironment } from "@/types";
+import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
+import { TabMode, UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { instanceV1Slug } from "@/utils";
 
 const router = useRouter();
 const tabStore = useTabStore();
-const environmentStore = useEnvironmentV1Store();
 
 const connection = computed(() => tabStore.currentTab.connection);
 
@@ -108,11 +102,9 @@ const { database: selectedDatabaseV1 } = useDatabaseV1ByUID(
 );
 
 const selectedEnvironment = computed(() => {
-  return (
-    environmentStore.getEnvironmentByName(
-      selectedDatabaseV1.value.effectiveEnvironment
-    ) ?? unknownEnvironment()
-  );
+  return connection.value.databaseId === `${UNKNOWN_ID}`
+    ? selectedInstance.value.environmentEntity
+    : selectedDatabaseV1.value.effectiveEnvironmentEntity;
 });
 
 const isProductionEnvironment = computed(() => {
