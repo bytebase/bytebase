@@ -16,7 +16,7 @@
       <div class="bb-grid-cell">
         <EnvironmentV1Name
           :environment="
-            extractComposedDatabase(item).instanceEntity.environmentEntity
+            extractComposedDatabase(item).effectiveEnvironmentEntity
           "
         />
       </div>

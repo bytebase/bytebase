@@ -107,7 +107,7 @@ const databaseCreationStatus = computed((): DatabaseCreationStatus => {
 });
 
 const environment = computed(() => {
-  return coreDatabaseInfo.value.instanceEntity.environmentEntity;
+  return coreDatabaseInfo.value.effectiveEnvironmentEntity;
 });
 
 const database = computed(() => {

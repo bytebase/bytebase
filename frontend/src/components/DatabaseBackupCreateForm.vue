@@ -67,7 +67,7 @@ const buildBackupName = (database: ComposedDatabase) => {
   // The default format is consistent with the default automatic backup name format used in the server.
   return [
     slug(props.database.projectEntity.title),
-    slug(props.database.instanceEntity.environmentEntity.title),
+    slug(props.database.effectiveEnvironmentEntity.title),
     dayjs.utc().local().format("YYYYMMDDTHHmmss"),
   ].join("-");
 };

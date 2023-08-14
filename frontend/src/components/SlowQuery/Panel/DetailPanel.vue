@@ -29,7 +29,7 @@
             </label>
 
             <EnvironmentV1Name
-              :environment="database.instanceEntity.environmentEntity"
+              :environment="database.effectiveEnvironmentEntity"
             />
           </div>
 
