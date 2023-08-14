@@ -338,7 +338,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:             make(chan *store.InstanceMessage, 100),
-		InstanceSlowQuerySyncChan:            make(chan string, 100),
+		InstanceSlowQuerySyncChan:            make(chan *state.InstanceSlowQuerySyncMessage, 100),
 		InstanceOutstandingConnections:       make(map[int]int),
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 	}
