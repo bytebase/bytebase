@@ -15,6 +15,8 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { SchemaDesignerTabType, useSchemaDesignerContext } from "./common";
+import TableEditor from "./Panels/TableEditor.vue"
+import TabsContainer from "./TabsContainer.vue"
 
 const { getCurrentTab } = useSchemaDesignerContext();
 const currentTab = computed(() => getCurrentTab());
