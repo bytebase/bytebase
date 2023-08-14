@@ -97,6 +97,7 @@
 
 <script lang="ts" setup>
 import { head, isNull, isUndefined } from "lodash-es";
+import { NEllipsis } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
@@ -173,6 +174,8 @@ onMounted(async () => {
     } catch (error) {
       // do nothing.
     }
+  } else if (props.baselineSchema?.projectId) {
+    state.projectId = props.baselineSchema.projectId;
   }
 });
 
@@ -262,6 +265,7 @@ const handleDatabaseSelect = async (databaseId: string) => {
     if (!database) {
       return;
     }
+
     const environment = environmentStore.getEnvironmentByName(
       database.effectiveEnvironment
     );
