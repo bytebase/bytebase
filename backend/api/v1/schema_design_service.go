@@ -1087,7 +1087,11 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
 	switch engine {
 	case v1pb.Engine_MYSQL:
-		return getMySQLDesignSchema(baselineSchema, to)
+		result, err := getMySQLDesignSchema(baselineSchema, to)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, "failed to generate design schema: %v", err)
+		}
+		return result, nil
 	default:
 		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 	}
@@ -1101,15 +1105,31 @@ func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (str
 	}
 
 	listener := &mysqlDesignSchemaGenerator{
-		to: toState,
+		lastTokenIndex: 0,
+		to:             toState,
 	}
 
 	for _, stmt := range list {
+		listener.lastTokenIndex = 0
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
+		if listener.err != nil {
+			break
+		}
+
+		if _, err := listener.result.WriteString(
+			stmt.Tokens.GetTextFromInterval(antlr.Interval{
+				Start: listener.lastTokenIndex,
+				Stop:  stmt.Tokens.Size() - 1,
+			}),
+		); err != nil {
+			return "", err
+		}
 	}
 	if listener.err != nil {
 		return "", listener.err
 	}
+
+	firstTable := true
 
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
@@ -1122,6 +1142,12 @@ func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (str
 			table, ok := schemaState.tables[table.Name]
 			if !ok {
 				continue
+			}
+			if firstTable {
+				firstTable = false
+				if _, err := listener.result.WriteString("\n\n"); err != nil {
+					return "", err
+				}
 			}
 			if err := table.toString(&listener.result); err != nil {
 				return "", err
@@ -1142,6 +1168,8 @@ type mysqlDesignSchemaGenerator struct {
 	columnDefine        strings.Builder
 	tableConstraints    strings.Builder
 	err                 error
+
+	lastTokenIndex int
 }
 
 // EnterCreateTable is called when production createTable is entered.
@@ -1162,6 +1190,17 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 
 	table, ok := schema.tables[tableName]
 	if !ok {
+		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+		return
+	}
+
+	if _, err := g.result.WriteString(
+		ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  ctx.GetStart().GetTokenIndex() - 1,
+		}),
+	); err != nil {
+		g.err = err
 		return
 	}
 
@@ -1171,10 +1210,6 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 	g.tableConstraints.Reset()
 
 	delete(schema.tables, tableName)
-	if _, err := g.result.WriteString("CREATE "); err != nil {
-		g.err = err
-		return
-	}
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: ctx.GetStart().GetTokenIndex(),
 		Stop:  ctx.TableElementList().GetStart().GetTokenIndex() - 1,
@@ -1260,19 +1295,17 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: ctx.TableElementList().GetStop().GetTokenIndex() + 1,
-		Stop:  ctx.GetStop().GetTokenIndex(),
+		// Write all tokens until the end of the statement.
+		// Because we listen one statement at a time, we can safely use the last token index.
+		Stop: ctx.GetParser().GetTokenStream().Size() - 1,
 	})); err != nil {
-		g.err = err
-		return
-	}
-
-	if _, err := g.result.WriteString(";\n"); err != nil {
 		g.err = err
 		return
 	}
 
 	g.currentTable = nil
 	g.firstElementInTable = false
+	g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
 }
 
 type columnAttr struct {
@@ -1492,7 +1525,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	// compare column type
 	typeCtx := ctx.FieldDefinition().DataType()
 	columnType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(typeCtx)
-	if columnType != column.tp {
+	if !strings.EqualFold(columnType, column.tp) {
 		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 			Start: ctx.GetStart().GetTokenIndex(),
 			Stop:  typeCtx.GetStart().GetTokenIndex() - 1,
@@ -1500,7 +1533,8 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 			g.err = err
 			return
 		}
-		if _, err := g.columnDefine.WriteString(column.tp); err != nil {
+		// write lower case column type for MySQL
+		if _, err := g.columnDefine.WriteString(strings.ToLower(column.tp)); err != nil {
 			g.err = err
 			return
 		}
