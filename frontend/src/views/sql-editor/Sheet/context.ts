@@ -8,9 +8,9 @@ import {
   useTabStore,
 } from "@/store";
 import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
+import { AnyTabInfo, UNKNOWN_ID } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { emptyConnection, isSheetReadableV1 } from "@/utils";
+import { emptyConnection, getSheetStatement, isSheetReadableV1 } from "@/utils";
 import { SheetViewMode } from "./types";
 
 type SheetEvents = Emittery<{
@@ -99,6 +99,8 @@ export const provideSheetContext = () => {
   });
 
   provide(KEY, context);
+
+  return context;
 };
 
 export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
@@ -115,21 +117,27 @@ export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
     });
     return false;
   }
+  const statement = getSheetStatement(sheet);
+  const newTab: AnyTabInfo = {
+    sheetName: sheet.name,
+    name: sheet.title,
+    statement,
+  };
   if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
     tabStore.setCurrentTabId(openingSheetTab.id);
   } else if (forceNewTab) {
-    tabStore.addTab({}, true /* beside */);
+    tabStore.addTab(newTab, true /* beside */);
   } else {
     // Open the sheet in a "temp" tab otherwise.
-    tabStore.selectOrAddTempTab();
+    tabStore.selectOrAddTempTab(newTab);
   }
 
   let insId = String(UNKNOWN_ID);
   let dbId = String(UNKNOWN_ID);
   if (sheet.database) {
     const [instanceName, databaseId] = getInstanceAndDatabaseId(sheet.database);
-    const ins = await useInstanceV1Store().getOrFetchInstanceByName(
+    const ins = useInstanceV1Store().getInstanceByName(
       `instances/${instanceName}`
     );
     insId = ins.uid;
@@ -139,7 +147,7 @@ export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
   tabStore.updateCurrentTab({
     sheetName: sheet.name,
     name: sheet.title,
-    statement: new TextDecoder().decode(sheet.content),
+    statement,
     isSaved: true,
     connection: {
       ...emptyConnection(),

@@ -156,7 +156,7 @@ const DEFAULT_FILE_PATH_TEMPLATE =
   "{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
 // Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
 const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql";
-// Default sheet path tempalte is to organize script files for SQL Editor.
+// Default sheet path template is to organize script files for SQL Editor.
 const DEFAULT_SHEET_PATH_TEMPLATE =
   "script/{{ENV_ID}}##{{DB_NAME}}##{{NAME}}.sql";
 

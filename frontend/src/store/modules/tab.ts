@@ -89,7 +89,11 @@ export const useTabStore = defineStore("tab", () => {
     currentTabId.value = id;
     tabs.value.set(id, newTab);
 
-    asidePanelTab.value = "databases";
+    if (!newTab.sheetName) {
+      // Switch the tab to "database" after adding a new sheet
+      // because users need to select a database to continue editing
+      asidePanelTab.value = "databases";
+    }
 
     watchTab(newTab, false);
   };
@@ -136,7 +140,7 @@ export const useTabStore = defineStore("tab", () => {
       }
     }
   };
-  const selectOrAddTempTab = () => {
+  const selectOrAddTempTab = (newTab?: AnyTabInfo) => {
     if (isDisconnected.value) {
       return;
     }
@@ -147,7 +151,7 @@ export const useTabStore = defineStore("tab", () => {
     if (tempTab) {
       setCurrentTabId(tempTab.id);
     } else {
-      addTab();
+      addTab(newTab);
     }
   };
   const _cleanup = (tabIdList: string[]) => {
