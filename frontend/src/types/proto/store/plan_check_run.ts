@@ -7,6 +7,52 @@ export const protobufPackage = "bytebase.store";
 export interface PlanCheckRunConfig {
   sheetId: number;
   databaseId: number;
+  changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
+}
+
+export enum PlanCheckRunConfig_ChangeDatabaseType {
+  CHANGE_DATABASE_TYPE_UNSPECIFIED = 0,
+  DDL = 1,
+  DML = 2,
+  SDL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function planCheckRunConfig_ChangeDatabaseTypeFromJSON(object: any): PlanCheckRunConfig_ChangeDatabaseType {
+  switch (object) {
+    case 0:
+    case "CHANGE_DATABASE_TYPE_UNSPECIFIED":
+      return PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED;
+    case 1:
+    case "DDL":
+      return PlanCheckRunConfig_ChangeDatabaseType.DDL;
+    case 2:
+    case "DML":
+      return PlanCheckRunConfig_ChangeDatabaseType.DML;
+    case 3:
+    case "SDL":
+      return PlanCheckRunConfig_ChangeDatabaseType.SDL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED;
+  }
+}
+
+export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRunConfig_ChangeDatabaseType): string {
+  switch (object) {
+    case PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED:
+      return "CHANGE_DATABASE_TYPE_UNSPECIFIED";
+    case PlanCheckRunConfig_ChangeDatabaseType.DDL:
+      return "DDL";
+    case PlanCheckRunConfig_ChangeDatabaseType.DML:
+      return "DML";
+    case PlanCheckRunConfig_ChangeDatabaseType.SDL:
+      return "SDL";
+    case PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface PlanCheckRunResult {
@@ -81,7 +127,7 @@ export interface PlanCheckRunResult_Result_SqlReviewReport {
 }
 
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
-  return { sheetId: 0, databaseId: 0 };
+  return { sheetId: 0, databaseId: 0, changeDatabaseType: 0 };
 }
 
 export const PlanCheckRunConfig = {
@@ -91,6 +137,9 @@ export const PlanCheckRunConfig = {
     }
     if (message.databaseId !== 0) {
       writer.uint32(16).int32(message.databaseId);
+    }
+    if (message.changeDatabaseType !== 0) {
+      writer.uint32(24).int32(message.changeDatabaseType);
     }
     return writer;
   },
@@ -116,6 +165,13 @@ export const PlanCheckRunConfig = {
 
           message.databaseId = reader.int32();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.changeDatabaseType = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -129,6 +185,9 @@ export const PlanCheckRunConfig = {
     return {
       sheetId: isSet(object.sheetId) ? Number(object.sheetId) : 0,
       databaseId: isSet(object.databaseId) ? Number(object.databaseId) : 0,
+      changeDatabaseType: isSet(object.changeDatabaseType)
+        ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
+        : 0,
     };
   },
 
@@ -136,6 +195,8 @@ export const PlanCheckRunConfig = {
     const obj: any = {};
     message.sheetId !== undefined && (obj.sheetId = Math.round(message.sheetId));
     message.databaseId !== undefined && (obj.databaseId = Math.round(message.databaseId));
+    message.changeDatabaseType !== undefined &&
+      (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
     return obj;
   },
 
@@ -147,6 +208,7 @@ export const PlanCheckRunConfig = {
     const message = createBasePlanCheckRunConfig();
     message.sheetId = object.sheetId ?? 0;
     message.databaseId = object.databaseId ?? 0;
+    message.changeDatabaseType = object.changeDatabaseType ?? 0;
     return message;
   },
 };
