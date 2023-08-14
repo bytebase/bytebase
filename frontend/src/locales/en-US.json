@@ -2689,7 +2689,8 @@
       "save-all": "Save all",
       "messages": {
         "unable-to-update": "Unable to update restriction",
-        "following-column-types-are-used": "Following column types are still used by field tempalte"
+        "following-column-types-are-used": "Following column types are still used by field tempalte",
+        "one-allowed-type-per-line": "One allowed data type per line"
       }
     },
     "add-field": "Add field template",
