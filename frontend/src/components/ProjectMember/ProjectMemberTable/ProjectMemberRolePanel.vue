@@ -49,6 +49,14 @@
                 <RoleExpiredTip v-if="checkRoleExpired(item)" />
               </div>
               <div class="bb-grid-cell">
+                <span
+                  class="text-blue-600 cursor-pointer hover:opacity-80"
+                  @click="editingBinding = item.rawBinding"
+                >
+                  {{ item.rawBinding.condition?.title }}
+                </span>
+              </div>
+              <div class="bb-grid-cell">
                 <span class="shrink-0 mr-1">{{
                   extractDatabaseName(item.databaseResource)
                 }}</span>
@@ -75,17 +83,6 @@
                 <RoleDescription :description="item.description || ''" />
               </div>
               <div class="bb-grid-cell space-x-1">
-                <NTooltip v-if="allowAdmin" trigger="hover">
-                  <template #trigger>
-                    <button
-                      class="cursor-pointer opacity-60 hover:opacity-100"
-                      @click="editingBinding = item.rawBinding"
-                    >
-                      <heroicons-outline:pencil class="w-4 h-4" />
-                    </button>
-                  </template>
-                  {{ $t("common.edit") }}
-                </NTooltip>
                 <NTooltip v-if="allowAdmin" trigger="hover">
                   <template #trigger>
                     <button
@@ -208,8 +205,12 @@ const COLUMNS = computed(() => {
       width: "2rem",
     },
     {
-      title: t("common.database"),
+      title: t("project.members.condition-name"),
       width: "2fr",
+    },
+    {
+      title: t("common.database"),
+      width: "1fr",
     },
     {
       title: t("common.schema"),
@@ -229,7 +230,7 @@ const COLUMNS = computed(() => {
     },
     {
       title: "",
-      width: "4rem",
+      width: "2rem",
     },
   ];
   return columns;
@@ -320,17 +321,14 @@ const handleDeleteRole = (role: string) => {
 };
 
 const handleDeleteCondition = async (singleBinding: SingleBinding) => {
-  let role = `${displayRoleTitle(singleBinding.rawBinding.role)}`;
-  if (singleBinding.databaseResource) {
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      String(singleBinding.databaseResource.databaseName)
-    );
-    role = `${role} - ${database.databaseName}`;
-  }
+  const conditionName =
+    singleBinding.rawBinding.condition?.title ||
+    displayRoleTitle(singleBinding.rawBinding.role);
   const title = t("project.members.revoke-role-from-user", {
-    role: role,
+    role: conditionName,
     user: props.member.user.title,
   });
+
   dialog.create({
     title: title,
     content: t("common.cannot-undo-this-action"),
@@ -350,31 +348,27 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
         return member !== user;
       });
 
-      if (rawBinding.parsedExpr?.expr) {
-        const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
-        if (conditionExpr.databaseResources) {
-          conditionExpr.databaseResources =
-            conditionExpr.databaseResources.filter(
-              (resource) => !isEqual(resource, singleBinding.databaseResource)
-            );
-          if (conditionExpr.databaseResources.length === 0) {
-            policy.bindings = policy.bindings.filter(
-              (binding) => !isEqual(binding, rawBinding)
-            );
-          } else {
-            const newBinding = cloneDeep(rawBinding);
-            newBinding.members = [user];
-            newBinding.condition!.expression =
-              stringifyConditionExpression(conditionExpr);
-            policy.bindings.push(newBinding);
-          }
-        }
-      }
-
       if (rawBinding.members.length === 0) {
         policy.bindings = policy.bindings.filter(
           (binding) => !isEqual(binding, rawBinding)
         );
+      } else {
+        if (rawBinding.parsedExpr?.expr) {
+          const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
+          if (conditionExpr.databaseResources) {
+            conditionExpr.databaseResources =
+              conditionExpr.databaseResources.filter(
+                (resource) => !isEqual(resource, singleBinding.databaseResource)
+              );
+            if (conditionExpr.databaseResources.length !== 0) {
+              const newBinding = cloneDeep(rawBinding);
+              newBinding.members = [user];
+              newBinding.condition!.expression =
+                stringifyConditionExpression(conditionExpr);
+              policy.bindings.push(newBinding);
+            }
+          }
+        }
       }
 
       await projectIamPolicyStore.updateProjectIamPolicy(

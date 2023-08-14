@@ -16,13 +16,13 @@
           :disabled="state.selectedMemberNameList.size === 0"
           @click="handleRevokeSelectedMembers"
         >
-          {{ $t("project.members.revoke-member") }}
+          {{ $t("project.members.revoke-access") }}
         </NButton>
         <NButton type="primary" @click="state.showAddMemberPanel = true">
           <template #icon>
             <heroicons-outline:user-add class="w-4 h-4" />
           </template>
-          {{ $t("project.members.add-member") }}
+          {{ $t("project.members.grant-access") }}
         </NButton>
       </div>
     </div>

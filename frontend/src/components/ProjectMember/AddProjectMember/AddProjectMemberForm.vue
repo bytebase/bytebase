@@ -22,14 +22,6 @@
       <span>{{ $t("project.members.assign-role") }}</span>
       <ProjectMemberRoleSelect v-model:role="state.role" class="mt-2" />
     </div>
-    <div class="w-full">
-      <span>{{ $t("project.members.role-name") }}</span>
-      <NInput
-        v-model:value="state.roleTitle"
-        class="mt-2"
-        :placeholder="$t('project.members.role-name')"
-      />
-    </div>
 
     <div v-if="state.role === 'roles/QUERIER'" class="w-full">
       <span class="block mb-2">{{ $t("common.databases") }}</span>
@@ -90,7 +82,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
-import { NInputNumber, NInput } from "naive-ui";
+import { NInputNumber } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
@@ -102,6 +94,7 @@ import { useUserStore } from "@/store";
 import { ComposedProject, DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Binding } from "@/types/proto/v1/iam_policy";
+import { displayRoleTitle } from "@/utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -116,7 +109,6 @@ defineEmits<{
 interface LocalState {
   userUidList: string[];
   role?: string;
-  roleTitle: string;
   expireDays: number;
   // Querier and exporter options.
   databaseResourceCondition?: string;
@@ -130,7 +122,6 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   userUidList: [],
-  roleTitle: "",
   expireDays: 7,
   // Exporter options.
   maxRowCount: 1000,
@@ -206,6 +197,7 @@ watch(
 watch(
   () => state,
   () => {
+    let conditionName = displayRoleTitle(props.binding.role);
     if (state.userUidList) {
       props.binding.members = state.userUidList.map((uid) => {
         const user = userStore.getUserById(uid);
@@ -217,11 +209,12 @@ watch(
     }
     const expression: string[] = [];
     if (state.expireDays > 0) {
-      expression.push(
-        `request.time < timestamp("${dayjs()
-          .add(state.expireDays, "days")
-          .toISOString()}")`
-      );
+      const now = dayjs();
+      const expiresAt = now.add(state.expireDays, "days");
+      expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
+      conditionName = `${displayRoleTitle(props.binding.role)} ${now.format(
+        "YYYY-MM-DD"
+      )}~${expiresAt.format("YYYY-MM-DD")}`;
     }
     if (state.role === "roles/QUERIER") {
       if (state.databaseResourceCondition) {
@@ -238,12 +231,12 @@ watch(
     }
     if (expression.length > 0) {
       props.binding.condition = Expr.create({
-        title: state.roleTitle,
+        title: conditionName,
         expression: expression.join(" && "),
       });
     } else {
       props.binding.condition = Expr.create({
-        title: state.roleTitle,
+        title: conditionName,
         expression: undefined,
       });
     }
