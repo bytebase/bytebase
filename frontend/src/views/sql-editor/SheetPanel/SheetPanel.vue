@@ -1,5 +1,5 @@
 <template>
-  <div class="w-[40vw] max-w-[calc(100vw-2rem)]">
+  <div class="w-[75vw] max-w-[calc(100vw-2rem)]">
     <NTabs v-model:value="view">
       <NTabPane name="my" :tab="$t('sheet.my-sheets')">
         <SheetTable view="my" @select-sheet="handleSelectSheet" />
