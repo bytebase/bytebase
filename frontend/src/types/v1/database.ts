@@ -2,7 +2,6 @@ import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { Database } from "../proto/v1/database_service";
 import { Environment } from "../proto/v1/environment_service";
-import { emptyEnvironment, unknownEnvironment } from "./environment";
 import { ComposedInstance, emptyInstance, unknownInstance } from "./instance";
 import { ComposedProject, emptyProject, unknownProject } from "./project";
 
@@ -21,13 +20,12 @@ export interface ComposedDatabase extends Database {
 export const emptyDatabase = (): ComposedDatabase => {
   const projectEntity = emptyProject();
   const instanceEntity = emptyInstance();
-  const effectiveEnvironmentEntity = emptyEnvironment();
   const database = Database.fromJSON({
     name: `${instanceEntity.name}/databases/${EMPTY_ID}`,
     uid: String(EMPTY_ID),
     syncState: State.ACTIVE,
     project: projectEntity.name,
-    effectiveEnvironment: effectiveEnvironmentEntity.name,
+    effectiveEnvironment: instanceEntity.name,
   });
   return {
     ...database,
@@ -35,20 +33,19 @@ export const emptyDatabase = (): ComposedDatabase => {
     instance: instanceEntity.name,
     instanceEntity,
     projectEntity,
-    effectiveEnvironmentEntity,
+    effectiveEnvironmentEntity: instanceEntity.environmentEntity,
   };
 };
 
 export const unknownDatabase = (): ComposedDatabase => {
   const projectEntity = unknownProject();
   const instanceEntity = unknownInstance();
-  const effectiveEnvironmentEntity = unknownEnvironment();
   const database = Database.fromJSON({
     name: `${instanceEntity.name}/databases/${UNKNOWN_ID}`,
     uid: String(UNKNOWN_ID),
     syncState: State.ACTIVE,
     project: projectEntity.name,
-    effectiveEnvironment: effectiveEnvironmentEntity.name,
+    effectiveEnvironment: instanceEntity.environmentEntity.name,
   });
   return {
     ...database,
@@ -56,6 +53,6 @@ export const unknownDatabase = (): ComposedDatabase => {
     instance: instanceEntity.name,
     instanceEntity,
     projectEntity,
-    effectiveEnvironmentEntity,
+    effectiveEnvironmentEntity: instanceEntity.environmentEntity,
   };
 };
