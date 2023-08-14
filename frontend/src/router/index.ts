@@ -171,7 +171,7 @@ const routes: Array<RouteRecordRaw> = [
                   "quickaction.bb.database.create",
                   "quickaction.bb.issue.grant.request.querier",
                   "quickaction.bb.issue.grant.request.exporter",
-                  "quickaction.bb.project.create"
+                  "quickaction.bb.project.create",
                 ];
                 if (hasFeature("bb.feature.dba-workflow")) {
                   pull(
