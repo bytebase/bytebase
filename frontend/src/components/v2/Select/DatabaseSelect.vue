@@ -8,13 +8,14 @@
     :filterable="true"
     style="width: 12rem"
     v-bind="$attrs"
+    :render-label="renderLabel"
     @update:value="$emit('update:database', $event)"
   />
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
-import { computed, watch } from "vue";
+import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
+import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useCurrentUserV1,
@@ -23,7 +24,8 @@ import {
 } from "@/store";
 import { ComposedDatabase, UNKNOWN_ID, unknownDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { supportedEngineV1List } from "@/utils";
+import { instanceV1Name, supportedEngineV1List } from "@/utils";
+import { InstanceV1EngineIcon } from "../Model";
 
 interface DatabaseSelectOption extends SelectOption {
   value: string;
@@ -112,6 +114,36 @@ const options = computed(() => {
     };
   });
 });
+
+const renderLabel: SelectRenderLabel = (option) => {
+  const { database } = option as DatabaseSelectOption;
+  return h(
+    "div",
+    {
+      class: "w-full flex flex-row justify-start items-center truncate",
+    },
+    [
+      h(InstanceV1EngineIcon, {
+        class: "mr-1",
+        instance: database.instanceEntity,
+      }),
+      h(
+        "div",
+        {
+          class: "mr-1",
+        },
+        [database.databaseName]
+      ),
+      h(
+        "div",
+        {
+          class: "text-xs opacity-60",
+        },
+        [`(${instanceV1Name(database.instanceEntity)})`]
+      ),
+    ]
+  );
+};
 
 const filterByDatabaseName = (pattern: string, option: SelectOption) => {
   const { database } = option as DatabaseSelectOption;

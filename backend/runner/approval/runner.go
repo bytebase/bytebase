@@ -158,7 +158,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			err = errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
 		}
 
-		return approvalTemplate, false, err
+		return approvalTemplate, true, err
 	}()
 	if err != nil {
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
