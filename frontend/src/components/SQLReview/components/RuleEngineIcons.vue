@@ -1,9 +1,7 @@
 <template>
-  <EngineIcon
-    v-for="engine in rule.engineList"
-    :key="engine"
-    :engine="engineFromJSON(engine)"
-  />
+  <div v-for="engine in rule.engineList" :key="engine" class="relative w-4">
+    <EngineIcon :engine="engineFromJSON(engine)" />
+  </div>
 </template>
 
 <script lang="ts" setup>
