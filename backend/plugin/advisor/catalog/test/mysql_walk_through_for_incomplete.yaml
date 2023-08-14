@@ -23,12 +23,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: ALTER TABLE t RENAME COLUMN a TO a_copy
   want:
@@ -46,6 +52,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -55,12 +63,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: ALTER TABLE t RENAME TO t1
   want:
@@ -79,12 +93,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     ALTER TABLE t ADD PRIMARY KEY (a);
@@ -161,12 +181,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE t(
@@ -195,6 +221,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -203,6 +231,8 @@
                   characterset: utf8mb4
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 3
                   default: null
@@ -211,6 +241,8 @@
                   characterset: ""
                   collation: ""
                   comment: This is a comment
+                  classification: ""
+                  usercomment: ""
                 - name: d
                   position: 4
                   default: null
@@ -219,6 +251,8 @@
                   characterset: ""
                   collation: utf8mb4_polish_ci
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: PRIMARY
                   expressions:
@@ -280,12 +314,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: DROP TABLE t1, t2
   want:
@@ -295,9 +335,13 @@
           tables: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: INSERT INTO test values (1)
   want:
@@ -307,7 +351,11 @@
           tables: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
