@@ -16,7 +16,7 @@
           class="whitespace-nowrap"
           :text="item.label"
           :can-remove="false"
-          :style="item.style"
+          :badge-style="item.style"
           size="small"
         />
       </NCheckbox>
