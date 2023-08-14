@@ -1557,6 +1557,8 @@
     "members": {
       "add-member": "Add member",
       "revoke-member": "Revoke member",
+      "revoke-access": "Revoke Access",
+      "grant-access": "Grant Access",
       "edit": "Edit member - {member}",
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
@@ -1570,6 +1572,7 @@
       "role-never-expires": "This role never expires.",
       "add-more": "Add more",
       "role-name": "Role name",
+      "condition-name": "Condition name",
       "users": "Users",
       "roles": "Roles",
       "search-member": "Search member",
