@@ -83,7 +83,7 @@
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
 import { NInputNumber } from "naive-ui";
-import { computed, nextTick, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import ExporterDatabaseResourceForm from "@/components/Issue/panel/RequestExportPanel/ExportResourceForm/index.vue";
@@ -122,7 +122,8 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   userUidList: [],
-  expireDays: 7,
+  // Default is never expires.
+  expireDays: 0,
   // Exporter options.
   maxRowCount: 1000,
 });
@@ -145,6 +146,18 @@ const expireDaysOptions = computed(() => {
       {
         value: 15,
         label: t("common.date.days", { days: 15 }),
+      },
+      {
+        value: 30,
+        label: t("common.date.days", { days: 30 }),
+      },
+      {
+        value: 90,
+        label: t("common.date.days", { days: 90 }),
+      },
+      {
+        value: 0,
+        label: t("project.members.never-expires"),
       },
     ];
   }
@@ -185,9 +198,6 @@ watch(
   () => {
     state.databaseResourceCondition = undefined;
     state.databaseResources = undefined;
-    nextTick(() => {
-      state.expireDays = expireDaysOptions.value[0].value;
-    });
   },
   {
     immediate: true,
@@ -197,7 +207,7 @@ watch(
 watch(
   () => state,
   () => {
-    let conditionName = displayRoleTitle(props.binding.role);
+    let conditionName = "";
     if (state.userUidList) {
       props.binding.members = state.userUidList.map((uid) => {
         const user = userStore.getUserById(uid);
