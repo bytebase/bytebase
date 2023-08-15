@@ -1353,6 +1353,7 @@
     }
   },
   "repository": {
+    "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
     "base-directory": "Base directory",
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
