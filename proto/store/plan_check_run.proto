@@ -7,6 +7,14 @@ option go_package = "generated-go/store";
 message PlanCheckRunConfig {
   int32 sheet_id = 1;
   int32 database_id = 2;
+  ChangeDatabaseType change_database_type = 3;
+
+  enum ChangeDatabaseType {
+    CHANGE_DATABASE_TYPE_UNSPECIFIED = 0;
+    DDL = 1;
+    DML = 2;
+    SDL = 3;
+  }
 }
 
 message PlanCheckRunResult {
