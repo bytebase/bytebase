@@ -159,6 +159,7 @@ const prepareChangeHistoryList = async () => {
   state.loading = true;
   await changeHistoryStore.fetchChangeHistoryList({
     parent: props.database.name,
+    pageSize: 1000,
   });
   // prepare database metadata for getting affected tables.
   await useDBSchemaV1Store().getOrFetchDatabaseMetadata(props.database.name);
