@@ -8,6 +8,7 @@ export interface PlanCheckRunConfig {
   sheetId: number;
   databaseId: number;
   changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
+  pitrConfig?: PlanCheckRunConfig_PitrConfig | undefined;
 }
 
 export enum PlanCheckRunConfig_ChangeDatabaseType {
@@ -53,6 +54,11 @@ export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRun
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface PlanCheckRunConfig_PitrConfig {
+  targetInstanceId: number;
+  targetDatabaseName: string;
 }
 
 export interface PlanCheckRunResult {
@@ -128,7 +134,7 @@ export interface PlanCheckRunResult_Result_SqlReviewReport {
 }
 
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
-  return { sheetId: 0, databaseId: 0, changeDatabaseType: 0 };
+  return { sheetId: 0, databaseId: 0, changeDatabaseType: 0, pitrConfig: undefined };
 }
 
 export const PlanCheckRunConfig = {
@@ -141,6 +147,9 @@ export const PlanCheckRunConfig = {
     }
     if (message.changeDatabaseType !== 0) {
       writer.uint32(24).int32(message.changeDatabaseType);
+    }
+    if (message.pitrConfig !== undefined) {
+      PlanCheckRunConfig_PitrConfig.encode(message.pitrConfig, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -173,6 +182,13 @@ export const PlanCheckRunConfig = {
 
           message.changeDatabaseType = reader.int32() as any;
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.pitrConfig = PlanCheckRunConfig_PitrConfig.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -189,6 +205,7 @@ export const PlanCheckRunConfig = {
       changeDatabaseType: isSet(object.changeDatabaseType)
         ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
         : 0,
+      pitrConfig: isSet(object.pitrConfig) ? PlanCheckRunConfig_PitrConfig.fromJSON(object.pitrConfig) : undefined,
     };
   },
 
@@ -198,6 +215,8 @@ export const PlanCheckRunConfig = {
     message.databaseId !== undefined && (obj.databaseId = Math.round(message.databaseId));
     message.changeDatabaseType !== undefined &&
       (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
+    message.pitrConfig !== undefined &&
+      (obj.pitrConfig = message.pitrConfig ? PlanCheckRunConfig_PitrConfig.toJSON(message.pitrConfig) : undefined);
     return obj;
   },
 
@@ -210,6 +229,80 @@ export const PlanCheckRunConfig = {
     message.sheetId = object.sheetId ?? 0;
     message.databaseId = object.databaseId ?? 0;
     message.changeDatabaseType = object.changeDatabaseType ?? 0;
+    message.pitrConfig = (object.pitrConfig !== undefined && object.pitrConfig !== null)
+      ? PlanCheckRunConfig_PitrConfig.fromPartial(object.pitrConfig)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePlanCheckRunConfig_PitrConfig(): PlanCheckRunConfig_PitrConfig {
+  return { targetInstanceId: 0, targetDatabaseName: "" };
+}
+
+export const PlanCheckRunConfig_PitrConfig = {
+  encode(message: PlanCheckRunConfig_PitrConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.targetInstanceId !== 0) {
+      writer.uint32(8).int32(message.targetInstanceId);
+    }
+    if (message.targetDatabaseName !== "") {
+      writer.uint32(18).string(message.targetDatabaseName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRunConfig_PitrConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanCheckRunConfig_PitrConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.targetInstanceId = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.targetDatabaseName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanCheckRunConfig_PitrConfig {
+    return {
+      targetInstanceId: isSet(object.targetInstanceId) ? Number(object.targetInstanceId) : 0,
+      targetDatabaseName: isSet(object.targetDatabaseName) ? String(object.targetDatabaseName) : "",
+    };
+  },
+
+  toJSON(message: PlanCheckRunConfig_PitrConfig): unknown {
+    const obj: any = {};
+    message.targetInstanceId !== undefined && (obj.targetInstanceId = Math.round(message.targetInstanceId));
+    message.targetDatabaseName !== undefined && (obj.targetDatabaseName = message.targetDatabaseName);
+    return obj;
+  },
+
+  create(base?: DeepPartial<PlanCheckRunConfig_PitrConfig>): PlanCheckRunConfig_PitrConfig {
+    return PlanCheckRunConfig_PitrConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<PlanCheckRunConfig_PitrConfig>): PlanCheckRunConfig_PitrConfig {
+    const message = createBasePlanCheckRunConfig_PitrConfig();
+    message.targetInstanceId = object.targetInstanceId ?? 0;
+    message.targetDatabaseName = object.targetDatabaseName ?? "";
     return message;
   },
 };
