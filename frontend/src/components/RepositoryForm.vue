@@ -2,10 +2,24 @@
 <template>
   <div class="space-y-4">
     <div>
+      <div v-if="isDebug && getWebhookLink !== ''">
+        <label class="textlabel mt-2">
+          <i18n-t keypath="repository.our-webhook-link">
+            <template #webhookLink>
+              <a class="normal-link" :href="getWebhookLink" target="_blank">{{
+                getWebhookLink
+              }}</a>
+            </template>
+          </i18n-t>
+        </label>
+      </div>
       <div class="flex flex-row space-x-2 items-center">
         <label for="gitprovider" class="textlabel">
           {{ $t("repository.git-provider") }}
         </label>
+        <template v-if="vcsType === ExternalVersionControl_Type.AZURE_DEVOPS">
+          <img class="h-4 w-auto" src="../assets/azure-devops-logo.svg" />
+        </template>
         <template v-if="vcsType === ExternalVersionControl_Type.GITLAB">
           <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
@@ -361,12 +375,14 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
   useSubscriptionV1Store,
   useDatabaseV1Store,
+  useActuatorV1Store,
 } from "@/store";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
@@ -553,6 +569,18 @@ const sampleSchemaPath = (
   return result;
 };
 
+const getWebhookLink = computed(() => {
+  if (props.vcsType === ExternalVersionControl_Type.AZURE_DEVOPS) {
+    const parts = props.repositoryInfo.externalId.split("/");
+    if (parts.length !== 3) {
+      return "";
+    }
+    const [organization, project, _] = parts;
+    return `https://dev.azure.com/${organization}/${project}/_settings/serviceHooks`;
+  }
+  return "";
+});
+
 const fileOptionalPlaceholder = computed(() => {
   const tags = [] as string[];
   // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
@@ -597,4 +625,8 @@ const onSQLReviewCIToggle = (on: boolean) => {
     state.showFeatureModal = true;
   }
 };
+
+const actuatorStore = useActuatorV1Store();
+
+const isDebug = storeToRefs(actuatorStore).isDebug;
 </script>

@@ -40,30 +40,74 @@
         {{ row.title }}
       </div>
       <div class="bb-grid-cell">
-        <span>{{ row.checkResult.content }}</span>
-        <template v-if="row.checkResult.sqlReviewReport?.detail">
-          <span
-            class="ml-1 normal-link"
-            @click="selectDetail(row.checkResult.sqlReviewReport)"
-            >{{ $t("sql-review.view-definition") }}</span
+        <div>
+          <span>{{ row.checkResult.content }}</span>
+          <template v-if="row.checkResult.sqlReviewReport?.detail">
+            <span
+              class="ml-1 normal-link"
+              @click="
+                state.activeResultDefinition =
+                  row.checkResult.sqlReviewReport.detail
+              "
+              >{{ $t("sql-review.view-definition") }}</span
+            >
+            <span class="border-r border-control-border ml-1"></span>
+          </template>
+          <template
+            v-if="row.checkResult.sqlReviewReport && getActiveRule(row.checkResult.title as RuleType)"
           >
-          <span class="border-r border-control-border ml-1"></span>
-        </template>
-        TODO: details
+            <span
+              class="ml-1 normal-link"
+              @click="setActiveRule(row.checkResult.title as RuleType)"
+              >{{ $t("sql-review.rule-detail") }}</span
+            >
+            <span class="border-r border-control-border ml-1"></span>
+          </template>
+
+          <a
+            v-if="row.link"
+            class="ml-1 normal-link"
+            :href="row.link.url"
+            :target="row.link.target"
+          >
+            {{ row.link.title }}
+          </a>
+        </div>
       </div>
     </template>
   </BBGrid>
+
+  <SQLRuleEditDialog
+    v-if="state.activeRule"
+    :editable="false"
+    :rule="state.activeRule.rule"
+    :payload="state.activeRule.payload"
+    :disabled="false"
+    @cancel="state.activeRule = undefined"
+  />
+
+  <PlanCheckResultDefinitionModal
+    v-if="state.activeResultDefinition"
+    :definition="state.activeResultDefinition"
+    @cancel="state.activeResultDefinition = undefined"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
 import { LocalizedSQLRuleErrorCodes } from "@/components/Issue/const";
+import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import { SQLRuleEditDialog } from "@/components/SQLReview/components";
+import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
+import { useReviewPolicyByEnvironmentId } from "@/store";
 import {
   GeneralErrorCode,
+  RuleTemplate,
   RuleType,
   SQLReviewPolicyErrorCode,
+  findRuleTemplate,
   getRuleLocalization,
   ruleTemplateMap,
 } from "@/types";
@@ -74,6 +118,7 @@ import {
   PlanCheckRun_Status,
   Task,
 } from "@/types/proto/v1/rollout_service";
+import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
 
 interface ErrorCodeLink {
   title: string;
@@ -81,10 +126,10 @@ interface ErrorCodeLink {
   url: string;
 }
 
-// type PreviewSQLReviewRule = {
-//   rule: RuleTemplate;
-//   payload: PayloadValueType[];
-// };
+type PreviewSQLReviewRule = {
+  rule: RuleTemplate;
+  payload: PayloadValueType[];
+};
 
 type TableRow = {
   checkResult: PlanCheckRun_Result;
@@ -93,12 +138,22 @@ type TableRow = {
   link: ErrorCodeLink | undefined;
 };
 
+type LocalState = {
+  activeRule?: PreviewSQLReviewRule;
+  activeResultDefinition?: string;
+};
+
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
   task: Task;
 }>();
 
 const { t } = useI18n();
+const state = reactive<LocalState>({
+  activeRule: undefined,
+  activeResultDefinition: undefined,
+});
+const { issue } = useIssueContext();
 
 const statusIconClass = (status: PlanCheckRun_Result_Status) => {
   switch (status) {
@@ -115,37 +170,15 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
   if (props.planCheckRun.status === PlanCheckRun_Status.DONE) {
     return props.planCheckRun.results;
   } else if (props.planCheckRun.status === PlanCheckRun_Status.FAILED) {
-    // return [
-    //   {
-    //     status: "ERROR",
-    //     title: t("common.error"),
-    //     code: props.planCheckRun.code,
-    //     content: props.planCheckRun.result.detail,
-    //     namespace: "bb.core",
-    //     line: undefined,
-    //     column: undefined,
-    //   },
-    // ];
     return [
-      PlanCheckRun_Result.fromJSON({
+      PlanCheckRun_Result.fromPartial({
         status: PlanCheckRun_Result_Status.ERROR,
         title: t("common.error"),
       }),
     ];
   } else if (props.planCheckRun.status === PlanCheckRun_Status.CANCELED) {
-    // return [
-    //   {
-    //     status: "WARN",
-    //     title: t("common.canceled"),
-    //     code: props.planCheckRun.code,
-    //     content: "",
-    //     namespace: "bb.core",
-    //     line: undefined,
-    //     column: undefined,
-    //   },
-    // ];
     return [
-      PlanCheckRun_Result.fromJSON({
+      PlanCheckRun_Result.fromPartial({
         status: PlanCheckRun_Result_Status.WARNING,
         title: t("common.canceled"),
       }),
@@ -158,20 +191,21 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
 const categoryAndTitle = (
   checkResult: PlanCheckRun_Result
 ): [string, string] => {
-  if (checkResult.code === SQLReviewPolicyErrorCode.EMPTY_POLICY) {
-    const title = messageWithCode(checkResult.title, checkResult.code);
+  const code = checkResult.sqlReviewReport?.code ?? checkResult.code;
+  if (code === SQLReviewPolicyErrorCode.EMPTY_POLICY) {
+    const title = messageWithCode(checkResult.title, code);
     return ["", title];
   }
-  if (LocalizedSQLRuleErrorCodes.has(checkResult.code)) {
+  if (LocalizedSQLRuleErrorCodes.has(code)) {
     const rule = ruleTemplateMap.get(checkResult.title as RuleType);
     if (rule) {
       const ruleLocalization = getRuleLocalization(rule.type);
       const key = `sql-review.category.${rule.category.toLowerCase()}`;
       const category = t(key);
-      const title = messageWithCode(ruleLocalization.title, checkResult.code);
+      const title = messageWithCode(ruleLocalization.title, code);
       return [category, title];
     } else {
-      return ["", messageWithCode(checkResult.title, checkResult.code)];
+      return ["", messageWithCode(checkResult.title, code)];
     }
   }
 
@@ -185,7 +219,8 @@ const messageWithCode = (message: string, code: number) => {
 const errorCodeLink = (
   checkResult: PlanCheckRun_Result
 ): ErrorCodeLink | undefined => {
-  switch (checkResult.code) {
+  const code = checkResult.sqlReviewReport?.code ?? checkResult.code;
+  switch (code) {
     case undefined:
       return;
     case GeneralErrorCode.OK:
@@ -197,10 +232,12 @@ const errorCodeLink = (
         url: "/setting/sql-review",
       };
     default: {
-      // const url = `https://www.bytebase.com/docs/reference/error-code/${
-      //   checkResult.namespace === "bb.advisor" ? "advisor" : "core"
-      // }?source=console#${checkResult.code}`;
-      const url = "#TODO";
+      const errorCodeNamespace =
+        checkResult.sqlReviewReport !== undefined ? "advisor" : "core";
+      const domain = "https://www.bytebase.com";
+      const path = `/docs/reference/error-code/${errorCodeNamespace}/`;
+      const query = `source=console#${code}`;
+      const url = `${domain}${path}?${query}`;
       return {
         title: t("common.view-doc"),
         target: "__blank",
@@ -238,11 +275,11 @@ const COLUMN_LIST = computed(() => {
   };
   const TITLE: BBGridColumn = {
     title: "Title",
-    width: "12rem",
+    width: "minmax(12rem, 1fr)",
   };
   const CONTENT: BBGridColumn = {
     title: "Detail",
-    width: "1fr",
+    width: "2fr",
   };
   if (showCategoryColumn.value) {
     return [STATUS, CATEGORY, TITLE, CONTENT];
@@ -250,7 +287,38 @@ const COLUMN_LIST = computed(() => {
   return [STATUS, TITLE, CONTENT];
 });
 
-const selectDetail = (args: any) => {
-  // TODO
+const reviewPolicy = useReviewPolicyByEnvironmentId(
+  computed(() => {
+    const database = databaseForTask(issue.value, props.task);
+    return database.effectiveEnvironmentEntity.uid;
+  })
+);
+const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
+  const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
+  if (!rule) {
+    return undefined;
+  }
+
+  const ruleTemplate = findRuleTemplate(type);
+  if (!ruleTemplate) {
+    return undefined;
+  }
+  ruleTemplate.comment = rule.comment;
+  const { componentList } = ruleTemplate;
+  const payload = componentList.reduce<PayloadValueType[]>(
+    (list, component) => {
+      list.push(component.payload.value ?? component.payload.default);
+      return list;
+    },
+    []
+  );
+
+  return {
+    rule: ruleTemplate,
+    payload: payload,
+  };
+};
+const setActiveRule = (type: RuleType) => {
+  state.activeRule = getActiveRule(type);
 };
 </script>

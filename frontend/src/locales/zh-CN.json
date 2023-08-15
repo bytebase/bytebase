@@ -858,12 +858,12 @@
     "create-project": "@:common.create@:common.project",
     "edit-data": "编辑数据",
     "troubleshoot": "问题排查",
-    "transfer-in-db": "转移数据库",
+    "transfer-in-db": "转进数据库",
     "request-db": "申请数据库",
     "from-unassigned-databases": "转移未分配的数据库",
     "from-projects": "从其他项目转移",
-    "transfer-in-db-title": "转移数据库",
-    "transfer-in-db-alert": "您确定要转移 \"{ dbName }\" 到我们的项目中吗？",
+    "transfer-in-db-title": "转进数据库",
+    "transfer-in-db-alert": "您确定要转进 \"{ dbName }\" 到我们的项目中吗？",
     "unassigned-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库起先是未分配的状态。需要把数据库转移到项目后，才能使用。",
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
@@ -1400,7 +1400,8 @@
     "select-repository-attention-bitbucket": "Bytebase 仅列出您拥有管理员权限的 Bitbucket 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-search": "搜索仓库",
     "linked": "关联的仓库",
-    "select-repository-attention-azure-devops": "Bytebase 仅列出授予第三方应用程序通过 OAuth 访问的组织下的 Azure DevOps 存储库。\n如果您没有看到所需的存储库，请转到组织 -> 组织设置 -> 策略 以启用第三方应用程序访问。"
+    "select-repository-attention-azure-devops": "Bytebase 仅列出授予第三方应用程序通过 OAuth 访问的组织下的 Azure DevOps 存储库。\n如果您没有看到所需的存储库，请转到组织 -> 组织设置 -> 策略 以启用第三方应用程序访问。",
+    "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。"
   },
   "workflow": {
     "current-workflow": "当前工作流",
