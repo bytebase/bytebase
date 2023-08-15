@@ -1400,7 +1400,8 @@
     "select-repository-attention-bitbucket": "Bytebase 仅列出您拥有管理员权限的 Bitbucket 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-search": "搜索仓库",
     "linked": "关联的仓库",
-    "select-repository-attention-azure-devops": "Bytebase 仅列出授予第三方应用程序通过 OAuth 访问的组织下的 Azure DevOps 存储库。\n如果您没有看到所需的存储库，请转到组织 -> 组织设置 -> 策略 以启用第三方应用程序访问。"
+    "select-repository-attention-azure-devops": "Bytebase 仅列出授予第三方应用程序通过 OAuth 访问的组织下的 Azure DevOps 存储库。\n如果您没有看到所需的存储库，请转到组织 -> 组织设置 -> 策略 以启用第三方应用程序访问。",
+    "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。"
   },
   "workflow": {
     "current-workflow": "当前工作流",
