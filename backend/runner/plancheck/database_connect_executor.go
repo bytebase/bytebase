@@ -51,6 +51,7 @@ func (e *DatabaseConnectExecutor) Run(ctx context.Context, planCheckRun *store.P
 		err = driver.Ping(ctx)
 	}
 	if err != nil {
+		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
