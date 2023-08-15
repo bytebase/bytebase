@@ -45,6 +45,7 @@ const sizeClassMap: Map<BBAvatarSizeType, string> = new Map([
 ]);
 
 const fontStyleClassMap: Map<BBAvatarSizeType, string> = new Map([
+  ["TINY", "0.5rem"], // customized font size
   ["SMALL", "0.675rem"], // customized font size
   ["NORMAL", "0.875rem"], // text-sm
   ["LARGE", "2.25rem"], // text-4xl
