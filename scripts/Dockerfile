@@ -7,6 +7,7 @@
 
 FROM node:18 as frontend
 
+ARG TARGETARCH
 ARG RELEASE="release"
 
 RUN npm i -g pnpm
@@ -37,7 +38,11 @@ ARG BUILD_USER="unknown"
 ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
-RUN apt-get install -y gcc
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+  apt-get update && apt-get install -y gcc-aarch64-linux-gnu; \
+else \
+  apt-get install -y gcc ;\
+fi
 
 WORKDIR /backend-build
 
@@ -50,7 +55,10 @@ COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
-RUN VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+  CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
+fi && \
+    VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
     --tags "${RELEASE},embed_frontend" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
