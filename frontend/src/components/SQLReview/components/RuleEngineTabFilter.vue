@@ -6,7 +6,10 @@
   >
     <template #label="{ item }">
       <div class="flex items-center justify-center gap-x-1">
-        <RuleEngineIcon v-if="item.value !== UNKNOWN_ID" :engine="item.value" />
+        <RuleEngineIcon
+          v-if="item.value !== Engine.ENGINE_UNSPECIFIED"
+          :engine="engineFromJSON(item.value)"
+        />
         {{ item.label }}
       </div>
     </template>
@@ -16,8 +19,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { UNKNOWN_ID } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine, engineFromJSON } from "@/types/proto/v1/common";
 import { engineNameV1 } from "@/utils";
 
 const props = defineProps<{
@@ -27,7 +29,7 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (event: "update:engine", id: string): void;
+  (event: "update:engine", id: Engine): void;
 }>();
 
 const { t } = useI18n();
@@ -35,13 +37,13 @@ const { t } = useI18n();
 const items = computed(() => {
   const resp = props.individualEngineList.map((engine) => {
     return {
-      value: `${engine}`,
+      value: engine,
       label: engineNameV1(engine),
     };
   });
   if (props.individualEngineList.length < props.engineList.length) {
     resp.unshift({
-      value: `${UNKNOWN_ID}`,
+      value: Engine.ENGINE_UNSPECIFIED,
       label: t("sql-review.other-engines"),
     });
   }

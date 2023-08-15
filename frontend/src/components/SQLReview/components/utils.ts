@@ -6,9 +6,9 @@ import {
   RuleType,
   SQLReviewPolicy,
   TEMPLATE_LIST,
-  UNKNOWN_ID,
   IndividualConfigForEngine,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { PayloadForEngine } from "./RuleConfigComponents";
@@ -68,7 +68,7 @@ export const payloadValueListToComponentList = (
   rule: RuleTemplate,
   data: PayloadForEngine
 ) => {
-  const allEnginePayload = data[`${UNKNOWN_ID}`] || [];
+  const allEnginePayload = data.get(Engine.ENGINE_UNSPECIFIED) || [];
   const componentList = rule.componentList.reduce<RuleConfigComponent[]>(
     (list, component, index) => {
       switch (component.payload.type) {
@@ -116,7 +116,7 @@ export const payloadValueListToComponentList = (
 
   const individualConfigList: IndividualConfigForEngine[] = [];
   for (const individualConfig of rule.individualConfigList) {
-    const payloadList = data[individualConfig.engine];
+    const payloadList = data.get(individualConfig.engine) ?? [];
     const payload = cloneDeep(individualConfig.payload);
 
     for (const [index, component] of rule.componentList.entries()) {

@@ -74,7 +74,7 @@
         :selected="state.selectedEngine"
         :engine-list="rule.engineList"
         :individual-engine-list="rule.individualConfigList.map((c) => c.engine)"
-        @update:engine="(val: string) => state.selectedEngine = val"
+        @update:engine="(val: Engine) => state.selectedEngine = val"
       />
       <div
         v-for="(config, index) in rule.componentList"
@@ -86,48 +86,58 @@
         </p>
         <StringComponent
           v-if="config.payload.type === 'STRING'"
-          :value="state.payload[state.selectedEngine][index] as string"
+          :value="state.payload.get(state.selectedEngine)![index] as string"
           :config="config"
           :disabled="disabled"
           :editable="editable"
-          @update:value="state.payload[state.selectedEngine][index] = $event"
+          @update:value="
+            state.payload.get(state.selectedEngine)![index] = $event
+          "
         />
         <NumberComponent
           v-if="config.payload.type === 'NUMBER'"
-          :value="state.payload[state.selectedEngine][index] as number"
+          :value="state.payload.get(state.selectedEngine)![index] as number"
           :config="config"
           :disabled="disabled"
           :editable="editable"
-          @update:value="state.payload[state.selectedEngine][index] = $event"
+          @update:value="
+            state.payload.get(state.selectedEngine)![index] = $event
+          "
         />
         <BooleanComponent
           v-else-if="config.payload.type == 'BOOLEAN'"
           :rule="rule"
-          :value="state.payload[state.selectedEngine][index] as boolean"
+          :value="state.payload.get(state.selectedEngine)![index] as boolean"
           :config="config"
           :disabled="disabled"
           :editable="editable"
-          @update:value="state.payload[state.selectedEngine][index] = $event"
+          @update:value="
+            state.payload.get(state.selectedEngine)![index] = $event
+          "
         />
         <StringArrayComponent
           v-else-if="
             config.payload.type == 'STRING_ARRAY' &&
-            Array.isArray(state.payload[state.selectedEngine][index])
+            Array.isArray(state.payload.get(state.selectedEngine)![index])
           "
-          :value="state.payload[state.selectedEngine][index] as string[]"
+          :value="state.payload.get(state.selectedEngine)![index] as string[]"
           :config="config"
           :disabled="disabled"
           :editable="editable"
-          @update:value="state.payload[state.selectedEngine][index] = $event"
+          @update:value="
+            state.payload.get(state.selectedEngine)![index] = $event
+          "
         />
         <TemplateComponent
           v-else-if="config.payload.type == 'TEMPLATE'"
           :rule="rule"
-          :value="state.payload[state.selectedEngine][index] as string"
+          :value="state.payload.get(state.selectedEngine)![index] as string"
           :config="config"
           :disabled="disabled"
           :editable="editable"
-          @update:value="state.payload[state.selectedEngine][index] = $event"
+          @update:value="
+            state.payload.get(state.selectedEngine)![index] = $event
+          "
         />
       </div>
       <div v-if="editable" class="mt-4 pt-2 border-t flex justify-end">
@@ -154,7 +164,7 @@
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
-import { UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import {
   getRuleLocalization,
@@ -178,7 +188,7 @@ type LocalState = {
   payload: PayloadForEngine;
   level: SQLReviewRuleLevel;
   comment: string;
-  selectedEngine: string;
+  selectedEngine: Engine;
 };
 
 const props = defineProps<{
@@ -198,7 +208,7 @@ const { t } = useI18n();
 
 const getRulePayload = () => {
   const { componentList, individualConfigList, engineList } = props.rule;
-  const resp: PayloadForEngine = {};
+  const resp: PayloadForEngine = new Map();
 
   if (componentList.length === 0) {
     return resp;
@@ -215,7 +225,10 @@ const getRulePayload = () => {
   }, []);
 
   if (engineList.length > individualConfigList.length) {
-    resp[`${UNKNOWN_ID}`] = basePayload.map((val) => val.value);
+    resp.set(
+      Engine.ENGINE_UNSPECIFIED,
+      basePayload.map((val) => val.value)
+    );
   }
 
   for (const individualConfig of individualConfigList) {
@@ -231,7 +244,10 @@ const getRulePayload = () => {
         };
       }
     }
-    resp[individualConfig.engine] = individualPayload.map((val) => val.value);
+    resp.set(
+      individualConfig.engine,
+      individualPayload.map((val) => val.value)
+    );
   }
 
   return resp;
@@ -242,7 +258,7 @@ const state = reactive<LocalState>({
   level: props.rule.level,
   comment:
     props.rule.comment || getRuleLocalization(props.rule.type).description,
-  selectedEngine: `${UNKNOWN_ID}`,
+  selectedEngine: Engine.ENGINE_UNSPECIFIED,
 });
 
 const displayDescription = computed(() => {
