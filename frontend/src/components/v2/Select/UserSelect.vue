@@ -230,13 +230,27 @@ const renderAvatar = (user: User) => {
 const renderLabel = (option: SelectOption) => {
   const { user } = option as UserSelectOption;
   const avatar = renderAvatar(user);
-  const text = h("span", { class: "truncate" }, user.title);
+  const title = h("span", {}, user.title);
+  const email = h(
+    "span",
+    { class: "text-sm text-gray-400" },
+    `(${user.email})`
+  );
   return h(
     "div",
     {
-      class: "flex items-center gap-x-2",
+      class: "w-full flex items-center gap-x-2",
     },
-    [avatar, text]
+    [
+      avatar,
+      h(
+        "div",
+        {
+          class: "flex flex-row justify-start items-center gap-x-0.5 truncate",
+        },
+        [title, email]
+      ),
+    ]
   );
 };
 
