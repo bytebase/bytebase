@@ -2,11 +2,13 @@ package v1
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -32,10 +34,21 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 		// TODO(p0ny): implement
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		target := config.ChangeDatabaseConfig.Target
+
 		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get instance database id from target %q", target)
 		}
+
+		_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.ChangeDatabaseConfig.Sheet)
+		}
+		sheetUID, err := strconv.Atoi(sheetUIDStr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
+		}
+
 		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			ResourceID: &instanceID,
 		})
@@ -67,8 +80,45 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				DatabaseId: int32(database.UID),
 			},
 		})
+		if isStatementTypeCheckSupported(instance.Engine) {
+			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+				CreatorUID: api.SystemBotID,
+				UpdaterUID: api.SystemBotID,
+				PlanUID:    plan.UID,
+				Status:     store.PlanCheckRunStatusRunning,
+				Type:       store.PlanCheckDatabaseStatementType,
+				Config: &storepb.PlanCheckRunConfig{
+					SheetId:            int32(sheetUID),
+					DatabaseId:         int32(database.UID),
+					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+				},
+			})
+		}
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
 		// TODO(p0ny): implement
 	}
 	return planCheckRuns, nil
+}
+
+func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) storepb.PlanCheckRunConfig_ChangeDatabaseType {
+	switch t {
+	case
+		storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE,
+		storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
+		return storepb.PlanCheckRunConfig_DDL
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+		return storepb.PlanCheckRunConfig_SDL
+	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+		return storepb.PlanCheckRunConfig_DML
+	}
+	return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
+}
+
+func isStatementTypeCheckSupported(dbType db.Type) bool {
+	switch dbType {
+	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB, db.OceanBase:
+		return true
+	default:
+		return false
+	}
 }
