@@ -1,9 +1,9 @@
 <template>
-  <EngineIcon :engine="engine" />
+  <EngineIcon :engine="engineFromJSON(engine)" />
 </template>
 
 <script lang="ts" setup>
-import { Engine } from "@/types/proto/v1/common";
+import { Engine, engineFromJSON } from "@/types/proto/v1/common";
 
 defineProps<{
   engine: Engine;
