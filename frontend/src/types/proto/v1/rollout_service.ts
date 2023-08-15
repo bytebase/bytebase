@@ -565,6 +565,7 @@ export interface PlanCheckRun_Result_SqlSummaryReport {
 
 export interface PlanCheckRun_Result_SqlReviewReport {
   line: number;
+  column: number;
   detail: string;
   /** Code from sql review. */
   code: number;
@@ -3324,7 +3325,7 @@ export const PlanCheckRun_Result_SqlSummaryReport = {
 };
 
 function createBasePlanCheckRun_Result_SqlReviewReport(): PlanCheckRun_Result_SqlReviewReport {
-  return { line: 0, detail: "", code: 0 };
+  return { line: 0, column: 0, detail: "", code: 0 };
 }
 
 export const PlanCheckRun_Result_SqlReviewReport = {
@@ -3332,11 +3333,14 @@ export const PlanCheckRun_Result_SqlReviewReport = {
     if (message.line !== 0) {
       writer.uint32(8).int64(message.line);
     }
+    if (message.column !== 0) {
+      writer.uint32(16).int64(message.column);
+    }
     if (message.detail !== "") {
-      writer.uint32(18).string(message.detail);
+      writer.uint32(26).string(message.detail);
     }
     if (message.code !== 0) {
-      writer.uint32(24).int64(message.code);
+      writer.uint32(32).int64(message.code);
     }
     return writer;
   },
@@ -3356,14 +3360,21 @@ export const PlanCheckRun_Result_SqlReviewReport = {
           message.line = longToNumber(reader.int64() as Long);
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.column = longToNumber(reader.int64() as Long);
+          continue;
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
           message.detail = reader.string();
           continue;
-        case 3:
-          if (tag !== 24) {
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
@@ -3381,6 +3392,7 @@ export const PlanCheckRun_Result_SqlReviewReport = {
   fromJSON(object: any): PlanCheckRun_Result_SqlReviewReport {
     return {
       line: isSet(object.line) ? Number(object.line) : 0,
+      column: isSet(object.column) ? Number(object.column) : 0,
       detail: isSet(object.detail) ? String(object.detail) : "",
       code: isSet(object.code) ? Number(object.code) : 0,
     };
@@ -3389,6 +3401,7 @@ export const PlanCheckRun_Result_SqlReviewReport = {
   toJSON(message: PlanCheckRun_Result_SqlReviewReport): unknown {
     const obj: any = {};
     message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
     message.detail !== undefined && (obj.detail = message.detail);
     message.code !== undefined && (obj.code = Math.round(message.code));
     return obj;
@@ -3401,6 +3414,7 @@ export const PlanCheckRun_Result_SqlReviewReport = {
   fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlReviewReport>): PlanCheckRun_Result_SqlReviewReport {
     const message = createBasePlanCheckRun_Result_SqlReviewReport();
     message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
     message.code = object.code ?? 0;
     return message;

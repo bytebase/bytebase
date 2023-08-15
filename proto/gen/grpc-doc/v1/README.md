@@ -7424,6 +7424,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | line | [int64](#int64) |  |  |
+| column | [int64](#int64) |  |  |
 | detail | [string](#string) |  |  |
 | code | [int64](#int64) |  | Code from sql review. |
 
