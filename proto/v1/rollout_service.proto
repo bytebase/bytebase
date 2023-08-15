@@ -412,7 +412,7 @@ message PlanCheckRun {
     }
     message SqlReviewReport {
       int64 line = 1;
-      int64 column =2;
+      int64 column = 2;
       string detail = 3;
       // Code from sql review.
       int64 code = 4;
