@@ -108,6 +108,20 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				},
 			})
 		}
+		if config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST {
+			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+				CreatorUID: api.SystemBotID,
+				UpdaterUID: api.SystemBotID,
+				PlanUID:    plan.UID,
+				Status:     store.PlanCheckRunStatusRunning,
+				Type:       store.PlanCheckDatabaseGhostSync,
+				Config: &storepb.PlanCheckRunConfig{
+					SheetId:            int32(sheetUID),
+					DatabaseId:         int32(database.UID),
+					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+				},
+			})
+		}
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
 		// TODO(p0ny): implement
 	}
