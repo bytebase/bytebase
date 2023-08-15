@@ -803,7 +803,9 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			environmentID = database.EffectiveEnvironmentID
+			if database != nil {
+				environmentID = database.EffectiveEnvironmentID
+			}
 		}
 		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 		if err != nil {
