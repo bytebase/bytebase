@@ -1,6 +1,5 @@
 <template>
   <NSelect
-    show
     :multiple="multiple"
     :value="value"
     :options="options"
