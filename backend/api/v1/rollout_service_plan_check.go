@@ -77,6 +77,7 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 			Type:       store.PlanCheckDatabaseConnect,
 			Config: &storepb.PlanCheckRunConfig{
 				SheetId:    0,
+				InstanceId: int32(instance.UID),
 				DatabaseId: int32(database.UID),
 			},
 		})
@@ -89,6 +90,7 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				Type:       store.PlanCheckDatabaseStatementType,
 				Config: &storepb.PlanCheckRunConfig{
 					SheetId:            int32(sheetUID),
+					InstanceId:         int32(instance.UID),
 					DatabaseId:         int32(database.UID),
 					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
 				},
@@ -103,6 +105,7 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				Type:       store.PlanCheckDatabaseStatementAdvise,
 				Config: &storepb.PlanCheckRunConfig{
 					SheetId:            int32(sheetUID),
+					InstanceId:         int32(instance.UID),
 					DatabaseId:         int32(database.UID),
 					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
 				},
@@ -117,13 +120,87 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				Type:       store.PlanCheckDatabaseGhostSync,
 				Config: &storepb.PlanCheckRunConfig{
 					SheetId:            int32(sheetUID),
+					InstanceId:         int32(instance.UID),
 					DatabaseId:         int32(database.UID),
 					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
 				},
 			})
 		}
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
-		// TODO(p0ny): implement
+		// mysql PITR check
+		if _, ok := config.RestoreDatabaseConfig.Source.(*storepb.PlanConfig_RestoreDatabaseConfig_PointInTime); ok {
+			if config.RestoreDatabaseConfig.CreateDatabaseConfig != nil {
+				// Restore to a new database
+				// check target instance
+				targetInstanceID, err := common.GetInstanceID(config.RestoreDatabaseConfig.CreateDatabaseConfig.Target)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get instance id from %q", config.RestoreDatabaseConfig.CreateDatabaseConfig.Target)
+				}
+				targetInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &targetInstanceID})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to find the instance with ID %q", targetInstanceID)
+				}
+				if targetInstance == nil {
+					return nil, errors.Errorf("instance %q not found", targetInstanceID)
+				}
+
+				planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+					CreatorUID: api.SystemBotID,
+					UpdaterUID: api.SystemBotID,
+					PlanUID:    plan.UID,
+					Status:     store.PlanCheckRunStatusRunning,
+					Type:       store.PlanCheckDatabasePITRMySQL,
+					Config: &storepb.PlanCheckRunConfig{
+						InstanceId: int32(targetInstance.UID),
+						PitrConfig: &storepb.PlanCheckRunConfig_PitrConfig{
+							TargetInstanceId:   int32(targetInstance.UID),
+							TargetDatabaseName: config.RestoreDatabaseConfig.CreateDatabaseConfig.Database,
+						},
+					},
+				})
+			} else {
+				// in-place restore
+				// check instance
+				target := config.RestoreDatabaseConfig.Target
+				instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get instance database id from target %q", target)
+				}
+
+				instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+					ResourceID: &instanceID,
+				})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+				}
+				if instance == nil {
+					return nil, errors.Errorf("instance %q not found", instanceID)
+				}
+				database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					InstanceID:          &instanceID,
+					DatabaseName:        &databaseName,
+					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+				})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+				}
+				if database == nil {
+					return nil, errors.Errorf("database %q not found", databaseName)
+				}
+
+				planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+					CreatorUID: api.SystemBotID,
+					UpdaterUID: api.SystemBotID,
+					PlanUID:    plan.UID,
+					Status:     store.PlanCheckRunStatusRunning,
+					Type:       store.PlanCheckDatabasePITRMySQL,
+					Config: &storepb.PlanCheckRunConfig{
+						InstanceId: int32(instance.UID),
+						DatabaseId: int32(database.UID),
+					},
+				})
+			}
+		}
 	}
 	return planCheckRuns, nil
 }

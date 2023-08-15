@@ -516,6 +516,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
 			ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret)
 			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
+			pitrMySQLExecutor := plancheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
+			s.PlanCheckScheduler.Register(store.PlanCheckDatabasePITRMySQL, pitrMySQLExecutor)
 		}
 
 		// Anomaly scanner
