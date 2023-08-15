@@ -95,7 +95,7 @@
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { isEqual, orderBy } from "lodash-es";
+import { isEqual, orderBy, uniqBy } from "lodash-es";
 import { computed, onBeforeMount, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -231,11 +231,16 @@ const changeHistorySectionList = computed(
 const affectedTables = computed(() => {
   return [
     EmptyAffectedTable,
-    ...orderBy(
-      changeHistoryList.value
-        .map((changeHistory) => getAffectedTablesOfChangeHistory(changeHistory))
-        .flat(),
-      ["dropped"]
+    ...uniqBy(
+      orderBy(
+        changeHistoryList.value
+          .map((changeHistory) =>
+            getAffectedTablesOfChangeHistory(changeHistory)
+          )
+          .flat(),
+        ["dropped"]
+      ),
+      (affectedTable) => `${affectedTable.schema}.${affectedTable.table}`
     ),
   ];
 });
