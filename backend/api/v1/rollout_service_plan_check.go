@@ -94,6 +94,20 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				},
 			})
 		}
+		if isStatementAdviseSupported(instance.Engine) {
+			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+				CreatorUID: api.SystemBotID,
+				UpdaterUID: api.SystemBotID,
+				PlanUID:    plan.UID,
+				Status:     store.PlanCheckRunStatusRunning,
+				Type:       store.PlanCheckDatabaseStatementAdvise,
+				Config: &storepb.PlanCheckRunConfig{
+					SheetId:            int32(sheetUID),
+					DatabaseId:         int32(database.UID),
+					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+				},
+			})
+		}
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
 		// TODO(p0ny): implement
 	}
@@ -117,6 +131,15 @@ func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type)
 func isStatementTypeCheckSupported(dbType db.Type) bool {
 	switch dbType {
 	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB, db.OceanBase:
+		return true
+	default:
+		return false
+	}
+}
+
+func isStatementAdviseSupported(dbType db.Type) bool {
+	switch dbType {
+	case db.MySQL, db.TiDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
 		return true
 	default:
 		return false
