@@ -1653,6 +1653,7 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheet_id | [int32](#int32) |  |  |
+| instance_id | [int32](#int32) |  |  |
 | database_id | [int32](#int32) |  |  |
 | change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
 | pitr_config | [PlanCheckRunConfig.PitrConfig](#bytebase-store-PlanCheckRunConfig-PitrConfig) |  |  |

@@ -6,6 +6,7 @@ export const protobufPackage = "bytebase.store";
 
 export interface PlanCheckRunConfig {
   sheetId: number;
+  instanceId: number;
   databaseId: number;
   changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
   pitrConfig?: PlanCheckRunConfig_PitrConfig | undefined;
@@ -134,7 +135,7 @@ export interface PlanCheckRunResult_Result_SqlReviewReport {
 }
 
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
-  return { sheetId: 0, databaseId: 0, changeDatabaseType: 0, pitrConfig: undefined };
+  return { sheetId: 0, instanceId: 0, databaseId: 0, changeDatabaseType: 0, pitrConfig: undefined };
 }
 
 export const PlanCheckRunConfig = {
@@ -142,14 +143,17 @@ export const PlanCheckRunConfig = {
     if (message.sheetId !== 0) {
       writer.uint32(8).int32(message.sheetId);
     }
+    if (message.instanceId !== 0) {
+      writer.uint32(16).int32(message.instanceId);
+    }
     if (message.databaseId !== 0) {
-      writer.uint32(16).int32(message.databaseId);
+      writer.uint32(24).int32(message.databaseId);
     }
     if (message.changeDatabaseType !== 0) {
-      writer.uint32(24).int32(message.changeDatabaseType);
+      writer.uint32(32).int32(message.changeDatabaseType);
     }
     if (message.pitrConfig !== undefined) {
-      PlanCheckRunConfig_PitrConfig.encode(message.pitrConfig, writer.uint32(34).fork()).ldelim();
+      PlanCheckRunConfig_PitrConfig.encode(message.pitrConfig, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -173,17 +177,24 @@ export const PlanCheckRunConfig = {
             break;
           }
 
-          message.databaseId = reader.int32();
+          message.instanceId = reader.int32();
           continue;
         case 3:
           if (tag !== 24) {
             break;
           }
 
-          message.changeDatabaseType = reader.int32() as any;
+          message.databaseId = reader.int32();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.changeDatabaseType = reader.int32() as any;
+          continue;
+        case 5:
+          if (tag !== 42) {
             break;
           }
 
@@ -201,6 +212,7 @@ export const PlanCheckRunConfig = {
   fromJSON(object: any): PlanCheckRunConfig {
     return {
       sheetId: isSet(object.sheetId) ? Number(object.sheetId) : 0,
+      instanceId: isSet(object.instanceId) ? Number(object.instanceId) : 0,
       databaseId: isSet(object.databaseId) ? Number(object.databaseId) : 0,
       changeDatabaseType: isSet(object.changeDatabaseType)
         ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
@@ -212,6 +224,7 @@ export const PlanCheckRunConfig = {
   toJSON(message: PlanCheckRunConfig): unknown {
     const obj: any = {};
     message.sheetId !== undefined && (obj.sheetId = Math.round(message.sheetId));
+    message.instanceId !== undefined && (obj.instanceId = Math.round(message.instanceId));
     message.databaseId !== undefined && (obj.databaseId = Math.round(message.databaseId));
     message.changeDatabaseType !== undefined &&
       (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
@@ -227,6 +240,7 @@ export const PlanCheckRunConfig = {
   fromPartial(object: DeepPartial<PlanCheckRunConfig>): PlanCheckRunConfig {
     const message = createBasePlanCheckRunConfig();
     message.sheetId = object.sheetId ?? 0;
+    message.instanceId = object.instanceId ?? 0;
     message.databaseId = object.databaseId ?? 0;
     message.changeDatabaseType = object.changeDatabaseType ?? 0;
     message.pitrConfig = (object.pitrConfig !== undefined && object.pitrConfig !== null)
