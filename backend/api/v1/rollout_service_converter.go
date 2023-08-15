@@ -355,7 +355,7 @@ func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type 
 	case store.PlanCheckDatabaseStatementCompatibility:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_COMPATIBILITY
 	case store.PlanCheckDatabaseStatementAdvise:
-		return v1pb.PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE
 	case store.PlanCheckDatabaseStatementType:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_TYPE
 	case store.PlanCheckDatabaseStatementSummaryReport:
@@ -412,6 +412,7 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 			SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
 				Line:   report.SqlReviewReport.Line,
+				Column: report.SqlReviewReport.Column,
 				Detail: report.SqlReviewReport.Detail,
 				Code:   report.SqlReviewReport.Code,
 			},
