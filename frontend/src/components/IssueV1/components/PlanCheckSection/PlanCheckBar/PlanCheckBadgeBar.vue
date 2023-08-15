@@ -4,6 +4,8 @@
       v-for="group in planCheckRunsGroupByType"
       :key="group.type"
       :type="group.type"
+      :clickable="true"
+      :selected="group.type === selectedType"
       :plan-check-run-list="group.list"
       @click="$emit('select-type', group.type)"
     />
