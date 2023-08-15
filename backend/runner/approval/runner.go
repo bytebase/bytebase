@@ -357,17 +357,6 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 	seenTaskType := map[api.TaskType]bool{}
 	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
-			switch task.Type {
-			case
-				api.TaskDatabaseCreate,
-				api.TaskDatabaseSchemaUpdate,
-				api.TaskDatabaseSchemaUpdateSDL,
-				api.TaskDatabaseSchemaUpdateGhostSync,
-				api.TaskDatabaseSchemaUpdateGhostCutover,
-				api.TaskDatabaseDataUpdate:
-			default:
-				return 0, store.RiskSourceUnknown, false, errors.Errorf("unexpected task type %v", task.Type)
-			}
 			seenTaskType[task.Type] = true
 		}
 	}
@@ -383,8 +372,10 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 		}
 		return store.RiskSourceUnknown
 	}()
+
+	// cannot conclude risk source
 	if riskSource == store.RiskSourceUnknown {
-		return 0, store.RiskSourceUnknown, false, errors.Errorf("failed to conclude risk source from seen task types %v", seenTaskType)
+		return 0, store.RiskSourceUnknown, true, nil
 	}
 
 	e, err := cel.NewEnv(common.RiskFactors...)
