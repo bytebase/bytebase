@@ -928,7 +928,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 
 	allowExport := false
 	// Check if the user has permission to export the query.
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, int32(len(results)), user, instance, true); err == nil {
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
 		allowExport = true
 	}
 
@@ -2406,4 +2406,12 @@ func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewR
 	return &v1pb.DifferPreviewResponse{
 		Schema: schema,
 	}, nil
+}
+
+func countResultsRows(results []*v1pb.QueryResult) int32 {
+	var count int32
+	for _, result := range results {
+		count += int32(len(result.Rows))
+	}
+	return count
 }
