@@ -85,6 +85,12 @@
     :disabled="false"
     @cancel="state.activeRule = undefined"
   />
+
+  <PlanCheckResultDefinitionModal
+    v-if="state.activeResultDefinition"
+    :definition="state.activeResultDefinition"
+    @cancel="state.activeResultDefinition = undefined"
+  />
 </template>
 
 <script setup lang="ts">
@@ -112,6 +118,7 @@ import {
   PlanCheckRun_Status,
   Task,
 } from "@/types/proto/v1/rollout_service";
+import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
 
 interface ErrorCodeLink {
   title: string;
