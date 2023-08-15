@@ -142,11 +142,10 @@ const comment = (taskRun: TaskRun): string => {
 
 const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
   if (taskRun.status == "DONE") {
-    switch (taskRun.type) {
+    switch (task.type) {
       case "bb.task.database.schema.baseline":
       case "bb.task.database.schema.update":
       case "bb.task.database.schema.update-sdl":
-      case "bb.task.general":
       case "bb.task.database.data.update": {
         const db = useDatabaseV1Store().getDatabaseByUID(
           String(task.database!.id)
