@@ -138,12 +138,10 @@ message LogEntity {
     ACTION_PROJECT_MEMBER_CREATE = 42;
     // ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project.
     ACTION_PROJECT_MEMBER_DELETE = 43;
-    // ACTION_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER.
-    ACTION_PROJECT_MEMBER_ROLE_UPDATE = 44;
     // ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done.
-    ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 45;
+    ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 44;
     // ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another.
-    ACTION_PROJECT_DATABASE_TRANSFER = 46;
+    ACTION_PROJECT_DATABASE_TRANSFER = 45;
 
     // In instance resource only.
 
