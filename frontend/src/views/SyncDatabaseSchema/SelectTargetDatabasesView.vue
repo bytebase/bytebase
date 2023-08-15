@@ -503,6 +503,9 @@ watch(
 watch(
   () => [state.selectedDatabaseId, selectedSchemaDesign.value],
   async () => {
+    if (!state.selectedDatabaseId || !selectedSchemaDesign.value) {
+      return;
+    }
     const schema = await sqlServiceClient.differPreview({
       engine: engine.value,
       oldSchema: targetDatabaseSchema.value,

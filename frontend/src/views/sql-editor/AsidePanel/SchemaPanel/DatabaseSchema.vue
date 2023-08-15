@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <div class="flex-1 p-1 overflow-y-auto flex flex-col gap-y-2">
+    <div class="flex-1 p-1 overflow-y-auto flex flex-col">
       <template v-for="(schema, i) in availableSchemas" :key="i">
         <div v-for="(table, j) in schema.tables" :key="j" class="text-sm">
           <div
