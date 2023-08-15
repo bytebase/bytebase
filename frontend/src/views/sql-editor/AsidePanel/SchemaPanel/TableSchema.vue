@@ -31,15 +31,17 @@
     </div>
 
     <div
-      class="grid py-1 pl-4 pr-4 overflow-y-auto gap-x-1 gap-y-2"
+      class="grid py-1 pl-4 pr-4 overflow-y-auto gap-x-1"
       style="grid-template-columns: minmax(4rem, 2fr) minmax(4rem, 1fr)"
     >
       <template v-for="(column, index) in table.columns" :key="index">
-        <div class="text-sm text-gray-600whitespace-pre-wrap break-words">
+        <div
+          class="text-sm leading-6 text-gray-600whitespace-pre-wrap break-words"
+        >
           {{ column.name }}
         </div>
         <div
-          class="text-right text-sm text-gray-400 overflow-x-hidden whitespace-nowrap"
+          class="text-right text-sm leading-6 text-gray-400 overflow-x-hidden whitespace-nowrap"
         >
           {{ column.type }}
         </div>
