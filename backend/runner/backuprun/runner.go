@@ -480,19 +480,46 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	}
 
 	createdStage := createdStages[0]
-	if _, err := r.store.CreateTasksV2(ctx, &store.TaskMessage{
-		Name:       fmt.Sprintf("backup-%s", backupName),
-		PipelineID: pipeline.ID,
-		StageID:    createdStage.ID,
-		InstanceID: instance.UID,
-		DatabaseID: &database.UID,
-		Status:     api.TaskPending,
-		Type:       api.TaskDatabaseBackup,
-		Payload:    string(bytes),
-		CreatorID:  creatorID,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create task for backup %q", backupName)
+
+	if r.profile.DevelopmentUseV2Scheduler {
+		tasks, err := r.store.CreateTasksV2(ctx, &store.TaskMessage{
+			Name:       fmt.Sprintf("backup-%s", backupName),
+			PipelineID: pipeline.ID,
+			StageID:    createdStage.ID,
+			InstanceID: instance.UID,
+			DatabaseID: &database.UID,
+			Status:     api.TaskPendingApproval,
+			Type:       api.TaskDatabaseBackup,
+			Payload:    string(bytes),
+			CreatorID:  creatorID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create task for backup %q", backupName)
+		}
+		task := tasks[0]
+		if err := r.store.CreatePendingTaskRuns(ctx, &store.TaskRunMessage{
+			CreatorID: creatorID,
+			TaskUID:   task.ID,
+			Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+		}); err != nil {
+			return nil, errors.Wrapf(err, "failed to create pending task run for backup %q", backupName)
+		}
+	} else {
+		if _, err := r.store.CreateTasksV2(ctx, &store.TaskMessage{
+			Name:       fmt.Sprintf("backup-%s", backupName),
+			PipelineID: pipeline.ID,
+			StageID:    createdStage.ID,
+			InstanceID: instance.UID,
+			DatabaseID: &database.UID,
+			Status:     api.TaskPending,
+			Type:       api.TaskDatabaseBackup,
+			Payload:    string(bytes),
+			CreatorID:  creatorID,
+		}); err != nil {
+			return nil, errors.Wrapf(err, "failed to create task for backup %q", backupName)
+		}
 	}
+
 	return backupNew, nil
 }
 
