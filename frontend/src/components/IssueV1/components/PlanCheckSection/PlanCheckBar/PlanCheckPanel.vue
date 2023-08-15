@@ -10,6 +10,7 @@
         :plan-check-run-list="planCheckRunList"
         :selected-type="selectedType"
         :task="task"
+        @select-type="$emit('select-type', $event)"
       />
       <TabFilter
         v-if="selectedPlanCheckRunUID"
@@ -47,6 +48,7 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
+  (event: "select-type", type: PlanCheckRun_Type): void;
   (event: "close"): void;
 }>();
 
