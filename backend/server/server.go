@@ -512,6 +512,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
 			statementTypeExecutor := plancheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
 			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseStatementType, statementTypeExecutor)
+			statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(storeInstance, s.dbFactory, s.licenseService)
+			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
 		}
 
 		// Anomaly scanner
