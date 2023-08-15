@@ -783,8 +783,6 @@ export enum Activity_Type {
   TYPE_PROJECT_MEMBER_CREATE = 16,
   /** TYPE_PROJECT_MEMBER_DELETE - TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project. */
   TYPE_PROJECT_MEMBER_DELETE = 17,
-  /** TYPE_PROJECT_MEMBER_ROLE_UPDATE - TYPE_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. */
-  TYPE_PROJECT_MEMBER_ROLE_UPDATE = 18,
   /**
    * TYPE_SQL_EDITOR_QUERY - SQL Editor related activity types.
    * TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
@@ -857,9 +855,6 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 17:
     case "TYPE_PROJECT_MEMBER_DELETE":
       return Activity_Type.TYPE_PROJECT_MEMBER_DELETE;
-    case 18:
-    case "TYPE_PROJECT_MEMBER_ROLE_UPDATE":
-      return Activity_Type.TYPE_PROJECT_MEMBER_ROLE_UPDATE;
     case 19:
     case "TYPE_SQL_EDITOR_QUERY":
       return Activity_Type.TYPE_SQL_EDITOR_QUERY;
@@ -913,8 +908,6 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_PROJECT_MEMBER_CREATE";
     case Activity_Type.TYPE_PROJECT_MEMBER_DELETE:
       return "TYPE_PROJECT_MEMBER_DELETE";
-    case Activity_Type.TYPE_PROJECT_MEMBER_ROLE_UPDATE:
-      return "TYPE_PROJECT_MEMBER_ROLE_UPDATE";
     case Activity_Type.TYPE_SQL_EDITOR_QUERY:
       return "TYPE_SQL_EDITOR_QUERY";
     case Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE:
