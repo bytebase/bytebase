@@ -1403,7 +1403,8 @@
     "select-repository-attention-bitbucket": "Bytebase solo enumera los repositorios de Bitbucket en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
     "select-repository-search": "Buscar repositorio",
     "linked": "Repositorios vinculados",
-    "select-repository-attention-azure-devops": "Bytebase solo enumera los repositorios de Azure DevOps en la organización a la que se otorga acceso a aplicaciones de terceros a través de OAuth. \nSi no ve el repositorio que desea, vaya a Organización -> Configuración de la organización -> Políticas para habilitar el acceso a aplicaciones de terceros."
+    "select-repository-attention-azure-devops": "Bytebase solo enumera los repositorios de Azure DevOps en la organización a la que se otorga acceso a aplicaciones de terceros a través de OAuth. \nSi no ve el repositorio que desea, vaya a Organización -> Configuración de la organización -> Políticas para habilitar el acceso a aplicaciones de terceros.",
+    "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}."
   },
   "workflow": {
     "current-workflow": "Flujo de trabajo actual",
