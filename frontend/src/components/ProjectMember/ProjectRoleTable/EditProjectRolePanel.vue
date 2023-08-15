@@ -15,7 +15,11 @@
           <p class="mb-2">
             <span>{{ $t("project.members.condition-name") }}</span>
           </p>
-          <NInput v-model:value="state.title" type="text" placeholder="" />
+          <NInput
+            v-model:value="state.title"
+            type="text"
+            :placeholder="displayRoleTitle(binding.role)"
+          />
         </div>
 
         <template v-if="!isLoading">
@@ -105,7 +109,7 @@
         <div class="w-full flex flex-row justify-between items-center">
           <div>
             <BBButtonConfirm
-              v-if="showDeleteButton"
+              v-if="allowRemoveRole()"
               :style="'DELETE'"
               :button-text="$t('common.delete')"
               :require-confirm="true"
@@ -145,6 +149,7 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import { DatabaseSelect } from "@/components/v2";
 import {
   extractUserEmail,
+  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
@@ -155,7 +160,12 @@ import { Expr } from "@/types/proto/google/type/expr";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle, extractUserUID } from "@/utils";
+import {
+  displayRoleTitle,
+  extractUserUID,
+  hasPermissionInProjectV1,
+  hasWorkspacePermissionV1,
+} from "@/utils";
 import {
   convertFromCELString,
   convertFromExpr,
@@ -185,6 +195,7 @@ interface LocalState {
   databaseId?: string;
 }
 
+const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
@@ -201,9 +212,42 @@ const panelTitle = computed(() => {
   return displayRoleTitle(props.binding.role);
 });
 
-const showDeleteButton = computed(() => {
-  return props.binding.role !== "roles/OWNER";
+const allowAdmin = computed(() => {
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-project",
+      currentUserV1.value.userRole
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    hasPermissionInProjectV1(
+      iamPolicy.value,
+      currentUserV1.value,
+      "bb.permission.project.manage-member"
+    )
+  ) {
+    return true;
+  }
+
+  return false;
 });
+
+const allowRemoveRole = () => {
+  if (props.project.state === State.DELETED) {
+    return false;
+  }
+
+  // Don't allow to remove the role if the condition is empty.
+  // * No expiration time.
+  if (props.binding.condition?.expression === "") {
+    return false;
+  }
+
+  return allowAdmin.value;
+};
 
 const allowConfirm = computed(() => {
   return state.userUidList.length > 0;
@@ -212,7 +256,7 @@ const allowConfirm = computed(() => {
 onMounted(() => {
   const binding = props.binding;
   // Set the display title with the role name.
-  state.title = binding.condition?.title || displayRoleTitle(binding.role);
+  state.title = binding.condition?.title || "";
   state.description = binding.condition?.description || "";
 
   if (binding.parsedExpr?.expr) {
