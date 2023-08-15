@@ -2263,7 +2263,8 @@
     },
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
-    "view-definition": "View definition"
+    "view-definition": "View definition",
+    "other-engines": "Other engines"
   },
   "debug-log": {
     "title": "Debug Log",

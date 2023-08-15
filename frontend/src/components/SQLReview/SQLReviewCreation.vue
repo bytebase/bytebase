@@ -64,9 +64,9 @@ import {
   convertToCategoryList,
   convertRuleTemplateToPolicyRule,
   ruleIsAvailableInSubscription,
-  RuleConfigComponent,
   SQLReviewPolicyTemplate,
   SQLReviewPolicy,
+  SchemaPolicyRule,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -225,11 +225,15 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
       title: t("sql-review.no-permission"),
     });
   }
+
+  const ruleList: SchemaPolicyRule[] = [];
+  for (const rule of state.selectedRuleList) {
+    ruleList.push(...convertRuleTemplateToPolicyRule(rule));
+  }
+
   const upsert = {
     name: state.name,
-    ruleList: state.selectedRuleList.map((rule) =>
-      convertRuleTemplateToPolicyRule(rule)
-    ),
+    ruleList,
   };
 
   if (props.policy) {
@@ -298,11 +302,8 @@ const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
   state.ruleUpdated = true;
 };
 
-const onPayloadChange = (
-  rule: RuleTemplate,
-  componentList: RuleConfigComponent[]
-) => {
-  change(rule, { componentList });
+const onPayloadChange = (rule: RuleTemplate, update: Partial<RuleTemplate>) => {
+  change(rule, update);
 };
 
 const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {

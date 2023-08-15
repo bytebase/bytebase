@@ -18,17 +18,14 @@
 
 <script lang="ts" setup>
 import { PropType, toRef } from "vue";
-import {
-  RuleLevel,
-  RuleTemplate,
-  RuleConfigComponent,
-} from "@/types/sqlReview";
+import { RuleLevel, RuleTemplate } from "@/types/sqlReview";
 import {
   SQLRuleTable,
   SQLRuleFilter,
   useSQLRuleFilter,
   payloadValueListToComponentList,
 } from "./components/";
+import { PayloadForEngine } from "./components/RuleConfigComponents";
 
 const props = defineProps({
   selectedRuleList: {
@@ -42,7 +39,7 @@ const emit = defineEmits<{
   (
     event: "payload-change",
     rule: RuleTemplate,
-    componentList: RuleConfigComponent[]
+    update: Partial<RuleTemplate>
   ): void;
   (event: "level-change", rule: RuleTemplate, level: RuleLevel): void;
   (event: "comment-change", rule: RuleTemplate, comment: string): void;
@@ -54,15 +51,11 @@ const {
   filteredRuleList,
 } = useSQLRuleFilter(toRef(props, "selectedRuleList"));
 
-const onPayloadChange = (
-  rule: RuleTemplate,
-  data: (string | number | boolean | string[])[]
-) => {
+const onPayloadChange = (rule: RuleTemplate, data: PayloadForEngine) => {
   if (!rule.componentList) {
     return;
   }
-  const componentList = payloadValueListToComponentList(rule, data);
-  emit("payload-change", rule, componentList);
+  emit("payload-change", rule, payloadValueListToComponentList(rule, data));
 };
 
 const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {

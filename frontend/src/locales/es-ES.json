@@ -2260,7 +2260,8 @@
     },
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
-    "view-definition": "Ver definición"
+    "view-definition": "Ver definición",
+    "other-engines": "Otros motores"
   },
   "debug-log": {
     "title": "Registro de depuración",

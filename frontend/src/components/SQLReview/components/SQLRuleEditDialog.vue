@@ -44,60 +44,6 @@
           />
         </div>
       </div>
-      <div
-        v-for="(config, index) in rule.componentList"
-        :key="index"
-        class="space-y-1"
-      >
-        <p class="text-lg text-control font-medium mb-2">
-          {{ configTitle(config) }}
-        </p>
-        <StringComponent
-          v-if="config.payload.type === 'STRING'"
-          :value="state.payload[index] as string"
-          :config="config"
-          :disabled="disabled"
-          :editable="editable"
-          @update:value="state.payload[index] = $event"
-        />
-        <NumberComponent
-          v-if="config.payload.type === 'NUMBER'"
-          :value="state.payload[index] as number"
-          :config="config"
-          :disabled="disabled"
-          :editable="editable"
-          @update:value="state.payload[index] = $event"
-        />
-        <BooleanComponent
-          v-else-if="config.payload.type == 'BOOLEAN'"
-          :rule="rule"
-          :value="state.payload[index] as boolean"
-          :config="config"
-          :disabled="disabled"
-          :editable="editable"
-          @update:value="state.payload[index] = $event"
-        />
-        <StringArrayComponent
-          v-else-if="
-            config.payload.type == 'STRING_ARRAY' &&
-            Array.isArray(state.payload[index])
-          "
-          :value="state.payload[index] as string[]"
-          :config="config"
-          :disabled="disabled"
-          :editable="editable"
-          @update:value="state.payload[index] = $event"
-        />
-        <TemplateComponent
-          v-else-if="config.payload.type == 'TEMPLATE'"
-          :rule="rule"
-          :value="state.payload[index] as string"
-          :config="config"
-          :disabled="disabled"
-          :editable="editable"
-          @update:value="state.payload[index] = $event"
-        />
-      </div>
       <div v-if="editable" class="space-y-1">
         <h3 class="text-lg text-control font-medium">
           {{ $t("common.description") }}
@@ -123,6 +69,67 @@
           {{ displayDescription }}
         </div>
       </div>
+      <RuleEngineTabFilter
+        v-if="rule.individualConfigList.length > 0"
+        :selected="state.selectedEngine"
+        :engine-list="rule.engineList"
+        :individual-engine-list="rule.individualConfigList.map((c) => c.engine)"
+        @update:engine="(val: string) => state.selectedEngine = val"
+      />
+      <div
+        v-for="(config, index) in rule.componentList"
+        :key="index"
+        class="space-y-1"
+      >
+        <p class="text-lg text-control font-medium mb-2">
+          {{ configTitle(config) }}
+        </p>
+        <StringComponent
+          v-if="config.payload.type === 'STRING'"
+          :value="state.payload[state.selectedEngine][index] as string"
+          :config="config"
+          :disabled="disabled"
+          :editable="editable"
+          @update:value="state.payload[state.selectedEngine][index] = $event"
+        />
+        <NumberComponent
+          v-if="config.payload.type === 'NUMBER'"
+          :value="state.payload[state.selectedEngine][index] as number"
+          :config="config"
+          :disabled="disabled"
+          :editable="editable"
+          @update:value="state.payload[state.selectedEngine][index] = $event"
+        />
+        <BooleanComponent
+          v-else-if="config.payload.type == 'BOOLEAN'"
+          :rule="rule"
+          :value="state.payload[state.selectedEngine][index] as boolean"
+          :config="config"
+          :disabled="disabled"
+          :editable="editable"
+          @update:value="state.payload[state.selectedEngine][index] = $event"
+        />
+        <StringArrayComponent
+          v-else-if="
+            config.payload.type == 'STRING_ARRAY' &&
+            Array.isArray(state.payload[state.selectedEngine][index])
+          "
+          :value="state.payload[state.selectedEngine][index] as string[]"
+          :config="config"
+          :disabled="disabled"
+          :editable="editable"
+          @update:value="state.payload[state.selectedEngine][index] = $event"
+        />
+        <TemplateComponent
+          v-else-if="config.payload.type == 'TEMPLATE'"
+          :rule="rule"
+          :value="state.payload[state.selectedEngine][index] as string"
+          :config="config"
+          :disabled="disabled"
+          :editable="editable"
+          @update:value="state.payload[state.selectedEngine][index] = $event"
+        />
+      </div>
       <div v-if="editable" class="mt-4 pt-2 border-t flex justify-end">
         <button
           type="button"
@@ -144,10 +151,10 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
+import { UNKNOWN_ID } from "@/types";
 import {
   getRuleLocalization,
   getRuleLocalizationKey,
@@ -162,25 +169,26 @@ import {
   StringArrayComponent,
   TemplateComponent,
   PayloadValueType,
+  PayloadForEngine,
 } from "./RuleConfigComponents";
 import RuleEngineIcons from "./RuleEngineIcons.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
-  payload: PayloadValueType[];
+  payload: PayloadForEngine;
   level: RuleLevel;
   comment: string;
+  selectedEngine: string;
 };
 
 const props = defineProps<{
   editable: boolean;
   rule: RuleTemplate;
-  payload: PayloadValueType[];
   disabled: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:payload", payload: PayloadValueType[]): void;
+  (event: "update:payload", payload: PayloadForEngine): void;
   (event: "update:level", level: RuleLevel): void;
   (event: "update:comment", comment: string): void;
   (event: "cancel"): void;
@@ -188,11 +196,53 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const getRulePayload = () => {
+  const { componentList, individualConfigList, engineList } = props.rule;
+  const resp: PayloadForEngine = {};
+
+  if (componentList.length === 0) {
+    return resp;
+  }
+
+  const basePayload = componentList.reduce<
+    { key: string; value: PayloadValueType }[]
+  >((list, component) => {
+    list.push({
+      key: component.key,
+      value: component.payload.value ?? component.payload.default,
+    });
+    return list;
+  }, []);
+
+  if (engineList.length > individualConfigList.length) {
+    resp[`${UNKNOWN_ID}`] = basePayload.map((val) => val.value);
+  }
+
+  for (const individualConfig of individualConfigList) {
+    const individualPayload = [...basePayload];
+    for (const key of Object.keys(individualConfig.payload)) {
+      const index = individualPayload.findIndex((val) => val.key === key);
+      if (index >= 0) {
+        individualPayload[index] = {
+          ...individualPayload[index],
+          value:
+            individualConfig.payload[key].value ??
+            individualConfig.payload[key].default,
+        };
+      }
+    }
+    resp[individualConfig.engine] = individualPayload.map((val) => val.value);
+  }
+
+  return resp;
+};
+
 const state = reactive<LocalState>({
-  payload: cloneDeep(props.payload),
+  payload: getRulePayload(),
   level: props.rule.level,
   comment:
     props.rule.comment || getRuleLocalization(props.rule.type).description,
+  selectedEngine: `${UNKNOWN_ID}`,
 });
 
 const displayDescription = computed(() => {
@@ -210,12 +260,6 @@ const toggleActivity = (rule: RuleTemplate, on: boolean) => {
   state.level = on ? RuleLevel.WARNING : RuleLevel.DISABLED;
 };
 
-watch(
-  () => props.payload,
-  () => {
-    state.payload = cloneDeep(props.payload);
-  }
-);
 watch(
   () => props.rule.level,
   () => {

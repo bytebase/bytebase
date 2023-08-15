@@ -96,7 +96,6 @@
       :editable="editable"
       :rule="state.activeRule"
       :disabled="!isRuleAvailable(state.activeRule)"
-      :payload="state.activePayload"
       @cancel="state.activeRule = undefined"
       @update:payload="updatePayload(state.activeRule!, $event)"
       @update:level="updateLevel(state.activeRule!, $event)"
@@ -118,13 +117,12 @@ import {
   RuleLevel,
   RuleTemplate,
 } from "@/types";
-import { PayloadValueType } from "./RuleConfigComponents";
+import { PayloadForEngine } from "./RuleConfigComponents";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
 
 type LocalState = {
   activeRule: RuleTemplate | undefined;
-  activePayload: PayloadValueType[];
 };
 
 const props = withDefaults(
@@ -142,7 +140,7 @@ const emit = defineEmits<{
   (
     event: "payload-change",
     rule: RuleTemplate,
-    payload: PayloadValueType[]
+    payload: PayloadForEngine
   ): void;
   (event: "level-change", rule: RuleTemplate, level: RuleLevel): void;
   (event: "comment-change", rule: RuleTemplate, comment: string): void;
@@ -152,7 +150,6 @@ const { t } = useI18n();
 const currentPlan = useCurrentPlan();
 const state = reactive<LocalState>({
   activeRule: undefined,
-  activePayload: [],
 });
 
 const categoryList = computed(() => {
@@ -183,15 +180,6 @@ const isRuleAvailable = (rule: RuleTemplate) => {
 };
 
 const setActiveRule = (rule: RuleTemplate) => {
-  const { componentList } = rule;
-  const payload = componentList.reduce<PayloadValueType[]>(
-    (list, component) => {
-      list.push(component.payload.value ?? component.payload.default);
-      return list;
-    },
-    []
-  );
-  state.activePayload = payload;
   state.activeRule = rule;
 };
 
@@ -199,7 +187,7 @@ const toggleActivity = (rule: RuleTemplate, on: boolean) => {
   emit("level-change", rule, on ? RuleLevel.WARNING : RuleLevel.DISABLED);
 };
 
-const updatePayload = (rule: RuleTemplate, payload: PayloadValueType[]) => {
+const updatePayload = (rule: RuleTemplate, payload: PayloadForEngine) => {
   emit("payload-change", rule, payload);
 };
 const updateLevel = (rule: RuleTemplate, level: RuleLevel) => {

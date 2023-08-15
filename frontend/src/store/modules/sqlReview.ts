@@ -13,6 +13,7 @@ import {
   MaybeRef,
   RuleType,
   RuleLevel,
+  SchemaRuleEngineType,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
@@ -44,7 +45,8 @@ const convertToSQLReviewPolicy = async (
     return;
   }
 
-  const ruleList = policy.sqlReviewPolicy.rules.map((r) => {
+  const ruleList: SchemaPolicyRule[] = [];
+  for (const r of policy.sqlReviewPolicy.rules) {
     let level = RuleLevel.DISABLED;
     switch (r.level) {
       case SQLReviewRuleLevel.WARNING:
@@ -54,16 +56,45 @@ const convertToSQLReviewPolicy = async (
         level = RuleLevel.ERROR;
         break;
     }
+
+    let engine: SchemaRuleEngineType = "MYSQL";
+    switch (r.engine) {
+      case Engine.MYSQL:
+        engine = "MYSQL";
+        break;
+      case Engine.POSTGRES:
+        engine = "POSTGRES";
+        break;
+      case Engine.TIDB:
+        engine = "TIDB";
+        break;
+      case Engine.ORACLE:
+        engine = "ORACLE";
+        break;
+      case Engine.OCEANBASE:
+        engine = "OCEANBASE";
+        break;
+      case Engine.SNOWFLAKE:
+        engine = "SNOWFLAKE";
+        break;
+      case Engine.MSSQL:
+        engine = "MSSQL";
+        break;
+      default:
+        continue;
+    }
+
     const rule: SchemaPolicyRule = {
       type: r.type as RuleType,
       level: level,
+      engine: engine,
       comment: r.comment,
     };
     if (r.payload && r.payload !== "{}") {
       rule.payload = JSON.parse(r.payload);
     }
-    return rule;
-  });
+    ruleList.push(rule);
+  }
 
   const environment = await getEnvironmentById(policy.resourceUid);
 
@@ -140,6 +171,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const sqlReviewPolicy: SQLReviewPolicyV1 = {
         name,
         rules: ruleList.map((r) => {
+          // TODO: deprecate the SQLReviewRuleLevel and unify the level
           let level = SQLReviewRuleLevel.DISABLED;
           switch (r.level) {
             case RuleLevel.WARNING:
@@ -150,10 +182,36 @@ export const useSQLReviewStore = defineStore("sqlReview", {
               break;
           }
 
+          // TODO: deprecate the SchemaRuleEngineType and unify the engine
+          let engine = Engine.ENGINE_UNSPECIFIED;
+          switch (r.engine) {
+            case "MYSQL":
+              engine = Engine.MYSQL;
+              break;
+            case "POSTGRES":
+              engine = Engine.POSTGRES;
+              break;
+            case "TIDB":
+              engine = Engine.TIDB;
+              break;
+            case "ORACLE":
+              engine = Engine.ORACLE;
+              break;
+            case "OCEANBASE":
+              engine = Engine.OCEANBASE;
+              break;
+            case "SNOWFLAKE":
+              engine = Engine.SNOWFLAKE;
+              break;
+            case "MSSQL":
+              engine = Engine.MSSQL;
+              break;
+          }
+
           return {
             type: r.type as string,
             level,
-            engine: Engine.ENGINE_UNSPECIFIED,
+            engine,
             comment: r.comment,
             payload: r.payload ? JSON.stringify(r.payload) : "{}",
           };
@@ -224,6 +282,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         policy.sqlReviewPolicy = {
           name,
           rules: ruleList.map((r) => {
+            // TODO: deprecate the SQLReviewRuleLevel and unify the level
             let level = SQLReviewRuleLevel.DISABLED;
             switch (r.level) {
               case RuleLevel.WARNING:
@@ -234,11 +293,36 @@ export const useSQLReviewStore = defineStore("sqlReview", {
                 break;
             }
 
+            // TODO: deprecate the SchemaRuleEngineType and unify the engine
+            let engine = Engine.ENGINE_UNSPECIFIED;
+            switch (r.engine) {
+              case "MYSQL":
+                engine = Engine.MYSQL;
+                break;
+              case "POSTGRES":
+                engine = Engine.POSTGRES;
+                break;
+              case "TIDB":
+                engine = Engine.TIDB;
+                break;
+              case "ORACLE":
+                engine = Engine.ORACLE;
+                break;
+              case "OCEANBASE":
+                engine = Engine.OCEANBASE;
+                break;
+              case "SNOWFLAKE":
+                engine = Engine.SNOWFLAKE;
+                break;
+              case "MSSQL":
+                engine = Engine.MSSQL;
+                break;
+            }
+
             return {
               type: r.type as string,
               level,
-              // TODO:
-              engine: Engine.ENGINE_UNSPECIFIED,
+              engine,
               comment: r.comment,
               payload: r.payload ? JSON.stringify(r.payload) : "{}",
             };

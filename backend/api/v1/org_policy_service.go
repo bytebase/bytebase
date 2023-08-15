@@ -19,6 +19,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -694,7 +695,7 @@ func convertToStorePBWorkspaceIAMPolicy(policy *v1pb.IamPolicy) *storepb.IamPoli
 
 func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
 	payload, err := api.UnmarshalSQLReviewPolicy(
-		api.MergeSQLReviewRulesWithoutEngine(payloadStr),
+		payloadStr,
 	)
 	if err != nil {
 		return nil, err
@@ -747,14 +748,14 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 			Payload: rule.Payload,
 			Type:    advisor.SQLReviewRuleType(rule.Type),
 			Comment: rule.Comment,
-			// DONOT assign the engine, we will use FlattenSQLReviewRulesWithEngine to map available engine with the rule.
+			Engine:  advisorDB.Type(convertEngine(rule.Engine)),
 		})
 	}
 
-	return api.FlattenSQLReviewRulesWithEngine(&advisor.SQLReviewPolicy{
+	return &advisor.SQLReviewPolicy{
 		Name:     policy.Name,
 		RuleList: ruleList,
-	}), nil
+	}, nil
 }
 
 func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPolicy, error) {

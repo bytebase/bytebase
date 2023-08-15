@@ -139,12 +139,12 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, groupBy } from "lodash-es";
 import { computed, reactive, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
-import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
+import { PayloadForEngine } from "@/components/SQLReview/components/RuleConfigComponents";
 import { EnvironmentV1Name } from "@/components/v2";
 import {
   pushNotification,
@@ -159,6 +159,7 @@ import {
   SQLReviewPolicy,
   SchemaRuleEngineType,
   RuleType,
+  SchemaPolicyRule,
   TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
   ruleIsAvailableInSubscription,
@@ -240,17 +241,18 @@ const ruleListOfPolicy = computed((): RuleTemplate[] => {
     new Map<RuleType, RuleTemplate>()
   );
 
-  for (const policyRule of reviewPolicy.value.ruleList) {
-    const rule = ruleTemplateMap.get(policyRule.type);
+  const groupByRule = groupBy(reviewPolicy.value.ruleList, (rule) => rule.type);
+
+  for (const [type, ruleList] of Object.entries(groupByRule)) {
+    const rule = ruleTemplateMap.get(type as RuleType);
     if (!rule) {
       continue;
     }
 
-    const data = convertPolicyRuleToRuleTemplate(policyRule, rule);
+    const data = convertPolicyRuleToRuleTemplate(ruleList, rule);
     if (data) {
       ruleTemplateList.push(data);
     }
-    ruleTemplateMap.delete(policyRule.type);
   }
 
   for (const rule of ruleTemplateMap.values()) {
@@ -317,9 +319,8 @@ const markChange = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
   state.rulesUpdated = true;
 };
 
-const onPayloadChange = (rule: RuleTemplate, data: PayloadValueType[]) => {
-  const componentList = payloadValueListToComponentList(rule, data);
-  markChange(rule, { componentList });
+const onPayloadChange = (rule: RuleTemplate, data: PayloadForEngine) => {
+  markChange(rule, payloadValueListToComponentList(rule, data));
 };
 
 const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
@@ -337,18 +338,18 @@ const onCancelChanges = () => {
 
 const onApplyChanges = async () => {
   const policy = reviewPolicy.value;
-  const upsert = {
-    ruleList: state.ruleList.map((rule) =>
-      convertRuleTemplateToPolicyRule(rule)
-    ),
-  };
+
+  const ruleList: SchemaPolicyRule[] = [];
+  for (const rule of state.ruleList) {
+    ruleList.push(...convertRuleTemplateToPolicyRule(rule));
+  }
 
   state.updating = true;
   try {
     await useSQLReviewStore().updateReviewPolicy({
       id: policy.id,
       name: policy.name,
-      ...upsert,
+      ruleList,
     });
     state.rulesUpdated = false;
     pushNotification({

@@ -1,3 +1,4 @@
+import { groupBy, cloneDeep } from "lodash-es";
 import {
   convertPolicyRuleToRuleTemplate,
   RuleConfigComponent,
@@ -6,9 +7,11 @@ import {
   RuleType,
   SQLReviewPolicy,
   TEMPLATE_LIST,
+  UNKNOWN_ID,
+  IndividualConfigForEngine,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { PayloadValueType } from "./RuleConfigComponents";
+import { PayloadForEngine } from "./RuleConfigComponents";
 
 export const templateIdForEnvironment = (environment: Environment): string => {
   return `bb.sql-review.environment-policy.${environment.name}`;
@@ -29,22 +32,38 @@ export const rulesToTemplate = (
     new Map<RuleType, RuleTemplate>()
   );
 
-  for (const policyRule of review.ruleList) {
-    if (policyRule.level === RuleLevel.DISABLED && !withDisabled) {
-      continue;
-    }
+  const groupByRule = groupBy(review.ruleList, (rule) => rule.type);
 
-    const rule = ruleTemplateMap.get(policyRule.type);
+  for (const [type, ruleList] of Object.entries(groupByRule)) {
+    const rule = ruleTemplateMap.get(type as RuleType);
     if (!rule) {
       continue;
     }
-
-    const data = convertPolicyRuleToRuleTemplate(policyRule, rule);
+    if (rule.level === RuleLevel.DISABLED && !withDisabled) {
+      continue;
+    }
+    const data = convertPolicyRuleToRuleTemplate(ruleList, rule);
     if (data) {
       ruleTemplateList.push(data);
     }
-    ruleTemplateMap.delete(policyRule.type);
   }
+
+  // for (const policyRule of review.ruleList) {
+  //   if (policyRule.level === RuleLevel.DISABLED && !withDisabled) {
+  //     continue;
+  //   }
+
+  //   const rule = ruleTemplateMap.get(policyRule.type);
+  //   if (!rule) {
+  //     continue;
+  //   }
+
+  //   const data = convertPolicyRuleToRuleTemplate(policyRule, rule);
+  //   if (data) {
+  //     ruleTemplateList.push(data);
+  //   }
+  //   ruleTemplateMap.delete(policyRule.type);
+  // }
 
   if (withDisabled) {
     for (const rule of ruleTemplateMap.values()) {
@@ -64,8 +83,9 @@ export const rulesToTemplate = (
 
 export const payloadValueListToComponentList = (
   rule: RuleTemplate,
-  data: PayloadValueType[]
+  data: PayloadForEngine
 ) => {
+  const allEnginePayload = data[`${UNKNOWN_ID}`] || [];
   const componentList = rule.componentList.reduce<RuleConfigComponent[]>(
     (list, component, index) => {
       switch (component.payload.type) {
@@ -74,7 +94,7 @@ export const payloadValueListToComponentList = (
             ...component,
             payload: {
               ...component.payload,
-              value: data[index] as string[],
+              value: allEnginePayload[index] as string[],
             },
           });
           break;
@@ -83,7 +103,7 @@ export const payloadValueListToComponentList = (
             ...component,
             payload: {
               ...component.payload,
-              value: data[index] as number,
+              value: allEnginePayload[index] as number,
             },
           });
           break;
@@ -92,7 +112,7 @@ export const payloadValueListToComponentList = (
             ...component,
             payload: {
               ...component.payload,
-              value: data[index] as boolean,
+              value: allEnginePayload[index] as boolean,
             },
           });
           break;
@@ -101,7 +121,7 @@ export const payloadValueListToComponentList = (
             ...component,
             payload: {
               ...component.payload,
-              value: data[index] as string,
+              value: allEnginePayload[index] as string,
             },
           });
           break;
@@ -110,5 +130,24 @@ export const payloadValueListToComponentList = (
     },
     []
   );
-  return componentList;
+
+  const individualConfigList: IndividualConfigForEngine[] = [];
+  for (const individualConfig of rule.individualConfigList) {
+    const payloadList = data[individualConfig.engine];
+    const payload = cloneDeep(individualConfig.payload);
+
+    for (const [index, component] of rule.componentList.entries()) {
+      payload[component.key] = {
+        default: payload[component.key].default,
+        value: payloadList[index],
+      };
+    }
+
+    individualConfigList.push({
+      engine: individualConfig.engine,
+      payload,
+    });
+  }
+
+  return { componentList, individualConfigList };
 };
