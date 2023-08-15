@@ -120,7 +120,9 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		if err != nil {
 			return err
 		}
-		environmentID = database.EffectiveEnvironmentID
+		if database != nil {
+			environmentID = database.EffectiveEnvironmentID
+		}
 	}
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {

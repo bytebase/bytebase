@@ -686,6 +686,8 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		}
 		limit = int(pageToken.Limit)
 		offset = int(pageToken.Offset)
+	} else {
+		limit = int(request.PageSize)
 	}
 	if limit <= 0 {
 		limit = 10

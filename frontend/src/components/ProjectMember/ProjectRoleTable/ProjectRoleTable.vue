@@ -116,7 +116,7 @@ const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 const columnList = computed(() => {
   const ROLE_NAME: BBGridColumn = {
     title: t("project.members.condition-name"),
-    width: "1.5fr",
+    width: "1fr",
   };
   const EXPIRATION: BBGridColumn = {
     title: t("common.expiration"),
@@ -128,7 +128,7 @@ const columnList = computed(() => {
   };
   const OPERATIONS: BBGridColumn = {
     title: "",
-    width: "10rem",
+    width: "4rem",
   };
   return [ROLE_NAME, EXPIRATION, USERS, OPERATIONS];
 });
@@ -234,6 +234,6 @@ const getExpiredTime = (binding: Binding) => {
       return new Date(expression.expiredTime).toLocaleString();
     }
   }
-  return null;
+  return t("project.members.never-expires");
 };
 </script>

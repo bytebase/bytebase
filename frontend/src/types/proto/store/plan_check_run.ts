@@ -7,6 +7,52 @@ export const protobufPackage = "bytebase.store";
 export interface PlanCheckRunConfig {
   sheetId: number;
   databaseId: number;
+  changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
+}
+
+export enum PlanCheckRunConfig_ChangeDatabaseType {
+  CHANGE_DATABASE_TYPE_UNSPECIFIED = 0,
+  DDL = 1,
+  DML = 2,
+  SDL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function planCheckRunConfig_ChangeDatabaseTypeFromJSON(object: any): PlanCheckRunConfig_ChangeDatabaseType {
+  switch (object) {
+    case 0:
+    case "CHANGE_DATABASE_TYPE_UNSPECIFIED":
+      return PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED;
+    case 1:
+    case "DDL":
+      return PlanCheckRunConfig_ChangeDatabaseType.DDL;
+    case 2:
+    case "DML":
+      return PlanCheckRunConfig_ChangeDatabaseType.DML;
+    case 3:
+    case "SDL":
+      return PlanCheckRunConfig_ChangeDatabaseType.SDL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED;
+  }
+}
+
+export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRunConfig_ChangeDatabaseType): string {
+  switch (object) {
+    case PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED:
+      return "CHANGE_DATABASE_TYPE_UNSPECIFIED";
+    case PlanCheckRunConfig_ChangeDatabaseType.DDL:
+      return "DDL";
+    case PlanCheckRunConfig_ChangeDatabaseType.DML:
+      return "DML";
+    case PlanCheckRunConfig_ChangeDatabaseType.SDL:
+      return "SDL";
+    case PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface PlanCheckRunResult {
@@ -75,13 +121,14 @@ export interface PlanCheckRunResult_Result_SqlSummaryReport {
 
 export interface PlanCheckRunResult_Result_SqlReviewReport {
   line: number;
+  column: number;
   detail: string;
   /** Code from sql review. */
   code: number;
 }
 
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
-  return { sheetId: 0, databaseId: 0 };
+  return { sheetId: 0, databaseId: 0, changeDatabaseType: 0 };
 }
 
 export const PlanCheckRunConfig = {
@@ -91,6 +138,9 @@ export const PlanCheckRunConfig = {
     }
     if (message.databaseId !== 0) {
       writer.uint32(16).int32(message.databaseId);
+    }
+    if (message.changeDatabaseType !== 0) {
+      writer.uint32(24).int32(message.changeDatabaseType);
     }
     return writer;
   },
@@ -116,6 +166,13 @@ export const PlanCheckRunConfig = {
 
           message.databaseId = reader.int32();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.changeDatabaseType = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -129,6 +186,9 @@ export const PlanCheckRunConfig = {
     return {
       sheetId: isSet(object.sheetId) ? Number(object.sheetId) : 0,
       databaseId: isSet(object.databaseId) ? Number(object.databaseId) : 0,
+      changeDatabaseType: isSet(object.changeDatabaseType)
+        ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
+        : 0,
     };
   },
 
@@ -136,6 +196,8 @@ export const PlanCheckRunConfig = {
     const obj: any = {};
     message.sheetId !== undefined && (obj.sheetId = Math.round(message.sheetId));
     message.databaseId !== undefined && (obj.databaseId = Math.round(message.databaseId));
+    message.changeDatabaseType !== undefined &&
+      (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
     return obj;
   },
 
@@ -147,6 +209,7 @@ export const PlanCheckRunConfig = {
     const message = createBasePlanCheckRunConfig();
     message.sheetId = object.sheetId ?? 0;
     message.databaseId = object.databaseId ?? 0;
+    message.changeDatabaseType = object.changeDatabaseType ?? 0;
     return message;
   },
 };
@@ -437,7 +500,7 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
 };
 
 function createBasePlanCheckRunResult_Result_SqlReviewReport(): PlanCheckRunResult_Result_SqlReviewReport {
-  return { line: 0, detail: "", code: 0 };
+  return { line: 0, column: 0, detail: "", code: 0 };
 }
 
 export const PlanCheckRunResult_Result_SqlReviewReport = {
@@ -445,11 +508,14 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
     if (message.line !== 0) {
       writer.uint32(8).int64(message.line);
     }
+    if (message.column !== 0) {
+      writer.uint32(16).int64(message.column);
+    }
     if (message.detail !== "") {
-      writer.uint32(18).string(message.detail);
+      writer.uint32(26).string(message.detail);
     }
     if (message.code !== 0) {
-      writer.uint32(24).int64(message.code);
+      writer.uint32(32).int64(message.code);
     }
     return writer;
   },
@@ -469,14 +535,21 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
           message.line = longToNumber(reader.int64() as Long);
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.column = longToNumber(reader.int64() as Long);
+          continue;
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
           message.detail = reader.string();
           continue;
-        case 3:
-          if (tag !== 24) {
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
@@ -494,6 +567,7 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
   fromJSON(object: any): PlanCheckRunResult_Result_SqlReviewReport {
     return {
       line: isSet(object.line) ? Number(object.line) : 0,
+      column: isSet(object.column) ? Number(object.column) : 0,
       detail: isSet(object.detail) ? String(object.detail) : "",
       code: isSet(object.code) ? Number(object.code) : 0,
     };
@@ -502,6 +576,7 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
   toJSON(message: PlanCheckRunResult_Result_SqlReviewReport): unknown {
     const obj: any = {};
     message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
     message.detail !== undefined && (obj.detail = message.detail);
     message.code !== undefined && (obj.code = Math.round(message.code));
     return obj;
@@ -516,6 +591,7 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
   ): PlanCheckRunResult_Result_SqlReviewReport {
     const message = createBasePlanCheckRunResult_Result_SqlReviewReport();
     message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
     message.code = object.code ?? 0;
     return message;

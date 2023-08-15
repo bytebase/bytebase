@@ -112,6 +112,7 @@
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
     - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
   
+    - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
@@ -1652,6 +1653,7 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | sheet_id | [int32](#int32) |  |  |
 | database_id | [int32](#int32) |  |  |
+| change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
 
 
 
@@ -1703,6 +1705,7 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | line | [int64](#int64) |  |  |
+| column | [int64](#int64) |  |  |
 | detail | [string](#string) |  |  |
 | code | [int64](#int64) |  | Code from sql review. |
 
@@ -1727,6 +1730,20 @@ Type is the database change type.
 
 
  
+
+
+<a name="bytebase-store-PlanCheckRunConfig-ChangeDatabaseType"></a>
+
+### PlanCheckRunConfig.ChangeDatabaseType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| SDL | 3 |  |
+
 
 
 <a name="bytebase-store-PlanCheckRunResult-Result-Status"></a>

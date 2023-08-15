@@ -4469,9 +4469,8 @@ ACTION_ISSUE_CREATE is the type for creating a new issue. |
 ACTION_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository. |
 | ACTION_PROJECT_MEMBER_CREATE | 42 | ACTION_PROJECT_MEMBER_CREATE represents adding a member to the project. |
 | ACTION_PROJECT_MEMBER_DELETE | 43 | ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. |
-| ACTION_PROJECT_MEMBER_ROLE_UPDATE | 44 | ACTION_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. |
-| ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE | 45 | ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. |
-| ACTION_PROJECT_DATABASE_TRANSFER | 46 | ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. |
+| ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE | 44 | ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. |
+| ACTION_PROJECT_DATABASE_TRANSFER | 45 | ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. |
 | ACTION_DATABASE_SQL_EDITOR_QUERY | 61 | Database related activity types. Enum value 61 - 80
 
 ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
@@ -6522,7 +6521,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | TYPE_PROJECT_DATABASE_TRANSFER | 15 | TYPE_PROJECT_DATABASE_TRANFER represents transfering the database from one project to another. |
 | TYPE_PROJECT_MEMBER_CREATE | 16 | TYPE_PROJECT_MEMBER_CREATE represents adding a member to the project. |
 | TYPE_PROJECT_MEMBER_DELETE | 17 | TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project. |
-| TYPE_PROJECT_MEMBER_ROLE_UPDATE | 18 | TYPE_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. |
 | TYPE_SQL_EDITOR_QUERY | 19 | SQL Editor related activity types. TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor. |
 | TYPE_DATABASE_RECOVERY_PITR_DONE | 20 | Database related activity types. TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done. |
 
@@ -7424,6 +7422,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | line | [int64](#int64) |  |  |
+| column | [int64](#int64) |  |  |
 | detail | [string](#string) |  |  |
 | code | [int64](#int64) |  | Code from sql review. |
 

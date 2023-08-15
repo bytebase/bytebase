@@ -43,7 +43,7 @@
               >{{ $t("common.you") }}</span
             >
           </div>
-          <span class="textlabel">{{ projectMember.user.email }}</span>
+          <span class="textinfolabel">{{ projectMember.user.email }}</span>
         </div>
       </div>
       <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
@@ -52,17 +52,21 @@
           <p
             v-for="binding in getSortedBindingList(projectMember.bindingList)"
             :key="binding.role"
-            class="w-auto leading-8 flex flex-row justify-start items-center flex-nowrap"
+            class="w-auto leading-8 flex flex-row justify-start items-center flex-nowrap gap-x-2"
           >
-            <span class="max-w-[8rem] truncate">{{
-              displayRoleTitle(binding.role)
-            }}</span>
             <span
               v-if="getBindingConditionTitle(binding)"
-              class="ml-2 max-w-[8rem] truncate text-blue-600 cursor-pointer hover:text-blue-800"
+              class="block truncate"
+              >{{ displayRoleTitle(binding.role) }}</span
+            >
+            <span
+              class="block truncate text-blue-600 cursor-pointer hover:text-blue-800"
               @click="editingBinding = binding"
             >
-              {{ getBindingConditionTitle(binding) }}
+              {{
+                getBindingConditionTitle(binding) ||
+                displayRoleTitle(binding.role)
+              }}
             </span>
           </p>
         </div>
@@ -174,7 +178,7 @@ const columnList = computed(() => {
   };
   const OPERATIONS: BBGridColumn = {
     title: "",
-    width: "10rem",
+    width: "4rem",
   };
   const list = hasRBACFeature.value
     ? [ACCOUNT, ROLE, EXPIRATION, OPERATIONS]
@@ -264,6 +268,6 @@ const getExpiredTime = (binding: Binding) => {
       return new Date(expression.expiredTime).toLocaleString();
     }
   }
-  return null;
+  return t("project.members.never-expires");
 };
 </script>
