@@ -2,7 +2,6 @@ import { groupBy, cloneDeep } from "lodash-es";
 import {
   convertPolicyRuleToRuleTemplate,
   RuleConfigComponent,
-  RuleLevel,
   RuleTemplate,
   RuleType,
   SQLReviewPolicy,
@@ -11,6 +10,7 @@ import {
   IndividualConfigForEngine,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { PayloadForEngine } from "./RuleConfigComponents";
 
 export const templateIdForEnvironment = (environment: Environment): string => {
@@ -39,7 +39,7 @@ export const rulesToTemplate = (
     if (!rule) {
       continue;
     }
-    if (rule.level === RuleLevel.DISABLED && !withDisabled) {
+    if (rule.level === SQLReviewRuleLevel.DISABLED && !withDisabled) {
       continue;
     }
     const data = convertPolicyRuleToRuleTemplate(ruleList, rule);
@@ -48,28 +48,11 @@ export const rulesToTemplate = (
     }
   }
 
-  // for (const policyRule of review.ruleList) {
-  //   if (policyRule.level === RuleLevel.DISABLED && !withDisabled) {
-  //     continue;
-  //   }
-
-  //   const rule = ruleTemplateMap.get(policyRule.type);
-  //   if (!rule) {
-  //     continue;
-  //   }
-
-  //   const data = convertPolicyRuleToRuleTemplate(policyRule, rule);
-  //   if (data) {
-  //     ruleTemplateList.push(data);
-  //   }
-  //   ruleTemplateMap.delete(policyRule.type);
-  // }
-
   if (withDisabled) {
     for (const rule of ruleTemplateMap.values()) {
       ruleTemplateList.push({
         ...rule,
-        level: RuleLevel.DISABLED,
+        level: SQLReviewRuleLevel.DISABLED,
       });
     }
   }

@@ -1,12 +1,11 @@
 <template>
-  <EngineIcon :engine="engineFromJSON(engine)" />
+  <EngineIcon :engine="engine" />
 </template>
 
 <script lang="ts" setup>
-import { SchemaRuleEngineType } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/v1/common";
 
 defineProps<{
-  engine: SchemaRuleEngineType;
+  engine: Engine;
 }>();
 </script>

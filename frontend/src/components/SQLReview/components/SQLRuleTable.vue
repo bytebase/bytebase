@@ -20,7 +20,7 @@
             <BBSwitch
               :class="[!editable && 'pointer-events-none']"
               :disabled="!isRuleAvailable(rule)"
-              :value="rule.level !== RuleLevel.DISABLED"
+              :value="rule.level !== SQLReviewRuleLevel.DISABLED"
               size="small"
               @toggle="toggleActivity(rule, $event)"
             />
@@ -114,9 +114,9 @@ import {
   getRuleLocalization,
   ruleIsAvailableInSubscription,
   planTypeToString,
-  RuleLevel,
   RuleTemplate,
 } from "@/types";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { PayloadForEngine } from "./RuleConfigComponents";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
@@ -142,7 +142,7 @@ const emit = defineEmits<{
     rule: RuleTemplate,
     payload: PayloadForEngine
   ): void;
-  (event: "level-change", rule: RuleTemplate, level: RuleLevel): void;
+  (event: "level-change", rule: RuleTemplate, level: SQLReviewRuleLevel): void;
   (event: "comment-change", rule: RuleTemplate, comment: string): void;
 }>();
 
@@ -184,13 +184,17 @@ const setActiveRule = (rule: RuleTemplate) => {
 };
 
 const toggleActivity = (rule: RuleTemplate, on: boolean) => {
-  emit("level-change", rule, on ? RuleLevel.WARNING : RuleLevel.DISABLED);
+  emit(
+    "level-change",
+    rule,
+    on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED
+  );
 };
 
 const updatePayload = (rule: RuleTemplate, payload: PayloadForEngine) => {
   emit("payload-change", rule, payload);
 };
-const updateLevel = (rule: RuleTemplate, level: RuleLevel) => {
+const updateLevel = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
   emit("level-change", rule, level);
 };
 const updateComment = (rule: RuleTemplate, comment: string) => {

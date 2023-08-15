@@ -25,7 +25,7 @@
           <BBSwitch
             :class="[!editable && 'pointer-events-none']"
             :disabled="disabled"
-            :value="state.level !== RuleLevel.DISABLED"
+            :value="state.level !== SQLReviewRuleLevel.DISABLED"
             size="small"
             @toggle="toggleActivity(rule, $event)"
           />
@@ -155,11 +155,11 @@ import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
 import { UNKNOWN_ID } from "@/types";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import {
   getRuleLocalization,
   getRuleLocalizationKey,
   RuleConfigComponent,
-  RuleLevel,
   RuleTemplate,
 } from "@/types/sqlReview";
 import {
@@ -176,7 +176,7 @@ import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
   payload: PayloadForEngine;
-  level: RuleLevel;
+  level: SQLReviewRuleLevel;
   comment: string;
   selectedEngine: string;
 };
@@ -189,7 +189,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "update:payload", payload: PayloadForEngine): void;
-  (event: "update:level", level: RuleLevel): void;
+  (event: "update:level", level: SQLReviewRuleLevel): void;
   (event: "update:comment", comment: string): void;
   (event: "cancel"): void;
 }>();
@@ -257,7 +257,7 @@ const configTitle = (config: RuleConfigComponent): string => {
 };
 
 const toggleActivity = (rule: RuleTemplate, on: boolean) => {
-  state.level = on ? RuleLevel.WARNING : RuleLevel.DISABLED;
+  state.level = on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED;
 };
 
 watch(

@@ -16,14 +16,14 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { UNKNOWN_ID, SchemaRuleEngineType } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import { UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import { engineNameV1 } from "@/utils";
 
 const props = defineProps<{
   selected: string;
-  engineList: SchemaRuleEngineType[];
-  individualEngineList: SchemaRuleEngineType[];
+  engineList: Engine[];
+  individualEngineList: Engine[];
 }>();
 
 defineEmits<{
@@ -36,7 +36,7 @@ const items = computed(() => {
   const resp = props.individualEngineList.map((engine) => {
     return {
       value: `${engine}`,
-      label: engineNameV1(engineFromJSON(engine)),
+      label: engineNameV1(engine),
     };
   });
   if (props.individualEngineList.length < props.engineList.length) {

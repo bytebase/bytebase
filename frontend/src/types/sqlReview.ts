@@ -1,25 +1,17 @@
 import { pullAt, cloneDeep, groupBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
+import { Engine, engineFromJSON } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
+import {
+  SQLReviewRuleLevel,
+  sQLReviewRuleLevelFromJSON,
+} from "@/types/proto/v1/org_policy_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { PolicyId } from "./id";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
-import {
-  SQLReviewRuleLevel,
-} from "@/types/proto/v1/org_policy_service";
-
-// The engine type for rule template
-export type SchemaRuleEngineType =
-  | "MYSQL"
-  | "POSTGRES"
-  | "TIDB"
-  | "ORACLE"
-  | "OCEANBASE"
-  | "SNOWFLAKE"
-  | "MSSQL";
 
 // The category type for rule template
 export type CategoryType =
@@ -33,17 +25,10 @@ export type CategoryType =
   | "INDEX"
   | "SYSTEM";
 
-// The rule level
-export enum RuleLevel {
-  DISABLED = "DISABLED",
-  ERROR = "ERROR",
-  WARNING = "WARNING",
-}
-
 export const LEVEL_LIST = [
-  RuleLevel.ERROR,
-  RuleLevel.WARNING,
-  RuleLevel.DISABLED,
+  SQLReviewRuleLevel.ERROR,
+  SQLReviewRuleLevel.WARNING,
+  SQLReviewRuleLevel.DISABLED,
 ];
 
 // NumberPayload is the number type payload configuration options and default value.
@@ -95,7 +80,7 @@ interface IndividualConfigPayload {
 }
 
 export interface IndividualConfigForEngine {
-  engine: SchemaRuleEngineType;
+  engine: Engine;
   payload: IndividualConfigPayload;
 }
 
@@ -209,8 +194,8 @@ interface CasePayload {
 // Used by the backend
 export interface SchemaPolicyRule {
   type: RuleType;
-  level: RuleLevel;
-  engine: SchemaRuleEngineType;
+  level: SQLReviewRuleLevel;
+  engine: Engine;
   payload?:
     | NamingFormatPayload
     | StringArrayLimitPayload
@@ -238,10 +223,10 @@ export interface SQLReviewPolicy {
 export interface RuleTemplate {
   type: RuleType;
   category: CategoryType;
-  engineList: SchemaRuleEngineType[];
+  engineList: Engine[];
   componentList: RuleConfigComponent[];
   individualConfigList: IndividualConfigForEngine[];
-  level: RuleLevel;
+  level: SQLReviewRuleLevel;
   comment?: string;
 }
 
@@ -272,9 +257,9 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
     id: string;
     ruleList: {
       type: RuleType;
-      level: RuleLevel;
+      level: SQLReviewRuleLevel;
       payload?: PayloadObject;
-      engine?: SchemaRuleEngineType;
+      engine?: Engine;
     }[];
   }[];
 
@@ -292,7 +277,7 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
         ruleTemplate.individualConfigList || []
       );
       let componentList = cloneDeep(ruleTemplate.componentList);
-      let level = RuleLevel.DISABLED;
+      let level = SQLReviewRuleLevel.DISABLED;
 
       for (const rule of groupList) {
         level = rule.level;
@@ -303,6 +288,8 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
           // Override individual config for specific engine.
           individualConfigList[index] = {
             ...individualConfigList[index],
+            // Note: it's important to convert string type engine to enum.
+            engine: engineFromJSON(individualConfigList[index].engine),
             payload: Object.assign(
               {},
               individualConfigList[index].payload,
@@ -333,9 +320,13 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
 
       ruleList.push({
         ...ruleTemplate,
-        level,
+        level: sQLReviewRuleLevelFromJSON(level),
         componentList,
         individualConfigList,
+        // Note: it's important to convert string type engine to enum.
+        engineList: ruleTemplate.engineList.map((engine) =>
+          engineFromJSON(engine)
+        ),
       });
     }
 
@@ -428,7 +419,7 @@ export const convertPolicyRuleToRuleTemplate = (
     );
   }
 
-  const policyRule = policyRuleList[0];
+  let policyRule: SchemaPolicyRule | undefined = policyRuleList[0];
 
   const res = {
     ...ruleTemplate,
@@ -443,7 +434,7 @@ export const convertPolicyRuleToRuleTemplate = (
   const individualConfigList: IndividualConfigForEngine[] = [];
   for (const individualConfig of ruleTemplate.individualConfigList) {
     const index = policyRuleList.findIndex(
-      (rule) => rule.engine === individualConfig.engine
+      (rule) => rule.engine == individualConfig.engine
     );
     if (index >= 0) {
       const individualRule = policyRuleList[index];
@@ -453,6 +444,9 @@ export const convertPolicyRuleToRuleTemplate = (
       );
     }
   }
+
+  policyRule = policyRuleList[0];
+  const payload = policyRule?.payload ?? {};
 
   const stringComponent = ruleTemplate.componentList.find(
     (c) => c.payload.type === "STRING"
@@ -480,7 +474,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...stringComponent,
             payload: {
               ...stringComponent.payload,
-              value: (policyRule.payload as NamingFormatPayload).format,
+              value: (payload as NamingFormatPayload).format,
             } as StringPayload,
           },
         ],
@@ -500,14 +494,14 @@ export const convertPolicyRuleToRuleTemplate = (
             ...stringComponent,
             payload: {
               ...stringComponent.payload,
-              value: (policyRule.payload as NamingFormatPayload).format,
+              value: (payload as NamingFormatPayload).format,
             } as StringPayload,
           },
           {
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (policyRule.payload as NamingFormatPayload).maxLength,
+              value: (payload as NamingFormatPayload).maxLength,
             } as NumberPayload,
           },
         ],
@@ -525,7 +519,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...templateComponent,
             payload: {
               ...templateComponent.payload,
-              value: (policyRule.payload as NamingFormatPayload).format,
+              value: (payload as NamingFormatPayload).format,
             } as TemplatePayload,
           },
         ],
@@ -545,14 +539,14 @@ export const convertPolicyRuleToRuleTemplate = (
             ...templateComponent,
             payload: {
               ...templateComponent.payload,
-              value: (policyRule.payload as NamingFormatPayload).format,
+              value: (payload as NamingFormatPayload).format,
             } as TemplatePayload,
           },
           {
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (policyRule.payload as NamingFormatPayload).maxLength,
+              value: (payload as NamingFormatPayload).maxLength,
             } as NumberPayload,
           },
         ],
@@ -576,9 +570,9 @@ export const convertPolicyRuleToRuleTemplate = (
       const requiredColumnComponent = ruleTemplate.componentList[0];
       // The columnList payload is deprecated.
       // Just keep it to compatible with old data, we can remove this later.
-      let value: string[] = (policyRule.payload as any)["columnList"];
+      let value: string[] = (payload as any)["columnList"];
       if (!value) {
-        value = (policyRule.payload as StringArrayLimitPayload).list;
+        value = (payload as StringArrayLimitPayload).list;
       }
       const requiredColumnPayload = {
         ...requiredColumnComponent.payload,
@@ -602,7 +596,7 @@ export const convertPolicyRuleToRuleTemplate = (
       const stringArrayComponent = ruleTemplate.componentList[0];
       const stringArrayPayload = {
         ...stringArrayComponent.payload,
-        value: (policyRule.payload as StringArrayLimitPayload).list,
+        value: (payload as StringArrayLimitPayload).list,
       } as StringArrayPayload;
       return {
         ...res,
@@ -628,14 +622,14 @@ export const convertPolicyRuleToRuleTemplate = (
             ...booleanComponent,
             payload: {
               ...booleanComponent.payload,
-              value: (policyRule.payload as CommentFormatPayload).required,
+              value: (payload as CommentFormatPayload).required,
             } as BooleanPayload,
           },
           {
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (policyRule.payload as CommentFormatPayload).maxLength,
+              value: (payload as CommentFormatPayload).maxLength,
             } as NumberPayload,
           },
         ],
@@ -660,7 +654,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (policyRule.payload as NumberLimitPayload).number,
+              value: (payload as NumberLimitPayload).number,
             } as NumberPayload,
           },
         ],

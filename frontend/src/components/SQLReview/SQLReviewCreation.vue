@@ -59,7 +59,6 @@ import {
   useEnvironmentV1List,
 } from "@/store";
 import {
-  RuleLevel,
   RuleTemplate,
   convertToCategoryList,
   convertRuleTemplateToPolicyRule,
@@ -69,6 +68,7 @@ import {
   SchemaPolicyRule,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
@@ -147,7 +147,7 @@ const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
             subscriptionStore.currentPlan
           )
             ? rule.level
-            : RuleLevel.DISABLED,
+            : SQLReviewRuleLevel.DISABLED,
         }))
       );
       return res;
@@ -306,7 +306,7 @@ const onPayloadChange = (rule: RuleTemplate, update: Partial<RuleTemplate>) => {
   change(rule, update);
 };
 
-const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
   change(rule, { level });
 };
 

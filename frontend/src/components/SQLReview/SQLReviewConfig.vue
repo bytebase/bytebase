@@ -18,7 +18,8 @@
 
 <script lang="ts" setup>
 import { PropType, toRef } from "vue";
-import { RuleLevel, RuleTemplate } from "@/types/sqlReview";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { RuleTemplate } from "@/types/sqlReview";
 import {
   SQLRuleTable,
   SQLRuleFilter,
@@ -41,7 +42,7 @@ const emit = defineEmits<{
     rule: RuleTemplate,
     update: Partial<RuleTemplate>
   ): void;
-  (event: "level-change", rule: RuleTemplate, level: RuleLevel): void;
+  (event: "level-change", rule: RuleTemplate, level: SQLReviewRuleLevel): void;
   (event: "comment-change", rule: RuleTemplate, comment: string): void;
 }>();
 
@@ -58,7 +59,7 @@ const onPayloadChange = (rule: RuleTemplate, data: PayloadForEngine) => {
   emit("payload-change", rule, payloadValueListToComponentList(rule, data));
 };
 
-const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
   emit("level-change", rule, level);
 };
 

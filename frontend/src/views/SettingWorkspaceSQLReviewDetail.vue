@@ -154,10 +154,8 @@ import {
 } from "@/store";
 import {
   unknown,
-  RuleLevel,
   RuleTemplate,
   SQLReviewPolicy,
-  SchemaRuleEngineType,
   RuleType,
   SchemaPolicyRule,
   TEMPLATE_LIST,
@@ -165,6 +163,8 @@ import {
   ruleIsAvailableInSubscription,
   convertRuleTemplateToPolicyRule,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { idFromSlug, hasWorkspacePermissionV1 } from "@/utils";
 import {
   payloadValueListToComponentList,
@@ -185,8 +185,8 @@ interface LocalState {
   showEnableModal: boolean;
   selectedCategory?: string;
   editMode: boolean;
-  checkedEngine: Set<SchemaRuleEngineType>;
-  checkedLevel: Set<RuleLevel>;
+  checkedEngine: Set<Engine>;
+  checkedLevel: Set<SQLReviewRuleLevel>;
   ruleList: RuleTemplate[];
   rulesUpdated: boolean;
   updating: boolean;
@@ -203,8 +203,8 @@ const state = reactive<LocalState>({
   showDisableModal: false,
   showEnableModal: false,
   editMode: false,
-  checkedEngine: new Set<SchemaRuleEngineType>(),
-  checkedLevel: new Set<RuleLevel>(),
+  checkedEngine: new Set<Engine>(),
+  checkedLevel: new Set<SQLReviewRuleLevel>(),
   ruleList: [],
   rulesUpdated: false,
   updating: false,
@@ -258,7 +258,7 @@ const ruleListOfPolicy = computed((): RuleTemplate[] => {
   for (const rule of ruleTemplateMap.values()) {
     ruleTemplateList.push({
       ...rule,
-      level: RuleLevel.DISABLED,
+      level: SQLReviewRuleLevel.DISABLED,
     });
   }
 
@@ -323,7 +323,7 @@ const onPayloadChange = (rule: RuleTemplate, data: PayloadForEngine) => {
   markChange(rule, payloadValueListToComponentList(rule, data));
 };
 
-const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
   markChange(rule, { level });
 };
 
