@@ -84,7 +84,7 @@
               </div>
               <span
                 v-if="
-                  (!multiple && item === state.selectedItem) ||
+                  (!multiple && isEqual(item, state.selectedItem)) ||
                   (multiple && state.selectedItemList.includes(item))
                 "
                 class="absolute inset-y-0 right-0 flex items-center pr-4"
@@ -105,6 +105,7 @@
 
 <script lang="ts">
 import { onClickOutside, useElementBounding } from "@vueuse/core";
+import { isEqual } from "lodash-es";
 import {
   reactive,
   PropType,
@@ -258,6 +259,7 @@ export default defineComponent({
       button,
       popup,
       popupStyle,
+      isEqual,
     };
   },
 });
