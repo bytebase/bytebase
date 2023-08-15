@@ -53,8 +53,6 @@ const (
 	ActivityProjectMemberCreate ActivityType = "bb.project.member.create"
 	// ActivityProjectMemberDelete is the type for deleting project members.
 	ActivityProjectMemberDelete ActivityType = "bb.project.member.delete"
-	// ActivityProjectMemberRoleUpdate is the type for updating project member roles.
-	ActivityProjectMemberRoleUpdate ActivityType = "bb.project.member.role.update"
 
 	// SQL Editor related.
 
