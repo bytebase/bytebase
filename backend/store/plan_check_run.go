@@ -72,6 +72,10 @@ type FindPlanCheckRunMessage struct {
 
 // CreatePlanCheckRuns creates new plan check runs.
 func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRunMessage) error {
+	if len(creates) == 0 {
+		return nil
+	}
+
 	var query strings.Builder
 	var values []any
 	if _, err := query.WriteString(`INSERT INTO plan_check_run (
