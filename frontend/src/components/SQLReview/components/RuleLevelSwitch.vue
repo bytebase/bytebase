@@ -2,17 +2,17 @@
   <div class="flex items-center" :class="[!editable && 'pointer-events-none']">
     <button
       class="button error"
-      :class="[level === RuleLevel.ERROR && 'active']"
+      :class="[level === SQLReviewRuleLevel.ERROR && 'active']"
       :disabled="disabled"
-      @click="$emit('level-change', RuleLevel.ERROR)"
+      @click="$emit('level-change', SQLReviewRuleLevel.ERROR)"
     >
       {{ $t("sql-review.level.error") }}
     </button>
     <button
       class="button warning"
-      :class="[level === RuleLevel.WARNING && 'active']"
+      :class="[level === SQLReviewRuleLevel.WARNING && 'active']"
       :disabled="disabled"
-      @click="$emit('level-change', RuleLevel.WARNING)"
+      @click="$emit('level-change', SQLReviewRuleLevel.WARNING)"
     >
       {{ $t("sql-review.level.warning") }}
     </button>
@@ -20,11 +20,11 @@
 </template>
 
 <script lang="ts" setup>
-import { RuleLevel } from "@/types";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 
 withDefaults(
   defineProps<{
-    level: RuleLevel;
+    level: SQLReviewRuleLevel;
     disabled?: boolean;
     editable?: boolean;
   }>(),
@@ -35,7 +35,7 @@ withDefaults(
 );
 
 defineEmits<{
-  (event: "level-change", level: RuleLevel): void;
+  (event: "level-change", level: SQLReviewRuleLevel): void;
 }>();
 </script>
 

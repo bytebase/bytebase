@@ -74,8 +74,7 @@
     <SQLRuleEditDialog
       v-if="state.activeRule"
       :editable="false"
-      :rule="state.activeRule.rule"
-      :payload="state.activeRule.payload"
+      :rule="state.activeRule"
       :disabled="false"
       @cancel="state.activeRule = undefined"
     />
@@ -107,7 +106,6 @@ import {
   Task,
   findRuleTemplate,
 } from "@/types";
-import { PayloadValueType } from "../SQLReview/components/RuleConfigComponents";
 import { LocalizedSQLRuleErrorCodes } from "./const";
 
 interface ErrorCodeLink {
@@ -115,11 +113,6 @@ interface ErrorCodeLink {
   target: string;
   url: string;
 }
-
-type PreviewSQLReviewRule = {
-  rule: RuleTemplate;
-  payload: PayloadValueType[];
-};
 
 type TableRow = {
   checkResult: TaskCheckResult;
@@ -129,7 +122,7 @@ type TableRow = {
 };
 
 type LocalState = {
-  activeRule: PreviewSQLReviewRule | undefined;
+  activeRule?: RuleTemplate;
   activeResultDefinition?: string;
 };
 
@@ -284,7 +277,7 @@ const COLUMN_LIST = computed((): BBTableColumn[] => {
 const reviewPolicy = useReviewPolicyByEnvironmentId(
   computed(() => String(props.task.instance.environment.id))
 );
-const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
+const getActiveRule = (type: RuleType): RuleTemplate | undefined => {
   const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
   if (!rule) {
     return undefined;
@@ -295,19 +288,7 @@ const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
     return undefined;
   }
   ruleTemplate.comment = rule.comment;
-  const { componentList } = ruleTemplate;
-  const payload = componentList.reduce<PayloadValueType[]>(
-    (list, component) => {
-      list.push(component.payload.value ?? component.payload.default);
-      return list;
-    },
-    []
-  );
-
-  return {
-    rule: ruleTemplate,
-    payload: payload,
-  };
+  return ruleTemplate;
 };
 const setActiveRule = (type: RuleType) => {
   state.activeRule = getActiveRule(type);
