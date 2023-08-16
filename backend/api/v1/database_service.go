@@ -1956,6 +1956,9 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
 	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
 
 	switch instance.Engine {
 	case db.Postgres:
@@ -1998,6 +2001,9 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.NotFound, "database %q not found", db)
 			}
 			schema, err := s.store.GetDBSchema(ctx, database.UID)
 			if err != nil {
