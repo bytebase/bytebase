@@ -6,6 +6,7 @@
     <div class="w-full">
       <NInput
         v-model:value="state.search"
+        size="small"
         :placeholder="$t('sql-editor.search-history')"
       >
         <template #prefix>
