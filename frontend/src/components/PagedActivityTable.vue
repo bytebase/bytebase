@@ -78,6 +78,10 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits<{
+  (event: "list:update", list: LogEntity[]): void;
+}>();
+
 const state = reactive<LocalState>({
   loading: false,
   auditLogList: [],
@@ -177,4 +181,9 @@ watch(isLoggedIn, () => {
     resetSession();
   }
 });
+
+watch(
+  () => state.auditLogList,
+  (list) => emit("list:update", list)
+);
 </script>
