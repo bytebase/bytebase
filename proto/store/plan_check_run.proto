@@ -6,8 +6,15 @@ option go_package = "generated-go/store";
 
 message PlanCheckRunConfig {
   int32 sheet_id = 1;
-  int32 database_id = 2;
-  ChangeDatabaseType change_database_type = 3;
+  int32 instance_id = 2;
+  int32 database_id = 3;
+  ChangeDatabaseType change_database_type = 4;
+  PitrConfig pitr_config = 5;
+
+  message PitrConfig {
+    int32 target_instance_id = 1;
+    string target_database_name = 2;
+  }
 
   enum ChangeDatabaseType {
     CHANGE_DATABASE_TYPE_UNSPECIFIED = 0;
