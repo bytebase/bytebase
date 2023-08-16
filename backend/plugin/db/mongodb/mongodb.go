@@ -183,7 +183,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 
 	evalArg := statement
 	if simpleStatement {
-		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {EJSON.stringify(a.toArray())} else {EJSON.stringify(a)}", strings.TrimRight(statement, " \t\n\r\f;"))
+		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()))} else {print(EJSON.stringify(a))}", strings.TrimRight(statement, " \t\n\r\f;"))
 	}
 	mongoshArgs := []string{
 		connectionURI,
