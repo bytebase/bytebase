@@ -23,7 +23,7 @@ import (
 
 var _ Executor = (*StatementTypeExecutor)(nil)
 
-// NewStatementTypeExecutor creates a task check DML executor.
+// NewStatementTypeExecutor creates a statement type executor.
 func NewStatementTypeExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
 	return &StatementTypeExecutor{
 		store:     store,
@@ -31,13 +31,13 @@ func NewStatementTypeExecutor(store *store.Store, dbFactory *dbfactory.DBFactory
 	}
 }
 
-// StatementTypeExecutor is the task check DML executor.
+// StatementTypeExecutor is the statement type executor.
 type StatementTypeExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
-// Run will run the task check database connector executor once.
+// Run runs the statement type executor.
 func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
 	changeType := planCheckRun.Config.ChangeDatabaseType
 	if changeType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {

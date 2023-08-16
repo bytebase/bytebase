@@ -397,6 +397,10 @@
     },
     "attention": {
       "default": "Attention needed"
+    },
+    "confirm-button": {
+      "sure-to-delete": "Are you sure to delete?",
+      "cannot-undo": "You cannot undo this action."
     }
   },
   "settings": {
@@ -1570,6 +1574,7 @@
       "select-users": "Select users",
       "assign-role": "Assign role",
       "never-expires": "Never",
+      "role-description": "Role description",
       "role-never-expires": "This role never expires.",
       "add-more": "Add more",
       "role-name": "Role name",

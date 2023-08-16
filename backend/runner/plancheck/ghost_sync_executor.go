@@ -13,7 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// NewGhostSyncExecutor creates a task check gh-ost sync executor.
+// NewGhostSyncExecutor creates a gh-ost sync check executor.
 func NewGhostSyncExecutor(store *store.Store, secret string) Executor {
 	return &GhostSyncExecutor{
 		store:  store,
@@ -21,13 +21,13 @@ func NewGhostSyncExecutor(store *store.Store, secret string) Executor {
 	}
 }
 
-// GhostSyncExecutor is the task check gh-ost sync executor.
+// GhostSyncExecutor is the gh-ost sync check executor.
 type GhostSyncExecutor struct {
 	store  *store.Store
 	secret string
 }
 
-// Run will run the task check database connector executor once.
+// Run runs the gh-ost sync check executor.
 func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) (results []*storepb.PlanCheckRunResult_Result, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So

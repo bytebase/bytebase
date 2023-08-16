@@ -117,31 +117,32 @@ const options = computed(() => {
 
 const renderLabel: SelectRenderLabel = (option) => {
   const { database } = option as DatabaseSelectOption;
+  const children = [h("div", {}, [database.databaseName])];
+  if (database.uid !== String(UNKNOWN_ID)) {
+    // prefix engine icon
+    children.unshift(
+      h(InstanceV1EngineIcon, {
+        class: "mr-1",
+        instance: database.instanceEntity,
+      })
+    );
+    // suffix engine name
+    children.push(
+      h(
+        "div",
+        {
+          class: "text-xs opacity-60 ml-1",
+        },
+        [`(${instanceV1Name(database.instanceEntity)})`]
+      )
+    );
+  }
   return h(
     "div",
     {
       class: "w-full flex flex-row justify-start items-center truncate",
     },
-    [
-      h(InstanceV1EngineIcon, {
-        class: "mr-1",
-        instance: database.instanceEntity,
-      }),
-      h(
-        "div",
-        {
-          class: "mr-1",
-        },
-        [database.databaseName]
-      ),
-      h(
-        "div",
-        {
-          class: "text-xs opacity-60",
-        },
-        [`(${instanceV1Name(database.instanceEntity)})`]
-      ),
-    ]
+    children
   );
 };
 
