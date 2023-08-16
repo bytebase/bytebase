@@ -16,6 +16,7 @@
 <script lang="ts" setup>
 import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
 import { computed, h, watch } from "vue";
+import { VNodeArrayChildren } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useCurrentUserV1,
@@ -117,31 +118,34 @@ const options = computed(() => {
 
 const renderLabel: SelectRenderLabel = (option) => {
   const { database } = option as DatabaseSelectOption;
+  const children: VNodeArrayChildren = [];
+  const NAME = h("div", {}, [database.databaseName]);
+  children.push(NAME);
+  if (database.uid !== String(UNKNOWN_ID)) {
+    // prefix engine icon
+    children.unshift(
+      h(InstanceV1EngineIcon, {
+        class: "mr-1",
+        instance: database.instanceEntity,
+      })
+    );
+    // suffix engine name
+    children.push(
+      h(
+        "div",
+        {
+          class: "text-xs opacity-60 ml-1",
+        },
+        [`(${instanceV1Name(database.instanceEntity)})`]
+      )
+    );
+  }
   return h(
     "div",
     {
       class: "w-full flex flex-row justify-start items-center truncate",
     },
-    [
-      h(InstanceV1EngineIcon, {
-        class: "mr-1",
-        instance: database.instanceEntity,
-      }),
-      h(
-        "div",
-        {
-          class: "mr-1",
-        },
-        [database.databaseName]
-      ),
-      h(
-        "div",
-        {
-          class: "text-xs opacity-60",
-        },
-        [`(${instanceV1Name(database.instanceEntity)})`]
-      ),
-    ]
+    children
   );
 };
 
