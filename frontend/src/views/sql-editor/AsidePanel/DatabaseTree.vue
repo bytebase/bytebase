@@ -61,6 +61,7 @@ import {
   useConnectionTreeStore,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useInstanceV1Store,
   useIsLoggedIn,
   useTabStore,
 } from "@/store";
@@ -80,6 +81,7 @@ import {
   instanceV1HasAlterSchema,
   isDescendantOf,
   isSimilarTab,
+  instanceV1AllowsCrossDatabaseQuery,
 } from "@/utils";
 import { Prefix, Label, Suffix } from "./TreeNode";
 
@@ -106,6 +108,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
@@ -199,6 +202,13 @@ const setConnection = (
     if (option.type === "project") {
       // Not connectable to a project
       return;
+    }
+
+    if (option.type === "instance") {
+      const instance = instanceStore.getInstanceByUID(option.id);
+      if (!instanceV1AllowsCrossDatabaseQuery(instance)) {
+        return;
+      }
     }
 
     const target: CoreTabInfo = {
