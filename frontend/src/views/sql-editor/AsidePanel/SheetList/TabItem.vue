@@ -5,7 +5,9 @@
     :class="[isCurrentItem && 'bg-indigo-600/10']"
     @click="$emit('click', item, $event)"
   >
-    <div class="flex-1 text-sm cursor-pointer pt-0.5 break-all ital">
+    <SheetConnectionIcon :tab="item.target" class="shrink-0 w-4 h-6" />
+
+    <div class="flex-1 text-sm cursor-pointer pt-0.5 break-all">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <span v-html="titleHTML(item, keyword)" />
     </div>
@@ -25,6 +27,7 @@
 
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
+import { SheetConnectionIcon } from "../../EditorCommon";
 import { MergedItem, TabItem, domIDForItem, titleHTML } from "./common";
 
 defineProps<{

@@ -5,6 +5,8 @@
       :class="state.editing && 'invisible'"
       @dblclick="beginEdit"
     >
+      #{{ sheetTypeForTab(tab) }}#
+      <template v-if="tab.isFreshNew"> (FreshNew) </template>
       {{ state.name }}
     </span>
 
@@ -24,6 +26,7 @@
 import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
 import { useSheetV1Store, useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
+import { sheetTypeForTab } from "@/utils";
 
 type LocalState = {
   editing: boolean;

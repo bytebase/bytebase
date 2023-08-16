@@ -130,7 +130,7 @@ export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
     tabStore.addTab(newTab, true /* beside */);
   } else {
     // Open the sheet in a "temp" tab otherwise.
-    tabStore.selectOrAddTempTab(newTab);
+    tabStore.addTab(newTab);
   }
 
   let insId = String(UNKNOWN_ID);

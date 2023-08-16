@@ -6,6 +6,7 @@
     @click="$emit('click', item, $event)"
     @contextmenu="$emit('contextmenu', item, $event)"
   >
+    <SheetConnectionIcon :sheet="item.target" class="shrink-0 w-4 h-6" />
     <div class="flex-1 text-sm cursor-pointer pt-0.5 break-all">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <span v-if="item.target.title" v-html="titleHTML(item, keyword)" />
@@ -22,6 +23,7 @@
 <script setup lang="ts">
 import { Dropdown } from "@/views/sql-editor/Sheet";
 import { SheetViewMode } from "@/views/sql-editor/Sheet";
+import { SheetConnectionIcon } from "../../EditorCommon";
 import { MergedItem, SheetItem, domIDForItem, titleHTML } from "./common";
 
 defineProps<{

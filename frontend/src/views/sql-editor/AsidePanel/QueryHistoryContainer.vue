@@ -150,7 +150,8 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
   );
 
   // Open a new tab with the connection and statement.
-  tabStore.selectOrAddTempTab();
+  // tabStore.selectOrAddTempTab();
+  tabStore.addTab();
   tabStore.updateCurrentTab({
     connection,
     statement,

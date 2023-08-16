@@ -1,9 +1,7 @@
 <template>
-  <div
-    v-if="!tabStore.isDisconnected"
-    class="w-full block lg:flex justify-between items-start bg-white"
-  >
+  <div class="w-full block lg:flex justify-between items-start bg-white">
     <div
+      v-if="!tabStore.isDisconnected"
       class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
     >
       <NPopover v-if="showReadonlyDatasourceWarning" trigger="hover">
@@ -71,6 +69,13 @@
     >
       {{ $t("sql-editor.sql-execute-in-production-environment") }}
     </div>
+
+    <div
+      v-if="tabStore.isDisconnected"
+      class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
+    >
+      Select a database to from the database list to connect.
+    </div>
   </div>
 </template>
 
@@ -108,6 +113,10 @@ const selectedEnvironment = computed(() => {
 });
 
 const isProductionEnvironment = computed(() => {
+  if (tabStore.isDisconnected) {
+    return false;
+  }
+
   return selectedEnvironment.value.tier === EnvironmentTier.PROTECTED;
 });
 

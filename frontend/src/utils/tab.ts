@@ -1,12 +1,25 @@
 import dayjs from "dayjs";
 import { v1 as uuidv1 } from "uuid";
-import { computed } from "vue";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
-import type { Connection, ConnectionAtom, CoreTabInfo, TabInfo } from "@/types";
+import type {
+  ComposedDatabase,
+  ComposedInstance,
+  Connection,
+  ConnectionAtom,
+  CoreTabInfo,
+  TabInfo,
+  TabSheetType,
+} from "@/types";
 import { UNKNOWN_ID, TabMode } from "@/types";
-import { t } from "../plugins/i18n";
 
-export const defaultTabName = computed(() => t("sql-editor.untitled-sheet"));
+export const getDefaultTabName = () => {
+  return dayjs().format("YYYY-MM-DD HH:mm");
+};
+
+export const isSimilarDefaultTabName = (name: string) => {
+  const regex = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/;
+  return regex.test(name);
+};
 
 export const emptyConnection = (): Connection => {
   return {
@@ -18,7 +31,7 @@ export const emptyConnection = (): Connection => {
 export const getDefaultTab = (): TabInfo => {
   return {
     id: uuidv1(),
-    name: defaultTabName.value,
+    name: getDefaultTabName(),
     connection: emptyConnection(),
     isSaved: true,
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
@@ -37,6 +50,36 @@ export const isTempTab = (tab: TabInfo): boolean => {
   if (!tab.isSaved) return false;
   if (tab.statement) return false;
   return true;
+};
+
+export const sheetTypeForTab = (tab: TabInfo): TabSheetType => {
+  if (!tab.sheetName) {
+    return "TEMP";
+  }
+  if (tab.isSaved) {
+    return "CLEAN";
+  }
+  return "DIRTY";
+};
+
+export const connectionForTab = (tab: TabInfo) => {
+  const target: {
+    instance: ComposedInstance | undefined;
+    database: ComposedDatabase | undefined;
+  } = {
+    instance: undefined,
+    database: undefined,
+  };
+  const { instanceId, databaseId } = tab.connection;
+  if (databaseId !== String(UNKNOWN_ID)) {
+    const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+    target.database = database;
+    target.instance = database.instanceEntity;
+  } else if (instanceId !== String(UNKNOWN_ID)) {
+    const instance = useInstanceV1Store().getInstanceByUID(instanceId);
+    target.instance = instance;
+  }
+  return target;
 };
 
 export const isSameConnection = (a: Connection, b: Connection): boolean => {
@@ -60,7 +103,7 @@ export const getDefaultTabNameFromConnection = (conn: Connection) => {
   if (instance.uid !== String(UNKNOWN_ID)) {
     return `${instance.title}`;
   }
-  return defaultTabName.value;
+  return getDefaultTabName();
 };
 
 export const instanceOfConnectionAtom = (atom: ConnectionAtom) => {

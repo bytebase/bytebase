@@ -57,6 +57,7 @@ import Draggable from "vuedraggable";
 import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
+import { getDefaultTabNameFromConnection } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import TabItem from "./TabItem";
 
@@ -88,7 +89,14 @@ const handleSelectTab = async (tab: TabInfo) => {
 };
 
 const handleAddTab = () => {
-  tabStore.addTab();
+  const connection = { ...tabStore.currentTab.connection };
+  const name = getDefaultTabNameFromConnection(connection);
+  tabStore.addTab({
+    name,
+    connection,
+    // The newly created tab is "clean" so its connection can be changed
+    isFreshNew: true,
+  });
   nextTick(recalculateScrollState);
 };
 

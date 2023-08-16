@@ -219,7 +219,7 @@ const prepareSheet = async () => {
     tabStore.setCurrentTabId(openingSheetTab.id);
   } else {
     // Open the sheet in a "temp" tab otherwise.
-    tabStore.selectOrAddTempTab();
+    tabStore.addTab();
   }
 
   let insId = String(UNKNOWN_ID);
@@ -263,7 +263,7 @@ const prepareConnectionSlug = async () => {
     const tab = tabStore.currentTab;
     if (tab.sheetName) {
       // Don't touch a saved sheet.
-      tabStore.selectOrAddTempTab();
+      tabStore.addTab();
       return;
     }
     const target: CoreTabInfo = {

@@ -167,6 +167,15 @@ export const useTabStore = defineStore("tab", () => {
 
   // watchers
   const watchTab = (tab: TabInfo, immediate: boolean) => {
+    const dirtyFields = [
+      () => tab.name,
+      () => tab.sheetName,
+      () => tab.statement,
+    ];
+    watch(dirtyFields, () => {
+      tab.isFreshNew = false;
+    });
+
     // Use a throttled watcher to reduce the performance overhead when writing.
     watchThrottled(
       () => pick(tab, ...PERSISTENT_TAB_FIELDS),
