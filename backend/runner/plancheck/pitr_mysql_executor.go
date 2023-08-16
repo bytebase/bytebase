@@ -61,6 +61,9 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 
 		return instance, database.DatabaseName, nil
 	}()
+	if err != nil {
+		return nil, err
+	}
 
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
