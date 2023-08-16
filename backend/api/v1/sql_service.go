@@ -151,6 +151,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		}
 
 		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
+		sanitizeResults(result)
 
 		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
 			log.Error("failed to post admin execute activity", zap.Error(err))
@@ -1038,7 +1039,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	defer cancelCtx()
 
 	start := time.Now().UnixNano()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
+	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
 		ReadOnly:        true,
 		CurrentDatabase: request.ConnectionDatabase,
@@ -1055,7 +1056,22 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		// So the select will not block
 	}
 
-	return result, time.Now().UnixNano() - start, err
+	sanitizeResults(results)
+
+	return results, time.Now().UnixNano() - start, err
+}
+
+// sanitizeResults sanitizes the strings in the results by replacing all the invalid UTF-8 characters with its hexadecimal representation.
+func sanitizeResults(results []*v1pb.QueryResult) {
+	for _, result := range results {
+		for _, row := range result.Rows {
+			for _, value := range row.Values {
+				if value, ok := value.Kind.(*v1pb.RowValue_StringValue); ok {
+					value.StringValue = common.SanitizeUTF8String(value.StringValue)
+				}
+			}
+		}
+	}
 }
 
 // preQuery does the following:
@@ -2203,6 +2219,31 @@ func (s *SQLService) checkQueryRights(
 	}
 
 	for _, resource := range resourceList {
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &resource.Database,
+		})
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to get database: %v", err)
+		}
+		if database == nil {
+			return status.Errorf(codes.NotFound, "database not found: %s", resource.Database)
+		}
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to get environment: %v", err)
+		}
+		if environment != nil {
+			result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to check workspace IAM policy: %v", err)
+			}
+			// When checks passed for the role and environment, we will skip the project IAM policy checking.
+			if result {
+				continue
+			}
+		}
+
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
 			"request.time":      time.Now(),

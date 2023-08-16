@@ -1,11 +1,22 @@
 <template>
-  <BBOutline
-    id="database"
-    :title="$t('common.databases')"
-    :item-list="mixedDatabaseList"
-    :allow-collapse="false"
-    :outline-item-class="'pt-0.5 pb-0.5'"
-  />
+  <template v-for="(env, index) in databaseListByEnvironment" :key="index">
+    <BBOutline
+      :id="env.id"
+      :title="env.name"
+      :item-list="env.childList"
+      :allow-collapse="false"
+      :outline-item-class="'pt-0.5 pb-0.5'"
+    />
+  </template>
+  <template v-for="(prj, index) in tenantDatabaseListByProject" :key="index">
+    <BBOutline
+      :id="prj.id"
+      :title="prj.name"
+      :item-list="prj.childList"
+      :allow-collapse="false"
+      :outline-item-class="'pt-0.5 pb-0.5'"
+    />
+  </template>
 </template>
 
 <script lang="ts" setup>
