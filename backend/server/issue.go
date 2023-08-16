@@ -973,7 +973,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 		}
 	}
-	maximumTaskLimit := s.licenseService.GetPlanLimitValue(enterpriseAPI.PlanLimitMaximumTask)
+	maximumTaskLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumTask)
 	if int64(databaseIDCount) > maximumTaskLimit {
 		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can update up to %d databases, got %d.", maximumTaskLimit, databaseIDCount))
 	}
