@@ -6,6 +6,7 @@
   >
     <div class="databases-tree--input">
       <NInput
+        size="small"
         :value="searchPattern"
         :placeholder="$t('sql-editor.search-databases')"
         :clearable="true"
