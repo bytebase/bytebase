@@ -2203,6 +2203,31 @@ func (s *SQLService) checkQueryRights(
 	}
 
 	for _, resource := range resourceList {
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &resource.Database,
+		})
+		if err != nil {
+			return err
+		}
+		if database == nil {
+			return status.Errorf(codes.NotFound, "database not found: %s", resource.Database)
+		}
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+		if err != nil {
+			return err
+		}
+		if environment != nil {
+			result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+			if err != nil {
+				return err
+			}
+			// If there is data access control in the environment, we should skip the project IAM policy checking.
+			if result {
+				continue
+			}
+		}
+
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
 			"request.time":      time.Now(),
