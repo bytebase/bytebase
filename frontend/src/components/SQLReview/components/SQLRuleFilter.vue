@@ -28,12 +28,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  convertToCategoryList,
-  RuleLevel,
-  RuleTemplate,
-  SchemaRuleEngineType,
-} from "@/types";
+import { convertToCategoryList, RuleTemplate } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import SQLReviewCategorySummaryFilter from "./SQLReviewCategorySummaryFilter.vue";
 import type { CategoryFilterItem } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
@@ -45,8 +42,8 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (event: "toggle-checked-engine", engine: SchemaRuleEngineType): void;
-  (event: "toggle-checked-level", level: RuleLevel): void;
+  (event: "toggle-checked-engine", engine: Engine): void;
+  (event: "toggle-checked-level", level: SQLReviewRuleLevel): void;
   (event: "change-category", category: string | undefined): void;
   (event: "change-search-text", keyword: string): void;
 }>();
