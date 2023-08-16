@@ -76,15 +76,15 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 	}
 
 	if err := mysqlDriver.CheckServerVersionForPITR(ctx); err != nil {
-		return wrapPlanCheckError(err), nil
+		return convertErrorToResult(err), nil
 	}
 
 	if err := mysqlDriver.CheckEngineInnoDB(ctx, databaseName); err != nil {
-		return wrapPlanCheckError(err), nil
+		return convertErrorToResult(err), nil
 	}
 
 	if err := mysqlDriver.CheckBinlogRowFormat(ctx); err != nil {
-		return wrapPlanCheckError(err), nil
+		return convertErrorToResult(err), nil
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{
@@ -97,7 +97,7 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 	}, nil
 }
 
-func wrapPlanCheckError(err error) []*storepb.PlanCheckRunResult_Result {
+func convertErrorToResult(err error) []*storepb.PlanCheckRunResult_Result {
 	return []*storepb.PlanCheckRunResult_Result{
 		{
 			Status:  storepb.PlanCheckRunResult_Result_ERROR,
