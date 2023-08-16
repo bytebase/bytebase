@@ -205,7 +205,13 @@ export const instanceV1AllowsCrossDatabaseQuery = (
   instanceOrEngine: Instance | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return [Engine.MYSQL, Engine.TIDB].includes(engine);
+  return [
+    Engine.MYSQL,
+    Engine.TIDB,
+    Engine.CLICKHOUSE,
+    Engine.MARIADB,
+    Engine.OCEANBASE,
+  ].includes(engine);
 };
 
 export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
