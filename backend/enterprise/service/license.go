@@ -155,13 +155,12 @@ func (s *LicenseService) GetEffectivePlan() api.PlanType {
 }
 
 // GetPlanLimitValue gets the limit value for the plan.
-func (s *LicenseService) GetPlanLimitValue(name enterpriseAPI.PlanLimit) int64 {
+func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterpriseAPI.PlanLimit) int64 {
 	v, ok := enterpriseAPI.PlanLimitValues[name]
 	if !ok {
 		return 0
 	}
 
-	ctx := context.Background()
 	subscription := s.LoadSubscription(ctx)
 
 	limit := v[subscription.Plan]
