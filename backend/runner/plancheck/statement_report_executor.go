@@ -27,7 +27,7 @@ import (
 
 // NewStatementReportExecutor creates a statement report executor.
 func NewStatementReportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
-	return &StatementTypeExecutor{
+	return &StatementReportExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 	}
@@ -96,7 +96,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.P
 	switch instance.Engine {
 	case db.Postgres:
 		return reportStatementTypeForPostgres(database.DatabaseName, renderedStatement)
-	case db.MySQL, db.OceanBase, db.TiDB:
+	case db.MySQL, db.OceanBase:
 		return reportStatementTypeForMySQL(instance.Engine, database.DatabaseName, renderedStatement, charset, collation)
 	case db.Oracle:
 		schema := ""
