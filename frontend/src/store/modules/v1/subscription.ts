@@ -33,10 +33,18 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
   }),
   getters: {
     instanceCountLimit(state): number {
-      return instanceCountLimit.get(this.currentPlan) ?? 0;
+      let plan = this.currentPlan
+      if (this.isTrialing) {
+        plan = PlanType.FREE
+      }
+      return instanceCountLimit.get(plan) ?? 0;
     },
     userCountLimit(state): number {
-      return userCountLimit.get(this.currentPlan) ?? 0;
+      let plan = this.currentPlan
+      if (this.isTrialing) {
+        plan = PlanType.FREE
+      }
+      return userCountLimit.get(plan) ?? 0;
     },
     instanceLicenseCount(state): number {
       const count = state.subscription?.instanceCount ?? 0;
