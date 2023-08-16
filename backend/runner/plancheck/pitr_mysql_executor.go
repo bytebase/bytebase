@@ -12,7 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// NewPITRMySQLExecutor creates a task check migration schema executor.
+// NewPITRMySQLExecutor creates a plan check PITR MySQL executor.
 func NewPITRMySQLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
 	return &PITRMySQLExecutor{
 		store:     store,
@@ -20,13 +20,13 @@ func NewPITRMySQLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Ex
 	}
 }
 
-// PITRMySQLExecutor is the task check migration schema executor.
+// PITRMySQLExecutor is to check if the MySQL database is ready for PITR.
 type PITRMySQLExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
-// Run will run the task check migration schema executor once.
+// Run runs the PITR MySQL executor.
 func (e *PITRMySQLExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
 	instance, databaseName, err := func() (*store.InstanceMessage, string, error) {
 		if planCheckRun.Config.GetPitrConfig().GetTargetInstanceId() != 0 {
