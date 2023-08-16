@@ -1,16 +1,12 @@
 import { computed, reactive, unref } from "vue";
 import { useRoute } from "vue-router";
-import {
-  getRuleLocalization,
-  MaybeRef,
-  RuleLevel,
-  RuleTemplate,
-  SchemaRuleEngineType,
-} from "@/types";
+import { getRuleLocalization, MaybeRef, RuleTemplate } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 
 export type SQLRuleFilterParams = {
-  checkedEngine: Set<SchemaRuleEngineType>;
-  checkedLevel: Set<RuleLevel>;
+  checkedEngine: Set<Engine>;
+  checkedLevel: Set<SQLReviewRuleLevel>;
   selectedCategory: string | undefined;
   searchText: string;
 };
@@ -26,14 +22,14 @@ export const useSQLRuleFilter = (ruleList: MaybeRef<RuleTemplate[]>) => {
     searchText: "",
   });
   const events = {
-    toggleCheckedEngine(engine: SchemaRuleEngineType) {
+    toggleCheckedEngine(engine: Engine) {
       if (params.checkedEngine.has(engine)) {
         params.checkedEngine.delete(engine);
       } else {
         params.checkedEngine.add(engine);
       }
     },
-    toggleCheckedLevel(level: RuleLevel) {
+    toggleCheckedLevel(level: SQLReviewRuleLevel) {
       if (params.checkedLevel.has(level)) {
         params.checkedLevel.delete(level);
       } else {

@@ -94,7 +94,8 @@ import { computed, watch } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useSQLReviewPolicyList } from "@/store";
 import { SQLReviewPolicyTemplate } from "@/types";
-import { TEMPLATE_LIST as builtInTemplateList, RuleLevel } from "@/types";
+import { TEMPLATE_LIST as builtInTemplateList } from "@/types";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { rulesToTemplate } from "./utils";
 
 const props = withDefaults(
@@ -134,8 +135,9 @@ const isSelectedTemplate = (template: SQLReviewPolicyTemplate) => {
 };
 
 const enabledRuleCount = (template: SQLReviewPolicyTemplate) => {
-  return template.ruleList.filter((rule) => rule.level !== RuleLevel.DISABLED)
-    .length;
+  return template.ruleList.filter(
+    (rule) => rule.level !== SQLReviewRuleLevel.DISABLED
+  ).length;
 };
 
 const getTemplateImage = (id: string) => {

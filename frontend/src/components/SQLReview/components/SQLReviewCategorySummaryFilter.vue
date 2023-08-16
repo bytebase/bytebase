@@ -6,7 +6,7 @@
       class="flex items-center gap-x-1 text-sm text-gray-600"
     >
       <input
-        :id="stats.engine"
+        :id="engineToJSON(stats.engine)"
         type="checkbox"
         :value="stats.engine"
         :checked="isCheckedEngine(stats.engine)"
@@ -27,7 +27,7 @@
       class="flex items-center gap-x-2 text-sm text-gray-600"
     >
       <input
-        :id="stats.level"
+        :id="sQLReviewRuleLevelToJSON(stats.level)"
         type="checkbox"
         :value="stats.level"
         :checked="isCheckedLevel(stats.level)"
@@ -41,29 +41,28 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { LEVEL_LIST, RuleTemplate } from "@/types";
+import { engineFromJSON, Engine, engineToJSON } from "@/types/proto/v1/common";
 import {
-  LEVEL_LIST,
-  RuleLevel,
-  RuleTemplate,
-  SchemaRuleEngineType,
-} from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
+  SQLReviewRuleLevel,
+  sQLReviewRuleLevelToJSON,
+} from "@/types/proto/v1/org_policy_service";
 import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
 
 type EngineTypeStats = {
-  engine: SchemaRuleEngineType;
+  engine: Engine;
   count: number;
 };
 type RuleLevelStats = {
-  level: RuleLevel;
+  level: SQLReviewRuleLevel;
   count: number;
 };
 
 const props = withDefaults(
   defineProps<{
     ruleList: RuleTemplate[];
-    isCheckedEngine?: (engine: SchemaRuleEngineType) => boolean;
-    isCheckedLevel?: (level: RuleLevel) => boolean;
+    isCheckedEngine?: (engine: Engine) => boolean;
+    isCheckedLevel?: (level: SQLReviewRuleLevel) => boolean;
   }>(),
   {
     isCheckedEngine: () => false,
@@ -72,12 +71,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (
-    event: "toggle-checked-engine",
-    engine: SchemaRuleEngineType,
-    on: boolean
-  ): void;
-  (event: "toggle-checked-level", level: RuleLevel, on: boolean): void;
+  (event: "toggle-checked-engine", engine: Engine, on: boolean): void;
+  (event: "toggle-checked-level", level: SQLReviewRuleLevel, on: boolean): void;
 }>();
 
 const engineList = computed((): EngineTypeStats[] => {
