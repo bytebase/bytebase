@@ -1,7 +1,7 @@
 <template>
   <div
     :id="domIDForItem(item)"
-    class="flex items-start justify-between hover:bg-gray-100 px-2 py-1 gap-x-1"
+    class="flex items-start justify-between hover:bg-gray-100 px-2 gap-x-1"
     :class="[isCurrentItem && 'bg-indigo-600/10']"
     @click="$emit('click', item, $event)"
   >
