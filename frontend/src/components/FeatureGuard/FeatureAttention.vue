@@ -111,6 +111,8 @@ const descriptionText = computed(() => {
 
   const startTrial = subscriptionStore.canUpgradeTrial
     ? t("subscription.upgrade-trial")
+    : subscriptionStore.isTrialing
+    ? ""
     : t("subscription.trial-for-days", {
         days: subscriptionStore.trialingDays,
       });

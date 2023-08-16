@@ -66,7 +66,10 @@
               </template>
             </i18n-t>
           </template>
-          <i18n-t v-else keypath="subscription.require-subscription">
+          <i18n-t
+            v-else-if="requiredPlan !== PlanType.FREE"
+            keypath="subscription.require-subscription"
+          >
             <template #requiredPlan>
               <span class="font-bold text-accent">
                 {{
