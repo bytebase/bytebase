@@ -75,7 +75,7 @@
           <NInput
             v-model:value="state.description"
             type="textarea"
-            placeholder="Role description"
+            :placeholder="$t('project.members.role-description')"
           />
         </div>
 

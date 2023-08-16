@@ -923,7 +923,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 }
 
 func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
-	instanceLimit := s.licenseService.GetPlanLimitValue(enterpriseAPI.PlanLimitMaximumInstance)
+	instanceLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumInstance)
 
 	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
 	if err != nil {

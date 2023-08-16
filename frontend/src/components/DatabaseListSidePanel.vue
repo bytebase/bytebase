@@ -38,6 +38,7 @@ import {
   extractProjectResourceName,
 } from "@/utils";
 import DatabaseGroupIcon from "./DatabaseGroupIcon.vue";
+import EngineIcon from "./Icon/EngineIcon.vue";
 
 const { t } = useI18n();
 const databaseV1Store = useDatabaseV1Store();
@@ -106,6 +107,9 @@ const databaseListByEnvironment = computed(() => {
         id: `bb.database.${database.uid}`,
         name: `${database.databaseName} (${database.instanceEntity.title})`,
         link: `/db/${databaseV1Slug(database)}`,
+        prefix: h(EngineIcon, {
+          engine: database.instanceEntity.engine,
+        }),
       });
     }
   }
@@ -166,6 +170,9 @@ const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
           id: `bb.project.${project.uid}.database.${db.databaseName}`,
           name: `${db.databaseName} (${db.instanceEntity.title})`,
           link: `/project/${projectV1Slug(project)}#databases`,
+          prefix: h(EngineIcon, {
+            engine: db.instanceEntity.engine,
+          }),
         })),
         ...databaseGroupList.map<BBOutlineItem>((dbGroup) => ({
           id: `bb.project.${project.uid}.databaseGroup.${dbGroup.name}`,

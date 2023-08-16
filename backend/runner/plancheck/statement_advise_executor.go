@@ -30,14 +30,14 @@ func NewStatementAdviseExecutor(
 	}
 }
 
-// StatementAdviseExecutor is the plan check statement statement advise executor.
+// StatementAdviseExecutor is the plan check statement advise executor.
 type StatementAdviseExecutor struct {
 	store          *store.Store
 	dbFactory      *dbfactory.DBFactory
 	licenseService enterpriseAPI.LicenseService
 }
 
-// Run will run the plan check statement advise executor once, and run its sub-advisor one-by-one.
+// Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
 func (e *StatementAdviseExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
 	if planCheckRun.Type != store.PlanCheckDatabaseStatementAdvise {
 		return nil, common.Errorf(common.Invalid, "unexpected plan check type in statement advise executor: %v", planCheckRun.Type)

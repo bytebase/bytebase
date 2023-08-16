@@ -50,6 +50,7 @@
           :include-all="true"
           :filter="(db) => instanceFilter(db.instanceEntity)"
           :disabled="loading"
+          :consistent-menu-width="false"
           @update:database="changeDatabaseId"
         />
         <NDatePicker

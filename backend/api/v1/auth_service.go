@@ -909,7 +909,7 @@ func generateRecoveryCodes(n int) ([]string, error) {
 }
 
 func (s *AuthService) userCountGuard(ctx context.Context) error {
-	userLimit := s.licenseService.GetPlanLimitValue(enterpriseAPI.PlanLimitMaximumUser)
+	userLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumUser)
 
 	count, err := s.store.CountPrincipal(ctx)
 	if err != nil {

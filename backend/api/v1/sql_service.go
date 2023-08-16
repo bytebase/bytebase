@@ -1662,6 +1662,9 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
+		if database == nil {
+			return nil, nil, nil, nil, errors.Errorf("database %q not found", databaseName)
+		}
 	}
 
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
@@ -1765,6 +1768,9 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 				return nil, nil
 			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+		if databaseMessage == nil {
+			return nil, nil
 		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
@@ -1950,6 +1956,9 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
+		if databaseMessage == nil {
+			return nil, nil
+		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
 		if err != nil {
@@ -2016,6 +2025,9 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 				return nil, nil
 			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+		if databaseMessage == nil {
+			return nil, nil
 		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
