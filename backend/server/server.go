@@ -1205,6 +1205,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to find test onboarding instance")
 	}
+	if testDatabase == nil {
+		return errors.Errorf("database %q not found", dbName)
+	}
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
 	// update issue later.
@@ -1260,6 +1263,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find prod onboarding instance")
+	}
+	if prodDatabase == nil {
+		return errors.Errorf("database %q not found", dbName)
 	}
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
