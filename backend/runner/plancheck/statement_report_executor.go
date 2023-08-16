@@ -10,7 +10,6 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -157,22 +156,22 @@ func reportStatementTypeForOracle(databaseName string, schemaName string, statem
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					// TODO: support report statement type for oracle
-					StatementType: "UNKNOWN",
-					AffectedRows:  0,
+					StatementType:    "UNKNOWN",
+					AffectedRows:     0,
+					ChangedResources: changedResources,
 				},
 			},
-			ChangedResources: string(changedResources),
 		})
 	}
 	return results, nil
 }
 
-func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) ([]byte, error) {
+func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) (*storepb.ChangedResources, error) {
 	resources, err := parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
 	if err != nil {
 		return nil, err
 	}
-	return marshalChangedResources(resources)
+	return convertToChangedResources(resources), nil
 }
 
 func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charset, collation string) ([]*storepb.PlanCheckRunResult_Result, error) {
@@ -243,15 +242,15 @@ func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charse
 			continue
 		}
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
-		var changedResources []byte
+		var changedResources *storepb.ChangedResources
 		if !isDML(sqlType) {
 			if engine != db.TiDB {
 				changedResources, err = getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
+				if err != nil {
+					log.Error("failed to get statement changed resources", zap.Error(err))
+				}
 			} else {
-				changedResources, err = marshalChangedResources(resources)
-			}
-			if err != nil {
-				log.Error("failed to get statement changed resources", zap.Error(err))
+				changedResources = convertToChangedResources(resources)
 			}
 		}
 
@@ -262,11 +261,11 @@ func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charse
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					// TODO: support report statement type for oracle
-					StatementType: sqlType,
-					AffectedRows:  0,
+					StatementType:    sqlType,
+					AffectedRows:     0,
+					ChangedResources: changedResources,
 				},
 			},
-			ChangedResources: string(changedResources),
 		})
 	}
 
@@ -282,8 +281,8 @@ func isDML(tp string) bool {
 	}
 }
 
-func marshalChangedResources(resources []parser.SchemaResource) ([]byte, error) {
-	meta := storepb.ChangedResources{}
+func convertToChangedResources(resources []parser.SchemaResource) *storepb.ChangedResources {
+	meta := &storepb.ChangedResources{}
 	// resources is ordered by (db, schema, table)
 	for _, resource := range resources {
 		if len(meta.Databases) == 0 || meta.Databases[len(meta.Databases)-1].Name != resource.Database {
@@ -296,15 +295,15 @@ func marshalChangedResources(resources []parser.SchemaResource) ([]byte, error) 
 		schema := database.Schemas[len(database.Schemas)-1]
 		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{Name: resource.Table})
 	}
-	return protojson.Marshal(&meta)
+	return meta
 }
 
-func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]byte, error) {
+func getStatementChangedResourcesForMySQL(currentDatabase, statement string) (*storepb.ChangedResources, error) {
 	resources, err := parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
 	if err != nil {
 		return nil, err
 	}
-	return marshalChangedResources(resources)
+	return convertToChangedResources(resources), nil
 }
 
 func reportStatementTypeForPostgres(database, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
@@ -336,21 +335,18 @@ func reportStatementTypeForPostgres(database, statement string) ([]*storepb.Plan
 				resources = nil
 			}
 		}
-		changedResource, err := marshalChangedResources(resources)
-		if err != nil {
-			log.Error("failed to marshal changed resources", zap.Error(err))
-		}
+		changedResource := convertToChangedResources(resources)
 		results = append(results, &storepb.PlanCheckRunResult_Result{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
 			Code:   common.Ok.Int64(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementType: sqlType,
-					AffectedRows:  0,
+					StatementType:    sqlType,
+					AffectedRows:     0,
+					ChangedResources: changedResource,
 				},
 			},
-			ChangedResources: string(changedResource),
 		})
 	}
 
