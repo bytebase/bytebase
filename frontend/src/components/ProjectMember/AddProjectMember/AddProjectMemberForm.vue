@@ -91,7 +91,7 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import { DatabaseSelect } from "@/components/v2";
 import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 import { useUserStore } from "@/store";
-import { ComposedProject, DatabaseResource } from "@/types";
+import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle } from "@/utils";
@@ -226,12 +226,12 @@ watch(
         "YYYY-MM-DD"
       )}~${expiresAt.format("YYYY-MM-DD")}`;
     }
-    if (state.role === "roles/QUERIER") {
+    if (state.role === PresetRoleType.QUERIER) {
       if (state.databaseResourceCondition) {
         expression.push(state.databaseResourceCondition);
       }
     }
-    if (state.role === "roles/EXPORTER") {
+    if (state.role === PresetRoleType.EXPORTER) {
       if (state.databaseResourceCondition) {
         expression.push(state.databaseResourceCondition);
       }
@@ -255,4 +255,17 @@ watch(
     deep: true,
   }
 );
+
+defineExpose({
+  allowConfirm: computed(() => {
+    if (state.userUidList.length <= 0) {
+      return false;
+    }
+    if ((!state.expireDays && state.expireDays !== 0) || state.expireDays < 0) {
+      return false;
+    }
+    // TODO: use parsed expression to check if the expression is valid.
+    return true;
+  }),
+});
 </script>

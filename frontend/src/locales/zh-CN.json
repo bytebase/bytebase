@@ -394,6 +394,10 @@
     },
     "attention": {
       "default": "特别注意"
+    },
+    "confirm-button": {
+      "sure-to-delete": "确定要删除吗？",
+      "cannot-undo": "此操作无法撤销。"
     }
   },
   "settings": {
@@ -1564,6 +1568,7 @@
       "select-users": "选择用户",
       "assign-role": "分配角色",
       "never-expires": "永不过期",
+      "role-description": "角色描述",
       "role-never-expires": "此角色没有过期时间。",
       "add-more": "增加更多",
       "role-name": "角色名称",
