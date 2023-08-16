@@ -477,7 +477,7 @@ const extractTableName = (databaseResource?: DatabaseResource) => {
 
 const extractExpiration = (expiration?: Date) => {
   if (!expiration) {
-    return "*";
+    return t("project.members.never-expires");
   }
   return expiration.toLocaleString();
 };
