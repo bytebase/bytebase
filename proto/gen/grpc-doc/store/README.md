@@ -107,6 +107,7 @@
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
+    - [PlanCheckRunConfig.PitrConfig](#bytebase-store-PlanCheckRunConfig-PitrConfig)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
@@ -1652,8 +1653,26 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheet_id | [int32](#int32) |  |  |
+| instance_id | [int32](#int32) |  |  |
 | database_id | [int32](#int32) |  |  |
 | change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
+| pitr_config | [PlanCheckRunConfig.PitrConfig](#bytebase-store-PlanCheckRunConfig-PitrConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig-PitrConfig"></a>
+
+### PlanCheckRunConfig.PitrConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target_instance_id | [int32](#int32) |  |  |
+| target_database_name | [string](#string) |  |  |
 
 
 
