@@ -396,6 +396,10 @@
     },
     "attention": {
       "default": "Atención requerida"
+    },
+    "confirm-button": {
+      "sure-to-delete": "¿Estás seguro de que deseas eliminar?",
+      "cannot-undo": "Esta acción no se puede deshacer."
     }
   },
   "settings": {
@@ -1567,6 +1571,7 @@
       "select-users": "Seleccionar usuarios",
       "assign-role": "Asignar rol",
       "never-expires": "Nunca caduca",
+      "role-description": "El rol de un miembro determina qué puede hacer en el proyecto.",
       "role-never-expires": "Este rol nunca expira.",
       "add-more": "Más información",
       "role-name": "Nombre del rol",

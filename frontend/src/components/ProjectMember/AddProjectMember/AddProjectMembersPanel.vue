@@ -17,6 +17,7 @@
       >
         <AddProjectMemberForm
           v-if="binding"
+          ref="formRefs"
           class="w-full border-b mb-4 pb-4"
           :project="project"
           :binding="binding"
@@ -45,7 +46,7 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NDrawer, NDrawerContent, NButton } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
@@ -72,6 +73,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   bindings: [Binding.fromPartial({})],
 });
+const formRefs = ref<InstanceType<typeof AddProjectMemberForm>[]>([]);
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
@@ -80,6 +82,16 @@ const filteredBindings = computed(() => {
 });
 
 const allowConfirm = computed(() => {
+  // Check if all forms are completed.
+  for (const form of formRefs.value) {
+    if (!form) {
+      continue;
+    }
+    if (!form.allowConfirm) {
+      return false;
+    }
+  }
+
   for (const binding of filteredBindings.value) {
     if (binding.members.length === 0 || binding.role === "") {
       return false;
