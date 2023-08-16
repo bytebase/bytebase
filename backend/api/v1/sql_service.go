@@ -2222,7 +2222,7 @@ func (s *SQLService) checkQueryRights(
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to check workspace IAM policy: %v", err)
 			}
-			// If there is data access control in the environment, we should skip the project IAM policy checking.
+			// When checks passed for the role and environment, we will skip the project IAM policy checking.
 			if result {
 				continue
 			}
