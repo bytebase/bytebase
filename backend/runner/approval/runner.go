@@ -578,6 +578,9 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get database")
 			}
+			if database == nil {
+				return 0, store.RiskSourceUnknown, false, errors.Errorf("database %q not found", databaseName)
+			}
 			databases = append(databases, database)
 		}
 	}
