@@ -36,7 +36,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    size?: "small" | "tiny";
+    size?: "small" | "tiny" | "medium" | "large";
     disabled?: boolean;
     supportFormats: ExportFormat[];
   }>(),
