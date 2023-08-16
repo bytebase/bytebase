@@ -41,8 +41,6 @@ const ICON_PATH_MAP = new Map([
   ],
 ]);
 const icon = computed(() => {
-  console.log(`props.engine: ${props.engine}`);
-  console.log(ICON_PATH_MAP.get(props.engine));
   return ICON_PATH_MAP.get(props.engine);
 });
 </script>
