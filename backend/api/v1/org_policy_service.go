@@ -310,6 +310,9 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())
 		}
+		if database == nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		}
 
 		return api.PolicyResourceTypeDatabase, &database.UID, nil
 	}
