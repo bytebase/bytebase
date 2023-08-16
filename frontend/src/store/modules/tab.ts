@@ -4,13 +4,13 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, toRef, watch } from "vue";
 import { TabInfo, CoreTabInfo, AnyTabInfo, TabMode } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   getDefaultTab,
   INITIAL_TAB,
   isTempTab,
   isSimilarTab,
   WebStorageHelper,
+  instanceV1AllowsCrossDatabaseQuery,
 } from "@/utils";
 import { useWebTerminalV1Store } from "./v1";
 import { useInstanceV1Store } from "./v1/instance";
@@ -65,7 +65,7 @@ export const useTabStore = defineStore("tab", () => {
       return true;
     }
     const instance = instanceStore.getInstanceByUID(instanceId);
-    if (instance.engine === Engine.MYSQL || instance.engine === Engine.TIDB) {
+    if (instanceV1AllowsCrossDatabaseQuery(instance)) {
       // Connecting to instance directly.
       return false;
     }
