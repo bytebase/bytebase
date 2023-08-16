@@ -1741,8 +1741,10 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| code | [int64](#int64) |  |  |
 | statement_type | [string](#string) |  |  |
 | affected_rows | [int64](#int64) |  |  |
+| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
 
 
