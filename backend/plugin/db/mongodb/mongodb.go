@@ -170,7 +170,7 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	simpleStatement := false
 	if _, err := parser.ParseMongo(statement); err == nil {
 		simpleStatement = true
@@ -183,7 +183,11 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 
 	evalArg := statement
 	if simpleStatement {
-		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()))} else {print(EJSON.stringify(a))}", strings.TrimRight(statement, " \t\n\r\f;"))
+		limit := ""
+		if queryContext.Limit > 0 {
+			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
+		}
+		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s))} else {print(EJSON.stringify(a))}", strings.TrimRight(statement, " \t\n\r\f;"), limit)
 	}
 	mongoshArgs := []string{
 		connectionURI,

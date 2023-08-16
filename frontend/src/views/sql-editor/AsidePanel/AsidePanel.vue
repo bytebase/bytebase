@@ -6,7 +6,12 @@
       :tabs-padding="8"
     >
       <NTabPane name="databases" :tab="$t('common.databases')">
-        <NTabs v-model:value="databaseTab" type="segment" class="h-full">
+        <NTabs
+          v-model:value="databaseTab"
+          type="segment"
+          size="small"
+          class="h-full"
+        >
           <NTabPane name="projects" :tab="$t('common.projects')">
             <Splitpanes
               horizontal
@@ -53,7 +58,12 @@
         </NTabs>
       </NTabPane>
       <NTabPane name="sheets" :tab="$t('sheet.sheets')">
-        <NTabs v-model:value="sheetTab" type="segment" class="h-full">
+        <NTabs
+          v-model:value="sheetTab"
+          size="small"
+          type="segment"
+          class="h-full"
+        >
           <NTabPane name="my" :tab="$t('sheet.mine')">
             <SheetList view="my" />
           </NTabPane>
