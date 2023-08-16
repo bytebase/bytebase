@@ -186,7 +186,7 @@
 }
 
 .radio-set-row {
-  @apply flex flex-row items-center space-x-4;
+  @apply flex flex-row items-center gap-x-4;
 }
 
 .radio-set-col {
