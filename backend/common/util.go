@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
@@ -232,4 +233,49 @@ func ValidatePhone(phone string) error {
 		return errors.New("invalid phone number")
 	}
 	return nil
+}
+
+// SanitizeUTF8String returns a copy of the string s with each run of invalid or unprintable UTF-8 byte sequences
+// replaced by its hexadecimal representation string.
+func SanitizeUTF8String(s string) string {
+	var b strings.Builder
+
+	for i, c := range s {
+		if c != utf8.RuneError {
+			continue
+		}
+
+		_, wid := utf8.DecodeRuneInString(s[i:])
+		if wid == 1 {
+			b.Grow(len(s))
+			_, _ = b.WriteString(s[:i])
+			s = s[i:]
+			break
+		}
+	}
+
+	// Fast path for unchanged input
+	if b.Cap() == 0 { // didn't call b.Grow above
+		return s
+	}
+
+	for i := 0; i < len(s); {
+		c := s[i]
+		// U+0000-U+0019 are control characters
+		if 0x20 <= c && c < utf8.RuneSelf {
+			i++
+			_ = b.WriteByte(c)
+			continue
+		}
+		_, wid := utf8.DecodeRuneInString(s[i:])
+		if wid == 1 {
+			i++
+			_, _ = b.WriteString(fmt.Sprintf("\\x%02x", c))
+			continue
+		}
+		_, _ = b.WriteString(s[i : i+wid])
+		i += wid
+	}
+
+	return b.String()
 }
