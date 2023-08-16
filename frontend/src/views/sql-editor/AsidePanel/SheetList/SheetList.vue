@@ -3,6 +3,7 @@
     <div class="px-2 py-2 gap-x-1 flex items-center">
       <NInput
         v-model:value="keyword"
+        size="small"
         :disabled="isLoading"
         :placeholder="$t('sheet.search-sheets')"
         :clearable="true"
