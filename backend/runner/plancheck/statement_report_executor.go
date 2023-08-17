@@ -152,40 +152,38 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 		}, nil
 	}
 
-	var results []*storepb.PlanCheckRunResult_Result
+	var changedResources []parser.SchemaResource
 
 	for _, stmt := range singleSQLs {
 		if stmt.Empty || stmt.Text == "" {
 			continue
 		}
-
-		changedResources, err := getChangedResourcesForOracle(databaseName, schemaName, stmt.Text)
+		resources, err := getChangedResourcesForOracle(databaseName, schemaName, stmt.Text)
 		if err != nil {
 			log.Error("failed to extract changed resources", zap.String("statement", stmt.Text), zap.Error(err))
+		} else {
+			changedResources = append(changedResources, resources...)
 		}
-		results = append(results, &storepb.PlanCheckRunResult_Result{
+	}
+
+	return []*storepb.PlanCheckRunResult_Result{
+		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
 			Code:   common.Ok.Int64(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					// TODO: support report statement type and affected rows for oracle
-					StatementType:    "UNKNOWN",
+					StatementTypes:   nil,
 					AffectedRows:     0,
-					ChangedResources: changedResources,
+					ChangedResources: convertToChangedResources(changedResources),
 				},
 			},
-		})
-	}
-	return results, nil
+		},
+	}, nil
 }
 
-func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) (*storepb.ChangedResources, error) {
-	resources, err := parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
-	if err != nil {
-		return nil, err
-	}
-	return convertToChangedResources(resources), nil
+func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) ([]parser.SchemaResource, error) {
+	return parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
 }
 
 func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, databaseName, statement, charset, collation string) ([]*storepb.PlanCheckRunResult_Result, error) {
