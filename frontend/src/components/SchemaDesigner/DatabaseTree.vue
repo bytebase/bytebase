@@ -376,12 +376,18 @@ const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
         return;
       }
 
-      const matchPattern = new RegExp(`^${getOriginalName(table.name)}(_copy[0-9]{0,}){0,1}$`);
-      const copiedTableNames = tableList.value.filter((table) => {
-        return matchPattern.test(table.name);
-      }).sort((t1, t2) => {
-        return extractDuplicateNumber(t1.name) - extractDuplicateNumber(t2.name);
-      });
+      const matchPattern = new RegExp(
+        `^${getOriginalName(table.name)}` + "(_copy[0-9]{0,}){0,1}$"
+      );
+      const copiedTableNames = tableList.value
+        .filter((table) => {
+          return matchPattern.test(table.name);
+        })
+        .sort((t1, t2) => {
+          return (
+            extractDuplicateNumber(t1.name) - extractDuplicateNumber(t2.name)
+          );
+        });
       const targetName = copiedTableNames.slice(-1)[0]?.name ?? table.name;
 
       const newTable: Table = {
