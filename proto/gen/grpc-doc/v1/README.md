@@ -5458,6 +5458,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 | page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
+| query | [string](#string) |  | Query is the query statement. |
 | filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
 
 
