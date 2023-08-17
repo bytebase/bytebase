@@ -300,7 +300,8 @@
       "lgtm": "LGTM",
       "pitr": "PITR",
       "affected-rows": "影响行数",
-      "sql-type": "SQL 类型"
+      "sql-type": "SQL 类型",
+      "summary-report": "概要报告"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
     "comment": "评论",
