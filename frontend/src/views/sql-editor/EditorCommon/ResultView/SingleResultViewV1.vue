@@ -11,7 +11,7 @@
           size="small"
           type="text"
           :placeholder="t('sql-editor.search-results')"
-          @update:value="debouncedUpdateKeyword"
+          @update:value="updateKeyword"
         >
           <template #prefix>
             <heroicons-outline:search class="h-5 w-5 text-gray-300" />
@@ -240,6 +240,10 @@ const allowToExportData = computed(() => {
 const debouncedUpdateKeyword = useDebounceFn((value: string) => {
   keyword.value = value;
 }, 200);
+const updateKeyword = (value: string) => {
+  state.search = value;
+  debouncedUpdateKeyword(value);
+};
 
 const columns = computed(() => {
   const columns = props.result.columnNames;
