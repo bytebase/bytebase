@@ -142,6 +142,8 @@ export interface SearchIssuesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** Query is the query statement. */
+  query: string;
   /** Filter is used to filter issues returned in the list. */
   filter: string;
 }
@@ -930,7 +932,7 @@ export const UpdateIssueRequest = {
 };
 
 function createBaseSearchIssuesRequest(): SearchIssuesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
+  return { parent: "", pageSize: 0, pageToken: "", query: "", filter: "" };
 }
 
 export const SearchIssuesRequest = {
@@ -944,8 +946,11 @@ export const SearchIssuesRequest = {
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
     }
+    if (message.query !== "") {
+      writer.uint32(34).string(message.query);
+    }
     if (message.filter !== "") {
-      writer.uint32(34).string(message.filter);
+      writer.uint32(42).string(message.filter);
     }
     return writer;
   },
@@ -983,6 +988,13 @@ export const SearchIssuesRequest = {
             break;
           }
 
+          message.query = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.filter = reader.string();
           continue;
       }
@@ -999,6 +1011,7 @@ export const SearchIssuesRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      query: isSet(object.query) ? String(object.query) : "",
       filter: isSet(object.filter) ? String(object.filter) : "",
     };
   },
@@ -1008,6 +1021,7 @@ export const SearchIssuesRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.query !== undefined && (obj.query = message.query);
     message.filter !== undefined && (obj.filter = message.filter);
     return obj;
   },
@@ -1021,6 +1035,7 @@ export const SearchIssuesRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.query = object.query ?? "";
     message.filter = object.filter ?? "";
     return message;
   },
