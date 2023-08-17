@@ -206,7 +206,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 	}
 
 	sqlTypeSet := map[string]struct{}{}
-	var totalAffectedRows int64 = 0
+	var totalAffectedRows int64
 	var changedResources []parser.SchemaResource
 
 	p := tidbparser.New()
@@ -322,7 +322,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 	}
 
 	sqlTypeSet := map[string]struct{}{}
-	var totalAffectedRows int64 = 0
+	var totalAffectedRows int64
 	var changedResources []parser.SchemaResource
 
 	for _, stmt := range stmts {
