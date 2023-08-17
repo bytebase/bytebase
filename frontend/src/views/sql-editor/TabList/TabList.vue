@@ -126,7 +126,10 @@ const handleRemoveTab = async (tab: TabInfo, index: number) => {
   }
 
   function remove(index: number) {
-    if (tabStore.tabList.length <= 1) return;
+    if (tabStore.tabList.length === 1) {
+      // Ensure at least 1 tab
+      tabStore.addTab();
+    }
 
     tabStore.removeTab(tab);
 
