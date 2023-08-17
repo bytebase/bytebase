@@ -2,6 +2,7 @@ package plancheck
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
-	backendutils "github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -89,15 +89,29 @@ func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.P
 		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetID)
 	}
 
-	materials := backendutils.GetSecretMapFromDatabaseMessage(database)
+	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := backendutils.RenderStatement(statement, materials)
+	renderedStatement := utils.RenderStatement(statement, materials)
 
 	switch instance.Engine {
 	case db.Postgres:
-		return reportStatementTypeForPostgres(database.DatabaseName, renderedStatement)
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		sqlDB := driver.GetDB()
+
+		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement)
 	case db.MySQL, db.OceanBase:
-		return reportStatementTypeForMySQL(instance.Engine, database.DatabaseName, renderedStatement, charset, collation)
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		sqlDB := driver.GetDB()
+
+		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, charset, collation)
 	case db.Oracle:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -106,7 +120,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.P
 		} else {
 			schema = database.DatabaseName
 		}
-		return reportStatementTypeForOracle(database.DatabaseName, schema, renderedStatement)
+		return reportForOracle(database.DatabaseName, schema, renderedStatement)
 	default:
 		return []*storepb.PlanCheckRunResult_Result{
 			{
@@ -119,7 +133,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.P
 	}
 }
 
-func reportStatementTypeForOracle(databaseName string, schemaName string, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForOracle(databaseName string, schemaName string, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -155,7 +169,7 @@ func reportStatementTypeForOracle(databaseName string, schemaName string, statem
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					// TODO: support report statement type for oracle
+					// TODO: support report statement type and affected rows for oracle
 					StatementType:    "UNKNOWN",
 					AffectedRows:     0,
 					ChangedResources: changedResources,
@@ -174,7 +188,7 @@ func getChangedResourcesForOracle(databaseName string, schemaName string, statem
 	return convertToChangedResources(resources), nil
 }
 
-func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charset, collation string) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, databaseName, statement, charset, collation string) ([]*storepb.PlanCheckRunResult_Result, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -244,7 +258,7 @@ func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charse
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
 		var changedResources *storepb.ChangedResources
 		if !isDML(sqlType) {
-			if engine != db.TiDB {
+			if dbType != db.TiDB {
 				changedResources, err = getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
 				if err != nil {
 					log.Error("failed to get statement changed resources", zap.Error(err))
@@ -254,15 +268,20 @@ func reportStatementTypeForMySQL(engine db.Type, databaseName, statement, charse
 			}
 		}
 
+		affectedRows, err := getAffectedRowsForMysql(ctx, dbType, sqlDB, root[0])
+		if err != nil {
+			log.Error("failed to get affected rows for mysql", zap.String("database", databaseName), zap.Error(err))
+			affectedRows = 0
+		}
+
 		results = append(results, &storepb.PlanCheckRunResult_Result{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
 			Code:   common.Ok.Int64(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					// TODO: support report statement type for oracle
 					StatementType:    sqlType,
-					AffectedRows:     0,
+					AffectedRows:     affectedRows,
 					ChangedResources: changedResources,
 				},
 			},
@@ -306,7 +325,7 @@ func getStatementChangedResourcesForMySQL(currentDatabase, statement string) (*s
 	return convertToChangedResources(resources), nil
 }
 
-func reportStatementTypeForPostgres(database, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
 	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -336,6 +355,13 @@ func reportStatementTypeForPostgres(database, statement string) ([]*storepb.Plan
 			}
 		}
 		changedResource := convertToChangedResources(resources)
+
+		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
+		if err != nil {
+			log.Error("failed to get affected rows for postgres", zap.String("database", database), zap.Error(err))
+			rowCount = 0
+		}
+
 		results = append(results, &storepb.PlanCheckRunResult_Result{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
 			Code:   common.Ok.Int64(),
@@ -343,7 +369,7 @@ func reportStatementTypeForPostgres(database, statement string) ([]*storepb.Plan
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementType:    sqlType,
-					AffectedRows:     0,
+					AffectedRows:     rowCount,
 					ChangedResources: changedResource,
 				},
 			},
