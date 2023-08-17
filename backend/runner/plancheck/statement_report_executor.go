@@ -78,7 +78,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.P
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Code:    common.Ok.Int64(),
-				Title:   "Large SQL review policy is disabled",
+				Title:   "Report for large SQL is not supported",
 				Content: "",
 			},
 		}, nil
