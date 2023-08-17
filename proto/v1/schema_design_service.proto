@@ -40,6 +40,14 @@ service SchemaDesignService {
     option (google.api.method_signature) = "schemaDesign,update_mask";
   }
 
+  rpc MergeSchemaDesign(MergeSchemaDesignRequest) returns (SchemaDesign) {
+    option (google.api.http) = {
+      post: "/v1/{schema_design.name=projects/*/schemaDesigns/*}:merge"
+      body: "schema_design"
+    };
+    option (google.api.method_signature) = "schemaDesign";
+  }
+
   rpc ParseSchemaString(ParseSchemaStringRequest) returns (ParseSchemaStringResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:parseSchemaString"
@@ -171,6 +179,11 @@ message UpdateSchemaDesignRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+}
+
+message MergeSchemaDesignRequest {
+  // The personal draft schema design to merge.
+  SchemaDesign schema_design = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ParseSchemaStringRequest {
