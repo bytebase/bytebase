@@ -139,12 +139,12 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, groupBy } from "lodash-es";
 import { computed, reactive, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
-import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
+import { PayloadForEngine } from "@/components/SQLReview/components/RuleConfigComponents";
 import { EnvironmentV1Name } from "@/components/v2";
 import {
   pushNotification,
@@ -154,16 +154,17 @@ import {
 } from "@/store";
 import {
   unknown,
-  RuleLevel,
   RuleTemplate,
   SQLReviewPolicy,
-  SchemaRuleEngineType,
   RuleType,
+  SchemaPolicyRule,
   TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
   ruleIsAvailableInSubscription,
   convertRuleTemplateToPolicyRule,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { idFromSlug, hasWorkspacePermissionV1 } from "@/utils";
 import {
   payloadValueListToComponentList,
@@ -184,8 +185,8 @@ interface LocalState {
   showEnableModal: boolean;
   selectedCategory?: string;
   editMode: boolean;
-  checkedEngine: Set<SchemaRuleEngineType>;
-  checkedLevel: Set<RuleLevel>;
+  checkedEngine: Set<Engine>;
+  checkedLevel: Set<SQLReviewRuleLevel>;
   ruleList: RuleTemplate[];
   rulesUpdated: boolean;
   updating: boolean;
@@ -202,8 +203,8 @@ const state = reactive<LocalState>({
   showDisableModal: false,
   showEnableModal: false,
   editMode: false,
-  checkedEngine: new Set<SchemaRuleEngineType>(),
-  checkedLevel: new Set<RuleLevel>(),
+  checkedEngine: new Set<Engine>(),
+  checkedLevel: new Set<SQLReviewRuleLevel>(),
   ruleList: [],
   rulesUpdated: false,
   updating: false,
@@ -240,23 +241,24 @@ const ruleListOfPolicy = computed((): RuleTemplate[] => {
     new Map<RuleType, RuleTemplate>()
   );
 
-  for (const policyRule of reviewPolicy.value.ruleList) {
-    const rule = ruleTemplateMap.get(policyRule.type);
+  const groupByRule = groupBy(reviewPolicy.value.ruleList, (rule) => rule.type);
+
+  for (const [type, ruleList] of Object.entries(groupByRule)) {
+    const rule = ruleTemplateMap.get(type as RuleType);
     if (!rule) {
       continue;
     }
 
-    const data = convertPolicyRuleToRuleTemplate(policyRule, rule);
+    const data = convertPolicyRuleToRuleTemplate(ruleList, rule);
     if (data) {
       ruleTemplateList.push(data);
     }
-    ruleTemplateMap.delete(policyRule.type);
   }
 
   for (const rule of ruleTemplateMap.values()) {
     ruleTemplateList.push({
       ...rule,
-      level: RuleLevel.DISABLED,
+      level: SQLReviewRuleLevel.DISABLED,
     });
   }
 
@@ -317,12 +319,11 @@ const markChange = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
   state.rulesUpdated = true;
 };
 
-const onPayloadChange = (rule: RuleTemplate, data: PayloadValueType[]) => {
-  const componentList = payloadValueListToComponentList(rule, data);
-  markChange(rule, { componentList });
+const onPayloadChange = (rule: RuleTemplate, data: PayloadForEngine) => {
+  markChange(rule, payloadValueListToComponentList(rule, data));
 };
 
-const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
   markChange(rule, { level });
 };
 
@@ -337,18 +338,18 @@ const onCancelChanges = () => {
 
 const onApplyChanges = async () => {
   const policy = reviewPolicy.value;
-  const upsert = {
-    ruleList: state.ruleList.map((rule) =>
-      convertRuleTemplateToPolicyRule(rule)
-    ),
-  };
+
+  const ruleList: SchemaPolicyRule[] = [];
+  for (const rule of state.ruleList) {
+    ruleList.push(...convertRuleTemplateToPolicyRule(rule));
+  }
 
   state.updating = true;
   try {
     await useSQLReviewStore().updateReviewPolicy({
       id: policy.id,
       name: policy.name,
-      ...upsert,
+      ruleList,
     });
     state.rulesUpdated = false;
     pushNotification({
