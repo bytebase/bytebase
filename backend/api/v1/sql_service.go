@@ -928,9 +928,31 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	allowExport := false
-	// Check if the user has permission to export the query.
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
-		allowExport = true
+	// Check if the environment is open for export privileges for enterprise version.
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+			ResourceID: &database.EffectiveEnvironmentID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get environment %s: %v", database.EffectiveEnvironmentID, err)
+		}
+		if environment == nil {
+			return nil, status.Errorf(codes.NotFound, "environment %s not found", database.EffectiveEnvironmentID)
+		}
+		// Check if the environment is open for export privileges.
+		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to check workspace IAM policy: %v", err)
+		}
+		if result {
+			allowExport = true
+		}
+	}
+	// If the environment is not open for export privileges, check if the user has permission to export the query.
+	if !allowExport {
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
+			allowExport = true
+		}
 	}
 
 	response := &v1pb.QueryResponse{
@@ -2219,31 +2241,6 @@ func (s *SQLService) checkQueryRights(
 	}
 
 	for _, resource := range resourceList {
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instance.ResourceID,
-			DatabaseName: &resource.Database,
-		})
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to get database: %v", err)
-		}
-		if database == nil {
-			return status.Errorf(codes.NotFound, "database not found: %s", resource.Database)
-		}
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to get environment: %v", err)
-		}
-		if environment != nil {
-			result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
-			if err != nil {
-				return status.Errorf(codes.Internal, "failed to check workspace IAM policy: %v", err)
-			}
-			// When checks passed for the role and environment, we will skip the project IAM policy checking.
-			if result {
-				continue
-			}
-		}
-
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
 			"request.time":      time.Now(),
