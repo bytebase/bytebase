@@ -230,12 +230,12 @@ const renderAvatar = (user: User) => {
 const renderLabel = (option: SelectOption) => {
   const { user } = option as UserSelectOption;
   const avatar = renderAvatar(user);
-  const title = h("span", {}, user.title);
-  const email = h(
-    "span",
-    { class: "text-sm text-gray-400" },
-    `(${user.email})`
-  );
+  const children = [h("span", {}, user.title)];
+  if (user.name !== UNKNOWN_USER_NAME) {
+    children.push(
+      h("span", { class: "text-sm text-gray-400" }, `(${user.email})`)
+    );
+  }
   return h(
     "div",
     {
@@ -248,7 +248,7 @@ const renderLabel = (option: SelectOption) => {
         {
           class: "flex flex-row justify-start items-center gap-x-0.5 truncate",
         },
-        [title, email]
+        children
       ),
     ]
   );
