@@ -1,6 +1,7 @@
 /* eslint-disable */
 import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
+import { ChangedResources } from "./instance_change_history";
 
 export const protobufPackage = "bytebase.store";
 
@@ -122,8 +123,10 @@ export function planCheckRunResult_Result_StatusToJSON(object: PlanCheckRunResul
 }
 
 export interface PlanCheckRunResult_Result_SqlSummaryReport {
+  code: number;
   statementType: string;
   affectedRows: number;
+  changedResources?: ChangedResources | undefined;
 }
 
 export interface PlanCheckRunResult_Result_SqlReviewReport {
@@ -534,16 +537,22 @@ export const PlanCheckRunResult_Result = {
 };
 
 function createBasePlanCheckRunResult_Result_SqlSummaryReport(): PlanCheckRunResult_Result_SqlSummaryReport {
-  return { statementType: "", affectedRows: 0 };
+  return { code: 0, statementType: "", affectedRows: 0, changedResources: undefined };
 }
 
 export const PlanCheckRunResult_Result_SqlSummaryReport = {
   encode(message: PlanCheckRunResult_Result_SqlSummaryReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.code !== 0) {
+      writer.uint32(8).int64(message.code);
+    }
     if (message.statementType !== "") {
-      writer.uint32(10).string(message.statementType);
+      writer.uint32(18).string(message.statementType);
     }
     if (message.affectedRows !== 0) {
-      writer.uint32(16).int64(message.affectedRows);
+      writer.uint32(24).int64(message.affectedRows);
+    }
+    if (message.changedResources !== undefined) {
+      ChangedResources.encode(message.changedResources, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -556,18 +565,32 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.code = longToNumber(reader.int64() as Long);
+          continue;
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.statementType = reader.string();
           continue;
-        case 2:
-          if (tag !== 16) {
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
           message.affectedRows = longToNumber(reader.int64() as Long);
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.changedResources = ChangedResources.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -580,15 +603,20 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
 
   fromJSON(object: any): PlanCheckRunResult_Result_SqlSummaryReport {
     return {
+      code: isSet(object.code) ? Number(object.code) : 0,
       statementType: isSet(object.statementType) ? String(object.statementType) : "",
       affectedRows: isSet(object.affectedRows) ? Number(object.affectedRows) : 0,
+      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
   },
 
   toJSON(message: PlanCheckRunResult_Result_SqlSummaryReport): unknown {
     const obj: any = {};
+    message.code !== undefined && (obj.code = Math.round(message.code));
     message.statementType !== undefined && (obj.statementType = message.statementType);
     message.affectedRows !== undefined && (obj.affectedRows = Math.round(message.affectedRows));
+    message.changedResources !== undefined &&
+      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
     return obj;
   },
 
@@ -600,8 +628,12 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
     object: DeepPartial<PlanCheckRunResult_Result_SqlSummaryReport>,
   ): PlanCheckRunResult_Result_SqlSummaryReport {
     const message = createBasePlanCheckRunResult_Result_SqlSummaryReport();
+    message.code = object.code ?? 0;
     message.statementType = object.statementType ?? "";
     message.affectedRows = object.affectedRows ?? 0;
+    message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
+      ? ChangedResources.fromPartial(object.changedResources)
+      : undefined;
     return message;
   },
 };
