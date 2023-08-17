@@ -68,12 +68,15 @@
 <script lang="ts" setup>
 import { escape, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
+import { v1 as uuidv1 } from "uuid";
 import { computed, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
+import DuplicateIcon from "~icons/heroicons-outline/document-duplicate";
 import TableIcon from "~icons/heroicons-outline/table-cells";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { generateUniqueTabId } from "@/store";
+import { Table } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "./Modals/SchemaNameModal.vue";
@@ -349,20 +352,92 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
 
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
-  const icon = h(EllipsisIcon, {
+  const menuIcon = h(EllipsisIcon, {
     class: "w-4 h-auto text-gray-600",
     onClick: (e) => {
       handleShowDropdown(e, treeNode);
     },
   });
+  const duplicateIcon = h(DuplicateIcon, {
+    class: "w-4 h-auto mr-2 text-gray-600",
+    onClick: (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      const schema = schemaList.value.find(
+        (schema) => schema.id === treeNode.schemaId
+      );
+      if (!schema) {
+        return;
+      }
+      const table = tableList.value.find((t) => t.id === treeNode.tableId);
+      if (!table) {
+        return;
+      }
+
+      const newTable: Table = {
+        ...table,
+        id: uuidv1(),
+        name: getDuplicateName(table.name),
+        status: "created",
+        primaryKey: {
+          name: "",
+          columnIdList: [],
+        },
+        columnList: table.columnList.map((column) => {
+          return {
+            ...column,
+            id: uuidv1(),
+            status: "created",
+          };
+        }),
+      };
+
+      for (const primaryKeyId of table.primaryKey.columnIdList) {
+        const column = table.columnList.find((col) => col.id === primaryKeyId);
+        if (!column) {
+          continue;
+        }
+        const newColumn = newTable.columnList.find(
+          (col) => col.name === column.name
+        );
+        if (!newColumn) {
+          continue;
+        }
+        newTable.primaryKey.columnIdList.push(newColumn.id);
+      }
+
+      schema.tableList.push(newTable);
+
+      openTabForTable(treeNode, newTable.id);
+    },
+  });
   if (treeNode.type === "schema") {
     if (engine.value === Engine.POSTGRES) {
-      return icon;
+      return [menuIcon];
     }
   } else if (treeNode.type === "table") {
-    return icon;
+    const icons = [menuIcon];
+    if (!readonly.value) {
+      icons.unshift(duplicateIcon);
+    }
+    return icons;
   }
   return null;
+};
+
+const getDuplicateName = (name: string): string => {
+  const match = /_copy[1-9]{0,}$/.exec(name);
+  if (!match) {
+    return `${name}_copy`;
+  }
+
+  const num = Number(match[0].replace("_copy", "0"));
+  if (Number.isNaN(num)) {
+    return `${name}_copy`;
+  }
+  return `${name.replace(/_copy[1-9]{0,}$/, "")}_copy${num + 1}`;
 };
 
 const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
@@ -391,25 +466,7 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
       // Check if clicked on the content part.
       // And ignore the fold/unfold arrow.
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        state.shouldRelocateTreeNode = false;
-
-        if (treeNode.type === "table") {
-          addTab({
-            id: generateUniqueTabId(),
-            type: SchemaDesignerTabType.TabForTable,
-            schemaId: treeNode.schemaId,
-            tableId: treeNode.tableId,
-          });
-        }
-
-        nextTick(() => {
-          if (treeNode.type === "table") {
-            selectedKeysRef.value = [
-              `t-${treeNode.schemaId}-${treeNode.tableId}`,
-            ];
-          }
-          state.shouldRelocateTreeNode = true;
-        });
+        openTabForTable(treeNode, treeNode.tableId as string);
       } else {
         nextTick(() => {
           selectedKeysRef.value = [];
@@ -420,6 +477,26 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
       handleShowDropdown(e, treeNode);
     },
   };
+};
+
+const openTabForTable = (treeNode: TreeNode, tableId: string) => {
+  state.shouldRelocateTreeNode = false;
+
+  if (treeNode.type === "table") {
+    addTab({
+      id: generateUniqueTabId(),
+      type: SchemaDesignerTabType.TabForTable,
+      schemaId: treeNode.schemaId,
+      tableId: tableId,
+    });
+  }
+
+  nextTick(() => {
+    if (treeNode.type === "table") {
+      selectedKeysRef.value = [`t-${treeNode.schemaId}-${treeNode.tableId}`];
+    }
+    state.shouldRelocateTreeNode = true;
+  });
 };
 
 const handleContextMenuDropdownSelect = async (key: string) => {
