@@ -21,6 +21,7 @@ type IssueTypeGeneral = "bb.issue.general";
 type IssueTypeDataSource = "bb.issue.data-source.request";
 
 type IssueTypeDatabase =
+  | "bb.issue.database.general" // For V1 API compatibility
   | "bb.issue.database.create"
   | "bb.issue.database.grant"
   | "bb.issue.database.schema.update"
