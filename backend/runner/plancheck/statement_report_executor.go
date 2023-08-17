@@ -323,7 +323,10 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 		}, nil
 	}
 
-	var results []*storepb.PlanCheckRunResult_Result
+	sqlTypeSet := map[string]struct{}{}
+	var totalAffectedRows int64 = 0
+	var changedResources []parser.SchemaResource
+
 	for _, stmt := range stmts {
 		sqlType, resources := getStatementTypeAndResourcesFromAstNode(database, "public", stmt)
 		if sqlType == "COMMENT" {
@@ -333,29 +336,36 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 				resources = nil
 			}
 		}
-		changedResource := convertToChangedResources(resources)
+		sqlTypeSet[sqlType] = struct{}{}
+		changedResources = append(changedResources, resources...)
 
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
 		if err != nil {
 			log.Error("failed to get affected rows for postgres", zap.String("database", database), zap.Error(err))
-			rowCount = 0
+		} else {
+			totalAffectedRows += rowCount
 		}
+	}
 
-		results = append(results, &storepb.PlanCheckRunResult_Result{
+	var sqlTypes []string
+	for sqlType := range sqlTypeSet {
+		sqlTypes = append(sqlTypes, sqlType)
+	}
+
+	return []*storepb.PlanCheckRunResult_Result{
+		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
 			Code:   common.Ok.Int64(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementType:    sqlType,
-					AffectedRows:     rowCount,
-					ChangedResources: changedResource,
+					StatementTypes:   sqlTypes,
+					AffectedRows:     totalAffectedRows,
+					ChangedResources: convertToChangedResources(changedResources),
 				},
 			},
-		})
-	}
-
-	return results, nil
+		},
+	}, nil
 }
 
 func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]parser.SchemaResource, error) {
