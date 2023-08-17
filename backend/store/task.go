@@ -67,11 +67,12 @@ func (task *TaskMessage) toTask() *api.Task {
 		DatabaseID: task.DatabaseID,
 
 		// Domain specific fields
-		Name:              task.Name,
-		Status:            task.Status,
-		Type:              task.Type,
-		Payload:           task.Payload,
-		EarliestAllowedTs: task.EarliestAllowedTs,
+		Name:                task.Name,
+		Status:              task.Status,
+		Type:                task.Type,
+		Payload:             task.Payload,
+		EarliestAllowedTs:   task.EarliestAllowedTs,
+		LatestTaskRunStatus: task.LatestTaskRunStatus,
 	}
 	for _, block := range task.BlockedBy {
 		composedTask.BlockedBy = append(composedTask.BlockedBy, fmt.Sprintf("%d", block))
