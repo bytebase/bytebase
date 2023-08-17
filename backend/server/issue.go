@@ -139,6 +139,32 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			s.setTaskProgressForIssue(issue)
 		}
 
+		if s.profile.DevelopmentUseV2Scheduler {
+			for _, issue := range issueList {
+				if issue.Pipeline == nil {
+					continue
+				}
+				for _, stage := range issue.Pipeline.StageList {
+					for _, task := range stage.TaskList {
+						if task.LatestTaskRunStatus != nil {
+							switch *task.LatestTaskRunStatus {
+							case api.TaskRunPending:
+								task.Status = api.TaskPending
+							case api.TaskRunRunning:
+								task.Status = api.TaskRunning
+							case api.TaskRunDone:
+								task.Status = api.TaskDone
+							case api.TaskRunFailed:
+								task.Status = api.TaskFailed
+							case api.TaskRunCanceled:
+								task.Status = api.TaskCanceled
+							}
+						}
+					}
+				}
+			}
+		}
+
 		issueResponse := &api.IssueResponse{}
 		issueResponse.Issues = issueList
 

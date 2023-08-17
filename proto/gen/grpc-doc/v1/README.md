@@ -5458,6 +5458,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 | page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
+| query | [string](#string) |  | Query is the query statement. |
 | filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
 
 
@@ -7439,8 +7440,10 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| statement_type | [string](#string) |  |  |
+| code | [int64](#int64) |  |  |
+| statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int64](#int64) |  |  |
+| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
 
