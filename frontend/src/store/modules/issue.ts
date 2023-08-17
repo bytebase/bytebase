@@ -66,20 +66,23 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
 
   // Compose issue pipeline.
   if (isDatabaseRelatedIssueType(result.type)) {
-    const pipelineStore = usePipelineStore();
-    const pipelineId = (
-      issue.relationships!.pipeline.data as ResourceIdentifier
-    ).id;
     let pipeline = unknown("PIPELINE") as Pipeline;
-    pipeline.id = parseInt(pipelineId);
+    if (issue.relationships?.pipeline?.data) {
+      const pipelineStore = usePipelineStore();
+      const pipelineId = (
+        issue.relationships!.pipeline.data as ResourceIdentifier
+      ).id;
+      pipeline.id = parseInt(pipelineId);
 
-    for (const item of includedList || []) {
-      if (
-        item.type == "pipeline" &&
-        issue.relationships!.pipeline.data &&
-        (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
-      ) {
-        pipeline = pipelineStore.convert(item, includedList);
+      for (const item of includedList || []) {
+        if (
+          item.type == "pipeline" &&
+          issue.relationships!.pipeline.data &&
+          (issue.relationships!.pipeline.data as ResourceIdentifier).id ==
+            item.id
+        ) {
+          pipeline = pipelineStore.convert(item, includedList);
+        }
       }
     }
     result.pipeline = pipeline;
