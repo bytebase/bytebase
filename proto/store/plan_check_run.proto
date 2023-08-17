@@ -48,7 +48,8 @@ message PlanCheckRunResult {
     }
     message SqlSummaryReport {
       int64 code = 1;
-      string statement_type = 2;
+      // statement_types are the types of statements that are found in the sql.
+      repeated string statement_types = 2;
       int64 affected_rows = 3;
       ChangedResources changed_resources = 4;
     }
