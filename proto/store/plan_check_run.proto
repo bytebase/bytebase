@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/instance_change_history.proto";
+
 option go_package = "generated-go/store";
 
 message PlanCheckRunConfig {
@@ -45,8 +47,10 @@ message PlanCheckRunResult {
       SqlReviewReport sql_review_report = 6;
     }
     message SqlSummaryReport {
-      string statement_type = 1;
-      int64 affected_rows = 2;
+      int64 code = 1;
+      string statement_type = 2;
+      int64 affected_rows = 3;
+      ChangedResources changed_resources = 4;
     }
     message SqlReviewReport {
       int64 line = 1;

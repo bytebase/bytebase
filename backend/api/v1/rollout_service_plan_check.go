@@ -111,6 +111,21 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				},
 			})
 		}
+		if isStatementReportSupported(instance.Engine) {
+			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+				CreatorUID: api.SystemBotID,
+				UpdaterUID: api.SystemBotID,
+				PlanUID:    plan.UID,
+				Status:     store.PlanCheckRunStatusRunning,
+				Type:       store.PlanCheckDatabaseStatementSummaryReport,
+				Config: &storepb.PlanCheckRunConfig{
+					SheetId:            int32(sheetUID),
+					InstanceId:         int32(instance.UID),
+					DatabaseId:         int32(database.UID),
+					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+				},
+			})
+		}
 		if config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST {
 			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 				CreatorUID: api.SystemBotID,
@@ -231,6 +246,15 @@ func isStatementTypeCheckSupported(dbType db.Type) bool {
 func isStatementAdviseSupported(dbType db.Type) bool {
 	switch dbType {
 	case db.MySQL, db.TiDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
+		return true
+	default:
+		return false
+	}
+}
+
+func isStatementReportSupported(dbType db.Type) bool {
+	switch dbType {
+	case db.Postgres, db.MySQL, db.OceanBase, db.Oracle:
 		return true
 	default:
 		return false
