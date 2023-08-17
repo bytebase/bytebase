@@ -376,10 +376,24 @@ const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
         return;
       }
 
+      const matchPattern = new RegExp(
+        `^${getOriginalName(table.name)}` + "(_copy[0-9]{0,}){0,1}$"
+      );
+      const copiedTableNames = tableList.value
+        .filter((table) => {
+          return matchPattern.test(table.name);
+        })
+        .sort((t1, t2) => {
+          return (
+            extractDuplicateNumber(t1.name) - extractDuplicateNumber(t2.name)
+          );
+        });
+      const targetName = copiedTableNames.slice(-1)[0]?.name ?? table.name;
+
       const newTable: Table = {
         ...table,
         id: uuidv1(),
-        name: getDuplicateName(table.name),
+        name: getDuplicateName(targetName),
         status: "created",
         primaryKey: {
           name: "",
@@ -427,17 +441,29 @@ const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
   return null;
 };
 
-const getDuplicateName = (name: string): string => {
-  const match = /_copy[1-9]{0,}$/.exec(name);
+const getOriginalName = (name: string): string => {
+  return name.replace(/_copy[0-9]{0,}$/, "");
+};
+
+const extractDuplicateNumber = (name: string): number => {
+  const match = /_copy[0-9]{0,}$/.exec(name);
   if (!match) {
-    return `${name}_copy`;
+    return -1;
   }
 
   const num = Number(match[0].replace("_copy", "0"));
   if (Number.isNaN(num)) {
+    return -1;
+  }
+  return num;
+};
+
+const getDuplicateName = (name: string): string => {
+  const num = extractDuplicateNumber(name);
+  if (num < 0) {
     return `${name}_copy`;
   }
-  return `${name.replace(/_copy[1-9]{0,}$/, "")}_copy${num + 1}`;
+  return `${getOriginalName(name)}_copy${num + 1}`;
 };
 
 const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
@@ -491,12 +517,7 @@ const openTabForTable = (treeNode: TreeNode, tableId: string) => {
     });
   }
 
-  nextTick(() => {
-    if (treeNode.type === "table") {
-      selectedKeysRef.value = [`t-${treeNode.schemaId}-${treeNode.tableId}`];
-    }
-    state.shouldRelocateTreeNode = true;
-  });
+  state.shouldRelocateTreeNode = true;
 };
 
 const handleContextMenuDropdownSelect = async (key: string) => {
@@ -567,6 +588,6 @@ const handleDropdownClickoutside = (e: MouseEvent) => {
 
 <style scoped>
 .schema-designer-database-tree {
-  max-height: calc(100% - 48px);
+  max-height: calc(100% - 80px);
 }
 </style>
