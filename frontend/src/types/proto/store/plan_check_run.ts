@@ -124,7 +124,8 @@ export function planCheckRunResult_Result_StatusToJSON(object: PlanCheckRunResul
 
 export interface PlanCheckRunResult_Result_SqlSummaryReport {
   code: number;
-  statementType: string;
+  /** statement_types are the types of statements that are found in the sql. */
+  statementTypes: string[];
   affectedRows: number;
   changedResources?: ChangedResources | undefined;
 }
@@ -537,7 +538,7 @@ export const PlanCheckRunResult_Result = {
 };
 
 function createBasePlanCheckRunResult_Result_SqlSummaryReport(): PlanCheckRunResult_Result_SqlSummaryReport {
-  return { code: 0, statementType: "", affectedRows: 0, changedResources: undefined };
+  return { code: 0, statementTypes: [], affectedRows: 0, changedResources: undefined };
 }
 
 export const PlanCheckRunResult_Result_SqlSummaryReport = {
@@ -545,8 +546,8 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
     if (message.code !== 0) {
       writer.uint32(8).int64(message.code);
     }
-    if (message.statementType !== "") {
-      writer.uint32(18).string(message.statementType);
+    for (const v of message.statementTypes) {
+      writer.uint32(18).string(v!);
     }
     if (message.affectedRows !== 0) {
       writer.uint32(24).int64(message.affectedRows);
@@ -576,7 +577,7 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
             break;
           }
 
-          message.statementType = reader.string();
+          message.statementTypes.push(reader.string());
           continue;
         case 3:
           if (tag !== 24) {
@@ -604,7 +605,7 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
   fromJSON(object: any): PlanCheckRunResult_Result_SqlSummaryReport {
     return {
       code: isSet(object.code) ? Number(object.code) : 0,
-      statementType: isSet(object.statementType) ? String(object.statementType) : "",
+      statementTypes: Array.isArray(object?.statementTypes) ? object.statementTypes.map((e: any) => String(e)) : [],
       affectedRows: isSet(object.affectedRows) ? Number(object.affectedRows) : 0,
       changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
@@ -613,7 +614,11 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
   toJSON(message: PlanCheckRunResult_Result_SqlSummaryReport): unknown {
     const obj: any = {};
     message.code !== undefined && (obj.code = Math.round(message.code));
-    message.statementType !== undefined && (obj.statementType = message.statementType);
+    if (message.statementTypes) {
+      obj.statementTypes = message.statementTypes.map((e) => e);
+    } else {
+      obj.statementTypes = [];
+    }
     message.affectedRows !== undefined && (obj.affectedRows = Math.round(message.affectedRows));
     message.changedResources !== undefined &&
       (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
@@ -629,7 +634,7 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
   ): PlanCheckRunResult_Result_SqlSummaryReport {
     const message = createBasePlanCheckRunResult_Result_SqlSummaryReport();
     message.code = object.code ?? 0;
-    message.statementType = object.statementType ?? "";
+    message.statementTypes = object.statementTypes?.map((e) => e) || [];
     message.affectedRows = object.affectedRows ?? 0;
     message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
       ? ChangedResources.fromPartial(object.changedResources)
