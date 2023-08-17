@@ -272,6 +272,8 @@ type Task struct {
 	Progress Progress `jsonapi:"attr,progress"`
 	// OUTPUT ONLY, used by grouping batch change.
 	Statement string `jsonapi:"attr,statement"`
+	// For v1 api compatibility.
+	LatestTaskRunStatus *TaskRunStatus
 }
 
 // Progress is a generalized struct which can track the progress of a task.
