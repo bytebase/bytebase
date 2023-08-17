@@ -166,8 +166,11 @@ message SearchIssuesRequest {
   // the call that provided the page token.
   string page_token = 3;
 
+  // Query is the query statement.
+  string query = 4;
+
   // Filter is used to filter issues returned in the list.
-  string filter = 4;
+  string filter = 5;
 }
 
 message SearchIssuesResponse {
