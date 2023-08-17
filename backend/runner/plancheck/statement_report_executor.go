@@ -152,40 +152,38 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 		}, nil
 	}
 
-	var results []*storepb.PlanCheckRunResult_Result
+	var changedResources []parser.SchemaResource
 
 	for _, stmt := range singleSQLs {
 		if stmt.Empty || stmt.Text == "" {
 			continue
 		}
-
-		changedResources, err := getChangedResourcesForOracle(databaseName, schemaName, stmt.Text)
+		resources, err := getChangedResourcesForOracle(databaseName, schemaName, stmt.Text)
 		if err != nil {
 			log.Error("failed to extract changed resources", zap.String("statement", stmt.Text), zap.Error(err))
+		} else {
+			changedResources = append(changedResources, resources...)
 		}
-		results = append(results, &storepb.PlanCheckRunResult_Result{
+	}
+
+	return []*storepb.PlanCheckRunResult_Result{
+		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
 			Code:   common.Ok.Int64(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					// TODO: support report statement type and affected rows for oracle
-					StatementType:    "UNKNOWN",
+					StatementTypes:   nil,
 					AffectedRows:     0,
-					ChangedResources: changedResources,
+					ChangedResources: convertToChangedResources(changedResources),
 				},
 			},
-		})
-	}
-	return results, nil
+		},
+	}, nil
 }
 
-func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) (*storepb.ChangedResources, error) {
-	resources, err := parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
-	if err != nil {
-		return nil, err
-	}
-	return convertToChangedResources(resources), nil
+func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) ([]parser.SchemaResource, error) {
+	return parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
 }
 
 func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, databaseName, statement, charset, collation string) ([]*storepb.PlanCheckRunResult_Result, error) {
@@ -207,7 +205,9 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 		}, nil
 	}
 
-	var results []*storepb.PlanCheckRunResult_Result
+	sqlTypeSet := map[string]struct{}{}
+	var totalAffectedRows int64
+	var changedResources []parser.SchemaResource
 
 	p := tidbparser.New()
 	p.EnableWindowFunc(true)
@@ -217,78 +217,59 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 			continue
 		}
 		if parser.IsTiDBUnsupportDDLStmt(stmt.Text) {
-			results = append(results, &storepb.PlanCheckRunResult_Result{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Title:   "OK",
-				Content: "",
-				Code:    common.Ok.Int64(),
-				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						StatementType: "UNKNOWN",
-						AffectedRows:  0,
-					},
-				},
-			})
 			continue
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
 		if err != nil {
-			results = append(results, &storepb.PlanCheckRunResult_Result{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: err.Error(),
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int64(),
-					},
-				},
-			})
+			log.Error("failed to parse statement", zap.String("statement", stmt.Text), zap.Error(err))
 			continue
 		}
 		if len(root) != 1 {
-			results = append(results, &storepb.PlanCheckRunResult_Result{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Failed to report statement type",
-				Content: "Expect to get one node from parser",
-				Code:    common.Internal.Int64(),
-			})
+			log.Error("failed to parse statement, expect to get one node from parser", zap.String("statement", stmt.Text), zap.Error(err))
 			continue
 		}
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
-		var changedResources *storepb.ChangedResources
+		sqlTypeSet[sqlType] = struct{}{}
 		if !isDML(sqlType) {
 			if dbType != db.TiDB {
-				changedResources, err = getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
+				resources, err := getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
 				if err != nil {
 					log.Error("failed to get statement changed resources", zap.Error(err))
+				} else {
+					changedResources = append(changedResources, resources...)
 				}
 			} else {
-				changedResources = convertToChangedResources(resources)
+				changedResources = append(changedResources, resources...)
 			}
 		}
 
 		affectedRows, err := getAffectedRowsForMysql(ctx, dbType, sqlDB, root[0])
 		if err != nil {
 			log.Error("failed to get affected rows for mysql", zap.String("database", databaseName), zap.Error(err))
-			affectedRows = 0
+		} else {
+			totalAffectedRows += affectedRows
 		}
+	}
 
-		results = append(results, &storepb.PlanCheckRunResult_Result{
+	var sqlTypes []string
+	for sqlType := range sqlTypeSet {
+		sqlTypes = append(sqlTypes, sqlType)
+	}
+
+	return []*storepb.PlanCheckRunResult_Result{
+		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
 			Code:   common.Ok.Int64(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementType:    sqlType,
-					AffectedRows:     affectedRows,
-					ChangedResources: changedResources,
+					StatementTypes:   sqlTypes,
+					AffectedRows:     totalAffectedRows,
+					ChangedResources: convertToChangedResources(changedResources),
 				},
 			},
-		})
-	}
-
-	return results, nil
+		},
+	}, nil
 }
 
 func isDML(tp string) bool {
@@ -317,12 +298,8 @@ func convertToChangedResources(resources []parser.SchemaResource) *storepb.Chang
 	return meta
 }
 
-func getStatementChangedResourcesForMySQL(currentDatabase, statement string) (*storepb.ChangedResources, error) {
-	resources, err := parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
-	if err != nil {
-		return nil, err
-	}
-	return convertToChangedResources(resources), nil
+func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]parser.SchemaResource, error) {
+	return parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
 }
 
 func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
@@ -344,7 +321,10 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 		}, nil
 	}
 
-	var results []*storepb.PlanCheckRunResult_Result
+	sqlTypeSet := map[string]struct{}{}
+	var totalAffectedRows int64
+	var changedResources []parser.SchemaResource
+
 	for _, stmt := range stmts {
 		sqlType, resources := getStatementTypeAndResourcesFromAstNode(database, "public", stmt)
 		if sqlType == "COMMENT" {
@@ -354,29 +334,36 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 				resources = nil
 			}
 		}
-		changedResource := convertToChangedResources(resources)
+		sqlTypeSet[sqlType] = struct{}{}
+		changedResources = append(changedResources, resources...)
 
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
 		if err != nil {
 			log.Error("failed to get affected rows for postgres", zap.String("database", database), zap.Error(err))
-			rowCount = 0
+		} else {
+			totalAffectedRows += rowCount
 		}
+	}
 
-		results = append(results, &storepb.PlanCheckRunResult_Result{
+	var sqlTypes []string
+	for sqlType := range sqlTypeSet {
+		sqlTypes = append(sqlTypes, sqlType)
+	}
+
+	return []*storepb.PlanCheckRunResult_Result{
+		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
 			Code:   common.Ok.Int64(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementType:    sqlType,
-					AffectedRows:     rowCount,
-					ChangedResources: changedResource,
+					StatementTypes:   sqlTypes,
+					AffectedRows:     totalAffectedRows,
+					ChangedResources: convertToChangedResources(changedResources),
 				},
 			},
-		})
-	}
-
-	return results, nil
+		},
+	}, nil
 }
 
 func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]parser.SchemaResource, error) {

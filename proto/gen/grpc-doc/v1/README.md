@@ -7440,8 +7440,10 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| statement_type | [string](#string) |  |  |
+| code | [int64](#int64) |  |  |
+| statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int64](#int64) |  |  |
+| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
 
