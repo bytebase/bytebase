@@ -302,7 +302,8 @@
       "lgtm": "LGTM",
       "pitr": "PITR",
       "affected-rows": "Filas afectadas",
-      "sql-type": "Tipo de SQL"
+      "sql-type": "Tipo de SQL",
+      "summary-report": "Informe resumido"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' especifica el tiempo de ejecución esperado para esta tarea. Si este campo no está especificado, la tarea se ejecutará una vez que haya pasado todos los demás criterios de filtrado.",
     "earliest-allowed-time-unset": "No establecido",

@@ -303,7 +303,8 @@
       "lgtm": "LGTM",
       "pitr": "PITR",
       "affected-rows": "Affected rows",
-      "sql-type": "SQL type"
+      "sql-type": "SQL type",
+      "summary-report": "Summary report"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
