@@ -15,6 +15,7 @@ export function isGrantRequestIssueType(issueType: IssueType): boolean {
 
 export function isDatabaseRelatedIssueType(issueType: IssueType): boolean {
   return [
+    "bb.issue.database.general",
     "bb.issue.database.create",
     "bb.issue.database.grant",
     "bb.issue.database.schema.update",
