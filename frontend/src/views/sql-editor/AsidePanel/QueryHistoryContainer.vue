@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div
-    class="relative p-2 space-y-2 w-full h-full flex flex-col justify-start items-start"
+    class="relative py-2 px-0.5 w-full h-full flex flex-col justify-start items-start"
   >
     <div class="w-full">
       <NInput
@@ -18,7 +18,7 @@
       <div
         v-for="history in data"
         :key="history.name"
-        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
+        class="w-full pl-1 pr-2 py-1 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
         @click="handleQueryHistoryClick(history)"
       >
         <div class="w-full flex flex-row justify-between items-center">
