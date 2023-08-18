@@ -1575,6 +1575,7 @@
       "select-users": "Select users",
       "assign-role": "Assign role",
       "never-expires": "Never",
+      "expired": "Expired",
       "role-description": "Role description",
       "role-never-expires": "This role never expires.",
       "add-more": "Add more",
