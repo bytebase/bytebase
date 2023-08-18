@@ -36,9 +36,9 @@ func TestSQLExport(t *testing.T) {
 			databaseName:      "Test1",
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
-			query:             "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
+			query:             "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
 			reset:             "DELETE FROM tbl;",
-			export:            "SELECT * FROM tbl;",
+			export:            "SELECT * FROM Test1.tbl;",
 			affectedRows: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
@@ -190,30 +190,42 @@ func TestSQLExport(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		statement := tt.query
-		results, err := ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+		for _, databaseNameQuery := range []string{tt.databaseName, ""} {
+			if databaseNameQuery == "" && tt.dbType != db.MySQL {
+				// not supporting to query SQL when databaseName of PostgreSQL is empty
+				continue
+			}
 
-		export, err := ctl.sqlServiceClient.Export(ctx, &v1pb.ExportRequest{
-			Admin:              true,
-			ConnectionDatabase: tt.databaseName,
-			Format:             v1pb.ExportRequest_SQL,
-			Limit:              1,
-			Name:               instance.Name,
-			Statement:          tt.export,
-		})
-		a.NoError(err)
+			statement := tt.query
+			results, err := ctl.adminQuery(ctx, instance, databaseNameQuery, statement)
+			a.NoError(err)
+			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 
-		statement = tt.reset
-		results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			export, err := ctl.sqlServiceClient.Export(ctx, &v1pb.ExportRequest{
+				Admin:              true,
+				ConnectionDatabase: databaseNameQuery,
+				Format:             v1pb.ExportRequest_SQL,
+				Limit:              1,
+				Name:               instance.Name,
+				Statement:          tt.export,
+			})
+			a.NoError(err)
 
-		statement = string(export.Content)
-		results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			statement = tt.reset
+			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			a.NoError(err)
+			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+
+			statement = string(export.Content)
+			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			a.NoError(err)
+			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+
+			statement = tt.reset
+			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			a.NoError(err)
+			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+		}
 	}
 }
 
