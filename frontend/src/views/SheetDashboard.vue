@@ -134,7 +134,7 @@ const navigationList = computed(() => {
     },
     {
       path: "/sheets/starred",
-      label: t("common.starred"),
+      label: t("sheet.starred"),
     },
   ];
 

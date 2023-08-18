@@ -196,9 +196,6 @@
     },
     "no-data": "无数据",
     "visibility": "可见性",
-    "star": "添加收藏",
-    "unstar": "取消收藏",
-    "starred": "已收藏",
     "duplicate": "拷贝",
     "clear-search": "清空搜索",
     "enable": "开启",
@@ -2185,8 +2182,11 @@
   "sheet": {
     "self": "工作表",
     "my-sheets": "我的工作表",
-    "shared-with-me": "与我共享",
-    "starred": "已加星标",
+    "mine": "我的",
+    "starred": "收藏的",
+    "star": "添加收藏",
+    "unstar": "取消收藏",
+    "shared-with-me": "共享给我的",
     "actions": {
       "sync-from-vcs": "从 VCS 同步 SQL 脚本"
     },
@@ -2202,8 +2202,6 @@
     "from-issue-warning": "这个工作表来自工单 {issue}，处于只读模式。{oversize}",
     "content-oversize-warning": "SQL 过大所以无法直接编辑。",
     "sheets": "工作表",
-    "mine": "我的",
-    "shared": "分享的",
     "search-sheets": "搜索工作表"
   },
   "engine": {

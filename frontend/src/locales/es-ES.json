@@ -196,9 +196,6 @@
     },
     "no-data": "Sin datos",
     "visibility": "Visibilidad",
-    "star": "Marcar Favorito",
-    "unstar": "Quitar Favorito",
-    "starred": "Favorito",
     "duplicate": "Duplicar",
     "clear-search": "Borrar búsqueda",
     "enable": "Habilitar",
@@ -2187,8 +2184,11 @@
   "sheet": {
     "self": "Hojas",
     "my-sheets": "Mis Hojas",
+    "mine": "Mío",
+    "star": "Marcar Favorito",
+    "unstar": "Quitar Favorito",
+    "starred": "Favorito",
     "shared-with-me": "Compartido conmigo",
-    "starred": "Marcado como favorito",
     "actions": {
       "sync-from-vcs": "Sincronizar scripts SQL desde VCS"
     },
@@ -2204,8 +2204,6 @@
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
     },
     "sheets": "Hojas",
-    "mine": "Mío",
-    "shared": "Compartido",
     "search-sheets": "Hojas de búsqueda"
   },
   "engine": {
