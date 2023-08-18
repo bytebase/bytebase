@@ -280,7 +280,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 
 // MergeSchemaDesign merges a personal draft schema design to the target schema design.
 func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.TargetName)
+	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
