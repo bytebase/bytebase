@@ -20,8 +20,7 @@ message PlanCheckRunConfig {
     string database_name = 2;
   }
   message DatabaseGroupTarget {
-    int32 project_uid = 1;
-    int32 database_group_uid = 2;
+    int32 database_group_uid = 1;
   }
 
   enum ChangeDatabaseType {
