@@ -215,7 +215,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, PropType, watchEffect, ref, toRef } from "vue";
