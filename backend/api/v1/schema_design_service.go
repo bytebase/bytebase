@@ -244,12 +244,10 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
 	}
-	if request.UpdateMask == nil {
+	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
-	if len(request.UpdateMask.Paths) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
-	}
+
 	sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
 		UID: &sheetUID,
 	})
@@ -364,21 +362,11 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
 	}
 
-	sanitizeSchemaDesignSchemaMetadata(schemaDesign)
-	designSchema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
-	if err != nil {
-		return nil, err
-	}
-	// Try to transform the schema string to database metadata to make sure it's valid.
-	if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, designSchema); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
-	}
-
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       targetSheetUID,
 		UpdaterID: currentPrincipalID,
-		Statement: &designSchema,
+		Statement: &schemaDesign.Schema,
 	}
 	// Update main branch schema design.
 	targetSheet, err = s.store.PatchSheet(ctx, sheetUpdate)
