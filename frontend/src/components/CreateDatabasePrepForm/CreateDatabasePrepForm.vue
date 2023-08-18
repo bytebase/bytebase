@@ -326,12 +326,6 @@ const developmentUseV1IssueUI = computed(() => {
   return !!useActuatorV1Store().serverInfo?.developmentUseV2Scheduler;
 });
 
-useEventListener("keydown", (e: KeyboardEvent) => {
-  if (e.code == "Escape") {
-    cancel();
-  }
-});
-
 const showAssigneeSelect = computed(() => {
   // If the role can't change assignee after creating the issue, then we will show the
   // assignee select in the prep stage here to request a particular assignee.

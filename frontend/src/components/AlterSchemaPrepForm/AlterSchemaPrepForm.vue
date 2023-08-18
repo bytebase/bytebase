@@ -393,12 +393,6 @@ const schemaEditorContext = ref<{
   databaseIdList: [],
 });
 
-useEventListener(window, "keydown", (e) => {
-  if (e.code === "Escape") {
-    cancel();
-  }
-});
-
 const state = reactive<LocalState>({
   project: props.projectId
     ? projectV1Store.getProjectByUID(props.projectId)
