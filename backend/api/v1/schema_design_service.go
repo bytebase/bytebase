@@ -515,7 +515,21 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 			baselineSchema = changeHistory.Schema
 			schemaVersion = changeHistory.UID
 		}
+	} else if sheetPayload.SchemaDesign.Type == storepb.SheetPayload_SchemaDesign_PERSONAL_DRAFT && sheetPayload.SchemaDesign.BaselineSchemaDesignId != "" {
+		sheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSchemaDesignId)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetPayload.SchemaDesign.BaselineSchemaDesignId))
+		}
+		sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
+			UID: &sheetUID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+		}
+		baselineSchema = sheet.Statement
+		schemaVersion = fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheetPayload.SchemaDesign.BaselineSchemaDesignId)
 	}
+
 	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, baselineSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
