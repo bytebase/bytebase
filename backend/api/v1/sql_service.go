@@ -771,7 +771,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, nil, nil, nil, err
 	}
- 
+
 	// dataShare must be false when connecting to instance (not database) in sql editor
 	// dataShare must be false when engine is not redshift
 	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
@@ -864,12 +864,16 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		}
 	}
 
+	databaseID := 0
+	if database != nil {
+		databaseID = database.UID
+	}
 	// Create export activity.
 	level := api.ActivityInfo
 	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
 		Statement:    request.Statement,
 		InstanceID:   instance.UID,
-		DatabaseID:   database.UID,
+		DatabaseID:   databaseID,
 		DatabaseName: request.ConnectionDatabase,
 	})
 	if err != nil {
@@ -1126,7 +1130,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, nil, nil, advisor.Success, nil, nil, nil, err
 	}
- 
+
 	// dataShare must be false when connecting to instance (not database) in sql editor
 	// dataShare must be false when engine is not redshift
 	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
@@ -1725,12 +1729,17 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 		}
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+  environmentID := instance.EnvironmentID
+  if database != nil {
+    environmentID = database.EffectiveEnvironmentID
+  }
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {
 		return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch environment: %v", err)
 	}
 	if environment == nil {
-		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", database.EffectiveEnvironmentID)
+		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", environmentID)
 	}
 
 	return user, environment, instance, database, nil
@@ -1813,6 +1822,8 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		list, err := parser.ExtractResourceList(engine, databaseName, "", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+		} else if databaseName == "" {
+			return list, nil
 		}
 
 		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
