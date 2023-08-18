@@ -71,10 +71,12 @@
     </div>
 
     <div
-      v-if="tabStore.isDisconnected"
+      v-if="tabStore.isDisconnected && !currentTab.sheetName"
       class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
     >
-      Select a database to from the database list to connect.
+      <div class="text-sm text-control">
+        {{ $t("sql-editor.connection-holder") }}
+      </div>
     </div>
   </div>
 </template>
@@ -95,8 +97,8 @@ import { instanceV1Slug } from "@/utils";
 
 const router = useRouter();
 const tabStore = useTabStore();
-
-const connection = computed(() => tabStore.currentTab.connection);
+const currentTab = computed(() => tabStore.currentTab);
+const connection = computed(() => currentTab.value.connection);
 
 const { instance: selectedInstance } = useInstanceV1ByUID(
   computed(() => connection.value.instanceId)

@@ -3,17 +3,15 @@ import { pick } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, toRef, watch } from "vue";
 import { TabInfo, CoreTabInfo, AnyTabInfo, TabMode } from "@/types";
-import { UNKNOWN_ID } from "@/types";
 import {
   getDefaultTab,
   INITIAL_TAB,
   isTempTab,
   isSimilarTab,
   WebStorageHelper,
-  instanceV1AllowsCrossDatabaseQuery,
+  isDisconnectedTab,
 } from "@/utils";
 import { useWebTerminalV1Store } from "./v1";
-import { useInstanceV1Store } from "./v1/instance";
 import { useSheetV1Store } from "./v1/sheet";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor.tab-list";
@@ -39,7 +37,6 @@ type PersistentTabInfo = Pick<TabInfo, typeof PERSISTENT_TAB_FIELDS[number]>;
 
 export const useTabStore = defineStore("tab", () => {
   const storage = new WebStorageHelper("bb.sql-editor.tab-list", localStorage);
-  const instanceStore = useInstanceV1Store();
 
   // states
   // We store the tabIdList and the tabs separately.
@@ -60,16 +57,7 @@ export const useTabStore = defineStore("tab", () => {
     return tab ?? getDefaultTab();
   });
   const isDisconnected = computed((): boolean => {
-    const { instanceId, databaseId } = currentTab.value.connection;
-    if (instanceId === String(UNKNOWN_ID)) {
-      return true;
-    }
-    const instance = instanceStore.getInstanceByUID(instanceId);
-    if (instanceV1AllowsCrossDatabaseQuery(instance)) {
-      // Connecting to instance directly.
-      return false;
-    }
-    return databaseId === String(UNKNOWN_ID);
+    return isDisconnectedTab(currentTab.value);
   });
 
   // actions

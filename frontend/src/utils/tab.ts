@@ -11,6 +11,7 @@ import type {
   TabSheetType,
 } from "@/types";
 import { UNKNOWN_ID, TabMode } from "@/types";
+import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const getDefaultTabName = () => {
   return dayjs().format("YYYY-MM-DD HH:mm");
@@ -114,4 +115,17 @@ export const instanceOfConnectionAtom = (atom: ConnectionAtom) => {
     return useDatabaseV1Store().getDatabaseByUID(atom.id).instanceEntity;
   }
   return undefined;
+};
+
+export const isDisconnectedTab = (tab: TabInfo) => {
+  const { instanceId, databaseId } = tab.connection;
+  if (instanceId === String(UNKNOWN_ID)) {
+    return true;
+  }
+  const instance = useInstanceV1Store().getInstanceByUID(instanceId);
+  if (instanceV1AllowsCrossDatabaseQuery(instance)) {
+    // Connecting to instance directly.
+    return false;
+  }
+  return databaseId === String(UNKNOWN_ID);
 };
