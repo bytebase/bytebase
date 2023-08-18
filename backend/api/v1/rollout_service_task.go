@@ -451,7 +451,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 		return nil, nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
 	}
 
-	matchedDatabases, _, err := getMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
 	}
@@ -502,7 +502,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 
 		schemaGroupsMatchedTables := map[string][]string{}
 		for _, schemaGroup := range schemaGroups {
-			matches, _, err := getMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
+			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
 			}
