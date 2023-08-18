@@ -244,10 +244,10 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 	if err != nil {
 		return nil, nil, nil, err
 	}
-  databaseID := 0
-  if database != nil {
-    databaseID = database.UID
-  }
+	databaseID := 0
+	if database != nil {
+		databaseID = database.UID
+	}
 	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
@@ -965,10 +965,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 	// If the environment is not open for export privileges, check if the user has permission to export the query.
 	if !allowExport {
-	  dataShare := false
-	  if database != nil {
-		  dataShare = database.DataShare
-	  }
+		dataShare := false
+		if database != nil {
+			dataShare = database.DataShare
+		}
 		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, dataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
 			allowExport = true
 		}
@@ -1736,10 +1736,10 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 		}
 	}
 
-  environmentID := instance.EnvironmentID
-  if database != nil {
-    environmentID = database.EffectiveEnvironmentID
-  }
+	environmentID := instance.EnvironmentID
+	if database != nil {
+		environmentID = database.EffectiveEnvironmentID
+	}
 
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {

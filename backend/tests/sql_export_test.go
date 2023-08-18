@@ -28,17 +28,17 @@ func TestSQLExport(t *testing.T) {
 		prepareStatements string
 		query             string
 		reset             string
-    export            string
+		export            string
 		want              bool
 		affectedRows      []*v1pb.QueryResult
 	}{
 		{
-			databaseName: "Test1",
-			dbType:       db.MySQL,
+			databaseName:      "Test1",
+			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
-      query: "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
-			reset: "DELETE FROM tbl;",
-			export: "SELECT * FROM Test1.tbl;",
+			query:             "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
+			reset:             "DELETE FROM tbl;",
+			export:            "SELECT * FROM Test1.tbl;",
 			affectedRows: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
@@ -54,12 +54,12 @@ func TestSQLExport(t *testing.T) {
 			},
 		},
 		{
-			databaseName: "Test2",
-			dbType:       db.Postgres,
+			databaseName:      "Test2",
+			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
-		  query: "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
-			reset: "DELETE FROM tbl;",
-			export: "SELECT * FROM tbl;",
+			query:             "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
+			reset:             "DELETE FROM tbl;",
+			export:            "SELECT * FROM tbl;",
 			affectedRows: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
