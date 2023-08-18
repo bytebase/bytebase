@@ -26,11 +26,11 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.20.3 as backend
+FROM golang:1.21.0 as backend
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.20.1"
+ARG GO_VERSION="1.21.0"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -39,7 +39,7 @@ ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
-  apt-get update && apt-get install -y gcc-aarch64-linux-gnu; \
+  apt-get install -y gcc-aarch64-linux-gnu; \
 else \
   apt-get install -y gcc ;\
 fi
@@ -65,7 +65,7 @@ fi && \
     ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
-FROM debian:bullseye-slim as monolithic
+FROM debian:bookworm-slim as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"

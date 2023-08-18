@@ -14,9 +14,9 @@ OUTPUT_DIR=$(mkdir_output "$1")
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
 
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
-if [ "$(version ${GO_VERSION})" -lt "$(version 1.20.1)" ];
+if [ "$(version ${GO_VERSION})" -lt "$(version 1.21.0)" ];
 then
-   echo "${RED}Precheck failed.${NC} Require go version >= 1.20.1. Current version ${GO_VERSION}."; exit 1;
+   echo "${RED}Precheck failed.${NC} Require go version >= 1.21.0. Current version ${GO_VERSION}."; exit 1;
 fi
 
 NODE_VERSION=`node -v | { read v; echo ${v#v}; }`
@@ -31,7 +31,7 @@ then
 fi
 
 # Step 1 - Build the frontend release version into the backend/server/dist folder
-# Step 2 - Build the monolithic app by building backend release version together with the backend/server/dist (leveraing embed introduced in Golang 1.20.1).
+# Step 2 - Build the monolithic app by building backend release version together with the backend/server/dist (leveraing embed introduced in Golang 1.21.0).
 echo "Start building Bytebase monolithic ${VERSION}..."
 
 echo ""
