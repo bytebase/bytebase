@@ -1,10 +1,14 @@
 <template>
   <div
     class="suffix"
-    :class="{
-      admin: tab.mode === TabMode.Admin,
-      closable,
-    }"
+    :class="[
+      {
+        admin: tab.mode === TabMode.Admin,
+        closable,
+      },
+
+      [sheetTypeForTab(tab).toLowerCase()],
+    ]"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
@@ -23,6 +27,7 @@ import { computed, PropType, reactive } from "vue";
 import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
+import { sheetTypeForTab } from "@/utils";
 
 type LocalState = {
   hovering: boolean;
@@ -83,6 +88,9 @@ const icon = computed((): IconType | undefined => {
   @apply block w-5 h-5 p-0.5 text-gray-500 rounded;
 }
 
+.suffix.closable.temp .icon {
+  @apply text-accent;
+}
 .suffix.closable .icon {
   @apply hover:text-gray-700 hover:bg-gray-200;
 }
