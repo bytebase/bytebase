@@ -17,7 +17,7 @@ import { computed } from "vue";
 import { useCurrentUserV1, useTabStore, useWebTerminalStore } from "@/store";
 import { TabMode } from "@/types";
 import {
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   hasWorkspacePermissionV1,
 } from "@/utils";
 
@@ -54,7 +54,7 @@ const enterAdminMode = () => {
   const target = {
     connection: current.connection,
     mode: TabMode.Admin,
-    name: getDefaultTabNameFromConnection(current.connection),
+    name: getSuggestedTabNameFromConnection(current.connection),
   };
   tabStore.selectOrAddSimilarTab(target, /* beside */ true);
   tabStore.updateCurrentTab({

@@ -1,12 +1,14 @@
 <template>
   <div
     class="tab-item"
-    :class="{
-      current: isCurrentTab,
-      temp: isTempTab(tab),
-      hovering: state.hovering,
-      admin: tab.mode === TabMode.Admin,
-    }"
+    :class="[
+      {
+        current: isCurrentTab,
+        hovering: state.hovering,
+        admin: tab.mode === TabMode.Admin,
+      },
+      [sheetTypeForTab(tab).toLowerCase()],
+    ]"
     @mousedown="$emit('select', tab, index)"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
@@ -26,7 +28,7 @@ import { computed, PropType, reactive } from "vue";
 import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { isTempTab } from "@/utils";
+import { sheetTypeForTab } from "@/utils";
 import AdminLabel from "./AdminLabel.vue";
 import Label from "./Label.vue";
 import Prefix from "./Prefix.vue";
