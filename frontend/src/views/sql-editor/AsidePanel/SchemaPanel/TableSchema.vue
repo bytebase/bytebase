@@ -30,23 +30,7 @@
       </div>
     </div>
 
-    <div
-      class="grid py-1 pl-4 pr-4 overflow-y-auto gap-x-1"
-      style="grid-template-columns: minmax(4rem, 2fr) minmax(4rem, 1fr)"
-    >
-      <template v-for="(column, index) in table.columns" :key="index">
-        <div
-          class="text-sm leading-6 text-gray-600whitespace-pre-wrap break-words"
-        >
-          {{ column.name }}
-        </div>
-        <div
-          class="text-right text-sm leading-6 text-gray-400 overflow-x-hidden whitespace-nowrap"
-        >
-          {{ column.type }}
-        </div>
-      </template>
-    </div>
+    <ColumnList :table="table" class="w-full flex-1 py-1" />
   </div>
 </template>
 
@@ -57,9 +41,10 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/store/database";
+} from "@/types/proto/v1/database_service";
 import { databaseV1Slug } from "@/utils";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
+import ColumnList from "./ColumnList.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 
 const props = defineProps<{
