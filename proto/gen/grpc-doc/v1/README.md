@@ -7386,7 +7386,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
-| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
+| target | [string](#string) |  | Format: instances/{instance}/databases/{database} Format: projects/{project}/databaseGroups/{databaseGroup} |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 | error | [string](#string) |  | error is set if the Status is FAILED. |
