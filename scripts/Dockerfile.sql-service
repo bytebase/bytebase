@@ -6,6 +6,8 @@
 # $ docker run --init --rm --name sql-service --publish 8081:8081 bytebase/sql
 
 FROM golang:1.21.0 as sql
+ADD go.mod go.sum /
+RUN go mod download
 
 ARG VERSION="development"
 ARG GO_VERSION="1.21.0"
