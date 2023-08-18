@@ -21,6 +21,8 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 RUN pnpm "${RELEASE}-docker"
 
 FROM golang:1.21.0 as backend
+ADD go.mod go.sum /
+RUN go mod download
 
 ARG GO_VERSION="1.21.0"
 # RENDER_GIT_COMMIT is a render.com provided env var during build.

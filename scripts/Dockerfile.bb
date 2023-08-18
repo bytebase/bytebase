@@ -6,6 +6,8 @@
 # $ docker run --init --rm --name bb bytebase/bb
 
 FROM golang:1.21.0 as bb
+ADD go.mod go.sum /
+RUN go mod download
 
 ARG VERSION="development"
 ARG GO_VERSION="1.21.0"
