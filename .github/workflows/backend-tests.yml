@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.20.1
+          go-version: 1.21.0
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
@@ -54,7 +54,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.20.1
+          go-version: 1.21.0
       - name: Cache MySQL
         uses: actions/cache@v3
         with:
