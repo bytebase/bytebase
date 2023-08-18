@@ -302,7 +302,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
 import { NButton, NTabs, NTabPane, NRadio } from "naive-ui";
@@ -391,12 +390,6 @@ const schemaEditorContext = ref<{
   databaseIdList: string[];
 }>({
   databaseIdList: [],
-});
-
-useEventListener(window, "keydown", (e) => {
-  if (e.code === "Escape") {
-    cancel();
-  }
 });
 
 const state = reactive<LocalState>({

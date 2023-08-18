@@ -41,7 +41,7 @@ import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/store/database";
+} from "@/types/proto/v1/database_service";
 import DatabaseSchema from "./DatabaseSchema.vue";
 import TableSchema from "./TableSchema.vue";
 

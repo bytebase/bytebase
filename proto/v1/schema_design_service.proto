@@ -40,6 +40,14 @@ service SchemaDesignService {
     option (google.api.method_signature) = "schemaDesign,update_mask";
   }
 
+  rpc MergeSchemaDesign(MergeSchemaDesignRequest) returns (SchemaDesign) {
+    option (google.api.http) = {
+      post: "/v1/{schema_design.name=projects/*/schemaDesigns/*}:merge"
+      body: "schema_design"
+    };
+    option (google.api.method_signature) = "schemaDesign";
+  }
+
   rpc ParseSchemaString(ParseSchemaStringRequest) returns (ParseSchemaStringResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:parseSchemaString"
@@ -125,10 +133,6 @@ message ListSchemaDesignsRequest {
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // To filter the search result.
-  // Format: only support the following spec for now:
-  // - `creator = users/{email}`, `creator != users/{email}`
-  // - `starred = true`, `starred = false`.
-  // Not support empty filter for now.
   string filter = 2;
 
   // The maximum number of schema designs to return. The service may return fewer than
@@ -173,9 +177,16 @@ message UpdateSchemaDesignRequest {
   google.protobuf.FieldMask update_mask = 2;
 }
 
+message MergeSchemaDesignRequest {
+  // The personal draft schema design to merge.
+  SchemaDesign schema_design = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message ParseSchemaStringRequest {
+  // The schema string to parse.
   string schema_string = 1 [(google.api.field_behavior) = REQUIRED];
 
+  // The database engine of the schema string.
   Engine engine = 2;
 }
 

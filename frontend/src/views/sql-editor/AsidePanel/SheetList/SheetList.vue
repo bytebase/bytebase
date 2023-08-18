@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
-    <div class="px-2 py-2 gap-x-1 flex items-center">
+  <div class="flex flex-col h-full px-0.5 pt-2 gap-y-2">
+    <div class="flex items-center gap-x-1">
       <NInput
         v-model:value="keyword"
         size="small"
@@ -12,7 +12,11 @@
           <heroicons-outline:search class="h-5 w-5 text-gray-300" />
         </template>
       </NInput>
-      <NButton quaternary style="--n-padding: 0 8px" @click="addSheet">
+      <NButton
+        quaternary
+        style="--n-padding: 0 5px; --n-height: 28px"
+        @click="addSheet"
+      >
         <template #icon>
           <heroicons:plus />
         </template>
