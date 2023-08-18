@@ -325,16 +325,32 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, r
 		Results:    convertToPlanCheckRunResults(run.Result.Results),
 		Error:      run.Result.Error,
 	}
-	if run.Config.DatabaseId != 0 {
-		databaseUID := int(run.Config.DatabaseId)
-		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseUID})
+
+	switch config := run.Config.Target.(type) {
+	case *storepb.PlanCheckRunConfig_DatabaseTarget_:
+		instanceUid := int(config.DatabaseTarget.InstanceUid)
+		databaseName := config.DatabaseTarget.DatabaseName
+		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUid})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database")
+			return nil, errors.Wrapf(err, "failed to get instance")
 		}
-		converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
+		converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instance.ResourceID, common.DatabaseIDPrefix, databaseName)
+
+	case *storepb.PlanCheckRunConfig_DatabaseGroupTarget_:
+		databaseGroupUid := int64(config.DatabaseGroupTarget.DatabaseGroupUid)
+		databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{UID: &databaseGroupUid})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database group")
+		}
+		project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &databaseGroup.ProjectUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get project")
+		}
+		converted.Target = fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, project.ResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID)
 	}
-	if run.Config.SheetId != 0 {
-		sheetUID := int(run.Config.SheetId)
+
+	if run.Config.SheetUid != 0 {
+		sheetUID := int(run.Config.SheetUid)
 		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet")
