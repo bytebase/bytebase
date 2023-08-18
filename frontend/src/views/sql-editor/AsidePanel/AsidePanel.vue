@@ -2,7 +2,8 @@
   <div class="aside-panel h-full">
     <NTabs
       v-model:value="tabStore.asidePanelTab"
-      class="h-full"
+      class="h-full overflow-hidden"
+      pane-style="height: calc(100% - 33px); padding: 0 4px;"
       :tabs-padding="8"
     >
       <NTabPane name="databases" :tab="$t('common.databases')">
@@ -11,6 +12,7 @@
           type="segment"
           size="small"
           class="h-full"
+          pane-style="height: calc(100% - 35px); padding: 0;"
         >
           <NTabPane name="projects" :tab="$t('common.projects')">
             <Splitpanes
@@ -63,6 +65,7 @@
           size="small"
           type="segment"
           class="h-full"
+          pane-style="height: calc(100% - 35px); padding: 0;"
         >
           <NTabPane name="my" :tab="$t('sheet.mine')">
             <SheetList view="my" />
@@ -144,10 +147,3 @@ watchEffect(() => {
   }
 });
 </script>
-
-<style scoped>
-.aside-panel .n-tab-pane {
-  height: calc(100% - 40px);
-  @apply pt-0;
-}
-</style>
