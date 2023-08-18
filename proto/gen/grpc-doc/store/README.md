@@ -146,6 +146,7 @@
     - [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue)
     - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
   
+    - [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type)
     - [SheetPayload.Type](#bytebase-store-SheetPayload-Type)
   
 - [store/slow_query.proto](#store_slow_query-proto)
@@ -2178,8 +2179,10 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| type | [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type) |  | The type of the schema design. |
+| engine | [Engine](#bytebase-store-Engine) |  | The database instance engine of the schema design. |
 | baseline_change_history_id | [string](#string) |  | The baseline instance change history id of the schema design. |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
+| baseline_schema_design_id | [string](#string) |  | The baseline schema design id. Using for personal draft types. AKA sheet id. |
 
 
 
@@ -2222,6 +2225,19 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
  
+
+
+<a name="bytebase-store-SheetPayload-SchemaDesign-Type"></a>
+
+### SheetPayload.SchemaDesign.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| MAIN_BRANCH | 1 | Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. |
+| PERSONAL_DRAFT | 2 | Personal draft type is a copy of the main branch type schema designs. |
+
 
 
 <a name="bytebase-store-SheetPayload-Type"></a>
