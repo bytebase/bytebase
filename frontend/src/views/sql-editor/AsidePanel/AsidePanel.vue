@@ -70,11 +70,11 @@
           <NTabPane name="my" :tab="$t('sheet.mine')">
             <SheetList view="my" />
           </NTabPane>
-          <NTabPane name="shared" :tab="$t('sheet.shared')">
-            <SheetList view="shared" @add-tab="sheetTab = 'my'" />
-          </NTabPane>
           <NTabPane name="starred" :tab="$t('sheet.starred')">
             <SheetList view="starred" @add-tab="sheetTab = 'my'" />
+          </NTabPane>
+          <NTabPane name="shared" :tab="$t('sheet.shared-with-me')">
+            <SheetList view="shared" @add-tab="sheetTab = 'my'" />
           </NTabPane>
         </NTabs>
       </NTabPane>

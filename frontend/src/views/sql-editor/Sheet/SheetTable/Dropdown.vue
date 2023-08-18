@@ -45,12 +45,12 @@ const options = computed(() => {
   if (sheet.starred) {
     options.push({
       key: "unstar",
-      label: t("common.unstar"),
+      label: t("sheet.unstar"),
     });
   } else {
     options.push({
       key: "star",
-      label: t("common.star"),
+      label: t("sheet.star"),
     });
   }
 
