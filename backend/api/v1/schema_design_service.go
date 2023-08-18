@@ -308,26 +308,26 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	}
 	// If overwrite_schema is specified, we will use it as the new schema of main branch schema design.
 	if request.OverwriteSchema != nil {
-		// Try to transform the schema string to database metadata to make sure it's valid.
-		if _, err := transformSchemaStringToDatabaseMetadata(parentSchemaDesign.Engine, *request.OverwriteSchema); err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
-		}
 		sheetUpdate.Statement = request.OverwriteSchema
 	} else {
 		// Otherwise, we will use the schema of personal draft schema design as the new schema of main branch schema design.
 		if schemaDesign.Etag != parentSchemaDesign.Etag {
 			return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
 		}
+
 		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
 		designSchema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		if err != nil {
 			return nil, err
 		}
+		sheetUpdate.Statement = &designSchema
+	}
+
+	if sheetUpdate.Statement != nil {
 		// Try to transform the schema string to database metadata to make sure it's valid.
-		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, designSchema); err != nil {
+		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 		}
-		sheetUpdate.Statement = &designSchema
 	}
 
 	// Update main branch schema design.
