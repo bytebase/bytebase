@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
-    <div class="px-2 py-2 gap-x-1 flex items-center">
+  <div class="flex flex-col h-full px-0.5 pt-2 gap-y-2">
+    <div class="flex items-center gap-x-1">
       <NInput
         v-model:value="keyword"
         size="small"
@@ -12,7 +12,11 @@
           <heroicons-outline:search class="h-5 w-5 text-gray-300" />
         </template>
       </NInput>
-      <NButton quaternary style="--n-padding: 0 8px" @click="addSheet">
+      <NButton
+        quaternary
+        style="--n-padding: 0 5px; --n-height: 28px"
+        @click="addSheet"
+      >
         <template #icon>
           <heroicons:plus />
         </template>
@@ -77,7 +81,7 @@ import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useSheetAndTabStore, useTabStore } from "@/store";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { getSuggestedTabNameFromConnection } from "@/utils";
 import {
   SheetViewMode,
   openSheet,
@@ -109,18 +113,11 @@ const keyword = ref("");
 const { currentSheet } = storeToRefs(useSheetAndTabStore());
 const dropdown = ref<DropdownState>();
 
-const sortedSheetList = computed(() => {
-  return orderBy<Sheet>(
-    sheetList.value,
-    [
-      (sheet) => (sheet.title ? 0 : 1), // Untitled sheets go behind.
-      (sheet) => sheet.title,
-    ],
-    ["asc", "asc"]
-  );
-});
-
 const mergedItemList = computed(() => {
+  if (isLoading.value) {
+    return [];
+  }
+
   const { tabList } = tabStore;
   const mergedList: MergedItem[] = [];
 
@@ -135,17 +132,26 @@ const mergedItemList = computed(() => {
       }
     });
   }
-  if (!isLoading.value) {
-    // Sheets follow
-    sortedSheetList.value.forEach((sheet) => {
-      mergedList.push({
-        type: "SHEET",
-        target: sheet,
-      });
+  // Sheets follow
+  sheetList.value.forEach((sheet) => {
+    mergedList.push({
+      type: "SHEET",
+      target: sheet,
     });
-  }
+  });
 
-  return mergedList;
+  const sortedList = orderBy(
+    mergedList,
+    [
+      // Untitled sheets go behind
+      // They are probably dirty data
+      (item) => (item.type === "SHEET" && !item.target.title ? 1 : 0),
+      // Alphabetically otherwise
+      (item) => (item.type === "TAB" ? item.target.name : item.target.title),
+    ],
+    ["asc", "asc"]
+  );
+  return sortedList;
 });
 
 const filteredItemList = computed(() => {
@@ -179,7 +185,14 @@ const handleItemClick = (item: MergedItem, e: MouseEvent) => {
 };
 
 const addSheet = () => {
-  useTabStore().addTab();
+  const connection = { ...tabStore.currentTab.connection };
+  const name = getSuggestedTabNameFromConnection(connection);
+  tabStore.addTab({
+    name,
+    connection,
+    // The newly created tab is "clean" so its connection can be changed
+    isFreshNew: true,
+  });
   emit("add-tab");
 };
 

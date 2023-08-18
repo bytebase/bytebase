@@ -30,20 +30,26 @@ type DatabaseConnectExecutor struct {
 
 // Run runs the executor.
 func (e *DatabaseConnectExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	databaseID := int(planCheckRun.Config.DatabaseId)
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database ID %v", databaseID)
+	target := planCheckRun.Config.GetDatabaseTarget()
+	if target == nil {
+		return nil, errors.New("database target is required")
 	}
-	if database == nil {
-		return nil, errors.Errorf("database not found %v", databaseID)
-	}
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+
+	instanceUID := int(target.InstanceUid)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v", database.InstanceID)
+		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance not found %v", database.InstanceID)
+		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+	}
+
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found %q", target.DatabaseName)
 	}
 
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)

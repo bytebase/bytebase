@@ -173,6 +173,7 @@ import {
   specForTask,
   createEmptyLocalSheet,
   notifyNotEditableLegacyIssue,
+  patchLegacyIssueTasksStatement,
 } from "@/components/IssueV1/logic";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
@@ -545,7 +546,18 @@ const updateStatement = async (statement: string) => {
 
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
-    notifyNotEditableLegacyIssue();
+    // notifyNotEditableLegacyIssue();
+    try {
+      await patchLegacyIssueTasksStatement(issue.value, tasks, statement);
+      events.emit("status-changed", { eager: true });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } finally {
+      // nothing
+    }
     return;
   }
 

@@ -263,7 +263,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 ### Prerequisites
 
-- [Go](https://golang.org/doc/install) (1.20.1 or later)
+- [Go](https://golang.org/doc/install) (1.21.0 or later)
 - [pnpm](https://pnpm.io/installation)
 - [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
   ```bash

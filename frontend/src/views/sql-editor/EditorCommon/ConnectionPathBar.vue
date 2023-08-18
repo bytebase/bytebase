@@ -1,9 +1,7 @@
 <template>
-  <div
-    v-if="!tabStore.isDisconnected"
-    class="w-full block lg:flex justify-between items-start bg-white"
-  >
+  <div class="w-full block lg:flex justify-between items-start bg-white">
     <div
+      v-if="!tabStore.isDisconnected"
       class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
     >
       <NPopover v-if="showReadonlyDatasourceWarning" trigger="hover">
@@ -71,6 +69,15 @@
     >
       {{ $t("sql-editor.sql-execute-in-production-environment") }}
     </div>
+
+    <div
+      v-if="tabStore.isDisconnected && !currentTab.sheetName"
+      class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
+    >
+      <div class="text-sm text-control">
+        {{ $t("sql-editor.connection-holder") }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -90,8 +97,8 @@ import { instanceV1Slug } from "@/utils";
 
 const router = useRouter();
 const tabStore = useTabStore();
-
-const connection = computed(() => tabStore.currentTab.connection);
+const currentTab = computed(() => tabStore.currentTab);
+const connection = computed(() => currentTab.value.connection);
 
 const { instance: selectedInstance } = useInstanceV1ByUID(
   computed(() => connection.value.instanceId)
@@ -108,6 +115,10 @@ const selectedEnvironment = computed(() => {
 });
 
 const isProductionEnvironment = computed(() => {
+  if (tabStore.isDisconnected) {
+    return false;
+  }
+
   return selectedEnvironment.value.tier === EnvironmentTier.PROTECTED;
 });
 

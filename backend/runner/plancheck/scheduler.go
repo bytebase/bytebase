@@ -103,7 +103,11 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		return
 	}
 
-	instanceUID := int(planCheckRun.Config.InstanceId)
+	var instanceUID int
+	if target := planCheckRun.Config.GetDatabaseTarget(); target != nil {
+		instanceUID = int(target.InstanceUid)
+	}
+	// DatabaseGroupTarget uses instanceUID = 0
 
 	s.stateCfg.Lock()
 	if s.stateCfg.InstanceOutstandingConnections[instanceUID] >= state.InstanceMaximumConnectionNumber {

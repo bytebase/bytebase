@@ -17,7 +17,7 @@ builds:
       - embed_frontend
     env:
       - VERSION="development"
-      - GO_VERSION="1.20.1"
+      - GO_VERSION="1.21.0"
       - CGO_ENABLED=1
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
@@ -46,7 +46,7 @@ builds:
       - release
     env:
       - VERSION="development"
-      - GO_VERSION="1.20.1"
+      - GO_VERSION="1.21.0"
       - CGO_ENABLED=1
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
