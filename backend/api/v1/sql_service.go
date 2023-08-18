@@ -244,12 +244,15 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
+  databaseID := 0
+  if database != nil {
+    databaseID = database.UID
+  }
 	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             database.UID,
+		DatabaseID:             databaseID,
 		DatabaseName:           request.ConnectionDatabase,
 	})
 	if err != nil {
@@ -962,7 +965,11 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 	// If the environment is not open for export privileges, check if the user has permission to export the query.
 	if !allowExport {
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
+	  dataShare := false
+	  if database != nil {
+		  dataShare = database.DataShare
+	  }
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, dataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
 			allowExport = true
 		}
 	}
