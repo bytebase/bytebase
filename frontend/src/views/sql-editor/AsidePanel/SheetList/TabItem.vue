@@ -7,12 +7,12 @@
   >
     <SheetConnectionIcon :tab="item.target" class="shrink-0 w-4 h-6" />
 
-    <div class="flex-1 text-sm cursor-pointer pt-0.5 break-all">
+    <div class="flex-1 text-sm leading-6 cursor-pointer break-all">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <span v-html="titleHTML(item, keyword)" />
     </div>
 
-    <div class="w-6 h-6 flex items-center justify-center" @click.stop>
+    <div class="shrink-0 w-6 h-6 flex items-center justify-center" @click.stop>
       <NTooltip>
         <template #trigger>
           <carbon:dot-mark class="text-accent opacity-50 w-4 h-4" />
