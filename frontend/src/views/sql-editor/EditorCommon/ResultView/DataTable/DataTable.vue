@@ -17,7 +17,7 @@
           class="relative border-collapse table-fixed z-[1]"
           v-bind="tableResize.getTableProps()"
         >
-          <thead class="sticky top-0 z-[1] shadow">
+          <thead class="sticky top-0 z-[1] drop-shadow-sm">
             <tr>
               <th
                 v-for="header of table.getFlatHeaders()"
