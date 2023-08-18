@@ -18,7 +18,7 @@
       <div
         v-for="history in data"
         :key="history.name"
-        class="w-full pl-1 pr-2 py-1 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
+        class="w-full p-2 space-y-1 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
         @click="handleQueryHistoryClick(history)"
       >
         <div class="w-full flex flex-row justify-between items-center">
@@ -26,7 +26,7 @@
             {{ titleOfQueryHistory(history) }}
           </span>
           <span
-            class="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+            class="rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
           >
             <heroicons-outline:clipboard
               class="w-4 h-4"
@@ -35,7 +35,7 @@
           </span>
         </div>
         <p
-          class="max-w-full mt-2 mb-1 text-sm break-words font-mono line-clamp-3"
+          class="max-w-full text-xs break-words font-mono line-clamp-3"
           v-html="history.formattedStatement"
         ></p>
       </div>
