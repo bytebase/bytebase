@@ -1828,7 +1828,7 @@
     },
     "view-all-tabs": "View all Tabs",
     "sheets": "Sheets",
-    "connection-holder": "Click nodes on the left panel to get started",
+    "connection-holder": "Associate a database first from the Database Panel on the left",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
