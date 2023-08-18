@@ -75,7 +75,7 @@ import {
 } from "@/types";
 import {
   emptyConnection,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   hasWorkspacePermissionV1,
   instanceV1HasReadonlyMode,
   instanceOfConnectionAtom,
@@ -228,7 +228,7 @@ const setConnection = (
         tabStore.updateCurrentTab(target);
       } else {
         // Otherwise select or add a new tab and set its connection
-        const name = getDefaultTabNameFromConnection(target.connection);
+        const name = getSuggestedTabNameFromConnection(target.connection);
         tabStore.selectOrAddSimilarTab(
           target,
           /* beside */ false,

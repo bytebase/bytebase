@@ -20,7 +20,7 @@ import {
 } from "@/types/proto/v1/sheet_service";
 import {
   extractSheetUID,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   isSimilarDefaultTabName,
 } from "@/utils";
 import { useSheetContext } from "../Sheet";
@@ -105,7 +105,7 @@ const needSheetName = (sheetName: string | undefined) => {
   if (!sheetName) {
     const name = tab.name;
     if (
-      name === getDefaultTabNameFromConnection(tab.connection) ||
+      name === getSuggestedTabNameFromConnection(tab.connection) ||
       isSimilarDefaultTabName(name)
     ) {
       // The tab is unsaved and its name is still the default one.

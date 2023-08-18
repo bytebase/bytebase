@@ -77,7 +77,7 @@ import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useSheetAndTabStore, useTabStore } from "@/store";
-import { getDefaultTabNameFromConnection } from "@/utils";
+import { getSuggestedTabNameFromConnection } from "@/utils";
 import {
   SheetViewMode,
   openSheet,
@@ -182,7 +182,7 @@ const handleItemClick = (item: MergedItem, e: MouseEvent) => {
 
 const addSheet = () => {
   const connection = { ...tabStore.currentTab.connection };
-  const name = getDefaultTabNameFromConnection(connection);
+  const name = getSuggestedTabNameFromConnection(connection);
   tabStore.addTab({
     name,
     connection,

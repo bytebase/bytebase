@@ -18,7 +18,7 @@ export const getDefaultTabName = () => {
 };
 
 export const isSimilarDefaultTabName = (name: string) => {
-  const regex = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/;
+  const regex = /(^|\s)(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/;
   return regex.test(name);
 };
 
@@ -95,16 +95,17 @@ export const isSimilarTab = (a: CoreTabInfo, b: CoreTabInfo): boolean => {
   );
 };
 
-export const getDefaultTabNameFromConnection = (conn: Connection) => {
+export const getSuggestedTabNameFromConnection = (conn: Connection) => {
   const instance = useInstanceV1Store().getInstanceByUID(conn.instanceId);
   const database = useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
+  const parts: string[] = [];
   if (database.uid !== String(UNKNOWN_ID)) {
-    return `${database.databaseName}`;
+    parts.push(database.databaseName);
+  } else if (instance.uid !== String(UNKNOWN_ID)) {
+    parts.push(instance.title);
   }
-  if (instance.uid !== String(UNKNOWN_ID)) {
-    return `${instance.title}`;
-  }
-  return getDefaultTabName();
+  parts.push(getDefaultTabName());
+  return parts.join(" ");
 };
 
 export const instanceOfConnectionAtom = (atom: ConnectionAtom) => {

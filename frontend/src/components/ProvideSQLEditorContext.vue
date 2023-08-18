@@ -46,7 +46,7 @@ import {
   connectionV1Slug as makeConnectionV1Slug,
   isSheetReadableV1,
   isDatabaseV1Queryable,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   isSimilarTab,
   hasWorkspacePermissionV1,
 } from "@/utils";
@@ -275,7 +275,7 @@ const prepareConnectionSlug = async () => {
       // Don't go further if the connection doesn't change.
       return;
     }
-    const name = getDefaultTabNameFromConnection(target.connection);
+    const name = getSuggestedTabNameFromConnection(target.connection);
     tabStore.selectOrAddSimilarTab(
       target,
       /* beside */ false,
