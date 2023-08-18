@@ -1572,6 +1572,7 @@
       "select-users": "Seleccionar usuarios",
       "assign-role": "Asignar rol",
       "never-expires": "Nunca caduca",
+      "expired": "Caducada",
       "role-description": "El rol de un miembro determina qué puede hacer en el proyecto.",
       "role-never-expires": "Este rol nunca expira.",
       "add-more": "Más información",

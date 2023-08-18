@@ -53,6 +53,7 @@
             v-for="binding in getSortedBindingList(projectMember.bindingList)"
             :key="binding.role"
             class="w-auto leading-8 flex flex-row justify-start items-center flex-nowrap gap-x-2"
+            :class="isExpired(binding) ? 'line-through' : ''"
           >
             <span
               v-if="getBindingConditionTitle(binding)"
@@ -68,6 +69,9 @@
                 displayRoleTitle(binding.role)
               }}
             </span>
+            <span v-if="isExpired(binding)"
+              >({{ $t("project.members.expired") }})</span
+            >
           </p>
         </div>
       </div>
