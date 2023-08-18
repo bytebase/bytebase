@@ -278,68 +278,62 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.InvalidArgument, "only personal draft schema design can be merged")
 	}
 
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	schemaDesign := request.SchemaDesign
-	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(schemaDesign.Name)
+	_, targetSheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.TargetSchemaDesign)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
-	parentSheetUID, err := strconv.Atoi(schemaDesign.SchemaVersion)
-	if err != nil || parentSheetUID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	targetSheetUID, err := strconv.Atoi(targetSheetID)
+	if err != nil || targetSheetUID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", targetSheetID))
 	}
 	schemaDesignSheetType := storepb.SheetPayload_SCHEMA_DESIGN.String()
-	parentSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-		UID:         &parentSheetUID,
+	targetSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
+		UID:         &targetSheetUID,
 		PayloadType: &schemaDesignSheetType,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get parent sheet: %v", err))
 	}
-	parentSchemaDesign, err := s.convertSheetToSchemaDesign(ctx, parentSheet)
+	targetSchemaDesign, err := s.convertSheetToSchemaDesign(ctx, targetSheet)
 	if err != nil {
 		return nil, err
 	}
 
+	schemaDesign := request.SchemaDesign
+	if schemaDesign.Etag != targetSchemaDesign.Etag {
+		return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
+	}
+
+	sanitizeSchemaDesignSchemaMetadata(schemaDesign)
+	designSchema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
+	if err != nil {
+		return nil, err
+	}
+	// Try to transform the schema string to database metadata to make sure it's valid.
+	if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, designSchema); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+	}
+
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	sheetUpdate := &store.PatchSheetMessage{
-		UID:       parentSheetUID,
+		UID:       targetSheetUID,
 		UpdaterID: currentPrincipalID,
+		Statement: &designSchema,
 	}
-	// If overwrite_schema is specified, we will use it as the new schema of main branch schema design.
-	if request.OverwriteSchema != nil {
-		sheetUpdate.Statement = request.OverwriteSchema
-	} else {
-		// Otherwise, we will use the schema of personal draft schema design as the new schema of main branch schema design.
-		if schemaDesign.Etag != parentSchemaDesign.Etag {
-			return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
-		}
-
-		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
-		designSchema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
-		if err != nil {
-			return nil, err
-		}
-		sheetUpdate.Statement = &designSchema
-	}
-
-	if sheetUpdate.Statement != nil {
-		// Try to transform the schema string to database metadata to make sure it's valid.
-		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
-		}
-	}
-
 	// Update main branch schema design.
-	parentSheet, err = s.store.PatchSheet(ctx, sheetUpdate)
+	targetSheet, err = s.store.PatchSheet(ctx, sheetUpdate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update main branch schema design: %v", err))
 	}
-	parentSchemaDesign, err = s.convertSheetToSchemaDesign(ctx, parentSheet)
+	targetSchemaDesign, err = s.convertSheetToSchemaDesign(ctx, targetSheet)
 	if err != nil {
 		return nil, err
 	}
 
+	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(schemaDesign.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
 	// Delete personal draft schema design.
 	sheetUID, err := strconv.Atoi(sheetID)
 	if err != nil || sheetUID <= 0 {
@@ -349,7 +343,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete personal draft schema design: %v", err))
 	}
-	return parentSchemaDesign, nil
+	return targetSchemaDesign, nil
 }
 
 // ParseSchemaString parses a schema string to database metadata.

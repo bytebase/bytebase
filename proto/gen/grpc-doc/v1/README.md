@@ -7990,7 +7990,7 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  | The personal draft schema design to merge. |
-| overwrite_schema | [string](#string) | optional | The schema string to overwrite the main branch schema. If not specified, the schema string of the personal draft schema design will be used. If specified, the schema string of the main branch schema design will be overwritten. |
+| target_schema_design | [string](#string) |  | The target schema design to merge into. Format: projects/{project}/schemaDesigns/{schemaDesign} |
 
 
 
