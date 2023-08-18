@@ -28,141 +28,14 @@ func getPlanCheckRunsForPlan(ctx context.Context, s *store.Store, plan *store.Pl
 }
 
 func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.PlanMessage, spec *storepb.PlanConfig_Spec) ([]*store.PlanCheckRunMessage, error) {
-	var planCheckRuns []*store.PlanCheckRunMessage
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
 		// TODO(p0ny): implement
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-		target := config.ChangeDatabaseConfig.Target
+		return getPlanCheckRunsForSpecWithChangeDatabaseConfigDatabaseTarget(ctx, s, plan, spec, config)
 
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance database id from target %q", target)
-		}
-
-		_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.ChangeDatabaseConfig.Sheet)
-		}
-		sheetUID, err := strconv.Atoi(sheetUIDStr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
-		}
-
-		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-			ResourceID: &instanceID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance %q not found", instanceID)
-		}
-		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instanceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-		}
-		if database == nil {
-			return nil, errors.Errorf("database %q not found", databaseName)
-		}
-		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-			CreatorUID: api.SystemBotID,
-			UpdaterUID: api.SystemBotID,
-			PlanUID:    plan.UID,
-			Status:     store.PlanCheckRunStatusRunning,
-			Type:       store.PlanCheckDatabaseConnect,
-			Config: &storepb.PlanCheckRunConfig{
-				SheetUid:           0,
-				ChangeDatabaseType: storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED,
-				Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
-					DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
-						InstanceUid:  int32(instance.UID),
-						DatabaseName: database.DatabaseName,
-					},
-				},
-			},
-		})
-		if isStatementTypeCheckSupported(instance.Engine) {
-			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-				CreatorUID: api.SystemBotID,
-				UpdaterUID: api.SystemBotID,
-				PlanUID:    plan.UID,
-				Status:     store.PlanCheckRunStatusRunning,
-				Type:       store.PlanCheckDatabaseStatementType,
-				Config: &storepb.PlanCheckRunConfig{
-					SheetUid:           int32(sheetUID),
-					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
-					Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
-						DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
-							InstanceUid:  int32(instance.UID),
-							DatabaseName: database.DatabaseName,
-						},
-					},
-				},
-			})
-		}
-		if isStatementAdviseSupported(instance.Engine) {
-			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-				CreatorUID: api.SystemBotID,
-				UpdaterUID: api.SystemBotID,
-				PlanUID:    plan.UID,
-				Status:     store.PlanCheckRunStatusRunning,
-				Type:       store.PlanCheckDatabaseStatementAdvise,
-				Config: &storepb.PlanCheckRunConfig{
-					SheetUid:           int32(sheetUID),
-					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
-					Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
-						DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
-							InstanceUid:  int32(instance.UID),
-							DatabaseName: database.DatabaseName,
-						},
-					},
-				},
-			})
-		}
-		if isStatementReportSupported(instance.Engine) {
-			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-				CreatorUID: api.SystemBotID,
-				UpdaterUID: api.SystemBotID,
-				PlanUID:    plan.UID,
-				Status:     store.PlanCheckRunStatusRunning,
-				Type:       store.PlanCheckDatabaseStatementSummaryReport,
-				Config: &storepb.PlanCheckRunConfig{
-					SheetUid:           int32(sheetUID),
-					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
-					Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
-						DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
-							InstanceUid:  int32(instance.UID),
-							DatabaseName: database.DatabaseName,
-						},
-					},
-				},
-			})
-		}
-		if config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST {
-			planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-				CreatorUID: api.SystemBotID,
-				UpdaterUID: api.SystemBotID,
-				PlanUID:    plan.UID,
-				Status:     store.PlanCheckRunStatusRunning,
-				Type:       store.PlanCheckDatabaseGhostSync,
-				Config: &storepb.PlanCheckRunConfig{
-					SheetUid:           int32(sheetUID),
-					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
-					Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
-						DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
-							InstanceUid:  int32(instance.UID),
-							DatabaseName: database.DatabaseName,
-						},
-					},
-				},
-			})
-		}
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
+		var planCheckRuns []*store.PlanCheckRunMessage
 		// mysql PITR check
 		if _, ok := config.RestoreDatabaseConfig.Source.(*storepb.PlanConfig_RestoreDatabaseConfig_PointInTime); ok {
 			if config.RestoreDatabaseConfig.CreateDatabaseConfig != nil {
@@ -246,7 +119,155 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				})
 			}
 		}
+		return planCheckRuns, nil
+	default:
+		return nil, errors.Errorf("unknown spec config type %T", config)
 	}
+	return nil, nil
+}
+
+func getPlanCheckRunsForSpecWithChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, spec *storepb.PlanConfig_Spec, config *storepb.PlanConfig_Spec_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
+	configTarget, err := func() (*storepb.PlanCheckRunConfig, error) {
+		if instanceID, databaseName, err := common.GetInstanceDatabaseID(config.ChangeDatabaseConfig.Target); err == nil {
+			instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				ResourceID: &instanceID,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+			}
+			if instance == nil {
+				return nil, errors.Errorf("instance %q not found", instanceID)
+			}
+			database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:          &instanceID,
+				DatabaseName:        &databaseName,
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+			}
+			if database == nil {
+				return nil, errors.Errorf("database %q not found", databaseName)
+			}
+
+			return &storepb.PlanCheckRunConfig{
+				Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
+					DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
+						InstanceUid:  int32(instance.UID),
+						DatabaseName: database.DatabaseName,
+					},
+				},
+			}, nil
+		}
+		if projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(config.ChangeDatabaseConfig.Target); err == nil {
+			project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{
+				ResourceID: &projectID,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get project %q", projectID)
+			}
+			if project == nil {
+				return nil, errors.Errorf("project %q not found", projectID)
+			}
+			databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+				ProjectUID: &project.UID,
+				ResourceID: &databaseGroupID,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
+			}
+			if databaseGroup == nil {
+				return nil, errors.Errorf("database group %q not found", databaseGroupID)
+			}
+
+			return &storepb.PlanCheckRunConfig{
+				Target: &storepb.PlanCheckRunConfig_DatabaseGroupTarget_{
+					DatabaseGroupTarget: &storepb.PlanCheckRunConfig_DatabaseGroupTarget{
+						DatabaseGroupUid: databaseGroup.UID,
+					},
+				},
+			}, nil
+		}
+		return nil, errors.Errorf("unknown target %q", config.ChangeDatabaseConfig.Target)
+	}()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get plan check run config target")
+	}
+
+	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.ChangeDatabaseConfig.Sheet)
+	}
+	sheetUID, err := strconv.Atoi(sheetUIDStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
+	}
+
+	var planCheckRuns []*store.PlanCheckRunMessage
+
+	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+		CreatorUID: api.SystemBotID,
+		UpdaterUID: api.SystemBotID,
+		PlanUID:    plan.UID,
+		Status:     store.PlanCheckRunStatusRunning,
+		Type:       store.PlanCheckDatabaseConnect,
+		Config: &storepb.PlanCheckRunConfig{
+			SheetUid:           0,
+			ChangeDatabaseType: storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED,
+			Target:             configTarget.Target,
+		},
+	})
+	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+		CreatorUID: api.SystemBotID,
+		UpdaterUID: api.SystemBotID,
+		PlanUID:    plan.UID,
+		Status:     store.PlanCheckRunStatusRunning,
+		Type:       store.PlanCheckDatabaseStatementType,
+		Config: &storepb.PlanCheckRunConfig{
+			SheetUid:           int32(sheetUID),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+			Target:             configTarget.Target,
+		},
+	})
+	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+		CreatorUID: api.SystemBotID,
+		UpdaterUID: api.SystemBotID,
+		PlanUID:    plan.UID,
+		Status:     store.PlanCheckRunStatusRunning,
+		Type:       store.PlanCheckDatabaseStatementAdvise,
+		Config: &storepb.PlanCheckRunConfig{
+			SheetUid:           int32(sheetUID),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+			Target:             configTarget.Target,
+		},
+	})
+	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+		CreatorUID: api.SystemBotID,
+		UpdaterUID: api.SystemBotID,
+		PlanUID:    plan.UID,
+		Status:     store.PlanCheckRunStatusRunning,
+		Type:       store.PlanCheckDatabaseStatementSummaryReport,
+		Config: &storepb.PlanCheckRunConfig{
+			SheetUid:           int32(sheetUID),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+			Target:             configTarget.Target,
+		},
+	})
+	if config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST {
+		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+			CreatorUID: api.SystemBotID,
+			UpdaterUID: api.SystemBotID,
+			PlanUID:    plan.UID,
+			Status:     store.PlanCheckRunStatusRunning,
+			Type:       store.PlanCheckDatabaseGhostSync,
+			Config: &storepb.PlanCheckRunConfig{
+				SheetUid:           int32(sheetUID),
+				ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+				Target:             configTarget.Target,
+			},
+		})
+	}
+
 	return planCheckRuns, nil
 }
 
