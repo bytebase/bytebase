@@ -133,10 +133,6 @@ message ListSchemaDesignsRequest {
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // To filter the search result.
-  // Format: only support the following spec for now:
-  // - `creator = users/{email}`, `creator != users/{email}`
-  // - `starred = true`, `starred = false`.
-  // Not support empty filter for now.
   string filter = 2;
 
   // The maximum number of schema designs to return. The service may return fewer than
@@ -187,8 +183,10 @@ message MergeSchemaDesignRequest {
 }
 
 message ParseSchemaStringRequest {
+  // The schema string to parse.
   string schema_string = 1 [(google.api.field_behavior) = REQUIRED];
 
+  // The database engine of the schema string.
   Engine engine = 2;
 }
 

@@ -76,9 +76,14 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 			Status:     store.PlanCheckRunStatusRunning,
 			Type:       store.PlanCheckDatabaseConnect,
 			Config: &storepb.PlanCheckRunConfig{
-				SheetId:    0,
-				InstanceId: int32(instance.UID),
-				DatabaseId: int32(database.UID),
+				SheetUid:           0,
+				ChangeDatabaseType: storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED,
+				Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
+					DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
+						InstanceUid:  int32(instance.UID),
+						DatabaseName: database.DatabaseName,
+					},
+				},
 			},
 		})
 		if isStatementTypeCheckSupported(instance.Engine) {
@@ -89,10 +94,14 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				Status:     store.PlanCheckRunStatusRunning,
 				Type:       store.PlanCheckDatabaseStatementType,
 				Config: &storepb.PlanCheckRunConfig{
-					SheetId:            int32(sheetUID),
-					InstanceId:         int32(instance.UID),
-					DatabaseId:         int32(database.UID),
+					SheetUid:           int32(sheetUID),
 					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+					Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
+						DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
+							InstanceUid:  int32(instance.UID),
+							DatabaseName: database.DatabaseName,
+						},
+					},
 				},
 			})
 		}
@@ -104,10 +113,14 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				Status:     store.PlanCheckRunStatusRunning,
 				Type:       store.PlanCheckDatabaseStatementAdvise,
 				Config: &storepb.PlanCheckRunConfig{
-					SheetId:            int32(sheetUID),
-					InstanceId:         int32(instance.UID),
-					DatabaseId:         int32(database.UID),
+					SheetUid:           int32(sheetUID),
 					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+					Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
+						DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
+							InstanceUid:  int32(instance.UID),
+							DatabaseName: database.DatabaseName,
+						},
+					},
 				},
 			})
 		}
@@ -119,10 +132,14 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				Status:     store.PlanCheckRunStatusRunning,
 				Type:       store.PlanCheckDatabaseStatementSummaryReport,
 				Config: &storepb.PlanCheckRunConfig{
-					SheetId:            int32(sheetUID),
-					InstanceId:         int32(instance.UID),
-					DatabaseId:         int32(database.UID),
+					SheetUid:           int32(sheetUID),
 					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+					Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
+						DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
+							InstanceUid:  int32(instance.UID),
+							DatabaseName: database.DatabaseName,
+						},
+					},
 				},
 			})
 		}
@@ -134,10 +151,14 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 				Status:     store.PlanCheckRunStatusRunning,
 				Type:       store.PlanCheckDatabaseGhostSync,
 				Config: &storepb.PlanCheckRunConfig{
-					SheetId:            int32(sheetUID),
-					InstanceId:         int32(instance.UID),
-					DatabaseId:         int32(database.UID),
+					SheetUid:           int32(sheetUID),
 					ChangeDatabaseType: convertToChangeDatabaseType(config.ChangeDatabaseConfig.Type),
+					Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
+						DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
+							InstanceUid:  int32(instance.UID),
+							DatabaseName: database.DatabaseName,
+						},
+					},
 				},
 			})
 		}
@@ -166,10 +187,13 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 					Status:     store.PlanCheckRunStatusRunning,
 					Type:       store.PlanCheckDatabasePITRMySQL,
 					Config: &storepb.PlanCheckRunConfig{
-						InstanceId: int32(targetInstance.UID),
-						PitrConfig: &storepb.PlanCheckRunConfig_PitrConfig{
-							TargetInstanceId:   int32(targetInstance.UID),
-							TargetDatabaseName: config.RestoreDatabaseConfig.CreateDatabaseConfig.Database,
+						SheetUid:           0,
+						ChangeDatabaseType: storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED,
+						Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
+							DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
+								InstanceUid:  int32(targetInstance.UID),
+								DatabaseName: config.RestoreDatabaseConfig.CreateDatabaseConfig.Database,
+							},
 						},
 					},
 				})
@@ -210,8 +234,14 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 					Status:     store.PlanCheckRunStatusRunning,
 					Type:       store.PlanCheckDatabasePITRMySQL,
 					Config: &storepb.PlanCheckRunConfig{
-						InstanceId: int32(instance.UID),
-						DatabaseId: int32(database.UID),
+						SheetUid:           0,
+						ChangeDatabaseType: storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED,
+						Target: &storepb.PlanCheckRunConfig_DatabaseTarget_{
+							DatabaseTarget: &storepb.PlanCheckRunConfig_DatabaseTarget{
+								InstanceUid:  int32(instance.UID),
+								DatabaseName: database.DatabaseName,
+							},
+						},
 					},
 				})
 			}

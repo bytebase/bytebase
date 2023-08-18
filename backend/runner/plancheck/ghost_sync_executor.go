@@ -52,20 +52,26 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 		}
 	}()
 
-	databaseID := int(planCheckRun.Config.DatabaseId)
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database ID %v", databaseID)
+	target := planCheckRun.Config.GetDatabaseTarget()
+	if target == nil {
+		return nil, errors.New("database target is required")
 	}
-	if database == nil {
-		return nil, errors.Errorf("database not found %v", databaseID)
-	}
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+
+	instanceUID := int(target.InstanceUid)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v", database.InstanceID)
+		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance not found %v", database.InstanceID)
+		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+	}
+
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found %q", target.DatabaseName)
 	}
 
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -78,17 +84,17 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 		return nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", instance.UID)
 	}
 
-	sheetID := int(planCheckRun.Config.SheetId)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
+	sheetUID := int(planCheckRun.Config.SheetUid)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetID)
+		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
 	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found", sheetID)
+		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
-	statement, err := e.store.GetSheetStatementByID(ctx, sheetID)
+	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetID)
+		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
 	}
 
 	materials := utils.GetSecretMapFromDatabaseMessage(database)

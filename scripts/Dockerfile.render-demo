@@ -20,9 +20,9 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.20.3 as backend
+FROM golang:1.21.0 as backend
 
-ARG GO_VERSION="1.20.1"
+ARG GO_VERSION="1.21.0"
 # RENDER_GIT_COMMIT is a render.com provided env var during build.
 # https://render.com/docs/environment-variables
 ARG RENDER_GIT_COMMIT="unknown"
@@ -52,7 +52,7 @@ RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
         ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
-FROM debian:bullseye-slim as monolithic
+FROM debian:bookworm-slim as monolithic
 
 ARG VERSION="development"
 ARG RENDER_GIT_COMMIT="unknown"
