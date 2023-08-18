@@ -8,20 +8,12 @@ tmp_dir = ".air"
   cmd = """
   go build \
   --tags "" \
-  -gcflags=all=\"-N -l\" \
-  -ldflags " \
-  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=development' \
-  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=$(go version)' \
-  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)' \
-  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' \
-  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=$(id -u -n)' \
-  " \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
-  delay = 1000
+  delay = 500
   exclude_dir = [".air", "vendor", "frontend", "docs"]
   exclude_file = []
   exclude_regex = []
   exclude_unchanged = false
   follow_symlink = false
   send_interrupt = true
-  kill_delay = 2000
+  kill_delay = 1000
