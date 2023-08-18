@@ -7989,7 +7989,8 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  | The personal draft schema design to merge. |
+| name | [string](#string) |  | The name of the schema design to merge. Format: projects/{project}/schemaDesigns/{schemaDesign} |
+| target_name | [string](#string) |  | The target schema design to merge into. Format: projects/{project}/schemaDesigns/{schemaDesign} |
 
 
 
