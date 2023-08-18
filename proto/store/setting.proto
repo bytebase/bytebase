@@ -159,3 +159,23 @@ message DataClassificationSetting {
   }
   repeated DataClassificationConfig configs = 1;
 }
+
+message DataFeatureSetting {
+  enum MaskingLevel {
+    MASKING_LEVEL_UNSPECIFIED = 0;
+    NONE = 1;
+    PARTIAL = 2;
+    FULL = 3;
+  }
+
+  message DataFeature {
+    // id is the uuid for feature.
+    string id = 1;
+
+    // title is the title for feature, for example: "Mail".
+    string title = 2;
+
+    // description is the description for feature.
+    string description = 3;
+  }
+}
