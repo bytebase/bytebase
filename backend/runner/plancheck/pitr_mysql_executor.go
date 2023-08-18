@@ -28,42 +28,20 @@ type PITRMySQLExecutor struct {
 
 // Run runs the PITR MySQL executor.
 func (e *PITRMySQLExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	instance, databaseName, err := func() (*store.InstanceMessage, string, error) {
-		if planCheckRun.Config.GetPitrConfig().GetTargetInstanceId() != 0 {
-			instanceUID := int(planCheckRun.Config.GetPitrConfig().GetTargetInstanceId())
-			databaseName := planCheckRun.Config.GetPitrConfig().GetTargetDatabaseName()
-
-			instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
-			if err != nil {
-				return nil, "", errors.Wrapf(err, "failed to get instance %v", instanceUID)
-			}
-			if instance == nil {
-				return nil, "", errors.Errorf("instance not found %v", instanceUID)
-			}
-			return instance, databaseName, nil
-		}
-
-		databaseID := int(planCheckRun.Config.DatabaseId)
-		database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
-		if err != nil {
-			return nil, "", errors.Wrapf(err, "failed to get database ID %v", databaseID)
-		}
-		if database == nil {
-			return nil, "", errors.Errorf("database not found %v", databaseID)
-		}
-		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, "", errors.Wrapf(err, "failed to get instance %v", database.InstanceID)
-		}
-		if instance == nil {
-			return nil, "", errors.Errorf("instance not found %v", database.InstanceID)
-		}
-
-		return instance, database.DatabaseName, nil
-	}()
-	if err != nil {
-		return nil, err
+	target := planCheckRun.Config.GetDatabaseTarget()
+	if target == nil {
+		return nil, errors.New("database target is required")
 	}
+
+	instanceUID := int(target.InstanceUid)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+	}
+	databaseName := target.DatabaseName
 
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
