@@ -8,7 +8,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -32,7 +31,7 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
 		// TODO(p0ny): implement
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-		return getPlanCheckRunsForSpecWithChangeDatabaseConfigDatabaseTarget(ctx, s, plan, spec, config)
+		return getPlanCheckRunsForSpecWithChangeDatabaseConfigDatabaseTarget(ctx, s, plan, config)
 
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
 		var planCheckRuns []*store.PlanCheckRunMessage
@@ -126,7 +125,7 @@ func getPlanCheckRunsForSpec(ctx context.Context, s *store.Store, plan *store.Pl
 	return nil, nil
 }
 
-func getPlanCheckRunsForSpecWithChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, spec *storepb.PlanConfig_Spec, config *storepb.PlanConfig_Spec_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
+func getPlanCheckRunsForSpecWithChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_Spec_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
 	configTarget, err := func() (*storepb.PlanCheckRunConfig, error) {
 		if instanceID, databaseName, err := common.GetInstanceDatabaseID(config.ChangeDatabaseConfig.Target); err == nil {
 			instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
@@ -283,31 +282,4 @@ func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type)
 		return storepb.PlanCheckRunConfig_DML
 	}
 	return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
-}
-
-func isStatementTypeCheckSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB, db.OceanBase:
-		return true
-	default:
-		return false
-	}
-}
-
-func isStatementAdviseSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.MySQL, db.TiDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
-		return true
-	default:
-		return false
-	}
-}
-
-func isStatementReportSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.Postgres, db.MySQL, db.OceanBase, db.Oracle:
-		return true
-	default:
-		return false
-	}
 }
