@@ -13,6 +13,7 @@
     "
     :allow-delete="true"
     :allow-collapse="true"
+    :outline-item-class="'pt-0.5 pb-0.5'"
     @delete-index="deleteIndex"
   />
 </template>
