@@ -80,7 +80,10 @@ import {
   ChangeHistory,
   DatabaseMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import {
+  SchemaDesign,
+  SchemaDesign_Type,
+} from "@/types/proto/v1/schema_design_service";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import { mergeSchemaEditToMetadata } from "./common/util";
 import SchemaDesigner from "./index.vue";
@@ -119,7 +122,9 @@ const state = reactive<LocalState>({
   baselineSchema: {
     projectId: props.projectId,
   },
-  schemaDesign: SchemaDesign.fromPartial({}),
+  schemaDesign: SchemaDesign.fromPartial({
+    type: SchemaDesign_Type.MAIN_BRANCH,
+  }),
 });
 const refreshId = ref<string>("");
 const readonly = computed(() => {
@@ -229,6 +234,7 @@ const handleConfirm = async () => {
       baselineSchema: state.schemaDesign.baselineSchema,
       baselineSchemaMetadata: state.schemaDesign.baselineSchemaMetadata,
       engine: state.schemaDesign.engine,
+      type: state.schemaDesign.type,
       baselineDatabase: baselineDatabase,
       schemaVersion: schemaVersion,
     })
