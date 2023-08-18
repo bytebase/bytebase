@@ -250,17 +250,23 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		sheetUpdate.Name = &schemaDesign.Title
 	}
 	if slices.Contains(request.UpdateMask.Paths, "schema") {
+		sheetUpdate.Statement = &schemaDesign.Schema
+	}
+	if slices.Contains(request.UpdateMask.Paths, "metadata") {
 		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
 		schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		if err != nil {
 			return nil, err
 		}
-		// Try to transform the schema string to database metadata to make sure it's valid.
-		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
-		}
 		sheetUpdate.Statement = &schema
 	}
+	if sheetUpdate.Statement != nil {
+		// Try to transform the schema string to database metadata to make sure it's valid.
+		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+		}
+	}
+
 	sheet, err := s.store.PatchSheet(ctx, sheetUpdate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update sheet: %v", err))
@@ -272,7 +278,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	return schemaDesign, nil
 }
 
-// MergeSchemaDesign merges a personal draft schema design to its main branch.
+// MergeSchemaDesign merges a personal draft schema design to the target schema design.
 func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
 	if request.SchemaDesign.Type != v1pb.SchemaDesign_PERSONAL_DRAFT {
 		return nil, status.Errorf(codes.InvalidArgument, "only personal draft schema design can be merged")
@@ -292,7 +298,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		PayloadType: &schemaDesignSheetType,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get parent sheet: %v", err))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get target sheet: %v", err))
 	}
 	targetSchemaDesign, err := s.convertSheetToSchemaDesign(ctx, targetSheet)
 	if err != nil {
