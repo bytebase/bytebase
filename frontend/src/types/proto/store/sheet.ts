@@ -64,9 +64,55 @@ export interface SheetPayload_UsedByIssue {
 }
 
 export interface SheetPayload_SchemaDesign {
+  /** The type of the schema design. */
+  type: SheetPayload_SchemaDesign_Type;
+  /** The database instance engine of the schema design. */
+  engine: Engine;
   /** The baseline instance change history id of the schema design. */
   baselineChangeHistoryId: string;
-  engine: Engine;
+  /** The baseline schema design id. Using for personal draft types. AKA sheet id. */
+  baselineSchemaDesignId: string;
+}
+
+export enum SheetPayload_SchemaDesign_Type {
+  TYPE_UNSPECIFIED = 0,
+  /** MAIN_BRANCH - Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. */
+  MAIN_BRANCH = 1,
+  /** PERSONAL_DRAFT - Personal draft type is a copy of the main branch type schema designs. */
+  PERSONAL_DRAFT = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function sheetPayload_SchemaDesign_TypeFromJSON(object: any): SheetPayload_SchemaDesign_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return SheetPayload_SchemaDesign_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "MAIN_BRANCH":
+      return SheetPayload_SchemaDesign_Type.MAIN_BRANCH;
+    case 2:
+    case "PERSONAL_DRAFT":
+      return SheetPayload_SchemaDesign_Type.PERSONAL_DRAFT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SheetPayload_SchemaDesign_Type.UNRECOGNIZED;
+  }
+}
+
+export function sheetPayload_SchemaDesign_TypeToJSON(object: SheetPayload_SchemaDesign_Type): string {
+  switch (object) {
+    case SheetPayload_SchemaDesign_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case SheetPayload_SchemaDesign_Type.MAIN_BRANCH:
+      return "MAIN_BRANCH";
+    case SheetPayload_SchemaDesign_Type.PERSONAL_DRAFT:
+      return "PERSONAL_DRAFT";
+    case SheetPayload_SchemaDesign_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 function createBaseSheetPayload(): SheetPayload {
@@ -373,16 +419,22 @@ export const SheetPayload_UsedByIssue = {
 };
 
 function createBaseSheetPayload_SchemaDesign(): SheetPayload_SchemaDesign {
-  return { baselineChangeHistoryId: "", engine: 0 };
+  return { type: 0, engine: 0, baselineChangeHistoryId: "", baselineSchemaDesignId: "" };
 }
 
 export const SheetPayload_SchemaDesign = {
   encode(message: SheetPayload_SchemaDesign, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.baselineChangeHistoryId !== "") {
-      writer.uint32(10).string(message.baselineChangeHistoryId);
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
     }
     if (message.engine !== 0) {
       writer.uint32(16).int32(message.engine);
+    }
+    if (message.baselineChangeHistoryId !== "") {
+      writer.uint32(26).string(message.baselineChangeHistoryId);
+    }
+    if (message.baselineSchemaDesignId !== "") {
+      writer.uint32(34).string(message.baselineSchemaDesignId);
     }
     return writer;
   },
@@ -395,11 +447,11 @@ export const SheetPayload_SchemaDesign = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.baselineChangeHistoryId = reader.string();
+          message.type = reader.int32() as any;
           continue;
         case 2:
           if (tag !== 16) {
@@ -407,6 +459,20 @@ export const SheetPayload_SchemaDesign = {
           }
 
           message.engine = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.baselineChangeHistoryId = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.baselineSchemaDesignId = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -419,15 +485,19 @@ export const SheetPayload_SchemaDesign = {
 
   fromJSON(object: any): SheetPayload_SchemaDesign {
     return {
-      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId) ? String(object.baselineChangeHistoryId) : "",
+      type: isSet(object.type) ? sheetPayload_SchemaDesign_TypeFromJSON(object.type) : 0,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId) ? String(object.baselineChangeHistoryId) : "",
+      baselineSchemaDesignId: isSet(object.baselineSchemaDesignId) ? String(object.baselineSchemaDesignId) : "",
     };
   },
 
   toJSON(message: SheetPayload_SchemaDesign): unknown {
     const obj: any = {};
-    message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
+    message.type !== undefined && (obj.type = sheetPayload_SchemaDesign_TypeToJSON(message.type));
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
+    message.baselineSchemaDesignId !== undefined && (obj.baselineSchemaDesignId = message.baselineSchemaDesignId);
     return obj;
   },
 
@@ -437,8 +507,10 @@ export const SheetPayload_SchemaDesign = {
 
   fromPartial(object: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
     const message = createBaseSheetPayload_SchemaDesign();
-    message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? "";
+    message.type = object.type ?? 0;
     message.engine = object.engine ?? 0;
+    message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? "";
+    message.baselineSchemaDesignId = object.baselineSchemaDesignId ?? "";
     return message;
   },
 };

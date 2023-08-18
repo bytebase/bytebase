@@ -495,10 +495,13 @@
     - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
     - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
     - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
+    - [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest)
     - [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest)
     - [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse)
     - [SchemaDesign](#bytebase-v1-SchemaDesign)
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
+  
+    - [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type)
   
     - [SchemaDesignService](#bytebase-v1-SchemaDesignService)
   
@@ -7951,7 +7954,7 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource of the schema design. Foramt: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
+| filter | [string](#string) |  | To filter the search result. |
 | page_size | [int32](#int32) |  | The maximum number of schema designs to return. The service may return fewer than this value. If unspecified, at most 50 schema designs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListSchemaDesigns` call. Provide this to retrieve the subsequent page.
 
@@ -7978,6 +7981,21 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 
 
+<a name="bytebase-v1-MergeSchemaDesignRequest"></a>
+
+### MergeSchemaDesignRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  | The personal draft schema design to merge. |
+
+
+
+
+
+
 <a name="bytebase-v1-ParseSchemaStringRequest"></a>
 
 ### ParseSchemaStringRequest
@@ -7986,8 +8004,8 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| schema_string | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| schema_string | [string](#string) |  | The schema string to parse. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
 
 
 
@@ -8026,6 +8044,8 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema design. |
 | baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
 | schema_version | [string](#string) |  | The selected schema version of the baseline database. If not specified, the latest schema of database will be used as baseline schema. |
+| type | [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type) |  | The type of the schema design. |
+| etag | [string](#string) |  | The etag of the schema design. |
 | creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
 | updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was created. |
@@ -8055,6 +8075,19 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 
  
 
+
+<a name="bytebase-v1-SchemaDesign-Type"></a>
+
+### SchemaDesign.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| MAIN_BRANCH | 1 | Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. |
+| PERSONAL_DRAFT | 2 | Personal draft type is a copy of the main branch type schema designs. |
+
+
  
 
  
@@ -8071,6 +8104,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | ListSchemaDesigns | [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest) | [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse) |  |
 | CreateSchemaDesign | [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | UpdateSchemaDesign | [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
+| MergeSchemaDesign | [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 

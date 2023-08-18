@@ -42,6 +42,10 @@ export interface SchemaDesign {
    * If not specified, the latest schema of database will be used as baseline schema.
    */
   schemaVersion: string;
+  /** The type of the schema design. */
+  type: SchemaDesign_Type;
+  /** The etag of the schema design. */
+  etag: string;
   /**
    * The creator of the schema design.
    * Format: users/{email}
@@ -60,6 +64,47 @@ export interface SchemaDesign {
   updateTime?: Date | undefined;
 }
 
+export enum SchemaDesign_Type {
+  TYPE_UNSPECIFIED = 0,
+  /** MAIN_BRANCH - Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. */
+  MAIN_BRANCH = 1,
+  /** PERSONAL_DRAFT - Personal draft type is a copy of the main branch type schema designs. */
+  PERSONAL_DRAFT = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function schemaDesign_TypeFromJSON(object: any): SchemaDesign_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return SchemaDesign_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "MAIN_BRANCH":
+      return SchemaDesign_Type.MAIN_BRANCH;
+    case 2:
+    case "PERSONAL_DRAFT":
+      return SchemaDesign_Type.PERSONAL_DRAFT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SchemaDesign_Type.UNRECOGNIZED;
+  }
+}
+
+export function schemaDesign_TypeToJSON(object: SchemaDesign_Type): string {
+  switch (object) {
+    case SchemaDesign_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case SchemaDesign_Type.MAIN_BRANCH:
+      return "MAIN_BRANCH";
+    case SchemaDesign_Type.PERSONAL_DRAFT:
+      return "PERSONAL_DRAFT";
+    case SchemaDesign_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetSchemaDesignRequest {
   /**
    * The name of the schema design to retrieve.
@@ -74,13 +119,7 @@ export interface ListSchemaDesignsRequest {
    * Foramt: projects/{project}
    */
   parent: string;
-  /**
-   * To filter the search result.
-   * Format: only support the following spec for now:
-   * - `creator = users/{email}`, `creator != users/{email}`
-   * - `starred = true`, `starred = false`.
-   * Not support empty filter for now.
-   */
+  /** To filter the search result. */
   filter: string;
   /**
    * The maximum number of schema designs to return. The service may return fewer than
@@ -132,8 +171,15 @@ export interface UpdateSchemaDesignRequest {
   updateMask?: string[] | undefined;
 }
 
+export interface MergeSchemaDesignRequest {
+  /** The personal draft schema design to merge. */
+  schemaDesign?: SchemaDesign | undefined;
+}
+
 export interface ParseSchemaStringRequest {
+  /** The schema string to parse. */
   schemaString: string;
+  /** The database engine of the schema string. */
   engine: Engine;
 }
 
@@ -161,6 +207,8 @@ function createBaseSchemaDesign(): SchemaDesign {
     engine: 0,
     baselineDatabase: "",
     schemaVersion: "",
+    type: 0,
+    etag: "",
     creator: "",
     updater: "",
     createTime: undefined,
@@ -197,17 +245,23 @@ export const SchemaDesign = {
     if (message.schemaVersion !== "") {
       writer.uint32(74).string(message.schemaVersion);
     }
+    if (message.type !== 0) {
+      writer.uint32(80).int32(message.type);
+    }
+    if (message.etag !== "") {
+      writer.uint32(90).string(message.etag);
+    }
     if (message.creator !== "") {
-      writer.uint32(82).string(message.creator);
+      writer.uint32(98).string(message.creator);
     }
     if (message.updater !== "") {
-      writer.uint32(90).string(message.updater);
+      writer.uint32(106).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(98).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(114).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(106).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -283,28 +337,42 @@ export const SchemaDesign = {
           message.schemaVersion = reader.string();
           continue;
         case 10:
-          if (tag !== 82) {
+          if (tag !== 80) {
             break;
           }
 
-          message.creator = reader.string();
+          message.type = reader.int32() as any;
           continue;
         case 11:
           if (tag !== 90) {
             break;
           }
 
-          message.updater = reader.string();
+          message.etag = reader.string();
           continue;
         case 12:
           if (tag !== 98) {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.creator = reader.string();
           continue;
         case 13:
           if (tag !== 106) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 15:
+          if (tag !== 122) {
             break;
           }
 
@@ -332,6 +400,8 @@ export const SchemaDesign = {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       baselineDatabase: isSet(object.baselineDatabase) ? String(object.baselineDatabase) : "",
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
+      type: isSet(object.type) ? schemaDesign_TypeFromJSON(object.type) : 0,
+      etag: isSet(object.etag) ? String(object.etag) : "",
       creator: isSet(object.creator) ? String(object.creator) : "",
       updater: isSet(object.updater) ? String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
@@ -353,6 +423,8 @@ export const SchemaDesign = {
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.baselineDatabase !== undefined && (obj.baselineDatabase = message.baselineDatabase);
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.type !== undefined && (obj.type = schemaDesign_TypeToJSON(message.type));
+    message.etag !== undefined && (obj.etag = message.etag);
     message.creator !== undefined && (obj.creator = message.creator);
     message.updater !== undefined && (obj.updater = message.updater);
     message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
@@ -380,6 +452,8 @@ export const SchemaDesign = {
     message.engine = object.engine ?? 0;
     message.baselineDatabase = object.baselineDatabase ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
+    message.type = object.type ?? 0;
+    message.etag = object.etag ?? "";
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
     message.createTime = object.createTime ?? undefined;
@@ -762,6 +836,65 @@ export const UpdateSchemaDesignRequest = {
       ? SchemaDesign.fromPartial(object.schemaDesign)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseMergeSchemaDesignRequest(): MergeSchemaDesignRequest {
+  return { schemaDesign: undefined };
+}
+
+export const MergeSchemaDesignRequest = {
+  encode(message: MergeSchemaDesignRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schemaDesign !== undefined) {
+      SchemaDesign.encode(message.schemaDesign, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MergeSchemaDesignRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMergeSchemaDesignRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schemaDesign = SchemaDesign.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MergeSchemaDesignRequest {
+    return { schemaDesign: isSet(object.schemaDesign) ? SchemaDesign.fromJSON(object.schemaDesign) : undefined };
+  },
+
+  toJSON(message: MergeSchemaDesignRequest): unknown {
+    const obj: any = {};
+    message.schemaDesign !== undefined &&
+      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<MergeSchemaDesignRequest>): MergeSchemaDesignRequest {
+    return MergeSchemaDesignRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MergeSchemaDesignRequest>): MergeSchemaDesignRequest {
+    const message = createBaseMergeSchemaDesignRequest();
+    message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
+      ? SchemaDesign.fromPartial(object.schemaDesign)
+      : undefined;
     return message;
   },
 };
@@ -1277,6 +1410,97 @@ export const SchemaDesignServiceDefinition = {
         },
       },
     },
+    mergeSchemaDesign: {
+      name: "MergeSchemaDesign",
+      requestType: MergeSchemaDesignRequest,
+      requestStream: false,
+      responseType: SchemaDesign,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([12, 115, 99, 104, 101, 109, 97, 68, 101, 115, 105, 103, 110])],
+          578365826: [
+            new Uint8Array([
+              74,
+              58,
+              13,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              95,
+              100,
+              101,
+              115,
+              105,
+              103,
+              110,
+              34,
+              57,
+              47,
+              118,
+              49,
+              47,
+              123,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              95,
+              100,
+              101,
+              115,
+              105,
+              103,
+              110,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              68,
+              101,
+              115,
+              105,
+              103,
+              110,
+              115,
+              47,
+              42,
+              125,
+              58,
+              109,
+              101,
+              114,
+              103,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
     parseSchemaString: {
       name: "ParseSchemaString",
       requestType: ParseSchemaStringRequest,
@@ -1408,6 +1632,10 @@ export interface SchemaDesignServiceImplementation<CallContextExt = {}> {
     request: UpdateSchemaDesignRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<SchemaDesign>>;
+  mergeSchemaDesign(
+    request: MergeSchemaDesignRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<SchemaDesign>>;
   parseSchemaString(
     request: ParseSchemaStringRequest,
     context: CallContext & CallContextExt,
@@ -1433,6 +1661,10 @@ export interface SchemaDesignServiceClient<CallOptionsExt = {}> {
   ): Promise<SchemaDesign>;
   updateSchemaDesign(
     request: DeepPartial<UpdateSchemaDesignRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<SchemaDesign>;
+  mergeSchemaDesign(
+    request: DeepPartial<MergeSchemaDesignRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<SchemaDesign>;
   parseSchemaString(
