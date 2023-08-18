@@ -22,9 +22,9 @@
         @click="handleQueryHistoryClick(history)"
       >
         <div class="w-full flex flex-row justify-between items-center">
-          <span class="text-xs text-gray-500">{{
-            dayjs(history.createTime).format("YYYY-MM-DD HH:mm:ss")
-          }}</span>
+          <span class="text-xs text-gray-500">
+            {{ titleOfQueryHistory(history) }}
+          </span>
           <span
             class="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
           >
@@ -59,6 +59,7 @@
 
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
+import dayjs from "dayjs";
 import { escape } from "lodash-es";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -119,6 +120,10 @@ const data = computed(() => {
   });
 });
 
+const titleOfQueryHistory = (history: QueryHistory) => {
+  return dayjs(history.createTime).format("YYYY-MM-DD HH:mm:ss");
+};
+
 const notifyMessage = computed(() => {
   if (isLoading.value) {
     return "";
@@ -151,8 +156,9 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
   );
 
   // Open a new tab with the connection and statement.
-  // tabStore.selectOrAddTempTab();
-  tabStore.addTab();
+  tabStore.addTab({
+    name: `Query history at ${titleOfQueryHistory(queryHistory)}`,
+  });
   tabStore.updateCurrentTab({
     connection,
     statement,
