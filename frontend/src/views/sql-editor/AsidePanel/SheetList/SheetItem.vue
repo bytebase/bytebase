@@ -15,7 +15,11 @@
       </span>
     </div>
 
-    <div class="shrink-0 w-4 h-6 flex items-center justify-center" @click.stop>
+    <div
+      v-if="unsaved"
+      class="shrink-0 w-4 h-6 flex items-center justify-center"
+      @click.stop
+    >
       <NTooltip>
         <template #trigger>
           <carbon:dot-mark class="text-gray-500 w-4 h-4" />
@@ -32,12 +36,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+import { useTabStore } from "@/store";
 import { Dropdown } from "@/views/sql-editor/Sheet";
 import { SheetViewMode } from "@/views/sql-editor/Sheet";
 import { SheetConnectionIcon } from "../../EditorCommon";
 import { MergedItem, SheetItem, domIDForItem, titleHTML } from "./common";
 
-defineProps<{
+const props = defineProps<{
   item: SheetItem;
   isCurrentItem: boolean;
   view: SheetViewMode;
@@ -48,4 +54,17 @@ defineEmits<{
   (event: "click", item: MergedItem, e: MouseEvent): void;
   (event: "contextmenu", item: MergedItem, e: MouseEvent): void;
 }>();
+
+const tabStore = useTabStore();
+
+const unsaved = computed(() => {
+  const tab = tabStore.tabList.find(
+    (tab) => tab.sheetName === props.item.target.name
+  );
+  if (tab) {
+    return !tab.isSaved;
+  }
+  console.assert(false, "should never reach this line");
+  return false;
+});
 </script>
