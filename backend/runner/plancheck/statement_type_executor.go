@@ -58,6 +58,17 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 		return nil, errors.Errorf("instance not found UID %v", instanceUID)
 	}
 
+	if !isStatementTypeCheckSupported(instance.Engine) {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Code:    common.Ok.Int64(),
+				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
+				Content: "",
+			},
+		}, nil
+	}
+
 	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
