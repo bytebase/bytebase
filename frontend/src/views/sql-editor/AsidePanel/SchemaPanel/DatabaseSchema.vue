@@ -33,23 +33,12 @@
       </div>
     </div>
 
-    <div class="flex-1 p-1 overflow-y-auto flex flex-col">
-      <template v-for="(schema, i) in availableSchemas" :key="i">
-        <div v-for="(table, j) in schema.tables" :key="j" class="text-sm">
-          <div
-            class="flex items-center h-6 px-1 text-gray-600 whitespace-pre-wrap break-words rounded-sm"
-            :class="
-              rowClickable && ['hover:bg-[rgb(243,243,245)]', 'cursor-pointer']
-            "
-            @click="handleClickTable(schema, table)"
-          >
-            <heroicons-outline:table class="h-4 w-4 mr-1" />
-            <span v-if="schema.name">{{ schema.name }}.</span>
-            <span>{{ table.name }}</span>
-          </div>
-        </div>
-      </template>
-    </div>
+    <TableList
+      class="flex-1 w-full py-1"
+      :schema-list="availableSchemas"
+      :row-clickable="rowClickable"
+      @select-table="(schema, table) => $emit('select-table', schema, table)"
+    />
   </div>
 </template>
 
@@ -57,12 +46,12 @@
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import type {
+import { Engine } from "@/types/proto/v1/common";
+import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/store/database";
-import { Engine } from "@/types/proto/v1/common";
+} from "@/types/proto/v1/database_service";
 import {
   databaseV1Slug,
   instanceV1HasAlterSchema,
@@ -71,6 +60,7 @@ import {
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 import SchemaDiagramButton from "./SchemaDiagramButton.vue";
+import TableList from "./TableList.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -117,12 +107,5 @@ const availableSchemas = computed(() => {
 const handleClickHeader = () => {
   if (!props.headerClickable) return;
   emit("click-header");
-};
-
-const handleClickTable = (schema: SchemaMetadata, table: TableMetadata) => {
-  if (!rowClickable.value) {
-    return;
-  }
-  emit("select-table", schema, table);
 };
 </script>
