@@ -197,9 +197,6 @@
     },
     "no-data": "No data",
     "visibility": "Visibility",
-    "star": "Star",
-    "unstar": "Unstar",
-    "starred": "Starred",
     "duplicate": "Duplicate",
     "clear-search": "Clear search",
     "enable": "Enable",
@@ -2190,8 +2187,11 @@
   "sheet": {
     "self": "Sheets",
     "my-sheets": "My Sheets",
-    "shared-with-me": "Shared with me",
+    "mine": "Mine",
+    "star": "Star",
+    "unstar": "Unstar",
     "starred": "Starred",
+    "shared-with-me": "Shared with me",
     "actions": {
       "sync-from-vcs": "Sync SQL scripts from VCS"
     },
@@ -2207,8 +2207,6 @@
     "from-issue-warning": "The sheet comes from issue {issue} in read-only mode. {oversize}",
     "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. ",
     "sheets": "Sheets",
-    "mine": "Mine",
-    "shared": "Shared",
     "search-sheets": "Search Sheets"
   },
   "engine": {
