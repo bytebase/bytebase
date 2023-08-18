@@ -173,7 +173,15 @@ export interface UpdateSchemaDesignRequest {
 
 export interface MergeSchemaDesignRequest {
   /** The personal draft schema design to merge. */
-  schemaDesign?: SchemaDesign | undefined;
+  schemaDesign?:
+    | SchemaDesign
+    | undefined;
+  /**
+   * The schema string to overwrite the main branch schema.
+   * If not specified, the schema string of the personal draft schema design will be used.
+   * If specified, the schema string of the main branch schema design will be overwritten.
+   */
+  overwriteSchema?: string | undefined;
 }
 
 export interface ParseSchemaStringRequest {
@@ -841,13 +849,16 @@ export const UpdateSchemaDesignRequest = {
 };
 
 function createBaseMergeSchemaDesignRequest(): MergeSchemaDesignRequest {
-  return { schemaDesign: undefined };
+  return { schemaDesign: undefined, overwriteSchema: undefined };
 }
 
 export const MergeSchemaDesignRequest = {
   encode(message: MergeSchemaDesignRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.schemaDesign !== undefined) {
       SchemaDesign.encode(message.schemaDesign, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.overwriteSchema !== undefined) {
+      writer.uint32(18).string(message.overwriteSchema);
     }
     return writer;
   },
@@ -866,6 +877,13 @@ export const MergeSchemaDesignRequest = {
 
           message.schemaDesign = SchemaDesign.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.overwriteSchema = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -876,13 +894,17 @@ export const MergeSchemaDesignRequest = {
   },
 
   fromJSON(object: any): MergeSchemaDesignRequest {
-    return { schemaDesign: isSet(object.schemaDesign) ? SchemaDesign.fromJSON(object.schemaDesign) : undefined };
+    return {
+      schemaDesign: isSet(object.schemaDesign) ? SchemaDesign.fromJSON(object.schemaDesign) : undefined,
+      overwriteSchema: isSet(object.overwriteSchema) ? String(object.overwriteSchema) : undefined,
+    };
   },
 
   toJSON(message: MergeSchemaDesignRequest): unknown {
     const obj: any = {};
     message.schemaDesign !== undefined &&
       (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
+    message.overwriteSchema !== undefined && (obj.overwriteSchema = message.overwriteSchema);
     return obj;
   },
 
@@ -895,6 +917,7 @@ export const MergeSchemaDesignRequest = {
     message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
       ? SchemaDesign.fromPartial(object.schemaDesign)
       : undefined;
+    message.overwriteSchema = object.overwriteSchema ?? undefined;
     return message;
   },
 };

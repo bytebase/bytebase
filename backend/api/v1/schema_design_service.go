@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"crypto/sha1"
 	"fmt"
 	"sort"
 	"strconv"
@@ -223,6 +224,10 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 
 // UpdateSchemaDesign updates an existing schema design.
 func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	if request.SchemaDesign.Type != v1pb.SchemaDesign_PERSONAL_DRAFT {
+		return nil, status.Errorf(codes.InvalidArgument, "only personal draft schema design can be updated")
+	}
+
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
 	if err != nil {
@@ -268,6 +273,86 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		return nil, err
 	}
 	return schemaDesign, nil
+}
+
+// MergeSchemaDesign merges a personal draft schema design to its main branch.
+func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	if request.SchemaDesign.Type != v1pb.SchemaDesign_PERSONAL_DRAFT {
+		return nil, status.Errorf(codes.InvalidArgument, "only personal draft schema design can be merged")
+	}
+
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	schemaDesign := request.SchemaDesign
+	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(schemaDesign.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	parentSheetUID, err := strconv.Atoi(schemaDesign.SchemaVersion)
+	if err != nil || parentSheetUID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	}
+	schemaDesignSheetType := storepb.SheetPayload_SCHEMA_DESIGN.String()
+	parentSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
+		UID:         &parentSheetUID,
+		PayloadType: &schemaDesignSheetType,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get parent sheet: %v", err))
+	}
+	parentSchemaDesign, err := s.convertSheetToSchemaDesign(ctx, parentSheet)
+	if err != nil {
+		return nil, err
+	}
+
+	sheetUpdate := &store.PatchSheetMessage{
+		UID:       parentSheetUID,
+		UpdaterID: currentPrincipalID,
+	}
+	// If overwrite_schema is specified, we will use it as the new schema of main branch schema design.
+	if request.OverwriteSchema != nil {
+		// Try to transform the schema string to database metadata to make sure it's valid.
+		if _, err := transformSchemaStringToDatabaseMetadata(parentSchemaDesign.Engine, *request.OverwriteSchema); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+		}
+		sheetUpdate.Statement = request.OverwriteSchema
+	} else {
+		// Otherwise, we will use the schema of personal draft schema design as the new schema of main branch schema design.
+		if schemaDesign.Etag != parentSchemaDesign.Etag {
+			return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
+		}
+		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
+		designSchema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
+		if err != nil {
+			return nil, err
+		}
+		// Try to transform the schema string to database metadata to make sure it's valid.
+		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, designSchema); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+		}
+		sheetUpdate.Statement = &designSchema
+	}
+
+	// Update main branch schema design.
+	parentSheet, err = s.store.PatchSheet(ctx, sheetUpdate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update main branch schema design: %v", err))
+	}
+	parentSchemaDesign, err = s.convertSheetToSchemaDesign(ctx, parentSheet)
+	if err != nil {
+		return nil, err
+	}
+
+	// Delete personal draft schema design.
+	sheetUID, err := strconv.Atoi(sheetID)
+	if err != nil || sheetUID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	}
+	err = s.store.DeleteSheet(ctx, sheetUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete personal draft schema design: %v", err))
+	}
+	return parentSchemaDesign, nil
 }
 
 // ParseSchemaString parses a schema string to database metadata.
@@ -341,7 +426,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the project: %d", sheet.ProjectUID))
 	}
-	name := fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.UID)
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		UID: sheet.DatabaseUID,
@@ -394,6 +478,19 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
+	schemaDesignType := v1pb.SchemaDesign_Type(sheetPayload.Type)
+	etag := ""
+	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
+		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
+	}
+	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
+		etag = GenerateEtag([]byte(schema))
+	} else {
+		// For personal branch, we use the baseline schema as the etag.
+		etag = GenerateEtag([]byte(baselineSchema))
+	}
+
+	name := fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.UID)
 	return &v1pb.SchemaDesign{
 		Name:                   name,
 		Title:                  sheet.Name,
@@ -404,11 +501,20 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		Engine:                 engine,
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		SchemaVersion:          schemaVersion,
+		Type:                   v1pb.SchemaDesign_Type(sheetPayload.Type),
+		Etag:                   etag,
 		Creator:                fmt.Sprintf("users/%s", creator.Email),
 		Updater:                fmt.Sprintf("users/%s", updater.Email),
 		CreateTime:             timestamppb.New(sheet.CreatedTime),
 		UpdateTime:             timestamppb.New(sheet.UpdatedTime),
 	}, nil
+}
+
+// GenerateEtag generates etag for the given body.
+func GenerateEtag(body []byte) string {
+	hash := sha1.Sum(body)
+	etag := fmt.Sprintf("%x", hash)
+	return etag
 }
 
 func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) (*v1pb.DatabaseMetadata, error) {

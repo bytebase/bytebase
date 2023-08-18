@@ -321,6 +321,10 @@ func local_request_SchemaDesignService_UpdateSchemaDesign_0(ctx context.Context,
 
 }
 
+var (
+	filter_SchemaDesignService_MergeSchemaDesign_0 = &utilities.DoubleArray{Encoding: map[string]int{"schema_design": 0, "schemaDesign": 1, "name": 2}, Base: []int{1, 3, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 5, 2, 3, 4}}
+)
+
 func request_SchemaDesignService_MergeSchemaDesign_0(ctx context.Context, marshaler runtime.Marshaler, client SchemaDesignServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq MergeSchemaDesignRequest
 	var metadata runtime.ServerMetadata
@@ -348,6 +352,13 @@ func request_SchemaDesignService_MergeSchemaDesign_0(ctx context.Context, marsha
 	err = runtime.PopulateFieldFromPath(&protoReq, "schema_design.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "schema_design.name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SchemaDesignService_MergeSchemaDesign_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.MergeSchemaDesign(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -382,6 +393,13 @@ func local_request_SchemaDesignService_MergeSchemaDesign_0(ctx context.Context, 
 	err = runtime.PopulateFieldFromPath(&protoReq, "schema_design.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "schema_design.name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SchemaDesignService_MergeSchemaDesign_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.MergeSchemaDesign(ctx, &protoReq)

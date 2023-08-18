@@ -180,6 +180,11 @@ message UpdateSchemaDesignRequest {
 message MergeSchemaDesignRequest {
   // The personal draft schema design to merge.
   SchemaDesign schema_design = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The schema string to overwrite the main branch schema.
+  // If not specified, the schema string of the personal draft schema design will be used.
+  // If specified, the schema string of the main branch schema design will be overwritten.
+  optional string overwrite_schema = 2;
 }
 
 message ParseSchemaStringRequest {

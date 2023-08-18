@@ -24,6 +24,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     for (const schemaDesign of schemaDesigns) {
       schemaDesignMapByName.set(schemaDesign.name, schemaDesign);
     }
+    console.log("fetchSchemaDesignList", schemaDesigns);
     return schemaDesigns;
   };
   const createSchemaDesign = async (
