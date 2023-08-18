@@ -331,7 +331,7 @@ function createBasePlanCheckRunConfig_DatabaseGroupTarget(): PlanCheckRunConfig_
 export const PlanCheckRunConfig_DatabaseGroupTarget = {
   encode(message: PlanCheckRunConfig_DatabaseGroupTarget, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.databaseGroupUid !== 0) {
-      writer.uint32(8).int32(message.databaseGroupUid);
+      writer.uint32(8).int64(message.databaseGroupUid);
     }
     return writer;
   },
@@ -348,7 +348,7 @@ export const PlanCheckRunConfig_DatabaseGroupTarget = {
             break;
           }
 
-          message.databaseGroupUid = reader.int32();
+          message.databaseGroupUid = longToNumber(reader.int64() as Long);
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {

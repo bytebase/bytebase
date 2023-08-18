@@ -1672,7 +1672,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database_group_uid | [int32](#int32) |  |  |
+| database_group_uid | [int64](#int64) |  |  |
 
 
 
