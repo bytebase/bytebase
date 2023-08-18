@@ -328,17 +328,17 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, r
 
 	switch config := run.Config.Target.(type) {
 	case *storepb.PlanCheckRunConfig_DatabaseTarget_:
-		instanceUid := int(config.DatabaseTarget.InstanceUid)
+		instanceUID := int(config.DatabaseTarget.InstanceUid)
 		databaseName := config.DatabaseTarget.DatabaseName
-		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUid})
+		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get instance")
 		}
 		converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instance.ResourceID, common.DatabaseIDPrefix, databaseName)
 
 	case *storepb.PlanCheckRunConfig_DatabaseGroupTarget_:
-		databaseGroupUid := int64(config.DatabaseGroupTarget.DatabaseGroupUid)
-		databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{UID: &databaseGroupUid})
+		databaseGroupUID := int64(config.DatabaseGroupTarget.DatabaseGroupUid)
+		databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{UID: &databaseGroupUID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database group")
 		}
