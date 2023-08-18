@@ -4,14 +4,7 @@ tmp_dir = ".air"
 [build]
   bin = "./.air/sql-service --port 8081"
   cmd = """
-  go build -gcflags=all=\"-N -l\" \
-  -ldflags " \
-  -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.version=development' \
-  -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.goversion=$(go version)' \
-  -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.gitcommit=$(git rev-parse HEAD)' \
-  -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.buildtime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' \
-  -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.builduser=$(id -u -n)' \
-  " \
+  go build \
   -o ./.air/sql-service ./backend/bin/sql-service/main.go"""
   delay = 1000
   exclude_dir = [".air", "vendor", "frontend", "docs"]
