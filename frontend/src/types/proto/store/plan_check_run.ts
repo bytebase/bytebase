@@ -63,7 +63,6 @@ export interface PlanCheckRunConfig_DatabaseTarget {
 }
 
 export interface PlanCheckRunConfig_DatabaseGroupTarget {
-  projectUid: number;
   databaseGroupUid: number;
 }
 
@@ -326,16 +325,13 @@ export const PlanCheckRunConfig_DatabaseTarget = {
 };
 
 function createBasePlanCheckRunConfig_DatabaseGroupTarget(): PlanCheckRunConfig_DatabaseGroupTarget {
-  return { projectUid: 0, databaseGroupUid: 0 };
+  return { databaseGroupUid: 0 };
 }
 
 export const PlanCheckRunConfig_DatabaseGroupTarget = {
   encode(message: PlanCheckRunConfig_DatabaseGroupTarget, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.projectUid !== 0) {
-      writer.uint32(8).int32(message.projectUid);
-    }
     if (message.databaseGroupUid !== 0) {
-      writer.uint32(16).int32(message.databaseGroupUid);
+      writer.uint32(8).int32(message.databaseGroupUid);
     }
     return writer;
   },
@@ -352,13 +348,6 @@ export const PlanCheckRunConfig_DatabaseGroupTarget = {
             break;
           }
 
-          message.projectUid = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
           message.databaseGroupUid = reader.int32();
           continue;
       }
@@ -371,15 +360,11 @@ export const PlanCheckRunConfig_DatabaseGroupTarget = {
   },
 
   fromJSON(object: any): PlanCheckRunConfig_DatabaseGroupTarget {
-    return {
-      projectUid: isSet(object.projectUid) ? Number(object.projectUid) : 0,
-      databaseGroupUid: isSet(object.databaseGroupUid) ? Number(object.databaseGroupUid) : 0,
-    };
+    return { databaseGroupUid: isSet(object.databaseGroupUid) ? Number(object.databaseGroupUid) : 0 };
   },
 
   toJSON(message: PlanCheckRunConfig_DatabaseGroupTarget): unknown {
     const obj: any = {};
-    message.projectUid !== undefined && (obj.projectUid = Math.round(message.projectUid));
     message.databaseGroupUid !== undefined && (obj.databaseGroupUid = Math.round(message.databaseGroupUid));
     return obj;
   },
@@ -390,7 +375,6 @@ export const PlanCheckRunConfig_DatabaseGroupTarget = {
 
   fromPartial(object: DeepPartial<PlanCheckRunConfig_DatabaseGroupTarget>): PlanCheckRunConfig_DatabaseGroupTarget {
     const message = createBasePlanCheckRunConfig_DatabaseGroupTarget();
-    message.projectUid = object.projectUid ?? 0;
     message.databaseGroupUid = object.databaseGroupUid ?? 0;
     return message;
   },
