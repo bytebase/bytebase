@@ -75,7 +75,7 @@ import {
 } from "@/types";
 import {
   emptyConnection,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   hasWorkspacePermissionV1,
   instanceV1HasReadonlyMode,
   instanceOfConnectionAtom,
@@ -223,13 +223,19 @@ const setConnection = (
         // Don't go further if the connection doesn't change.
         return;
       }
-      const name = getDefaultTabNameFromConnection(target.connection);
-      tabStore.selectOrAddSimilarTab(
-        target,
-        /* beside */ false,
-        /* defaultTabName */ name
-      );
-      tabStore.updateCurrentTab(target);
+      if (tabStore.currentTab.isFreshNew) {
+        // If the current tab is "fresh new", update its connection directly.
+        tabStore.updateCurrentTab(target);
+      } else {
+        // Otherwise select or add a new tab and set its connection
+        const name = getSuggestedTabNameFromConnection(target.connection);
+        tabStore.selectOrAddSimilarTab(
+          target,
+          /* beside */ false,
+          /* defaultTabName */ name
+        );
+        tabStore.updateCurrentTab(target);
+      }
     };
 
     // If selected item is instance node
