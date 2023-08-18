@@ -33,30 +33,30 @@ message Binding {
 
 // DataMaskingExceptionPolicy is the whitelist of users who can access sensitive data.
 message DataMaskingExceptionPolicy {
-  repeated DataMaskingException data_masking_exception = 1;
-}
-
-message DataMaskingException {
-  // The parent resource where this policy instance installed.
-  // - Project parent: projects/project-id
-  string parent = 1;
-
-  enum Action {
-    ACTION_UNSPECIFIED = 0;
-    QUERY = 1;
-    EXPORT = 2;
+  message DataMaskingException {
+    // The parent resource where this policy instance installed.
+    // - Project parent: projects/project-id
+    string parent = 1;
+  
+    enum Action {
+      ACTION_UNSPECIFIED = 0;
+      QUERY = 1;
+      EXPORT = 2;
+    }
+    // action is the action that the user can access sensitive data.
+    Action action = 2;
+  
+    // data_masking_level is the masking level that the user can access sensitive data.
+    DataMaskingLevel data_masking_level = 3;
+  
+    // Members is the list of principals who bind to this exception policy instance.
+    //
+    // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+    repeated string members = 4;
+  
+    // The condition that is associated with this exception policy instance.
+    google.type.Expr condition = 5;
   }
-  // action is the action that the user can access sensitive data.
-  Action action = 2;
-
-  // data_masking_level is the masking level that the user can access sensitive data.
-  DataMaskingLevel data_masking_level = 3;
-
-  // Members is the list of principals who bind to this exception policy instance.
-  //
-  // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-  repeated string members = 4;
-
-  // The condition that is associated with this exception policy instance.
-  google.type.Expr condition = 5;
+  
+  repeated DataMaskingException data_masking_exceptions = 1;
 }
