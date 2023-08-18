@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/type/expr.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -48,13 +49,8 @@ message DataMaskingException {
   // action is the action that the user can access sensitive data.
   Action action = 2;
 
-  enum MaskingLevel {
-    MASKING_LEVEL_UNSPECIFIED = 0;
-    NONE = 1;
-    PARTIAL = 2;
-  }
-  // masking_level is the masking level that the user can access sensitive data.
-  MaskingLevel masking_level = 3;
+  // data_masking_level is the masking level that the user can access sensitive data.
+  DataMaskingLevel data_masking_level = 3;
 
   // Members is the list of principals who bind to this exception policy instance.
   //
