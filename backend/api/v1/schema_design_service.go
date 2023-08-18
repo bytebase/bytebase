@@ -280,11 +280,31 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 
 // MergeSchemaDesign merges a personal draft schema design to the target schema design.
 func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	if request.SchemaDesign.Type != v1pb.SchemaDesign_PERSONAL_DRAFT {
+	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.TargetName)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	sheetUID, err := strconv.Atoi(sheetID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	schemaDesignSheetType := storepb.SheetPayload_SCHEMA_DESIGN.String()
+	sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
+		UID:         &sheetUID,
+		PayloadType: &schemaDesignSheetType,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get target sheet: %v", err))
+	}
+	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet)
+	if err != nil {
+		return nil, err
+	}
+	if schemaDesign.Type != v1pb.SchemaDesign_PERSONAL_DRAFT {
 		return nil, status.Errorf(codes.InvalidArgument, "only personal draft schema design can be merged")
 	}
 
-	_, targetSheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.TargetSchemaDesign)
+	_, targetSheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.TargetName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -292,7 +312,6 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil || targetSheetUID <= 0 {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", targetSheetID))
 	}
-	schemaDesignSheetType := storepb.SheetPayload_SCHEMA_DESIGN.String()
 	targetSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
 		UID:         &targetSheetUID,
 		PayloadType: &schemaDesignSheetType,
@@ -305,7 +324,6 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		return nil, err
 	}
 
-	schemaDesign := request.SchemaDesign
 	if schemaDesign.Etag != targetSchemaDesign.Etag {
 		return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
 	}
@@ -336,15 +354,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		return nil, err
 	}
 
-	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(schemaDesign.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 	// Delete personal draft schema design.
-	sheetUID, err := strconv.Atoi(sheetID)
-	if err != nil || sheetUID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
-	}
 	err = s.store.DeleteSheet(ctx, sheetUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete personal draft schema design: %v", err))

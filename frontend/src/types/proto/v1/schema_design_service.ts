@@ -172,15 +172,16 @@ export interface UpdateSchemaDesignRequest {
 }
 
 export interface MergeSchemaDesignRequest {
-  /** The personal draft schema design to merge. */
-  schemaDesign?:
-    | SchemaDesign
-    | undefined;
+  /**
+   * The name of the schema design to merge.
+   * Format: projects/{project}/schemaDesigns/{schemaDesign}
+   */
+  name: string;
   /**
    * The target schema design to merge into.
    * Format: projects/{project}/schemaDesigns/{schemaDesign}
    */
-  targetSchemaDesign: string;
+  targetName: string;
 }
 
 export interface ParseSchemaStringRequest {
@@ -848,16 +849,16 @@ export const UpdateSchemaDesignRequest = {
 };
 
 function createBaseMergeSchemaDesignRequest(): MergeSchemaDesignRequest {
-  return { schemaDesign: undefined, targetSchemaDesign: "" };
+  return { name: "", targetName: "" };
 }
 
 export const MergeSchemaDesignRequest = {
   encode(message: MergeSchemaDesignRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.schemaDesign !== undefined) {
-      SchemaDesign.encode(message.schemaDesign, writer.uint32(10).fork()).ldelim();
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
-    if (message.targetSchemaDesign !== "") {
-      writer.uint32(18).string(message.targetSchemaDesign);
+    if (message.targetName !== "") {
+      writer.uint32(18).string(message.targetName);
     }
     return writer;
   },
@@ -874,14 +875,14 @@ export const MergeSchemaDesignRequest = {
             break;
           }
 
-          message.schemaDesign = SchemaDesign.decode(reader, reader.uint32());
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.targetSchemaDesign = reader.string();
+          message.targetName = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -894,16 +895,15 @@ export const MergeSchemaDesignRequest = {
 
   fromJSON(object: any): MergeSchemaDesignRequest {
     return {
-      schemaDesign: isSet(object.schemaDesign) ? SchemaDesign.fromJSON(object.schemaDesign) : undefined,
-      targetSchemaDesign: isSet(object.targetSchemaDesign) ? String(object.targetSchemaDesign) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      targetName: isSet(object.targetName) ? String(object.targetName) : "",
     };
   },
 
   toJSON(message: MergeSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
-    message.targetSchemaDesign !== undefined && (obj.targetSchemaDesign = message.targetSchemaDesign);
+    message.name !== undefined && (obj.name = message.name);
+    message.targetName !== undefined && (obj.targetName = message.targetName);
     return obj;
   },
 
@@ -913,10 +913,8 @@ export const MergeSchemaDesignRequest = {
 
   fromPartial(object: DeepPartial<MergeSchemaDesignRequest>): MergeSchemaDesignRequest {
     const message = createBaseMergeSchemaDesignRequest();
-    message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
-      ? SchemaDesign.fromPartial(object.schemaDesign)
-      : undefined;
-    message.targetSchemaDesign = object.targetSchemaDesign ?? "";
+    message.name = object.name ?? "";
+    message.targetName = object.targetName ?? "";
     return message;
   },
 };
@@ -1236,7 +1234,7 @@ export const SchemaDesignServiceDefinition = {
         _unknownFields: {
           8410: [
             new Uint8Array([
-              19,
+              20,
               112,
               97,
               114,
@@ -1250,7 +1248,8 @@ export const SchemaDesignServiceDefinition = {
               101,
               109,
               97,
-              68,
+              95,
+              100,
               101,
               115,
               105,
@@ -1329,14 +1328,15 @@ export const SchemaDesignServiceDefinition = {
         _unknownFields: {
           8410: [
             new Uint8Array([
-              24,
+              25,
               115,
               99,
               104,
               101,
               109,
               97,
-              68,
+              95,
+              100,
               101,
               115,
               105,
@@ -1440,46 +1440,17 @@ export const SchemaDesignServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([12, 115, 99, 104, 101, 109, 97, 68, 101, 115, 105, 103, 110])],
+          8410: [new Uint8Array([16, 110, 97, 109, 101, 44, 116, 97, 114, 103, 101, 116, 95, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              74,
-              58,
-              13,
-              115,
-              99,
-              104,
-              101,
-              109,
-              97,
-              95,
-              100,
-              101,
-              115,
-              105,
-              103,
-              110,
+              45,
               34,
-              57,
+              43,
               47,
               118,
               49,
               47,
               123,
-              115,
-              99,
-              104,
-              101,
-              109,
-              97,
-              95,
-              100,
-              101,
-              115,
-              105,
-              103,
-              110,
-              46,
               110,
               97,
               109,
