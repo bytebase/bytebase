@@ -321,17 +321,13 @@ func local_request_SchemaDesignService_UpdateSchemaDesign_0(ctx context.Context,
 
 }
 
+var (
+	filter_SchemaDesignService_MergeSchemaDesign_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+)
+
 func request_SchemaDesignService_MergeSchemaDesign_0(ctx context.Context, marshaler runtime.Marshaler, client SchemaDesignServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq MergeSchemaDesignRequest
 	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.SchemaDesign); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
 
 	var (
 		val string
@@ -340,14 +336,21 @@ func request_SchemaDesignService_MergeSchemaDesign_0(ctx context.Context, marsha
 		_   = err
 	)
 
-	val, ok = pathParams["schema_design.name"]
+	val, ok = pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "schema_design.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "schema_design.name", val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "schema_design.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SchemaDesignService_MergeSchemaDesign_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.MergeSchemaDesign(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -359,14 +362,6 @@ func local_request_SchemaDesignService_MergeSchemaDesign_0(ctx context.Context, 
 	var protoReq MergeSchemaDesignRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.SchemaDesign); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	var (
 		val string
 		ok  bool
@@ -374,14 +369,21 @@ func local_request_SchemaDesignService_MergeSchemaDesign_0(ctx context.Context, 
 		_   = err
 	)
 
-	val, ok = pathParams["schema_design.name"]
+	val, ok = pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "schema_design.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "schema_design.name", val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "schema_design.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SchemaDesignService_MergeSchemaDesign_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.MergeSchemaDesign(ctx, &protoReq)
@@ -589,7 +591,7 @@ func RegisterSchemaDesignServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SchemaDesignService/MergeSchemaDesign", runtime.WithHTTPPathPattern("/v1/{schema_design.name=projects/*/schemaDesigns/*}:merge"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SchemaDesignService/MergeSchemaDesign", runtime.WithHTTPPathPattern("/v1/{name=projects/*/schemaDesigns/*}:merge"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -791,7 +793,7 @@ func RegisterSchemaDesignServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SchemaDesignService/MergeSchemaDesign", runtime.WithHTTPPathPattern("/v1/{schema_design.name=projects/*/schemaDesigns/*}:merge"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SchemaDesignService/MergeSchemaDesign", runtime.WithHTTPPathPattern("/v1/{name=projects/*/schemaDesigns/*}:merge"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -863,7 +865,7 @@ var (
 
 	pattern_SchemaDesignService_UpdateSchemaDesign_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "schemaDesigns", "schema_design.name"}, ""))
 
-	pattern_SchemaDesignService_MergeSchemaDesign_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "schemaDesigns", "schema_design.name"}, "merge"))
+	pattern_SchemaDesignService_MergeSchemaDesign_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "schemaDesigns", "name"}, "merge"))
 
 	pattern_SchemaDesignService_ParseSchemaString_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "schemaDesign"}, "parseSchemaString"))
 
