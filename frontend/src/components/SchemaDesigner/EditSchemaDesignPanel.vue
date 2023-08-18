@@ -206,7 +206,7 @@ const handleUpdateSchemaDesign = async () => {
     )
   );
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
-    updateMask.push("schema");
+    updateMask.push("metadata");
   }
   await schemaDesignStore.updateSchemaDesign(
     SchemaDesign.fromPartial({
