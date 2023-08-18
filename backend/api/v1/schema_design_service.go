@@ -224,10 +224,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 
 // UpdateSchemaDesign updates an existing schema design.
 func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	if request.SchemaDesign.Type != v1pb.SchemaDesign_PERSONAL_DRAFT {
-		return nil, status.Errorf(codes.InvalidArgument, "only personal draft schema design can be updated")
-	}
-
+	// TODO(steven): Only allow personal draft schema design to be updated.
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
 	if err != nil {
