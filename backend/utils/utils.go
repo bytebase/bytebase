@@ -959,6 +959,7 @@ func ConvertVcsPushEvent(pushEvent *vcs.PushEvent) *storepb.PushEvent {
 	}
 }
 
+// GetMatchedAndUnmatchedDatabasesInDatabaseGroup returns the matched and unmatched databases in the given database group.
 func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
@@ -994,6 +995,7 @@ func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 	return matches, unmatches, nil
 }
 
+// GetMatchedAndUnmatchedTablesInSchemaGroup returns the matched and unmatched tables in the given schema group.
 func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
 	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
 	if err != nil {
