@@ -157,6 +157,15 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
+	schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
+	if err != nil {
+		return nil, err
+	}
+	// Try to transform the schema string to database metadata to make sure it's valid.
+	if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+	}
+
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
@@ -198,14 +207,6 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
-	}
-	schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
-	if err != nil {
-		return nil, err
-	}
-	// Try to transform the schema string to database metadata to make sure it's valid.
-	if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, schema); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
 	sheetCreate := &store.SheetMessage{
@@ -249,6 +250,12 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	if len(request.UpdateMask.Paths) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
+	sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
+		UID: &sheetUID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+	}
 
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       sheetUID,
@@ -269,6 +276,26 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		}
 		sheetUpdate.Statement = &schema
 	}
+	// Update baseline schema design id for personal draft schema design.
+	if slices.Contains(request.UpdateMask.Paths, "schema_version") {
+		_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(schemaDesign.SchemaVersion)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		sheetPayload := &storepb.SheetPayload{}
+		if err := protojson.Unmarshal([]byte(sheet.Payload), sheetPayload); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
+		}
+		sheetPayload.SchemaDesign.BaselineSchemaDesignId = sheetID
+		payloadBytes, err := protojson.Marshal(sheetPayload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
+		}
+		payload := string(payloadBytes)
+		sheetUpdate.Payload = &payload
+	}
+
+	// If the schema is updated, we need to make sure the schema string is valid.
 	if sheetUpdate.Statement != nil {
 		// Try to transform the schema string to database metadata to make sure it's valid.
 		if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
@@ -276,7 +303,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		}
 	}
 
-	sheet, err := s.store.PatchSheet(ctx, sheetUpdate)
+	sheet, err = s.store.PatchSheet(ctx, sheetUpdate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update sheet: %v", err))
 	}
