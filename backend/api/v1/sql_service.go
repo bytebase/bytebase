@@ -244,12 +244,15 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
+	databaseID := 0
+	if database != nil {
+		databaseID = database.UID
+	}
 	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             database.UID,
+		DatabaseID:             databaseID,
 		DatabaseName:           request.ConnectionDatabase,
 	})
 	if err != nil {
@@ -772,6 +775,14 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, nil, err
 	}
 
+	// dataShare must be false when connecting to instance (not database) in sql editor
+	// dataShare must be false when engine is not redshift
+	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
+	dataShare := false
+	if database != nil {
+		dataShare = database.DataShare
+	}
+
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
 		// Check if the caller is admin for exporting with admin mode.
 		if request.Admin && (user.Role != api.Owner && user.Role != api.DBA) {
@@ -785,7 +796,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		}
 		if !result {
 			// Check if the user has permission to execute the export.
-			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, true); err != nil {
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, dataShare, request.Statement, request.Limit, user, instance, true); err != nil {
 				return nil, nil, nil, nil, err
 			}
 		}
@@ -856,12 +867,16 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		}
 	}
 
+	databaseID := 0
+	if database != nil {
+		databaseID = database.UID
+	}
 	// Create export activity.
 	level := api.ActivityInfo
 	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
 		Statement:    request.Statement,
 		InstanceID:   instance.UID,
-		DatabaseID:   database.UID,
+		DatabaseID:   databaseID,
 		DatabaseName: request.ConnectionDatabase,
 	})
 	if err != nil {
@@ -950,7 +965,11 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 	// If the environment is not open for export privileges, check if the user has permission to export the query.
 	if !allowExport {
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
+		dataShare := false
+		if database != nil {
+			dataShare = database.DataShare
+		}
+		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, dataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
 			allowExport = true
 		}
 	}
@@ -1119,6 +1138,14 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
+	// dataShare must be false when connecting to instance (not database) in sql editor
+	// dataShare must be false when engine is not redshift
+	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
+	dataShare := false
+	if database != nil {
+		dataShare = database.DataShare
+	}
+
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
 		// Check if the environment is open for query privileges.
 		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
@@ -1127,7 +1154,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		}
 		if !result {
 			// Check if the user has permission to execute the query.
-			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, database.DataShare, request.Statement, request.Limit, user, instance, false); err != nil {
+			if err := s.checkQueryRights(ctx, request.ConnectionDatabase, dataShare, request.Statement, request.Limit, user, instance, false); err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, err
 			}
 		}
@@ -1223,11 +1250,15 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	case advisor.Warn:
 		level = api.ActivityWarn
 	}
+	databaseID := 0
+	if database != nil {
+		databaseID = database.UID
+	}
 	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             database.UID,
+		DatabaseID:             databaseID,
 		DatabaseName:           request.ConnectionDatabase,
 		// TODO: here we should use []*v1pb.Advice instead of []advisor.Advice
 		// This should fix when we migrate to v1 activity API
@@ -1705,12 +1736,17 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 		}
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+	environmentID := instance.EnvironmentID
+	if database != nil {
+		environmentID = database.EffectiveEnvironmentID
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {
 		return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch environment: %v", err)
 	}
 	if environment == nil {
-		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", database.EffectiveEnvironmentID)
+		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", environmentID)
 	}
 
 	return user, environment, instance, database, nil
@@ -1793,6 +1829,8 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		list, err := parser.ExtractResourceList(engine, databaseName, "", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+		} else if databaseName == "" {
+			return list, nil
 		}
 
 		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
