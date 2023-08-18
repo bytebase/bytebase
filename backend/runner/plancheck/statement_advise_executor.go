@@ -48,13 +48,26 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, planCheckRun *store.P
 		return nil, errors.Errorf("change database type is unspecified")
 	}
 
-	databaseID := int(planCheckRun.Config.DatabaseId)
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
+	target := planCheckRun.Config.GetDatabaseTarget()
+	if target == nil {
+		return nil, errors.New("database target is required")
+	}
+
+	instanceUID := int(target.InstanceUid)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database ID %v", databaseID)
+		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+	}
+
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found %v", databaseID)
+		return nil, errors.Errorf("database not found %q", target.DatabaseName)
 	}
 
 	environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
@@ -63,13 +76,6 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, planCheckRun *store.P
 	}
 	if environment == nil {
 		return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
-	}
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v", database.InstanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance not found %v", database.InstanceID)
 	}
 
 	if err := e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance); err != nil {
@@ -96,13 +102,13 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, planCheckRun *store.P
 		return nil, err
 	}
 
-	sheetID := int(planCheckRun.Config.SheetId)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
+	sheetUID := int(planCheckRun.Config.SheetUid)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetID)
+		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
 	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found", sheetID)
+		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
 	if sheet.Size > common.MaxSheetSizeForTaskCheck {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -114,9 +120,9 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, planCheckRun *store.P
 			},
 		}, nil
 	}
-	statement, err := e.store.GetSheetStatementByID(ctx, sheetID)
+	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetID)
+		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
 	}
 
 	policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
