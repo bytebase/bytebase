@@ -294,7 +294,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		PayloadType: &schemaDesignSheetType,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get target sheet: %v", err))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
 	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet)
 	if err != nil {
