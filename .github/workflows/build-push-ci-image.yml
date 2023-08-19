@@ -10,7 +10,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel.
 jobs:
   docker:
-    runs-on: [golangci]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Extract build args
@@ -30,7 +30,7 @@ jobs:
         working-directory: frontend
       - name: Run pnpm release build
         run: |
-          rm -r ./backend/server/dist
+          rm -rf ./backend/server/dist
           cp backend/plugin/advisor/config/* frontend/src/types
           cp backend/enterprise/api/plan.yaml frontend/src/types
           pnpm --dir ./frontend i && pnpm --dir ./frontend release
