@@ -61,7 +61,7 @@
 
     <div
       v-if="isProductionEnvironment"
-      class="flex justify-start items-center py-1 sm:py-0 sm:h-6 px-4 sm:rounded-bl text-white text-sm bg-error"
+      class="flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 text-white bg-error"
     >
       {{ $t("sql-editor.sql-execute-in-production-environment") }}
     </div>
