@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-release-image:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, golangci]
     steps:
       - uses: actions/checkout@v3
       - name: Extract build args
