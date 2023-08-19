@@ -32,7 +32,7 @@ jobs:
         run: |
           cp ../backend/plugin/advisor/config/* ./src/types
           cp ../backend/enterprise/api/plan.yaml ./src/types
-          pnpm release-docker
+          pnpm --dir ./frontend release
         working-directory: frontend
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
