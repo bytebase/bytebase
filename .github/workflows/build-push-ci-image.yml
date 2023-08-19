@@ -26,14 +26,6 @@ jobs:
           node-version: "18"
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
-      - run: pnpm install --frozen-lockfile
-        working-directory: frontend
-      - name: Run pnpm release build
-        run: |
-          rm -rf ./backend/server/dist
-          cp backend/plugin/advisor/config/* frontend/src/types
-          cp backend/enterprise/api/plan.yaml frontend/src/types
-          pnpm --dir ./frontend i && pnpm --dir ./frontend release
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -43,6 +35,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Run pnpm release build
+        run: |
+          rm -rf ./backend/server/dist
+          cp backend/plugin/advisor/config/* frontend/src/types
+          cp backend/enterprise/api/plan.yaml frontend/src/types
+          pnpm --dir ./frontend i && pnpm --dir ./frontend release
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v4
