@@ -6,6 +6,7 @@
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
 FROM node:18 as frontend
+RUN ulimit -n 1024000
 
 ARG TARGETARCH
 ARG RELEASE="release"
@@ -27,6 +28,7 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 RUN pnpm "${RELEASE}-docker"
 
 FROM golang:1.21.0 as backend
+RUN ulimit -n 1024000
 ADD go.mod go.sum /
 RUN go mod download
 
@@ -68,6 +70,7 @@ fi && \
 
 # Use debian because mysql requires glibc.
 FROM debian:bookworm-slim as monolithic
+RUN ulimit -n 1024000
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
