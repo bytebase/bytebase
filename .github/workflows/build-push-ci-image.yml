@@ -18,6 +18,22 @@ jobs:
           echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
           echo "BUILD_USER=$(id -u -n)" >> $GITHUB_ENV
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 8.6.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Run pnpm release build
+        run: |
+          cp ../backend/plugin/advisor/config/* ./src/types
+          cp ../backend/enterprise/api/plan.yaml ./src/types
+          pnpm release-docker
+        working-directory: frontend
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
