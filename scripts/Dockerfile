@@ -29,7 +29,8 @@ WORKDIR /backend-build
 
 COPY . .
 
-RUN pwd
+RUN ls -al
+RUN ls -al ./backend/server
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED

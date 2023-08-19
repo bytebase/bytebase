@@ -37,6 +37,8 @@ echo "Start building Bytebase monolithic ${VERSION}..."
 echo ""
 echo "Step 1 - building Bytebase frontend..."
 
+rm -r ./backend/server/dist
+
 if command -v pnpm > /dev/null
 then
    pnpm --dir ./frontend i && pnpm --dir ./frontend release
