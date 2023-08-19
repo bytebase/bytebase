@@ -39,9 +39,9 @@ echo "Step 1 - building Bytebase frontend..."
 
 if command -v pnpm > /dev/null
 then
-    pnpm --dir ./frontend i && pnpm --dir ./frontend release
+   pnpm --dir ./frontend i && pnpm --dir ./frontend release
 else
-    npm --prefix ./frontend run release
+   npm --prefix ./frontend run release
 fi
 
 echo "Completed building Bytebase frontend."
