@@ -1384,7 +1384,8 @@ Click "Approve" button to apply the schema update.`,
 		CreateContext:         string(createContext),
 	}
 
-	// Use system bot as the creator so that the issue only appears in the user's assignee list
+	// TODO(d): use new CI/CD API.
+	// Use system bot as the creator so that the issue only appears in the user's assignee list.
 	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create sample issue")
