@@ -1,10 +1,9 @@
 name: Build and push CI image
 
 on:
-  push:
-    branches:
-      - main
-
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel.
@@ -39,7 +38,6 @@ jobs:
         working-directory: frontend
       - name: Run pnpm release build
         run: |
-          rm -rf ./backend/server/dist
           cp backend/plugin/advisor/config/* frontend/src/types
           cp backend/enterprise/api/plan.yaml frontend/src/types
           pnpm --dir ./frontend i && pnpm --dir ./frontend release
