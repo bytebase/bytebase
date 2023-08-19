@@ -1526,6 +1526,7 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 }
 
 func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationDetailList []*api.MigrationDetail) error {
+	// TODO(d): use new API.
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			VCSPushEvent: &pushEvent,
