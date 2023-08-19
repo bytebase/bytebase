@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"testing"
 
 	plsqlparser "github.com/bytebase/plsql-parser"
@@ -33,9 +32,7 @@ func TestPLSQLParser(t *testing.T) {
 
 	for _, test := range tests {
 		tree, _, err := ParsePLSQL(test.statement)
-		if sql, ok := tree.(*plsqlparser.Sql_scriptContext); ok {
-			fmt.Println(sql.GetText())
-		}
+		_, _ = tree.(*plsqlparser.Sql_scriptContext)
 		if test.errorMessage == "" {
 			require.NoError(t, err)
 		} else {
