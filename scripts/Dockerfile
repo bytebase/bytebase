@@ -5,30 +5,7 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM node:18 as frontend
-RUN ulimit -n 1024000
-
-ARG TARGETARCH
-ARG RELEASE="release"
-
-RUN npm i -g pnpm
-
-WORKDIR /frontend-build
-
-# Install build dependency (e.g. vite)
-COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-COPY ./frontend/ .
-# Copy the SQL review config files to the frontend
-COPY ./backend/plugin/advisor/config/ ./src/types
-COPY ./backend/enterprise/api/plan.yaml ./src/types/
-
-# Build frontend
-RUN pnpm "${RELEASE}-docker"
-
 FROM golang:1.21.0 as backend
-RUN ulimit -n 1024000
 ADD go.mod go.sum /
 RUN go mod download
 
@@ -52,9 +29,6 @@ WORKDIR /backend-build
 
 COPY . .
 
-# Copy frontend asset
-COPY --from=frontend /frontend-build/dist ./backend/server/dist
-
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
@@ -68,7 +42,6 @@ fi && \
 
 # Use debian because mysql requires glibc.
 FROM debian:bookworm-slim as monolithic
-RUN ulimit -n 1024000
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
