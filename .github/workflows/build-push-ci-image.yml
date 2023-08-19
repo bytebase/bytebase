@@ -30,8 +30,8 @@ jobs:
         working-directory: frontend
       - name: Run pnpm release build
         run: |
-          cp backend/plugin/advisor/config/* ./src/types
-          cp backend/enterprise/api/plan.yaml ./src/types
+          cp backend/plugin/advisor/config/* frontend/src/types
+          cp backend/enterprise/api/plan.yaml frontend/src/types
           pnpm --dir ./frontend release
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
