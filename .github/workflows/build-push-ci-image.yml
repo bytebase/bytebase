@@ -30,6 +30,7 @@ jobs:
         working-directory: frontend
       - name: Run pnpm release build
         run: |
+          rm -r ./backend/server/dist
           cp backend/plugin/advisor/config/* frontend/src/types
           cp backend/enterprise/api/plan.yaml frontend/src/types
           pnpm --dir ./frontend i && pnpm --dir ./frontend release
