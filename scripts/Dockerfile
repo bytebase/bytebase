@@ -29,6 +29,8 @@ WORKDIR /backend-build
 
 COPY . .
 
+RUN pwd
+
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
