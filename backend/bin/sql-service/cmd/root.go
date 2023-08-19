@@ -80,7 +80,7 @@ var (
 		Run: func(_ *cobra.Command, _ []string) {
 			start()
 
-			fmt.Print(byeBanner)
+			fmt.Printf("%s", byeBanner)
 		},
 	}
 )
