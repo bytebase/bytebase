@@ -173,7 +173,7 @@ our product experts.
 
 # 👩‍🏫 Tutorials
 
-Product tutorials are available at https://www.bytebase.com/tutorial
+Product tutorials are available at https://www.bytebase.com/tutorial.
 
 ## Integrations
 
@@ -329,7 +329,7 @@ Either Flyway or Liquibase is a library and CLI focusing on schema change. While
 solution covering the entire database development lifecycle for Developers and DBAs to collaborate.
 
 Another key difference is Bytebase **doesn't** support Oracle and SQL Server. This is a conscious
-decision we make so that we can focus on supporting other databases without good tooliing support.
+decision we make so that we can focus on supporting other databases without good tooling support.
 In particular, many of our users tell us Bytebase is by far the best (and sometimes the only) database
 tool that can support their PostgreSQL and ClickHouse use cases.
 
