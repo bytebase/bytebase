@@ -27,6 +27,13 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+var (
+	protojsonUnmarshaler = protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: true,
+	}
+)
+
 // SchemaDesignService implements SchemaDesignServiceServer interface.
 type SchemaDesignService struct {
 	v1pb.UnimplementedSchemaDesignServiceServer
@@ -289,7 +296,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		sheetPayload := &storepb.SheetPayload{}
-		if err := protojson.Unmarshal([]byte(sheet.Payload), sheetPayload); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal([]byte(sheet.Payload), sheetPayload); err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
 		}
 		sheetPayload.SchemaDesign.BaselineSheetId = sheetID
@@ -448,7 +455,7 @@ func (s *SchemaDesignService) getSheet(ctx context.Context, find *store.FindShee
 
 func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sheet *store.SheetMessage) (*v1pb.SchemaDesign, error) {
 	sheetPayload := &storepb.SheetPayload{}
-	err := protojson.Unmarshal([]byte(sheet.Payload), sheetPayload)
+	err := protojsonUnmarshaler.Unmarshal([]byte(sheet.Payload), sheetPayload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
 	}
@@ -504,18 +511,19 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
 		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
 	}
-
-	sheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSheetId)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetPayload.SchemaDesign.BaselineSheetId))
+	if sheetPayload.SchemaDesign.BaselineSheetId != "" {
+		sheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSheetId)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetPayload.SchemaDesign.BaselineSheetId))
+		}
+		baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
+			UID: &sheetUID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+		}
+		baselineSchema = baselineSheet.Statement
 	}
-	baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-		UID: &sheetUID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
-	}
-	baselineSchema = baselineSheet.Statement
 
 	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
 		etag = GenerateEtag([]byte(schema))
