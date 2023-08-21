@@ -30,8 +30,8 @@ enum Engine {
   RISINGWAVE = 16;
 }
 
-enum DataMaskingLevel {
-  DATA_MASKING_LEVEL_UNSPECIFIED = 0;
+enum ObfusecateLevel {
+  OBFUSECATE_LEVEL_UNSPECIFIED = 0;
   NONE = 1;
   PARTIAL = 2;
   FULL = 3;
