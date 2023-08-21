@@ -31,9 +31,9 @@ message Binding {
   google.type.Expr condition = 3;
 }
 
-// DataMaskingExceptionPolicy is the whitelist of users who can access sensitive data.
-message DataMaskingExceptionPolicy {
-  message DataMaskingException {
+// MaskingExceptionPolicy is the whitelist of users who can access sensitive data.
+message MaskingExceptionPolicy {
+  message MaskingException {
     enum Action {
       ACTION_UNSPECIFIED = 0;
       QUERY = 1;
@@ -43,7 +43,7 @@ message DataMaskingExceptionPolicy {
     Action action = 1;
 
     // Level is the masking level that the user can access sensitive data.
-    ObfusecateLevel level = 2;
+    MaskingLevel masking_level = 2;
 
     // Members is the list of principals who bind to this exception policy instance.
     //
@@ -54,5 +54,5 @@ message DataMaskingExceptionPolicy {
     google.type.Expr condition = 4;
   }
 
-  repeated DataMaskingException data_masking_exceptions = 1;
+  repeated MaskingException masking_exceptions = 1;
 }

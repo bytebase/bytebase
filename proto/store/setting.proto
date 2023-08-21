@@ -160,11 +160,11 @@ message DataClassificationSetting {
   repeated DataClassificationConfig configs = 1;
 }
 
-message DataMaskingRuleSetting {
-  message DataMaskingRule {
+message MaskingRuleSetting {
+  message MaskingRule {
     google.type.Expr condition = 1;
 
-    ObfusecateLevel level = 2;
+    MaskingLevel masking_level = 2;
   }
-  repeated DataMaskingRule rules = 1;
+  repeated MaskingRule rules = 1;
 }
