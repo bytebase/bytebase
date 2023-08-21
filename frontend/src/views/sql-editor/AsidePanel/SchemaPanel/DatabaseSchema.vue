@@ -16,11 +16,15 @@
           :database-metadata="databaseMetadata"
         />
         <ExternalLinkButton
+          v-if="sqlEditorStore.mode === 'BUNDLED'"
           :link="`/db/${databaseV1Slug(database)}`"
           :tooltip="$t('common.detail')"
         />
         <AlterSchemaButton
-          v-if="instanceV1HasAlterSchema(database.instanceEntity)"
+          v-if="
+            sqlEditorStore.mode === 'BUNDLED' &&
+            instanceV1HasAlterSchema(database.instanceEntity)
+          "
           :database="database"
           @click="
             emit('alter-schema', {
@@ -45,6 +49,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
+import { useSQLEditorStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -78,6 +83,7 @@ const emit = defineEmits<{
 }>();
 
 const currentUser = useCurrentUserV1();
+const sqlEditorStore = useSQLEditorStore();
 
 const engine = computed(() => props.database.instanceEntity.engine);
 
