@@ -141,6 +141,21 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 	planUID = &plan.UID
+	var rolloutUID *int
+	if request.Issue.Rollout != "" {
+		_, rolloutID, err := common.GetProjectIDRolloutID(request.Issue.Rollout)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		rollout, err := s.store.GetRollout(ctx, rolloutID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get rollout, error: %v", err)
+		}
+		if rollout == nil {
+			return nil, status.Errorf(codes.NotFound, "rollout not found for id: %d", rolloutID)
+		}
+		rolloutUID = &rollout.ID
+	}
 
 	assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
 	if err != nil {
@@ -157,7 +172,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	issueCreateMessage := &store.IssueMessage{
 		Project:       project,
 		PlanUID:       planUID,
-		PipelineUID:   nil,
+		PipelineUID:   rolloutUID,
 		Title:         request.Issue.Title,
 		Status:        api.IssueOpen,
 		Type:          api.IssueDatabaseGeneral,

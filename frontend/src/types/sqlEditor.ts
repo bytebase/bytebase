@@ -8,6 +8,12 @@ export type CompletionItems = monaco.languages.CompletionItem[];
 
 export type Language = "sql" | "javascript" | "redis";
 
+export type SQLEditorMode =
+  // SQL Editor is bundled with main console.
+  | "BUNDLED"
+  // SQL Editor is by its own.
+  | "STANDALONE";
+
 export const EngineTypesUsingSQL = [
   "MYSQL",
   "CLICKHOUSE",

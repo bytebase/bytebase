@@ -10,7 +10,10 @@
         <span class="font-semibold">{{ table.name }}</span>
       </div>
 
-      <div class="flex justify-end gap-x-0.5">
+      <div
+        v-if="sqlEditorStore.mode === 'BUNDLED'"
+        class="flex justify-end gap-x-0.5"
+      >
         <ExternalLinkButton
           :link="tableDetailLink"
           :tooltip="$t('common.detail')"
@@ -35,7 +38,9 @@
 </template>
 
 <script lang="ts" setup>
+import { stringify } from "qs";
 import { computed } from "vue";
+import { useSQLEditorStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
@@ -62,14 +67,17 @@ const emit = defineEmits<{
   ): void;
 }>();
 
+const sqlEditorStore = useSQLEditorStore();
+
 const tableDetailLink = computed((): string => {
   const { database, schema, table } = props;
-  let url = `/db/${databaseV1Slug(database)}/table/${encodeURIComponent(
-    table.name
-  )}`;
+  const query: Record<string, string> = {
+    table: table.name,
+  };
   if (schema.name) {
-    url += `?schema=${encodeURIComponent(schema.name)}`;
+    query.schema = schema.name;
   }
+  const url = `/db/${databaseV1Slug(database)}?${stringify(query)}`;
 
   return url;
 });
