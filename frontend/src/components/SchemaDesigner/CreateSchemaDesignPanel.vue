@@ -72,10 +72,10 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useProjectV1ByUID,
+  useSheetV1Store,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { databaseNamePrefix } from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
 import {
   ChangeHistory,
   DatabaseMetadata,
@@ -84,6 +84,11 @@ import {
   SchemaDesign,
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
+import {
+  Sheet_Source,
+  Sheet_Type,
+  Sheet_Visibility,
+} from "@/types/proto/v1/sheet_service";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import { mergeSchemaEditToMetadata } from "./common/util";
 import SchemaDesigner from "./index.vue";
@@ -117,6 +122,7 @@ const { t } = useI18n();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
+const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   schemaDesignName: "",
   baselineSchema: {
@@ -218,11 +224,15 @@ const handleConfirm = async () => {
     )
   );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
-  const schemaVersion =
-    !state.baselineSchema.changeHistory ||
-    state.baselineSchema.changeHistory?.uid === String(UNKNOWN_ID)
-      ? ""
-      : state.baselineSchema.changeHistory?.name;
+  // Create a baseline sheet for the schema design.
+  const baselineSheet = await sheetStore.createSheet(project.value.name, {
+    name: `baseline schema of ${state.schemaDesignName}`,
+    database: baselineDatabase,
+    content: new TextEncoder().encode(state.schemaDesign.baselineSchema),
+    visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+    source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+    type: Sheet_Type.TYPE_SQL,
+  });
 
   const createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
     project.value.name,
@@ -236,7 +246,7 @@ const handleConfirm = async () => {
       engine: state.schemaDesign.engine,
       type: state.schemaDesign.type,
       baselineDatabase: baselineDatabase,
-      schemaVersion: schemaVersion,
+      baselineSheetName: baselineSheet.name,
     })
   );
   pushNotification({

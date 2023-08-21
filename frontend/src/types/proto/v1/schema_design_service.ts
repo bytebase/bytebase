@@ -38,10 +38,10 @@ export interface SchemaDesign {
    */
   baselineDatabase: string;
   /**
-   * The selected schema version of the baseline database.
-   * If not specified, the latest schema of database will be used as baseline schema.
+   * The name of the baseline sheet.
+   * Format: projects/{project}/sheets/{sheet}
    */
-  schemaVersion: string;
+  baselineSheetName: string;
   /** The type of the schema design. */
   type: SchemaDesign_Type;
   /** The etag of the schema design. */
@@ -214,7 +214,7 @@ function createBaseSchemaDesign(): SchemaDesign {
     baselineSchemaMetadata: undefined,
     engine: 0,
     baselineDatabase: "",
-    schemaVersion: "",
+    baselineSheetName: "",
     type: 0,
     etag: "",
     creator: "",
@@ -250,8 +250,8 @@ export const SchemaDesign = {
     if (message.baselineDatabase !== "") {
       writer.uint32(66).string(message.baselineDatabase);
     }
-    if (message.schemaVersion !== "") {
-      writer.uint32(74).string(message.schemaVersion);
+    if (message.baselineSheetName !== "") {
+      writer.uint32(74).string(message.baselineSheetName);
     }
     if (message.type !== 0) {
       writer.uint32(80).int32(message.type);
@@ -342,7 +342,7 @@ export const SchemaDesign = {
             break;
           }
 
-          message.schemaVersion = reader.string();
+          message.baselineSheetName = reader.string();
           continue;
         case 10:
           if (tag !== 80) {
@@ -407,7 +407,7 @@ export const SchemaDesign = {
         : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       baselineDatabase: isSet(object.baselineDatabase) ? String(object.baselineDatabase) : "",
-      schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
+      baselineSheetName: isSet(object.baselineSheetName) ? String(object.baselineSheetName) : "",
       type: isSet(object.type) ? schemaDesign_TypeFromJSON(object.type) : 0,
       etag: isSet(object.etag) ? String(object.etag) : "",
       creator: isSet(object.creator) ? String(object.creator) : "",
@@ -430,7 +430,7 @@ export const SchemaDesign = {
       : undefined);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.baselineDatabase !== undefined && (obj.baselineDatabase = message.baselineDatabase);
-    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.baselineSheetName !== undefined && (obj.baselineSheetName = message.baselineSheetName);
     message.type !== undefined && (obj.type = schemaDesign_TypeToJSON(message.type));
     message.etag !== undefined && (obj.etag = message.etag);
     message.creator !== undefined && (obj.creator = message.creator);
@@ -459,7 +459,7 @@ export const SchemaDesign = {
         : undefined;
     message.engine = object.engine ?? 0;
     message.baselineDatabase = object.baselineDatabase ?? "";
-    message.schemaVersion = object.schemaVersion ?? "";
+    message.baselineSheetName = object.baselineSheetName ?? "";
     message.type = object.type ?? 0;
     message.etag = object.etag ?? "";
     message.creator = object.creator ?? "";
