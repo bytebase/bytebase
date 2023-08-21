@@ -607,28 +607,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 	return creates, nil
 }
 
-func convertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
-	switch engine {
-	case db.Oracle:
-		return parser.Oracle, nil
-	case db.MSSQL:
-		return parser.MSSQL, nil
-	case db.Postgres:
-		return parser.Postgres, nil
-	case db.Redshift:
-		return parser.Redshift, nil
-	case db.MySQL:
-		return parser.MySQL, nil
-	case db.TiDB:
-		return parser.TiDB, nil
-	case db.MariaDB:
-		return parser.MariaDB, nil
-	case db.OceanBase:
-		return parser.OceanBase, nil
-	}
-	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)
-}
-
 func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if c.Source == nil {
 		return nil, nil, errors.Errorf("missing source in restore database config")
