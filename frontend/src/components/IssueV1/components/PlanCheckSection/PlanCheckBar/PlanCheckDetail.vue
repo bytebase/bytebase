@@ -177,6 +177,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
       PlanCheckRun_Result.fromPartial({
         status: PlanCheckRun_Result_Status.ERROR,
         title: t("common.error"),
+        content: props.planCheckRun.error,
       }),
     ];
   } else if (props.planCheckRun.status === PlanCheckRun_Status.CANCELED) {
@@ -184,6 +185,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
       PlanCheckRun_Result.fromPartial({
         status: PlanCheckRun_Result_Status.WARNING,
         title: t("common.canceled"),
+        content: props.planCheckRun.error,
       }),
     ];
   }
