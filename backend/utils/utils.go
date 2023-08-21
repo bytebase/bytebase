@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -1029,4 +1030,27 @@ func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *st
 		}
 	}
 	return matched, unmatched, nil
+}
+
+// ConvertDatabaseToParserEngineType converts a database type to a parser engine type.
+func ConvertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
+	switch engine {
+	case db.Oracle:
+		return parser.Oracle, nil
+	case db.MSSQL:
+		return parser.MSSQL, nil
+	case db.Postgres:
+		return parser.Postgres, nil
+	case db.Redshift:
+		return parser.Redshift, nil
+	case db.MySQL:
+		return parser.MySQL, nil
+	case db.TiDB:
+		return parser.TiDB, nil
+	case db.MariaDB:
+		return parser.MariaDB, nil
+	case db.OceanBase:
+		return parser.OceanBase, nil
+	}
+	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)
 }

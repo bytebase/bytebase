@@ -509,7 +509,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
 		}
 
-		parserEngineType, err := convertDatabaseToParserEngineType(instance.Engine)
+		parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
 		}
