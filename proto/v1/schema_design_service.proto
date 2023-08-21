@@ -86,9 +86,9 @@ message SchemaDesign {
   // Format: instances/{instance}/databases/{database}
   string baseline_database = 8 [(google.api.field_behavior) = IMMUTABLE];
 
-  // The selected schema version of the baseline database.
-  // If not specified, the latest schema of database will be used as baseline schema.
-  string schema_version = 9 [(google.api.field_behavior) = IMMUTABLE];
+  // The name of the baseline sheet.
+  // Format: projects/{project}/sheets/{sheet}
+  string baseline_sheet_name = 9 [(google.api.field_behavior) = IMMUTABLE];
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
