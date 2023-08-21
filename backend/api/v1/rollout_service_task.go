@@ -514,7 +514,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 			return nil, nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
 		}
 
-		statements, schemaGroupNames, err := getStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, c.Target, schemaGroups, schemaGroupsMatchedTables)
+		statements, schemaGroupNames, err := GetStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, c.Target, schemaGroups, schemaGroupsMatchedTables)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get statements from schema groups")
 		}
@@ -607,9 +607,8 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 	return creates, nil
 }
 
-// input: statement, parserEngineType
-// output: rendered statement list
-func getStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngineType parser.EngineType, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
+// GetStatementsAndSchemaGroupsFromSchemaGroups takes in a statement template and a list of schema groups, returns a list of expanded(rendered) statements and schema group names.
+func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngineType parser.EngineType, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
 	flush := func(emptyStatementBuilder *strings.Builder, statementBuilder *strings.Builder, schemaGroup *store.SchemaGroupMessage, matchedTables []string) ([]string, []string) {
 		if statementBuilder.Len() == 0 {
 			return nil, nil

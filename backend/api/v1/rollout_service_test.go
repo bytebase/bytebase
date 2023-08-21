@@ -129,7 +129,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 	}
 
 	for _, tc := range tcs {
-		statements, schemaGroupNames, err := getStatementsAndSchemaGroupsFromSchemaGroups(tc.statement, tc.parserEngineType, tc.schemaGroupParent, tc.schemaGroups, tc.schemaGroupMatchedTables)
+		statements, schemaGroupNames, err := GetStatementsAndSchemaGroupsFromSchemaGroups(tc.statement, tc.parserEngineType, tc.schemaGroupParent, tc.schemaGroups, tc.schemaGroupMatchedTables)
 		a.NoError(err, tc.name)
 		a.Equal(tc.expectedStatements, statements, tc.name)
 		a.Equal(tc.expectedSchemaGroupNames, schemaGroupNames, tc.name)
