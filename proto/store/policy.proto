@@ -42,7 +42,7 @@ message DataMaskingExceptionPolicy {
     // action is the action that the user can access sensitive data.
     Action action = 1;
 
-    // data_masking_level is the masking level that the user can access sensitive data.
+    // Level is the masking level that the user can access sensitive data.
     ObfusecateLevel level = 2;
 
     // Members is the list of principals who bind to this exception policy instance.
