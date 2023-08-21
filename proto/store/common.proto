@@ -28,10 +28,3 @@ enum Engine {
   OCEANBASE = 14;
   DM = 15;
 }
-
-enum MaskingLevel {
-  MASKING_LEVEL_UNSPECIFIED = 0;
-  NONE = 1;
-  PARTIAL = 2;
-  FULL = 3;
-}

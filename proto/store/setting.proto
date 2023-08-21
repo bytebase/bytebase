@@ -159,12 +159,3 @@ message DataClassificationSetting {
   }
   repeated DataClassificationConfig configs = 1;
 }
-
-message MaskingRuleSetting {
-  message MaskingRule {
-    google.type.Expr condition = 1;
-
-    MaskingLevel masking_level = 2;
-  }
-  repeated MaskingRule rules = 1;
-}
