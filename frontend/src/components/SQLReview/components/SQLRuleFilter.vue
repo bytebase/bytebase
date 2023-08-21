@@ -9,7 +9,7 @@
       @toggle-checked-level="$emit('toggle-checked-level', $event)"
     />
     <div
-      class="flex justify-between items-center border-t border-control-border pt-4"
+      class="flex flex-col lg:flex-row items-start justify-between gap-y-3 lg:items-center border-t border-control-border pt-4"
     >
       <SQLReviewCategoryTabFilter
         :selected="params.selectedCategory"
@@ -18,6 +18,7 @@
       />
       <BBTableSearch
         ref="searchField"
+        class="w-full lg:w-auto"
         :placeholder="$t('sql-review.search-rule-name')"
         @change-text="$emit('change-search-text', $event)"
       />
