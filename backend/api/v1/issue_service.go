@@ -147,14 +147,14 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		rollout, err := s.store.GetRollout(ctx, rolloutID)
+		pipeline, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get rollout, error: %v", err)
 		}
-		if rollout == nil {
+		if pipeline == nil {
 			return nil, status.Errorf(codes.NotFound, "rollout not found for id: %d", rolloutID)
 		}
-		rolloutUID = &rollout.ID
+		rolloutUID = &pipeline.ID
 	}
 
 	assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
