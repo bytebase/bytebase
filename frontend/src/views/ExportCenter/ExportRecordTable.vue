@@ -18,10 +18,11 @@
         </NButton>
       </div>
       <div
-        class="bb-grid-cell text-blue-600 hover:underline"
+        class="bb-grid-cell text-blue-600"
+        :class="item.issueId !== `${UNKNOWN_ID}` && 'hover:underline'"
         @click="gotoIssuePage(item)"
       >
-        {{ `#${item.issueId}` }}
+        {{ item.issueId === `${UNKNOWN_ID}` ? "/" : `#${item.issueId}` }}
       </div>
       <div class="bb-grid-cell">
         {{ item.database.databaseName }}
@@ -131,6 +132,9 @@ const toggleExpandRow = (item: ExportRecord) => {
 };
 
 const gotoIssuePage = async (item: ExportRecord) => {
+  if (item.issueId === `${UNKNOWN_ID}`) {
+    return;
+  }
   const issue = await useIssueStore().getOrFetchIssueById(item.issueId);
   if (issue.id === UNKNOWN_ID) {
     pushNotification({
