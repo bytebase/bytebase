@@ -250,7 +250,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		sheetUpdate.Statement = &schema
 	}
 	// Update baseline schema design id for personal draft schema design.
-	if slices.Contains(request.UpdateMask.Paths, "schema_version") {
+	if slices.Contains(request.UpdateMask.Paths, "baseline_sheet_name") {
 		_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(schemaDesign.BaselineSheetName)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
