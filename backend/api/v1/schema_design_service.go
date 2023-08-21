@@ -166,7 +166,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	_, baselineSheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(schemaDesign.BaselineSheetName)
+	_, baselineSheetID, err := common.GetProjectResourceIDSheetID(schemaDesign.BaselineSheetName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -251,7 +251,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	}
 	// Update baseline schema design id for personal draft schema design.
 	if slices.Contains(request.UpdateMask.Paths, "baseline_sheet_name") {
-		_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(schemaDesign.BaselineSheetName)
+		_, sheetID, err := common.GetProjectResourceIDSheetID(schemaDesign.BaselineSheetName)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
