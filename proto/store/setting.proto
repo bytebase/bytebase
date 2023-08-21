@@ -164,7 +164,7 @@ message DataMaskingRuleSetting {
   message DataMaskingRule {
     google.type.Expr condition = 1;
 
-    ObfusecateLevel data_masking_level = 2;
+    ObfusecateLevel level = 2;
   }
   repeated DataMaskingRule rules = 1;
 }
