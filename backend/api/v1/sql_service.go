@@ -1333,15 +1333,15 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 							Table:  table.Name,
 							Column: column.Name,
 						}]
+						if sensitive {
+							isEmpty = false
+						}
 						tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
 							Name:      column.Name,
 							Sensitive: sensitive,
 						})
 					}
 					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
-				}
-				if len(databaseSchema.TableList) > 0 {
-					isEmpty = false
 				}
 				result.DatabaseList = append(result.DatabaseList, databaseSchema)
 			}
@@ -1379,6 +1379,9 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						}
 						sensitive = classificationIsSensitive
 					}
+					if sensitive {
+						isEmpty = false
+					}
 					tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
 						Name:      column.Name,
 						Sensitive: sensitive,
@@ -1392,15 +1395,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			}
 			if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
 				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
-			}
-		}
-		if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
-			if len(databaseSchema.SchemaList) > 0 {
-				isEmpty = false
-			}
-		} else {
-			if len(databaseSchema.TableList) > 0 {
-				isEmpty = false
 			}
 		}
 		result.DatabaseList = append(result.DatabaseList, databaseSchema)
