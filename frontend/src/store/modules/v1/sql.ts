@@ -39,7 +39,10 @@ export const useSQLStore = defineStore("sql", () => {
   };
 
   const exportData = async (params: ExportRequest) => {
-    return await sqlServiceClient.export(params);
+    return await sqlServiceClient.export(params, {
+      // Won't jump to 403 page when permission denied.
+      ignoredCodes: [Status.PERMISSION_DENIED],
+    });
   };
 
   return {
