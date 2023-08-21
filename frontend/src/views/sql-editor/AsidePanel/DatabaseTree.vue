@@ -63,6 +63,7 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1Store,
+  useSQLEditorStore,
   useIsLoggedIn,
   useTabStore,
 } from "@/store";
@@ -115,6 +116,7 @@ const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
+const sqlEditorStore = useSQLEditorStore();
 
 const mounted = useMounted();
 const treeRef = ref<InstanceType<typeof NTree>>();
@@ -125,6 +127,7 @@ const dropdownPosition = ref<Position>({
   y: 0,
 });
 const dropdownContext = ref<ConnectionAtom>();
+
 const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
   const atom = dropdownContext.value;
   if (!atom) {
@@ -157,7 +160,7 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
         });
       }
     }
-    if (atom.type === "database") {
+    if (atom.type === "database" && sqlEditorStore.mode === "BUNDLED") {
       const database = databaseStore.getDatabaseByUID(atom.id);
       if (instanceV1HasAlterSchema(database.instanceEntity)) {
         items.push({
