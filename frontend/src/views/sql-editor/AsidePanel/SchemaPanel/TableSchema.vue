@@ -35,6 +35,7 @@
 </template>
 
 <script lang="ts" setup>
+import { stringify } from "qs";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -64,12 +65,13 @@ const emit = defineEmits<{
 
 const tableDetailLink = computed((): string => {
   const { database, schema, table } = props;
-  let url = `/db/${databaseV1Slug(database)}/table/${encodeURIComponent(
-    table.name
-  )}`;
+  const query: Record<string, string> = {
+    table: table.name,
+  };
   if (schema.name) {
-    url += `?schema=${encodeURIComponent(schema.name)}`;
+    query.schema = schema.name;
   }
+  const url = `/db/${databaseV1Slug(database)}?${stringify(query)}`;
 
   return url;
 });
