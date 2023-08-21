@@ -397,6 +397,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					return nil, err
 				}
 
+				var results []*storepb.PlanCheckRunResult_Result
 				for _, advice := range adviceList {
 					status := storepb.PlanCheckRunResult_Result_SUCCESS
 					switch advice.Status {
