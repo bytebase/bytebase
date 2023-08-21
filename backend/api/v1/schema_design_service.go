@@ -202,6 +202,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
 			schemaDesignSheetPayload.SchemaDesign.BaselineSchemaDesignId = sheetID
+			schemaDesignSheetPayload.SchemaDesign.BaselineSchemaDesignEtag = GenerateEtag([]byte(schema))
 		}
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
@@ -490,9 +491,14 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	baselineSchema := ""
-	schemaVersion := ""
-	if sheetPayload.SchemaDesign.BaselineChangeHistoryId != "" {
+	baselineSchema, schemaVersion, etag := "", "", ""
+	schemaDesignType := v1pb.SchemaDesign_Type(sheetPayload.SchemaDesign.Type)
+	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
+	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
+		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
+	}
+
+	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
 		changeHistory, err := s.store.GetInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 			ID: &sheetPayload.SchemaDesign.BaselineChangeHistoryId,
 		})
@@ -503,7 +509,8 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 			baselineSchema = changeHistory.Schema
 			schemaVersion = changeHistory.UID
 		}
-	} else if sheetPayload.SchemaDesign.Type == storepb.SheetPayload_SchemaDesign_PERSONAL_DRAFT && sheetPayload.SchemaDesign.BaselineSchemaDesignId != "" {
+		etag = GenerateEtag([]byte(schema))
+	} else {
 		sheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSchemaDesignId)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetPayload.SchemaDesign.BaselineSchemaDesignId))
@@ -516,23 +523,12 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		}
 		baselineSchema = sheet.Statement
 		schemaVersion = fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheetPayload.SchemaDesign.BaselineSchemaDesignId)
+		etag = sheetPayload.SchemaDesign.BaselineSchemaDesignEtag
 	}
 
 	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, baselineSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
-	}
-
-	schemaDesignType := v1pb.SchemaDesign_Type(sheetPayload.Type)
-	etag := ""
-	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
-		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
-	}
-	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
-		etag = GenerateEtag([]byte(schema))
-	} else {
-		// For personal branch, we use the baseline schema as the etag.
-		etag = GenerateEtag([]byte(baselineSchema))
 	}
 
 	name := fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.UID)
@@ -546,7 +542,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		Engine:                 engine,
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		SchemaVersion:          schemaVersion,
-		Type:                   v1pb.SchemaDesign_Type(sheetPayload.Type),
+		Type:                   schemaDesignType,
 		Etag:                   etag,
 		Creator:                fmt.Sprintf("users/%s", creator.Email),
 		Updater:                fmt.Sprintf("users/%s", updater.Email),

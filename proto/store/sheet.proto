@@ -47,6 +47,8 @@ message SheetPayload {
     string baseline_change_history_id = 3;
     // The baseline schema design id. Using for personal draft types. AKA sheet id.
     string baseline_schema_design_id = 4;
+    // The etag of baseline schema design. Using for personal draft types.
+    string baseline_schema_design_etag = 5;
   }
   SchemaDesign schema_design = 4;
 }

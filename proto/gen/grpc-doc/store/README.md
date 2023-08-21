@@ -2198,6 +2198,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | engine | [Engine](#bytebase-store-Engine) |  | The database instance engine of the schema design. |
 | baseline_change_history_id | [string](#string) |  | The baseline instance change history id of the schema design. |
 | baseline_schema_design_id | [string](#string) |  | The baseline schema design id. Using for personal draft types. AKA sheet id. |
+| baseline_schema_design_etag | [string](#string) |  | The etag of baseline schema design. Using for personal draft types. |
 
 
 
