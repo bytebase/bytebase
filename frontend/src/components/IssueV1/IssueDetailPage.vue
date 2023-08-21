@@ -1,10 +1,12 @@
 <template>
-  <div class="divide-y">
+  <div>
     <div class="issue-debug">phase: {{ phase }}</div>
 
     <BannerSection v-if="!isCreating" />
 
     <HeaderSection class="!border-t-0" />
+
+    <div class="w-full border-t my-4" />
 
     <StageSection />
 
@@ -12,11 +14,15 @@
 
     <TaskRunSection v-if="!isCreating" />
 
+    <div class="w-full border-t my-4" />
+
     <PlanCheckSection v-if="!isCreating" />
 
     <StatementSection />
 
     <DescriptionSection />
+
+    <div class="w-full border-t my-4" />
 
     <ActivitySection v-if="!isCreating" />
 

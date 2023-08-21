@@ -3,7 +3,7 @@
     <template #trigger>
       <NButton
         :disabled="errors.length > 0"
-        size="large"
+        size="medium"
         tag="div"
         v-bind="issueStatusActionButtonProps(action)"
         @click.prevent="$emit('perform-action', action)"
