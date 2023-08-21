@@ -162,22 +162,9 @@ message DataClassificationSetting {
 
 message DataMaskingRuleSetting {
   message DataMaskingRule {
-    google.type.expr condition = 1;
+    google.type.Expr condition = 1;
 
     DataMaskingLevel data_masking_level = 2;
   }
   repeated DataMaskingRule data_masking_rules = 1;
-}
-
-message DataFeatureSetting {
-  message DataFeature {
-    // id is the uuid for feature.
-    string id = 1;
-
-    // title is the title for feature, for example: "Mail".
-    string title = 2;
-
-    // description is the description for feature.
-    string description = 3;
-  }
 }
