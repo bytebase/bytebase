@@ -224,6 +224,7 @@ const handleConfirm = async () => {
     )
   );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
+  // Create a baseline sheet for the schema design.
   const baselineSheet = await sheetStore.createSheet(project.value.name, {
     name: `baseline schema of ${state.schemaDesignName}`,
     database: baselineDatabase,
