@@ -5,32 +5,13 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM node:18 as frontend
-
-ARG TARGETARCH
-ARG RELEASE="release"
-
-RUN npm i -g pnpm
-
-WORKDIR /frontend-build
-
-# Install build dependency (e.g. vite)
-COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-COPY ./frontend/ .
-# Copy the SQL review config files to the frontend
-COPY ./backend/plugin/advisor/config/ ./src/types
-COPY ./backend/enterprise/api/plan.yaml ./src/types/
-
-# Build frontend
-RUN pnpm "${RELEASE}-docker"
-
-FROM golang:1.20.3 as backend
+FROM golang:1.21.0 as backend
+ADD go.mod go.sum /
+RUN go mod download
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.20.1"
+ARG GO_VERSION="1.21.0"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -39,7 +20,7 @@ ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
-  apt-get update && apt-get install -y gcc-aarch64-linux-gnu; \
+  apt-get install -y gcc-aarch64-linux-gnu; \
 else \
   apt-get install -y gcc ;\
 fi
@@ -48,24 +29,22 @@ WORKDIR /backend-build
 
 COPY . .
 
-# Copy frontend asset
-COPY --from=frontend /frontend-build/dist ./backend/server/dist
-
-COPY ./scripts/VERSION .
+RUN ls -al
+RUN ls -al ./backend/server
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
   CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
 fi && \
-    VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
+    VERSION=`cat ./scripts/VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
     --tags "${RELEASE},embed_frontend" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
-FROM debian:bullseye-slim as monolithic
+FROM debian:bookworm-slim as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"

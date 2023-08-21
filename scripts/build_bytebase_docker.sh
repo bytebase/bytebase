@@ -12,6 +12,19 @@ cd "$(dirname "$0")/../"
 
 echo "Start building Bytebase docker image ${VERSION}..."
 
+rm -r ./backend/server/dist
+
+echo "Start building Bytebase frontend"
+
+if command -v pnpm > /dev/null
+then
+    pnpm --dir ./frontend i && pnpm --dir ./frontend release
+else
+    npm --prefix ./frontend run release
+fi
+
+echo "Completed building Bytebase frontend."
+
 docker build -f ./scripts/Dockerfile \
     --build-arg VERSION=${VERSION} \
     --build-arg GO_VERSION="$(go version)" \
@@ -29,12 +42,4 @@ echo ""
 echo "Command to start Bytebase on port 8080"
 echo ""
 echo "$ docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:${VERSION} --data /var/opt/bytebase --port 8080"
-echo ""
-echo "Command to start Bytebase on port 8080 and exposed at http://example.com via a separate gateway"
-echo ""
-echo "$ docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:${VERSION} --data /var/opt/bytebase --port 8080 --external-url http://example.com"
-echo ""
-echo "Command to start Bytebase in readonly and use default demo on port 8080"
-echo ""
-echo "$ docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:${VERSION} --data /var/opt/bytebase --port 8080 --demo default --readonly"
 echo ""

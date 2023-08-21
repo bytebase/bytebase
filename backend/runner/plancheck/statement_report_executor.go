@@ -41,18 +41,37 @@ type StatementReportExecutor struct {
 
 // Run runs the statement report executor.
 func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	databaseID := int(planCheckRun.Config.DatabaseId)
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
-	if err != nil {
-		return nil, err
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found: %d", databaseID)
+	target := planCheckRun.Config.GetDatabaseTarget()
+	if target == nil {
+		return nil, errors.New("database target is required")
 	}
 
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instanceUID := int(target.InstanceUid)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v", database.InstanceID)
+		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+	}
+
+	if !isStatementReportSupported(instance.Engine) {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Code:    common.Ok.Int64(),
+				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
+				Content: "",
+			},
+		}, nil
+	}
+
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found %q", target.DatabaseName)
 	}
 
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
@@ -65,13 +84,13 @@ func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.P
 	charset := dbSchema.Metadata.CharacterSet
 	collation := dbSchema.Metadata.Collation
 
-	sheetID := int(planCheckRun.Config.SheetId)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
+	sheetUID := int(planCheckRun.Config.SheetUid)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetID)
+		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
 	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found", sheetID)
+		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
 	if sheet.Size > common.MaxSheetSizeForTaskCheck {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -84,9 +103,9 @@ func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.P
 		}, nil
 	}
 
-	statement, err := e.store.GetSheetStatementByID(ctx, sheetID)
+	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetID)
+		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
 	}
 
 	materials := utils.GetSecretMapFromDatabaseMessage(database)

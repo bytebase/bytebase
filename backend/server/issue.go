@@ -1243,7 +1243,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					if originalStatement == "" {
 						return nil, echo.NewHTTPError(http.StatusBadRequest, "The statement of migration detail should not be empty")
 					}
-					parserEngineType, err := convertDatabaseToParserEngineType(instance.Engine)
+					parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
 					if err != nil {
 						return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to convert database engine type").SetInternal(err)
 					}
@@ -1437,28 +1437,6 @@ func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, tab
 		idx++
 	}
 	return taskCreateList, nil
-}
-
-func convertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
-	switch engine {
-	case db.Oracle:
-		return parser.Oracle, nil
-	case db.MSSQL:
-		return parser.MSSQL, nil
-	case db.Postgres:
-		return parser.Postgres, nil
-	case db.Redshift:
-		return parser.Redshift, nil
-	case db.MySQL:
-		return parser.MySQL, nil
-	case db.TiDB:
-		return parser.TiDB, nil
-	case db.MariaDB:
-		return parser.MariaDB, nil
-	case db.OceanBase:
-		return parser.OceanBase, nil
-	}
-	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)
 }
 
 func getOrDefaultSchemaVersion(detail *api.MigrationDetail) string {

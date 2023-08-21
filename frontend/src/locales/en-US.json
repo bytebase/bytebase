@@ -197,9 +197,6 @@
     },
     "no-data": "No data",
     "visibility": "Visibility",
-    "star": "Star",
-    "unstar": "Unstar",
-    "starred": "Starred",
     "duplicate": "Duplicate",
     "clear-search": "Clear search",
     "enable": "Enable",
@@ -1801,7 +1798,9 @@
     "no-rows-found": "No rows found",
     "download-as-file": "Download as {file}",
     "only-select-allowed": "Only {select} statements are allowed to execute.",
-    "want-to-action": "If you want to {want}, click the {action} button and submit an issue.",
+    "want-to-action": "If you want to {want}, click the {action} button {reaction}.",
+    "and-submit-an-issue": "and submit an issue",
+    "to-enable-admin-mode": "to enable the admin mode",
     "table-schema-placeholder": "Select a table to see its schema",
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "notify-multiple-statements": "Multiple SQL statements detected. SQL Editor only executes the first statement. You can select another statement and execute it individually.",
@@ -2190,8 +2189,11 @@
   "sheet": {
     "self": "Sheets",
     "my-sheets": "My Sheets",
-    "shared-with-me": "Shared with me",
+    "mine": "Mine",
+    "star": "Star",
+    "unstar": "Unstar",
     "starred": "Starred",
+    "shared-with-me": "Shared with me",
     "actions": {
       "sync-from-vcs": "Sync SQL scripts from VCS"
     },
@@ -2207,8 +2209,6 @@
     "from-issue-warning": "The sheet comes from issue {issue} in read-only mode. {oversize}",
     "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. ",
     "sheets": "Sheets",
-    "mine": "Mine",
-    "shared": "Shared",
     "search-sheets": "Search Sheets"
   },
   "engine": {

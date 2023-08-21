@@ -107,7 +107,8 @@
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
-    - [PlanCheckRunConfig.PitrConfig](#bytebase-store-PlanCheckRunConfig-PitrConfig)
+    - [PlanCheckRunConfig.DatabaseGroupTarget](#bytebase-store-PlanCheckRunConfig-DatabaseGroupTarget)
+    - [PlanCheckRunConfig.DatabaseTarget](#bytebase-store-PlanCheckRunConfig-DatabaseTarget)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
@@ -1653,27 +1654,41 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet_id | [int32](#int32) |  |  |
-| instance_id | [int32](#int32) |  |  |
-| database_id | [int32](#int32) |  |  |
+| sheet_uid | [int32](#int32) |  |  |
 | change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
-| pitr_config | [PlanCheckRunConfig.PitrConfig](#bytebase-store-PlanCheckRunConfig-PitrConfig) |  |  |
+| database_target | [PlanCheckRunConfig.DatabaseTarget](#bytebase-store-PlanCheckRunConfig-DatabaseTarget) |  |  |
+| database_group_target | [PlanCheckRunConfig.DatabaseGroupTarget](#bytebase-store-PlanCheckRunConfig-DatabaseGroupTarget) |  |  |
 
 
 
 
 
 
-<a name="bytebase-store-PlanCheckRunConfig-PitrConfig"></a>
+<a name="bytebase-store-PlanCheckRunConfig-DatabaseGroupTarget"></a>
 
-### PlanCheckRunConfig.PitrConfig
+### PlanCheckRunConfig.DatabaseGroupTarget
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| target_instance_id | [int32](#int32) |  |  |
-| target_database_name | [string](#string) |  |  |
+| database_group_uid | [int64](#int64) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig-DatabaseTarget"></a>
+
+### PlanCheckRunConfig.DatabaseTarget
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance_uid | [int32](#int32) |  |  |
+| database_name | [string](#string) |  |  |
 
 
 
@@ -2181,8 +2196,8 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ----- | ---- | ----- | ----------- |
 | type | [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type) |  | The type of the schema design. |
 | engine | [Engine](#bytebase-store-Engine) |  | The database instance engine of the schema design. |
-| baseline_change_history_id | [string](#string) |  | The baseline instance change history id of the schema design. |
-| baseline_schema_design_id | [string](#string) |  | The baseline schema design id. Using for personal draft types. AKA sheet id. |
+| baseline_sheet_id | [string](#string) |  | The id of the baseline sheet including the baseline full schema. |
+| baseline_schema_design_id | [string](#string) |  | The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. |
 
 
 

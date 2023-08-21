@@ -1,17 +1,15 @@
 name: Build and push CI image
 
 on:
-  push:
-    branches:
-      - main
-
-  # Allows you to run this workflow manually from the Actions tab
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
 jobs:
   docker:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, golangci]
     steps:
       - uses: actions/checkout@v3
       - name: Extract build args
@@ -19,6 +17,14 @@ jobs:
           echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
           echo "BUILD_USER=$(id -u -n)" >> $GITHUB_ENV
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 8.6.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -28,12 +34,20 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Run pnpm release build
+        run: |
+          cp backend/plugin/advisor/config/* frontend/src/types
+          cp backend/enterprise/api/plan.yaml frontend/src/types
+          pnpm --dir ./frontend i && pnpm --dir ./frontend release
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v4
         with:
+          context: .
           file: scripts/Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: bytebase/bytebase:release-ci
           build-args: |

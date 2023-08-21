@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="connectionTreeStore.tree.state === ConnectionTreeState.LOADED"
-    class="databases-tree p-2 space-y-2 h-full flex flex-col"
+    class="databases-tree pt-2 px-0.5 gap-y-2 h-full flex flex-col"
     :class="connectionTreeStore.tree.mode"
   >
     <div class="databases-tree--input">
@@ -63,6 +63,7 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1Store,
+  useSQLEditorStore,
   useIsLoggedIn,
   useTabStore,
 } from "@/store";
@@ -75,7 +76,7 @@ import {
 } from "@/types";
 import {
   emptyConnection,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   hasWorkspacePermissionV1,
   instanceV1HasReadonlyMode,
   instanceOfConnectionAtom,
@@ -115,6 +116,7 @@ const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
+const sqlEditorStore = useSQLEditorStore();
 
 const mounted = useMounted();
 const treeRef = ref<InstanceType<typeof NTree>>();
@@ -125,6 +127,7 @@ const dropdownPosition = ref<Position>({
   y: 0,
 });
 const dropdownContext = ref<ConnectionAtom>();
+
 const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
   const atom = dropdownContext.value;
   if (!atom) {
@@ -157,7 +160,7 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
         });
       }
     }
-    if (atom.type === "database") {
+    if (atom.type === "database" && sqlEditorStore.mode === "BUNDLED") {
       const database = databaseStore.getDatabaseByUID(atom.id);
       if (instanceV1HasAlterSchema(database.instanceEntity)) {
         items.push({
@@ -223,13 +226,19 @@ const setConnection = (
         // Don't go further if the connection doesn't change.
         return;
       }
-      const name = getDefaultTabNameFromConnection(target.connection);
-      tabStore.selectOrAddSimilarTab(
-        target,
-        /* beside */ false,
-        /* defaultTabName */ name
-      );
-      tabStore.updateCurrentTab(target);
+      if (tabStore.currentTab.isFreshNew) {
+        // If the current tab is "fresh new", update its connection directly.
+        tabStore.updateCurrentTab(target);
+      } else {
+        // Otherwise select or add a new tab and set its connection
+        const name = getSuggestedTabNameFromConnection(target.connection);
+        tabStore.selectOrAddSimilarTab(
+          target,
+          /* beside */ false,
+          /* defaultTabName */ name
+        );
+        tabStore.updateCurrentTab(target);
+      }
     };
 
     // If selected item is instance node

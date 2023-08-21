@@ -188,6 +188,10 @@ type Server struct {
 	secret          string
 	errorRecordRing api.ErrorRecordRing
 
+	// Stubs.
+	rolloutService *v1.RolloutService
+	issueService   *v1.IssueService
+
 	// MySQL utility binaries
 	mysqlBinDir string
 	// MongoDB utility binaries
@@ -619,7 +623,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
 				if profile.SampleDatabasePort != 0 {
-					if err := s.generateOnboardingData(ctx, user.ID); err != nil {
+					if err := s.generateOnboardingData(ctx, user); err != nil {
 						return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
 					}
 				}
@@ -651,8 +655,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.SchemaSyncer, s.dbFactory, s.ActivityManager, s.licenseService))
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
-	v1pb.RegisterIssueServiceServer(s.grpcServer, v1.NewIssueService(s.store, s.ActivityManager, s.TaskScheduler, s.TaskCheckScheduler, s.RelayRunner, s.stateCfg))
-	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskCheckScheduler, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager))
+	s.issueService = v1.NewIssueService(s.store, s.ActivityManager, s.TaskScheduler, s.TaskCheckScheduler, s.RelayRunner, s.stateCfg)
+	v1pb.RegisterIssueServiceServer(s.grpcServer, s.issueService)
+	s.rolloutService = v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskCheckScheduler, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager)
+	v1pb.RegisterRolloutServiceServer(s.grpcServer, s.rolloutService)
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
 	v1pb.RegisterSchemaDesignServiceServer(s.grpcServer, v1.NewSchemaDesignService(s.store, s.licenseService))
@@ -1147,7 +1153,8 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 }
 
 // generateOnboardingData generates onboarding data after the first signup.
-func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
+func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMessage) error {
+	userID := user.ID
 	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
 		ResourceID: "project-sample",
 		Title:      "Sample Project",
@@ -1351,49 +1358,119 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to create prod sheet for sample project")
 	}
 
-	createContext, err := json.Marshal(
-		&api.MigrationContext{
-			DetailList: []*api.MigrationDetail{
-				{
-					MigrationType: db.Migrate,
-					DatabaseID:    testDatabase.UID,
-					SheetID:       testSheet.UID,
-				},
-				{
-					MigrationType: db.Migrate,
-					DatabaseID:    prodDatabase.UID,
-					// This will violate the NOT NULL SQL Review policy configured above and emit a
-					// warning. Thus to demonstrate the SQL Review capability.
-					SheetID: prodSheet.UID,
+	var issueLink string
+	// Use new CI/CD API.
+	if s.profile.DevelopmentUseV2Scheduler {
+		childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, api.SystemBotID)
+		plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+			Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+			Plan: &v1pb.Plan{
+				Title: "Onboarding sample plan for adding email column to Employee table",
+				Steps: []*v1pb.Plan_Step{
+					{
+						Specs: []*v1pb.Plan_Spec{
+							{
+								Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+									ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+										Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+										Target: fmt.Sprintf("instances/%s/databases/%s", testDatabase.InstanceID, testDatabase.DatabaseName),
+										Sheet:  fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, testSheet.UID),
+									},
+								},
+							},
+						},
+					},
+					{
+						Specs: []*v1pb.Plan_Spec{
+							{
+								Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+									ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+										Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+										Target: fmt.Sprintf("instances/%s/databases/%s", prodDatabase.InstanceID, prodDatabase.DatabaseName),
+										// This will violate the NOT NULL SQL Review policy configured above and emit a
+										// warning. Thus to demonstrate the SQL Review capability.
+										Sheet: fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, prodSheet.UID),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		})
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal sample schema update issue context")
-	}
+		if err != nil {
+			return errors.Wrapf(err, "failed to create plan for sample project")
+		}
+		rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
+			Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+			Plan:   plan.Name,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to create rollout for sample project")
+		}
+		issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
+			Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+			Issue: &v1pb.Issue{
+				Title: "👉👉👉 [START HERE] Add email column to Employee table",
+				Description: `A sample issue to showcase how to review database schema change.
 
-	issueCreate := &api.IssueCreate{
-		ProjectID: project.UID,
-		Name:      "👉👉👉 [START HERE] Add email column to Employee table",
-		Type:      api.IssueDatabaseSchemaUpdate,
-		Description: `A sample issue to showcase how to review database schema change.
-		
-Click "Approve" button to apply the schema update.`,
-		AssigneeID:            userID,
-		AssigneeNeedAttention: true,
-		CreateContext:         string(createContext),
-	}
+				Click "Approve" button to apply the schema update.`,
+				Type:     v1pb.Issue_DATABASE_CHANGE,
+				Assignee: fmt.Sprintf("users/%s", user.Email),
+				Plan:     plan.Name,
+				Rollout:  rollout.Name,
+			},
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to create issue for sample project")
+		}
+		issueLink = fmt.Sprintf("/issue/%s-%s", slug.Make(issue.Title), issue.Uid)
+	} else {
+		createContext, err := json.Marshal(
+			&api.MigrationContext{
+				DetailList: []*api.MigrationDetail{
+					{
+						MigrationType: db.Migrate,
+						DatabaseID:    testDatabase.UID,
+						SheetID:       testSheet.UID,
+					},
+					{
+						MigrationType: db.Migrate,
+						DatabaseID:    prodDatabase.UID,
+						// This will violate the NOT NULL SQL Review policy configured above and emit a
+						// warning. Thus to demonstrate the SQL Review capability.
+						SheetID: prodSheet.UID,
+					},
+				},
+			})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal sample schema update issue context")
+		}
 
-	// Use system bot as the creator so that the issue only appears in the user's assignee list
-	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create sample issue")
+		issueCreate := &api.IssueCreate{
+			ProjectID: project.UID,
+			Name:      "👉👉👉 [START HERE] Add email column to Employee table",
+			Type:      api.IssueDatabaseSchemaUpdate,
+			Description: `A sample issue to showcase how to review database schema change.
+			
+	Click "Approve" button to apply the schema update.`,
+			AssigneeID:            userID,
+			AssigneeNeedAttention: true,
+			CreateContext:         string(createContext),
+		}
+
+		// Use system bot as the creator so that the issue only appears in the user's assignee list.
+		issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create sample issue")
+		}
+		issueLink = fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID)
 	}
 
 	// Bookmark the issue.
 	if _, err := s.store.CreateBookmarkV2(ctx, &store.BookmarkMessage{
 		Name: "Sample Issue",
-		Link: fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
+		Link: issueLink,
 	}, userID); err != nil {
 		return errors.Wrapf(err, "failed to bookmark sample issue")
 	}

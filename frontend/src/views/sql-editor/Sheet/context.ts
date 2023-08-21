@@ -126,11 +126,12 @@ export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
   if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
     tabStore.setCurrentTabId(openingSheetTab.id);
+    return true;
   } else if (forceNewTab) {
     tabStore.addTab(newTab, true /* beside */);
   } else {
     // Open the sheet in a "temp" tab otherwise.
-    tabStore.selectOrAddTempTab(newTab);
+    tabStore.addTab(newTab);
   }
 
   let insId = String(UNKNOWN_ID);

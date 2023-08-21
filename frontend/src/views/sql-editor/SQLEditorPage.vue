@@ -116,7 +116,8 @@ import { useWindowSize } from "@vueuse/core";
 import { NDrawer } from "naive-ui";
 import { stringify } from "qs";
 import { Splitpanes, Pane } from "splitpanes";
-import { computed, reactive } from "vue";
+import { computed, reactive, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
@@ -126,7 +127,7 @@ import {
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
-import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
+import { DatabaseId, TabMode, UNKNOWN_ID, SQLEditorMode } from "@/types";
 import {
   allowUsingSchemaEditorV1,
   instanceV1HasReadonlyMode,
@@ -154,6 +155,7 @@ const state = reactive<LocalState>({
   sidebarExpanded: false,
 });
 
+const route = useRoute();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sqlEditorStore = useSQLEditorStore();
@@ -163,6 +165,13 @@ const { showPanel: showSheetPanel } = provideSheetContext();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
+
+onMounted(() => {
+  const mode = (route.query.mode || "BUNDLED") as SQLEditorMode;
+  sqlEditorStore.setSQLEditorState({
+    mode,
+  });
+});
 
 const { width: windowWidth } = useWindowSize();
 
@@ -264,6 +273,6 @@ const handleAlterSchema = async (params: {
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
 
-  @apply flex-1 overflow-hidden flex flex-col pt-2;
+  @apply flex-1 overflow-hidden flex flex-col pt-1;
 }
 </style>

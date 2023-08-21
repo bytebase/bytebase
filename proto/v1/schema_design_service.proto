@@ -29,7 +29,7 @@ service SchemaDesignService {
       post: "/v1/{parent=projects/*}/schemaDesign"
       body: "schema_design"
     };
-    option (google.api.method_signature) = "parent,schemaDesign";
+    option (google.api.method_signature) = "parent,schema_design";
   }
 
   rpc UpdateSchemaDesign(UpdateSchemaDesignRequest) returns (SchemaDesign) {
@@ -37,15 +37,12 @@ service SchemaDesignService {
       patch: "/v1/{schema_design.name=projects/*/schemaDesigns/*}"
       body: "schema_design"
     };
-    option (google.api.method_signature) = "schemaDesign,update_mask";
+    option (google.api.method_signature) = "schema_design,update_mask";
   }
 
   rpc MergeSchemaDesign(MergeSchemaDesignRequest) returns (SchemaDesign) {
-    option (google.api.http) = {
-      post: "/v1/{schema_design.name=projects/*/schemaDesigns/*}:merge"
-      body: "schema_design"
-    };
-    option (google.api.method_signature) = "schemaDesign";
+    option (google.api.http) = {post: "/v1/{name=projects/*/schemaDesigns/*}:merge"};
+    option (google.api.method_signature) = "name,target_name";
   }
 
   rpc ParseSchemaString(ParseSchemaStringRequest) returns (ParseSchemaStringResponse) {
@@ -89,9 +86,9 @@ message SchemaDesign {
   // Format: instances/{instance}/databases/{database}
   string baseline_database = 8 [(google.api.field_behavior) = IMMUTABLE];
 
-  // The selected schema version of the baseline database.
-  // If not specified, the latest schema of database will be used as baseline schema.
-  string schema_version = 9 [(google.api.field_behavior) = IMMUTABLE];
+  // The name of the baseline sheet.
+  // Format: projects/{project}/sheets/{sheet}
+  string baseline_sheet_name = 9 [(google.api.field_behavior) = IMMUTABLE];
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
@@ -178,8 +175,13 @@ message UpdateSchemaDesignRequest {
 }
 
 message MergeSchemaDesignRequest {
-  // The personal draft schema design to merge.
-  SchemaDesign schema_design = 1 [(google.api.field_behavior) = REQUIRED];
+  // The name of the schema design to merge.
+  // Format: projects/{project}/schemaDesigns/{schemaDesign}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The target schema design to merge into.
+  // Format: projects/{project}/schemaDesigns/{schemaDesign}
+  string target_name = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ParseSchemaStringRequest {

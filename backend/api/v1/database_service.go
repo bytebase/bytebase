@@ -853,6 +853,9 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 }
 
 func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResources {
+	if r == nil {
+		return nil
+	}
 	result := &v1pb.ChangedResources{}
 	for _, database := range r.Databases {
 		v1Database := &v1pb.ChangedResourceDatabase{
