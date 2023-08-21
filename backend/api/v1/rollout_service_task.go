@@ -16,7 +16,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
