@@ -2,7 +2,7 @@ package v1
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto/sha1"
 	"fmt"
 	"sort"
 	"strconv"
@@ -516,7 +516,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 
 // GenerateEtag generates etag for the given body.
 func GenerateEtag(body []byte) string {
-	hash := sha256.Sum256(body)
+	hash := sha1.Sum(body)
 	etag := fmt.Sprintf("%x", hash)
 	return etag
 }
