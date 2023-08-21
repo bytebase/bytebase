@@ -2196,7 +2196,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ----- | ---- | ----- | ----------- |
 | type | [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type) |  | The type of the schema design. |
 | engine | [Engine](#bytebase-store-Engine) |  | The database instance engine of the schema design. |
-| baseline_schema_sheet_id | [string](#string) |  | The sheet id of the baseline schema design. |
+| baseline_schema_sheet_id | [string](#string) |  | The sheet id of the baseline schema. |
 
 
 

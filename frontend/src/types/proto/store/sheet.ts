@@ -68,7 +68,7 @@ export interface SheetPayload_SchemaDesign {
   type: SheetPayload_SchemaDesign_Type;
   /** The database instance engine of the schema design. */
   engine: Engine;
-  /** The sheet id of the baseline schema design. */
+  /** The sheet id of the baseline schema. */
   baselineSchemaSheetId: string;
 }
 

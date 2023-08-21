@@ -341,7 +341,7 @@ type SheetPayload_SchemaDesign struct {
 	Type SheetPayload_SchemaDesign_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.SheetPayload_SchemaDesign_Type" json:"type,omitempty"`
 	// The database instance engine of the schema design.
 	Engine Engine `protobuf:"varint,2,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
-	// The sheet id of the baseline schema design.
+	// The sheet id of the baseline schema.
 	BaselineSchemaSheetId string `protobuf:"bytes,3,opt,name=baseline_schema_sheet_id,json=baselineSchemaSheetId,proto3" json:"baseline_schema_sheet_id,omitempty"`
 }
 
