@@ -171,13 +171,46 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	schemaDesignType := storepb.SheetPayload_SchemaDesign_Type(schemaDesign.Type)
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			Type:                  storepb.SheetPayload_SchemaDesign_Type(schemaDesign.Type),
-			Engine:                storepb.Engine(schemaDesign.Engine),
-			BaselineSchemaSheetId: baselineSheetID,
+			Type:   schemaDesignType,
+			Engine: storepb.Engine(schemaDesign.Engine),
 		},
+	}
+	if schemaDesignType == storepb.SheetPayload_SchemaDesign_MAIN_BRANCH {
+		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = baselineSheetID
+	} else if schemaDesignType == storepb.SheetPayload_SchemaDesign_PERSONAL_DRAFT {
+		// Create a new sheet to save the baseline full schema of the personal draft schema design.
+		sheetUID, err := strconv.Atoi(baselineSheetID)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", baselineSheetID))
+		}
+		baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
+			UID: &sheetUID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+		}
+		baselineSheetCreate := &store.SheetMessage{
+			Name:        schemaDesign.Title,
+			ProjectUID:  project.UID,
+			DatabaseUID: &database.UID,
+			Statement:   baselineSheet.Statement,
+			Visibility:  store.ProjectSheet,
+			Source:      store.SheetFromBytebaseArtifact,
+			Type:        store.SheetForSQL,
+			CreatorID:   currentPrincipalID,
+			UpdaterID:   currentPrincipalID,
+		}
+		sheet, err := s.store.CreateSheet(ctx, baselineSheetCreate)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
+		}
+		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = strconv.Itoa(sheet.UID)
+		// baselineSheetID is a reference to the baseline schema design.
+		schemaDesignSheetPayload.SchemaDesign.BaselineSchemaDesignId = baselineSheetID
 	}
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {
@@ -259,7 +292,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		if err := protojson.Unmarshal([]byte(sheet.Payload), sheetPayload); err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
 		}
-		sheetPayload.SchemaDesign.BaselineSchemaSheetId = sheetID
+		sheetPayload.SchemaDesign.BaselineSheetId = sheetID
 		payloadBytes, err := protojson.Marshal(sheetPayload)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
@@ -472,9 +505,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
 	}
 
-	sheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSchemaSheetId)
+	sheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSheetId)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetPayload.SchemaDesign.BaselineSchemaSheetId))
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetPayload.SchemaDesign.BaselineSheetId))
 	}
 	baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
 		UID: &sheetUID,

@@ -43,8 +43,10 @@ message SheetPayload {
     Type type = 1;
     // The database instance engine of the schema design.
     Engine engine = 2;
-    // The sheet id of the baseline schema.
-    string baseline_schema_sheet_id = 3;
+    // The id of the baseline sheet including the baseline full schema.
+    string baseline_sheet_id = 3;
+    // The sheet id of the baseline schema design. Only valid when the schema design is a personal draft.
+    string baseline_schema_design_id = 4;
   }
   SchemaDesign schema_design = 4;
 }
