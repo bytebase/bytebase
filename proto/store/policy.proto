@@ -31,7 +31,7 @@ message Binding {
   google.type.Expr condition = 3;
 }
 
-// MaskingExceptionPolicy is the whitelist of users who can access sensitive data.
+// MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 message MaskingExceptionPolicy {
   message MaskingException {
     enum Action {
