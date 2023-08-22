@@ -4,7 +4,7 @@
       <NTooltip>
         <template #trigger>
           <div class="flex gap-x-1 items-center textlabel">
-            {{ $t("common.when") }}
+            {{ $t("task.rollout-time") }}
           </div>
         </template>
         <template #default>
