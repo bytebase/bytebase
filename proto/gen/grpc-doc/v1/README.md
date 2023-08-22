@@ -16,6 +16,7 @@
   
 - [v1/common.proto](#v1_common-proto)
     - [Engine](#bytebase-v1-Engine)
+    - [MaskingLevel](#bytebase-v1-MaskingLevel)
     - [State](#bytebase-v1-State)
   
 - [v1/deployment.proto](#v1_deployment-proto)
@@ -35,6 +36,10 @@
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
+    - [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy)
+    - [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException)
+    - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
+    - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
@@ -46,6 +51,7 @@
     - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
     - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
     - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
+    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
     - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
@@ -782,6 +788,20 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
+<a name="bytebase-v1-MaskingLevel"></a>
+
+### MaskingLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASKING_LEVEL_UNSPECIFIED | 0 |  |
+| NONE | 1 |  |
+| PARTIAL | 2 |  |
+| FULL | 3 |  |
+
+
+
 <a name="bytebase-v1-State"></a>
 
 ### State
@@ -1038,6 +1058,72 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 
 
 
+<a name="bytebase-v1-MaskingExceptionPolicy"></a>
+
+### MaskingExceptionPolicy
+MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException"></a>
+
+### MaskingExceptionPolicy.MaskingException
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
+| members | [string](#string) | repeated | Members is the list of principals who bind to this exception policy instance.
+
+* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingRulePolicy"></a>
+
+### MaskingRulePolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingRulePolicy-MaskingRule"></a>
+
+### MaskingRulePolicy.MaskingRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-Policy"></a>
 
 ### Policy
@@ -1057,6 +1143,8 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
 | slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
 | disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
+| masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
+| masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
@@ -1207,6 +1295,19 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | UNSET | 1 |  |
 | DAILY | 2 |  |
 | WEEKLY | 3 |  |
+
+
+
+<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException-Action"></a>
+
+### MaskingExceptionPolicy.MaskingException.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 |  |
+| QUERY | 1 |  |
+| EXPORT | 2 |  |
 
 
 
