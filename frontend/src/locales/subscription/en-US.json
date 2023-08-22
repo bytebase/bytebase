@@ -62,6 +62,7 @@
         "instance-maximum-20": "Up to 20",
         "instance-maximum-20-tooltip": "Maximum 20. Talk to us for pricing if your instances go over the limit.",
         "instance-unlimited": "Unlimited",
+        "instance-unlimited-tooltip": "Allow unlimited instances. Purchase instance license to enable advanced instance features.",
         "environment-count": "Environment count",
         "environment-unlimited": "Unlimited",
         "state-based-change": "State-based change",
