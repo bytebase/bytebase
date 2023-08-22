@@ -1,31 +1,45 @@
 <template>
   <div class="flex items-center flex-wrap gap-1">
-    <EnvironmentV1Name
-      :environment="environment"
-      :plain="true"
-      :tooltip="true"
-      class="hover:underline"
-    />
-
-    <heroicons-outline:chevron-right class="text-control-light" />
-
     <InstanceV1Name
       :instance="coreDatabaseInfo.instanceEntity"
       :plain="true"
-      class="hover:underline"
-    />
+      text-class="hover:underline"
+    >
+      <template
+        v-if="
+          database &&
+          database.instanceEntity.environment !== database.effectiveEnvironment
+        "
+        #prefix
+      >
+        <EnvironmentV1Name
+          :environment="database.instanceEntity.environmentEntity"
+          :plain="true"
+          :show-icon="false"
+          text-class="hover:underline text-control-light"
+        />
+      </template>
+    </InstanceV1Name>
 
     <heroicons-outline:chevron-right class="text-control-light" />
 
     <div class="flex items-center gap-x-1">
       <heroicons-outline:database />
 
-      <DatabaseV1Name
-        v-if="database"
-        :database="database"
-        :plain="true"
-        class="hover:underline"
-      />
+      <template v-if="database">
+        <EnvironmentV1Name
+          :environment="database.effectiveEnvironmentEntity"
+          :plain="true"
+          :show-icon="false"
+          text-class="hover:underline text-control-light"
+        />
+
+        <DatabaseV1Name
+          :database="database"
+          :plain="true"
+          class="hover:underline"
+        />
+      </template>
       <span v-else>
         {{ coreDatabaseInfo.databaseName }}
       </span>
@@ -104,10 +118,6 @@ const databaseCreationStatus = computed((): DatabaseCreationStatus => {
     return "PENDING_CREATE";
   }
   return "EXISTED";
-});
-
-const environment = computed(() => {
-  return coreDatabaseInfo.value.effectiveEnvironmentEntity;
 });
 
 const database = computed(() => {
