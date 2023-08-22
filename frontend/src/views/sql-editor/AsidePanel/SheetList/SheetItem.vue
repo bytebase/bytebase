@@ -64,7 +64,6 @@ const unsaved = computed(() => {
   if (tab) {
     return !tab.isSaved;
   }
-  console.assert(false, "should never reach this line");
   return false;
 });
 </script>
