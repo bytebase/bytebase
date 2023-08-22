@@ -676,9 +676,21 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			payloadStr := string(payloadBytes)
 			patch.Payload = &payloadStr
 
-			if issue.PipelineUID != nil {
-				if err := s.taskCheckScheduler.SchedulePipelineTaskCheckReport(ctx, *issue.PipelineUID); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to schedule pipeline task check report, error: %v", err)
+			if issue.PlanUID != nil {
+				plan, err := s.store.GetPlan(ctx, *issue.PlanUID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
+				}
+				if plan == nil {
+					return nil, status.Errorf(codes.NotFound, "plan %q not found", *issue.PlanUID)
+				}
+
+				planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
+				}
+				if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 				}
 			}
 
