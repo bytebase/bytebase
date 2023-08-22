@@ -1,6 +1,5 @@
 {
   "common": {
-    "when": "When",
     "view": "View",
     "you": "you",
     "general": "General",
@@ -303,7 +302,8 @@
       "sql-type": "SQL type",
       "summary-report": "Summary report"
     },
-    "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
+    "rollout-time": "Rollout time",
+    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
     "comment": "Comment",
     "invoker": "Invoker",
