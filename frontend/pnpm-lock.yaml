@@ -102,8 +102,8 @@ dependencies:
     specifier: ^3.9.0
     version: 3.9.0(dayjs@1.11.7)(libphonenumber-js@1.10.34)(vue-router@4.1.6)(vue@3.2.47)
   monaco-editor:
-    specifier: 0.34.1
-    version: 0.34.1
+    specifier: 0.41.0
+    version: 0.41.0
   monaco-languageclient:
     specifier: 4.0.1
     version: 4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
@@ -3999,6 +3999,10 @@ packages:
 
   /monaco-editor@0.34.1:
     resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
+    dev: false
+
+  /monaco-editor@0.41.0:
+    resolution: {integrity: sha512-1o4olnZJsiLmv5pwLEAmzHTE/5geLKQ07BrGxlF4Ri/AXAc2yyDGZwHjiTqD8D/ROKUZmwMA28A+yEowLNOEcA==}
     dev: false
 
   /monaco-languageclient@4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4):
