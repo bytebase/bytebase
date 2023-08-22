@@ -21,10 +21,22 @@
           {{ getFormatedValue(schemaDesign).project }}
         </div>
         <div class="bb-grid-cell">
-          {{ getFormatedValue(schemaDesign).creator }}
+          <div class="flex flex-row items-center">
+            <BBAvatar
+              :size="'TINY'"
+              :username="getFormatedValue(schemaDesign).creator"
+            />
+            {{ getFormatedValue(schemaDesign).creator }}
+          </div>
         </div>
         <div class="bb-grid-cell">
-          {{ getFormatedValue(schemaDesign).updater }}
+          <div class="flex flex-row items-center">
+            <BBAvatar
+              :size="'TINY'"
+              :username="getFormatedValue(schemaDesign).updater"
+            />
+            {{ getFormatedValue(schemaDesign).updater }}
+          </div>
         </div>
         <div class="bb-grid-cell">
           <HumanizeTs
