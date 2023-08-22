@@ -1,6 +1,5 @@
 {
   "common": {
-    "when": "于何时",
     "view": "查看",
     "you": "您",
     "general": "通用",
@@ -300,7 +299,8 @@
       "sql-type": "SQL 类型",
       "summary-report": "概要报告"
     },
-    "earliest-allowed-time-hint": "'@:{'common.when'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
+    "rollout-time": "指定发布时间",
+    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
     "comment": "评论",
     "invoker": "执行者",
     "started": "开始于",
