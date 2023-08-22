@@ -308,5 +308,5 @@ message DataCategorySetting {
   }
 
   // data_category is the map of id - DataCategoryItem.
-  map<string, DataCategoryItem> data_category = 1;
+  map<string, DataCategoryItem> items = 1;
 }
