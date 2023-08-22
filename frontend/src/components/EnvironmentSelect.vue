@@ -11,7 +11,7 @@
       <EnvironmentV1Name
         :environment="environment"
         :link="false"
-        :suffiux="
+        :suffix="
           defaultEnvironment == environment.name
             ? `(${$t('common.default')})`
             : ''
