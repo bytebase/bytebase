@@ -92,6 +92,9 @@ dependencies:
   lodash-es:
     specifier: 4.17.21
     version: 4.17.21
+  lucide-vue-next:
+    specifier: ^0.268.0
+    version: 0.268.0(vue@3.2.47)
   markdown-it:
     specifier: ^13.0.1
     version: 13.0.1
@@ -99,8 +102,8 @@ dependencies:
     specifier: ^3.9.0
     version: 3.9.0(dayjs@1.11.7)(libphonenumber-js@1.10.34)(vue-router@4.1.6)(vue@3.2.47)
   monaco-editor:
-    specifier: 0.34.1
-    version: 0.34.1
+    specifier: 0.41.0
+    version: 0.41.0
   monaco-languageclient:
     specifier: 4.0.1
     version: 4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
@@ -725,8 +728,8 @@ packages:
       vue-i18n:
         optional: true
     dependencies:
-      '@intlify/message-compiler': 9.3.0-beta.25
-      '@intlify/shared': 9.3.0-beta.25
+      '@intlify/message-compiler': 9.3.0-beta.26
+      '@intlify/shared': 9.3.0-beta.26
       jsonc-eslint-parser: 1.4.1
       source-map: 0.6.1
       vue-i18n: 9.2.2(vue@3.2.47)
@@ -755,11 +758,11 @@ packages:
       '@intlify/shared': 9.2.2
       source-map: 0.6.1
 
-  /@intlify/message-compiler@9.3.0-beta.25:
-    resolution: {integrity: sha512-uT7ybqKoDEw1XITQYnTYjWgZnpCDmHv9e3D4MmJDqHl2qCm6anzdUXWKHUhqR87Ha9Z8Rl44v40iSI/4NUbppQ==}
+  /@intlify/message-compiler@9.3.0-beta.26:
+    resolution: {integrity: sha512-qsfU6Lca7mI80ts1vgy+pfNvGm2gHy0nERpT/K1GYgnECmsKwud0e8SG1PPxKPEHKa5Mdngzs4pS7X1wH0SCGA==}
     engines: {node: '>= 16'}
     dependencies:
-      '@intlify/shared': 9.3.0-beta.25
+      '@intlify/shared': 9.3.0-beta.26
       source-map-js: 1.0.2
     dev: true
 
@@ -767,8 +770,8 @@ packages:
     resolution: {integrity: sha512-wRwTpsslgZS5HNyM7uDQYZtxnbI12aGiBZURX3BTR9RFIKKRWpllTsgzHWvj3HKm3Y2Sh5LPC1r0PDCKEhVn9Q==}
     engines: {node: '>= 14'}
 
-  /@intlify/shared@9.3.0-beta.25:
-    resolution: {integrity: sha512-Zg+ECV9RPdp227tCJOgvPb+S3i651nf4kKHsMojSyWCppVK/4NFuDrBG2lIQSQL6Iq5LKVr5MkezHCW2NBTQRg==}
+  /@intlify/shared@9.3.0-beta.26:
+    resolution: {integrity: sha512-RpCtfSYIg4tSskrazTr5+WCHyw6qpgwdIxC+x3nCnrPGxyk+en9FoSbadVfx/w7uDTdyhKslEw4d2+qhNc0s4Q==}
     engines: {node: '>= 16'}
     dev: true
 
@@ -788,7 +791,7 @@ packages:
         optional: true
     dependencies:
       '@intlify/bundle-utils': 3.4.0(vue-i18n@9.2.2)
-      '@intlify/shared': 9.3.0-beta.25
+      '@intlify/shared': 9.3.0-beta.26
       '@rollup/pluginutils': 4.2.1
       debug: 4.3.4
       fast-glob: 3.2.12
@@ -3857,6 +3860,14 @@ packages:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
     dev: false
 
+  /lucide-vue-next@0.268.0(vue@3.2.47):
+    resolution: {integrity: sha512-tw5Ah8RZcgoIySeyuK36KlEPJK+1IPQ+gzPfRg8wugQt4kbbX4rrvREtWyuhRXtnTjb1ztk78rTtAWJgqRySRA==}
+    peerDependencies:
+      vue: '>=3.0.1'
+    dependencies:
+      vue: 3.2.47
+    dev: false
+
   /magic-string@0.25.9:
     resolution: {integrity: sha512-RmF0AsMzgt25qzqqLc1+MbHmhdx0ojF2Fvs4XnOqz2ZOBXzzkEwc/dJQZCYHAn7v1jbVOjAZfK8msRn4BxO4VQ==}
     dependencies:
@@ -3988,6 +3999,10 @@ packages:
 
   /monaco-editor@0.34.1:
     resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
+    dev: false
+
+  /monaco-editor@0.41.0:
+    resolution: {integrity: sha512-1o4olnZJsiLmv5pwLEAmzHTE/5geLKQ07BrGxlF4Ri/AXAc2yyDGZwHjiTqD8D/ROKUZmwMA28A+yEowLNOEcA==}
     dev: false
 
   /monaco-languageclient@4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4):

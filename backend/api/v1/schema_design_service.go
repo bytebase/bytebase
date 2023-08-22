@@ -372,7 +372,14 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, err
 	}
+	// Only allow merging to main branch schema design.
+	// Maybe we can support merging to other personal draft schema design in the future.
+	if targetSchemaDesign.Type != v1pb.SchemaDesign_MAIN_BRANCH {
+		return nil, status.Errorf(codes.InvalidArgument, "only main branch schema design can be merged to")
+	}
 
+	// Restrict merging only when the target schema design is not updated.
+	// Maybe we can support auto-merging in the future.
 	if schemaDesign.Etag != targetSchemaDesign.Etag {
 		return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
 	}
@@ -505,7 +512,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	baselineSchema, etag := "", ""
+	baselineSchema, etag, baselineSheetName := "", "", ""
 	schemaDesignType := v1pb.SchemaDesign_Type(sheetPayload.SchemaDesign.Type)
 	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
 	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
@@ -527,8 +534,14 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 
 	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
 		etag = GenerateEtag([]byte(schema))
+		if sheetPayload.SchemaDesign.BaselineSheetId != "" {
+			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheetPayload.SchemaDesign.BaselineSheetId)
+		}
 	} else {
 		etag = GenerateEtag([]byte(baselineSchema))
+		if sheetPayload.SchemaDesign.BaselineSchemaDesignId != "" {
+			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheetPayload.SchemaDesign.BaselineSchemaDesignId)
+		}
 	}
 
 	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, baselineSchema)
@@ -544,6 +557,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		SchemaMetadata:         schemaMetadata,
 		BaselineSchema:         baselineSchema,
 		BaselineSchemaMetadata: baselineSchemaMetadata,
+		BaselineSheetName:      baselineSheetName,
 		Engine:                 engine,
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Type:                   schemaDesignType,
