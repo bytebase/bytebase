@@ -191,9 +191,11 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	}
 	// We don't move the sheet to default project because BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
 	if request.Force {
-		defaultProject := api.DefaultProjectID
-		if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, defaultProject, api.SystemBotID); err != nil {
-			return nil, err
+		if len(databases) > 0 {
+			defaultProject := api.DefaultProjectID
+			if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, defaultProject, api.SystemBotID); err != nil {
+				return nil, err
+			}
 		}
 		// We don't close the issues because they might be open still.
 	} else {
