@@ -307,6 +307,6 @@ message DataCategorySetting {
     // add the algorithm field right now.
   }
 
-  // data_category is the map of id - DataCategoryItem.
+  // items is the map of id - DataCategoryItem.
   map<string, DataCategoryItem> items = 1;
 }
