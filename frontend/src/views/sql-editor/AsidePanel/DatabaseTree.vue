@@ -29,7 +29,6 @@
         :expanded-keys="expandedTreeNodeKeysForCurrentTreeMode"
         :render-label="renderLabel"
         :render-prefix="renderPrefix"
-        :render-suffix="renderSuffix"
         :node-props="nodeProps"
         :virtual-scroll="true"
         @update:expanded-keys="updateExpandedKeys"
@@ -85,7 +84,7 @@ import {
   isSimilarTab,
   instanceV1AllowsCrossDatabaseQuery,
 } from "@/utils";
-import { Prefix, Label, Suffix } from "./TreeNode";
+import { Prefix, Label } from "./TreeNode";
 
 type Position = {
   x: number;
@@ -265,13 +264,6 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const atom = option as any as ConnectionAtom;
   return h(Prefix, { atom });
-};
-
-// Render a 'connected' icon in the right of the node
-// if it matches the current tab's connection
-const renderSuffix = ({ option }: { option: TreeOption }) => {
-  const atom = option as any as ConnectionAtom;
-  return h(Suffix, { atom });
 };
 
 const handleSelect = (key: string) => {
