@@ -2,7 +2,7 @@
   <NTooltip :disabled="errors.length === 0" placement="top">
     <template #trigger>
       <NButton
-        size="large"
+        size="medium"
         tag="div"
         :disabled="errors.length > 0"
         v-bind="issueReviewActionButtonProps(action)"
