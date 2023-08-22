@@ -20,7 +20,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
-	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -33,19 +32,17 @@ type RolloutService struct {
 	store              *store.Store
 	licenseService     enterpriseAPI.LicenseService
 	dbFactory          *dbfactory.DBFactory
-	taskCheckScheduler *taskcheck.Scheduler
 	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
 	activityManager    *activity.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskCheckScheduler *taskcheck.Scheduler, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
 	return &RolloutService{
 		store:              store,
 		licenseService:     licenseService,
 		dbFactory:          dbFactory,
-		taskCheckScheduler: taskCheckScheduler,
 		planCheckScheduler: planCheckScheduler,
 		stateCfg:           stateCfg,
 		activityManager:    activityManager,
