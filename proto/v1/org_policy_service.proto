@@ -297,6 +297,7 @@ message SensitiveData {
   string schema = 1;
   string table = 2;
   string column = 3;
+  string data_category_id = 4;
   enum MaskingLevel {
     MASKING_LEVEL_UNSPECIFIED = 0;
     DEFAULT = 1;
@@ -304,7 +305,7 @@ message SensitiveData {
     PARTIAL = 3;
     NONE = 4;
   }
-  MaskingLevel masking_level = 4;
+  MaskingLevel masking_level = 5;
 }
 
 message SQLReviewPolicy {
