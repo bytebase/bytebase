@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -22,17 +23,19 @@ import (
 
 // SchedulerV2 is the V2 scheduler for task run.
 type SchedulerV2 struct {
-	store       *store.Store
-	stateCfg    *state.State
-	executorMap map[api.TaskType]Executor
+	store           *store.Store
+	stateCfg        *state.State
+	activityManager *activity.Manager
+	executorMap     map[api.TaskType]Executor
 }
 
 // NewSchedulerV2 will create a new scheduler.
-func NewSchedulerV2(store *store.Store, stateCfg *state.State) *SchedulerV2 {
+func NewSchedulerV2(store *store.Store, stateCfg *state.State, activityManager *activity.Manager) *SchedulerV2 {
 	return &SchedulerV2{
-		store:       store,
-		stateCfg:    stateCfg,
-		executorMap: map[api.TaskType]Executor{},
+		store:           store,
+		stateCfg:        stateCfg,
+		activityManager: activityManager,
+		executorMap:     map[api.TaskType]Executor{},
 	}
 }
 
