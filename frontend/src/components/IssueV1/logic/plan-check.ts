@@ -5,10 +5,35 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
+  Plan_ChangeDatabaseConfig_Type,
+  Plan_Spec,
   Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
 import { databaseForTask, specForTask, targetForSpec } from ".";
+
+export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
+  if (spec.createDatabaseConfig) {
+    return false;
+  }
+  if (spec.changeDatabaseConfig !== undefined) {
+    if (
+      [
+        Plan_ChangeDatabaseConfig_Type.BASELINE,
+        Plan_ChangeDatabaseConfig_Type.BRANCH,
+      ].includes(spec.changeDatabaseConfig.type)
+    ) {
+      return false;
+    }
+    return true;
+  }
+  if (spec.restoreDatabaseConfig !== undefined) {
+    if (spec.restoreDatabaseConfig.pointInTime !== undefined) {
+      return true; // PITR check
+    }
+  }
+  return false;
+};
 
 export const planCheckRunListForTask = (issue: ComposedIssue, task: Task) => {
   const spec = specForTask(issue.planEntity, task);
