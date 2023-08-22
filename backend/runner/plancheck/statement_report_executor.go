@@ -46,6 +46,10 @@ func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.P
 		return nil, errors.New("database target is required")
 	}
 
+	return e.runForDatabaseTarget(ctx, planCheckRun, target)
+}
+
+func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, target *storepb.PlanCheckRunConfig_DatabaseTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
 	instanceUID := int(target.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
