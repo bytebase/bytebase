@@ -1269,9 +1269,9 @@
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
-      "description": "Bytebase 支持将一个数据库的指定 Schema 版本同步到其他数据库。",
+      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。",
       "schema-history-version": "Schema 历史版本",
-      "select-source-schema": "选择源数据库",
+      "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
       "select-database-placeholder": "选择数据库 (仅限 MySQL, PostgreSQL)",

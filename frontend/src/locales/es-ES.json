@@ -1270,7 +1270,7 @@
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
     "sync-schema": {
       "title": "Sincronizar esquema",
-      "description": "Bytebase admite la sincronización de una versión de esquema específica de una base de datos con otras.",
+      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",
       "schema-history-version": "Versión del historial de esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
