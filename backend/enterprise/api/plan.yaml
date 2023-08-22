@@ -223,6 +223,7 @@ planList:
         content: user-unlimited
       - type: instance-count
         content: instance-unlimited
+        tooltip: instance-unlimited-tooltip
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
