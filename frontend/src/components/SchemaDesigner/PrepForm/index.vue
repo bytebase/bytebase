@@ -23,7 +23,7 @@
 
       <SchemaDesignTable
         v-if="ready"
-        :schema-designs="schemaDesignList"
+        :schema-designs="sortedSchemaDesignList"
         @click="handleSchemaDesignItemClick"
       />
       <div v-else class="w-full h-[20rem] flex items-center justify-center">
@@ -52,8 +52,9 @@
 </template>
 
 <script lang="ts" setup>
+import { orderBy } from "lodash-es";
 import { NButton } from "naive-ui";
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
 import { DrawerContent } from "@/components/v2";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
@@ -73,6 +74,10 @@ defineProps<{
 const { schemaDesignList, ready } = useSchemaDesignList();
 const state = reactive<LocalState>({
   showCreatePanel: false,
+});
+
+const sortedSchemaDesignList = computed(() => {
+  return orderBy(schemaDesignList.value, "updateTime", "desc");
 });
 
 const handleSchemaDesignItemClick = async (schemaDesign: SchemaDesign) => {
