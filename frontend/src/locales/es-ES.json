@@ -1,6 +1,5 @@
 {
   "common": {
-    "when": "Cuando",
     "view": "Ver",
     "you": "tu",
     "general": "General",
@@ -302,7 +301,8 @@
       "sql-type": "Tipo de SQL",
       "summary-report": "Informe resumido"
     },
-    "earliest-allowed-time-hint": "'@:{'common.when'}' especifica el tiempo de ejecución esperado para esta tarea. Si este campo no está especificado, la tarea se ejecutará una vez que haya pasado todos los demás criterios de filtrado.",
+    "rollout-time": "Tiempo de lanzamiento",
+    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' especifica el tiempo de ejecución esperado para esta tarea. Si este campo no está especificado, la tarea se ejecutará una vez que haya pasado todos los demás criterios de filtrado.",
     "earliest-allowed-time-unset": "No establecido",
     "comment": "Comentario",
     "invoker": "Convocador",
