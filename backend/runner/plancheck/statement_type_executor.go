@@ -15,9 +15,9 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	"github.com/bytebase/bytebase/backend/runner/utils"
+	runnerutils "github.com/bytebase/bytebase/backend/runner/utils"
 	"github.com/bytebase/bytebase/backend/store"
-	backendutils "github.com/bytebase/bytebase/backend/utils"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -48,6 +48,12 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 	if target == nil {
 		return nil, errors.New("database target is required")
 	}
+
+	return e.runForDatabaseTarget(ctx, planCheckRun, target)
+}
+
+func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, target *storepb.PlanCheckRunConfig_DatabaseTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+	changeType := planCheckRun.Config.ChangeDatabaseType
 
 	instanceUID := int(target.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
@@ -109,9 +115,9 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
 	}
 
-	materials := backendutils.GetSecretMapFromDatabaseMessage(database)
+	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := backendutils.RenderStatement(statement, materials)
+	renderedStatement := utils.RenderStatement(statement, materials)
 
 	var results []*storepb.PlanCheckRunResult_Result
 	switch instance.Engine {
@@ -154,7 +160,7 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 }
 
 func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema string, instance *store.InstanceMessage, database *store.DatabaseMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database, e.dbFactory, newSchema)
+	ddl, err := runnerutils.ComputeDatabaseSchemaDiff(ctx, instance, database, e.dbFactory, newSchema)
 	if err != nil {
 		return nil, err
 	}
