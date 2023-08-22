@@ -7,7 +7,7 @@
     @contextmenu="$emit('contextmenu', item, $event)"
   >
     <SheetConnectionIcon :sheet="item.target" class="shrink-0 w-4 h-6" />
-    <div class="flex-1 text-sm leading-6 cursor-pointer break-all">
+    <div class="flex-1 text-sm leading-6 cursor-pointer truncate">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <span v-if="item.target.title" v-html="titleHTML(item, keyword)" />
       <span v-else>
@@ -64,7 +64,6 @@ const unsaved = computed(() => {
   if (tab) {
     return !tab.isSaved;
   }
-  console.assert(false, "should never reach this line");
   return false;
 });
 </script>
