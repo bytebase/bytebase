@@ -62,6 +62,7 @@
         "instance-maximum-20": "不超过 20 个",
         "instance-maximum-20-tooltip": "最多 20 个实例。请与我们联系以获取超过数量的价格。",
         "instance-unlimited": "无限制",
+        "instance-unlimited-tooltip": "可添加无限实例，另可购买实例证书，开启高级实例功能。",
         "environment-count": "环境数",
         "environment-unlimited": "无限制",
         "state-based-change": "基于终态的变更",
