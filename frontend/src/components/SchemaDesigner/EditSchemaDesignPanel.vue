@@ -18,19 +18,36 @@
         >
           <div class="flex flex-row justify-start items-center space-x-2">
             <span v-if="!state.isEditing">
-              {{ state.schemaDesignName }}
+              {{ state.schemaDesignTitle }}
             </span>
-            <NInput v-else v-model:value="state.schemaDesignName" />
+            <NInput v-else v-model:value="state.schemaDesignTitle" />
+            <NTag
+              v-if="schemaDesign.type === SchemaDesign_Type.PERSONAL_DRAFT"
+              type="warning"
+              size="small"
+              round
+            >
+              {{ $t("schema-designer.personal-draft") }}
+            </NTag>
           </div>
           <div>
             <div class="w-full flex flex-row justify-between items-center">
               <div class="flex flex-row justify-end items-center space-x-2">
                 <template v-if="!state.isEditing">
-                  <NButton @click="state.isEditing = true">{{
-                    $t("common.edit")
-                  }}</NButton>
+                  <NDropdown
+                    trigger="click"
+                    :options="schemaDesignDraftDropdownOptions"
+                    @select="handleSchemaDesignDraftSelect"
+                  >
+                    <NButton text style="font-size: 18px">
+                      <NIcon>
+                        <History class="opacity-60" />
+                      </NIcon>
+                    </NButton>
+                  </NDropdown>
+                  <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
                   <NButton
-                    v-if="!viewMode"
+                    v-if="!viewMode && !isSchemaDesignDraft"
                     type="primary"
                     @click="handleApplySchemaDesignClick"
                     >{{ $t("schema-designer.apply-to-database") }}</NButton
@@ -40,10 +57,16 @@
                   <NButton @click="handleCancelEdit">{{
                     $t("common.cancel")
                   }}</NButton>
-                  <NButton type="primary" @click="handleUpdateSchemaDesign">{{
-                    $t("common.update")
+                  <NButton @click="handleSaveSchemaDesignDraft">{{
+                    $t("schema-designer.save-draft")
                   }}</NButton>
                 </template>
+                <NButton
+                  v-if="isSchemaDesignDraft && !viewMode"
+                  type="primary"
+                  @click="handleMergeSchemaDesign"
+                  >{{ $t("schema-designer.merge-to-main") }}</NButton
+                >
               </div>
             </div>
           </div>
@@ -106,25 +129,41 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { NButton, NDrawer, NDrawerContent, NInput } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { History } from "lucide-vue-next";
+import {
+  NButton,
+  NDropdown,
+  NDrawer,
+  NDrawerContent,
+  NIcon,
+  NInput,
+  NTag,
+} from "naive-ui";
+import { Status } from "nice-grpc-common";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import {
+  SchemaDesign,
+  SchemaDesign_Type,
+} from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
 import { mergeSchemaEditToMetadata } from "./common/util";
 import SchemaDesigner from "./index.vue";
 
 interface LocalState {
+  schemaDesignTitle: string;
+  // Pre edit or editing schema design name.
   schemaDesignName: string;
   isEditing: boolean;
 }
 
 const props = defineProps<{
+  // Should be a schema design name of main branch.
   schemaDesignName: string;
   viewMode?: boolean;
 }>();
@@ -135,13 +174,43 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const state = reactive<LocalState>({
-  schemaDesignName: "",
+  schemaDesignTitle: "",
+  schemaDesignName: props.schemaDesignName,
   isEditing: false,
 });
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
 
 const schemaDesign = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(props.schemaDesignName || "");
+  return schemaDesignStore.getSchemaDesignByName(state.schemaDesignName || "");
+});
+
+const isSchemaDesignDraft = computed(() => {
+  return schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT;
+});
+
+const schemaDesignDrafts = computed(() => {
+  return schemaDesignStore.schemaDesignList.filter((schemaDesign) => {
+    return (
+      schemaDesign.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+      schemaDesign.baselineSheetName === props.schemaDesignName
+    );
+  });
+});
+
+const schemaDesignDraftDropdownOptions = computed(() => {
+  return schemaDesignDrafts.value
+    .map((schemaDesign) => {
+      return {
+        label: schemaDesign.title,
+        key: schemaDesign.name,
+      };
+    })
+    .concat([
+      {
+        label: "Clear",
+        key: props.schemaDesignName,
+      },
+    ]);
 });
 
 const baselineDatabase = computed(() => {
@@ -160,12 +229,45 @@ const prepareBaselineDatabase = async () => {
 
 onMounted(async () => {
   await prepareBaselineDatabase();
-  state.schemaDesignName = schemaDesign.value.title;
 });
+
+watch(
+  () => [state.schemaDesignName],
+  () => {
+    state.schemaDesignTitle = schemaDesign.value.title;
+  },
+  {
+    immediate: true,
+  }
+);
+
+const handleEdit = async () => {
+  // Allow editing directly if it's a personal draft.
+  if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+    state.isEditing = true;
+  } else if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
+    // Create a new draft if it's a main branch.
+    const schemaDesignDraft = await schemaDesignStore.createSchemaDesignDraft(
+      schemaDesign.value
+    );
+    // Select the newly created draft.
+    state.schemaDesignName = schemaDesignDraft.name;
+    // Trigger the edit mode.
+    handleEdit();
+  } else {
+    throw new Error(
+      `Unsupported schema design type: ${schemaDesign.value.type}`
+    );
+  }
+};
+
+const handleSchemaDesignDraftSelect = (name: string) => {
+  state.schemaDesignName = name;
+};
 
 const handleCancelEdit = () => {
   state.isEditing = false;
-  state.schemaDesignName = schemaDesign.value.title;
+  state.schemaDesignTitle = schemaDesign.value.title;
 
   const metadata = mergeSchemaEditToMetadata(
     schemaDesignerRef.value?.editableSchemas || [],
@@ -177,7 +279,7 @@ const handleCancelEdit = () => {
   }
 };
 
-const handleUpdateSchemaDesign = async () => {
+const handleSaveSchemaDesignDraft = async () => {
   if (!state.isEditing) {
     return;
   }
@@ -186,7 +288,7 @@ const handleUpdateSchemaDesign = async () => {
   if (!designerState) {
     throw new Error("schema designer is undefined");
   }
-  if (state.schemaDesignName === "") {
+  if (state.schemaDesignTitle === "") {
     pushNotification({
       module: "bytebase",
       style: "WARN",
@@ -196,7 +298,7 @@ const handleUpdateSchemaDesign = async () => {
   }
 
   const updateMask = [];
-  if (schemaDesign.value.title !== state.schemaDesignName) {
+  if (schemaDesign.value.title !== state.schemaDesignTitle) {
     updateMask.push("title");
   }
   const mergedMetadata = mergeSchemaEditToMetadata(
@@ -208,22 +310,65 @@ const handleUpdateSchemaDesign = async () => {
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     updateMask.push("metadata");
   }
-  await schemaDesignStore.updateSchemaDesign(
-    SchemaDesign.fromPartial({
-      name: schemaDesign.value.name,
-      title: state.schemaDesignName,
-      engine: schemaDesign.value.engine,
-      baselineSchema: schemaDesign.value.baselineSchema,
-      schemaMetadata: mergedMetadata,
-    }),
-    updateMask
-  );
+  if (updateMask.length !== 0) {
+    await schemaDesignStore.updateSchemaDesign(
+      SchemaDesign.fromPartial({
+        name: schemaDesign.value.name,
+        title: state.schemaDesignTitle,
+        engine: schemaDesign.value.engine,
+        baselineSchema: schemaDesign.value.baselineSchema,
+        schemaMetadata: mergedMetadata,
+      }),
+      updateMask
+    );
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("schema-designer.message.updated-succeed"),
+    });
+  }
   state.isEditing = false;
+};
+
+const handleMergeSchemaDesign = async () => {
+  // If it's in edit mode, we need to save the draft first.
+  if (state.isEditing) {
+    await handleSaveSchemaDesignDraft();
+  }
+
+  try {
+    await schemaDesignStore.mergeSchemaDesign({
+      name: schemaDesign.value.name,
+      targetName: props.schemaDesignName,
+    });
+  } catch (error: any) {
+    // If there is conflict, we need to show the conflict and let user resolve it.
+    if (error.code === Status.FAILED_PRECONDITION) {
+      // TODO(steven): show the conflict and let user resolve it.
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Merge to main failed",
+        description: error.details,
+      });
+    } else {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `Request error occurred`,
+        description: error.details,
+      });
+    }
+    return;
+  }
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("schema-designer.message.updated-succeed"),
+    title: "Merge to main succeed",
   });
+  // Auto select the main branch after merged.
+  state.schemaDesignName = props.schemaDesignName;
 };
 
 const handleApplySchemaDesignClick = () => {
@@ -236,7 +381,12 @@ const handleApplySchemaDesignClick = () => {
 };
 
 const deleteSchemaDesign = async () => {
+  const schemaDesignType = schemaDesign.value.type;
   await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
-  emit("dismiss");
+  if (schemaDesignType === SchemaDesign_Type.MAIN_BRANCH) {
+    emit("dismiss");
+  } else if (schemaDesignType === SchemaDesign_Type.PERSONAL_DRAFT) {
+    state.schemaDesignName = props.schemaDesignName;
+  }
 };
 </script>

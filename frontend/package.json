@@ -43,6 +43,7 @@
     "jszip": "^3.10.1",
     "libphonenumber-js": "^1.10.34",
     "lodash-es": "4.17.21",
+    "lucide-vue-next": "^0.268.0",
     "markdown-it": "^13.0.1",
     "maz-ui": "^3.9.0",
     "monaco-editor": "0.34.1",
