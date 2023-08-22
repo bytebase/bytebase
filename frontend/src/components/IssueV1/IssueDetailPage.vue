@@ -6,7 +6,7 @@
 
     <HeaderSection class="!border-t-0" />
 
-    <div class="w-full border-t my-4" />
+    <div class="w-full border-t mt-4" />
 
     <StageSection />
 
