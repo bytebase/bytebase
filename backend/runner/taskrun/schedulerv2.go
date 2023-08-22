@@ -356,6 +356,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
+		s.createActivityForTaskRunStatusUpdate(ctx, taskRun, task, api.TaskRunCanceled)
 		return
 	}
 
@@ -398,6 +399,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
+		s.createActivityForTaskRunStatusUpdate(ctx, taskRun, task, api.TaskRunFailed)
 		return
 	}
 
@@ -432,7 +434,46 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
+		s.createActivityForTaskRunStatusUpdate(ctx, taskRun, task, api.TaskRunDone)
 		return
+	}
+}
+
+func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, newStatus api.TaskRunStatus) {
+	if err := func() error {
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+			PipelineID: &task.PipelineID,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to get issue")
+		}
+
+		createActivityPayload := api.ActivityPipelineTaskRunStatusUpdatePayload{
+			TaskID:    task.ID,
+			NewStatus: newStatus,
+			IssueName: issue.Title,
+			TaskName:  task.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal ActivityPipelineTaskRunStatusUpdatePayload payload")
+		}
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: task.PipelineID,
+			Type:         api.ActivityPipelineTaskRunStatusUpdate,
+			Level:        api.ActivityInfo,
+			Payload:      string(bytes),
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return errors.Wrap(err, "failed to create activity")
+		}
+
+		return nil
+	}(); err != nil {
+		log.Error("failed to create activity for task run status update", zap.Error(err))
 	}
 }
 

@@ -498,7 +498,29 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		}
 
 	case api.ActivityPipelineTaskRunStatusUpdate:
-		//TODO
+		payload := &api.ActivityPipelineTaskRunStatusUpdatePayload{}
+		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
+			log.Warn("Failed to post webhook event after changing the issue task run status, failed to unmarshal payload",
+				zap.String("issue_name", meta.Issue.Title),
+				zap.Error(err))
+			return nil, err
+		}
+		switch payload.NewStatus {
+		case api.TaskRunPending:
+			title = "Task run started - " + payload.TaskName
+		case api.TaskRunRunning:
+			title = "Task run started to run - " + payload.TaskName
+		case api.TaskRunDone:
+			level = webhook.WebhookSuccess
+			title = "Task run completed - " + payload.TaskName
+		case api.TaskRunFailed:
+			level = webhook.WebhookError
+			title = "Task run failed - " + payload.TaskName
+		case api.TaskRunCanceled:
+			title = "Task run canceled - " + payload.TaskName
+		default:
+			title = "Task run changed - " + payload.TaskName
+		}
 
 	case api.ActivityIssueApprovalNotify:
 		payload := &api.ActivityIssueApprovalNotifyPayload{}
