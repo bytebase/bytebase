@@ -159,7 +159,7 @@
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
 import { NButton, NTooltip, useDialog } from "naive-ui";
-import { computed, h, reactive, watch } from "vue";
+import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
@@ -175,6 +175,7 @@ import {
   notifyNotEditableLegacyIssue,
   patchLegacyIssueTasksStatement,
 } from "@/components/IssueV1/logic";
+import MonacoEditor from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import { rolloutServiceClient } from "@/grpcweb";
@@ -202,6 +203,7 @@ import {
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
+import { useEditorAutoCompletion } from "./useEditorAutoCompletion";
 import { EditState, useTempEditState } from "./useTempEditState";
 import { readFileAsync } from "./utils";
 
@@ -225,7 +227,10 @@ const state = reactive<LocalState>({
   isUploadingFile: false,
 });
 
-const { editorRef, updateEditorHeight } = useAutoEditorHeight();
+const editorRef = ref<InstanceType<typeof MonacoEditor>>();
+const { updateEditorHeight } = useAutoEditorHeight(editorRef);
+const { updateEditorAutoCompletionContext } =
+  useEditorAutoCompletion(editorRef);
 
 const selectedDatabase = computed(() => {
   return databaseForTask(issue.value, selectedTask.value);
@@ -622,11 +627,12 @@ const handleStatementChange = (value: string) => {
     if (!sheet.value) return;
     setSheetStatement(sheet.value, value);
   }
+
+  updateEditorHeight();
 };
 
 const handleMonacoEditorReady = () => {
-  // TODO
-  // handleUpdateEditorAutoCompletionContext();
+  updateEditorAutoCompletionContext();
   updateEditorHeight();
 };
 

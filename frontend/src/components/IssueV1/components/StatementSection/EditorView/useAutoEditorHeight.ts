@@ -1,10 +1,11 @@
-import { ref } from "vue";
+import { Ref } from "vue";
 import MonacoEditor from "@/components/MonacoEditor";
 
 const EDITOR_MIN_HEIGHT = 120; // ~= 6 lines, a reasonable size to start writing SQL
 
-export const useAutoEditorHeight = () => {
-  const editorRef = ref<InstanceType<typeof MonacoEditor>>();
+export const useAutoEditorHeight = (
+  editorRef: Ref<InstanceType<typeof MonacoEditor> | undefined>
+) => {
   const updateEditorHeight = () => {
     requestAnimationFrame(() => {
       const contentHeight =
@@ -18,7 +19,6 @@ export const useAutoEditorHeight = () => {
   };
 
   return {
-    editorRef,
     updateEditorHeight,
   };
 };
