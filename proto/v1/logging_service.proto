@@ -128,6 +128,8 @@ message LogEntity {
     ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34;
     // ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.
     ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 35;
+    // ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now.
+    ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE = 36;
 
     // Project related activity types.
     // Enum value 41 - 60
