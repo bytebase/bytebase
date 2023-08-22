@@ -163,3 +163,48 @@ export function engineToJSON(object: Engine): string {
       return "UNRECOGNIZED";
   }
 }
+
+export enum MaskingLevel {
+  MASKING_LEVEL_UNSPECIFIED = 0,
+  NONE = 1,
+  PARTIAL = 2,
+  FULL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function maskingLevelFromJSON(object: any): MaskingLevel {
+  switch (object) {
+    case 0:
+    case "MASKING_LEVEL_UNSPECIFIED":
+      return MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
+    case 1:
+    case "NONE":
+      return MaskingLevel.NONE;
+    case 2:
+    case "PARTIAL":
+      return MaskingLevel.PARTIAL;
+    case 3:
+    case "FULL":
+      return MaskingLevel.FULL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return MaskingLevel.UNRECOGNIZED;
+  }
+}
+
+export function maskingLevelToJSON(object: MaskingLevel): string {
+  switch (object) {
+    case MaskingLevel.MASKING_LEVEL_UNSPECIFIED:
+      return "MASKING_LEVEL_UNSPECIFIED";
+    case MaskingLevel.NONE:
+      return "NONE";
+    case MaskingLevel.PARTIAL:
+      return "PARTIAL";
+    case MaskingLevel.FULL:
+      return "FULL";
+    case MaskingLevel.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
