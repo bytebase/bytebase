@@ -3,7 +3,7 @@
     <template #trigger>
       <NButton
         type="primary"
-        size="large"
+        size="medium"
         tag="div"
         :disabled="issueCreateErrorList.length > 0 || loading"
         :loading="loading"
