@@ -165,7 +165,6 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 
 type ActivityPipelineTaskRunStatusUpdatePayload struct {
 	TaskID    int           `json:"taskId"`
-	OldStatus TaskRunStatus `json:"oldStatus,omitempty"`
 	NewStatus TaskRunStatus `json:"newStatus,omitempty"`
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`

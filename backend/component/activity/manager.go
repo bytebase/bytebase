@@ -49,7 +49,6 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, rolloutU
 	for _, task := range tasks {
 		payload, err := json.Marshal(api.ActivityPipelineTaskRunStatusUpdatePayload{
 			TaskID:    task.ID,
-			OldStatus: api.TaskRunUnknown,
 			NewStatus: api.TaskRunPending,
 			IssueName: issue.Title,
 			TaskName:  task.Name,
