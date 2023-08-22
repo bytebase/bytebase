@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
-	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -33,23 +32,21 @@ import (
 // IssueService implements the issue service.
 type IssueService struct {
 	v1pb.UnimplementedIssueServiceServer
-	store              *store.Store
-	activityManager    *activity.Manager
-	taskScheduler      *taskrun.Scheduler
-	taskCheckScheduler *taskcheck.Scheduler
-	relayRunner        *relay.Runner
-	stateCfg           *state.State
+	store           *store.Store
+	activityManager *activity.Manager
+	taskScheduler   *taskrun.Scheduler
+	relayRunner     *relay.Runner
+	stateCfg        *state.State
 }
 
 // NewIssueService creates a new IssueService.
-func NewIssueService(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, relayRunner *relay.Runner, stateCfg *state.State) *IssueService {
+func NewIssueService(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, relayRunner *relay.Runner, stateCfg *state.State) *IssueService {
 	return &IssueService{
-		store:              store,
-		activityManager:    activityManager,
-		taskScheduler:      taskScheduler,
-		taskCheckScheduler: taskCheckScheduler,
-		relayRunner:        relayRunner,
-		stateCfg:           stateCfg,
+		store:           store,
+		activityManager: activityManager,
+		taskScheduler:   taskScheduler,
+		relayRunner:     relayRunner,
+		stateCfg:        stateCfg,
 	}
 }
 
@@ -676,9 +673,21 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			payloadStr := string(payloadBytes)
 			patch.Payload = &payloadStr
 
-			if issue.PipelineUID != nil {
-				if err := s.taskCheckScheduler.SchedulePipelineTaskCheckReport(ctx, *issue.PipelineUID); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to schedule pipeline task check report, error: %v", err)
+			if issue.PlanUID != nil {
+				plan, err := s.store.GetPlan(ctx, *issue.PlanUID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
+				}
+				if plan == nil {
+					return nil, status.Errorf(codes.NotFound, "plan %q not found", *issue.PlanUID)
+				}
+
+				planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
+				}
+				if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 				}
 			}
 
