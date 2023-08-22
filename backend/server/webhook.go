@@ -1746,7 +1746,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 		file,
 		vcs.RefInfo{
 			RefType: vcs.RefTypeCommit,
-			RefName: pushEvent.CommitList[0].ID,
+			RefName: pushEvent.CommitList[len(pushEvent.CommitList)-1].ID,
 		},
 	)
 	if err != nil {
