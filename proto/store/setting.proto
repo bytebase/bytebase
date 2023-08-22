@@ -159,3 +159,19 @@ message DataClassificationSetting {
   }
   repeated DataClassificationConfig configs = 1;
 }
+
+message DataCategorySetting {
+  message DataCategoryItem {
+    // id is the uuid for category item.
+    string id = 1;
+    // the title of the category item, it should not be empty.
+    string title = 2;
+    // the description of the category item, it can be empty.
+    string description = 3;
+    // We do not support custom algorithm by now, we only support the default algorithm, so we do not
+    // add the algorithm field right now.
+  }
+
+  // data_category is the map of id - DataCategoryItem.
+  map<string, DataCategoryItem> data_category = 1;
+}
