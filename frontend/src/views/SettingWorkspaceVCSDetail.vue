@@ -31,6 +31,13 @@
         <div class="textlabel whitespace-nowrap">Bitbucket.org</div>
         <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
       </div>
+      <div
+        v-else-if="vcsUIType == 'AZURE_DEVOPS'"
+        class="flex flex-row items-center space-x-2"
+      >
+        <div class="textlabel whitespace-nowrap">Azure DevOps</div>
+        <img class="h-6 w-auto" src="../assets/azure-devops-logo.svg" />
+      </div>
     </div>
 
     <div>
@@ -91,6 +98,12 @@
         <template v-else-if="vcsUIType == 'GITHUB_COM'">
           {{ $t("gitops.setting.git-provider.github-application-id-label") }}
         </template>
+        <template v-else-if="vcsUIType == 'AZURE_DEVOPS'">
+          {{ $t("gitops.setting.git-provider.azure-application-id-label") }}
+          <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
+            $t("gitops.setting.git-provider.view-in-azure")
+          }}</a>
+        </template>
       </p>
       <input
         id="applicationid"
@@ -112,6 +125,9 @@
         </template>
         <template v-else-if="vcsUIType == 'GITHUB_COM'">
           {{ $t("gitops.setting.git-provider.secret-label-github") }}
+        </template>
+        <template v-else-if="vcsUIType == 'AZURE_DEVOPS'">
+          {{ $t("gitops.setting.git-provider.azure-secret-label") }}
         </template>
       </p>
       <input
@@ -269,12 +285,16 @@ watchEffect(async () => {
 });
 
 const adminApplicationUrl = computed(() => {
-  if (vcsUIType.value == "GITLAB_SELF_HOST") {
-    return `${vcs.value?.url}/admin/applications`;
-  } else if (vcsUIType.value == "GITLAB_COM") {
-    return "https://gitlab.com/-/profile/applications";
+  switch (vcsUIType.value) {
+    case "AZURE_DEVOPS":
+      return `https://app.vsaex.visualstudio.com/app/view?clientId=${vcs.value?.applicationId}`;
+    case "GITLAB_COM":
+      return "https://gitlab.com/-/profile/applications";
+    case "GITLAB_SELF_HOST":
+      return `${vcs.value?.url}/admin/applications`;
+    default:
+      return "";
   }
-  return "";
 });
 
 const repositoryList = computed(() =>
