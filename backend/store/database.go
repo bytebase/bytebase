@@ -528,6 +528,9 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 // BatchUpdateDatabaseProject updates the project for databases in batch.
 func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*DatabaseMessage, projectID string, updaterID int) ([]*DatabaseMessage, error) {
+	if len(databases) == 0 {
+		return nil, errors.Errorf("there is no database in the project")
+	}
 	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
 		return nil, err
