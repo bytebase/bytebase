@@ -232,9 +232,7 @@ const renderLabel = (option: SelectOption) => {
   const avatar = renderAvatar(user);
   const children = [h("span", {}, user.title)];
   if (user.name !== UNKNOWN_USER_NAME) {
-    children.push(
-      h("span", { class: "text-sm text-gray-400" }, `(${user.email})`)
-    );
+    children.push(h("span", { class: "text-gray-400" }, `(${user.email})`));
   }
   return h(
     "div",

@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center gap-x-4">
-    <div class="flex items-center gap-x-1 text-sm">
+  <div class="flex items-center gap-x-4 py-1">
+    <div class="flex items-center gap-x-1">
       <div class="textlabel">{{ $t("common.project") }}</div>
       <div>-</div>
       <ProjectV1Name :project="project" />
@@ -10,7 +10,7 @@
       v-if="!isCreating && creator"
       keypath="issue.opened-by-at"
       tag="div"
-      class="text-sm text-control-light"
+      class="text-control-light"
     >
       <template #creator>
         <router-link
