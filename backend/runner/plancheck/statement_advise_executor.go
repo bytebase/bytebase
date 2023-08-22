@@ -431,7 +431,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					Status:  storepb.PlanCheckRunResult_Result_ERROR,
 					Title:   "Failed to run SQL review",
 					Content: err.Error(),
-					Code:    common.Ok.Int64(),
+					Code:    common.Internal.Int64(),
 					Report:  nil,
 				})
 			} else {
