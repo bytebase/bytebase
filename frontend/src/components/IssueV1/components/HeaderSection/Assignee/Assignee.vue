@@ -9,7 +9,7 @@
           </div>
         </template>
         <template #default>
-          <div class="max-w-[12rem]">
+          <div class="max-w-[14rem]">
             {{ $t("issue.assignee-tooltip") }}
           </div>
         </template>
@@ -27,7 +27,7 @@
           :disabled="!allowChangeAssignee || isUpdating"
           :loading="isUpdating"
           :filter="filterAssignee"
-          style="width: 12rem"
+          style="width: 14rem"
           @update:user="changeAssigneeUID"
         />
       </template>

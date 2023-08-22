@@ -13,7 +13,7 @@
       </template>
     </NTooltip>
 
-    <div class="flex-1 min-w-[12rem]">
+    <div class="flex-1 min-w-[14rem]">
       <div
         v-if="!ready"
         class="flex items-center gap-x-2 text-sm text-control-placeholder"
