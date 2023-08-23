@@ -1871,7 +1871,8 @@
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
     "sheet": {
       "choose-sheet": "Choose Sheet",
-      "self": "Sheet"
+      "self": "Sheet",
+      "connection": "Connection"
     },
     "tab": {
       "unsaved": "Unsaved"
