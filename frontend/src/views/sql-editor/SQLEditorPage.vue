@@ -116,8 +116,7 @@ import { useWindowSize } from "@vueuse/core";
 import { NDrawer } from "naive-ui";
 import { stringify } from "qs";
 import { Splitpanes, Pane } from "splitpanes";
-import { computed, reactive, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { computed, reactive } from "vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
@@ -127,7 +126,7 @@ import {
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
-import { DatabaseId, TabMode, UNKNOWN_ID, SQLEditorMode } from "@/types";
+import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
   allowUsingSchemaEditorV1,
   instanceV1HasReadonlyMode,
@@ -155,7 +154,6 @@ const state = reactive<LocalState>({
   sidebarExpanded: false,
 });
 
-const route = useRoute();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sqlEditorStore = useSQLEditorStore();
@@ -165,13 +163,6 @@ const { showPanel: showSheetPanel } = provideSheetContext();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
-
-onMounted(() => {
-  const mode = (route.query.mode || "BUNDLED") as SQLEditorMode;
-  sqlEditorStore.setSQLEditorState({
-    mode,
-  });
-});
 
 const { width: windowWidth } = useWindowSize();
 
