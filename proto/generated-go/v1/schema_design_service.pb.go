@@ -100,7 +100,8 @@ type SchemaDesign struct {
 	// Format: instances/{instance}/databases/{database}
 	BaselineDatabase string `protobuf:"bytes,8,opt,name=baseline_database,json=baselineDatabase,proto3" json:"baseline_database,omitempty"`
 	// The name of the baseline sheet.
-	// Format: projects/{project}/sheets/{sheet}
+	// For main branch, its format will be: projects/{project}/sheets/{sheet}
+	// For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
 	BaselineSheetName string `protobuf:"bytes,9,opt,name=baseline_sheet_name,json=baselineSheetName,proto3" json:"baseline_sheet_name,omitempty"`
 	// The type of the schema design.
 	Type SchemaDesign_Type `protobuf:"varint,10,opt,name=type,proto3,enum=bytebase.v1.SchemaDesign_Type" json:"type,omitempty"`

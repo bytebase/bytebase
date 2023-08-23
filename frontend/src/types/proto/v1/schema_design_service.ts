@@ -39,7 +39,8 @@ export interface SchemaDesign {
   baselineDatabase: string;
   /**
    * The name of the baseline sheet.
-   * Format: projects/{project}/sheets/{sheet}
+   * For main branch, its format will be: projects/{project}/sheets/{sheet}
+   * For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
    */
   baselineSheetName: string;
   /** The type of the schema design. */
