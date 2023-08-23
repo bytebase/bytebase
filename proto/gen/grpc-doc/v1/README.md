@@ -1341,9 +1341,11 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | DEPLOYMENT_APPROVAL | 2 |  |
 | BACKUP_PLAN | 3 |  |
 | SQL_REVIEW | 4 |  |
-| SENSITIVE_DATA | 5 |  |
+| MASKING | 5 |  |
 | SLOW_QUERY | 7 |  |
 | DISABLE_COPY_DATA | 8 |  |
+| MASKING_RULE | 9 |  |
+| MASKING_EXCEPTION | 10 |  |
 
 
 

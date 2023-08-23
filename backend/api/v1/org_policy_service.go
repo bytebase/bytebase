@@ -522,7 +522,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		return payload.String()
-	case v1pb.PolicyType_SENSITIVE_DATA:
+	case v1pb.PolicyType_MASKING:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
@@ -617,7 +617,7 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		}
 		policy.Policy = payload
 	case api.PolicyTypeSensitiveData:
-		pType = v1pb.PolicyType_SENSITIVE_DATA
+		pType = v1pb.PolicyType_MASKING
 		payload, err := convertToV1PBSensitiveDataPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
@@ -1014,7 +1014,7 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeBackupPlan, nil
 	case v1pb.PolicyType_SQL_REVIEW.String():
 		return api.PolicyTypeSQLReview, nil
-	case v1pb.PolicyType_SENSITIVE_DATA.String():
+	case v1pb.PolicyType_MASKING.String():
 		return api.PolicyTypeSensitiveData, nil
 	case v1pb.PolicyType_SLOW_QUERY.String():
 		return api.PolicyTypeSlowQuery, nil

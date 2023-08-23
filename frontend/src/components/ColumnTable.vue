@@ -340,7 +340,7 @@ const toggleSensitiveColumn = (
   usePolicyV1Store().upsertPolicy({
     parentPath: props.database.name,
     policy: {
-      type: PolicyType.SENSITIVE_DATA,
+      type: PolicyType.MASKING,
       maskingPolicy: {
         maskData: maskDataList,
       },
