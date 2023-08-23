@@ -58,9 +58,9 @@ service IssueService {
     option (google.api.method_signature) = "parent,issue_comment,update_mask";
   }
 
-  rpc BatchUpdateIssues(BatchUpdateIssuesRequest) returns (BatchUpdateIssuesResponse) {
+  rpc BatchUpdateIssuesStatus(BatchUpdateIssuesStatusRequest) returns (BatchUpdateIssuesStatusResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/issues:batchUpdate"
+      post: "/v1/{parent=projects/*}/issues:batchUpdateStatus"
       body: "*"
     };
   }
@@ -182,22 +182,24 @@ message SearchIssuesResponse {
   string next_page_token = 2;
 }
 
-message BatchUpdateIssuesRequest {
+message BatchUpdateIssuesStatusRequest {
   // The parent resource shared by all issues being updated.
   // Format: projects/{project}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
   // We only support updating the status of databases for now.
   string parent = 1;
 
-  // The request message specifying the resources to update.
-  // A maximum of 1000 databases can be modified in a batch.
-  repeated UpdateIssueRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
+  // The list of issues to update.
+  // Format: projects/{project}/issues/{issue}
+  repeated string issues = 2;
+
+  // The new status.
+  IssueStatus status = 3;
+
+  string comment = 4;
 }
 
-message BatchUpdateIssuesResponse {
-  // Issues updated.
-  repeated Issue issues = 1;
-}
+message BatchUpdateIssuesStatusResponse {}
 
 message ApproveIssueRequest {
   // The name of the issue to add an approver.
