@@ -356,7 +356,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
-		s.createActivityForTaskRunStatusUpdate(ctx, taskRun, task, api.TaskRunCanceled)
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunCanceled)
 		return
 	}
 
@@ -399,7 +399,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
-		s.createActivityForTaskRunStatusUpdate(ctx, taskRun, task, api.TaskRunFailed)
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunFailed)
 		return
 	}
 
@@ -434,12 +434,12 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
-		s.createActivityForTaskRunStatusUpdate(ctx, taskRun, task, api.TaskRunDone)
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunDone)
 		return
 	}
 }
 
-func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, newStatus api.TaskRunStatus) {
+func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus api.TaskRunStatus) {
 	if err := func() error {
 		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
 			PipelineID: &task.PipelineID,
