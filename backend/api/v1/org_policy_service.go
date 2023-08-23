@@ -769,15 +769,16 @@ func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_Sensitive
 
 	var sensitiveDataList []*v1pb.SensitiveData
 	for _, data := range payload.SensitiveDataList {
-		maskType := v1pb.SensitiveDataMaskType_MASK_TYPE_UNSPECIFIED
+		maskType := v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 		if data.Type == api.SensitiveDataMaskTypeDefault {
-			maskType = v1pb.SensitiveDataMaskType_DEFAULT
+			maskType = v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 		}
 		sensitiveDataList = append(sensitiveDataList, &v1pb.SensitiveData{
-			Schema:   data.Schema,
-			Table:    data.Table,
-			Column:   data.Column,
-			MaskType: maskType,
+			Schema:             data.Schema,
+			Table:              data.Table,
+			Column:             data.Column,
+			SemanticCategoryId: "",
+			MaskingLevel:       maskType,
 		})
 	}
 
@@ -791,8 +792,11 @@ func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_Sensitive
 func convertToSensitiveDataPolicyPayload(policy *v1pb.SensitiveDataPolicy) (*api.SensitiveDataPolicy, error) {
 	var sensitiveDataList []api.SensitiveData
 	for _, data := range policy.SensitiveData {
-		if data.MaskType != v1pb.SensitiveDataMaskType_DEFAULT {
-			return nil, errors.Errorf("invalid sensitive data mask type %v", data.MaskType)
+		if data.MaskingLevel != v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
+			return nil, errors.Errorf("invalid sensitive data mask type %v", data.MaskingLevel)
+		}
+		if data.SemanticCategoryId != "" {
+			return nil, errors.Errorf("semantic category id is not supported")
 		}
 		sensitiveDataList = append(sensitiveDataList, api.SensitiveData{
 			Schema: data.Schema,
