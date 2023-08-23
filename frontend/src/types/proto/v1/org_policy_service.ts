@@ -464,7 +464,7 @@ export interface SensitiveData {
   schema: string;
   table: string;
   column: string;
-  dataCategoryId: string;
+  semanticCategoryId: string;
   maskingLevel: MaskingLevel;
 }
 
@@ -1753,7 +1753,7 @@ export const SensitiveDataPolicy = {
 };
 
 function createBaseSensitiveData(): SensitiveData {
-  return { schema: "", table: "", column: "", dataCategoryId: "", maskingLevel: 0 };
+  return { schema: "", table: "", column: "", semanticCategoryId: "", maskingLevel: 0 };
 }
 
 export const SensitiveData = {
@@ -1767,8 +1767,8 @@ export const SensitiveData = {
     if (message.column !== "") {
       writer.uint32(26).string(message.column);
     }
-    if (message.dataCategoryId !== "") {
-      writer.uint32(34).string(message.dataCategoryId);
+    if (message.semanticCategoryId !== "") {
+      writer.uint32(34).string(message.semanticCategoryId);
     }
     if (message.maskingLevel !== 0) {
       writer.uint32(40).int32(message.maskingLevel);
@@ -1809,7 +1809,7 @@ export const SensitiveData = {
             break;
           }
 
-          message.dataCategoryId = reader.string();
+          message.semanticCategoryId = reader.string();
           continue;
         case 5:
           if (tag !== 40) {
@@ -1832,7 +1832,7 @@ export const SensitiveData = {
       schema: isSet(object.schema) ? String(object.schema) : "",
       table: isSet(object.table) ? String(object.table) : "",
       column: isSet(object.column) ? String(object.column) : "",
-      dataCategoryId: isSet(object.dataCategoryId) ? String(object.dataCategoryId) : "",
+      semanticCategoryId: isSet(object.semanticCategoryId) ? String(object.semanticCategoryId) : "",
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
   },
@@ -1842,7 +1842,7 @@ export const SensitiveData = {
     message.schema !== undefined && (obj.schema = message.schema);
     message.table !== undefined && (obj.table = message.table);
     message.column !== undefined && (obj.column = message.column);
-    message.dataCategoryId !== undefined && (obj.dataCategoryId = message.dataCategoryId);
+    message.semanticCategoryId !== undefined && (obj.semanticCategoryId = message.semanticCategoryId);
     message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
     return obj;
   },
@@ -1856,7 +1856,7 @@ export const SensitiveData = {
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
-    message.dataCategoryId = object.dataCategoryId ?? "";
+    message.semanticCategoryId = object.semanticCategoryId ?? "";
     message.maskingLevel = object.maskingLevel ?? 0;
     return message;
   },

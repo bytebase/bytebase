@@ -1201,7 +1201,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
-| data_category_id | [string](#string) |  |  |
+| semantic_category_id | [string](#string) |  |  |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
 
 
