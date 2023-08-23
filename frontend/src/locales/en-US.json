@@ -1529,6 +1529,10 @@
         "issue-approval-notify": {
           "title": "Issue approval needed",
           "label": "When issue is pending approval"
+        },
+        "issue-task-run-status-change": {
+          "title": "Issue task run status change",
+          "label": "When issue task run status has changed"
         }
       }
     },
