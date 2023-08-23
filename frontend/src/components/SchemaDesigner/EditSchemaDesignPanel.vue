@@ -29,6 +29,8 @@
             >
               {{ $t("schema-designer.personal-draft") }}
             </NTag>
+            <NTag v-else type="primary" size="small" round>Main</NTag>
+
             <NDropdown
               v-if="!state.isEditing && schemaDesignDrafts.length > 0"
               class="max-w-[10rem]"
@@ -199,6 +201,10 @@ const state = reactive<LocalState>({
 });
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
 
+const mainSchemaDesign = computed(() => {
+  return schemaDesignStore.getSchemaDesignByName(props.schemaDesignName || "");
+});
+
 const schemaDesign = computed(() => {
   return schemaDesignStore.getSchemaDesignByName(state.schemaDesignName || "");
 });
@@ -217,12 +223,14 @@ const schemaDesignDrafts = computed(() => {
 });
 
 const schemaDesignDraftDropdownOptions = computed(() => {
-  return schemaDesignDrafts.value.map((schemaDesign) => {
-    return {
-      label: schemaDesign.title,
-      key: schemaDesign.name,
-    };
-  });
+  return [mainSchemaDesign.value]
+    .concat(schemaDesignDrafts.value)
+    .map((schemaDesign) => {
+      return {
+        label: schemaDesign.title,
+        key: schemaDesign.name,
+      };
+    });
 });
 
 const baselineDatabase = computed(() => {
@@ -278,9 +286,13 @@ const renderDraftsLabel = (option: DropdownOption) => {
       h(
         "span",
         {
-          class: "text-xs font-mono shrink-0 text-gray-400 ml-1",
+          class: "text-xs font-mono shrink-0 text-gray-400 ml-1 mt-0.5",
         },
-        [schemaDesign.etag.slice(0, 6)]
+        [
+          schemaDesign.name === props.schemaDesignName
+            ? "main"
+            : schemaDesign.etag.slice(0, 6),
+        ]
       ),
     ]
   );
