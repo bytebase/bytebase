@@ -325,7 +325,7 @@ message BatchRunTasksRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
 
-  string comment = 3;
+  string reason = 3;
 }
 
 message BatchRunTasksResponse {}
@@ -338,7 +338,7 @@ message BatchSkipTasksRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
 
-  string comment = 3;
+  string reason = 3;
 }
 
 message BatchSkipTasksResponse {}
@@ -352,7 +352,7 @@ message BatchCancelTaskRunsRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   repeated string task_runs = 2;
 
-  string comment = 3;
+  string reason = 3;
 }
 
 message BatchCancelTaskRunsResponse {}
