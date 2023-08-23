@@ -64,7 +64,8 @@ const state = reactive<LocalState>({
 
 const selectedEnvironment = computed(() => {
   const environment = router.currentRoute.value.query.environment as string;
-  if (environment) return useEnvironmentV1Store().getEnvironmentByName(environment);
+  if (environment)
+    return useEnvironmentV1Store().getEnvironmentByName(environment);
   return undefined;
 });
 

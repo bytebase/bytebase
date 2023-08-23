@@ -5,7 +5,9 @@
     @update:value="$emit('update:environment', $event)"
   >
     <template #label="{ item }">
-      <template v-if="item.value === UNKNOWN_ENVIRONMENT_NAME">{{ item.label }}</template>
+      <template v-if="item.value === UNKNOWN_ENVIRONMENT_NAME">{{
+        item.label
+      }}</template>
       <EnvironmentV1Name v-else :environment="item.environment" :link="false" />
     </template>
   </TabFilter>

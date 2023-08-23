@@ -206,7 +206,12 @@ import {
   featureToRef,
   useCurrentUserV1,
 } from "@/store";
-import { UNKNOWN_ID, UNKNOWN_ENVIRONMENT_NAME, Issue, planTypeToString } from "../types";
+import {
+  UNKNOWN_ID,
+  UNKNOWN_ENVIRONMENT_NAME,
+  Issue,
+  planTypeToString,
+} from "../types";
 import {
   activeEnvironment,
   extractUserUID,

@@ -52,14 +52,23 @@
 import { uniqBy } from "lodash-es";
 import { NInputGroup } from "naive-ui";
 import { reactive, PropType, computed, ref, watchEffect } from "vue";
-import { useCurrentUserV1, usePolicyV1Store, useEnvironmentV1Store } from "@/store";
+import {
+  useCurrentUserV1,
+  usePolicyV1Store,
+  useEnvironmentV1Store,
+} from "@/store";
 import {
   Policy,
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { filterDatabaseV1ByKeyword, isDatabaseV1Accessible } from "@/utils";
-import { ComposedDatabase, ComposedInstance, UNKNOWN_ID, UNKNOWN_ENVIRONMENT_NAME } from "../types";
+import {
+  ComposedDatabase,
+  ComposedInstance,
+  UNKNOWN_ID,
+  UNKNOWN_ENVIRONMENT_NAME,
+} from "../types";
 import { DatabaseV1Table } from "./v2";
 import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
 
@@ -134,6 +143,6 @@ const filterInstance = (instance: ComposedInstance) => {
 };
 
 const environment = computed(() => {
-  return environmentV1Store.getEnvironmentByName(state.environment)
-})
+  return environmentV1Store.getEnvironmentByName(state.environment);
+});
 </script>
