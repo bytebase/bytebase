@@ -1865,7 +1865,8 @@
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
     "sheet": {
       "choose-sheet": "Elegir hoja",
-      "self": "Hoja"
+      "self": "Hoja",
+      "connection": "Conexión"
     },
     "tab": {
       "unsaved": "No guardado"
