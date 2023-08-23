@@ -209,7 +209,7 @@ func TestSensitiveData(t *testing.T) {
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
 		Parent: database.Name,
 		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_SENSITIVE_DATA,
+			Type: v1pb.PolicyType_MASKING,
 			Policy: &v1pb.Policy_MaskingPolicy{
 				MaskingPolicy: &v1pb.MaskingPolicy{
 					MaskData: []*v1pb.MaskData{

@@ -17,9 +17,11 @@ export enum PolicyType {
   DEPLOYMENT_APPROVAL = 2,
   BACKUP_PLAN = 3,
   SQL_REVIEW = 4,
-  SENSITIVE_DATA = 5,
+  MASKING = 5,
   SLOW_QUERY = 7,
   DISABLE_COPY_DATA = 8,
+  MASKING_RULE = 9,
+  MASKING_EXCEPTION = 10,
   UNRECOGNIZED = -1,
 }
 
@@ -41,14 +43,20 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case "SQL_REVIEW":
       return PolicyType.SQL_REVIEW;
     case 5:
-    case "SENSITIVE_DATA":
-      return PolicyType.SENSITIVE_DATA;
+    case "MASKING":
+      return PolicyType.MASKING;
     case 7:
     case "SLOW_QUERY":
       return PolicyType.SLOW_QUERY;
     case 8:
     case "DISABLE_COPY_DATA":
       return PolicyType.DISABLE_COPY_DATA;
+    case 9:
+    case "MASKING_RULE":
+      return PolicyType.MASKING_RULE;
+    case 10:
+    case "MASKING_EXCEPTION":
+      return PolicyType.MASKING_EXCEPTION;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -68,12 +76,16 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "BACKUP_PLAN";
     case PolicyType.SQL_REVIEW:
       return "SQL_REVIEW";
-    case PolicyType.SENSITIVE_DATA:
-      return "SENSITIVE_DATA";
+    case PolicyType.MASKING:
+      return "MASKING";
     case PolicyType.SLOW_QUERY:
       return "SLOW_QUERY";
     case PolicyType.DISABLE_COPY_DATA:
       return "DISABLE_COPY_DATA";
+    case PolicyType.MASKING_RULE:
+      return "MASKING_RULE";
+    case PolicyType.MASKING_EXCEPTION:
+      return "MASKING_EXCEPTION";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
