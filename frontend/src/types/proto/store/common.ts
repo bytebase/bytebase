@@ -225,18 +225,15 @@ export const PageToken = {
 
   toJSON(message: PageToken): unknown {
     const obj: any = {};
-    if (message.limit !== 0) {
-      obj.limit = Math.round(message.limit);
-    }
-    if (message.offset !== 0) {
-      obj.offset = Math.round(message.offset);
-    }
+    message.limit !== undefined && (obj.limit = Math.round(message.limit));
+    message.offset !== undefined && (obj.offset = Math.round(message.offset));
     return obj;
   },
 
   create(base?: DeepPartial<PageToken>): PageToken {
     return PageToken.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PageToken>): PageToken {
     const message = createBasePageToken();
     message.limit = object.limit ?? 0;

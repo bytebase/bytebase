@@ -313,15 +313,14 @@ export const GetInstanceRequest = {
 
   toJSON(message: GetInstanceRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<GetInstanceRequest>): GetInstanceRequest {
     return GetInstanceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<GetInstanceRequest>): GetInstanceRequest {
     const message = createBaseGetInstanceRequest();
     message.name = object.name ?? "";
@@ -394,21 +393,16 @@ export const ListInstancesRequest = {
 
   toJSON(message: ListInstancesRequest): unknown {
     const obj: any = {};
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    if (message.showDeleted === true) {
-      obj.showDeleted = message.showDeleted;
-    }
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
   create(base?: DeepPartial<ListInstancesRequest>): ListInstancesRequest {
     return ListInstancesRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListInstancesRequest>): ListInstancesRequest {
     const message = createBaseListInstancesRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -472,18 +466,19 @@ export const ListInstancesResponse = {
 
   toJSON(message: ListInstancesResponse): unknown {
     const obj: any = {};
-    if (message.instances?.length) {
-      obj.instances = message.instances.map((e) => Instance.toJSON(e));
+    if (message.instances) {
+      obj.instances = message.instances.map((e) => e ? Instance.toJSON(e) : undefined);
+    } else {
+      obj.instances = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListInstancesResponse>): ListInstancesResponse {
     return ListInstancesResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListInstancesResponse>): ListInstancesResponse {
     const message = createBaseListInstancesResponse();
     message.instances = object.instances?.map((e) => Instance.fromPartial(e)) || [];
@@ -557,21 +552,16 @@ export const CreateInstanceRequest = {
 
   toJSON(message: CreateInstanceRequest): unknown {
     const obj: any = {};
-    if (message.instance !== undefined) {
-      obj.instance = Instance.toJSON(message.instance);
-    }
-    if (message.instanceId !== "") {
-      obj.instanceId = message.instanceId;
-    }
-    if (message.validateOnly === true) {
-      obj.validateOnly = message.validateOnly;
-    }
+    message.instance !== undefined && (obj.instance = message.instance ? Instance.toJSON(message.instance) : undefined);
+    message.instanceId !== undefined && (obj.instanceId = message.instanceId);
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
   create(base?: DeepPartial<CreateInstanceRequest>): CreateInstanceRequest {
     return CreateInstanceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CreateInstanceRequest>): CreateInstanceRequest {
     const message = createBaseCreateInstanceRequest();
     message.instance = (object.instance !== undefined && object.instance !== null)
@@ -637,18 +627,15 @@ export const UpdateInstanceRequest = {
 
   toJSON(message: UpdateInstanceRequest): unknown {
     const obj: any = {};
-    if (message.instance !== undefined) {
-      obj.instance = Instance.toJSON(message.instance);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.instance !== undefined && (obj.instance = message.instance ? Instance.toJSON(message.instance) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
   create(base?: DeepPartial<UpdateInstanceRequest>): UpdateInstanceRequest {
     return UpdateInstanceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UpdateInstanceRequest>): UpdateInstanceRequest {
     const message = createBaseUpdateInstanceRequest();
     message.instance = (object.instance !== undefined && object.instance !== null)
@@ -713,18 +700,15 @@ export const DeleteInstanceRequest = {
 
   toJSON(message: DeleteInstanceRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.force === true) {
-      obj.force = message.force;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.force !== undefined && (obj.force = message.force);
     return obj;
   },
 
   create(base?: DeepPartial<DeleteInstanceRequest>): DeleteInstanceRequest {
     return DeleteInstanceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DeleteInstanceRequest>): DeleteInstanceRequest {
     const message = createBaseDeleteInstanceRequest();
     message.name = object.name ?? "";
@@ -774,15 +758,14 @@ export const UndeleteInstanceRequest = {
 
   toJSON(message: UndeleteInstanceRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<UndeleteInstanceRequest>): UndeleteInstanceRequest {
     return UndeleteInstanceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UndeleteInstanceRequest>): UndeleteInstanceRequest {
     const message = createBaseUndeleteInstanceRequest();
     message.name = object.name ?? "";
@@ -831,15 +814,14 @@ export const SyncInstanceRequest = {
 
   toJSON(message: SyncInstanceRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<SyncInstanceRequest>): SyncInstanceRequest {
     return SyncInstanceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SyncInstanceRequest>): SyncInstanceRequest {
     const message = createBaseSyncInstanceRequest();
     message.name = object.name ?? "";
@@ -884,6 +866,7 @@ export const SyncInstanceResponse = {
   create(base?: DeepPartial<SyncInstanceResponse>): SyncInstanceResponse {
     return SyncInstanceResponse.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<SyncInstanceResponse>): SyncInstanceResponse {
     const message = createBaseSyncInstanceResponse();
     return message;
@@ -955,21 +938,17 @@ export const AddDataSourceRequest = {
 
   toJSON(message: AddDataSourceRequest): unknown {
     const obj: any = {};
-    if (message.instance !== "") {
-      obj.instance = message.instance;
-    }
-    if (message.dataSource !== undefined) {
-      obj.dataSource = DataSource.toJSON(message.dataSource);
-    }
-    if (message.validateOnly === true) {
-      obj.validateOnly = message.validateOnly;
-    }
+    message.instance !== undefined && (obj.instance = message.instance);
+    message.dataSource !== undefined &&
+      (obj.dataSource = message.dataSource ? DataSource.toJSON(message.dataSource) : undefined);
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
   create(base?: DeepPartial<AddDataSourceRequest>): AddDataSourceRequest {
     return AddDataSourceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<AddDataSourceRequest>): AddDataSourceRequest {
     const message = createBaseAddDataSourceRequest();
     message.instance = object.instance ?? "";
@@ -1035,18 +1014,16 @@ export const RemoveDataSourceRequest = {
 
   toJSON(message: RemoveDataSourceRequest): unknown {
     const obj: any = {};
-    if (message.instance !== "") {
-      obj.instance = message.instance;
-    }
-    if (message.dataSource !== undefined) {
-      obj.dataSource = DataSource.toJSON(message.dataSource);
-    }
+    message.instance !== undefined && (obj.instance = message.instance);
+    message.dataSource !== undefined &&
+      (obj.dataSource = message.dataSource ? DataSource.toJSON(message.dataSource) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<RemoveDataSourceRequest>): RemoveDataSourceRequest {
     return RemoveDataSourceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<RemoveDataSourceRequest>): RemoveDataSourceRequest {
     const message = createBaseRemoveDataSourceRequest();
     message.instance = object.instance ?? "";
@@ -1133,24 +1110,18 @@ export const UpdateDataSourceRequest = {
 
   toJSON(message: UpdateDataSourceRequest): unknown {
     const obj: any = {};
-    if (message.instance !== "") {
-      obj.instance = message.instance;
-    }
-    if (message.dataSource !== undefined) {
-      obj.dataSource = DataSource.toJSON(message.dataSource);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
-    if (message.validateOnly === true) {
-      obj.validateOnly = message.validateOnly;
-    }
+    message.instance !== undefined && (obj.instance = message.instance);
+    message.dataSource !== undefined &&
+      (obj.dataSource = message.dataSource ? DataSource.toJSON(message.dataSource) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
   create(base?: DeepPartial<UpdateDataSourceRequest>): UpdateDataSourceRequest {
     return UpdateDataSourceRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UpdateDataSourceRequest>): UpdateDataSourceRequest {
     const message = createBaseUpdateDataSourceRequest();
     message.instance = object.instance ?? "";
@@ -1204,15 +1175,14 @@ export const SyncSlowQueriesRequest = {
 
   toJSON(message: SyncSlowQueriesRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
     return obj;
   },
 
   create(base?: DeepPartial<SyncSlowQueriesRequest>): SyncSlowQueriesRequest {
     return SyncSlowQueriesRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SyncSlowQueriesRequest>): SyncSlowQueriesRequest {
     const message = createBaseSyncSlowQueriesRequest();
     message.parent = object.parent ?? "";
@@ -1261,15 +1231,14 @@ export const InstanceOptions = {
 
   toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
-    if (message.schemaTenantMode === true) {
-      obj.schemaTenantMode = message.schemaTenantMode;
-    }
+    message.schemaTenantMode !== undefined && (obj.schemaTenantMode = message.schemaTenantMode);
     return obj;
   },
 
   create(base?: DeepPartial<InstanceOptions>): InstanceOptions {
     return InstanceOptions.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
     const message = createBaseInstanceOptions();
     message.schemaTenantMode = object.schemaTenantMode ?? false;
@@ -1442,45 +1411,29 @@ export const Instance = {
 
   toJSON(message: Instance): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
+    message.title !== undefined && (obj.title = message.title);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.engineVersion !== undefined && (obj.engineVersion = message.engineVersion);
+    message.externalLink !== undefined && (obj.externalLink = message.externalLink);
+    if (message.dataSources) {
+      obj.dataSources = message.dataSources.map((e) => e ? DataSource.toJSON(e) : undefined);
+    } else {
+      obj.dataSources = [];
     }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.state !== 0) {
-      obj.state = stateToJSON(message.state);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.engine !== 0) {
-      obj.engine = engineToJSON(message.engine);
-    }
-    if (message.engineVersion !== "") {
-      obj.engineVersion = message.engineVersion;
-    }
-    if (message.externalLink !== "") {
-      obj.externalLink = message.externalLink;
-    }
-    if (message.dataSources?.length) {
-      obj.dataSources = message.dataSources.map((e) => DataSource.toJSON(e));
-    }
-    if (message.environment !== "") {
-      obj.environment = message.environment;
-    }
-    if (message.activation === true) {
-      obj.activation = message.activation;
-    }
-    if (message.options !== undefined) {
-      obj.options = InstanceOptions.toJSON(message.options);
-    }
+    message.environment !== undefined && (obj.environment = message.environment);
+    message.activation !== undefined && (obj.activation = message.activation);
+    message.options !== undefined &&
+      (obj.options = message.options ? InstanceOptions.toJSON(message.options) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<Instance>): Instance {
     return Instance.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Instance>): Instance {
     const message = createBaseInstance();
     message.name = object.name ?? "";
@@ -1761,69 +1714,32 @@ export const DataSource = {
 
   toJSON(message: DataSource): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.type !== 0) {
-      obj.type = dataSourceTypeToJSON(message.type);
-    }
-    if (message.username !== "") {
-      obj.username = message.username;
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    if (message.sslCa !== "") {
-      obj.sslCa = message.sslCa;
-    }
-    if (message.sslCert !== "") {
-      obj.sslCert = message.sslCert;
-    }
-    if (message.sslKey !== "") {
-      obj.sslKey = message.sslKey;
-    }
-    if (message.host !== "") {
-      obj.host = message.host;
-    }
-    if (message.port !== "") {
-      obj.port = message.port;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.srv === true) {
-      obj.srv = message.srv;
-    }
-    if (message.authenticationDatabase !== "") {
-      obj.authenticationDatabase = message.authenticationDatabase;
-    }
-    if (message.sid !== "") {
-      obj.sid = message.sid;
-    }
-    if (message.serviceName !== "") {
-      obj.serviceName = message.serviceName;
-    }
-    if (message.sshHost !== "") {
-      obj.sshHost = message.sshHost;
-    }
-    if (message.sshPort !== "") {
-      obj.sshPort = message.sshPort;
-    }
-    if (message.sshUser !== "") {
-      obj.sshUser = message.sshUser;
-    }
-    if (message.sshPassword !== "") {
-      obj.sshPassword = message.sshPassword;
-    }
-    if (message.sshPrivateKey !== "") {
-      obj.sshPrivateKey = message.sshPrivateKey;
-    }
+    message.id !== undefined && (obj.id = message.id);
+    message.type !== undefined && (obj.type = dataSourceTypeToJSON(message.type));
+    message.username !== undefined && (obj.username = message.username);
+    message.password !== undefined && (obj.password = message.password);
+    message.sslCa !== undefined && (obj.sslCa = message.sslCa);
+    message.sslCert !== undefined && (obj.sslCert = message.sslCert);
+    message.sslKey !== undefined && (obj.sslKey = message.sslKey);
+    message.host !== undefined && (obj.host = message.host);
+    message.port !== undefined && (obj.port = message.port);
+    message.database !== undefined && (obj.database = message.database);
+    message.srv !== undefined && (obj.srv = message.srv);
+    message.authenticationDatabase !== undefined && (obj.authenticationDatabase = message.authenticationDatabase);
+    message.sid !== undefined && (obj.sid = message.sid);
+    message.serviceName !== undefined && (obj.serviceName = message.serviceName);
+    message.sshHost !== undefined && (obj.sshHost = message.sshHost);
+    message.sshPort !== undefined && (obj.sshPort = message.sshPort);
+    message.sshUser !== undefined && (obj.sshUser = message.sshUser);
+    message.sshPassword !== undefined && (obj.sshPassword = message.sshPassword);
+    message.sshPrivateKey !== undefined && (obj.sshPrivateKey = message.sshPrivateKey);
     return obj;
   },
 
   create(base?: DeepPartial<DataSource>): DataSource {
     return DataSource.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DataSource>): DataSource {
     const message = createBaseDataSource();
     message.id = object.id ?? "";

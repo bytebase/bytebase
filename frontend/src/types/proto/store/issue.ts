@@ -91,21 +91,18 @@ export const IssuePayload = {
 
   toJSON(message: IssuePayload): unknown {
     const obj: any = {};
-    if (message.approval !== undefined) {
-      obj.approval = IssuePayloadApproval.toJSON(message.approval);
-    }
-    if (message.grantRequest !== undefined) {
-      obj.grantRequest = GrantRequest.toJSON(message.grantRequest);
-    }
-    if (message.grouping !== undefined) {
-      obj.grouping = Grouping.toJSON(message.grouping);
-    }
+    message.approval !== undefined &&
+      (obj.approval = message.approval ? IssuePayloadApproval.toJSON(message.approval) : undefined);
+    message.grantRequest !== undefined &&
+      (obj.grantRequest = message.grantRequest ? GrantRequest.toJSON(message.grantRequest) : undefined);
+    message.grouping !== undefined && (obj.grouping = message.grouping ? Grouping.toJSON(message.grouping) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<IssuePayload>): IssuePayload {
     return IssuePayload.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<IssuePayload>): IssuePayload {
     const message = createBaseIssuePayload();
     message.approval = (object.approval !== undefined && object.approval !== null)
@@ -162,15 +159,14 @@ export const Grouping = {
 
   toJSON(message: Grouping): unknown {
     const obj: any = {};
-    if (message.databaseGroupName !== "") {
-      obj.databaseGroupName = message.databaseGroupName;
-    }
+    message.databaseGroupName !== undefined && (obj.databaseGroupName = message.databaseGroupName);
     return obj;
   },
 
   create(base?: DeepPartial<Grouping>): Grouping {
     return Grouping.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Grouping>): Grouping {
     const message = createBaseGrouping();
     message.databaseGroupName = object.databaseGroupName ?? "";
@@ -254,24 +250,18 @@ export const GrantRequest = {
 
   toJSON(message: GrantRequest): unknown {
     const obj: any = {};
-    if (message.role !== "") {
-      obj.role = message.role;
-    }
-    if (message.user !== "") {
-      obj.user = message.user;
-    }
-    if (message.condition !== undefined) {
-      obj.condition = Expr.toJSON(message.condition);
-    }
-    if (message.expiration !== undefined) {
-      obj.expiration = Duration.toJSON(message.expiration);
-    }
+    message.role !== undefined && (obj.role = message.role);
+    message.user !== undefined && (obj.user = message.user);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    message.expiration !== undefined &&
+      (obj.expiration = message.expiration ? Duration.toJSON(message.expiration) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<GrantRequest>): GrantRequest {
     return GrantRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<GrantRequest>): GrantRequest {
     const message = createBaseGrantRequest();
     message.role = object.role ?? "";

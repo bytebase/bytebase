@@ -52,6 +52,7 @@ export const Empty = {
   create(base?: DeepPartial<Empty>): Empty {
     return Empty.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<Empty>): Empty {
     const message = createBaseEmpty();
     return message;
