@@ -2467,7 +2467,8 @@
         "3": "各个部门的性别比例如何？"
       },
       "statement-copied": "语句已复制到剪贴板",
-      "dont-show-again": "不再显示"
+      "dont-show-again": "不再显示",
+      "chat-sql": "ChatSQL"
     }
   },
   "custom-approval": {
