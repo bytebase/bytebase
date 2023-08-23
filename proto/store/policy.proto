@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/type/expr.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -28,4 +29,16 @@ message Binding {
   // If the condition evaluates to true, then this binding applies to the current request.
   // If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
   google.type.Expr condition = 3;
+}
+
+message SensitiveDataPolicy {
+  repeated SensitiveData sensitive_data = 1;
+}
+
+message SensitiveData {
+  string schema = 1;
+  string table = 2;
+  string column = 3;
+  string semantic_category_id = 4;
+  MaskingLevel masking_level = 5;
 }

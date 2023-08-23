@@ -1,6 +1,7 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
 import { Expr } from "../google/type/expr";
+import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
 
 export const protobufPackage = "bytebase.store";
 
@@ -30,6 +31,18 @@ export interface Binding {
    * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
    */
   condition?: Expr | undefined;
+}
+
+export interface SensitiveDataPolicy {
+  sensitiveData: SensitiveData[];
+}
+
+export interface SensitiveData {
+  schema: string;
+  table: string;
+  column: string;
+  semanticCategoryId: string;
+  maskingLevel: MaskingLevel;
 }
 
 function createBaseIamPolicy(): IamPolicy {
@@ -178,6 +191,180 @@ export const Binding = {
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseSensitiveDataPolicy(): SensitiveDataPolicy {
+  return { sensitiveData: [] };
+}
+
+export const SensitiveDataPolicy = {
+  encode(message: SensitiveDataPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.sensitiveData) {
+      SensitiveData.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SensitiveDataPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSensitiveDataPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sensitiveData.push(SensitiveData.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SensitiveDataPolicy {
+    return {
+      sensitiveData: Array.isArray(object?.sensitiveData)
+        ? object.sensitiveData.map((e: any) => SensitiveData.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SensitiveDataPolicy): unknown {
+    const obj: any = {};
+    if (message.sensitiveData) {
+      obj.sensitiveData = message.sensitiveData.map((e) => e ? SensitiveData.toJSON(e) : undefined);
+    } else {
+      obj.sensitiveData = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
+    return SensitiveDataPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
+    const message = createBaseSensitiveDataPolicy();
+    message.sensitiveData = object.sensitiveData?.map((e) => SensitiveData.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSensitiveData(): SensitiveData {
+  return { schema: "", table: "", column: "", semanticCategoryId: "", maskingLevel: 0 };
+}
+
+export const SensitiveData = {
+  encode(message: SensitiveData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
+    if (message.table !== "") {
+      writer.uint32(18).string(message.table);
+    }
+    if (message.column !== "") {
+      writer.uint32(26).string(message.column);
+    }
+    if (message.semanticCategoryId !== "") {
+      writer.uint32(34).string(message.semanticCategoryId);
+    }
+    if (message.maskingLevel !== 0) {
+      writer.uint32(40).int32(message.maskingLevel);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SensitiveData {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSensitiveData();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.column = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.semanticCategoryId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.maskingLevel = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SensitiveData {
+    return {
+      schema: isSet(object.schema) ? String(object.schema) : "",
+      table: isSet(object.table) ? String(object.table) : "",
+      column: isSet(object.column) ? String(object.column) : "",
+      semanticCategoryId: isSet(object.semanticCategoryId) ? String(object.semanticCategoryId) : "",
+      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+    };
+  },
+
+  toJSON(message: SensitiveData): unknown {
+    const obj: any = {};
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.table !== undefined && (obj.table = message.table);
+    message.column !== undefined && (obj.column = message.column);
+    message.semanticCategoryId !== undefined && (obj.semanticCategoryId = message.semanticCategoryId);
+    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    return obj;
+  },
+
+  create(base?: DeepPartial<SensitiveData>): SensitiveData {
+    return SensitiveData.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SensitiveData>): SensitiveData {
+    const message = createBaseSensitiveData();
+    message.schema = object.schema ?? "";
+    message.table = object.table ?? "";
+    message.column = object.column ?? "";
+    message.semanticCategoryId = object.semanticCategoryId ?? "";
+    message.maskingLevel = object.maskingLevel ?? 0;
     return message;
   },
 };
