@@ -5337,7 +5337,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | parent | [string](#string) |  | The parent resource shared by all issues being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
 | issues | [string](#string) | repeated | The list of issues to update. Format: projects/{project}/issues/{issue} |
 | status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The new status. |
-| comment | [string](#string) |  |  |
+| reason | [string](#string) |  |  |
 
 
 

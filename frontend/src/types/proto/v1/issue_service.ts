@@ -173,7 +173,7 @@ export interface BatchUpdateIssuesStatusRequest {
   issues: string[];
   /** The new status. */
   status: IssueStatus;
-  comment: string;
+  reason: string;
 }
 
 export interface BatchUpdateIssuesStatusResponse {
@@ -1118,7 +1118,7 @@ export const SearchIssuesResponse = {
 };
 
 function createBaseBatchUpdateIssuesStatusRequest(): BatchUpdateIssuesStatusRequest {
-  return { parent: "", issues: [], status: 0, comment: "" };
+  return { parent: "", issues: [], status: 0, reason: "" };
 }
 
 export const BatchUpdateIssuesStatusRequest = {
@@ -1132,8 +1132,8 @@ export const BatchUpdateIssuesStatusRequest = {
     if (message.status !== 0) {
       writer.uint32(24).int32(message.status);
     }
-    if (message.comment !== "") {
-      writer.uint32(34).string(message.comment);
+    if (message.reason !== "") {
+      writer.uint32(34).string(message.reason);
     }
     return writer;
   },
@@ -1171,7 +1171,7 @@ export const BatchUpdateIssuesStatusRequest = {
             break;
           }
 
-          message.comment = reader.string();
+          message.reason = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1187,7 +1187,7 @@ export const BatchUpdateIssuesStatusRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       issues: Array.isArray(object?.issues) ? object.issues.map((e: any) => String(e)) : [],
       status: isSet(object.status) ? issueStatusFromJSON(object.status) : 0,
-      comment: isSet(object.comment) ? String(object.comment) : "",
+      reason: isSet(object.reason) ? String(object.reason) : "",
     };
   },
 
@@ -1200,7 +1200,7 @@ export const BatchUpdateIssuesStatusRequest = {
       obj.issues = [];
     }
     message.status !== undefined && (obj.status = issueStatusToJSON(message.status));
-    message.comment !== undefined && (obj.comment = message.comment);
+    message.reason !== undefined && (obj.reason = message.reason);
     return obj;
   },
 
@@ -1213,7 +1213,7 @@ export const BatchUpdateIssuesStatusRequest = {
     message.parent = object.parent ?? "";
     message.issues = object.issues?.map((e) => e) || [];
     message.status = object.status ?? 0;
-    message.comment = object.comment ?? "";
+    message.reason = object.reason ?? "";
     return message;
   },
 };
