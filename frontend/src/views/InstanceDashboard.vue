@@ -8,7 +8,7 @@
     />
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
-        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
+        :environment="selectedEnvironment?.name"
         :include-all="true"
         @update:environment="selectEnvironment"
       />
@@ -43,7 +43,7 @@ import {
   useInstanceV1Store,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { UNKNOWN_ID } from "../types";
+import { UNKNOWN_ENVIRONMENT_NAME } from "../types";
 import { sortInstanceV1ListByEnvironmentV1 } from "../utils";
 
 interface LocalState {
@@ -63,8 +63,9 @@ const state = reactive<LocalState>({
 });
 
 const selectedEnvironment = computed(() => {
-  const uid = router.currentRoute.value.query.environment as string;
-  if (uid) return useEnvironmentV1Store().getEnvironmentByUID(uid);
+  const environment = router.currentRoute.value.query.environment as string;
+  if (environment)
+    return useEnvironmentV1Store().getEnvironmentByName(environment);
   return undefined;
 });
 
@@ -77,11 +78,11 @@ onMounted(() => {
   }
 });
 
-const selectEnvironment = (uid: string | undefined) => {
-  if (uid && uid !== String(UNKNOWN_ID)) {
+const selectEnvironment = (environment: string | undefined) => {
+  if (environment && environment !== UNKNOWN_ENVIRONMENT_NAME) {
     router.replace({
       name: "workspace.instance",
-      query: { environment: uid },
+      query: { environment },
     });
   } else {
     router.replace({ name: "workspace.instance" });
@@ -95,7 +96,7 @@ const { instanceList: rawInstanceV1List } = useInstanceV1List(
 const filteredInstanceV1List = computed(() => {
   let list = [...rawInstanceV1List.value];
   const environment = selectedEnvironment.value;
-  if (environment && environment.uid !== String(UNKNOWN_ID)) {
+  if (environment && environment.name !== UNKNOWN_ENVIRONMENT_NAME) {
     list = list.filter((instance) => instance.environment === environment.name);
   }
   const keyword = state.searchText.trim().toLowerCase();
