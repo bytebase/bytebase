@@ -29,22 +29,27 @@
             >
               {{ $t("schema-designer.personal-draft") }}
             </NTag>
+            <NDropdown
+              v-if="!state.isEditing"
+              class="max-w-[10rem]"
+              trigger="click"
+              :options="schemaDesignDraftDropdownOptions"
+              :render-label="renderDraftsLabel"
+              @select="handleSchemaDesignDraftSelect"
+            >
+              <NButton size="small" quaternary>
+                <template #icon>
+                  <NIcon size="16">
+                    <History class="opacity-80" />
+                  </NIcon>
+                </template>
+              </NButton>
+            </NDropdown>
           </div>
           <div>
             <div class="w-full flex flex-row justify-between items-center">
               <div class="flex flex-row justify-end items-center space-x-2">
                 <template v-if="!state.isEditing">
-                  <NDropdown
-                    trigger="click"
-                    :options="schemaDesignDraftDropdownOptions"
-                    @select="handleSchemaDesignDraftSelect"
-                  >
-                    <NButton text style="font-size: 18px">
-                      <NIcon>
-                        <History class="opacity-60" />
-                      </NIcon>
-                    </NButton>
-                  </NDropdown>
                   <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
                   <NButton
                     v-if="!viewMode && !isSchemaDesignDraft"
@@ -125,6 +130,13 @@
       </template>
     </NDrawerContent>
   </NDrawer>
+
+  <ResolveConflictPanel
+    v-if="state.showDiffEditor"
+    :schema-design-name="state.schemaDesignName"
+    @dismiss="state.showDiffEditor = false"
+    @try-merge="handleMergeAfterConflictResolved"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -138,9 +150,12 @@ import {
   NIcon,
   NInput,
   NTag,
+  useDialog,
+  DropdownOption,
+  NEllipsis,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, h, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
@@ -152,6 +167,7 @@ import {
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
+import ResolveConflictPanel from "./ResolveConflictPanel.vue";
 import { mergeSchemaEditToMetadata } from "./common/util";
 import SchemaDesigner from "./index.vue";
 
@@ -160,6 +176,7 @@ interface LocalState {
   // Pre edit or editing schema design name.
   schemaDesignName: string;
   isEditing: boolean;
+  showDiffEditor: boolean;
 }
 
 const props = defineProps<{
@@ -173,10 +190,12 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
+const dialog = useDialog();
 const state = reactive<LocalState>({
   schemaDesignTitle: "",
   schemaDesignName: props.schemaDesignName,
   isEditing: false,
+  showDiffEditor: false,
 });
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
 
@@ -198,19 +217,12 @@ const schemaDesignDrafts = computed(() => {
 });
 
 const schemaDesignDraftDropdownOptions = computed(() => {
-  return schemaDesignDrafts.value
-    .map((schemaDesign) => {
-      return {
-        label: schemaDesign.title,
-        key: schemaDesign.name,
-      };
-    })
-    .concat([
-      {
-        label: "Clear",
-        key: props.schemaDesignName,
-      },
-    ]);
+  return schemaDesignDrafts.value.map((schemaDesign) => {
+    return {
+      label: schemaDesign.title,
+      key: schemaDesign.name,
+    };
+  });
 });
 
 const baselineDatabase = computed(() => {
@@ -240,6 +252,39 @@ watch(
     immediate: true,
   }
 );
+
+const renderDraftsLabel = (option: DropdownOption) => {
+  const schemaDesign = schemaDesignStore.getSchemaDesignByName(
+    option.key as string
+  );
+  if (!schemaDesign) {
+    // Should not reach here.
+    return h(NEllipsis, {}, () => [h("span", {}, () => [option.label])]);
+  }
+
+  return h(
+    "div",
+    {
+      class: "w-full flex justify-between items-center",
+    },
+    [
+      h(
+        NEllipsis,
+        {
+          class: "shrink !max-w-[4rem]",
+        },
+        [schemaDesign.title]
+      ),
+      h(
+        "span",
+        {
+          class: "text-xs font-mono shrink-0 text-gray-400 ml-1",
+        },
+        [schemaDesign.etag.slice(0, 6)]
+      ),
+    ]
+  );
+};
 
 const handleEdit = async () => {
   // Allow editing directly if it's a personal draft.
@@ -344,12 +389,21 @@ const handleMergeSchemaDesign = async () => {
   } catch (error: any) {
     // If there is conflict, we need to show the conflict and let user resolve it.
     if (error.code === Status.FAILED_PRECONDITION) {
-      // TODO(steven): show the conflict and let user resolve it.
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Merge to main failed",
-        description: error.details,
+      dialog.create({
+        positiveText: t("schema-designer.diff-editor.resolve"),
+        negativeText: t("common.cancel"),
+        title: t("schema-designer.diff-editor.auto-merge-failed"),
+        content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
+        autoFocus: false,
+        closable: false,
+        maskClosable: false,
+        closeOnEsc: false,
+        onNegativeClick: () => {
+          // nothing to do
+        },
+        onPositiveClick: () => {
+          state.showDiffEditor = true;
+        },
       });
     } else {
       pushNotification({
@@ -365,10 +419,15 @@ const handleMergeSchemaDesign = async () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: "Merge to main succeed",
+    title: t("schema-designer.message.merge-to-main-successfully"),
   });
   // Auto select the main branch after merged.
   state.schemaDesignName = props.schemaDesignName;
+};
+
+const handleMergeAfterConflictResolved = () => {
+  state.showDiffEditor = false;
+  handleMergeSchemaDesign();
 };
 
 const handleApplySchemaDesignClick = () => {

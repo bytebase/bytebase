@@ -8147,7 +8147,7 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the baseline schema. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema design. |
 | baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
-| baseline_sheet_name | [string](#string) |  | The name of the baseline sheet. Format: projects/{project}/sheets/{sheet} |
+| baseline_sheet_name | [string](#string) |  | The name of the baseline sheet. For main branch, its format will be: projects/{project}/sheets/{sheet} For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign} |
 | type | [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type) |  | The type of the schema design. |
 | etag | [string](#string) |  | The etag of the schema design. |
 | creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |

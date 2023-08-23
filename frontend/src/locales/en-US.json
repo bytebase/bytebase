@@ -2806,6 +2806,15 @@
     "personal-draft": "Personal draft",
     "save-draft": "Save draft",
     "merge-to-main": "Merge to main",
+    "diff-editor": {
+      "self": "Diff editor",
+      "resolve": "Resolve",
+      "latest-schema": "Latest schema",
+      "editing-schema": "Editing schema",
+      "auto-merge-failed": "Auto merge failed",
+      "need-to-resolve-conflicts": "Schema design has been updated by others. You need to resolve the conflicts before you can merge.",
+      "resolve-and-merge-again": "Resolve and merge again"
+    },
     "tables": "Tables",
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
@@ -2814,7 +2823,8 @@
     "select-database-placeholder": "Select a database (MySQL only)",
     "message": {
       "created-succeed": "Schema design created successfully",
-      "updated-succeed": "Schema design updated successfully"
+      "updated-succeed": "Schema design updated successfully",
+      "merge-to-main-successfully": "Merge to main successfully"
     }
   }
 }

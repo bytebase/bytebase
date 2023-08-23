@@ -2802,6 +2802,15 @@
     "personal-draft": "Borrador personal",
     "save-draft": "Guardar borrador",
     "merge-to-main": "Fusionar a principal",
+    "diff-editor": {
+      "self": "Editor de diferencias",
+      "resolve": "Resolver",
+      "latest-schema": "Último esquema",
+      "editing-schema": "Editando esquema",
+      "auto-merge-failed": "Falló la fusión automática",
+      "need-to-resolve-conflicts": "El diseño del esquema ha sido actualizado por otros. Debe resolver los conflictos antes de poder fusionar.",
+      "resolve-and-merge-again": "Resolver y fusionar nuevamente"
+    },
     "tables": "Tablas",
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
@@ -2810,7 +2819,8 @@
     "select-database-placeholder": "Seleccionar base de datos (sólo MySQL)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
-      "updated-succeed": "Diseño de esquema actualizado con éxito"
+      "updated-succeed": "Diseño de esquema actualizado con éxito",
+      "merge-to-main-successfully": "Fusionar con el principal exitosamente"
     }
   }
 }
