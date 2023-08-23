@@ -3,8 +3,8 @@
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
-        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
-        @update:environment="changeEnvironmentId($event)"
+        :environment="selectedEnvironment?.name"
+        @update:environment="changeEnvironment($event)"
       />
       <div class="flex flex-row space-x-4">
         <NButton v-if="project" @click="goProject">
@@ -178,7 +178,7 @@ const selectedUserUID = computed((): string => {
 const selectedEnvironment = computed((): Environment | undefined => {
   const { environment } = route.query;
   return environment
-    ? environmentV1Store.getEnvironmentByUID(environment as string)
+    ? environmentV1Store.getEnvironmentByName(environment as string)
     : undefined;
 });
 
@@ -208,7 +208,7 @@ const filter = (issue: Issue) => {
   return true;
 };
 
-const changeEnvironmentId = (environment: string | undefined) => {
+const changeEnvironment = (environment: string | undefined) => {
   if (environment && environment !== String(UNKNOWN_ID)) {
     router.replace({
       name: "workspace.issue",
