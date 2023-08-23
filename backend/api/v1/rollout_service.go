@@ -512,7 +512,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to create pending task runs")
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Comment, user.ID); err != nil {
+	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
 		log.Error("failed to batch create activities for running tasks", zap.Error(err))
 	}
 
@@ -576,11 +576,11 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		tasksToSkip = append(tasksToSkip, taskByID[taskID])
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Comment, updaterID); err != nil {
+	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason, updaterID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Comment, updaterID); err != nil {
+	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, updaterID); err != nil {
 		log.Error("failed to batch create activities for skipping tasks", zap.Error(err))
 	}
 
@@ -705,7 +705,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForCancelTaskRuns(ctx, tasks, issue, request.Comment, principalID); err != nil {
+	if err := s.activityManager.BatchCreateActivitiesForCancelTaskRuns(ctx, tasks, issue, request.Reason, principalID); err != nil {
 		log.Error("failed to batch create activities for cancel task runs", zap.Error(err))
 	}
 
