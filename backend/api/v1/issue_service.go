@@ -798,7 +798,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 				ContainerUID: updatedIssue.UID,
 				Type:         api.ActivityIssueStatusUpdate,
 				Level:        api.ActivityInfo,
-				Comment:      request.Comment,
+				Comment:      request.Reason,
 				Payload:      string(payload),
 			}
 			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
