@@ -260,6 +260,7 @@ export const FieldMask = {
   create(base?: DeepPartial<FieldMask>): FieldMask {
     return FieldMask.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<FieldMask>): FieldMask {
     const message = createBaseFieldMask();
     message.paths = object.paths?.map((e) => e) || [];
