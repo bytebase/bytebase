@@ -324,8 +324,8 @@
     - [ApprovalStep](#bytebase-v1-ApprovalStep)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
     - [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest)
-    - [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest)
-    - [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse)
+    - [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest)
+    - [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse)
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
@@ -5326,31 +5326,28 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-BatchUpdateIssuesRequest"></a>
+<a name="bytebase-v1-BatchUpdateIssuesStatusRequest"></a>
 
-### BatchUpdateIssuesRequest
+### BatchUpdateIssuesStatusRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource shared by all issues being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
-| requests | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
+| issues | [string](#string) | repeated | The list of issues to update. Format: projects/{project}/issues/{issue} |
+| status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The new status. |
+| comment | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-BatchUpdateIssuesResponse"></a>
+<a name="bytebase-v1-BatchUpdateIssuesStatusResponse"></a>
 
-### BatchUpdateIssuesResponse
+### BatchUpdateIssuesStatusResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issues | [Issue](#bytebase-v1-Issue) | repeated | Issues updated. |
 
 
 
@@ -5722,7 +5719,7 @@ ANY means approving any node will proceed.
 | SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) |  |
 | CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
-| BatchUpdateIssues | [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest) | [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse) |  |
+| BatchUpdateIssuesStatus | [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest) | [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse) |  |
 | ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
