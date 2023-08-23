@@ -178,7 +178,7 @@
               :schema="schemaName"
               :table="table"
               :column-list="table.columns"
-              :sensitive-data-list="sensitiveDataList"
+              :mask-data-list="sensitiveDataList"
               :classification-config="classificationConfig"
             />
           </div>

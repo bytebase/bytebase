@@ -81,17 +81,18 @@ export const InstanceChangeHistoryPayload = {
 
   toJSON(message: InstanceChangeHistoryPayload): unknown {
     const obj: any = {};
-    message.pushEvent !== undefined &&
-      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
-    message.changedResources !== undefined &&
-      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
+    if (message.pushEvent !== undefined) {
+      obj.pushEvent = PushEvent.toJSON(message.pushEvent);
+    }
+    if (message.changedResources !== undefined) {
+      obj.changedResources = ChangedResources.toJSON(message.changedResources);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<InstanceChangeHistoryPayload>): InstanceChangeHistoryPayload {
     return InstanceChangeHistoryPayload.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<InstanceChangeHistoryPayload>): InstanceChangeHistoryPayload {
     const message = createBaseInstanceChangeHistoryPayload();
     message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
@@ -149,10 +150,8 @@ export const ChangedResources = {
 
   toJSON(message: ChangedResources): unknown {
     const obj: any = {};
-    if (message.databases) {
-      obj.databases = message.databases.map((e) => e ? ChangedResourceDatabase.toJSON(e) : undefined);
-    } else {
-      obj.databases = [];
+    if (message.databases?.length) {
+      obj.databases = message.databases.map((e) => ChangedResourceDatabase.toJSON(e));
     }
     return obj;
   },
@@ -160,7 +159,6 @@ export const ChangedResources = {
   create(base?: DeepPartial<ChangedResources>): ChangedResources {
     return ChangedResources.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ChangedResources>): ChangedResources {
     const message = createBaseChangedResources();
     message.databases = object.databases?.map((e) => ChangedResourceDatabase.fromPartial(e)) || [];
@@ -222,11 +220,11 @@ export const ChangedResourceDatabase = {
 
   toJSON(message: ChangedResourceDatabase): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.schemas) {
-      obj.schemas = message.schemas.map((e) => e ? ChangedResourceSchema.toJSON(e) : undefined);
-    } else {
-      obj.schemas = [];
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.schemas?.length) {
+      obj.schemas = message.schemas.map((e) => ChangedResourceSchema.toJSON(e));
     }
     return obj;
   },
@@ -234,7 +232,6 @@ export const ChangedResourceDatabase = {
   create(base?: DeepPartial<ChangedResourceDatabase>): ChangedResourceDatabase {
     return ChangedResourceDatabase.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ChangedResourceDatabase>): ChangedResourceDatabase {
     const message = createBaseChangedResourceDatabase();
     message.name = object.name ?? "";
@@ -297,11 +294,11 @@ export const ChangedResourceSchema = {
 
   toJSON(message: ChangedResourceSchema): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.tables) {
-      obj.tables = message.tables.map((e) => e ? ChangedResourceTable.toJSON(e) : undefined);
-    } else {
-      obj.tables = [];
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.tables?.length) {
+      obj.tables = message.tables.map((e) => ChangedResourceTable.toJSON(e));
     }
     return obj;
   },
@@ -309,7 +306,6 @@ export const ChangedResourceSchema = {
   create(base?: DeepPartial<ChangedResourceSchema>): ChangedResourceSchema {
     return ChangedResourceSchema.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ChangedResourceSchema>): ChangedResourceSchema {
     const message = createBaseChangedResourceSchema();
     message.name = object.name ?? "";
@@ -359,14 +355,15 @@ export const ChangedResourceTable = {
 
   toJSON(message: ChangedResourceTable): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
     return ChangedResourceTable.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
     const message = createBaseChangedResourceTable();
     message.name = object.name ?? "";

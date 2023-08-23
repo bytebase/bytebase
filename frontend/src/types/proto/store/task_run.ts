@@ -75,16 +75,21 @@ export const TaskRunResult = {
 
   toJSON(message: TaskRunResult): unknown {
     const obj: any = {};
-    message.detail !== undefined && (obj.detail = message.detail);
-    message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
-    message.version !== undefined && (obj.version = message.version);
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
+    if (message.changeHistory !== "") {
+      obj.changeHistory = message.changeHistory;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<TaskRunResult>): TaskRunResult {
     return TaskRunResult.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<TaskRunResult>): TaskRunResult {
     const message = createBaseTaskRunResult();
     message.detail = object.detail ?? "";
