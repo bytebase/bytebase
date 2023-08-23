@@ -149,11 +149,13 @@ const handleConfirm = async (
       await rolloutServiceClient.batchRunTasks({
         parent: stage.name,
         tasks: props.taskList.map((task) => task.name),
+        reason: comment,
       });
     } else if (action === "SKIP") {
       await rolloutServiceClient.batchSkipTasks({
         parent: stage.name,
         tasks: props.taskList.map((task) => task.name),
+        reason: comment,
       });
     } else if (action === "CANCEL") {
       const taskRunListToCancel = props.taskList
@@ -169,6 +171,7 @@ const handleConfirm = async (
         await rolloutServiceClient.batchCancelTaskRuns({
           parent: `${stage.name}/tasks/-`,
           taskRuns: taskRunListToCancel.map((taskRun) => taskRun.name),
+          reason: comment,
         });
       }
     }
