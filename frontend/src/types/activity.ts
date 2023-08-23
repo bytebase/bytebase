@@ -35,6 +35,8 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.pipeline-stage-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE:
       return t("activity.type.pipeline-task-status-update");
+    case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return t("activity.type.pipeline-task-run-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
       return t("activity.type.pipeline-task-file-commit");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
