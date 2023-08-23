@@ -321,6 +321,9 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.IDs; v != nil {
+		where, args = append(where, fmt.Sprintf("task.id = ANY($%d)", len(args)+1)), append(args, *v)
+	}
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
