@@ -158,7 +158,7 @@ export interface SearchIssuesResponse {
   nextPageToken: string;
 }
 
-export interface BatchUpdateIssuesRequest {
+export interface BatchUpdateIssuesStatusRequest {
   /**
    * The parent resource shared by all issues being updated.
    * Format: projects/{project}
@@ -167,15 +167,16 @@ export interface BatchUpdateIssuesRequest {
    */
   parent: string;
   /**
-   * The request message specifying the resources to update.
-   * A maximum of 1000 databases can be modified in a batch.
+   * The list of issues to update.
+   * Format: projects/{project}/issues/{issue}
    */
-  requests: UpdateIssueRequest[];
+  issues: string[];
+  /** The new status. */
+  status: IssueStatus;
+  reason: string;
 }
 
-export interface BatchUpdateIssuesResponse {
-  /** Issues updated. */
-  issues: Issue[];
+export interface BatchUpdateIssuesStatusResponse {
 }
 
 export interface ApproveIssueRequest {
@@ -1116,25 +1117,31 @@ export const SearchIssuesResponse = {
   },
 };
 
-function createBaseBatchUpdateIssuesRequest(): BatchUpdateIssuesRequest {
-  return { parent: "", requests: [] };
+function createBaseBatchUpdateIssuesStatusRequest(): BatchUpdateIssuesStatusRequest {
+  return { parent: "", issues: [], status: 0, reason: "" };
 }
 
-export const BatchUpdateIssuesRequest = {
-  encode(message: BatchUpdateIssuesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const BatchUpdateIssuesStatusRequest = {
+  encode(message: BatchUpdateIssuesStatusRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
-    for (const v of message.requests) {
-      UpdateIssueRequest.encode(v!, writer.uint32(18).fork()).ldelim();
+    for (const v of message.issues) {
+      writer.uint32(18).string(v!);
+    }
+    if (message.status !== 0) {
+      writer.uint32(24).int32(message.status);
+    }
+    if (message.reason !== "") {
+      writer.uint32(34).string(message.reason);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateIssuesRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateIssuesStatusRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchUpdateIssuesRequest();
+    const message = createBaseBatchUpdateIssuesStatusRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1150,7 +1157,21 @@ export const BatchUpdateIssuesRequest = {
             break;
           }
 
-          message.requests.push(UpdateIssueRequest.decode(reader, reader.uint32()));
+          message.issues.push(reader.string());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.reason = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1161,62 +1182,58 @@ export const BatchUpdateIssuesRequest = {
     return message;
   },
 
-  fromJSON(object: any): BatchUpdateIssuesRequest {
+  fromJSON(object: any): BatchUpdateIssuesStatusRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
-      requests: Array.isArray(object?.requests) ? object.requests.map((e: any) => UpdateIssueRequest.fromJSON(e)) : [],
+      issues: Array.isArray(object?.issues) ? object.issues.map((e: any) => String(e)) : [],
+      status: isSet(object.status) ? issueStatusFromJSON(object.status) : 0,
+      reason: isSet(object.reason) ? String(object.reason) : "",
     };
   },
 
-  toJSON(message: BatchUpdateIssuesRequest): unknown {
+  toJSON(message: BatchUpdateIssuesStatusRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
-    if (message.requests) {
-      obj.requests = message.requests.map((e) => e ? UpdateIssueRequest.toJSON(e) : undefined);
+    if (message.issues) {
+      obj.issues = message.issues.map((e) => e);
     } else {
-      obj.requests = [];
+      obj.issues = [];
     }
+    message.status !== undefined && (obj.status = issueStatusToJSON(message.status));
+    message.reason !== undefined && (obj.reason = message.reason);
     return obj;
   },
 
-  create(base?: DeepPartial<BatchUpdateIssuesRequest>): BatchUpdateIssuesRequest {
-    return BatchUpdateIssuesRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchUpdateIssuesStatusRequest>): BatchUpdateIssuesStatusRequest {
+    return BatchUpdateIssuesStatusRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<BatchUpdateIssuesRequest>): BatchUpdateIssuesRequest {
-    const message = createBaseBatchUpdateIssuesRequest();
+  fromPartial(object: DeepPartial<BatchUpdateIssuesStatusRequest>): BatchUpdateIssuesStatusRequest {
+    const message = createBaseBatchUpdateIssuesStatusRequest();
     message.parent = object.parent ?? "";
-    message.requests = object.requests?.map((e) => UpdateIssueRequest.fromPartial(e)) || [];
+    message.issues = object.issues?.map((e) => e) || [];
+    message.status = object.status ?? 0;
+    message.reason = object.reason ?? "";
     return message;
   },
 };
 
-function createBaseBatchUpdateIssuesResponse(): BatchUpdateIssuesResponse {
-  return { issues: [] };
+function createBaseBatchUpdateIssuesStatusResponse(): BatchUpdateIssuesStatusResponse {
+  return {};
 }
 
-export const BatchUpdateIssuesResponse = {
-  encode(message: BatchUpdateIssuesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.issues) {
-      Issue.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
+export const BatchUpdateIssuesStatusResponse = {
+  encode(_: BatchUpdateIssuesStatusResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateIssuesResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchUpdateIssuesStatusResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchUpdateIssuesResponse();
+    const message = createBaseBatchUpdateIssuesStatusResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.issues.push(Issue.decode(reader, reader.uint32()));
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1226,27 +1243,21 @@ export const BatchUpdateIssuesResponse = {
     return message;
   },
 
-  fromJSON(object: any): BatchUpdateIssuesResponse {
-    return { issues: Array.isArray(object?.issues) ? object.issues.map((e: any) => Issue.fromJSON(e)) : [] };
+  fromJSON(_: any): BatchUpdateIssuesStatusResponse {
+    return {};
   },
 
-  toJSON(message: BatchUpdateIssuesResponse): unknown {
+  toJSON(_: BatchUpdateIssuesStatusResponse): unknown {
     const obj: any = {};
-    if (message.issues) {
-      obj.issues = message.issues.map((e) => e ? Issue.toJSON(e) : undefined);
-    } else {
-      obj.issues = [];
-    }
     return obj;
   },
 
-  create(base?: DeepPartial<BatchUpdateIssuesResponse>): BatchUpdateIssuesResponse {
-    return BatchUpdateIssuesResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchUpdateIssuesStatusResponse>): BatchUpdateIssuesStatusResponse {
+    return BatchUpdateIssuesStatusResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<BatchUpdateIssuesResponse>): BatchUpdateIssuesResponse {
-    const message = createBaseBatchUpdateIssuesResponse();
-    message.issues = object.issues?.map((e) => Issue.fromPartial(e)) || [];
+  fromPartial(_: DeepPartial<BatchUpdateIssuesStatusResponse>): BatchUpdateIssuesStatusResponse {
+    const message = createBaseBatchUpdateIssuesStatusResponse();
     return message;
   },
 };
@@ -2937,22 +2948,22 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    batchUpdateIssues: {
-      name: "BatchUpdateIssues",
-      requestType: BatchUpdateIssuesRequest,
+    batchUpdateIssuesStatus: {
+      name: "BatchUpdateIssuesStatus",
+      requestType: BatchUpdateIssuesStatusRequest,
       requestStream: false,
-      responseType: BatchUpdateIssuesResponse,
+      responseType: BatchUpdateIssuesStatusResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              47,
+              53,
               58,
               1,
               42,
               34,
-              42,
+              48,
               47,
               118,
               49,
@@ -2995,6 +3006,12 @@ export const IssueServiceDefinition = {
               97,
               116,
               101,
+              83,
+              116,
+              97,
+              116,
+              117,
+              115,
             ]),
           ],
         },
@@ -3199,10 +3216,10 @@ export interface IssueServiceImplementation<CallContextExt = {}> {
     request: UpdateIssueCommentRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<IssueComment>>;
-  batchUpdateIssues(
-    request: BatchUpdateIssuesRequest,
+  batchUpdateIssuesStatus(
+    request: BatchUpdateIssuesStatusRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchUpdateIssuesResponse>>;
+  ): Promise<DeepPartial<BatchUpdateIssuesStatusResponse>>;
   approveIssue(request: ApproveIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
   rejectIssue(request: RejectIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
   requestIssue(request: RequestIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
@@ -3228,10 +3245,10 @@ export interface IssueServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UpdateIssueCommentRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<IssueComment>;
-  batchUpdateIssues(
-    request: DeepPartial<BatchUpdateIssuesRequest>,
+  batchUpdateIssuesStatus(
+    request: DeepPartial<BatchUpdateIssuesStatusRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchUpdateIssuesResponse>;
+  ): Promise<BatchUpdateIssuesStatusResponse>;
   approveIssue(request: DeepPartial<ApproveIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
   rejectIssue(request: DeepPartial<RejectIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
   requestIssue(request: DeepPartial<RequestIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
