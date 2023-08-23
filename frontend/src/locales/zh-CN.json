@@ -1523,6 +1523,10 @@
         "issue-approval-notify": {
           "title": "工单待审批",
           "label": "当工单需要审批"
+        },
+        "issue-task-run-status-change": {
+          "title": "工单任务执行状态变更",
+          "label": "当一个工单包含的任务执行状态发生了变更"
         }
       }
     },

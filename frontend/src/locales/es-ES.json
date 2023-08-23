@@ -1526,6 +1526,10 @@
         "issue-approval-notify": {
           "title": "Notificación de aprobación de incidencia",
           "label": "Cuando se aprueba o rechaza una incidencia"
+        },
+        "issue-task-run-status-change": {
+          "title": "Cambio de estado de ejecución de tarea de incidencia",
+          "label": "Cuando cambia el estado de la ejecución de la tarea que encierra la incidencia"
         }
       }
     },
