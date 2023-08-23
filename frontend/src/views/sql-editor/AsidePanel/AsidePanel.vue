@@ -85,7 +85,8 @@
 <script lang="ts" setup>
 import { NTabs, NTabPane } from "naive-ui";
 import { Splitpanes, Pane } from "splitpanes";
-import { computed, onUnmounted, ref, watchEffect } from "vue";
+import { computed, ref, watchEffect } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionTreeStore,
   useCurrentUserV1,
@@ -148,11 +149,8 @@ watchEffect(() => {
     connectionTreeStore.tree.mode = ConnectionTreeMode.INSTANCE;
   }
 });
-const off = sheetEvents.on("add-sheet", () => {
-  sheetTab.value = "my";
-});
 
-onUnmounted(() => {
-  off();
+useEmitteryEventListener(sheetEvents, "add-sheet", () => {
+  sheetTab.value = "my";
 });
 </script>
