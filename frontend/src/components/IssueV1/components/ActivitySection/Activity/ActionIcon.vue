@@ -109,6 +109,7 @@ import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 import { useUserStore } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
+  ActivityPipelineTaskRunStatusUpdatePayload,
   ActivityStageStatusUpdatePayload,
   ActivityTaskStatusUpdatePayload,
   SYSTEM_BOT_EMAIL,
@@ -180,6 +181,36 @@ const icon = computed((): ActionIconType => {
       }
       case "PENDING_APPROVAL": {
         return "avatar"; // stale approval dismissed.
+      }
+    }
+  } else if (
+    activity.action === LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE
+  ) {
+    const payload = JSON.parse(
+      activity.payload
+    ) as ActivityPipelineTaskRunStatusUpdatePayload;
+
+    switch (payload.newStatus) {
+      case "PENDING": {
+        return "rollout";
+      }
+      case "CANCELED": {
+        return "cancel";
+      }
+      case "RUNNING": {
+        return "run";
+      }
+      case "DONE": {
+        return "complete";
+        // TODO check if skipped
+        // if (payload.oldStatus === "RUNNING") {
+        //   return "complete";
+        // } else {
+        //   return "skip";
+        // }
+      }
+      case "FAILED": {
+        return "fail";
       }
     }
   } else if (
