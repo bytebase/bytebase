@@ -297,7 +297,7 @@ message SensitiveData {
   string schema = 1;
   string table = 2;
   string column = 3;
-  string data_category_id = 4;
+  string semantic_category_id = 4;
   MaskingLevel masking_level = 5;
 }
 
