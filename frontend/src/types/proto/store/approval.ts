@@ -317,25 +317,24 @@ export const IssuePayloadApproval = {
 
   toJSON(message: IssuePayloadApproval): unknown {
     const obj: any = {};
-    if (message.approvalTemplates) {
-      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
-    } else {
-      obj.approvalTemplates = [];
+    if (message.approvalTemplates?.length) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => ApprovalTemplate.toJSON(e));
     }
-    if (message.approvers) {
-      obj.approvers = message.approvers.map((e) => e ? IssuePayloadApproval_Approver.toJSON(e) : undefined);
-    } else {
-      obj.approvers = [];
+    if (message.approvers?.length) {
+      obj.approvers = message.approvers.map((e) => IssuePayloadApproval_Approver.toJSON(e));
     }
-    message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
-    message.approvalFindingError !== undefined && (obj.approvalFindingError = message.approvalFindingError);
+    if (message.approvalFindingDone === true) {
+      obj.approvalFindingDone = message.approvalFindingDone;
+    }
+    if (message.approvalFindingError !== "") {
+      obj.approvalFindingError = message.approvalFindingError;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IssuePayloadApproval>): IssuePayloadApproval {
     return IssuePayloadApproval.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IssuePayloadApproval>): IssuePayloadApproval {
     const message = createBaseIssuePayloadApproval();
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
@@ -400,15 +399,18 @@ export const IssuePayloadApproval_Approver = {
 
   toJSON(message: IssuePayloadApproval_Approver): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status));
-    message.principalId !== undefined && (obj.principalId = Math.round(message.principalId));
+    if (message.status !== 0) {
+      obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status);
+    }
+    if (message.principalId !== 0) {
+      obj.principalId = Math.round(message.principalId);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IssuePayloadApproval_Approver>): IssuePayloadApproval_Approver {
     return IssuePayloadApproval_Approver.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IssuePayloadApproval_Approver>): IssuePayloadApproval_Approver {
     const message = createBaseIssuePayloadApproval_Approver();
     message.status = object.status ?? 0;
@@ -493,17 +495,24 @@ export const ApprovalTemplate = {
 
   toJSON(message: ApprovalTemplate): unknown {
     const obj: any = {};
-    message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
-    message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
+    if (message.flow !== undefined) {
+      obj.flow = ApprovalFlow.toJSON(message.flow);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.creatorId !== 0) {
+      obj.creatorId = Math.round(message.creatorId);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
     return ApprovalTemplate.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
     const message = createBaseApprovalTemplate();
     message.flow = (object.flow !== undefined && object.flow !== null)
@@ -557,10 +566,8 @@ export const ApprovalFlow = {
 
   toJSON(message: ApprovalFlow): unknown {
     const obj: any = {};
-    if (message.steps) {
-      obj.steps = message.steps.map((e) => e ? ApprovalStep.toJSON(e) : undefined);
-    } else {
-      obj.steps = [];
+    if (message.steps?.length) {
+      obj.steps = message.steps.map((e) => ApprovalStep.toJSON(e));
     }
     return obj;
   },
@@ -568,7 +575,6 @@ export const ApprovalFlow = {
   create(base?: DeepPartial<ApprovalFlow>): ApprovalFlow {
     return ApprovalFlow.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalFlow>): ApprovalFlow {
     const message = createBaseApprovalFlow();
     message.steps = object.steps?.map((e) => ApprovalStep.fromPartial(e)) || [];
@@ -630,11 +636,11 @@ export const ApprovalStep = {
 
   toJSON(message: ApprovalStep): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = approvalStep_TypeToJSON(message.type));
-    if (message.nodes) {
-      obj.nodes = message.nodes.map((e) => e ? ApprovalNode.toJSON(e) : undefined);
-    } else {
-      obj.nodes = [];
+    if (message.type !== 0) {
+      obj.type = approvalStep_TypeToJSON(message.type);
+    }
+    if (message.nodes?.length) {
+      obj.nodes = message.nodes.map((e) => ApprovalNode.toJSON(e));
     }
     return obj;
   },
@@ -642,7 +648,6 @@ export const ApprovalStep = {
   create(base?: DeepPartial<ApprovalStep>): ApprovalStep {
     return ApprovalStep.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalStep>): ApprovalStep {
     const message = createBaseApprovalStep();
     message.type = object.type ?? 0;
@@ -727,20 +732,24 @@ export const ApprovalNode = {
 
   toJSON(message: ApprovalNode): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = approvalNode_TypeToJSON(message.type));
-    message.groupValue !== undefined &&
-      (obj.groupValue = message.groupValue !== undefined
-        ? approvalNode_GroupValueToJSON(message.groupValue)
-        : undefined);
-    message.role !== undefined && (obj.role = message.role);
-    message.externalNodeId !== undefined && (obj.externalNodeId = message.externalNodeId);
+    if (message.type !== 0) {
+      obj.type = approvalNode_TypeToJSON(message.type);
+    }
+    if (message.groupValue !== undefined) {
+      obj.groupValue = approvalNode_GroupValueToJSON(message.groupValue);
+    }
+    if (message.role !== undefined) {
+      obj.role = message.role;
+    }
+    if (message.externalNodeId !== undefined) {
+      obj.externalNodeId = message.externalNodeId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ApprovalNode>): ApprovalNode {
     return ApprovalNode.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
     const message = createBaseApprovalNode();
     message.type = object.type ?? 0;

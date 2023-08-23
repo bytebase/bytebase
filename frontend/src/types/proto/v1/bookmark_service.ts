@@ -104,14 +104,15 @@ export const CreateBookmarkRequest = {
 
   toJSON(message: CreateBookmarkRequest): unknown {
     const obj: any = {};
-    message.bookmark !== undefined && (obj.bookmark = message.bookmark ? Bookmark.toJSON(message.bookmark) : undefined);
+    if (message.bookmark !== undefined) {
+      obj.bookmark = Bookmark.toJSON(message.bookmark);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateBookmarkRequest>): CreateBookmarkRequest {
     return CreateBookmarkRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateBookmarkRequest>): CreateBookmarkRequest {
     const message = createBaseCreateBookmarkRequest();
     message.bookmark = (object.bookmark !== undefined && object.bookmark !== null)
@@ -162,14 +163,15 @@ export const DeleteBookmarkRequest = {
 
   toJSON(message: DeleteBookmarkRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteBookmarkRequest>): DeleteBookmarkRequest {
     return DeleteBookmarkRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteBookmarkRequest>): DeleteBookmarkRequest {
     const message = createBaseDeleteBookmarkRequest();
     message.name = object.name ?? "";
@@ -231,15 +233,18 @@ export const ListBookmarksRequest = {
 
   toJSON(message: ListBookmarksRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListBookmarksRequest>): ListBookmarksRequest {
     return ListBookmarksRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListBookmarksRequest>): ListBookmarksRequest {
     const message = createBaseListBookmarksRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -302,19 +307,18 @@ export const ListBookmarksResponse = {
 
   toJSON(message: ListBookmarksResponse): unknown {
     const obj: any = {};
-    if (message.bookmarks) {
-      obj.bookmarks = message.bookmarks.map((e) => e ? Bookmark.toJSON(e) : undefined);
-    } else {
-      obj.bookmarks = [];
+    if (message.bookmarks?.length) {
+      obj.bookmarks = message.bookmarks.map((e) => Bookmark.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListBookmarksResponse>): ListBookmarksResponse {
     return ListBookmarksResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListBookmarksResponse>): ListBookmarksResponse {
     const message = createBaseListBookmarksResponse();
     message.bookmarks = object.bookmarks?.map((e) => Bookmark.fromPartial(e)) || [];
@@ -388,16 +392,21 @@ export const Bookmark = {
 
   toJSON(message: Bookmark): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.link !== undefined && (obj.link = message.link);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.link !== "") {
+      obj.link = message.link;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Bookmark>): Bookmark {
     return Bookmark.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Bookmark>): Bookmark {
     const message = createBaseBookmark();
     message.name = object.name ?? "";

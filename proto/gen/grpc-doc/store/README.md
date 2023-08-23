@@ -32,6 +32,7 @@
     - [PageToken](#bytebase-store-PageToken)
   
     - [Engine](#bytebase-store-Engine)
+    - [MaskingLevel](#bytebase-store-MaskingLevel)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
@@ -120,6 +121,8 @@
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [IamPolicy](#bytebase-store-IamPolicy)
+    - [MaskData](#bytebase-store-MaskData)
+    - [MaskingPolicy](#bytebase-store-MaskingPolicy)
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
@@ -554,6 +557,20 @@ Used internally for obfuscating the page token.
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
 | DM | 15 |  |
+
+
+
+<a name="bytebase-store-MaskingLevel"></a>
+
+### MaskingLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASKING_LEVEL_UNSPECIFIED | 0 |  |
+| NONE | 1 |  |
+| PARTIAL | 2 |  |
+| FULL | 3 |  |
 
 
  
@@ -1841,6 +1858,40 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. |
+
+
+
+
+
+
+<a name="bytebase-store-MaskData"></a>
+
+### MaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| semantic_category_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingPolicy"></a>
+
+### MaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
 
 
 
