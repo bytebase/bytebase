@@ -1,10 +1,10 @@
 /* eslint-disable */
-import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
+import Long = require("long");
 
 export const protobufPackage = "bytebase.v1";
 
@@ -185,15 +185,18 @@ export const ListRisksRequest = {
 
   toJSON(message: ListRisksRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListRisksRequest>): ListRisksRequest {
     return ListRisksRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListRisksRequest>): ListRisksRequest {
     const message = createBaseListRisksRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -256,19 +259,18 @@ export const ListRisksResponse = {
 
   toJSON(message: ListRisksResponse): unknown {
     const obj: any = {};
-    if (message.risks) {
-      obj.risks = message.risks.map((e) => e ? Risk.toJSON(e) : undefined);
-    } else {
-      obj.risks = [];
+    if (message.risks?.length) {
+      obj.risks = message.risks.map((e) => Risk.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListRisksResponse>): ListRisksResponse {
     return ListRisksResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListRisksResponse>): ListRisksResponse {
     const message = createBaseListRisksResponse();
     message.risks = object.risks?.map((e) => Risk.fromPartial(e)) || [];
@@ -318,14 +320,15 @@ export const CreateRiskRequest = {
 
   toJSON(message: CreateRiskRequest): unknown {
     const obj: any = {};
-    message.risk !== undefined && (obj.risk = message.risk ? Risk.toJSON(message.risk) : undefined);
+    if (message.risk !== undefined) {
+      obj.risk = Risk.toJSON(message.risk);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateRiskRequest>): CreateRiskRequest {
     return CreateRiskRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateRiskRequest>): CreateRiskRequest {
     const message = createBaseCreateRiskRequest();
     message.risk = (object.risk !== undefined && object.risk !== null) ? Risk.fromPartial(object.risk) : undefined;
@@ -387,15 +390,18 @@ export const UpdateRiskRequest = {
 
   toJSON(message: UpdateRiskRequest): unknown {
     const obj: any = {};
-    message.risk !== undefined && (obj.risk = message.risk ? Risk.toJSON(message.risk) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.risk !== undefined) {
+      obj.risk = Risk.toJSON(message.risk);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateRiskRequest>): UpdateRiskRequest {
     return UpdateRiskRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateRiskRequest>): UpdateRiskRequest {
     const message = createBaseUpdateRiskRequest();
     message.risk = (object.risk !== undefined && object.risk !== null) ? Risk.fromPartial(object.risk) : undefined;
@@ -445,14 +451,15 @@ export const DeleteRiskRequest = {
 
   toJSON(message: DeleteRiskRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteRiskRequest>): DeleteRiskRequest {
     return DeleteRiskRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteRiskRequest>): DeleteRiskRequest {
     const message = createBaseDeleteRiskRequest();
     message.name = object.name ?? "";
@@ -569,20 +576,33 @@ export const Risk = {
 
   toJSON(message: Risk): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.source !== undefined && (obj.source = risk_SourceToJSON(message.source));
-    message.title !== undefined && (obj.title = message.title);
-    message.level !== undefined && (obj.level = Math.round(message.level));
-    message.active !== undefined && (obj.active = message.active);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.uid !== "") {
+      obj.uid = message.uid;
+    }
+    if (message.source !== 0) {
+      obj.source = risk_SourceToJSON(message.source);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.active === true) {
+      obj.active = message.active;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Risk>): Risk {
     return Risk.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Risk>): Risk {
     const message = createBaseRisk();
     message.name = object.name ?? "";
@@ -763,8 +783,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

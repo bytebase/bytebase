@@ -526,7 +526,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
-		payload, err := convertToSensitiveDataPolicyPayload(policy.GetSensitiveDataPolicy())
+		payload, err := convertToSensitiveDataPolicyPayload(policy.GetMaskingPolicy())
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -761,19 +761,19 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 	}, nil
 }
 
-func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPolicy, error) {
+func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_MaskingPolicy, error) {
 	payload, err := api.UnmarshalSensitiveDataPolicy(payloadStr)
 	if err != nil {
 		return nil, err
 	}
 
-	var sensitiveDataList []*v1pb.SensitiveData
+	var maskDataList []*v1pb.MaskData
 	for _, data := range payload.SensitiveDataList {
 		maskType := v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 		if data.Type == api.SensitiveDataMaskTypeDefault {
 			maskType = v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 		}
-		sensitiveDataList = append(sensitiveDataList, &v1pb.SensitiveData{
+		maskDataList = append(maskDataList, &v1pb.MaskData{
 			Schema:             data.Schema,
 			Table:              data.Table,
 			Column:             data.Column,
@@ -782,16 +782,16 @@ func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_Sensitive
 		})
 	}
 
-	return &v1pb.Policy_SensitiveDataPolicy{
-		SensitiveDataPolicy: &v1pb.SensitiveDataPolicy{
-			SensitiveData: sensitiveDataList,
+	return &v1pb.Policy_MaskingPolicy{
+		MaskingPolicy: &v1pb.MaskingPolicy{
+			MaskData: maskDataList,
 		},
 	}, nil
 }
 
-func convertToSensitiveDataPolicyPayload(policy *v1pb.SensitiveDataPolicy) (*api.SensitiveDataPolicy, error) {
+func convertToSensitiveDataPolicyPayload(policy *v1pb.MaskingPolicy) (*api.SensitiveDataPolicy, error) {
 	var sensitiveDataList []api.SensitiveData
-	for _, data := range policy.SensitiveData {
+	for _, data := range policy.MaskData {
 		if data.MaskingLevel != v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
 			return nil, errors.Errorf("invalid sensitive data mask type %v", data.MaskingLevel)
 		}
