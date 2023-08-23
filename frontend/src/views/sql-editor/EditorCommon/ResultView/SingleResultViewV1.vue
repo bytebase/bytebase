@@ -45,6 +45,22 @@
         >
           {{ $t("sql-editor.visualize-explain") }}
         </NButton>
+        <NTooltip v-if="DISMISS_PLACEHOLDER">
+          <template #trigger>
+            <NButton
+              size="small"
+              style="--n-padding: 0 8px"
+              @click="DISMISS_PLACEHOLDER = false"
+            >
+              <template #icon>
+                <heroicons:academic-cap class="w-4 h-4" />
+              </template>
+            </NButton>
+          </template>
+          <template #default>
+            {{ $t("plugin.ai.chat-sql") }}
+          </template>
+        </NTooltip>
         <DataExportButton
           v-if="showExportButton"
           size="small"
@@ -117,12 +133,13 @@ import {
 } from "@tanstack/vue-table";
 import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-import { NInput, NPagination } from "naive-ui";
+import { NInput, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ExportFormat } from "@/components/DataExportButton.vue";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
   useInstanceV1Store,
   useTabStore,

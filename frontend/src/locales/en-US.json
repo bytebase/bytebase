@@ -2474,7 +2474,8 @@
         "3": "What's the gender ratio in each department?"
       },
       "statement-copied": "Statement copied to clipboard",
-      "dont-show-again": "Don't show again"
+      "dont-show-again": "Don't show again",
+      "chat-sql": "ChatSQL"
     }
   },
   "custom-approval": {
