@@ -196,7 +196,7 @@ message BatchUpdateIssuesStatusRequest {
   // The new status.
   IssueStatus status = 3;
 
-  string comment = 4;
+  string reason = 4;
 }
 
 message BatchUpdateIssuesStatusResponse {}
