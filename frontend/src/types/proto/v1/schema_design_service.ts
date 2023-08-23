@@ -419,57 +419,31 @@ export const SchemaDesign = {
 
   toJSON(message: SchemaDesign): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.schema !== "") {
-      obj.schema = message.schema;
-    }
-    if (message.schemaMetadata !== undefined) {
-      obj.schemaMetadata = DatabaseMetadata.toJSON(message.schemaMetadata);
-    }
-    if (message.baselineSchema !== "") {
-      obj.baselineSchema = message.baselineSchema;
-    }
-    if (message.baselineSchemaMetadata !== undefined) {
-      obj.baselineSchemaMetadata = DatabaseMetadata.toJSON(message.baselineSchemaMetadata);
-    }
-    if (message.engine !== 0) {
-      obj.engine = engineToJSON(message.engine);
-    }
-    if (message.baselineDatabase !== "") {
-      obj.baselineDatabase = message.baselineDatabase;
-    }
-    if (message.baselineSheetName !== "") {
-      obj.baselineSheetName = message.baselineSheetName;
-    }
-    if (message.type !== 0) {
-      obj.type = schemaDesign_TypeToJSON(message.type);
-    }
-    if (message.etag !== "") {
-      obj.etag = message.etag;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.title !== undefined && (obj.title = message.title);
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.schemaMetadata !== undefined &&
+      (obj.schemaMetadata = message.schemaMetadata ? DatabaseMetadata.toJSON(message.schemaMetadata) : undefined);
+    message.baselineSchema !== undefined && (obj.baselineSchema = message.baselineSchema);
+    message.baselineSchemaMetadata !== undefined && (obj.baselineSchemaMetadata = message.baselineSchemaMetadata
+      ? DatabaseMetadata.toJSON(message.baselineSchemaMetadata)
+      : undefined);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.baselineDatabase !== undefined && (obj.baselineDatabase = message.baselineDatabase);
+    message.baselineSheetName !== undefined && (obj.baselineSheetName = message.baselineSheetName);
+    message.type !== undefined && (obj.type = schemaDesign_TypeToJSON(message.type));
+    message.etag !== undefined && (obj.etag = message.etag);
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.updater !== undefined && (obj.updater = message.updater);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     return obj;
   },
 
   create(base?: DeepPartial<SchemaDesign>): SchemaDesign {
     return SchemaDesign.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SchemaDesign>): SchemaDesign {
     const message = createBaseSchemaDesign();
     message.name = object.name ?? "";
@@ -537,15 +511,14 @@ export const GetSchemaDesignRequest = {
 
   toJSON(message: GetSchemaDesignRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<GetSchemaDesignRequest>): GetSchemaDesignRequest {
     return GetSchemaDesignRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<GetSchemaDesignRequest>): GetSchemaDesignRequest {
     const message = createBaseGetSchemaDesignRequest();
     message.name = object.name ?? "";
@@ -629,24 +602,17 @@ export const ListSchemaDesignsRequest = {
 
   toJSON(message: ListSchemaDesignsRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.filter !== "") {
-      obj.filter = message.filter;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.filter !== undefined && (obj.filter = message.filter);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListSchemaDesignsRequest>): ListSchemaDesignsRequest {
     return ListSchemaDesignsRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListSchemaDesignsRequest>): ListSchemaDesignsRequest {
     const message = createBaseListSchemaDesignsRequest();
     message.parent = object.parent ?? "";
@@ -713,18 +679,19 @@ export const ListSchemaDesignsResponse = {
 
   toJSON(message: ListSchemaDesignsResponse): unknown {
     const obj: any = {};
-    if (message.schemaDesigns?.length) {
-      obj.schemaDesigns = message.schemaDesigns.map((e) => SchemaDesign.toJSON(e));
+    if (message.schemaDesigns) {
+      obj.schemaDesigns = message.schemaDesigns.map((e) => e ? SchemaDesign.toJSON(e) : undefined);
+    } else {
+      obj.schemaDesigns = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListSchemaDesignsResponse>): ListSchemaDesignsResponse {
     return ListSchemaDesignsResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListSchemaDesignsResponse>): ListSchemaDesignsResponse {
     const message = createBaseListSchemaDesignsResponse();
     message.schemaDesigns = object.schemaDesigns?.map((e) => SchemaDesign.fromPartial(e)) || [];
@@ -787,18 +754,16 @@ export const CreateSchemaDesignRequest = {
 
   toJSON(message: CreateSchemaDesignRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.schemaDesign !== undefined) {
-      obj.schemaDesign = SchemaDesign.toJSON(message.schemaDesign);
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.schemaDesign !== undefined &&
+      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<CreateSchemaDesignRequest>): CreateSchemaDesignRequest {
     return CreateSchemaDesignRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CreateSchemaDesignRequest>): CreateSchemaDesignRequest {
     const message = createBaseCreateSchemaDesignRequest();
     message.parent = object.parent ?? "";
@@ -863,18 +828,16 @@ export const UpdateSchemaDesignRequest = {
 
   toJSON(message: UpdateSchemaDesignRequest): unknown {
     const obj: any = {};
-    if (message.schemaDesign !== undefined) {
-      obj.schemaDesign = SchemaDesign.toJSON(message.schemaDesign);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.schemaDesign !== undefined &&
+      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
   create(base?: DeepPartial<UpdateSchemaDesignRequest>): UpdateSchemaDesignRequest {
     return UpdateSchemaDesignRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UpdateSchemaDesignRequest>): UpdateSchemaDesignRequest {
     const message = createBaseUpdateSchemaDesignRequest();
     message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
@@ -939,18 +902,15 @@ export const MergeSchemaDesignRequest = {
 
   toJSON(message: MergeSchemaDesignRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.targetName !== "") {
-      obj.targetName = message.targetName;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.targetName !== undefined && (obj.targetName = message.targetName);
     return obj;
   },
 
   create(base?: DeepPartial<MergeSchemaDesignRequest>): MergeSchemaDesignRequest {
     return MergeSchemaDesignRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<MergeSchemaDesignRequest>): MergeSchemaDesignRequest {
     const message = createBaseMergeSchemaDesignRequest();
     message.name = object.name ?? "";
@@ -1013,18 +973,15 @@ export const ParseSchemaStringRequest = {
 
   toJSON(message: ParseSchemaStringRequest): unknown {
     const obj: any = {};
-    if (message.schemaString !== "") {
-      obj.schemaString = message.schemaString;
-    }
-    if (message.engine !== 0) {
-      obj.engine = engineToJSON(message.engine);
-    }
+    message.schemaString !== undefined && (obj.schemaString = message.schemaString);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     return obj;
   },
 
   create(base?: DeepPartial<ParseSchemaStringRequest>): ParseSchemaStringRequest {
     return ParseSchemaStringRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ParseSchemaStringRequest>): ParseSchemaStringRequest {
     const message = createBaseParseSchemaStringRequest();
     message.schemaString = object.schemaString ?? "";
@@ -1076,15 +1033,15 @@ export const ParseSchemaStringResponse = {
 
   toJSON(message: ParseSchemaStringResponse): unknown {
     const obj: any = {};
-    if (message.schemaMetadata !== undefined) {
-      obj.schemaMetadata = DatabaseMetadata.toJSON(message.schemaMetadata);
-    }
+    message.schemaMetadata !== undefined &&
+      (obj.schemaMetadata = message.schemaMetadata ? DatabaseMetadata.toJSON(message.schemaMetadata) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<ParseSchemaStringResponse>): ParseSchemaStringResponse {
     return ParseSchemaStringResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ParseSchemaStringResponse>): ParseSchemaStringResponse {
     const message = createBaseParseSchemaStringResponse();
     message.schemaMetadata = (object.schemaMetadata !== undefined && object.schemaMetadata !== null)
@@ -1135,15 +1092,14 @@ export const DeleteSchemaDesignRequest = {
 
   toJSON(message: DeleteSchemaDesignRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<DeleteSchemaDesignRequest>): DeleteSchemaDesignRequest {
     return DeleteSchemaDesignRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DeleteSchemaDesignRequest>): DeleteSchemaDesignRequest {
     const message = createBaseDeleteSchemaDesignRequest();
     message.name = object.name ?? "";

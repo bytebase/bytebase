@@ -140,6 +140,7 @@ export const GetActuatorInfoRequest = {
   create(base?: DeepPartial<GetActuatorInfoRequest>): GetActuatorInfoRequest {
     return GetActuatorInfoRequest.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<GetActuatorInfoRequest>): GetActuatorInfoRequest {
     const message = createBaseGetActuatorInfoRequest();
     return message;
@@ -200,18 +201,16 @@ export const UpdateActuatorInfoRequest = {
 
   toJSON(message: UpdateActuatorInfoRequest): unknown {
     const obj: any = {};
-    if (message.actuator !== undefined) {
-      obj.actuator = ActuatorInfo.toJSON(message.actuator);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.actuator !== undefined &&
+      (obj.actuator = message.actuator ? ActuatorInfo.toJSON(message.actuator) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
   create(base?: DeepPartial<UpdateActuatorInfoRequest>): UpdateActuatorInfoRequest {
     return UpdateActuatorInfoRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UpdateActuatorInfoRequest>): UpdateActuatorInfoRequest {
     const message = createBaseUpdateActuatorInfoRequest();
     message.actuator = (object.actuator !== undefined && object.actuator !== null)
@@ -276,18 +275,15 @@ export const ListDebugLogRequest = {
 
   toJSON(message: ListDebugLogRequest): unknown {
     const obj: any = {};
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListDebugLogRequest>): ListDebugLogRequest {
     return ListDebugLogRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListDebugLogRequest>): ListDebugLogRequest {
     const message = createBaseListDebugLogRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -350,18 +346,19 @@ export const ListDebugLogResponse = {
 
   toJSON(message: ListDebugLogResponse): unknown {
     const obj: any = {};
-    if (message.logs?.length) {
-      obj.logs = message.logs.map((e) => DebugLog.toJSON(e));
+    if (message.logs) {
+      obj.logs = message.logs.map((e) => e ? DebugLog.toJSON(e) : undefined);
+    } else {
+      obj.logs = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListDebugLogResponse>): ListDebugLogResponse {
     return ListDebugLogResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListDebugLogResponse>): ListDebugLogResponse {
     const message = createBaseListDebugLogResponse();
     message.logs = object.logs?.map((e) => DebugLog.fromPartial(e)) || [];
@@ -457,27 +454,18 @@ export const DebugLog = {
 
   toJSON(message: DebugLog): unknown {
     const obj: any = {};
-    if (message.recordTime !== undefined) {
-      obj.recordTime = message.recordTime.toISOString();
-    }
-    if (message.requestPath !== "") {
-      obj.requestPath = message.requestPath;
-    }
-    if (message.role !== "") {
-      obj.role = message.role;
-    }
-    if (message.error !== "") {
-      obj.error = message.error;
-    }
-    if (message.stackTrace !== "") {
-      obj.stackTrace = message.stackTrace;
-    }
+    message.recordTime !== undefined && (obj.recordTime = message.recordTime.toISOString());
+    message.requestPath !== undefined && (obj.requestPath = message.requestPath);
+    message.role !== undefined && (obj.role = message.role);
+    message.error !== undefined && (obj.error = message.error);
+    message.stackTrace !== undefined && (obj.stackTrace = message.stackTrace);
     return obj;
   },
 
   create(base?: DeepPartial<DebugLog>): DebugLog {
     return DebugLog.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DebugLog>): DebugLog {
     const message = createBaseDebugLog();
     message.recordTime = object.recordTime ?? undefined;
@@ -526,6 +514,7 @@ export const DeleteCacheRequest = {
   create(base?: DeepPartial<DeleteCacheRequest>): DeleteCacheRequest {
     return DeleteCacheRequest.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<DeleteCacheRequest>): DeleteCacheRequest {
     const message = createBaseDeleteCacheRequest();
     return message;
@@ -759,60 +748,30 @@ export const ActuatorInfo = {
 
   toJSON(message: ActuatorInfo): unknown {
     const obj: any = {};
-    if (message.version !== "") {
-      obj.version = message.version;
-    }
-    if (message.gitCommit !== "") {
-      obj.gitCommit = message.gitCommit;
-    }
-    if (message.readonly === true) {
-      obj.readonly = message.readonly;
-    }
-    if (message.saas === true) {
-      obj.saas = message.saas;
-    }
-    if (message.demoName !== "") {
-      obj.demoName = message.demoName;
-    }
-    if (message.host !== "") {
-      obj.host = message.host;
-    }
-    if (message.port !== "") {
-      obj.port = message.port;
-    }
-    if (message.externalUrl !== "") {
-      obj.externalUrl = message.externalUrl;
-    }
-    if (message.needAdminSetup === true) {
-      obj.needAdminSetup = message.needAdminSetup;
-    }
-    if (message.disallowSignup === true) {
-      obj.disallowSignup = message.disallowSignup;
-    }
-    if (message.lastActiveTime !== undefined) {
-      obj.lastActiveTime = message.lastActiveTime.toISOString();
-    }
-    if (message.require2fa === true) {
-      obj.require2fa = message.require2fa;
-    }
-    if (message.workspaceId !== "") {
-      obj.workspaceId = message.workspaceId;
-    }
-    if (message.gitopsWebhookUrl !== "") {
-      obj.gitopsWebhookUrl = message.gitopsWebhookUrl;
-    }
-    if (message.debug === true) {
-      obj.debug = message.debug;
-    }
-    if (message.developmentUseV2Scheduler === true) {
-      obj.developmentUseV2Scheduler = message.developmentUseV2Scheduler;
-    }
+    message.version !== undefined && (obj.version = message.version);
+    message.gitCommit !== undefined && (obj.gitCommit = message.gitCommit);
+    message.readonly !== undefined && (obj.readonly = message.readonly);
+    message.saas !== undefined && (obj.saas = message.saas);
+    message.demoName !== undefined && (obj.demoName = message.demoName);
+    message.host !== undefined && (obj.host = message.host);
+    message.port !== undefined && (obj.port = message.port);
+    message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
+    message.needAdminSetup !== undefined && (obj.needAdminSetup = message.needAdminSetup);
+    message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
+    message.lastActiveTime !== undefined && (obj.lastActiveTime = message.lastActiveTime.toISOString());
+    message.require2fa !== undefined && (obj.require2fa = message.require2fa);
+    message.workspaceId !== undefined && (obj.workspaceId = message.workspaceId);
+    message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
+    message.debug !== undefined && (obj.debug = message.debug);
+    message.developmentUseV2Scheduler !== undefined &&
+      (obj.developmentUseV2Scheduler = message.developmentUseV2Scheduler);
     return obj;
   },
 
   create(base?: DeepPartial<ActuatorInfo>): ActuatorInfo {
     return ActuatorInfo.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ActuatorInfo>): ActuatorInfo {
     const message = createBaseActuatorInfo();
     message.version = object.version ?? "";
