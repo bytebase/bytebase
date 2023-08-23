@@ -1865,7 +1865,8 @@
     "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
     "sheet": {
       "choose-sheet": "选择工作表",
-      "self": "工作表"
+      "self": "工作表",
+      "connection": "连接"
     },
     "tab": {
       "unsaved": "未保存"
