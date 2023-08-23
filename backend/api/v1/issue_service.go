@@ -631,7 +631,6 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 }
 
 // UpdateIssue updates the issue.
-// It can only update approval_finding_done to false.
 func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssueRequest) (*v1pb.Issue, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if request.UpdateMask == nil {
