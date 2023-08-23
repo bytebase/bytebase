@@ -35,7 +35,8 @@ export type TaskStatus =
   | "RUNNING"
   | "DONE"
   | "FAILED"
-  | "CANCELED";
+  | "CANCELED"
+  | "SKIPPED";
 
 export type TaskGeneralPayload = {
   statement: string;
