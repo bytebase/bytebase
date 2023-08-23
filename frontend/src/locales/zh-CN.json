@@ -2799,6 +2799,15 @@
     "personal-draft": "个人草稿",
     "save-draft": "保存草稿",
     "merge-to-main": "合并到主版本",
+    "diff-editor": {
+      "self": "Diff 编辑器",
+      "resolve": "解决",
+      "latest-schema": "最新 Schema",
+      "editing-schema": "正在编辑的 Schema",
+      "auto-merge-failed": "自动合并失败",
+      "need-to-resolve-conflicts": "Schema 设计已经被其他用户更新，您需要先解决可能存在的冲突。",
+      "resolve-and-merge-again": "解决冲突并再次合并"
+    },
     "tables": "表",
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
@@ -2807,7 +2816,8 @@
     "select-database-placeholder": "选择数据库 (仅限 MySQL)",
     "message": {
       "created-succeed": "Schema 设计创建成功",
-      "updated-succeed": "Schema 设计更新成功"
+      "updated-succeed": "Schema 设计更新成功",
+      "merge-to-main-successfully": "成功合并到主版本"
     }
   }
 }

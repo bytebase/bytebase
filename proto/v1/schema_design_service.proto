@@ -87,7 +87,8 @@ message SchemaDesign {
   string baseline_database = 8 [(google.api.field_behavior) = IMMUTABLE];
 
   // The name of the baseline sheet.
-  // Format: projects/{project}/sheets/{sheet}
+  // For main branch, its format will be: projects/{project}/sheets/{sheet}
+  // For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
   string baseline_sheet_name = 9 [(google.api.field_behavior) = IMMUTABLE];
 
   enum Type {
