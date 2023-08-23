@@ -179,6 +179,9 @@ const icon = computed((): ActionIconType => {
       case "FAILED": {
         return "fail";
       }
+      case "SKIPPED": {
+        return "skip";
+      }
       case "PENDING_APPROVAL": {
         return "avatar"; // stale approval dismissed.
       }
@@ -202,12 +205,6 @@ const icon = computed((): ActionIconType => {
       }
       case "DONE": {
         return "complete";
-        // TODO check if skipped
-        // if (payload.oldStatus === "RUNNING") {
-        //   return "complete";
-        // } else {
-        //   return "skip";
-        // }
       }
       case "FAILED": {
         return "fail";

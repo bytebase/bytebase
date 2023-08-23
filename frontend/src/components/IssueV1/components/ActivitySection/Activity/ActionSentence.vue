@@ -140,6 +140,10 @@ const renderActionSentence = () => {
           params.verb = t("activity.sentence.canceled");
           break;
         }
+        case "SKIPPED": {
+          params.verb = t("activity.sentence.skipped");
+          break;
+        }
         default:
           params.verb = t("activity.sentence.changed");
       }
@@ -155,17 +159,6 @@ const renderActionSentence = () => {
       const payload = JSON.parse(
         activity.payload
       ) as ActivityPipelineTaskRunStatusUpdatePayload;
-      // if (payload.newStatus === "PENDING_APPROVAL") {
-      //   // stale approval dismissed.
-
-      //   const task = findTaskByUID(issue.rolloutEntity, String(payload.taskId));
-      //   const taskName = t("activity.sentence.task-name", {
-      //     name: task.title,
-      //   });
-      //   return t("activity.sentence.dismissed-stale-approval", {
-      //     task: taskName,
-      //   });
-      // }
       const params: VerbTypeTarget = {
         activity,
         verb: "",
@@ -186,12 +179,6 @@ const renderActionSentence = () => {
         }
         case "DONE": {
           params.verb = t("activity.sentence.completed");
-          // TODO: check if skipped
-          // if (payload.oldStatus === "RUNNING") {
-          //   params.verb = t("activity.sentence.completed");
-          // } else {
-          //   params.verb = t("activity.sentence.skipped");
-          // }
           break;
         }
         case "FAILED": {
