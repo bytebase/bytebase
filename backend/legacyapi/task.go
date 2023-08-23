@@ -23,6 +23,8 @@ const (
 	TaskFailed TaskStatus = "FAILED"
 	// TaskCanceled is the task status for CANCELED.
 	TaskCanceled TaskStatus = "CANCELED"
+	// TaskSkipped is the task status for SKIPPED.
+	TaskSkipped TaskStatus = "SKIPPED"
 )
 
 // TaskType is the type of a task.
@@ -293,7 +295,8 @@ type Progress struct {
 
 // TaskFind is the API message for finding tasks.
 type TaskFind struct {
-	ID *int
+	ID  *int
+	IDs *[]int
 
 	// Related fields
 	PipelineID *int
