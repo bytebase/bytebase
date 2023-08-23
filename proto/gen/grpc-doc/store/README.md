@@ -134,6 +134,8 @@
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
+    - [SemanticCategorySetting](#bytebase-store-SemanticCategorySetting)
+    - [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -2063,6 +2065,40 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SemanticCategorySetting"></a>
+
+### SemanticCategorySetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| categories | [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SemanticCategorySetting-SemanticCategory"></a>
+
+### SemanticCategorySetting.SemanticCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic category. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| title | [string](#string) |  | the title of the category item, it should not be empty. |
+| description | [string](#string) |  | the description of the category item, it can be empty.
+
+We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
 
 
 

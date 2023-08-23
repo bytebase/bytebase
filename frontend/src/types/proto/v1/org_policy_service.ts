@@ -260,39 +260,6 @@ export function backupPlanScheduleToJSON(object: BackupPlanSchedule): string {
   }
 }
 
-export enum SensitiveDataMaskType {
-  MASK_TYPE_UNSPECIFIED = 0,
-  DEFAULT = 1,
-  UNRECOGNIZED = -1,
-}
-
-export function sensitiveDataMaskTypeFromJSON(object: any): SensitiveDataMaskType {
-  switch (object) {
-    case 0:
-    case "MASK_TYPE_UNSPECIFIED":
-      return SensitiveDataMaskType.MASK_TYPE_UNSPECIFIED;
-    case 1:
-    case "DEFAULT":
-      return SensitiveDataMaskType.DEFAULT;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SensitiveDataMaskType.UNRECOGNIZED;
-  }
-}
-
-export function sensitiveDataMaskTypeToJSON(object: SensitiveDataMaskType): string {
-  switch (object) {
-    case SensitiveDataMaskType.MASK_TYPE_UNSPECIFIED:
-      return "MASK_TYPE_UNSPECIFIED";
-    case SensitiveDataMaskType.DEFAULT:
-      return "DEFAULT";
-    case SensitiveDataMaskType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum SQLReviewRuleLevel {
   LEVEL_UNSPECIFIED = 0,
   ERROR = 1,
@@ -497,7 +464,8 @@ export interface SensitiveData {
   schema: string;
   table: string;
   column: string;
-  maskType: SensitiveDataMaskType;
+  dataCategoryId: string;
+  maskingLevel: MaskingLevel;
 }
 
 export interface SQLReviewPolicy {
@@ -1785,7 +1753,7 @@ export const SensitiveDataPolicy = {
 };
 
 function createBaseSensitiveData(): SensitiveData {
-  return { schema: "", table: "", column: "", maskType: 0 };
+  return { schema: "", table: "", column: "", dataCategoryId: "", maskingLevel: 0 };
 }
 
 export const SensitiveData = {
@@ -1799,8 +1767,11 @@ export const SensitiveData = {
     if (message.column !== "") {
       writer.uint32(26).string(message.column);
     }
-    if (message.maskType !== 0) {
-      writer.uint32(32).int32(message.maskType);
+    if (message.dataCategoryId !== "") {
+      writer.uint32(34).string(message.dataCategoryId);
+    }
+    if (message.maskingLevel !== 0) {
+      writer.uint32(40).int32(message.maskingLevel);
     }
     return writer;
   },
@@ -1834,11 +1805,18 @@ export const SensitiveData = {
           message.column = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.maskType = reader.int32() as any;
+          message.dataCategoryId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.maskingLevel = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1854,7 +1832,8 @@ export const SensitiveData = {
       schema: isSet(object.schema) ? String(object.schema) : "",
       table: isSet(object.table) ? String(object.table) : "",
       column: isSet(object.column) ? String(object.column) : "",
-      maskType: isSet(object.maskType) ? sensitiveDataMaskTypeFromJSON(object.maskType) : 0,
+      dataCategoryId: isSet(object.dataCategoryId) ? String(object.dataCategoryId) : "",
+      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
   },
 
@@ -1863,7 +1842,8 @@ export const SensitiveData = {
     message.schema !== undefined && (obj.schema = message.schema);
     message.table !== undefined && (obj.table = message.table);
     message.column !== undefined && (obj.column = message.column);
-    message.maskType !== undefined && (obj.maskType = sensitiveDataMaskTypeToJSON(message.maskType));
+    message.dataCategoryId !== undefined && (obj.dataCategoryId = message.dataCategoryId);
+    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
     return obj;
   },
 
@@ -1876,7 +1856,8 @@ export const SensitiveData = {
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
-    message.maskType = object.maskType ?? 0;
+    message.dataCategoryId = object.dataCategoryId ?? "";
+    message.maskingLevel = object.maskingLevel ?? 0;
     return message;
   },
 };
