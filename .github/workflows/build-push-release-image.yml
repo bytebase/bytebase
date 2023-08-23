@@ -6,6 +6,10 @@ on:
       # Run on pushing branches like `release/1.0.0`
       - "release/*.*.*"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-release-image:
     runs-on: [self-hosted, golangci]
