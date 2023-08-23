@@ -30,7 +30,7 @@
               {{ $t("schema-designer.personal-draft") }}
             </NTag>
             <NDropdown
-              v-if="!state.isEditing"
+              v-if="!state.isEditing && schemaDesignDrafts.length > 0"
               class="max-w-[10rem]"
               trigger="click"
               :options="schemaDesignDraftDropdownOptions"
