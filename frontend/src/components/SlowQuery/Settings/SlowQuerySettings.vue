@@ -13,7 +13,7 @@
     </div>
     <div class="flex items-center justify-between">
       <EnvironmentTabFilter
-        :environment="state.filter.environment?.uid ?? String(UNKNOWN_ID)"
+        :environment="state.filter.environment?.name"
         :include-all="true"
         @update:environment="changeEnvironment"
       />
@@ -132,9 +132,9 @@ const prepare = async () => {
   }
 };
 
-const changeEnvironment = (id: string | undefined) => {
+const changeEnvironment = (name: string | undefined) => {
   state.filter.environment = environmentList.value.find(
-    (env) => env.uid === id
+    (env) => env.name === name
   );
 };
 
