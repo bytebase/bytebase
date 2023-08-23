@@ -210,7 +210,7 @@ import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
-import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
+import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
 import {
   bytesToString,
   hasWorkspacePermissionV1,
@@ -300,16 +300,16 @@ onMounted(() => {
 const sensitiveDataPolicy = usePolicyByParentAndType(
   computed(() => ({
     parentPath: database.value.name,
-    policyType: PolicyType.SENSITIVE_DATA,
+    policyType: PolicyType.MASKING,
   }))
 );
 
-const sensitiveDataList = computed((): SensitiveData[] => {
+const sensitiveDataList = computed((): MaskData[] => {
   const policy = sensitiveDataPolicy.value;
-  if (!policy || !policy.sensitiveDataPolicy) {
+  if (!policy || !policy.maskingPolicy) {
     return [];
   }
 
-  return policy.sensitiveDataPolicy.sensitiveData;
+  return policy.maskingPolicy.maskData;
 });
 </script>
