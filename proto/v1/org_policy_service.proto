@@ -338,7 +338,7 @@ message MaskingExceptionPolicy {
     // Members is the list of principals who bind to this exception policy instance.
     //
     // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-    repeated string members  = 3;
+    repeated string members = 3;
 
     // The condition that is associated with this exception policy instance.
     google.type.Expr condition = 4;
