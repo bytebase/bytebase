@@ -297,12 +297,8 @@ message SensitiveData {
   string schema = 1;
   string table = 2;
   string column = 3;
-  SensitiveDataMaskType mask_type = 4;
-}
-
-enum SensitiveDataMaskType {
-  MASK_TYPE_UNSPECIFIED = 0;
-  DEFAULT = 1;
+  string semantic_category_id = 4;
+  MaskingLevel masking_level = 5;
 }
 
 message SQLReviewPolicy {

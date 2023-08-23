@@ -237,6 +237,22 @@ export interface DataClassificationSetting_DataClassificationConfig_Classificati
   value?: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
 }
 
+export interface SemanticCategorySetting {
+  categories: SemanticCategorySetting_SemanticCategory[];
+}
+
+export interface SemanticCategorySetting_SemanticCategory {
+  /**
+   * id is the uuid for semantic category.
+   * The id should in [0-9]+-[0-9]+-[0-9]+ format.
+   */
+  id: string;
+  /** the title of the category item, it should not be empty. */
+  title: string;
+  /** the description of the category item, it can be empty. */
+  description: string;
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return {
     externalUrl: "",
@@ -1717,6 +1733,156 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
     message.value = (object.value !== undefined && object.value !== null)
       ? DataClassificationSetting_DataClassificationConfig_DataClassification.fromPartial(object.value)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseSemanticCategorySetting(): SemanticCategorySetting {
+  return { categories: [] };
+}
+
+export const SemanticCategorySetting = {
+  encode(message: SemanticCategorySetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.categories) {
+      SemanticCategorySetting_SemanticCategory.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticCategorySetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSemanticCategorySetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.categories.push(SemanticCategorySetting_SemanticCategory.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SemanticCategorySetting {
+    return {
+      categories: Array.isArray(object?.categories)
+        ? object.categories.map((e: any) => SemanticCategorySetting_SemanticCategory.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SemanticCategorySetting): unknown {
+    const obj: any = {};
+    if (message.categories) {
+      obj.categories = message.categories.map((e) =>
+        e ? SemanticCategorySetting_SemanticCategory.toJSON(e) : undefined
+      );
+    } else {
+      obj.categories = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SemanticCategorySetting>): SemanticCategorySetting {
+    return SemanticCategorySetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SemanticCategorySetting>): SemanticCategorySetting {
+    const message = createBaseSemanticCategorySetting();
+    message.categories = object.categories?.map((e) => SemanticCategorySetting_SemanticCategory.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSemanticCategorySetting_SemanticCategory(): SemanticCategorySetting_SemanticCategory {
+  return { id: "", title: "", description: "" };
+}
+
+export const SemanticCategorySetting_SemanticCategory = {
+  encode(message: SemanticCategorySetting_SemanticCategory, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticCategorySetting_SemanticCategory {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSemanticCategorySetting_SemanticCategory();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SemanticCategorySetting_SemanticCategory {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+    };
+  },
+
+  toJSON(message: SemanticCategorySetting_SemanticCategory): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SemanticCategorySetting_SemanticCategory>): SemanticCategorySetting_SemanticCategory {
+    return SemanticCategorySetting_SemanticCategory.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SemanticCategorySetting_SemanticCategory>): SemanticCategorySetting_SemanticCategory {
+    const message = createBaseSemanticCategorySetting_SemanticCategory();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
     return message;
   },
 };
