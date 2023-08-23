@@ -429,18 +429,20 @@ export const Http = {
 
   toJSON(message: Http): unknown {
     const obj: any = {};
-    if (message.rules?.length) {
-      obj.rules = message.rules.map((e) => HttpRule.toJSON(e));
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? HttpRule.toJSON(e) : undefined);
+    } else {
+      obj.rules = [];
     }
-    if (message.fullyDecodeReservedExpansion === true) {
-      obj.fullyDecodeReservedExpansion = message.fullyDecodeReservedExpansion;
-    }
+    message.fullyDecodeReservedExpansion !== undefined &&
+      (obj.fullyDecodeReservedExpansion = message.fullyDecodeReservedExpansion);
     return obj;
   },
 
   create(base?: DeepPartial<Http>): Http {
     return Http.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Http>): Http {
     const message = createBaseHttp();
     message.rules = object.rules?.map((e) => HttpRule.fromPartial(e)) || [];
@@ -604,35 +606,20 @@ export const HttpRule = {
 
   toJSON(message: HttpRule): unknown {
     const obj: any = {};
-    if (message.selector !== "") {
-      obj.selector = message.selector;
-    }
-    if (message.get !== undefined) {
-      obj.get = message.get;
-    }
-    if (message.put !== undefined) {
-      obj.put = message.put;
-    }
-    if (message.post !== undefined) {
-      obj.post = message.post;
-    }
-    if (message.delete !== undefined) {
-      obj.delete = message.delete;
-    }
-    if (message.patch !== undefined) {
-      obj.patch = message.patch;
-    }
-    if (message.custom !== undefined) {
-      obj.custom = CustomHttpPattern.toJSON(message.custom);
-    }
-    if (message.body !== "") {
-      obj.body = message.body;
-    }
-    if (message.responseBody !== "") {
-      obj.responseBody = message.responseBody;
-    }
-    if (message.additionalBindings?.length) {
-      obj.additionalBindings = message.additionalBindings.map((e) => HttpRule.toJSON(e));
+    message.selector !== undefined && (obj.selector = message.selector);
+    message.get !== undefined && (obj.get = message.get);
+    message.put !== undefined && (obj.put = message.put);
+    message.post !== undefined && (obj.post = message.post);
+    message.delete !== undefined && (obj.delete = message.delete);
+    message.patch !== undefined && (obj.patch = message.patch);
+    message.custom !== undefined &&
+      (obj.custom = message.custom ? CustomHttpPattern.toJSON(message.custom) : undefined);
+    message.body !== undefined && (obj.body = message.body);
+    message.responseBody !== undefined && (obj.responseBody = message.responseBody);
+    if (message.additionalBindings) {
+      obj.additionalBindings = message.additionalBindings.map((e) => e ? HttpRule.toJSON(e) : undefined);
+    } else {
+      obj.additionalBindings = [];
     }
     return obj;
   },
@@ -640,6 +627,7 @@ export const HttpRule = {
   create(base?: DeepPartial<HttpRule>): HttpRule {
     return HttpRule.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<HttpRule>): HttpRule {
     const message = createBaseHttpRule();
     message.selector = object.selector ?? "";
@@ -709,18 +697,15 @@ export const CustomHttpPattern = {
 
   toJSON(message: CustomHttpPattern): unknown {
     const obj: any = {};
-    if (message.kind !== "") {
-      obj.kind = message.kind;
-    }
-    if (message.path !== "") {
-      obj.path = message.path;
-    }
+    message.kind !== undefined && (obj.kind = message.kind);
+    message.path !== undefined && (obj.path = message.path);
     return obj;
   },
 
   create(base?: DeepPartial<CustomHttpPattern>): CustomHttpPattern {
     return CustomHttpPattern.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CustomHttpPattern>): CustomHttpPattern {
     const message = createBaseCustomHttpPattern();
     message.kind = object.kind ?? "";

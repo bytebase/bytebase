@@ -62,15 +62,14 @@ export const ParseRequest = {
 
   toJSON(message: ParseRequest): unknown {
     const obj: any = {};
-    if (message.expression !== "") {
-      obj.expression = message.expression;
-    }
+    message.expression !== undefined && (obj.expression = message.expression);
     return obj;
   },
 
   create(base?: DeepPartial<ParseRequest>): ParseRequest {
     return ParseRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ParseRequest>): ParseRequest {
     const message = createBaseParseRequest();
     message.expression = object.expression ?? "";
@@ -119,15 +118,15 @@ export const ParseResponse = {
 
   toJSON(message: ParseResponse): unknown {
     const obj: any = {};
-    if (message.expression !== undefined) {
-      obj.expression = ParsedExpr.toJSON(message.expression);
-    }
+    message.expression !== undefined &&
+      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<ParseResponse>): ParseResponse {
     return ParseResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ParseResponse>): ParseResponse {
     const message = createBaseParseResponse();
     message.expression = (object.expression !== undefined && object.expression !== null)
@@ -178,15 +177,15 @@ export const DeparseRequest = {
 
   toJSON(message: DeparseRequest): unknown {
     const obj: any = {};
-    if (message.expression !== undefined) {
-      obj.expression = ParsedExpr.toJSON(message.expression);
-    }
+    message.expression !== undefined &&
+      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<DeparseRequest>): DeparseRequest {
     return DeparseRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DeparseRequest>): DeparseRequest {
     const message = createBaseDeparseRequest();
     message.expression = (object.expression !== undefined && object.expression !== null)
@@ -237,15 +236,14 @@ export const DeparseResponse = {
 
   toJSON(message: DeparseResponse): unknown {
     const obj: any = {};
-    if (message.expression !== "") {
-      obj.expression = message.expression;
-    }
+    message.expression !== undefined && (obj.expression = message.expression);
     return obj;
   },
 
   create(base?: DeepPartial<DeparseResponse>): DeparseResponse {
     return DeparseResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DeparseResponse>): DeparseResponse {
     const message = createBaseDeparseResponse();
     message.expression = object.expression ?? "";

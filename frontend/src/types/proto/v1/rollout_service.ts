@@ -1,10 +1,10 @@
 /* eslint-disable */
+import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { ChangedResources } from "./database_service";
-import Long = require("long");
 
 export const protobufPackage = "bytebase.v1";
 
@@ -1133,15 +1133,14 @@ export const GetPlanRequest = {
 
   toJSON(message: GetPlanRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<GetPlanRequest>): GetPlanRequest {
     return GetPlanRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<GetPlanRequest>): GetPlanRequest {
     const message = createBaseGetPlanRequest();
     message.name = object.name ?? "";
@@ -1214,21 +1213,16 @@ export const ListPlansRequest = {
 
   toJSON(message: ListPlansRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListPlansRequest>): ListPlansRequest {
     return ListPlansRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListPlansRequest>): ListPlansRequest {
     const message = createBaseListPlansRequest();
     message.parent = object.parent ?? "";
@@ -1292,18 +1286,19 @@ export const ListPlansResponse = {
 
   toJSON(message: ListPlansResponse): unknown {
     const obj: any = {};
-    if (message.plans?.length) {
-      obj.plans = message.plans.map((e) => Plan.toJSON(e));
+    if (message.plans) {
+      obj.plans = message.plans.map((e) => e ? Plan.toJSON(e) : undefined);
+    } else {
+      obj.plans = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListPlansResponse>): ListPlansResponse {
     return ListPlansResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListPlansResponse>): ListPlansResponse {
     const message = createBaseListPlansResponse();
     message.plans = object.plans?.map((e) => Plan.fromPartial(e)) || [];
@@ -1366,18 +1361,15 @@ export const CreatePlanRequest = {
 
   toJSON(message: CreatePlanRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.plan !== undefined) {
-      obj.plan = Plan.toJSON(message.plan);
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.plan !== undefined && (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<CreatePlanRequest>): CreatePlanRequest {
     return CreatePlanRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CreatePlanRequest>): CreatePlanRequest {
     const message = createBaseCreatePlanRequest();
     message.parent = object.parent ?? "";
@@ -1440,18 +1432,15 @@ export const UpdatePlanRequest = {
 
   toJSON(message: UpdatePlanRequest): unknown {
     const obj: any = {};
-    if (message.plan !== undefined) {
-      obj.plan = Plan.toJSON(message.plan);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.plan !== undefined && (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
   create(base?: DeepPartial<UpdatePlanRequest>): UpdatePlanRequest {
     return UpdatePlanRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UpdatePlanRequest>): UpdatePlanRequest {
     const message = createBaseUpdatePlanRequest();
     message.plan = (object.plan !== undefined && object.plan !== null) ? Plan.fromPartial(object.plan) : undefined;
@@ -1558,23 +1547,15 @@ export const Plan = {
 
   toJSON(message: Plan): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.issue !== "") {
-      obj.issue = message.issue;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.steps?.length) {
-      obj.steps = message.steps.map((e) => Plan_Step.toJSON(e));
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.issue !== undefined && (obj.issue = message.issue);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    if (message.steps) {
+      obj.steps = message.steps.map((e) => e ? Plan_Step.toJSON(e) : undefined);
+    } else {
+      obj.steps = [];
     }
     return obj;
   },
@@ -1582,6 +1563,7 @@ export const Plan = {
   create(base?: DeepPartial<Plan>): Plan {
     return Plan.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Plan>): Plan {
     const message = createBasePlan();
     message.name = object.name ?? "";
@@ -1635,8 +1617,10 @@ export const Plan_Step = {
 
   toJSON(message: Plan_Step): unknown {
     const obj: any = {};
-    if (message.specs?.length) {
-      obj.specs = message.specs.map((e) => Plan_Spec.toJSON(e));
+    if (message.specs) {
+      obj.specs = message.specs.map((e) => e ? Plan_Spec.toJSON(e) : undefined);
+    } else {
+      obj.specs = [];
     }
     return obj;
   },
@@ -1644,6 +1628,7 @@ export const Plan_Step = {
   create(base?: DeepPartial<Plan_Step>): Plan_Step {
     return Plan_Step.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Plan_Step>): Plan_Step {
     const message = createBasePlan_Step();
     message.specs = object.specs?.map((e) => Plan_Spec.fromPartial(e)) || [];
@@ -1752,27 +1737,24 @@ export const Plan_Spec = {
 
   toJSON(message: Plan_Spec): unknown {
     const obj: any = {};
-    if (message.earliestAllowedTime !== undefined) {
-      obj.earliestAllowedTime = message.earliestAllowedTime.toISOString();
-    }
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.changeDatabaseConfig !== undefined) {
-      obj.changeDatabaseConfig = Plan_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
-    }
-    if (message.restoreDatabaseConfig !== undefined) {
-      obj.restoreDatabaseConfig = Plan_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig);
-    }
+    message.earliestAllowedTime !== undefined && (obj.earliestAllowedTime = message.earliestAllowedTime.toISOString());
+    message.id !== undefined && (obj.id = message.id);
+    message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
+      ? Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
+      : undefined);
+    message.changeDatabaseConfig !== undefined && (obj.changeDatabaseConfig = message.changeDatabaseConfig
+      ? Plan_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig)
+      : undefined);
+    message.restoreDatabaseConfig !== undefined && (obj.restoreDatabaseConfig = message.restoreDatabaseConfig
+      ? Plan_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<Plan_Spec>): Plan_Spec {
     return Plan_Spec.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Plan_Spec>): Plan_Spec {
     const message = createBasePlan_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
@@ -1940,38 +1922,19 @@ export const Plan_CreateDatabaseConfig = {
 
   toJSON(message: Plan_CreateDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
-    if (message.cluster !== "") {
-      obj.cluster = message.cluster;
-    }
-    if (message.owner !== "") {
-      obj.owner = message.owner;
-    }
-    if (message.backup !== "") {
-      obj.backup = message.backup;
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.database !== undefined && (obj.database = message.database);
+    message.table !== undefined && (obj.table = message.table);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
+    message.collation !== undefined && (obj.collation = message.collation);
+    message.cluster !== undefined && (obj.cluster = message.cluster);
+    message.owner !== undefined && (obj.owner = message.owner);
+    message.backup !== undefined && (obj.backup = message.backup);
+    obj.labels = {};
     if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
     }
     return obj;
   },
@@ -1979,6 +1942,7 @@ export const Plan_CreateDatabaseConfig = {
   create(base?: DeepPartial<Plan_CreateDatabaseConfig>): Plan_CreateDatabaseConfig {
     return Plan_CreateDatabaseConfig.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Plan_CreateDatabaseConfig>): Plan_CreateDatabaseConfig {
     const message = createBasePlan_CreateDatabaseConfig();
     message.target = object.target ?? "";
@@ -2050,18 +2014,15 @@ export const Plan_CreateDatabaseConfig_LabelsEntry = {
 
   toJSON(message: Plan_CreateDatabaseConfig_LabelsEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
   create(base?: DeepPartial<Plan_CreateDatabaseConfig_LabelsEntry>): Plan_CreateDatabaseConfig_LabelsEntry {
     return Plan_CreateDatabaseConfig_LabelsEntry.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Plan_CreateDatabaseConfig_LabelsEntry>): Plan_CreateDatabaseConfig_LabelsEntry {
     const message = createBasePlan_CreateDatabaseConfig_LabelsEntry();
     message.key = object.key ?? "";
@@ -2170,30 +2131,21 @@ export const Plan_ChangeDatabaseConfig = {
 
   toJSON(message: Plan_ChangeDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.type !== 0) {
-      obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type);
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    if (message.rollbackEnabled === true) {
-      obj.rollbackEnabled = message.rollbackEnabled;
-    }
-    if (message.rollbackDetail !== undefined) {
-      obj.rollbackDetail = Plan_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail);
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.type !== undefined && (obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type));
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
+    message.rollbackDetail !== undefined && (obj.rollbackDetail = message.rollbackDetail
+      ? Plan_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<Plan_ChangeDatabaseConfig>): Plan_ChangeDatabaseConfig {
     return Plan_ChangeDatabaseConfig.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Plan_ChangeDatabaseConfig>): Plan_ChangeDatabaseConfig {
     const message = createBasePlan_ChangeDatabaseConfig();
     message.target = object.target ?? "";
@@ -2262,18 +2214,15 @@ export const Plan_ChangeDatabaseConfig_RollbackDetail = {
 
   toJSON(message: Plan_ChangeDatabaseConfig_RollbackDetail): unknown {
     const obj: any = {};
-    if (message.rollbackFromTask !== "") {
-      obj.rollbackFromTask = message.rollbackFromTask;
-    }
-    if (message.rollbackFromIssue !== "") {
-      obj.rollbackFromIssue = message.rollbackFromIssue;
-    }
+    message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
+    message.rollbackFromIssue !== undefined && (obj.rollbackFromIssue = message.rollbackFromIssue);
     return obj;
   },
 
   create(base?: DeepPartial<Plan_ChangeDatabaseConfig_RollbackDetail>): Plan_ChangeDatabaseConfig_RollbackDetail {
     return Plan_ChangeDatabaseConfig_RollbackDetail.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Plan_ChangeDatabaseConfig_RollbackDetail>): Plan_ChangeDatabaseConfig_RollbackDetail {
     const message = createBasePlan_ChangeDatabaseConfig_RollbackDetail();
     message.rollbackFromTask = object.rollbackFromTask ?? "";
@@ -2360,24 +2309,19 @@ export const Plan_RestoreDatabaseConfig = {
 
   toJSON(message: Plan_RestoreDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.backup !== undefined) {
-      obj.backup = message.backup;
-    }
-    if (message.pointInTime !== undefined) {
-      obj.pointInTime = message.pointInTime.toISOString();
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
+      ? Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
+      : undefined);
+    message.backup !== undefined && (obj.backup = message.backup);
+    message.pointInTime !== undefined && (obj.pointInTime = message.pointInTime.toISOString());
     return obj;
   },
 
   create(base?: DeepPartial<Plan_RestoreDatabaseConfig>): Plan_RestoreDatabaseConfig {
     return Plan_RestoreDatabaseConfig.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Plan_RestoreDatabaseConfig>): Plan_RestoreDatabaseConfig {
     const message = createBasePlan_RestoreDatabaseConfig();
     message.target = object.target ?? "";
@@ -2455,21 +2399,16 @@ export const ListPlanCheckRunsRequest = {
 
   toJSON(message: ListPlanCheckRunsRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListPlanCheckRunsRequest>): ListPlanCheckRunsRequest {
     return ListPlanCheckRunsRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListPlanCheckRunsRequest>): ListPlanCheckRunsRequest {
     const message = createBaseListPlanCheckRunsRequest();
     message.parent = object.parent ?? "";
@@ -2535,18 +2474,19 @@ export const ListPlanCheckRunsResponse = {
 
   toJSON(message: ListPlanCheckRunsResponse): unknown {
     const obj: any = {};
-    if (message.planCheckRuns?.length) {
-      obj.planCheckRuns = message.planCheckRuns.map((e) => PlanCheckRun.toJSON(e));
+    if (message.planCheckRuns) {
+      obj.planCheckRuns = message.planCheckRuns.map((e) => e ? PlanCheckRun.toJSON(e) : undefined);
+    } else {
+      obj.planCheckRuns = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListPlanCheckRunsResponse>): ListPlanCheckRunsResponse {
     return ListPlanCheckRunsResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListPlanCheckRunsResponse>): ListPlanCheckRunsResponse {
     const message = createBaseListPlanCheckRunsResponse();
     message.planCheckRuns = object.planCheckRuns?.map((e) => PlanCheckRun.fromPartial(e)) || [];
@@ -2596,15 +2536,14 @@ export const RunPlanChecksRequest = {
 
   toJSON(message: RunPlanChecksRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<RunPlanChecksRequest>): RunPlanChecksRequest {
     return RunPlanChecksRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<RunPlanChecksRequest>): RunPlanChecksRequest {
     const message = createBaseRunPlanChecksRequest();
     message.name = object.name ?? "";
@@ -2649,6 +2588,7 @@ export const RunPlanChecksResponse = {
   create(base?: DeepPartial<RunPlanChecksResponse>): RunPlanChecksResponse {
     return RunPlanChecksResponse.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<RunPlanChecksResponse>): RunPlanChecksResponse {
     const message = createBaseRunPlanChecksResponse();
     return message;
@@ -2720,11 +2660,11 @@ export const BatchRunTasksRequest = {
 
   toJSON(message: BatchRunTasksRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.tasks?.length) {
-      obj.tasks = message.tasks;
+    message.parent !== undefined && (obj.parent = message.parent);
+    if (message.tasks) {
+      obj.tasks = message.tasks.map((e) => e);
+    } else {
+      obj.tasks = [];
     }
     message.reason !== undefined && (obj.reason = message.reason);
     return obj;
@@ -2733,6 +2673,7 @@ export const BatchRunTasksRequest = {
   create(base?: DeepPartial<BatchRunTasksRequest>): BatchRunTasksRequest {
     return BatchRunTasksRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<BatchRunTasksRequest>): BatchRunTasksRequest {
     const message = createBaseBatchRunTasksRequest();
     message.parent = object.parent ?? "";
@@ -2779,6 +2720,7 @@ export const BatchRunTasksResponse = {
   create(base?: DeepPartial<BatchRunTasksResponse>): BatchRunTasksResponse {
     return BatchRunTasksResponse.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<BatchRunTasksResponse>): BatchRunTasksResponse {
     const message = createBaseBatchRunTasksResponse();
     return message;
@@ -2850,11 +2792,11 @@ export const BatchSkipTasksRequest = {
 
   toJSON(message: BatchSkipTasksRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.tasks?.length) {
-      obj.tasks = message.tasks;
+    message.parent !== undefined && (obj.parent = message.parent);
+    if (message.tasks) {
+      obj.tasks = message.tasks.map((e) => e);
+    } else {
+      obj.tasks = [];
     }
     message.reason !== undefined && (obj.reason = message.reason);
     return obj;
@@ -2863,6 +2805,7 @@ export const BatchSkipTasksRequest = {
   create(base?: DeepPartial<BatchSkipTasksRequest>): BatchSkipTasksRequest {
     return BatchSkipTasksRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<BatchSkipTasksRequest>): BatchSkipTasksRequest {
     const message = createBaseBatchSkipTasksRequest();
     message.parent = object.parent ?? "";
@@ -2909,6 +2852,7 @@ export const BatchSkipTasksResponse = {
   create(base?: DeepPartial<BatchSkipTasksResponse>): BatchSkipTasksResponse {
     return BatchSkipTasksResponse.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<BatchSkipTasksResponse>): BatchSkipTasksResponse {
     const message = createBaseBatchSkipTasksResponse();
     return message;
@@ -2980,11 +2924,11 @@ export const BatchCancelTaskRunsRequest = {
 
   toJSON(message: BatchCancelTaskRunsRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.taskRuns?.length) {
-      obj.taskRuns = message.taskRuns;
+    message.parent !== undefined && (obj.parent = message.parent);
+    if (message.taskRuns) {
+      obj.taskRuns = message.taskRuns.map((e) => e);
+    } else {
+      obj.taskRuns = [];
     }
     message.reason !== undefined && (obj.reason = message.reason);
     return obj;
@@ -2993,6 +2937,7 @@ export const BatchCancelTaskRunsRequest = {
   create(base?: DeepPartial<BatchCancelTaskRunsRequest>): BatchCancelTaskRunsRequest {
     return BatchCancelTaskRunsRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<BatchCancelTaskRunsRequest>): BatchCancelTaskRunsRequest {
     const message = createBaseBatchCancelTaskRunsRequest();
     message.parent = object.parent ?? "";
@@ -3039,6 +2984,7 @@ export const BatchCancelTaskRunsResponse = {
   create(base?: DeepPartial<BatchCancelTaskRunsResponse>): BatchCancelTaskRunsResponse {
     return BatchCancelTaskRunsResponse.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<BatchCancelTaskRunsResponse>): BatchCancelTaskRunsResponse {
     const message = createBaseBatchCancelTaskRunsResponse();
     return message;
@@ -3186,39 +3132,26 @@ export const PlanCheckRun = {
 
   toJSON(message: PlanCheckRun): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.type !== undefined && (obj.type = planCheckRun_TypeToJSON(message.type));
+    message.status !== undefined && (obj.status = planCheckRun_StatusToJSON(message.status));
+    message.target !== undefined && (obj.target = message.target);
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    if (message.results) {
+      obj.results = message.results.map((e) => e ? PlanCheckRun_Result.toJSON(e) : undefined);
+    } else {
+      obj.results = [];
     }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.type !== 0) {
-      obj.type = planCheckRun_TypeToJSON(message.type);
-    }
-    if (message.status !== 0) {
-      obj.status = planCheckRun_StatusToJSON(message.status);
-    }
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.results?.length) {
-      obj.results = message.results.map((e) => PlanCheckRun_Result.toJSON(e));
-    }
-    if (message.error !== "") {
-      obj.error = message.error;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
+    message.error !== undefined && (obj.error = message.error);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRun>): PlanCheckRun {
     return PlanCheckRun.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRun>): PlanCheckRun {
     const message = createBasePlanCheckRun();
     message.name = object.name ?? "";
@@ -3336,30 +3269,23 @@ export const PlanCheckRun_Result = {
 
   toJSON(message: PlanCheckRun_Result): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
-      obj.status = planCheckRun_Result_StatusToJSON(message.status);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.content !== "") {
-      obj.content = message.content;
-    }
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
-    if (message.sqlSummaryReport !== undefined) {
-      obj.sqlSummaryReport = PlanCheckRun_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport);
-    }
-    if (message.sqlReviewReport !== undefined) {
-      obj.sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.toJSON(message.sqlReviewReport);
-    }
+    message.status !== undefined && (obj.status = planCheckRun_Result_StatusToJSON(message.status));
+    message.title !== undefined && (obj.title = message.title);
+    message.content !== undefined && (obj.content = message.content);
+    message.code !== undefined && (obj.code = Math.round(message.code));
+    message.sqlSummaryReport !== undefined && (obj.sqlSummaryReport = message.sqlSummaryReport
+      ? PlanCheckRun_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport)
+      : undefined);
+    message.sqlReviewReport !== undefined && (obj.sqlReviewReport = message.sqlReviewReport
+      ? PlanCheckRun_Result_SqlReviewReport.toJSON(message.sqlReviewReport)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
     return PlanCheckRun_Result.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
     const message = createBasePlanCheckRun_Result();
     message.status = object.status ?? 0;
@@ -3452,24 +3378,22 @@ export const PlanCheckRun_Result_SqlSummaryReport = {
 
   toJSON(message: PlanCheckRun_Result_SqlSummaryReport): unknown {
     const obj: any = {};
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
+    message.code !== undefined && (obj.code = Math.round(message.code));
+    if (message.statementTypes) {
+      obj.statementTypes = message.statementTypes.map((e) => e);
+    } else {
+      obj.statementTypes = [];
     }
-    if (message.statementTypes?.length) {
-      obj.statementTypes = message.statementTypes;
-    }
-    if (message.affectedRows !== 0) {
-      obj.affectedRows = Math.round(message.affectedRows);
-    }
-    if (message.changedResources !== undefined) {
-      obj.changedResources = ChangedResources.toJSON(message.changedResources);
-    }
+    message.affectedRows !== undefined && (obj.affectedRows = Math.round(message.affectedRows));
+    message.changedResources !== undefined &&
+      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRun_Result_SqlSummaryReport>): PlanCheckRun_Result_SqlSummaryReport {
     return PlanCheckRun_Result_SqlSummaryReport.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlSummaryReport>): PlanCheckRun_Result_SqlSummaryReport {
     const message = createBasePlanCheckRun_Result_SqlSummaryReport();
     message.code = object.code ?? 0;
@@ -3558,24 +3482,17 @@ export const PlanCheckRun_Result_SqlReviewReport = {
 
   toJSON(message: PlanCheckRun_Result_SqlReviewReport): unknown {
     const obj: any = {};
-    if (message.line !== 0) {
-      obj.line = Math.round(message.line);
-    }
-    if (message.column !== 0) {
-      obj.column = Math.round(message.column);
-    }
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
+    message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
+    message.detail !== undefined && (obj.detail = message.detail);
+    message.code !== undefined && (obj.code = Math.round(message.code));
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRun_Result_SqlReviewReport>): PlanCheckRun_Result_SqlReviewReport {
     return PlanCheckRun_Result_SqlReviewReport.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlReviewReport>): PlanCheckRun_Result_SqlReviewReport {
     const message = createBasePlanCheckRun_Result_SqlReviewReport();
     message.line = object.line ?? 0;
@@ -3627,15 +3544,14 @@ export const GetRolloutRequest = {
 
   toJSON(message: GetRolloutRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<GetRolloutRequest>): GetRolloutRequest {
     return GetRolloutRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<GetRolloutRequest>): GetRolloutRequest {
     const message = createBaseGetRolloutRequest();
     message.name = object.name ?? "";
@@ -3697,18 +3613,15 @@ export const CreateRolloutRequest = {
 
   toJSON(message: CreateRolloutRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.plan !== "") {
-      obj.plan = message.plan;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.plan !== undefined && (obj.plan = message.plan);
     return obj;
   },
 
   create(base?: DeepPartial<CreateRolloutRequest>): CreateRolloutRequest {
     return CreateRolloutRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CreateRolloutRequest>): CreateRolloutRequest {
     const message = createBaseCreateRolloutRequest();
     message.parent = object.parent ?? "";
@@ -3771,18 +3684,15 @@ export const PreviewRolloutRequest = {
 
   toJSON(message: PreviewRolloutRequest): unknown {
     const obj: any = {};
-    if (message.project !== "") {
-      obj.project = message.project;
-    }
-    if (message.plan !== undefined) {
-      obj.plan = Plan.toJSON(message.plan);
-    }
+    message.project !== undefined && (obj.project = message.project);
+    message.plan !== undefined && (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<PreviewRolloutRequest>): PreviewRolloutRequest {
     return PreviewRolloutRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PreviewRolloutRequest>): PreviewRolloutRequest {
     const message = createBasePreviewRolloutRequest();
     message.project = object.project ?? "";
@@ -3856,21 +3766,16 @@ export const ListTaskRunsRequest = {
 
   toJSON(message: ListTaskRunsRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListTaskRunsRequest>): ListTaskRunsRequest {
     return ListTaskRunsRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListTaskRunsRequest>): ListTaskRunsRequest {
     const message = createBaseListTaskRunsRequest();
     message.parent = object.parent ?? "";
@@ -3934,18 +3839,19 @@ export const ListTaskRunsResponse = {
 
   toJSON(message: ListTaskRunsResponse): unknown {
     const obj: any = {};
-    if (message.taskRuns?.length) {
-      obj.taskRuns = message.taskRuns.map((e) => TaskRun.toJSON(e));
+    if (message.taskRuns) {
+      obj.taskRuns = message.taskRuns.map((e) => e ? TaskRun.toJSON(e) : undefined);
+    } else {
+      obj.taskRuns = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListTaskRunsResponse>): ListTaskRunsResponse {
     return ListTaskRunsResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListTaskRunsResponse>): ListTaskRunsResponse {
     const message = createBaseListTaskRunsResponse();
     message.taskRuns = object.taskRuns?.map((e) => TaskRun.fromPartial(e)) || [];
@@ -4041,20 +3947,14 @@ export const Rollout = {
 
   toJSON(message: Rollout): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.plan !== "") {
-      obj.plan = message.plan;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.stages?.length) {
-      obj.stages = message.stages.map((e) => Stage.toJSON(e));
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.plan !== undefined && (obj.plan = message.plan);
+    message.title !== undefined && (obj.title = message.title);
+    if (message.stages) {
+      obj.stages = message.stages.map((e) => e ? Stage.toJSON(e) : undefined);
+    } else {
+      obj.stages = [];
     }
     return obj;
   },
@@ -4062,6 +3962,7 @@ export const Rollout = {
   create(base?: DeepPartial<Rollout>): Rollout {
     return Rollout.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Rollout>): Rollout {
     const message = createBaseRollout();
     message.name = object.name ?? "";
@@ -4160,20 +4061,14 @@ export const Stage = {
 
   toJSON(message: Stage): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.environment !== "") {
-      obj.environment = message.environment;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.tasks?.length) {
-      obj.tasks = message.tasks.map((e) => Task.toJSON(e));
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.environment !== undefined && (obj.environment = message.environment);
+    message.title !== undefined && (obj.title = message.title);
+    if (message.tasks) {
+      obj.tasks = message.tasks.map((e) => e ? Task.toJSON(e) : undefined);
+    } else {
+      obj.tasks = [];
     }
     return obj;
   },
@@ -4181,6 +4076,7 @@ export const Stage = {
   create(base?: DeepPartial<Stage>): Stage {
     return Stage.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Stage>): Stage {
     const message = createBaseStage();
     message.name = object.name ?? "";
@@ -4413,57 +4309,42 @@ export const Task = {
 
   toJSON(message: Task): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.title !== undefined && (obj.title = message.title);
+    message.specId !== undefined && (obj.specId = message.specId);
+    message.status !== undefined && (obj.status = task_StatusToJSON(message.status));
+    message.skippedReason !== undefined && (obj.skippedReason = message.skippedReason);
+    message.type !== undefined && (obj.type = task_TypeToJSON(message.type));
+    if (message.blockedByTasks) {
+      obj.blockedByTasks = message.blockedByTasks.map((e) => e);
+    } else {
+      obj.blockedByTasks = [];
     }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.specId !== "") {
-      obj.specId = message.specId;
-    }
-    if (message.status !== 0) {
-      obj.status = task_StatusToJSON(message.status);
-    }
-    if (message.skippedReason !== "") {
-      obj.skippedReason = message.skippedReason;
-    }
-    if (message.type !== 0) {
-      obj.type = task_TypeToJSON(message.type);
-    }
-    if (message.blockedByTasks?.length) {
-      obj.blockedByTasks = message.blockedByTasks;
-    }
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.databaseCreate !== undefined) {
-      obj.databaseCreate = Task_DatabaseCreate.toJSON(message.databaseCreate);
-    }
-    if (message.databaseSchemaBaseline !== undefined) {
-      obj.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline);
-    }
-    if (message.databaseSchemaUpdate !== undefined) {
-      obj.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.toJSON(message.databaseSchemaUpdate);
-    }
-    if (message.databaseDataUpdate !== undefined) {
-      obj.databaseDataUpdate = Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate);
-    }
-    if (message.databaseBackup !== undefined) {
-      obj.databaseBackup = Task_DatabaseBackup.toJSON(message.databaseBackup);
-    }
-    if (message.databaseRestoreRestore !== undefined) {
-      obj.databaseRestoreRestore = Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore);
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.databaseCreate !== undefined &&
+      (obj.databaseCreate = message.databaseCreate ? Task_DatabaseCreate.toJSON(message.databaseCreate) : undefined);
+    message.databaseSchemaBaseline !== undefined && (obj.databaseSchemaBaseline = message.databaseSchemaBaseline
+      ? Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline)
+      : undefined);
+    message.databaseSchemaUpdate !== undefined && (obj.databaseSchemaUpdate = message.databaseSchemaUpdate
+      ? Task_DatabaseSchemaUpdate.toJSON(message.databaseSchemaUpdate)
+      : undefined);
+    message.databaseDataUpdate !== undefined && (obj.databaseDataUpdate = message.databaseDataUpdate
+      ? Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate)
+      : undefined);
+    message.databaseBackup !== undefined &&
+      (obj.databaseBackup = message.databaseBackup ? Task_DatabaseBackup.toJSON(message.databaseBackup) : undefined);
+    message.databaseRestoreRestore !== undefined && (obj.databaseRestoreRestore = message.databaseRestoreRestore
+      ? Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<Task>): Task {
     return Task.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Task>): Task {
     const message = createBaseTask();
     message.name = object.name ?? "";
@@ -4616,32 +4497,17 @@ export const Task_DatabaseCreate = {
 
   toJSON(message: Task_DatabaseCreate): unknown {
     const obj: any = {};
-    if (message.project !== "") {
-      obj.project = message.project;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
+    message.project !== undefined && (obj.project = message.project);
+    message.database !== undefined && (obj.database = message.database);
+    message.table !== undefined && (obj.table = message.table);
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
+    message.collation !== undefined && (obj.collation = message.collation);
+    obj.labels = {};
     if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
     }
     return obj;
   },
@@ -4649,6 +4515,7 @@ export const Task_DatabaseCreate = {
   create(base?: DeepPartial<Task_DatabaseCreate>): Task_DatabaseCreate {
     return Task_DatabaseCreate.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Task_DatabaseCreate>): Task_DatabaseCreate {
     const message = createBaseTask_DatabaseCreate();
     message.project = object.project ?? "";
@@ -4718,18 +4585,15 @@ export const Task_DatabaseCreate_LabelsEntry = {
 
   toJSON(message: Task_DatabaseCreate_LabelsEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
   create(base?: DeepPartial<Task_DatabaseCreate_LabelsEntry>): Task_DatabaseCreate_LabelsEntry {
     return Task_DatabaseCreate_LabelsEntry.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Task_DatabaseCreate_LabelsEntry>): Task_DatabaseCreate_LabelsEntry {
     const message = createBaseTask_DatabaseCreate_LabelsEntry();
     message.key = object.key ?? "";
@@ -4779,15 +4643,14 @@ export const Task_DatabaseSchemaBaseline = {
 
   toJSON(message: Task_DatabaseSchemaBaseline): unknown {
     const obj: any = {};
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     return obj;
   },
 
   create(base?: DeepPartial<Task_DatabaseSchemaBaseline>): Task_DatabaseSchemaBaseline {
     return Task_DatabaseSchemaBaseline.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Task_DatabaseSchemaBaseline>): Task_DatabaseSchemaBaseline {
     const message = createBaseTask_DatabaseSchemaBaseline();
     message.schemaVersion = object.schemaVersion ?? "";
@@ -4849,18 +4712,15 @@ export const Task_DatabaseSchemaUpdate = {
 
   toJSON(message: Task_DatabaseSchemaUpdate): unknown {
     const obj: any = {};
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     return obj;
   },
 
   create(base?: DeepPartial<Task_DatabaseSchemaUpdate>): Task_DatabaseSchemaUpdate {
     return Task_DatabaseSchemaUpdate.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Task_DatabaseSchemaUpdate>): Task_DatabaseSchemaUpdate {
     const message = createBaseTask_DatabaseSchemaUpdate();
     message.sheet = object.sheet ?? "";
@@ -5000,36 +4860,22 @@ export const Task_DatabaseDataUpdate = {
 
   toJSON(message: Task_DatabaseDataUpdate): unknown {
     const obj: any = {};
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    if (message.rollbackEnabled === true) {
-      obj.rollbackEnabled = message.rollbackEnabled;
-    }
-    if (message.rollbackSqlStatus !== 0) {
-      obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus);
-    }
-    if (message.rollbackError !== "") {
-      obj.rollbackError = message.rollbackError;
-    }
-    if (message.rollbackSheet !== "") {
-      obj.rollbackSheet = message.rollbackSheet;
-    }
-    if (message.rollbackFromIssue !== "") {
-      obj.rollbackFromIssue = message.rollbackFromIssue;
-    }
-    if (message.rollbackFromTask !== "") {
-      obj.rollbackFromTask = message.rollbackFromTask;
-    }
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
+    message.rollbackSqlStatus !== undefined &&
+      (obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus));
+    message.rollbackError !== undefined && (obj.rollbackError = message.rollbackError);
+    message.rollbackSheet !== undefined && (obj.rollbackSheet = message.rollbackSheet);
+    message.rollbackFromIssue !== undefined && (obj.rollbackFromIssue = message.rollbackFromIssue);
+    message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
     return obj;
   },
 
   create(base?: DeepPartial<Task_DatabaseDataUpdate>): Task_DatabaseDataUpdate {
     return Task_DatabaseDataUpdate.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Task_DatabaseDataUpdate>): Task_DatabaseDataUpdate {
     const message = createBaseTask_DatabaseDataUpdate();
     message.sheet = object.sheet ?? "";
@@ -5085,15 +4931,14 @@ export const Task_DatabaseBackup = {
 
   toJSON(message: Task_DatabaseBackup): unknown {
     const obj: any = {};
-    if (message.backup !== "") {
-      obj.backup = message.backup;
-    }
+    message.backup !== undefined && (obj.backup = message.backup);
     return obj;
   },
 
   create(base?: DeepPartial<Task_DatabaseBackup>): Task_DatabaseBackup {
     return Task_DatabaseBackup.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Task_DatabaseBackup>): Task_DatabaseBackup {
     const message = createBaseTask_DatabaseBackup();
     message.backup = object.backup ?? "";
@@ -5166,21 +5011,16 @@ export const Task_DatabaseRestoreRestore = {
 
   toJSON(message: Task_DatabaseRestoreRestore): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.backup !== undefined) {
-      obj.backup = message.backup;
-    }
-    if (message.pointInTime !== undefined) {
-      obj.pointInTime = message.pointInTime.toISOString();
-    }
+    message.target !== undefined && (obj.target = message.target);
+    message.backup !== undefined && (obj.backup = message.backup);
+    message.pointInTime !== undefined && (obj.pointInTime = message.pointInTime.toISOString());
     return obj;
   },
 
   create(base?: DeepPartial<Task_DatabaseRestoreRestore>): Task_DatabaseRestoreRestore {
     return Task_DatabaseRestoreRestore.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Task_DatabaseRestoreRestore>): Task_DatabaseRestoreRestore {
     const message = createBaseTask_DatabaseRestoreRestore();
     message.target = object.target ?? "";
@@ -5355,45 +5195,24 @@ export const TaskRun = {
 
   toJSON(message: TaskRun): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.status !== 0) {
-      obj.status = taskRun_StatusToJSON(message.status);
-    }
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    if (message.changeHistory !== "") {
-      obj.changeHistory = message.changeHistory;
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.updater !== undefined && (obj.updater = message.updater);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.title !== undefined && (obj.title = message.title);
+    message.status !== undefined && (obj.status = taskRun_StatusToJSON(message.status));
+    message.detail !== undefined && (obj.detail = message.detail);
+    message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
+    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     return obj;
   },
 
   create(base?: DeepPartial<TaskRun>): TaskRun {
     return TaskRun.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<TaskRun>): TaskRun {
     const message = createBaseTaskRun();
     message.name = object.name ?? "";
@@ -6383,6 +6202,8 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

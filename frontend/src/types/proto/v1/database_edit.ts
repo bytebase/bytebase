@@ -284,26 +284,40 @@ export const DatabaseEdit = {
 
   toJSON(message: DatabaseEdit): unknown {
     const obj: any = {};
-    if (message.createSchemaContexts?.length) {
-      obj.createSchemaContexts = message.createSchemaContexts.map((e) => CreateSchemaContext.toJSON(e));
+    if (message.createSchemaContexts) {
+      obj.createSchemaContexts = message.createSchemaContexts.map((e) => e ? CreateSchemaContext.toJSON(e) : undefined);
+    } else {
+      obj.createSchemaContexts = [];
     }
-    if (message.renameSchemaContexts?.length) {
-      obj.renameSchemaContexts = message.renameSchemaContexts.map((e) => RenameSchemaContext.toJSON(e));
+    if (message.renameSchemaContexts) {
+      obj.renameSchemaContexts = message.renameSchemaContexts.map((e) => e ? RenameSchemaContext.toJSON(e) : undefined);
+    } else {
+      obj.renameSchemaContexts = [];
     }
-    if (message.dropSchemaContexts?.length) {
-      obj.dropSchemaContexts = message.dropSchemaContexts.map((e) => DropSchemaContext.toJSON(e));
+    if (message.dropSchemaContexts) {
+      obj.dropSchemaContexts = message.dropSchemaContexts.map((e) => e ? DropSchemaContext.toJSON(e) : undefined);
+    } else {
+      obj.dropSchemaContexts = [];
     }
-    if (message.createTableContexts?.length) {
-      obj.createTableContexts = message.createTableContexts.map((e) => CreateTableContext.toJSON(e));
+    if (message.createTableContexts) {
+      obj.createTableContexts = message.createTableContexts.map((e) => e ? CreateTableContext.toJSON(e) : undefined);
+    } else {
+      obj.createTableContexts = [];
     }
-    if (message.alterTableContexts?.length) {
-      obj.alterTableContexts = message.alterTableContexts.map((e) => AlterTableContext.toJSON(e));
+    if (message.alterTableContexts) {
+      obj.alterTableContexts = message.alterTableContexts.map((e) => e ? AlterTableContext.toJSON(e) : undefined);
+    } else {
+      obj.alterTableContexts = [];
     }
-    if (message.renameTableContexts?.length) {
-      obj.renameTableContexts = message.renameTableContexts.map((e) => RenameTableContext.toJSON(e));
+    if (message.renameTableContexts) {
+      obj.renameTableContexts = message.renameTableContexts.map((e) => e ? RenameTableContext.toJSON(e) : undefined);
+    } else {
+      obj.renameTableContexts = [];
     }
-    if (message.dropTableContexts?.length) {
-      obj.dropTableContexts = message.dropTableContexts.map((e) => DropTableContext.toJSON(e));
+    if (message.dropTableContexts) {
+      obj.dropTableContexts = message.dropTableContexts.map((e) => e ? DropTableContext.toJSON(e) : undefined);
+    } else {
+      obj.dropTableContexts = [];
     }
     return obj;
   },
@@ -311,6 +325,7 @@ export const DatabaseEdit = {
   create(base?: DeepPartial<DatabaseEdit>): DatabaseEdit {
     return DatabaseEdit.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DatabaseEdit>): DatabaseEdit {
     const message = createBaseDatabaseEdit();
     message.createSchemaContexts = object.createSchemaContexts?.map((e) => CreateSchemaContext.fromPartial(e)) || [];
@@ -365,15 +380,14 @@ export const CreateSchemaContext = {
 
   toJSON(message: CreateSchemaContext): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<CreateSchemaContext>): CreateSchemaContext {
     return CreateSchemaContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CreateSchemaContext>): CreateSchemaContext {
     const message = createBaseCreateSchemaContext();
     message.name = object.name ?? "";
@@ -435,18 +449,15 @@ export const RenameSchemaContext = {
 
   toJSON(message: RenameSchemaContext): unknown {
     const obj: any = {};
-    if (message.oldName !== "") {
-      obj.oldName = message.oldName;
-    }
-    if (message.newName !== "") {
-      obj.newName = message.newName;
-    }
+    message.oldName !== undefined && (obj.oldName = message.oldName);
+    message.newName !== undefined && (obj.newName = message.newName);
     return obj;
   },
 
   create(base?: DeepPartial<RenameSchemaContext>): RenameSchemaContext {
     return RenameSchemaContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<RenameSchemaContext>): RenameSchemaContext {
     const message = createBaseRenameSchemaContext();
     message.oldName = object.oldName ?? "";
@@ -496,15 +507,14 @@ export const DropSchemaContext = {
 
   toJSON(message: DropSchemaContext): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<DropSchemaContext>): DropSchemaContext {
     return DropSchemaContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DropSchemaContext>): DropSchemaContext {
     const message = createBaseDropSchemaContext();
     message.name = object.name ?? "";
@@ -669,35 +679,29 @@ export const CreateTableContext = {
 
   toJSON(message: CreateTableContext): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    message.name !== undefined && (obj.name = message.name);
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.type !== undefined && (obj.type = message.type);
+    message.engine !== undefined && (obj.engine = message.engine);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
+    message.collation !== undefined && (obj.collation = message.collation);
+    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.addColumnContexts) {
+      obj.addColumnContexts = message.addColumnContexts.map((e) => e ? AddColumnContext.toJSON(e) : undefined);
+    } else {
+      obj.addColumnContexts = [];
     }
-    if (message.schema !== "") {
-      obj.schema = message.schema;
+    if (message.primaryKeys) {
+      obj.primaryKeys = message.primaryKeys.map((e) => e);
+    } else {
+      obj.primaryKeys = [];
     }
-    if (message.type !== "") {
-      obj.type = message.type;
-    }
-    if (message.engine !== "") {
-      obj.engine = message.engine;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
-    if (message.addColumnContexts?.length) {
-      obj.addColumnContexts = message.addColumnContexts.map((e) => AddColumnContext.toJSON(e));
-    }
-    if (message.primaryKeys?.length) {
-      obj.primaryKeys = message.primaryKeys;
-    }
-    if (message.addForeignKeyContexts?.length) {
-      obj.addForeignKeyContexts = message.addForeignKeyContexts.map((e) => AddForeignKeyContext.toJSON(e));
+    if (message.addForeignKeyContexts) {
+      obj.addForeignKeyContexts = message.addForeignKeyContexts.map((e) =>
+        e ? AddForeignKeyContext.toJSON(e) : undefined
+      );
+    } else {
+      obj.addForeignKeyContexts = [];
     }
     return obj;
   },
@@ -705,6 +709,7 @@ export const CreateTableContext = {
   create(base?: DeepPartial<CreateTableContext>): CreateTableContext {
     return CreateTableContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CreateTableContext>): CreateTableContext {
     const message = createBaseCreateTableContext();
     message.name = object.name ?? "";
@@ -870,32 +875,44 @@ export const AlterTableContext = {
 
   toJSON(message: AlterTableContext): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    message.name !== undefined && (obj.name = message.name);
+    message.schema !== undefined && (obj.schema = message.schema);
+    if (message.addColumnContexts) {
+      obj.addColumnContexts = message.addColumnContexts.map((e) => e ? AddColumnContext.toJSON(e) : undefined);
+    } else {
+      obj.addColumnContexts = [];
     }
-    if (message.schema !== "") {
-      obj.schema = message.schema;
+    if (message.alterColumnContexts) {
+      obj.alterColumnContexts = message.alterColumnContexts.map((e) => e ? AlterColumnContext.toJSON(e) : undefined);
+    } else {
+      obj.alterColumnContexts = [];
     }
-    if (message.addColumnContexts?.length) {
-      obj.addColumnContexts = message.addColumnContexts.map((e) => AddColumnContext.toJSON(e));
+    if (message.dropColumnContexts) {
+      obj.dropColumnContexts = message.dropColumnContexts.map((e) => e ? DropColumnContext.toJSON(e) : undefined);
+    } else {
+      obj.dropColumnContexts = [];
     }
-    if (message.alterColumnContexts?.length) {
-      obj.alterColumnContexts = message.alterColumnContexts.map((e) => AlterColumnContext.toJSON(e));
+    if (message.dropPrimaryKeys) {
+      obj.dropPrimaryKeys = message.dropPrimaryKeys.map((e) => e);
+    } else {
+      obj.dropPrimaryKeys = [];
     }
-    if (message.dropColumnContexts?.length) {
-      obj.dropColumnContexts = message.dropColumnContexts.map((e) => DropColumnContext.toJSON(e));
+    if (message.primaryKeys) {
+      obj.primaryKeys = message.primaryKeys.map((e) => e);
+    } else {
+      obj.primaryKeys = [];
     }
-    if (message.dropPrimaryKeys?.length) {
-      obj.dropPrimaryKeys = message.dropPrimaryKeys;
+    if (message.dropForeignKeys) {
+      obj.dropForeignKeys = message.dropForeignKeys.map((e) => e);
+    } else {
+      obj.dropForeignKeys = [];
     }
-    if (message.primaryKeys?.length) {
-      obj.primaryKeys = message.primaryKeys;
-    }
-    if (message.dropForeignKeys?.length) {
-      obj.dropForeignKeys = message.dropForeignKeys;
-    }
-    if (message.addForeignKeyContexts?.length) {
-      obj.addForeignKeyContexts = message.addForeignKeyContexts.map((e) => AddForeignKeyContext.toJSON(e));
+    if (message.addForeignKeyContexts) {
+      obj.addForeignKeyContexts = message.addForeignKeyContexts.map((e) =>
+        e ? AddForeignKeyContext.toJSON(e) : undefined
+      );
+    } else {
+      obj.addForeignKeyContexts = [];
     }
     return obj;
   },
@@ -903,6 +920,7 @@ export const AlterTableContext = {
   create(base?: DeepPartial<AlterTableContext>): AlterTableContext {
     return AlterTableContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<AlterTableContext>): AlterTableContext {
     const message = createBaseAlterTableContext();
     message.name = object.name ?? "";
@@ -983,21 +1001,16 @@ export const RenameTableContext = {
 
   toJSON(message: RenameTableContext): unknown {
     const obj: any = {};
-    if (message.schema !== "") {
-      obj.schema = message.schema;
-    }
-    if (message.oldName !== "") {
-      obj.oldName = message.oldName;
-    }
-    if (message.newName !== "") {
-      obj.newName = message.newName;
-    }
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.oldName !== undefined && (obj.oldName = message.oldName);
+    message.newName !== undefined && (obj.newName = message.newName);
     return obj;
   },
 
   create(base?: DeepPartial<RenameTableContext>): RenameTableContext {
     return RenameTableContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<RenameTableContext>): RenameTableContext {
     const message = createBaseRenameTableContext();
     message.schema = object.schema ?? "";
@@ -1061,18 +1074,15 @@ export const DropTableContext = {
 
   toJSON(message: DropTableContext): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.schema !== "") {
-      obj.schema = message.schema;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.schema !== undefined && (obj.schema = message.schema);
     return obj;
   },
 
   create(base?: DeepPartial<DropTableContext>): DropTableContext {
     return DropTableContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DropTableContext>): DropTableContext {
     const message = createBaseDropTableContext();
     message.name = object.name ?? "";
@@ -1210,36 +1220,21 @@ export const AddColumnContext = {
 
   toJSON(message: AddColumnContext): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.type !== "") {
-      obj.type = message.type;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
-    if (message.nullable === true) {
-      obj.nullable = message.nullable;
-    }
-    if (message.defaultValue !== "") {
-      obj.defaultValue = message.defaultValue;
-    }
-    if (message.hasDefaultValue === true) {
-      obj.hasDefaultValue = message.hasDefaultValue;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.type !== undefined && (obj.type = message.type);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
+    message.collation !== undefined && (obj.collation = message.collation);
+    message.comment !== undefined && (obj.comment = message.comment);
+    message.nullable !== undefined && (obj.nullable = message.nullable);
+    message.defaultValue !== undefined && (obj.defaultValue = message.defaultValue);
+    message.hasDefaultValue !== undefined && (obj.hasDefaultValue = message.hasDefaultValue);
     return obj;
   },
 
   create(base?: DeepPartial<AddColumnContext>): AddColumnContext {
     return AddColumnContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<AddColumnContext>): AddColumnContext {
     const message = createBaseAddColumnContext();
     message.name = object.name ?? "";
@@ -1395,39 +1390,22 @@ export const AlterColumnContext = {
 
   toJSON(message: AlterColumnContext): unknown {
     const obj: any = {};
-    if (message.oldName !== "") {
-      obj.oldName = message.oldName;
-    }
-    if (message.newName !== "") {
-      obj.newName = message.newName;
-    }
-    if (message.type !== "") {
-      obj.type = message.type;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
-    if (message.nullable === true) {
-      obj.nullable = message.nullable;
-    }
-    if (message.defaultValue !== "") {
-      obj.defaultValue = message.defaultValue;
-    }
-    if (message.isDefaultValueChanged === true) {
-      obj.isDefaultValueChanged = message.isDefaultValueChanged;
-    }
+    message.oldName !== undefined && (obj.oldName = message.oldName);
+    message.newName !== undefined && (obj.newName = message.newName);
+    message.type !== undefined && (obj.type = message.type);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
+    message.collation !== undefined && (obj.collation = message.collation);
+    message.comment !== undefined && (obj.comment = message.comment);
+    message.nullable !== undefined && (obj.nullable = message.nullable);
+    message.defaultValue !== undefined && (obj.defaultValue = message.defaultValue);
+    message.isDefaultValueChanged !== undefined && (obj.isDefaultValueChanged = message.isDefaultValueChanged);
     return obj;
   },
 
   create(base?: DeepPartial<AlterColumnContext>): AlterColumnContext {
     return AlterColumnContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<AlterColumnContext>): AlterColumnContext {
     const message = createBaseAlterColumnContext();
     message.oldName = object.oldName ?? "";
@@ -1484,15 +1462,14 @@ export const DropColumnContext = {
 
   toJSON(message: DropColumnContext): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<DropColumnContext>): DropColumnContext {
     return DropColumnContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DropColumnContext>): DropColumnContext {
     const message = createBaseDropColumnContext();
     message.name = object.name ?? "";
@@ -1576,24 +1553,17 @@ export const AddForeignKeyContext = {
 
   toJSON(message: AddForeignKeyContext): unknown {
     const obj: any = {};
-    if (message.column !== "") {
-      obj.column = message.column;
-    }
-    if (message.referencedSchema !== "") {
-      obj.referencedSchema = message.referencedSchema;
-    }
-    if (message.referencedTable !== "") {
-      obj.referencedTable = message.referencedTable;
-    }
-    if (message.referencedColumn !== "") {
-      obj.referencedColumn = message.referencedColumn;
-    }
+    message.column !== undefined && (obj.column = message.column);
+    message.referencedSchema !== undefined && (obj.referencedSchema = message.referencedSchema);
+    message.referencedTable !== undefined && (obj.referencedTable = message.referencedTable);
+    message.referencedColumn !== undefined && (obj.referencedColumn = message.referencedColumn);
     return obj;
   },
 
   create(base?: DeepPartial<AddForeignKeyContext>): AddForeignKeyContext {
     return AddForeignKeyContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<AddForeignKeyContext>): AddForeignKeyContext {
     const message = createBaseAddForeignKeyContext();
     message.column = object.column ?? "";
