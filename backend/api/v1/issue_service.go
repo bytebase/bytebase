@@ -751,6 +751,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 
 	var issueIDs []int
+	var issues []*store.IssueMessage
 	for _, issueName := range request.Issues {
 		issue, err := s.getIssueMessage(ctx, issueName)
 		if err != nil {
@@ -759,6 +760,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		if issue == nil {
 			return nil, status.Errorf(codes.NotFound, "cannot find issue %v", issueName)
 		}
+		issues = append(issues, issue)
 		issueIDs = append(issueIDs, issue.UID)
 	}
 
@@ -773,6 +775,39 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 
 	if err := s.store.BatchUpdateIssueStatuses(ctx, issueIDs, newStatus, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to batch update issues, err: %v", err)
+	}
+
+	if err := func() error {
+		var errs error
+		for _, issue := range issues {
+			payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+				OldStatus: issue.Status,
+				NewStatus: newStatus,
+				IssueName: issue.Title,
+			})
+			if err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Title))
+				continue
+			}
+			activityCreate := &store.ActivityMessage{
+				CreatorUID:   principalID,
+				ContainerUID: issue.UID,
+				Type:         api.ActivityIssueStatusUpdate,
+				Level:        api.ActivityInfo,
+				Comment:      request.Comment,
+				Payload:      string(payload),
+			}
+			issue.Status = newStatus
+			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+				Issue: issue,
+			}); err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Title))
+				continue
+			}
+		}
+		return errs
+	}(); err != nil {
+		log.Error("failed to create activity after changing the issue status", zap.Error(err))
 	}
 
 	return &v1pb.BatchUpdateIssuesStatusResponse{}, nil
