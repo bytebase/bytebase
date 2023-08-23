@@ -16,7 +16,7 @@ import {
 } from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
-import { StageStatusUpdateType, TaskStatus } from "./pipeline";
+import { StageStatusUpdateType, TaskRunStatus, TaskStatus } from "./pipeline";
 import { ApprovalEvent } from "./review";
 import { Advice } from "./sqlAdvice";
 import { VCSPushEvent } from "./vcs";
@@ -100,6 +100,7 @@ export type ActivityIssueStatusUpdatePayload = {
   newStatus: IssueStatus;
   issueName: string;
 };
+
 export type ActivityStageStatusUpdatePayload = {
   stageId: StageId;
   stageStatusUpdateType: StageStatusUpdateType;
@@ -111,6 +112,13 @@ export type ActivityTaskStatusUpdatePayload = {
   taskId: TaskId;
   oldStatus: TaskStatus;
   newStatus: TaskStatus;
+  issueName: string;
+  taskName: string;
+};
+
+export type ActivityPipelineTaskRunStatusUpdatePayload = {
+  taskId: TaskId;
+  newStatus: TaskRunStatus;
   issueName: string;
   taskName: string;
 };
