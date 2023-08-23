@@ -71,10 +71,10 @@
             <SheetList view="my" />
           </NTabPane>
           <NTabPane name="starred" :tab="$t('sheet.starred')">
-            <SheetList view="starred" @add-tab="sheetTab = 'my'" />
+            <SheetList view="starred" />
           </NTabPane>
           <NTabPane name="shared" :tab="$t('sheet.shared-with-me')">
-            <SheetList view="shared" @add-tab="sheetTab = 'my'" />
+            <SheetList view="shared" />
           </NTabPane>
         </NTabs>
       </NTabPane>
@@ -85,7 +85,7 @@
 <script lang="ts" setup>
 import { NTabs, NTabPane } from "naive-ui";
 import { Splitpanes, Pane } from "splitpanes";
-import { computed, ref, watchEffect } from "vue";
+import { computed, onUnmounted, ref, watchEffect } from "vue";
 import {
   useConnectionTreeStore,
   useCurrentUserV1,
@@ -95,6 +95,7 @@ import {
 import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import { useSheetContext } from "../Sheet";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SchemaPanel from "./SchemaPanel/";
@@ -111,6 +112,7 @@ const currentUserV1 = useCurrentUserV1();
 const tabStore = useTabStore();
 const connectionTreeStore = useConnectionTreeStore();
 const searchPattern = ref("");
+const { events: sheetEvents } = useSheetContext();
 
 const databaseTab = ref<"projects" | "instances" | "history">(
   connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE
@@ -145,5 +147,12 @@ watchEffect(() => {
   if (databaseTab.value === "instances") {
     connectionTreeStore.tree.mode = ConnectionTreeMode.INSTANCE;
   }
+});
+const off = sheetEvents.on("add-sheet", () => {
+  sheetTab.value = "my";
+});
+
+onUnmounted(() => {
+  off();
 });
 </script>
