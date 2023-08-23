@@ -106,7 +106,7 @@ message Value {
     ExternalApprovalSetting external_approval_setting_value = 8;
     SchemaTemplateSetting schema_template_setting_value = 9;
     DataClassificationSetting data_classification_setting_value = 10;
-    DataCategorySetting data_category_setting = 11;
+    SemanticCategorySetting semantic_category_setting_value = 11;
   }
 }
 
@@ -295,17 +295,18 @@ message DataClassificationSetting {
   repeated DataClassificationConfig configs = 1;
 }
 
-message DataCategorySetting {
-  message DataCategoryItem {
+message SemanticCategorySetting {
+  message SemanticCategory {
+    // id is the uuid for semantic category.
+    // The id should in [0-9]+-[0-9]+-[0-9]+ format.
+    string id = 1;
     // the title of the category item, it should not be empty.
-    string title = 1;
+    string title = 2;
     // the description of the category item, it can be empty.
-    string description = 2;
+    string description = 3;
     // We do not support custom algorithm by now, we only support the default algorithm, so we do not
     // add the algorithm field right now.
   }
 
-  // items is the map of DataCategoryItemId - DataCategoryItem.
-  // The id should in [0-9]+-[0-9]+-[0-9]+ format.
-  map<string, DataCategoryItem> data_category = 1;
+  repeated SemanticCategory categories = 1;
 }
