@@ -198,15 +198,14 @@ export const GetEnvironmentRequest = {
 
   toJSON(message: GetEnvironmentRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<GetEnvironmentRequest>): GetEnvironmentRequest {
     return GetEnvironmentRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<GetEnvironmentRequest>): GetEnvironmentRequest {
     const message = createBaseGetEnvironmentRequest();
     message.name = object.name ?? "";
@@ -279,21 +278,16 @@ export const ListEnvironmentsRequest = {
 
   toJSON(message: ListEnvironmentsRequest): unknown {
     const obj: any = {};
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    if (message.showDeleted === true) {
-      obj.showDeleted = message.showDeleted;
-    }
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
   create(base?: DeepPartial<ListEnvironmentsRequest>): ListEnvironmentsRequest {
     return ListEnvironmentsRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListEnvironmentsRequest>): ListEnvironmentsRequest {
     const message = createBaseListEnvironmentsRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -359,18 +353,19 @@ export const ListEnvironmentsResponse = {
 
   toJSON(message: ListEnvironmentsResponse): unknown {
     const obj: any = {};
-    if (message.environments?.length) {
-      obj.environments = message.environments.map((e) => Environment.toJSON(e));
+    if (message.environments) {
+      obj.environments = message.environments.map((e) => e ? Environment.toJSON(e) : undefined);
+    } else {
+      obj.environments = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListEnvironmentsResponse>): ListEnvironmentsResponse {
     return ListEnvironmentsResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListEnvironmentsResponse>): ListEnvironmentsResponse {
     const message = createBaseListEnvironmentsResponse();
     message.environments = object.environments?.map((e) => Environment.fromPartial(e)) || [];
@@ -433,18 +428,16 @@ export const CreateEnvironmentRequest = {
 
   toJSON(message: CreateEnvironmentRequest): unknown {
     const obj: any = {};
-    if (message.environment !== undefined) {
-      obj.environment = Environment.toJSON(message.environment);
-    }
-    if (message.environmentId !== "") {
-      obj.environmentId = message.environmentId;
-    }
+    message.environment !== undefined &&
+      (obj.environment = message.environment ? Environment.toJSON(message.environment) : undefined);
+    message.environmentId !== undefined && (obj.environmentId = message.environmentId);
     return obj;
   },
 
   create(base?: DeepPartial<CreateEnvironmentRequest>): CreateEnvironmentRequest {
     return CreateEnvironmentRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CreateEnvironmentRequest>): CreateEnvironmentRequest {
     const message = createBaseCreateEnvironmentRequest();
     message.environment = (object.environment !== undefined && object.environment !== null)
@@ -509,18 +502,16 @@ export const UpdateEnvironmentRequest = {
 
   toJSON(message: UpdateEnvironmentRequest): unknown {
     const obj: any = {};
-    if (message.environment !== undefined) {
-      obj.environment = Environment.toJSON(message.environment);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.environment !== undefined &&
+      (obj.environment = message.environment ? Environment.toJSON(message.environment) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
   create(base?: DeepPartial<UpdateEnvironmentRequest>): UpdateEnvironmentRequest {
     return UpdateEnvironmentRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UpdateEnvironmentRequest>): UpdateEnvironmentRequest {
     const message = createBaseUpdateEnvironmentRequest();
     message.environment = (object.environment !== undefined && object.environment !== null)
@@ -572,15 +563,14 @@ export const DeleteEnvironmentRequest = {
 
   toJSON(message: DeleteEnvironmentRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<DeleteEnvironmentRequest>): DeleteEnvironmentRequest {
     return DeleteEnvironmentRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DeleteEnvironmentRequest>): DeleteEnvironmentRequest {
     const message = createBaseDeleteEnvironmentRequest();
     message.name = object.name ?? "";
@@ -629,15 +619,14 @@ export const UndeleteEnvironmentRequest = {
 
   toJSON(message: UndeleteEnvironmentRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<UndeleteEnvironmentRequest>): UndeleteEnvironmentRequest {
     return UndeleteEnvironmentRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UndeleteEnvironmentRequest>): UndeleteEnvironmentRequest {
     const message = createBaseUndeleteEnvironmentRequest();
     message.name = object.name ?? "";
@@ -743,30 +732,19 @@ export const Environment = {
 
   toJSON(message: Environment): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.state !== 0) {
-      obj.state = stateToJSON(message.state);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.order !== 0) {
-      obj.order = Math.round(message.order);
-    }
-    if (message.tier !== 0) {
-      obj.tier = environmentTierToJSON(message.tier);
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
+    message.title !== undefined && (obj.title = message.title);
+    message.order !== undefined && (obj.order = Math.round(message.order));
+    message.tier !== undefined && (obj.tier = environmentTierToJSON(message.tier));
     return obj;
   },
 
   create(base?: DeepPartial<Environment>): Environment {
     return Environment.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Environment>): Environment {
     const message = createBaseEnvironment();
     message.name = object.name ?? "";
@@ -820,15 +798,15 @@ export const UpdateEnvironmentBackupSettingRequest = {
 
   toJSON(message: UpdateEnvironmentBackupSettingRequest): unknown {
     const obj: any = {};
-    if (message.setting !== undefined) {
-      obj.setting = EnvironmentBackupSetting.toJSON(message.setting);
-    }
+    message.setting !== undefined &&
+      (obj.setting = message.setting ? EnvironmentBackupSetting.toJSON(message.setting) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<UpdateEnvironmentBackupSettingRequest>): UpdateEnvironmentBackupSettingRequest {
     return UpdateEnvironmentBackupSettingRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UpdateEnvironmentBackupSettingRequest>): UpdateEnvironmentBackupSettingRequest {
     const message = createBaseUpdateEnvironmentBackupSettingRequest();
     message.setting = (object.setting !== undefined && object.setting !== null)
@@ -892,18 +870,15 @@ export const EnvironmentBackupSetting = {
 
   toJSON(message: EnvironmentBackupSetting): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.enabled === true) {
-      obj.enabled = message.enabled;
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.enabled !== undefined && (obj.enabled = message.enabled);
     return obj;
   },
 
   create(base?: DeepPartial<EnvironmentBackupSetting>): EnvironmentBackupSetting {
     return EnvironmentBackupSetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<EnvironmentBackupSetting>): EnvironmentBackupSetting {
     const message = createBaseEnvironmentBackupSetting();
     message.name = object.name ?? "";

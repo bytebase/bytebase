@@ -338,15 +338,14 @@ export const GetIdentityProviderRequest = {
 
   toJSON(message: GetIdentityProviderRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<GetIdentityProviderRequest>): GetIdentityProviderRequest {
     return GetIdentityProviderRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<GetIdentityProviderRequest>): GetIdentityProviderRequest {
     const message = createBaseGetIdentityProviderRequest();
     message.name = object.name ?? "";
@@ -419,21 +418,16 @@ export const ListIdentityProvidersRequest = {
 
   toJSON(message: ListIdentityProvidersRequest): unknown {
     const obj: any = {};
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    if (message.showDeleted === true) {
-      obj.showDeleted = message.showDeleted;
-    }
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
   create(base?: DeepPartial<ListIdentityProvidersRequest>): ListIdentityProvidersRequest {
     return ListIdentityProvidersRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListIdentityProvidersRequest>): ListIdentityProvidersRequest {
     const message = createBaseListIdentityProvidersRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -499,18 +493,19 @@ export const ListIdentityProvidersResponse = {
 
   toJSON(message: ListIdentityProvidersResponse): unknown {
     const obj: any = {};
-    if (message.identityProviders?.length) {
-      obj.identityProviders = message.identityProviders.map((e) => IdentityProvider.toJSON(e));
+    if (message.identityProviders) {
+      obj.identityProviders = message.identityProviders.map((e) => e ? IdentityProvider.toJSON(e) : undefined);
+    } else {
+      obj.identityProviders = [];
     }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
 
   create(base?: DeepPartial<ListIdentityProvidersResponse>): ListIdentityProvidersResponse {
     return ListIdentityProvidersResponse.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ListIdentityProvidersResponse>): ListIdentityProvidersResponse {
     const message = createBaseListIdentityProvidersResponse();
     message.identityProviders = object.identityProviders?.map((e) => IdentityProvider.fromPartial(e)) || [];
@@ -573,18 +568,16 @@ export const CreateIdentityProviderRequest = {
 
   toJSON(message: CreateIdentityProviderRequest): unknown {
     const obj: any = {};
-    if (message.identityProvider !== undefined) {
-      obj.identityProvider = IdentityProvider.toJSON(message.identityProvider);
-    }
-    if (message.identityProviderId !== "") {
-      obj.identityProviderId = message.identityProviderId;
-    }
+    message.identityProvider !== undefined &&
+      (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
+    message.identityProviderId !== undefined && (obj.identityProviderId = message.identityProviderId);
     return obj;
   },
 
   create(base?: DeepPartial<CreateIdentityProviderRequest>): CreateIdentityProviderRequest {
     return CreateIdentityProviderRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<CreateIdentityProviderRequest>): CreateIdentityProviderRequest {
     const message = createBaseCreateIdentityProviderRequest();
     message.identityProvider = (object.identityProvider !== undefined && object.identityProvider !== null)
@@ -649,18 +642,16 @@ export const UpdateIdentityProviderRequest = {
 
   toJSON(message: UpdateIdentityProviderRequest): unknown {
     const obj: any = {};
-    if (message.identityProvider !== undefined) {
-      obj.identityProvider = IdentityProvider.toJSON(message.identityProvider);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
+    message.identityProvider !== undefined &&
+      (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
   create(base?: DeepPartial<UpdateIdentityProviderRequest>): UpdateIdentityProviderRequest {
     return UpdateIdentityProviderRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UpdateIdentityProviderRequest>): UpdateIdentityProviderRequest {
     const message = createBaseUpdateIdentityProviderRequest();
     message.identityProvider = (object.identityProvider !== undefined && object.identityProvider !== null)
@@ -712,15 +703,14 @@ export const DeleteIdentityProviderRequest = {
 
   toJSON(message: DeleteIdentityProviderRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<DeleteIdentityProviderRequest>): DeleteIdentityProviderRequest {
     return DeleteIdentityProviderRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DeleteIdentityProviderRequest>): DeleteIdentityProviderRequest {
     const message = createBaseDeleteIdentityProviderRequest();
     message.name = object.name ?? "";
@@ -769,15 +759,14 @@ export const UndeleteIdentityProviderRequest = {
 
   toJSON(message: UndeleteIdentityProviderRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<UndeleteIdentityProviderRequest>): UndeleteIdentityProviderRequest {
     return UndeleteIdentityProviderRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<UndeleteIdentityProviderRequest>): UndeleteIdentityProviderRequest {
     const message = createBaseUndeleteIdentityProviderRequest();
     message.name = object.name ?? "";
@@ -841,18 +830,18 @@ export const TestIdentityProviderRequest = {
 
   toJSON(message: TestIdentityProviderRequest): unknown {
     const obj: any = {};
-    if (message.identityProvider !== undefined) {
-      obj.identityProvider = IdentityProvider.toJSON(message.identityProvider);
-    }
-    if (message.oauth2Context !== undefined) {
-      obj.oauth2Context = OAuth2IdentityProviderTestRequestContext.toJSON(message.oauth2Context);
-    }
+    message.identityProvider !== undefined &&
+      (obj.identityProvider = message.identityProvider ? IdentityProvider.toJSON(message.identityProvider) : undefined);
+    message.oauth2Context !== undefined && (obj.oauth2Context = message.oauth2Context
+      ? OAuth2IdentityProviderTestRequestContext.toJSON(message.oauth2Context)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<TestIdentityProviderRequest>): TestIdentityProviderRequest {
     return TestIdentityProviderRequest.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<TestIdentityProviderRequest>): TestIdentityProviderRequest {
     const message = createBaseTestIdentityProviderRequest();
     message.identityProvider = (object.identityProvider !== undefined && object.identityProvider !== null)
@@ -906,15 +895,14 @@ export const OAuth2IdentityProviderTestRequestContext = {
 
   toJSON(message: OAuth2IdentityProviderTestRequestContext): unknown {
     const obj: any = {};
-    if (message.code !== "") {
-      obj.code = message.code;
-    }
+    message.code !== undefined && (obj.code = message.code);
     return obj;
   },
 
   create(base?: DeepPartial<OAuth2IdentityProviderTestRequestContext>): OAuth2IdentityProviderTestRequestContext {
     return OAuth2IdentityProviderTestRequestContext.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<OAuth2IdentityProviderTestRequestContext>): OAuth2IdentityProviderTestRequestContext {
     const message = createBaseOAuth2IdentityProviderTestRequestContext();
     message.code = object.code ?? "";
@@ -959,6 +947,7 @@ export const TestIdentityProviderResponse = {
   create(base?: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
     return TestIdentityProviderResponse.fromPartial(base ?? {});
   },
+
   fromPartial(_: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
     const message = createBaseTestIdentityProviderResponse();
     return message;
@@ -1074,33 +1063,21 @@ export const IdentityProvider = {
 
   toJSON(message: IdentityProvider): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.state !== 0) {
-      obj.state = stateToJSON(message.state);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.domain !== "") {
-      obj.domain = message.domain;
-    }
-    if (message.type !== 0) {
-      obj.type = identityProviderTypeToJSON(message.type);
-    }
-    if (message.config !== undefined) {
-      obj.config = IdentityProviderConfig.toJSON(message.config);
-    }
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
+    message.title !== undefined && (obj.title = message.title);
+    message.domain !== undefined && (obj.domain = message.domain);
+    message.type !== undefined && (obj.type = identityProviderTypeToJSON(message.type));
+    message.config !== undefined &&
+      (obj.config = message.config ? IdentityProviderConfig.toJSON(message.config) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<IdentityProvider>): IdentityProvider {
     return IdentityProvider.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<IdentityProvider>): IdentityProvider {
     const message = createBaseIdentityProvider();
     message.name = object.name ?? "";
@@ -1181,21 +1158,19 @@ export const IdentityProviderConfig = {
 
   toJSON(message: IdentityProviderConfig): unknown {
     const obj: any = {};
-    if (message.oauth2Config !== undefined) {
-      obj.oauth2Config = OAuth2IdentityProviderConfig.toJSON(message.oauth2Config);
-    }
-    if (message.oidcConfig !== undefined) {
-      obj.oidcConfig = OIDCIdentityProviderConfig.toJSON(message.oidcConfig);
-    }
-    if (message.ldapConfig !== undefined) {
-      obj.ldapConfig = LDAPIdentityProviderConfig.toJSON(message.ldapConfig);
-    }
+    message.oauth2Config !== undefined &&
+      (obj.oauth2Config = message.oauth2Config ? OAuth2IdentityProviderConfig.toJSON(message.oauth2Config) : undefined);
+    message.oidcConfig !== undefined &&
+      (obj.oidcConfig = message.oidcConfig ? OIDCIdentityProviderConfig.toJSON(message.oidcConfig) : undefined);
+    message.ldapConfig !== undefined &&
+      (obj.ldapConfig = message.ldapConfig ? LDAPIdentityProviderConfig.toJSON(message.ldapConfig) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<IdentityProviderConfig>): IdentityProviderConfig {
     return IdentityProviderConfig.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<IdentityProviderConfig>): IdentityProviderConfig {
     const message = createBaseIdentityProviderConfig();
     message.oauth2Config = (object.oauth2Config !== undefined && object.oauth2Config !== null)
@@ -1352,39 +1327,27 @@ export const OAuth2IdentityProviderConfig = {
 
   toJSON(message: OAuth2IdentityProviderConfig): unknown {
     const obj: any = {};
-    if (message.authUrl !== "") {
-      obj.authUrl = message.authUrl;
+    message.authUrl !== undefined && (obj.authUrl = message.authUrl);
+    message.tokenUrl !== undefined && (obj.tokenUrl = message.tokenUrl);
+    message.userInfoUrl !== undefined && (obj.userInfoUrl = message.userInfoUrl);
+    message.clientId !== undefined && (obj.clientId = message.clientId);
+    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
+    if (message.scopes) {
+      obj.scopes = message.scopes.map((e) => e);
+    } else {
+      obj.scopes = [];
     }
-    if (message.tokenUrl !== "") {
-      obj.tokenUrl = message.tokenUrl;
-    }
-    if (message.userInfoUrl !== "") {
-      obj.userInfoUrl = message.userInfoUrl;
-    }
-    if (message.clientId !== "") {
-      obj.clientId = message.clientId;
-    }
-    if (message.clientSecret !== "") {
-      obj.clientSecret = message.clientSecret;
-    }
-    if (message.scopes?.length) {
-      obj.scopes = message.scopes;
-    }
-    if (message.fieldMapping !== undefined) {
-      obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
-    }
-    if (message.skipTlsVerify === true) {
-      obj.skipTlsVerify = message.skipTlsVerify;
-    }
-    if (message.authStyle !== 0) {
-      obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle);
-    }
+    message.fieldMapping !== undefined &&
+      (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
+    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
+    message.authStyle !== undefined && (obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle));
     return obj;
   },
 
   create(base?: DeepPartial<OAuth2IdentityProviderConfig>): OAuth2IdentityProviderConfig {
     return OAuth2IdentityProviderConfig.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<OAuth2IdentityProviderConfig>): OAuth2IdentityProviderConfig {
     const message = createBaseOAuth2IdentityProviderConfig();
     message.authUrl = object.authUrl ?? "";
@@ -1519,33 +1482,25 @@ export const OIDCIdentityProviderConfig = {
 
   toJSON(message: OIDCIdentityProviderConfig): unknown {
     const obj: any = {};
-    if (message.issuer !== "") {
-      obj.issuer = message.issuer;
+    message.issuer !== undefined && (obj.issuer = message.issuer);
+    message.clientId !== undefined && (obj.clientId = message.clientId);
+    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
+    if (message.scopes) {
+      obj.scopes = message.scopes.map((e) => e);
+    } else {
+      obj.scopes = [];
     }
-    if (message.clientId !== "") {
-      obj.clientId = message.clientId;
-    }
-    if (message.clientSecret !== "") {
-      obj.clientSecret = message.clientSecret;
-    }
-    if (message.scopes?.length) {
-      obj.scopes = message.scopes;
-    }
-    if (message.fieldMapping !== undefined) {
-      obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
-    }
-    if (message.skipTlsVerify === true) {
-      obj.skipTlsVerify = message.skipTlsVerify;
-    }
-    if (message.authStyle !== 0) {
-      obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle);
-    }
+    message.fieldMapping !== undefined &&
+      (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
+    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
+    message.authStyle !== undefined && (obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle));
     return obj;
   },
 
   create(base?: DeepPartial<OIDCIdentityProviderConfig>): OIDCIdentityProviderConfig {
     return OIDCIdentityProviderConfig.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<OIDCIdentityProviderConfig>): OIDCIdentityProviderConfig {
     const message = createBaseOIDCIdentityProviderConfig();
     message.issuer = object.issuer ?? "";
@@ -1702,39 +1657,23 @@ export const LDAPIdentityProviderConfig = {
 
   toJSON(message: LDAPIdentityProviderConfig): unknown {
     const obj: any = {};
-    if (message.host !== "") {
-      obj.host = message.host;
-    }
-    if (message.port !== 0) {
-      obj.port = Math.round(message.port);
-    }
-    if (message.skipTlsVerify === true) {
-      obj.skipTlsVerify = message.skipTlsVerify;
-    }
-    if (message.bindDn !== "") {
-      obj.bindDn = message.bindDn;
-    }
-    if (message.bindPassword !== "") {
-      obj.bindPassword = message.bindPassword;
-    }
-    if (message.baseDn !== "") {
-      obj.baseDn = message.baseDn;
-    }
-    if (message.userFilter !== "") {
-      obj.userFilter = message.userFilter;
-    }
-    if (message.securityProtocol !== "") {
-      obj.securityProtocol = message.securityProtocol;
-    }
-    if (message.fieldMapping !== undefined) {
-      obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
-    }
+    message.host !== undefined && (obj.host = message.host);
+    message.port !== undefined && (obj.port = Math.round(message.port));
+    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
+    message.bindDn !== undefined && (obj.bindDn = message.bindDn);
+    message.bindPassword !== undefined && (obj.bindPassword = message.bindPassword);
+    message.baseDn !== undefined && (obj.baseDn = message.baseDn);
+    message.userFilter !== undefined && (obj.userFilter = message.userFilter);
+    message.securityProtocol !== undefined && (obj.securityProtocol = message.securityProtocol);
+    message.fieldMapping !== undefined &&
+      (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<LDAPIdentityProviderConfig>): LDAPIdentityProviderConfig {
     return LDAPIdentityProviderConfig.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<LDAPIdentityProviderConfig>): LDAPIdentityProviderConfig {
     const message = createBaseLDAPIdentityProviderConfig();
     message.host = object.host ?? "";
@@ -1828,24 +1767,17 @@ export const FieldMapping = {
 
   toJSON(message: FieldMapping): unknown {
     const obj: any = {};
-    if (message.identifier !== "") {
-      obj.identifier = message.identifier;
-    }
-    if (message.displayName !== "") {
-      obj.displayName = message.displayName;
-    }
-    if (message.email !== "") {
-      obj.email = message.email;
-    }
-    if (message.phone !== "") {
-      obj.phone = message.phone;
-    }
+    message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
+    message.email !== undefined && (obj.email = message.email);
+    message.phone !== undefined && (obj.phone = message.phone);
     return obj;
   },
 
   create(base?: DeepPartial<FieldMapping>): FieldMapping {
     return FieldMapping.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<FieldMapping>): FieldMapping {
     const message = createBaseFieldMapping();
     message.identifier = object.identifier ?? "";

@@ -1,7 +1,7 @@
 /* eslint-disable */
+import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
 import { ChangedResources } from "./instance_change_history";
-import Long = require("long");
 
 export const protobufPackage = "bytebase.store";
 
@@ -223,24 +223,22 @@ export const PlanCheckRunConfig = {
 
   toJSON(message: PlanCheckRunConfig): unknown {
     const obj: any = {};
-    if (message.sheetUid !== 0) {
-      obj.sheetUid = Math.round(message.sheetUid);
-    }
-    if (message.changeDatabaseType !== 0) {
-      obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType);
-    }
-    if (message.databaseTarget !== undefined) {
-      obj.databaseTarget = PlanCheckRunConfig_DatabaseTarget.toJSON(message.databaseTarget);
-    }
-    if (message.databaseGroupTarget !== undefined) {
-      obj.databaseGroupTarget = PlanCheckRunConfig_DatabaseGroupTarget.toJSON(message.databaseGroupTarget);
-    }
+    message.sheetUid !== undefined && (obj.sheetUid = Math.round(message.sheetUid));
+    message.changeDatabaseType !== undefined &&
+      (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
+    message.databaseTarget !== undefined && (obj.databaseTarget = message.databaseTarget
+      ? PlanCheckRunConfig_DatabaseTarget.toJSON(message.databaseTarget)
+      : undefined);
+    message.databaseGroupTarget !== undefined && (obj.databaseGroupTarget = message.databaseGroupTarget
+      ? PlanCheckRunConfig_DatabaseGroupTarget.toJSON(message.databaseGroupTarget)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunConfig>): PlanCheckRunConfig {
     return PlanCheckRunConfig.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRunConfig>): PlanCheckRunConfig {
     const message = createBasePlanCheckRunConfig();
     message.sheetUid = object.sheetUid ?? 0;
@@ -309,18 +307,15 @@ export const PlanCheckRunConfig_DatabaseTarget = {
 
   toJSON(message: PlanCheckRunConfig_DatabaseTarget): unknown {
     const obj: any = {};
-    if (message.instanceUid !== 0) {
-      obj.instanceUid = Math.round(message.instanceUid);
-    }
-    if (message.databaseName !== "") {
-      obj.databaseName = message.databaseName;
-    }
+    message.instanceUid !== undefined && (obj.instanceUid = Math.round(message.instanceUid));
+    message.databaseName !== undefined && (obj.databaseName = message.databaseName);
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunConfig_DatabaseTarget>): PlanCheckRunConfig_DatabaseTarget {
     return PlanCheckRunConfig_DatabaseTarget.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRunConfig_DatabaseTarget>): PlanCheckRunConfig_DatabaseTarget {
     const message = createBasePlanCheckRunConfig_DatabaseTarget();
     message.instanceUid = object.instanceUid ?? 0;
@@ -370,15 +365,14 @@ export const PlanCheckRunConfig_DatabaseGroupTarget = {
 
   toJSON(message: PlanCheckRunConfig_DatabaseGroupTarget): unknown {
     const obj: any = {};
-    if (message.databaseGroupUid !== 0) {
-      obj.databaseGroupUid = Math.round(message.databaseGroupUid);
-    }
+    message.databaseGroupUid !== undefined && (obj.databaseGroupUid = Math.round(message.databaseGroupUid));
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunConfig_DatabaseGroupTarget>): PlanCheckRunConfig_DatabaseGroupTarget {
     return PlanCheckRunConfig_DatabaseGroupTarget.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRunConfig_DatabaseGroupTarget>): PlanCheckRunConfig_DatabaseGroupTarget {
     const message = createBasePlanCheckRunConfig_DatabaseGroupTarget();
     message.databaseGroupUid = object.databaseGroupUid ?? 0;
@@ -442,18 +436,19 @@ export const PlanCheckRunResult = {
 
   toJSON(message: PlanCheckRunResult): unknown {
     const obj: any = {};
-    if (message.results?.length) {
-      obj.results = message.results.map((e) => PlanCheckRunResult_Result.toJSON(e));
+    if (message.results) {
+      obj.results = message.results.map((e) => e ? PlanCheckRunResult_Result.toJSON(e) : undefined);
+    } else {
+      obj.results = [];
     }
-    if (message.error !== "") {
-      obj.error = message.error;
-    }
+    message.error !== undefined && (obj.error = message.error);
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunResult>): PlanCheckRunResult {
     return PlanCheckRunResult.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRunResult>): PlanCheckRunResult {
     const message = createBasePlanCheckRunResult();
     message.results = object.results?.map((e) => PlanCheckRunResult_Result.fromPartial(e)) || [];
@@ -564,30 +559,23 @@ export const PlanCheckRunResult_Result = {
 
   toJSON(message: PlanCheckRunResult_Result): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
-      obj.status = planCheckRunResult_Result_StatusToJSON(message.status);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.content !== "") {
-      obj.content = message.content;
-    }
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
-    if (message.sqlSummaryReport !== undefined) {
-      obj.sqlSummaryReport = PlanCheckRunResult_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport);
-    }
-    if (message.sqlReviewReport !== undefined) {
-      obj.sqlReviewReport = PlanCheckRunResult_Result_SqlReviewReport.toJSON(message.sqlReviewReport);
-    }
+    message.status !== undefined && (obj.status = planCheckRunResult_Result_StatusToJSON(message.status));
+    message.title !== undefined && (obj.title = message.title);
+    message.content !== undefined && (obj.content = message.content);
+    message.code !== undefined && (obj.code = Math.round(message.code));
+    message.sqlSummaryReport !== undefined && (obj.sqlSummaryReport = message.sqlSummaryReport
+      ? PlanCheckRunResult_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport)
+      : undefined);
+    message.sqlReviewReport !== undefined && (obj.sqlReviewReport = message.sqlReviewReport
+      ? PlanCheckRunResult_Result_SqlReviewReport.toJSON(message.sqlReviewReport)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunResult_Result>): PlanCheckRunResult_Result {
     return PlanCheckRunResult_Result.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<PlanCheckRunResult_Result>): PlanCheckRunResult_Result {
     const message = createBasePlanCheckRunResult_Result();
     message.status = object.status ?? 0;
@@ -680,24 +668,22 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
 
   toJSON(message: PlanCheckRunResult_Result_SqlSummaryReport): unknown {
     const obj: any = {};
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
+    message.code !== undefined && (obj.code = Math.round(message.code));
+    if (message.statementTypes) {
+      obj.statementTypes = message.statementTypes.map((e) => e);
+    } else {
+      obj.statementTypes = [];
     }
-    if (message.statementTypes?.length) {
-      obj.statementTypes = message.statementTypes;
-    }
-    if (message.affectedRows !== 0) {
-      obj.affectedRows = Math.round(message.affectedRows);
-    }
-    if (message.changedResources !== undefined) {
-      obj.changedResources = ChangedResources.toJSON(message.changedResources);
-    }
+    message.affectedRows !== undefined && (obj.affectedRows = Math.round(message.affectedRows));
+    message.changedResources !== undefined &&
+      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunResult_Result_SqlSummaryReport>): PlanCheckRunResult_Result_SqlSummaryReport {
     return PlanCheckRunResult_Result_SqlSummaryReport.fromPartial(base ?? {});
   },
+
   fromPartial(
     object: DeepPartial<PlanCheckRunResult_Result_SqlSummaryReport>,
   ): PlanCheckRunResult_Result_SqlSummaryReport {
@@ -788,24 +774,17 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
 
   toJSON(message: PlanCheckRunResult_Result_SqlReviewReport): unknown {
     const obj: any = {};
-    if (message.line !== 0) {
-      obj.line = Math.round(message.line);
-    }
-    if (message.column !== 0) {
-      obj.column = Math.round(message.column);
-    }
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
+    message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
+    message.detail !== undefined && (obj.detail = message.detail);
+    message.code !== undefined && (obj.code = Math.round(message.code));
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunResult_Result_SqlReviewReport>): PlanCheckRunResult_Result_SqlReviewReport {
     return PlanCheckRunResult_Result_SqlReviewReport.fromPartial(base ?? {});
   },
+
   fromPartial(
     object: DeepPartial<PlanCheckRunResult_Result_SqlReviewReport>,
   ): PlanCheckRunResult_Result_SqlReviewReport {
@@ -851,6 +830,8 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

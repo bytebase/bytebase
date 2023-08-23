@@ -1,9 +1,9 @@
 /* eslint-disable */
+import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../../../protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON } from "../../../protobuf/struct";
 import { Timestamp } from "../../../protobuf/timestamp";
-import Long = require("long");
 
 export const protobufPackage = "google.api.expr.v1alpha1";
 
@@ -443,18 +443,16 @@ export const ParsedExpr = {
 
   toJSON(message: ParsedExpr): unknown {
     const obj: any = {};
-    if (message.expr !== undefined) {
-      obj.expr = Expr.toJSON(message.expr);
-    }
-    if (message.sourceInfo !== undefined) {
-      obj.sourceInfo = SourceInfo.toJSON(message.sourceInfo);
-    }
+    message.expr !== undefined && (obj.expr = message.expr ? Expr.toJSON(message.expr) : undefined);
+    message.sourceInfo !== undefined &&
+      (obj.sourceInfo = message.sourceInfo ? SourceInfo.toJSON(message.sourceInfo) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<ParsedExpr>): ParsedExpr {
     return ParsedExpr.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ParsedExpr>): ParsedExpr {
     const message = createBaseParsedExpr();
     message.expr = (object.expr !== undefined && object.expr !== null) ? Expr.fromPartial(object.expr) : undefined;
@@ -596,36 +594,29 @@ export const Expr = {
 
   toJSON(message: Expr): unknown {
     const obj: any = {};
-    if (message.id !== 0) {
-      obj.id = Math.round(message.id);
-    }
-    if (message.constExpr !== undefined) {
-      obj.constExpr = Constant.toJSON(message.constExpr);
-    }
-    if (message.identExpr !== undefined) {
-      obj.identExpr = Expr_Ident.toJSON(message.identExpr);
-    }
-    if (message.selectExpr !== undefined) {
-      obj.selectExpr = Expr_Select.toJSON(message.selectExpr);
-    }
-    if (message.callExpr !== undefined) {
-      obj.callExpr = Expr_Call.toJSON(message.callExpr);
-    }
-    if (message.listExpr !== undefined) {
-      obj.listExpr = Expr_CreateList.toJSON(message.listExpr);
-    }
-    if (message.structExpr !== undefined) {
-      obj.structExpr = Expr_CreateStruct.toJSON(message.structExpr);
-    }
-    if (message.comprehensionExpr !== undefined) {
-      obj.comprehensionExpr = Expr_Comprehension.toJSON(message.comprehensionExpr);
-    }
+    message.id !== undefined && (obj.id = Math.round(message.id));
+    message.constExpr !== undefined &&
+      (obj.constExpr = message.constExpr ? Constant.toJSON(message.constExpr) : undefined);
+    message.identExpr !== undefined &&
+      (obj.identExpr = message.identExpr ? Expr_Ident.toJSON(message.identExpr) : undefined);
+    message.selectExpr !== undefined &&
+      (obj.selectExpr = message.selectExpr ? Expr_Select.toJSON(message.selectExpr) : undefined);
+    message.callExpr !== undefined &&
+      (obj.callExpr = message.callExpr ? Expr_Call.toJSON(message.callExpr) : undefined);
+    message.listExpr !== undefined &&
+      (obj.listExpr = message.listExpr ? Expr_CreateList.toJSON(message.listExpr) : undefined);
+    message.structExpr !== undefined &&
+      (obj.structExpr = message.structExpr ? Expr_CreateStruct.toJSON(message.structExpr) : undefined);
+    message.comprehensionExpr !== undefined && (obj.comprehensionExpr = message.comprehensionExpr
+      ? Expr_Comprehension.toJSON(message.comprehensionExpr)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<Expr>): Expr {
     return Expr.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Expr>): Expr {
     const message = createBaseExpr();
     message.id = object.id ?? 0;
@@ -695,15 +686,14 @@ export const Expr_Ident = {
 
   toJSON(message: Expr_Ident): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
   create(base?: DeepPartial<Expr_Ident>): Expr_Ident {
     return Expr_Ident.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Expr_Ident>): Expr_Ident {
     const message = createBaseExpr_Ident();
     message.name = object.name ?? "";
@@ -776,21 +766,16 @@ export const Expr_Select = {
 
   toJSON(message: Expr_Select): unknown {
     const obj: any = {};
-    if (message.operand !== undefined) {
-      obj.operand = Expr.toJSON(message.operand);
-    }
-    if (message.field !== "") {
-      obj.field = message.field;
-    }
-    if (message.testOnly === true) {
-      obj.testOnly = message.testOnly;
-    }
+    message.operand !== undefined && (obj.operand = message.operand ? Expr.toJSON(message.operand) : undefined);
+    message.field !== undefined && (obj.field = message.field);
+    message.testOnly !== undefined && (obj.testOnly = message.testOnly);
     return obj;
   },
 
   create(base?: DeepPartial<Expr_Select>): Expr_Select {
     return Expr_Select.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Expr_Select>): Expr_Select {
     const message = createBaseExpr_Select();
     message.operand = (object.operand !== undefined && object.operand !== null)
@@ -867,14 +852,12 @@ export const Expr_Call = {
 
   toJSON(message: Expr_Call): unknown {
     const obj: any = {};
-    if (message.target !== undefined) {
-      obj.target = Expr.toJSON(message.target);
-    }
-    if (message.function !== "") {
-      obj.function = message.function;
-    }
-    if (message.args?.length) {
-      obj.args = message.args.map((e) => Expr.toJSON(e));
+    message.target !== undefined && (obj.target = message.target ? Expr.toJSON(message.target) : undefined);
+    message.function !== undefined && (obj.function = message.function);
+    if (message.args) {
+      obj.args = message.args.map((e) => e ? Expr.toJSON(e) : undefined);
+    } else {
+      obj.args = [];
     }
     return obj;
   },
@@ -882,6 +865,7 @@ export const Expr_Call = {
   create(base?: DeepPartial<Expr_Call>): Expr_Call {
     return Expr_Call.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Expr_Call>): Expr_Call {
     const message = createBaseExpr_Call();
     message.target = (object.target !== undefined && object.target !== null)
@@ -959,11 +943,15 @@ export const Expr_CreateList = {
 
   toJSON(message: Expr_CreateList): unknown {
     const obj: any = {};
-    if (message.elements?.length) {
-      obj.elements = message.elements.map((e) => Expr.toJSON(e));
+    if (message.elements) {
+      obj.elements = message.elements.map((e) => e ? Expr.toJSON(e) : undefined);
+    } else {
+      obj.elements = [];
     }
-    if (message.optionalIndices?.length) {
+    if (message.optionalIndices) {
       obj.optionalIndices = message.optionalIndices.map((e) => Math.round(e));
+    } else {
+      obj.optionalIndices = [];
     }
     return obj;
   },
@@ -971,6 +959,7 @@ export const Expr_CreateList = {
   create(base?: DeepPartial<Expr_CreateList>): Expr_CreateList {
     return Expr_CreateList.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Expr_CreateList>): Expr_CreateList {
     const message = createBaseExpr_CreateList();
     message.elements = object.elements?.map((e) => Expr.fromPartial(e)) || [];
@@ -1035,11 +1024,11 @@ export const Expr_CreateStruct = {
 
   toJSON(message: Expr_CreateStruct): unknown {
     const obj: any = {};
-    if (message.messageName !== "") {
-      obj.messageName = message.messageName;
-    }
-    if (message.entries?.length) {
-      obj.entries = message.entries.map((e) => Expr_CreateStruct_Entry.toJSON(e));
+    message.messageName !== undefined && (obj.messageName = message.messageName);
+    if (message.entries) {
+      obj.entries = message.entries.map((e) => e ? Expr_CreateStruct_Entry.toJSON(e) : undefined);
+    } else {
+      obj.entries = [];
     }
     return obj;
   },
@@ -1047,6 +1036,7 @@ export const Expr_CreateStruct = {
   create(base?: DeepPartial<Expr_CreateStruct>): Expr_CreateStruct {
     return Expr_CreateStruct.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Expr_CreateStruct>): Expr_CreateStruct {
     const message = createBaseExpr_CreateStruct();
     message.messageName = object.messageName ?? "";
@@ -1142,27 +1132,18 @@ export const Expr_CreateStruct_Entry = {
 
   toJSON(message: Expr_CreateStruct_Entry): unknown {
     const obj: any = {};
-    if (message.id !== 0) {
-      obj.id = Math.round(message.id);
-    }
-    if (message.fieldKey !== undefined) {
-      obj.fieldKey = message.fieldKey;
-    }
-    if (message.mapKey !== undefined) {
-      obj.mapKey = Expr.toJSON(message.mapKey);
-    }
-    if (message.value !== undefined) {
-      obj.value = Expr.toJSON(message.value);
-    }
-    if (message.optionalEntry === true) {
-      obj.optionalEntry = message.optionalEntry;
-    }
+    message.id !== undefined && (obj.id = Math.round(message.id));
+    message.fieldKey !== undefined && (obj.fieldKey = message.fieldKey);
+    message.mapKey !== undefined && (obj.mapKey = message.mapKey ? Expr.toJSON(message.mapKey) : undefined);
+    message.value !== undefined && (obj.value = message.value ? Expr.toJSON(message.value) : undefined);
+    message.optionalEntry !== undefined && (obj.optionalEntry = message.optionalEntry);
     return obj;
   },
 
   create(base?: DeepPartial<Expr_CreateStruct_Entry>): Expr_CreateStruct_Entry {
     return Expr_CreateStruct_Entry.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Expr_CreateStruct_Entry>): Expr_CreateStruct_Entry {
     const message = createBaseExpr_CreateStruct_Entry();
     message.id = object.id ?? 0;
@@ -1293,33 +1274,21 @@ export const Expr_Comprehension = {
 
   toJSON(message: Expr_Comprehension): unknown {
     const obj: any = {};
-    if (message.iterVar !== "") {
-      obj.iterVar = message.iterVar;
-    }
-    if (message.iterRange !== undefined) {
-      obj.iterRange = Expr.toJSON(message.iterRange);
-    }
-    if (message.accuVar !== "") {
-      obj.accuVar = message.accuVar;
-    }
-    if (message.accuInit !== undefined) {
-      obj.accuInit = Expr.toJSON(message.accuInit);
-    }
-    if (message.loopCondition !== undefined) {
-      obj.loopCondition = Expr.toJSON(message.loopCondition);
-    }
-    if (message.loopStep !== undefined) {
-      obj.loopStep = Expr.toJSON(message.loopStep);
-    }
-    if (message.result !== undefined) {
-      obj.result = Expr.toJSON(message.result);
-    }
+    message.iterVar !== undefined && (obj.iterVar = message.iterVar);
+    message.iterRange !== undefined && (obj.iterRange = message.iterRange ? Expr.toJSON(message.iterRange) : undefined);
+    message.accuVar !== undefined && (obj.accuVar = message.accuVar);
+    message.accuInit !== undefined && (obj.accuInit = message.accuInit ? Expr.toJSON(message.accuInit) : undefined);
+    message.loopCondition !== undefined &&
+      (obj.loopCondition = message.loopCondition ? Expr.toJSON(message.loopCondition) : undefined);
+    message.loopStep !== undefined && (obj.loopStep = message.loopStep ? Expr.toJSON(message.loopStep) : undefined);
+    message.result !== undefined && (obj.result = message.result ? Expr.toJSON(message.result) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<Expr_Comprehension>): Expr_Comprehension {
     return Expr_Comprehension.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Expr_Comprehension>): Expr_Comprehension {
     const message = createBaseExpr_Comprehension();
     message.iterVar = object.iterVar ?? "";
@@ -1484,39 +1453,25 @@ export const Constant = {
 
   toJSON(message: Constant): unknown {
     const obj: any = {};
-    if (message.nullValue !== undefined) {
-      obj.nullValue = nullValueToJSON(message.nullValue);
-    }
-    if (message.boolValue !== undefined) {
-      obj.boolValue = message.boolValue;
-    }
-    if (message.int64Value !== undefined) {
-      obj.int64Value = Math.round(message.int64Value);
-    }
-    if (message.uint64Value !== undefined) {
-      obj.uint64Value = Math.round(message.uint64Value);
-    }
-    if (message.doubleValue !== undefined) {
-      obj.doubleValue = message.doubleValue;
-    }
-    if (message.stringValue !== undefined) {
-      obj.stringValue = message.stringValue;
-    }
-    if (message.bytesValue !== undefined) {
-      obj.bytesValue = base64FromBytes(message.bytesValue);
-    }
-    if (message.durationValue !== undefined) {
-      obj.durationValue = Duration.toJSON(message.durationValue);
-    }
-    if (message.timestampValue !== undefined) {
-      obj.timestampValue = message.timestampValue.toISOString();
-    }
+    message.nullValue !== undefined &&
+      (obj.nullValue = message.nullValue !== undefined ? nullValueToJSON(message.nullValue) : undefined);
+    message.boolValue !== undefined && (obj.boolValue = message.boolValue);
+    message.int64Value !== undefined && (obj.int64Value = Math.round(message.int64Value));
+    message.uint64Value !== undefined && (obj.uint64Value = Math.round(message.uint64Value));
+    message.doubleValue !== undefined && (obj.doubleValue = message.doubleValue);
+    message.stringValue !== undefined && (obj.stringValue = message.stringValue);
+    message.bytesValue !== undefined &&
+      (obj.bytesValue = message.bytesValue !== undefined ? base64FromBytes(message.bytesValue) : undefined);
+    message.durationValue !== undefined &&
+      (obj.durationValue = message.durationValue ? Duration.toJSON(message.durationValue) : undefined);
+    message.timestampValue !== undefined && (obj.timestampValue = message.timestampValue.toISOString());
     return obj;
   },
 
   create(base?: DeepPartial<Constant>): Constant {
     return Constant.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<Constant>): Constant {
     const message = createBaseConstant();
     message.nullValue = object.nullValue ?? undefined;
@@ -1649,32 +1604,24 @@ export const SourceInfo = {
 
   toJSON(message: SourceInfo): unknown {
     const obj: any = {};
-    if (message.syntaxVersion !== "") {
-      obj.syntaxVersion = message.syntaxVersion;
-    }
-    if (message.location !== "") {
-      obj.location = message.location;
-    }
-    if (message.lineOffsets?.length) {
+    message.syntaxVersion !== undefined && (obj.syntaxVersion = message.syntaxVersion);
+    message.location !== undefined && (obj.location = message.location);
+    if (message.lineOffsets) {
       obj.lineOffsets = message.lineOffsets.map((e) => Math.round(e));
+    } else {
+      obj.lineOffsets = [];
     }
+    obj.positions = {};
     if (message.positions) {
-      const entries = Object.entries(message.positions);
-      if (entries.length > 0) {
-        obj.positions = {};
-        entries.forEach(([k, v]) => {
-          obj.positions[k] = Math.round(v);
-        });
-      }
+      Object.entries(message.positions).forEach(([k, v]) => {
+        obj.positions[k] = Math.round(v);
+      });
     }
+    obj.macroCalls = {};
     if (message.macroCalls) {
-      const entries = Object.entries(message.macroCalls);
-      if (entries.length > 0) {
-        obj.macroCalls = {};
-        entries.forEach(([k, v]) => {
-          obj.macroCalls[k] = Expr.toJSON(v);
-        });
-      }
+      Object.entries(message.macroCalls).forEach(([k, v]) => {
+        obj.macroCalls[k] = Expr.toJSON(v);
+      });
     }
     return obj;
   },
@@ -1682,6 +1629,7 @@ export const SourceInfo = {
   create(base?: DeepPartial<SourceInfo>): SourceInfo {
     return SourceInfo.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SourceInfo>): SourceInfo {
     const message = createBaseSourceInfo();
     message.syntaxVersion = object.syntaxVersion ?? "";
@@ -1760,18 +1708,15 @@ export const SourceInfo_PositionsEntry = {
 
   toJSON(message: SourceInfo_PositionsEntry): unknown {
     const obj: any = {};
-    if (message.key !== 0) {
-      obj.key = Math.round(message.key);
-    }
-    if (message.value !== 0) {
-      obj.value = Math.round(message.value);
-    }
+    message.key !== undefined && (obj.key = Math.round(message.key));
+    message.value !== undefined && (obj.value = Math.round(message.value));
     return obj;
   },
 
   create(base?: DeepPartial<SourceInfo_PositionsEntry>): SourceInfo_PositionsEntry {
     return SourceInfo_PositionsEntry.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SourceInfo_PositionsEntry>): SourceInfo_PositionsEntry {
     const message = createBaseSourceInfo_PositionsEntry();
     message.key = object.key ?? 0;
@@ -1834,18 +1779,15 @@ export const SourceInfo_MacroCallsEntry = {
 
   toJSON(message: SourceInfo_MacroCallsEntry): unknown {
     const obj: any = {};
-    if (message.key !== 0) {
-      obj.key = Math.round(message.key);
-    }
-    if (message.value !== undefined) {
-      obj.value = Expr.toJSON(message.value);
-    }
+    message.key !== undefined && (obj.key = Math.round(message.key));
+    message.value !== undefined && (obj.value = message.value ? Expr.toJSON(message.value) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<SourceInfo_MacroCallsEntry>): SourceInfo_MacroCallsEntry {
     return SourceInfo_MacroCallsEntry.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SourceInfo_MacroCallsEntry>): SourceInfo_MacroCallsEntry {
     const message = createBaseSourceInfo_MacroCallsEntry();
     message.key = object.key ?? 0;
@@ -1930,24 +1872,17 @@ export const SourcePosition = {
 
   toJSON(message: SourcePosition): unknown {
     const obj: any = {};
-    if (message.location !== "") {
-      obj.location = message.location;
-    }
-    if (message.offset !== 0) {
-      obj.offset = Math.round(message.offset);
-    }
-    if (message.line !== 0) {
-      obj.line = Math.round(message.line);
-    }
-    if (message.column !== 0) {
-      obj.column = Math.round(message.column);
-    }
+    message.location !== undefined && (obj.location = message.location);
+    message.offset !== undefined && (obj.offset = Math.round(message.offset));
+    message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
     return obj;
   },
 
   create(base?: DeepPartial<SourcePosition>): SourcePosition {
     return SourcePosition.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SourcePosition>): SourcePosition {
     const message = createBaseSourcePosition();
     message.location = object.location ?? "";
@@ -2038,6 +1973,8 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

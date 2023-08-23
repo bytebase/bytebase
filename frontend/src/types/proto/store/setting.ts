@@ -360,30 +360,25 @@ export const WorkspaceProfileSetting = {
 
   toJSON(message: WorkspaceProfileSetting): unknown {
     const obj: any = {};
-    if (message.externalUrl !== "") {
-      obj.externalUrl = message.externalUrl;
+    message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
+    message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
+    message.require2fa !== undefined && (obj.require2fa = message.require2fa);
+    if (message.outboundIpList) {
+      obj.outboundIpList = message.outboundIpList.map((e) => e);
+    } else {
+      obj.outboundIpList = [];
     }
-    if (message.disallowSignup === true) {
-      obj.disallowSignup = message.disallowSignup;
-    }
-    if (message.require2fa === true) {
-      obj.require2fa = message.require2fa;
-    }
-    if (message.outboundIpList?.length) {
-      obj.outboundIpList = message.outboundIpList;
-    }
-    if (message.gitopsWebhookUrl !== "") {
-      obj.gitopsWebhookUrl = message.gitopsWebhookUrl;
-    }
-    if (message.refreshTokenDuration !== undefined) {
-      obj.refreshTokenDuration = Duration.toJSON(message.refreshTokenDuration);
-    }
+    message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
+    message.refreshTokenDuration !== undefined && (obj.refreshTokenDuration = message.refreshTokenDuration
+      ? Duration.toJSON(message.refreshTokenDuration)
+      : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
     return WorkspaceProfileSetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
     const message = createBaseWorkspaceProfileSetting();
     message.externalUrl = object.externalUrl ?? "";
@@ -449,18 +444,15 @@ export const AgentPluginSetting = {
 
   toJSON(message: AgentPluginSetting): unknown {
     const obj: any = {};
-    if (message.url !== "") {
-      obj.url = message.url;
-    }
-    if (message.token !== "") {
-      obj.token = message.token;
-    }
+    message.url !== undefined && (obj.url = message.url);
+    message.token !== undefined && (obj.token = message.token);
     return obj;
   },
 
   create(base?: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
     return AgentPluginSetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
     const message = createBaseAgentPluginSetting();
     message.url = object.url ?? "";
@@ -514,8 +506,10 @@ export const WorkspaceApprovalSetting = {
 
   toJSON(message: WorkspaceApprovalSetting): unknown {
     const obj: any = {};
-    if (message.rules?.length) {
-      obj.rules = message.rules.map((e) => WorkspaceApprovalSetting_Rule.toJSON(e));
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? WorkspaceApprovalSetting_Rule.toJSON(e) : undefined);
+    } else {
+      obj.rules = [];
     }
     return obj;
   },
@@ -523,6 +517,7 @@ export const WorkspaceApprovalSetting = {
   create(base?: DeepPartial<WorkspaceApprovalSetting>): WorkspaceApprovalSetting {
     return WorkspaceApprovalSetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<WorkspaceApprovalSetting>): WorkspaceApprovalSetting {
     const message = createBaseWorkspaceApprovalSetting();
     message.rules = object.rules?.map((e) => WorkspaceApprovalSetting_Rule.fromPartial(e)) || [];
@@ -595,21 +590,18 @@ export const WorkspaceApprovalSetting_Rule = {
 
   toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
     const obj: any = {};
-    if (message.expression !== undefined) {
-      obj.expression = ParsedExpr.toJSON(message.expression);
-    }
-    if (message.template !== undefined) {
-      obj.template = ApprovalTemplate.toJSON(message.template);
-    }
-    if (message.condition !== undefined) {
-      obj.condition = Expr.toJSON(message.condition);
-    }
+    message.expression !== undefined &&
+      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
+    message.template !== undefined &&
+      (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
     return WorkspaceApprovalSetting_Rule.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
     const message = createBaseWorkspaceApprovalSetting_Rule();
     message.expression = (object.expression !== undefined && object.expression !== null)
@@ -668,8 +660,10 @@ export const ExternalApprovalSetting = {
 
   toJSON(message: ExternalApprovalSetting): unknown {
     const obj: any = {};
-    if (message.nodes?.length) {
-      obj.nodes = message.nodes.map((e) => ExternalApprovalSetting_Node.toJSON(e));
+    if (message.nodes) {
+      obj.nodes = message.nodes.map((e) => e ? ExternalApprovalSetting_Node.toJSON(e) : undefined);
+    } else {
+      obj.nodes = [];
     }
     return obj;
   },
@@ -677,6 +671,7 @@ export const ExternalApprovalSetting = {
   create(base?: DeepPartial<ExternalApprovalSetting>): ExternalApprovalSetting {
     return ExternalApprovalSetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ExternalApprovalSetting>): ExternalApprovalSetting {
     const message = createBaseExternalApprovalSetting();
     message.nodes = object.nodes?.map((e) => ExternalApprovalSetting_Node.fromPartial(e)) || [];
@@ -749,21 +744,16 @@ export const ExternalApprovalSetting_Node = {
 
   toJSON(message: ExternalApprovalSetting_Node): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.endpoint !== "") {
-      obj.endpoint = message.endpoint;
-    }
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.endpoint !== undefined && (obj.endpoint = message.endpoint);
     return obj;
   },
 
   create(base?: DeepPartial<ExternalApprovalSetting_Node>): ExternalApprovalSetting_Node {
     return ExternalApprovalSetting_Node.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<ExternalApprovalSetting_Node>): ExternalApprovalSetting_Node {
     const message = createBaseExternalApprovalSetting_Node();
     message.id = object.id ?? "";
@@ -928,42 +918,24 @@ export const SMTPMailDeliverySetting = {
 
   toJSON(message: SMTPMailDeliverySetting): unknown {
     const obj: any = {};
-    if (message.server !== "") {
-      obj.server = message.server;
-    }
-    if (message.port !== 0) {
-      obj.port = Math.round(message.port);
-    }
-    if (message.encryption !== 0) {
-      obj.encryption = sMTPMailDeliverySetting_EncryptionToJSON(message.encryption);
-    }
-    if (message.ca !== "") {
-      obj.ca = message.ca;
-    }
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.cert !== "") {
-      obj.cert = message.cert;
-    }
-    if (message.authentication !== 0) {
-      obj.authentication = sMTPMailDeliverySetting_AuthenticationToJSON(message.authentication);
-    }
-    if (message.username !== "") {
-      obj.username = message.username;
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    if (message.from !== "") {
-      obj.from = message.from;
-    }
+    message.server !== undefined && (obj.server = message.server);
+    message.port !== undefined && (obj.port = Math.round(message.port));
+    message.encryption !== undefined && (obj.encryption = sMTPMailDeliverySetting_EncryptionToJSON(message.encryption));
+    message.ca !== undefined && (obj.ca = message.ca);
+    message.key !== undefined && (obj.key = message.key);
+    message.cert !== undefined && (obj.cert = message.cert);
+    message.authentication !== undefined &&
+      (obj.authentication = sMTPMailDeliverySetting_AuthenticationToJSON(message.authentication));
+    message.username !== undefined && (obj.username = message.username);
+    message.password !== undefined && (obj.password = message.password);
+    message.from !== undefined && (obj.from = message.from);
     return obj;
   },
 
   create(base?: DeepPartial<SMTPMailDeliverySetting>): SMTPMailDeliverySetting {
     return SMTPMailDeliverySetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SMTPMailDeliverySetting>): SMTPMailDeliverySetting {
     const message = createBaseSMTPMailDeliverySetting();
     message.server = object.server ?? "";
@@ -1038,11 +1010,17 @@ export const SchemaTemplateSetting = {
 
   toJSON(message: SchemaTemplateSetting): unknown {
     const obj: any = {};
-    if (message.fieldTemplates?.length) {
-      obj.fieldTemplates = message.fieldTemplates.map((e) => SchemaTemplateSetting_FieldTemplate.toJSON(e));
+    if (message.fieldTemplates) {
+      obj.fieldTemplates = message.fieldTemplates.map((e) =>
+        e ? SchemaTemplateSetting_FieldTemplate.toJSON(e) : undefined
+      );
+    } else {
+      obj.fieldTemplates = [];
     }
-    if (message.columnTypes?.length) {
-      obj.columnTypes = message.columnTypes.map((e) => SchemaTemplateSetting_ColumnType.toJSON(e));
+    if (message.columnTypes) {
+      obj.columnTypes = message.columnTypes.map((e) => e ? SchemaTemplateSetting_ColumnType.toJSON(e) : undefined);
+    } else {
+      obj.columnTypes = [];
     }
     return obj;
   },
@@ -1050,6 +1028,7 @@ export const SchemaTemplateSetting = {
   create(base?: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
     return SchemaTemplateSetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
     const message = createBaseSchemaTemplateSetting();
     message.fieldTemplates = object.fieldTemplates?.map((e) => SchemaTemplateSetting_FieldTemplate.fromPartial(e)) ||
@@ -1135,24 +1114,17 @@ export const SchemaTemplateSetting_FieldTemplate = {
 
   toJSON(message: SchemaTemplateSetting_FieldTemplate): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.engine !== 0) {
-      obj.engine = engineToJSON(message.engine);
-    }
-    if (message.category !== "") {
-      obj.category = message.category;
-    }
-    if (message.column !== undefined) {
-      obj.column = ColumnMetadata.toJSON(message.column);
-    }
+    message.id !== undefined && (obj.id = message.id);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.category !== undefined && (obj.category = message.category);
+    message.column !== undefined && (obj.column = message.column ? ColumnMetadata.toJSON(message.column) : undefined);
     return obj;
   },
 
   create(base?: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
     return SchemaTemplateSetting_FieldTemplate.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
     const message = createBaseSchemaTemplateSetting_FieldTemplate();
     message.id = object.id ?? "";
@@ -1230,14 +1202,12 @@ export const SchemaTemplateSetting_ColumnType = {
 
   toJSON(message: SchemaTemplateSetting_ColumnType): unknown {
     const obj: any = {};
-    if (message.engine !== 0) {
-      obj.engine = engineToJSON(message.engine);
-    }
-    if (message.enabled === true) {
-      obj.enabled = message.enabled;
-    }
-    if (message.types?.length) {
-      obj.types = message.types;
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.enabled !== undefined && (obj.enabled = message.enabled);
+    if (message.types) {
+      obj.types = message.types.map((e) => e);
+    } else {
+      obj.types = [];
     }
     return obj;
   },
@@ -1245,6 +1215,7 @@ export const SchemaTemplateSetting_ColumnType = {
   create(base?: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
     return SchemaTemplateSetting_ColumnType.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
     const message = createBaseSchemaTemplateSetting_ColumnType();
     message.engine = object.engine ?? 0;
@@ -1299,8 +1270,12 @@ export const DataClassificationSetting = {
 
   toJSON(message: DataClassificationSetting): unknown {
     const obj: any = {};
-    if (message.configs?.length) {
-      obj.configs = message.configs.map((e) => DataClassificationSetting_DataClassificationConfig.toJSON(e));
+    if (message.configs) {
+      obj.configs = message.configs.map((e) =>
+        e ? DataClassificationSetting_DataClassificationConfig.toJSON(e) : undefined
+      );
+    } else {
+      obj.configs = [];
     }
     return obj;
   },
@@ -1308,6 +1283,7 @@ export const DataClassificationSetting = {
   create(base?: DeepPartial<DataClassificationSetting>): DataClassificationSetting {
     return DataClassificationSetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<DataClassificationSetting>): DataClassificationSetting {
     const message = createBaseDataClassificationSetting();
     message.configs = object.configs?.map((e) => DataClassificationSetting_DataClassificationConfig.fromPartial(e)) ||
@@ -1413,23 +1389,20 @@ export const DataClassificationSetting_DataClassificationConfig = {
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    if (message.levels) {
+      obj.levels = message.levels.map((e) =>
+        e ? DataClassificationSetting_DataClassificationConfig_Level.toJSON(e) : undefined
+      );
+    } else {
+      obj.levels = [];
     }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.levels?.length) {
-      obj.levels = message.levels.map((e) => DataClassificationSetting_DataClassificationConfig_Level.toJSON(e));
-    }
+    obj.classification = {};
     if (message.classification) {
-      const entries = Object.entries(message.classification);
-      if (entries.length > 0) {
-        obj.classification = {};
-        entries.forEach(([k, v]) => {
-          obj.classification[k] = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(v);
-        });
-      }
+      Object.entries(message.classification).forEach(([k, v]) => {
+        obj.classification[k] = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(v);
+      });
     }
     return obj;
   },
@@ -1439,6 +1412,7 @@ export const DataClassificationSetting_DataClassificationConfig = {
   ): DataClassificationSetting_DataClassificationConfig {
     return DataClassificationSetting_DataClassificationConfig.fromPartial(base ?? {});
   },
+
   fromPartial(
     object: DeepPartial<DataClassificationSetting_DataClassificationConfig>,
   ): DataClassificationSetting_DataClassificationConfig {
@@ -1538,18 +1512,10 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig_Level): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.sensitive === true) {
-      obj.sensitive = message.sensitive;
-    }
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.sensitive !== undefined && (obj.sensitive = message.sensitive);
     return obj;
   },
 
@@ -1558,6 +1524,7 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
   ): DataClassificationSetting_DataClassificationConfig_Level {
     return DataClassificationSetting_DataClassificationConfig_Level.fromPartial(base ?? {});
   },
+
   fromPartial(
     object: DeepPartial<DataClassificationSetting_DataClassificationConfig_Level>,
   ): DataClassificationSetting_DataClassificationConfig_Level {
@@ -1652,18 +1619,10 @@ export const DataClassificationSetting_DataClassificationConfig_DataClassificati
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig_DataClassification): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.levelId !== undefined) {
-      obj.levelId = message.levelId;
-    }
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.levelId !== undefined && (obj.levelId = message.levelId);
     return obj;
   },
 
@@ -1672,6 +1631,7 @@ export const DataClassificationSetting_DataClassificationConfig_DataClassificati
   ): DataClassificationSetting_DataClassificationConfig_DataClassification {
     return DataClassificationSetting_DataClassificationConfig_DataClassification.fromPartial(base ?? {});
   },
+
   fromPartial(
     object: DeepPartial<DataClassificationSetting_DataClassificationConfig_DataClassification>,
   ): DataClassificationSetting_DataClassificationConfig_DataClassification {
@@ -1752,12 +1712,10 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig_ClassificationEntry): unknown {
     const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== undefined) {
-      obj.value = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(message.value);
-    }
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value
+      ? DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(message.value)
+      : undefined);
     return obj;
   },
 
@@ -1766,6 +1724,7 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
   ): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
     return DataClassificationSetting_DataClassificationConfig_ClassificationEntry.fromPartial(base ?? {});
   },
+
   fromPartial(
     object: DeepPartial<DataClassificationSetting_DataClassificationConfig_ClassificationEntry>,
   ): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
@@ -1823,8 +1782,12 @@ export const SemanticCategorySetting = {
 
   toJSON(message: SemanticCategorySetting): unknown {
     const obj: any = {};
-    if (message.categories?.length) {
-      obj.categories = message.categories.map((e) => SemanticCategorySetting_SemanticCategory.toJSON(e));
+    if (message.categories) {
+      obj.categories = message.categories.map((e) =>
+        e ? SemanticCategorySetting_SemanticCategory.toJSON(e) : undefined
+      );
+    } else {
+      obj.categories = [];
     }
     return obj;
   },
@@ -1832,6 +1795,7 @@ export const SemanticCategorySetting = {
   create(base?: DeepPartial<SemanticCategorySetting>): SemanticCategorySetting {
     return SemanticCategorySetting.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SemanticCategorySetting>): SemanticCategorySetting {
     const message = createBaseSemanticCategorySetting();
     message.categories = object.categories?.map((e) => SemanticCategorySetting_SemanticCategory.fromPartial(e)) || [];
@@ -1904,21 +1868,16 @@ export const SemanticCategorySetting_SemanticCategory = {
 
   toJSON(message: SemanticCategorySetting_SemanticCategory): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
   create(base?: DeepPartial<SemanticCategorySetting_SemanticCategory>): SemanticCategorySetting_SemanticCategory {
     return SemanticCategorySetting_SemanticCategory.fromPartial(base ?? {});
   },
+
   fromPartial(object: DeepPartial<SemanticCategorySetting_SemanticCategory>): SemanticCategorySetting_SemanticCategory {
     const message = createBaseSemanticCategorySetting_SemanticCategory();
     message.id = object.id ?? "";
