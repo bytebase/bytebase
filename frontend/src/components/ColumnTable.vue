@@ -95,12 +95,8 @@ import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { ComposedDatabase } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { Engine } from "@/types/proto/v1/common";
-import {
-  PolicyType,
-  SensitiveData,
-  SensitiveDataMaskType,
-} from "@/types/proto/v1/org_policy_service";
+import { Engine, MaskingLevel } from "@/types/proto/v1/common";
+import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
@@ -334,7 +330,8 @@ const toggleSensitiveColumn = (
       schema: props.schema,
       table: props.table.name,
       column: column.name,
-      maskType: SensitiveDataMaskType.DEFAULT,
+      semanticCategoryId: "",
+      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     });
   } else if (!on && index >= 0) {
     sensitiveDataList.splice(index, 1);

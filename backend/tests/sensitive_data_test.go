@@ -214,14 +214,16 @@ func TestSensitiveData(t *testing.T) {
 				SensitiveDataPolicy: &v1pb.SensitiveDataPolicy{
 					SensitiveData: []*v1pb.SensitiveData{
 						{
-							Table:    tableName,
-							Column:   "id",
-							MaskType: v1pb.SensitiveDataMaskType_DEFAULT,
+							Table:              tableName,
+							Column:             "id",
+							SemanticCategoryId: "",
+							MaskingLevel:       v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED,
 						},
 						{
-							Table:    tableName,
-							Column:   "author",
-							MaskType: v1pb.SensitiveDataMaskType_DEFAULT,
+							Table:              tableName,
+							Column:             "author",
+							SemanticCategoryId: "",
+							MaskingLevel:       v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED,
 						},
 					},
 				},
