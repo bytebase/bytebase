@@ -10,11 +10,17 @@ import {
 import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
 import { AnyTabInfo, UNKNOWN_ID } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { emptyConnection, getSheetStatement, isSheetReadableV1 } from "@/utils";
+import {
+  emptyConnection,
+  getSheetStatement,
+  getSuggestedTabNameFromConnection,
+  isSheetReadableV1,
+} from "@/utils";
 import { SheetViewMode } from "./types";
 
 type SheetEvents = Emittery<{
   refresh: { views: SheetViewMode[] };
+  "add-sheet": undefined;
 }>;
 
 const useSheetListByView = (viewMode: SheetViewMode) => {
@@ -159,4 +165,16 @@ export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
   });
 
   return true;
+};
+
+export const addNewSheet = () => {
+  const tabStore = useTabStore();
+  const connection = { ...tabStore.currentTab.connection };
+  const name = getSuggestedTabNameFromConnection(connection);
+  tabStore.addTab({
+    name,
+    connection,
+    // The newly created tab is "clean" so its connection can be changed
+    isFreshNew: true,
+  });
 };

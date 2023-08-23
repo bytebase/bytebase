@@ -10,25 +10,37 @@
       <NTabPane name="shared" :tab="$t('sheet.shared-with-me')">
         <SheetTable view="shared" @select-sheet="handleSelectSheet" />
       </NTabPane>
+
+      <template #suffix>
+        <NButton type="primary" @click="handleAddSheet">
+          {{ $t("common.create") }}
+        </NButton>
+      </template>
     </NTabs>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NTabs, NTabPane } from "naive-ui";
+import { NButton, NTabs, NTabPane } from "naive-ui";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { useSheetContext, openSheet } from "../Sheet";
+import { useSheetContext, openSheet, addNewSheet } from "../Sheet";
 import SheetTable from "./SheetTable";
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const { view } = useSheetContext();
+const { view, events } = useSheetContext();
 
 const handleSelectSheet = async (sheet: Sheet) => {
   if (await openSheet(sheet)) {
     emit("close");
   }
+};
+
+const handleAddSheet = () => {
+  addNewSheet();
+  emit("close");
+  events.emit("add-sheet");
 };
 </script>
