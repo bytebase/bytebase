@@ -141,6 +141,8 @@ export enum LogEntity_Action {
   ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34,
   /** ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
   ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 35,
+  /** ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE - ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
+  ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE = 36,
   /**
    * ACTION_PROJECT_REPOSITORY_PUSH - Project related activity types.
    * Enum value 41 - 60
@@ -215,6 +217,9 @@ export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
     case 35:
     case "ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE":
       return LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE;
+    case 36:
+    case "ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE":
+      return LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE;
     case 41:
     case "ACTION_PROJECT_REPOSITORY_PUSH":
       return LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH;
@@ -275,6 +280,8 @@ export function logEntity_ActionToJSON(object: LogEntity_Action): string {
       return "ACTION_PIPELINE_TASK_STATEMENT_UPDATE";
     case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
       return "ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE";
+    case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return "ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE";
     case LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH:
       return "ACTION_PROJECT_REPOSITORY_PUSH";
     case LogEntity_Action.ACTION_PROJECT_MEMBER_CREATE:

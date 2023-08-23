@@ -9,11 +9,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -492,10 +494,12 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 
 	var taskRunCreates []*store.TaskRunMessage
+	var tasksToRun []*store.TaskMessage
 	for _, task := range stageToRunTasks {
 		if !taskIDsToRunMap[task.ID] {
 			continue
 		}
+		tasksToRun = append(tasksToRun, task)
 		create := &store.TaskRunMessage{
 			TaskUID:   task.ID,
 			Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
@@ -506,6 +510,10 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 
 	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create pending task runs")
+	}
+
+	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, rolloutID, tasksToRun, issue, user.ID); err != nil {
+		log.Error("failed to batch create activities for running tasks", zap.Error(err))
 	}
 
 	return &v1pb.BatchRunTasksResponse{}, nil
