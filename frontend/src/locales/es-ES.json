@@ -2469,7 +2469,8 @@
         "3": "¿Cuál es la proporción de género en cada departamento?"
       },
       "statement-copied": "Declaración copiada al portapapeles",
-      "dont-show-again": "No mostrar de nuevo"
+      "dont-show-again": "No mostrar de nuevo",
+      "chat-sql": "ChatSQL"
     }
   },
   "custom-approval": {
