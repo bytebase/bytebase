@@ -295,7 +295,8 @@ type Progress struct {
 
 // TaskFind is the API message for finding tasks.
 type TaskFind struct {
-	ID *int
+	ID  *int
+	IDs *[]int
 
 	// Related fields
 	PipelineID *int
