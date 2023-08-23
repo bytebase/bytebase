@@ -76,7 +76,7 @@ const state = reactive<LocalState>({
   hoverTabId: "",
 });
 
-const { showPanel: showSheetPanel } = useSheetContext();
+const { showPanel: showSheetPanel, events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 
 const scrollState = reactive({
@@ -98,6 +98,7 @@ const handleAddTab = () => {
     isFreshNew: true,
   });
   nextTick(recalculateScrollState);
+  sheetEvents.emit("add-sheet");
 };
 
 const handleRemoveTab = async (tab: TabInfo, index: number) => {
