@@ -15,7 +15,7 @@
       <NButton
         quaternary
         style="--n-padding: 0 5px; --n-height: 28px"
-        @click="addSheet"
+        @click="handleAddSheet"
       >
         <template #icon>
           <heroicons:plus />
@@ -81,12 +81,13 @@ import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useSheetAndTabStore, useTabStore } from "@/store";
-import { getSuggestedTabNameFromConnection } from "@/utils";
 import {
   SheetViewMode,
   openSheet,
   useSheetContextByView,
   Dropdown,
+  addNewSheet,
+  useSheetContext,
 } from "@/views/sql-editor/Sheet";
 import SheetItem from "./SheetItem.vue";
 import TabItem from "./TabItem.vue";
@@ -102,11 +103,8 @@ const props = defineProps<{
   view: SheetViewMode;
 }>();
 
-const emit = defineEmits<{
-  (event: "add-tab"): void;
-}>();
-
 const tabStore = useTabStore();
+const { events } = useSheetContext();
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 const keyword = ref("");
@@ -184,16 +182,9 @@ const handleItemClick = (item: MergedItem, e: MouseEvent) => {
   }
 };
 
-const addSheet = () => {
-  const connection = { ...tabStore.currentTab.connection };
-  const name = getSuggestedTabNameFromConnection(connection);
-  tabStore.addTab({
-    name,
-    connection,
-    // The newly created tab is "clean" so its connection can be changed
-    isFreshNew: true,
-  });
-  emit("add-tab");
+const handleAddSheet = () => {
+  addNewSheet();
+  events.emit("add-sheet");
 };
 
 const handleRightClick = (item: MergedItem, e: MouseEvent) => {

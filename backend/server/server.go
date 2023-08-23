@@ -463,7 +463,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 
 		if profile.DevelopmentUseV2Scheduler {
-			s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg)
+			s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.ActivityManager)
 			s.TaskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 			s.TaskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
 			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))

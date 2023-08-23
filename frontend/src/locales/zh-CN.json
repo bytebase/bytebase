@@ -1523,6 +1523,10 @@
         "issue-approval-notify": {
           "title": "工单待审批",
           "label": "当工单需要审批"
+        },
+        "issue-task-run-status-change": {
+          "title": "工单任务执行状态变更",
+          "label": "当一个工单包含的任务执行状态发生了变更"
         }
       }
     },
@@ -2467,7 +2471,8 @@
         "3": "各个部门的性别比例如何？"
       },
       "statement-copied": "语句已复制到剪贴板",
-      "dont-show-again": "不再显示"
+      "dont-show-again": "不再显示",
+      "chat-sql": "ChatSQL"
     }
   },
   "custom-approval": {

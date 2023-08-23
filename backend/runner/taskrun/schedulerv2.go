@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -22,17 +23,19 @@ import (
 
 // SchedulerV2 is the V2 scheduler for task run.
 type SchedulerV2 struct {
-	store       *store.Store
-	stateCfg    *state.State
-	executorMap map[api.TaskType]Executor
+	store           *store.Store
+	stateCfg        *state.State
+	activityManager *activity.Manager
+	executorMap     map[api.TaskType]Executor
 }
 
 // NewSchedulerV2 will create a new scheduler.
-func NewSchedulerV2(store *store.Store, stateCfg *state.State) *SchedulerV2 {
+func NewSchedulerV2(store *store.Store, stateCfg *state.State, activityManager *activity.Manager) *SchedulerV2 {
 	return &SchedulerV2{
-		store:       store,
-		stateCfg:    stateCfg,
-		executorMap: map[api.TaskType]Executor{},
+		store:           store,
+		stateCfg:        stateCfg,
+		activityManager: activityManager,
+		executorMap:     map[api.TaskType]Executor{},
 	}
 }
 
@@ -353,6 +356,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunCanceled)
 		return
 	}
 
@@ -395,6 +399,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunFailed)
 		return
 	}
 
@@ -429,7 +434,46 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunDone)
 		return
+	}
+}
+
+func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus api.TaskRunStatus) {
+	if err := func() error {
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+			PipelineID: &task.PipelineID,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to get issue")
+		}
+
+		createActivityPayload := api.ActivityPipelineTaskRunStatusUpdatePayload{
+			TaskID:    task.ID,
+			NewStatus: newStatus,
+			IssueName: issue.Title,
+			TaskName:  task.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal ActivityPipelineTaskRunStatusUpdatePayload payload")
+		}
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: task.PipelineID,
+			Type:         api.ActivityPipelineTaskRunStatusUpdate,
+			Level:        api.ActivityInfo,
+			Payload:      string(bytes),
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return errors.Wrap(err, "failed to create activity")
+		}
+
+		return nil
+	}(); err != nil {
+		log.Error("failed to create activity for task run status update", zap.Error(err))
 	}
 }
 
