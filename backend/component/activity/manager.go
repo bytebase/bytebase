@@ -128,7 +128,7 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 	return nil
 }
 
-// BatchCreateActivitiesForSkipTasks creates activities for skipping tasks
+// BatchCreateActivitiesForSkipTasks creates activities for skipping tasks.
 func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterID int) error {
 	var creates []*store.ActivityMessage
 	for _, task := range tasks {
