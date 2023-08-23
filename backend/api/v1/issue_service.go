@@ -751,7 +751,6 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 
 	var issueIDs []int
-	var issues []*store.IssueMessage
 	for _, issueName := range request.Issues {
 		issue, err := s.getIssueMessage(ctx, issueName)
 		if err != nil {
@@ -760,7 +759,6 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		if issue == nil {
 			return nil, status.Errorf(codes.NotFound, "cannot find issue %v", issueName)
 		}
-		issues = append(issues, issue)
 		issueIDs = append(issueIDs, issue.UID)
 	}
 
@@ -779,29 +777,34 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 
 	if err := func() error {
 		var errs error
-		for _, issue := range issues {
+		for _, issueID := range issueIDs {
+			updatedIssue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
+			if err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to get issue %v", issueID))
+				continue
+			}
+
 			payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-				OldStatus: issue.Status,
+				OldStatus: updatedIssue.Status,
 				NewStatus: newStatus,
-				IssueName: issue.Title,
+				IssueName: updatedIssue.Title,
 			})
 			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Title))
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title))
 				continue
 			}
 			activityCreate := &store.ActivityMessage{
 				CreatorUID:   principalID,
-				ContainerUID: issue.UID,
+				ContainerUID: updatedIssue.UID,
 				Type:         api.ActivityIssueStatusUpdate,
 				Level:        api.ActivityInfo,
 				Comment:      request.Comment,
 				Payload:      string(payload),
 			}
-			issue.Status = newStatus
 			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-				Issue: issue,
+				Issue: updatedIssue,
 			}); err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Title))
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title))
 				continue
 			}
 		}
