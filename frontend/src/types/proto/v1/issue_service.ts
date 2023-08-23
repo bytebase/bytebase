@@ -600,15 +600,18 @@ export const GetIssueRequest = {
 
   toJSON(message: GetIssueRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.force !== undefined && (obj.force = message.force);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.force === true) {
+      obj.force = message.force;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetIssueRequest>): GetIssueRequest {
     return GetIssueRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetIssueRequest>): GetIssueRequest {
     const message = createBaseGetIssueRequest();
     message.name = object.name ?? "";
@@ -671,15 +674,18 @@ export const CreateIssueRequest = {
 
   toJSON(message: CreateIssueRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.issue !== undefined && (obj.issue = message.issue ? Issue.toJSON(message.issue) : undefined);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.issue !== undefined) {
+      obj.issue = Issue.toJSON(message.issue);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateIssueRequest>): CreateIssueRequest {
     return CreateIssueRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateIssueRequest>): CreateIssueRequest {
     const message = createBaseCreateIssueRequest();
     message.parent = object.parent ?? "";
@@ -764,17 +770,24 @@ export const ListIssuesRequest = {
 
   toJSON(message: ListIssuesRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.filter !== undefined && (obj.filter = message.filter);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListIssuesRequest>): ListIssuesRequest {
     return ListIssuesRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListIssuesRequest>): ListIssuesRequest {
     const message = createBaseListIssuesRequest();
     message.parent = object.parent ?? "";
@@ -839,19 +852,18 @@ export const ListIssuesResponse = {
 
   toJSON(message: ListIssuesResponse): unknown {
     const obj: any = {};
-    if (message.issues) {
-      obj.issues = message.issues.map((e) => e ? Issue.toJSON(e) : undefined);
-    } else {
-      obj.issues = [];
+    if (message.issues?.length) {
+      obj.issues = message.issues.map((e) => Issue.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListIssuesResponse>): ListIssuesResponse {
     return ListIssuesResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListIssuesResponse>): ListIssuesResponse {
     const message = createBaseListIssuesResponse();
     message.issues = object.issues?.map((e) => Issue.fromPartial(e)) || [];
@@ -914,15 +926,18 @@ export const UpdateIssueRequest = {
 
   toJSON(message: UpdateIssueRequest): unknown {
     const obj: any = {};
-    message.issue !== undefined && (obj.issue = message.issue ? Issue.toJSON(message.issue) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.issue !== undefined) {
+      obj.issue = Issue.toJSON(message.issue);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateIssueRequest>): UpdateIssueRequest {
     return UpdateIssueRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateIssueRequest>): UpdateIssueRequest {
     const message = createBaseUpdateIssueRequest();
     message.issue = (object.issue !== undefined && object.issue !== null) ? Issue.fromPartial(object.issue) : undefined;
@@ -1018,18 +1033,27 @@ export const SearchIssuesRequest = {
 
   toJSON(message: SearchIssuesRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.query !== undefined && (obj.query = message.query);
-    message.filter !== undefined && (obj.filter = message.filter);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.query !== "") {
+      obj.query = message.query;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SearchIssuesRequest>): SearchIssuesRequest {
     return SearchIssuesRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SearchIssuesRequest>): SearchIssuesRequest {
     const message = createBaseSearchIssuesRequest();
     message.parent = object.parent ?? "";
@@ -1095,19 +1119,18 @@ export const SearchIssuesResponse = {
 
   toJSON(message: SearchIssuesResponse): unknown {
     const obj: any = {};
-    if (message.issues) {
-      obj.issues = message.issues.map((e) => e ? Issue.toJSON(e) : undefined);
-    } else {
-      obj.issues = [];
+    if (message.issues?.length) {
+      obj.issues = message.issues.map((e) => Issue.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SearchIssuesResponse>): SearchIssuesResponse {
     return SearchIssuesResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SearchIssuesResponse>): SearchIssuesResponse {
     const message = createBaseSearchIssuesResponse();
     message.issues = object.issues?.map((e) => Issue.fromPartial(e)) || [];
@@ -1170,11 +1193,11 @@ export const BatchUpdateIssuesRequest = {
 
   toJSON(message: BatchUpdateIssuesRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    if (message.requests) {
-      obj.requests = message.requests.map((e) => e ? UpdateIssueRequest.toJSON(e) : undefined);
-    } else {
-      obj.requests = [];
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.requests?.length) {
+      obj.requests = message.requests.map((e) => UpdateIssueRequest.toJSON(e));
     }
     return obj;
   },
@@ -1182,7 +1205,6 @@ export const BatchUpdateIssuesRequest = {
   create(base?: DeepPartial<BatchUpdateIssuesRequest>): BatchUpdateIssuesRequest {
     return BatchUpdateIssuesRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<BatchUpdateIssuesRequest>): BatchUpdateIssuesRequest {
     const message = createBaseBatchUpdateIssuesRequest();
     message.parent = object.parent ?? "";
@@ -1232,10 +1254,8 @@ export const BatchUpdateIssuesResponse = {
 
   toJSON(message: BatchUpdateIssuesResponse): unknown {
     const obj: any = {};
-    if (message.issues) {
-      obj.issues = message.issues.map((e) => e ? Issue.toJSON(e) : undefined);
-    } else {
-      obj.issues = [];
+    if (message.issues?.length) {
+      obj.issues = message.issues.map((e) => Issue.toJSON(e));
     }
     return obj;
   },
@@ -1243,7 +1263,6 @@ export const BatchUpdateIssuesResponse = {
   create(base?: DeepPartial<BatchUpdateIssuesResponse>): BatchUpdateIssuesResponse {
     return BatchUpdateIssuesResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<BatchUpdateIssuesResponse>): BatchUpdateIssuesResponse {
     const message = createBaseBatchUpdateIssuesResponse();
     message.issues = object.issues?.map((e) => Issue.fromPartial(e)) || [];
@@ -1305,15 +1324,18 @@ export const ApproveIssueRequest = {
 
   toJSON(message: ApproveIssueRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ApproveIssueRequest>): ApproveIssueRequest {
     return ApproveIssueRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApproveIssueRequest>): ApproveIssueRequest {
     const message = createBaseApproveIssueRequest();
     message.name = object.name ?? "";
@@ -1376,15 +1398,18 @@ export const RejectIssueRequest = {
 
   toJSON(message: RejectIssueRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<RejectIssueRequest>): RejectIssueRequest {
     return RejectIssueRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<RejectIssueRequest>): RejectIssueRequest {
     const message = createBaseRejectIssueRequest();
     message.name = object.name ?? "";
@@ -1447,15 +1472,18 @@ export const RequestIssueRequest = {
 
   toJSON(message: RequestIssueRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<RequestIssueRequest>): RequestIssueRequest {
     return RequestIssueRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<RequestIssueRequest>): RequestIssueRequest {
     const message = createBaseRequestIssueRequest();
     message.name = object.name ?? "";
@@ -1715,43 +1743,66 @@ export const Issue = {
 
   toJSON(message: Issue): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
-    message.type !== undefined && (obj.type = issue_TypeToJSON(message.type));
-    message.status !== undefined && (obj.status = issueStatusToJSON(message.status));
-    message.assignee !== undefined && (obj.assignee = message.assignee);
-    message.assigneeAttention !== undefined && (obj.assigneeAttention = message.assigneeAttention);
-    if (message.approvers) {
-      obj.approvers = message.approvers.map((e) => e ? Issue_Approver.toJSON(e) : undefined);
-    } else {
-      obj.approvers = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    if (message.approvalTemplates) {
-      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
-    } else {
-      obj.approvalTemplates = [];
+    if (message.uid !== "") {
+      obj.uid = message.uid;
     }
-    message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
-    message.approvalFindingError !== undefined && (obj.approvalFindingError = message.approvalFindingError);
-    if (message.subscribers) {
-      obj.subscribers = message.subscribers.map((e) => e);
-    } else {
-      obj.subscribers = [];
+    if (message.title !== "") {
+      obj.title = message.title;
     }
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
-    message.plan !== undefined && (obj.plan = message.plan);
-    message.rollout !== undefined && (obj.rollout = message.rollout);
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.type !== 0) {
+      obj.type = issue_TypeToJSON(message.type);
+    }
+    if (message.status !== 0) {
+      obj.status = issueStatusToJSON(message.status);
+    }
+    if (message.assignee !== "") {
+      obj.assignee = message.assignee;
+    }
+    if (message.assigneeAttention === true) {
+      obj.assigneeAttention = message.assigneeAttention;
+    }
+    if (message.approvers?.length) {
+      obj.approvers = message.approvers.map((e) => Issue_Approver.toJSON(e));
+    }
+    if (message.approvalTemplates?.length) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => ApprovalTemplate.toJSON(e));
+    }
+    if (message.approvalFindingDone === true) {
+      obj.approvalFindingDone = message.approvalFindingDone;
+    }
+    if (message.approvalFindingError !== "") {
+      obj.approvalFindingError = message.approvalFindingError;
+    }
+    if (message.subscribers?.length) {
+      obj.subscribers = message.subscribers;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    if (message.plan !== "") {
+      obj.plan = message.plan;
+    }
+    if (message.rollout !== "") {
+      obj.rollout = message.rollout;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Issue>): Issue {
     return Issue.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Issue>): Issue {
     const message = createBaseIssue();
     message.name = object.name ?? "";
@@ -1830,15 +1881,18 @@ export const Issue_Approver = {
 
   toJSON(message: Issue_Approver): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = issue_Approver_StatusToJSON(message.status));
-    message.principal !== undefined && (obj.principal = message.principal);
+    if (message.status !== 0) {
+      obj.status = issue_Approver_StatusToJSON(message.status);
+    }
+    if (message.principal !== "") {
+      obj.principal = message.principal;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Issue_Approver>): Issue_Approver {
     return Issue_Approver.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Issue_Approver>): Issue_Approver {
     const message = createBaseIssue_Approver();
     message.status = object.status ?? 0;
@@ -1923,17 +1977,24 @@ export const ApprovalTemplate = {
 
   toJSON(message: ApprovalTemplate): unknown {
     const obj: any = {};
-    message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
-    message.creator !== undefined && (obj.creator = message.creator);
+    if (message.flow !== undefined) {
+      obj.flow = ApprovalFlow.toJSON(message.flow);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
     return ApprovalTemplate.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
     const message = createBaseApprovalTemplate();
     message.flow = (object.flow !== undefined && object.flow !== null)
@@ -1987,10 +2048,8 @@ export const ApprovalFlow = {
 
   toJSON(message: ApprovalFlow): unknown {
     const obj: any = {};
-    if (message.steps) {
-      obj.steps = message.steps.map((e) => e ? ApprovalStep.toJSON(e) : undefined);
-    } else {
-      obj.steps = [];
+    if (message.steps?.length) {
+      obj.steps = message.steps.map((e) => ApprovalStep.toJSON(e));
     }
     return obj;
   },
@@ -1998,7 +2057,6 @@ export const ApprovalFlow = {
   create(base?: DeepPartial<ApprovalFlow>): ApprovalFlow {
     return ApprovalFlow.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalFlow>): ApprovalFlow {
     const message = createBaseApprovalFlow();
     message.steps = object.steps?.map((e) => ApprovalStep.fromPartial(e)) || [];
@@ -2060,11 +2118,11 @@ export const ApprovalStep = {
 
   toJSON(message: ApprovalStep): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = approvalStep_TypeToJSON(message.type));
-    if (message.nodes) {
-      obj.nodes = message.nodes.map((e) => e ? ApprovalNode.toJSON(e) : undefined);
-    } else {
-      obj.nodes = [];
+    if (message.type !== 0) {
+      obj.type = approvalStep_TypeToJSON(message.type);
+    }
+    if (message.nodes?.length) {
+      obj.nodes = message.nodes.map((e) => ApprovalNode.toJSON(e));
     }
     return obj;
   },
@@ -2072,7 +2130,6 @@ export const ApprovalStep = {
   create(base?: DeepPartial<ApprovalStep>): ApprovalStep {
     return ApprovalStep.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalStep>): ApprovalStep {
     const message = createBaseApprovalStep();
     message.type = object.type ?? 0;
@@ -2157,20 +2214,24 @@ export const ApprovalNode = {
 
   toJSON(message: ApprovalNode): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = approvalNode_TypeToJSON(message.type));
-    message.groupValue !== undefined &&
-      (obj.groupValue = message.groupValue !== undefined
-        ? approvalNode_GroupValueToJSON(message.groupValue)
-        : undefined);
-    message.role !== undefined && (obj.role = message.role);
-    message.externalNodeId !== undefined && (obj.externalNodeId = message.externalNodeId);
+    if (message.type !== 0) {
+      obj.type = approvalNode_TypeToJSON(message.type);
+    }
+    if (message.groupValue !== undefined) {
+      obj.groupValue = approvalNode_GroupValueToJSON(message.groupValue);
+    }
+    if (message.role !== undefined) {
+      obj.role = message.role;
+    }
+    if (message.externalNodeId !== undefined) {
+      obj.externalNodeId = message.externalNodeId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ApprovalNode>): ApprovalNode {
     return ApprovalNode.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
     const message = createBaseApprovalNode();
     message.type = object.type ?? 0;
@@ -2235,16 +2296,18 @@ export const CreateIssueCommentRequest = {
 
   toJSON(message: CreateIssueCommentRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.issueComment !== undefined &&
-      (obj.issueComment = message.issueComment ? IssueComment.toJSON(message.issueComment) : undefined);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.issueComment !== undefined) {
+      obj.issueComment = IssueComment.toJSON(message.issueComment);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateIssueCommentRequest>): CreateIssueCommentRequest {
     return CreateIssueCommentRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateIssueCommentRequest>): CreateIssueCommentRequest {
     const message = createBaseCreateIssueCommentRequest();
     message.parent = object.parent ?? "";
@@ -2320,17 +2383,21 @@ export const UpdateIssueCommentRequest = {
 
   toJSON(message: UpdateIssueCommentRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.issueComment !== undefined &&
-      (obj.issueComment = message.issueComment ? IssueComment.toJSON(message.issueComment) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.issueComment !== undefined) {
+      obj.issueComment = IssueComment.toJSON(message.issueComment);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateIssueCommentRequest>): UpdateIssueCommentRequest {
     return UpdateIssueCommentRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateIssueCommentRequest>): UpdateIssueCommentRequest {
     const message = createBaseUpdateIssueCommentRequest();
     message.parent = object.parent ?? "";
@@ -2429,18 +2496,27 @@ export const IssueComment = {
 
   toJSON(message: IssueComment): unknown {
     const obj: any = {};
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.comment !== undefined && (obj.comment = message.comment);
-    message.payload !== undefined && (obj.payload = message.payload);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    if (message.uid !== "") {
+      obj.uid = message.uid;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
+    if (message.payload !== "") {
+      obj.payload = message.payload;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IssueComment>): IssueComment {
     return IssueComment.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IssueComment>): IssueComment {
     const message = createBaseIssueComment();
     message.uid = object.uid ?? "";

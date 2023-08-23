@@ -1,10 +1,10 @@
 /* eslint-disable */
-import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import Long = require("long");
 
 export const protobufPackage = "bytebase.v1";
 
@@ -385,15 +385,18 @@ export const CreateSheetRequest = {
 
   toJSON(message: CreateSheetRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.sheet !== undefined && (obj.sheet = message.sheet ? Sheet.toJSON(message.sheet) : undefined);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.sheet !== undefined) {
+      obj.sheet = Sheet.toJSON(message.sheet);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateSheetRequest>): CreateSheetRequest {
     return CreateSheetRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateSheetRequest>): CreateSheetRequest {
     const message = createBaseCreateSheetRequest();
     message.parent = object.parent ?? "";
@@ -456,15 +459,18 @@ export const GetSheetRequest = {
 
   toJSON(message: GetSheetRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.raw !== undefined && (obj.raw = message.raw);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.raw === true) {
+      obj.raw = message.raw;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetSheetRequest>): GetSheetRequest {
     return GetSheetRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetSheetRequest>): GetSheetRequest {
     const message = createBaseGetSheetRequest();
     message.name = object.name ?? "";
@@ -527,15 +533,18 @@ export const UpdateSheetRequest = {
 
   toJSON(message: UpdateSheetRequest): unknown {
     const obj: any = {};
-    message.sheet !== undefined && (obj.sheet = message.sheet ? Sheet.toJSON(message.sheet) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.sheet !== undefined) {
+      obj.sheet = Sheet.toJSON(message.sheet);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateSheetRequest>): UpdateSheetRequest {
     return UpdateSheetRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateSheetRequest>): UpdateSheetRequest {
     const message = createBaseUpdateSheetRequest();
     message.sheet = (object.sheet !== undefined && object.sheet !== null) ? Sheet.fromPartial(object.sheet) : undefined;
@@ -598,16 +607,18 @@ export const UpdateSheetOrganizerRequest = {
 
   toJSON(message: UpdateSheetOrganizerRequest): unknown {
     const obj: any = {};
-    message.organizer !== undefined &&
-      (obj.organizer = message.organizer ? SheetOrganizer.toJSON(message.organizer) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.organizer !== undefined) {
+      obj.organizer = SheetOrganizer.toJSON(message.organizer);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateSheetOrganizerRequest>): UpdateSheetOrganizerRequest {
     return UpdateSheetOrganizerRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateSheetOrganizerRequest>): UpdateSheetOrganizerRequest {
     const message = createBaseUpdateSheetOrganizerRequest();
     message.organizer = (object.organizer !== undefined && object.organizer !== null)
@@ -683,16 +694,21 @@ export const SheetOrganizer = {
 
   toJSON(message: SheetOrganizer): unknown {
     const obj: any = {};
-    message.sheet !== undefined && (obj.sheet = message.sheet);
-    message.starred !== undefined && (obj.starred = message.starred);
-    message.pinned !== undefined && (obj.pinned = message.pinned);
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
+    if (message.starred === true) {
+      obj.starred = message.starred;
+    }
+    if (message.pinned === true) {
+      obj.pinned = message.pinned;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetOrganizer>): SheetOrganizer {
     return SheetOrganizer.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetOrganizer>): SheetOrganizer {
     const message = createBaseSheetOrganizer();
     message.sheet = object.sheet ?? "";
@@ -743,14 +759,15 @@ export const DeleteSheetRequest = {
 
   toJSON(message: DeleteSheetRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteSheetRequest>): DeleteSheetRequest {
     return DeleteSheetRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteSheetRequest>): DeleteSheetRequest {
     const message = createBaseDeleteSheetRequest();
     message.name = object.name ?? "";
@@ -834,17 +851,24 @@ export const SearchSheetsRequest = {
 
   toJSON(message: SearchSheetsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SearchSheetsRequest>): SearchSheetsRequest {
     return SearchSheetsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SearchSheetsRequest>): SearchSheetsRequest {
     const message = createBaseSearchSheetsRequest();
     message.parent = object.parent ?? "";
@@ -909,19 +933,18 @@ export const SearchSheetsResponse = {
 
   toJSON(message: SearchSheetsResponse): unknown {
     const obj: any = {};
-    if (message.sheets) {
-      obj.sheets = message.sheets.map((e) => e ? Sheet.toJSON(e) : undefined);
-    } else {
-      obj.sheets = [];
+    if (message.sheets?.length) {
+      obj.sheets = message.sheets.map((e) => Sheet.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SearchSheetsResponse>): SearchSheetsResponse {
     return SearchSheetsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SearchSheetsResponse>): SearchSheetsResponse {
     const message = createBaseSearchSheetsResponse();
     message.sheets = object.sheets?.map((e) => Sheet.fromPartial(e)) || [];
@@ -971,14 +994,15 @@ export const SyncSheetsRequest = {
 
   toJSON(message: SyncSheetsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SyncSheetsRequest>): SyncSheetsRequest {
     return SyncSheetsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SyncSheetsRequest>): SyncSheetsRequest {
     const message = createBaseSyncSheetsRequest();
     message.parent = object.parent ?? "";
@@ -1175,27 +1199,51 @@ export const Sheet = {
 
   toJSON(message: Sheet): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.database !== undefined && (obj.database = message.database);
-    message.title !== undefined && (obj.title = message.title);
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
-    message.content !== undefined &&
-      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
-    message.contentSize !== undefined && (obj.contentSize = Math.round(message.contentSize));
-    message.visibility !== undefined && (obj.visibility = sheet_VisibilityToJSON(message.visibility));
-    message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
-    message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
-    message.starred !== undefined && (obj.starred = message.starred);
-    message.payload !== undefined && (obj.payload = message.payload);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    if (message.content.length !== 0) {
+      obj.content = base64FromBytes(message.content);
+    }
+    if (message.contentSize !== 0) {
+      obj.contentSize = Math.round(message.contentSize);
+    }
+    if (message.visibility !== 0) {
+      obj.visibility = sheet_VisibilityToJSON(message.visibility);
+    }
+    if (message.source !== 0) {
+      obj.source = sheet_SourceToJSON(message.source);
+    }
+    if (message.type !== 0) {
+      obj.type = sheet_TypeToJSON(message.type);
+    }
+    if (message.starred === true) {
+      obj.starred = message.starred;
+    }
+    if (message.payload !== "") {
+      obj.payload = message.payload;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Sheet>): Sheet {
     return Sheet.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Sheet>): Sheet {
     const message = createBaseSheet();
     message.name = object.name ?? "";
@@ -1766,8 +1814,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

@@ -93,17 +93,17 @@ export const MFAConfig = {
 
   toJSON(message: MFAConfig): unknown {
     const obj: any = {};
-    message.otpSecret !== undefined && (obj.otpSecret = message.otpSecret);
-    message.tempOtpSecret !== undefined && (obj.tempOtpSecret = message.tempOtpSecret);
-    if (message.recoveryCodes) {
-      obj.recoveryCodes = message.recoveryCodes.map((e) => e);
-    } else {
-      obj.recoveryCodes = [];
+    if (message.otpSecret !== "") {
+      obj.otpSecret = message.otpSecret;
     }
-    if (message.tempRecoveryCodes) {
-      obj.tempRecoveryCodes = message.tempRecoveryCodes.map((e) => e);
-    } else {
-      obj.tempRecoveryCodes = [];
+    if (message.tempOtpSecret !== "") {
+      obj.tempOtpSecret = message.tempOtpSecret;
+    }
+    if (message.recoveryCodes?.length) {
+      obj.recoveryCodes = message.recoveryCodes;
+    }
+    if (message.tempRecoveryCodes?.length) {
+      obj.tempRecoveryCodes = message.tempRecoveryCodes;
     }
     return obj;
   },
@@ -111,7 +111,6 @@ export const MFAConfig = {
   create(base?: DeepPartial<MFAConfig>): MFAConfig {
     return MFAConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MFAConfig>): MFAConfig {
     const message = createBaseMFAConfig();
     message.otpSecret = object.otpSecret ?? "";

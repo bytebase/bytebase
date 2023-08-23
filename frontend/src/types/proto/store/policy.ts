@@ -86,10 +86,8 @@ export const IamPolicy = {
 
   toJSON(message: IamPolicy): unknown {
     const obj: any = {};
-    if (message.bindings) {
-      obj.bindings = message.bindings.map((e) => e ? Binding.toJSON(e) : undefined);
-    } else {
-      obj.bindings = [];
+    if (message.bindings?.length) {
+      obj.bindings = message.bindings.map((e) => Binding.toJSON(e));
     }
     return obj;
   },
@@ -97,7 +95,6 @@ export const IamPolicy = {
   create(base?: DeepPartial<IamPolicy>): IamPolicy {
     return IamPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IamPolicy>): IamPolicy {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
@@ -170,20 +167,21 @@ export const Binding = {
 
   toJSON(message: Binding): unknown {
     const obj: any = {};
-    message.role !== undefined && (obj.role = message.role);
-    if (message.members) {
-      obj.members = message.members.map((e) => e);
-    } else {
-      obj.members = [];
+    if (message.role !== "") {
+      obj.role = message.role;
     }
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    if (message.members?.length) {
+      obj.members = message.members;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Binding>): Binding {
     return Binding.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Binding>): Binding {
     const message = createBaseBinding();
     message.role = object.role ?? "";
@@ -240,10 +238,8 @@ export const SensitiveDataPolicy = {
 
   toJSON(message: SensitiveDataPolicy): unknown {
     const obj: any = {};
-    if (message.sensitiveData) {
-      obj.sensitiveData = message.sensitiveData.map((e) => e ? SensitiveData.toJSON(e) : undefined);
-    } else {
-      obj.sensitiveData = [];
+    if (message.sensitiveData?.length) {
+      obj.sensitiveData = message.sensitiveData.map((e) => SensitiveData.toJSON(e));
     }
     return obj;
   },
@@ -251,7 +247,6 @@ export const SensitiveDataPolicy = {
   create(base?: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
     return SensitiveDataPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
     const message = createBaseSensitiveDataPolicy();
     message.sensitiveData = object.sensitiveData?.map((e) => SensitiveData.fromPartial(e)) || [];
@@ -346,18 +341,27 @@ export const SensitiveData = {
 
   toJSON(message: SensitiveData): unknown {
     const obj: any = {};
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.table !== undefined && (obj.table = message.table);
-    message.column !== undefined && (obj.column = message.column);
-    message.semanticCategoryId !== undefined && (obj.semanticCategoryId = message.semanticCategoryId);
-    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    if (message.column !== "") {
+      obj.column = message.column;
+    }
+    if (message.semanticCategoryId !== "") {
+      obj.semanticCategoryId = message.semanticCategoryId;
+    }
+    if (message.maskingLevel !== 0) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SensitiveData>): SensitiveData {
     return SensitiveData.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SensitiveData>): SensitiveData {
     const message = createBaseSensitiveData();
     message.schema = object.schema ?? "";
