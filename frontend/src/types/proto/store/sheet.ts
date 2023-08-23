@@ -1,7 +1,7 @@
 /* eslint-disable */
-import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
+import Long = require("long");
 
 export const protobufPackage = "bytebase.store";
 
@@ -193,23 +193,24 @@ export const SheetPayload = {
 
   toJSON(message: SheetPayload): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = sheetPayload_TypeToJSON(message.type));
-    message.vcsPayload !== undefined &&
-      (obj.vcsPayload = message.vcsPayload ? SheetPayload_VCSPayload.toJSON(message.vcsPayload) : undefined);
-    if (message.usedByIssues) {
-      obj.usedByIssues = message.usedByIssues.map((e) => e ? SheetPayload_UsedByIssue.toJSON(e) : undefined);
-    } else {
-      obj.usedByIssues = [];
+    if (message.type !== 0) {
+      obj.type = sheetPayload_TypeToJSON(message.type);
     }
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SheetPayload_SchemaDesign.toJSON(message.schemaDesign) : undefined);
+    if (message.vcsPayload !== undefined) {
+      obj.vcsPayload = SheetPayload_VCSPayload.toJSON(message.vcsPayload);
+    }
+    if (message.usedByIssues?.length) {
+      obj.usedByIssues = message.usedByIssues.map((e) => SheetPayload_UsedByIssue.toJSON(e));
+    }
+    if (message.schemaDesign !== undefined) {
+      obj.schemaDesign = SheetPayload_SchemaDesign.toJSON(message.schemaDesign);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload>): SheetPayload {
     return SheetPayload.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
     const message = createBaseSheetPayload();
     message.type = object.type ?? 0;
@@ -322,19 +323,30 @@ export const SheetPayload_VCSPayload = {
 
   toJSON(message: SheetPayload_VCSPayload): unknown {
     const obj: any = {};
-    message.fileName !== undefined && (obj.fileName = message.fileName);
-    message.filePath !== undefined && (obj.filePath = message.filePath);
-    message.size !== undefined && (obj.size = Math.round(message.size));
-    message.author !== undefined && (obj.author = message.author);
-    message.lastCommitId !== undefined && (obj.lastCommitId = message.lastCommitId);
-    message.lastSyncTs !== undefined && (obj.lastSyncTs = Math.round(message.lastSyncTs));
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.filePath !== "") {
+      obj.filePath = message.filePath;
+    }
+    if (message.size !== 0) {
+      obj.size = Math.round(message.size);
+    }
+    if (message.author !== "") {
+      obj.author = message.author;
+    }
+    if (message.lastCommitId !== "") {
+      obj.lastCommitId = message.lastCommitId;
+    }
+    if (message.lastSyncTs !== 0) {
+      obj.lastSyncTs = Math.round(message.lastSyncTs);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload_VCSPayload>): SheetPayload_VCSPayload {
     return SheetPayload_VCSPayload.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload_VCSPayload>): SheetPayload_VCSPayload {
     const message = createBaseSheetPayload_VCSPayload();
     message.fileName = object.fileName ?? "";
@@ -401,15 +413,18 @@ export const SheetPayload_UsedByIssue = {
 
   toJSON(message: SheetPayload_UsedByIssue): unknown {
     const obj: any = {};
-    message.issueId !== undefined && (obj.issueId = Math.round(message.issueId));
-    message.issueTitle !== undefined && (obj.issueTitle = message.issueTitle);
+    if (message.issueId !== 0) {
+      obj.issueId = Math.round(message.issueId);
+    }
+    if (message.issueTitle !== "") {
+      obj.issueTitle = message.issueTitle;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload_UsedByIssue>): SheetPayload_UsedByIssue {
     return SheetPayload_UsedByIssue.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload_UsedByIssue>): SheetPayload_UsedByIssue {
     const message = createBaseSheetPayload_UsedByIssue();
     message.issueId = object.issueId ?? 0;
@@ -494,17 +509,24 @@ export const SheetPayload_SchemaDesign = {
 
   toJSON(message: SheetPayload_SchemaDesign): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = sheetPayload_SchemaDesign_TypeToJSON(message.type));
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.baselineSheetId !== undefined && (obj.baselineSheetId = message.baselineSheetId);
-    message.baselineSchemaDesignId !== undefined && (obj.baselineSchemaDesignId = message.baselineSchemaDesignId);
+    if (message.type !== 0) {
+      obj.type = sheetPayload_SchemaDesign_TypeToJSON(message.type);
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.baselineSheetId !== "") {
+      obj.baselineSheetId = message.baselineSheetId;
+    }
+    if (message.baselineSchemaDesignId !== "") {
+      obj.baselineSchemaDesignId = message.baselineSchemaDesignId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
     return SheetPayload_SchemaDesign.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
     const message = createBaseSheetPayload_SchemaDesign();
     message.type = object.type ?? 0;
@@ -548,8 +570,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

@@ -167,22 +167,39 @@ export const DataSourceOptions = {
 
   toJSON(message: DataSourceOptions): unknown {
     const obj: any = {};
-    message.srv !== undefined && (obj.srv = message.srv);
-    message.authenticationDatabase !== undefined && (obj.authenticationDatabase = message.authenticationDatabase);
-    message.sid !== undefined && (obj.sid = message.sid);
-    message.serviceName !== undefined && (obj.serviceName = message.serviceName);
-    message.sshHost !== undefined && (obj.sshHost = message.sshHost);
-    message.sshPort !== undefined && (obj.sshPort = message.sshPort);
-    message.sshUser !== undefined && (obj.sshUser = message.sshUser);
-    message.sshObfuscatedPassword !== undefined && (obj.sshObfuscatedPassword = message.sshObfuscatedPassword);
-    message.sshObfuscatedPrivateKey !== undefined && (obj.sshObfuscatedPrivateKey = message.sshObfuscatedPrivateKey);
+    if (message.srv === true) {
+      obj.srv = message.srv;
+    }
+    if (message.authenticationDatabase !== "") {
+      obj.authenticationDatabase = message.authenticationDatabase;
+    }
+    if (message.sid !== "") {
+      obj.sid = message.sid;
+    }
+    if (message.serviceName !== "") {
+      obj.serviceName = message.serviceName;
+    }
+    if (message.sshHost !== "") {
+      obj.sshHost = message.sshHost;
+    }
+    if (message.sshPort !== "") {
+      obj.sshPort = message.sshPort;
+    }
+    if (message.sshUser !== "") {
+      obj.sshUser = message.sshUser;
+    }
+    if (message.sshObfuscatedPassword !== "") {
+      obj.sshObfuscatedPassword = message.sshObfuscatedPassword;
+    }
+    if (message.sshObfuscatedPrivateKey !== "") {
+      obj.sshObfuscatedPrivateKey = message.sshObfuscatedPrivateKey;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DataSourceOptions>): DataSourceOptions {
     return DataSourceOptions.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DataSourceOptions>): DataSourceOptions {
     const message = createBaseDataSourceOptions();
     message.srv = object.srv ?? false;

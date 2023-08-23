@@ -62,14 +62,15 @@ export const InstanceOptions = {
 
   toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
-    message.schemaTenantMode !== undefined && (obj.schemaTenantMode = message.schemaTenantMode);
+    if (message.schemaTenantMode === true) {
+      obj.schemaTenantMode = message.schemaTenantMode;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<InstanceOptions>): InstanceOptions {
     return InstanceOptions.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
     const message = createBaseInstanceOptions();
     message.schemaTenantMode = object.schemaTenantMode ?? false;
@@ -120,15 +121,15 @@ export const InstanceMetadata = {
 
   toJSON(message: InstanceMetadata): unknown {
     const obj: any = {};
-    message.mysqlLowerCaseTableNames !== undefined &&
-      (obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames));
+    if (message.mysqlLowerCaseTableNames !== 0) {
+      obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<InstanceMetadata>): InstanceMetadata {
     return InstanceMetadata.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<InstanceMetadata>): InstanceMetadata {
     const message = createBaseInstanceMetadata();
     message.mysqlLowerCaseTableNames = object.mysqlLowerCaseTableNames ?? 0;

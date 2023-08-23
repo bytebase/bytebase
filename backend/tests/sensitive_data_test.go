@@ -210,9 +210,9 @@ func TestSensitiveData(t *testing.T) {
 		Parent: database.Name,
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_SENSITIVE_DATA,
-			Policy: &v1pb.Policy_SensitiveDataPolicy{
-				SensitiveDataPolicy: &v1pb.SensitiveDataPolicy{
-					SensitiveData: []*v1pb.SensitiveData{
+			Policy: &v1pb.Policy_MaskingPolicy{
+				MaskingPolicy: &v1pb.MaskingPolicy{
+					MaskData: []*v1pb.MaskData{
 						{
 							Table:              tableName,
 							Column:             "id",

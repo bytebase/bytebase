@@ -169,16 +169,21 @@ export const ListInboxRequest = {
 
   toJSON(message: ListInboxRequest): unknown {
     const obj: any = {};
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListInboxRequest>): ListInboxRequest {
     return ListInboxRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListInboxRequest>): ListInboxRequest {
     const message = createBaseListInboxRequest();
     message.filter = object.filter ?? "";
@@ -244,19 +249,18 @@ export const ListInboxResponse = {
 
   toJSON(message: ListInboxResponse): unknown {
     const obj: any = {};
-    if (message.inboxMessages) {
-      obj.inboxMessages = message.inboxMessages.map((e) => e ? InboxMessage.toJSON(e) : undefined);
-    } else {
-      obj.inboxMessages = [];
+    if (message.inboxMessages?.length) {
+      obj.inboxMessages = message.inboxMessages.map((e) => InboxMessage.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListInboxResponse>): ListInboxResponse {
     return ListInboxResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListInboxResponse>): ListInboxResponse {
     const message = createBaseListInboxResponse();
     message.inboxMessages = object.inboxMessages?.map((e) => InboxMessage.fromPartial(e)) || [];
@@ -302,7 +306,6 @@ export const GetInboxSummaryRequest = {
   create(base?: DeepPartial<GetInboxSummaryRequest>): GetInboxSummaryRequest {
     return GetInboxSummaryRequest.fromPartial(base ?? {});
   },
-
   fromPartial(_: DeepPartial<GetInboxSummaryRequest>): GetInboxSummaryRequest {
     const message = createBaseGetInboxSummaryRequest();
     return message;
@@ -363,16 +366,18 @@ export const UpdateInboxRequest = {
 
   toJSON(message: UpdateInboxRequest): unknown {
     const obj: any = {};
-    message.inboxMessage !== undefined &&
-      (obj.inboxMessage = message.inboxMessage ? InboxMessage.toJSON(message.inboxMessage) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.inboxMessage !== undefined) {
+      obj.inboxMessage = InboxMessage.toJSON(message.inboxMessage);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateInboxRequest>): UpdateInboxRequest {
     return UpdateInboxRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateInboxRequest>): UpdateInboxRequest {
     const message = createBaseUpdateInboxRequest();
     message.inboxMessage = (object.inboxMessage !== undefined && object.inboxMessage !== null)
@@ -459,18 +464,24 @@ export const InboxMessage = {
 
   toJSON(message: InboxMessage): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.activityUid !== undefined && (obj.activityUid = message.activityUid);
-    message.status !== undefined && (obj.status = inboxMessage_StatusToJSON(message.status));
-    message.activity !== undefined &&
-      (obj.activity = message.activity ? LogEntity.toJSON(message.activity) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.activityUid !== "") {
+      obj.activityUid = message.activityUid;
+    }
+    if (message.status !== 0) {
+      obj.status = inboxMessage_StatusToJSON(message.status);
+    }
+    if (message.activity !== undefined) {
+      obj.activity = LogEntity.toJSON(message.activity);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<InboxMessage>): InboxMessage {
     return InboxMessage.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<InboxMessage>): InboxMessage {
     const message = createBaseInboxMessage();
     message.name = object.name ?? "";
@@ -537,15 +548,18 @@ export const InboxSummary = {
 
   toJSON(message: InboxSummary): unknown {
     const obj: any = {};
-    message.unread !== undefined && (obj.unread = Math.round(message.unread));
-    message.unreadError !== undefined && (obj.unreadError = Math.round(message.unreadError));
+    if (message.unread !== 0) {
+      obj.unread = Math.round(message.unread);
+    }
+    if (message.unreadError !== 0) {
+      obj.unreadError = Math.round(message.unreadError);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<InboxSummary>): InboxSummary {
     return InboxSummary.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<InboxSummary>): InboxSummary {
     const message = createBaseInboxSummary();
     message.unread = object.unread ?? 0;
