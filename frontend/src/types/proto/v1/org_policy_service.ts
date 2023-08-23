@@ -419,7 +419,7 @@ export interface Policy {
   workspaceIamPolicy?: IamPolicy | undefined;
   deploymentApprovalPolicy?: DeploymentApprovalPolicy | undefined;
   backupPlanPolicy?: BackupPlanPolicy | undefined;
-  sensitiveDataPolicy?: SensitiveDataPolicy | undefined;
+  maskingPolicy?: MaskingPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
   slowQueryPolicy?: SlowQueryPolicy | undefined;
   disableCopyDataPolicy?: DisableCopyDataPolicy | undefined;
@@ -456,11 +456,11 @@ export interface DisableCopyDataPolicy {
   active: boolean;
 }
 
-export interface SensitiveDataPolicy {
-  sensitiveData: SensitiveData[];
+export interface MaskingPolicy {
+  maskData: MaskData[];
 }
 
-export interface SensitiveData {
+export interface MaskData {
   schema: string;
   table: string;
   column: string;
@@ -1051,7 +1051,7 @@ function createBasePolicy(): Policy {
     workspaceIamPolicy: undefined,
     deploymentApprovalPolicy: undefined,
     backupPlanPolicy: undefined,
-    sensitiveDataPolicy: undefined,
+    maskingPolicy: undefined,
     sqlReviewPolicy: undefined,
     slowQueryPolicy: undefined,
     disableCopyDataPolicy: undefined,
@@ -1086,8 +1086,8 @@ export const Policy = {
     if (message.backupPlanPolicy !== undefined) {
       BackupPlanPolicy.encode(message.backupPlanPolicy, writer.uint32(66).fork()).ldelim();
     }
-    if (message.sensitiveDataPolicy !== undefined) {
-      SensitiveDataPolicy.encode(message.sensitiveDataPolicy, writer.uint32(74).fork()).ldelim();
+    if (message.maskingPolicy !== undefined) {
+      MaskingPolicy.encode(message.maskingPolicy, writer.uint32(74).fork()).ldelim();
     }
     if (message.sqlReviewPolicy !== undefined) {
       SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(90).fork()).ldelim();
@@ -1177,7 +1177,7 @@ export const Policy = {
             break;
           }
 
-          message.sensitiveDataPolicy = SensitiveDataPolicy.decode(reader, reader.uint32());
+          message.maskingPolicy = MaskingPolicy.decode(reader, reader.uint32());
           continue;
         case 11:
           if (tag !== 90) {
@@ -1255,9 +1255,7 @@ export const Policy = {
         ? DeploymentApprovalPolicy.fromJSON(object.deploymentApprovalPolicy)
         : undefined,
       backupPlanPolicy: isSet(object.backupPlanPolicy) ? BackupPlanPolicy.fromJSON(object.backupPlanPolicy) : undefined,
-      sensitiveDataPolicy: isSet(object.sensitiveDataPolicy)
-        ? SensitiveDataPolicy.fromJSON(object.sensitiveDataPolicy)
-        : undefined,
+      maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
       slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
       disableCopyDataPolicy: isSet(object.disableCopyDataPolicy)
@@ -1298,8 +1296,8 @@ export const Policy = {
     if (message.backupPlanPolicy !== undefined) {
       obj.backupPlanPolicy = BackupPlanPolicy.toJSON(message.backupPlanPolicy);
     }
-    if (message.sensitiveDataPolicy !== undefined) {
-      obj.sensitiveDataPolicy = SensitiveDataPolicy.toJSON(message.sensitiveDataPolicy);
+    if (message.maskingPolicy !== undefined) {
+      obj.maskingPolicy = MaskingPolicy.toJSON(message.maskingPolicy);
     }
     if (message.sqlReviewPolicy !== undefined) {
       obj.sqlReviewPolicy = SQLReviewPolicy.toJSON(message.sqlReviewPolicy);
@@ -1347,8 +1345,8 @@ export const Policy = {
     message.backupPlanPolicy = (object.backupPlanPolicy !== undefined && object.backupPlanPolicy !== null)
       ? BackupPlanPolicy.fromPartial(object.backupPlanPolicy)
       : undefined;
-    message.sensitiveDataPolicy = (object.sensitiveDataPolicy !== undefined && object.sensitiveDataPolicy !== null)
-      ? SensitiveDataPolicy.fromPartial(object.sensitiveDataPolicy)
+    message.maskingPolicy = (object.maskingPolicy !== undefined && object.maskingPolicy !== null)
+      ? MaskingPolicy.fromPartial(object.maskingPolicy)
       : undefined;
     message.sqlReviewPolicy = (object.sqlReviewPolicy !== undefined && object.sqlReviewPolicy !== null)
       ? SQLReviewPolicy.fromPartial(object.sqlReviewPolicy)
@@ -1732,22 +1730,22 @@ export const DisableCopyDataPolicy = {
   },
 };
 
-function createBaseSensitiveDataPolicy(): SensitiveDataPolicy {
-  return { sensitiveData: [] };
+function createBaseMaskingPolicy(): MaskingPolicy {
+  return { maskData: [] };
 }
 
-export const SensitiveDataPolicy = {
-  encode(message: SensitiveDataPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.sensitiveData) {
-      SensitiveData.encode(v!, writer.uint32(10).fork()).ldelim();
+export const MaskingPolicy = {
+  encode(message: MaskingPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.maskData) {
+      MaskData.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SensitiveDataPolicy {
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingPolicy {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSensitiveDataPolicy();
+    const message = createBaseMaskingPolicy();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1756,7 +1754,7 @@ export const SensitiveDataPolicy = {
             break;
           }
 
-          message.sensitiveData.push(SensitiveData.decode(reader, reader.uint32()));
+          message.maskData.push(MaskData.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1767,38 +1765,34 @@ export const SensitiveDataPolicy = {
     return message;
   },
 
-  fromJSON(object: any): SensitiveDataPolicy {
-    return {
-      sensitiveData: Array.isArray(object?.sensitiveData)
-        ? object.sensitiveData.map((e: any) => SensitiveData.fromJSON(e))
-        : [],
-    };
+  fromJSON(object: any): MaskingPolicy {
+    return { maskData: Array.isArray(object?.maskData) ? object.maskData.map((e: any) => MaskData.fromJSON(e)) : [] };
   },
 
-  toJSON(message: SensitiveDataPolicy): unknown {
+  toJSON(message: MaskingPolicy): unknown {
     const obj: any = {};
-    if (message.sensitiveData?.length) {
-      obj.sensitiveData = message.sensitiveData.map((e) => SensitiveData.toJSON(e));
+    if (message.maskData?.length) {
+      obj.maskData = message.maskData.map((e) => MaskData.toJSON(e));
     }
     return obj;
   },
 
-  create(base?: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
-    return SensitiveDataPolicy.fromPartial(base ?? {});
+  create(base?: DeepPartial<MaskingPolicy>): MaskingPolicy {
+    return MaskingPolicy.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
-    const message = createBaseSensitiveDataPolicy();
-    message.sensitiveData = object.sensitiveData?.map((e) => SensitiveData.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<MaskingPolicy>): MaskingPolicy {
+    const message = createBaseMaskingPolicy();
+    message.maskData = object.maskData?.map((e) => MaskData.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseSensitiveData(): SensitiveData {
+function createBaseMaskData(): MaskData {
   return { schema: "", table: "", column: "", semanticCategoryId: "", maskingLevel: 0 };
 }
 
-export const SensitiveData = {
-  encode(message: SensitiveData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const MaskData = {
+  encode(message: MaskData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.schema !== "") {
       writer.uint32(10).string(message.schema);
     }
@@ -1817,10 +1811,10 @@ export const SensitiveData = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SensitiveData {
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskData {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSensitiveData();
+    const message = createBaseMaskData();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1868,7 +1862,7 @@ export const SensitiveData = {
     return message;
   },
 
-  fromJSON(object: any): SensitiveData {
+  fromJSON(object: any): MaskData {
     return {
       schema: isSet(object.schema) ? String(object.schema) : "",
       table: isSet(object.table) ? String(object.table) : "",
@@ -1878,7 +1872,7 @@ export const SensitiveData = {
     };
   },
 
-  toJSON(message: SensitiveData): unknown {
+  toJSON(message: MaskData): unknown {
     const obj: any = {};
     if (message.schema !== "") {
       obj.schema = message.schema;
@@ -1898,11 +1892,11 @@ export const SensitiveData = {
     return obj;
   },
 
-  create(base?: DeepPartial<SensitiveData>): SensitiveData {
-    return SensitiveData.fromPartial(base ?? {});
+  create(base?: DeepPartial<MaskData>): MaskData {
+    return MaskData.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SensitiveData>): SensitiveData {
-    const message = createBaseSensitiveData();
+  fromPartial(object: DeepPartial<MaskData>): MaskData {
+    const message = createBaseMaskData();
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";

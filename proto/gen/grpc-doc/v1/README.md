@@ -36,15 +36,15 @@
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
+    - [MaskData](#bytebase-v1-MaskData)
     - [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException)
+    - [MaskingPolicy](#bytebase-v1-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
-    - [SensitiveData](#bytebase-v1-SensitiveData)
-    - [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy)
     - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
@@ -1059,6 +1059,25 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 
 
 
+<a name="bytebase-v1-MaskData"></a>
+
+### MaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| semantic_category_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-MaskingExceptionPolicy"></a>
 
 ### MaskingExceptionPolicy
@@ -1088,6 +1107,21 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingPolicy"></a>
+
+### MaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [MaskData](#bytebase-v1-MaskData) | repeated |  |
 
 
 
@@ -1140,7 +1174,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 | deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
 | backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
-| sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
+| masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
 | slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
 | disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
@@ -1184,40 +1218,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SensitiveData"></a>
-
-### SensitiveData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| semantic_category_id | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SensitiveDataPolicy"></a>
-
-### SensitiveDataPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sensitive_data | [SensitiveData](#bytebase-v1-SensitiveData) | repeated |  |
 
 
 

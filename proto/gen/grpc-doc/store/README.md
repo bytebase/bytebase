@@ -121,8 +121,8 @@
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [IamPolicy](#bytebase-store-IamPolicy)
-    - [SensitiveData](#bytebase-store-SensitiveData)
-    - [SensitiveDataPolicy](#bytebase-store-SensitiveDataPolicy)
+    - [MaskData](#bytebase-store-MaskData)
+    - [MaskingPolicy](#bytebase-store-MaskingPolicy)
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
@@ -1864,9 +1864,9 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 
 
-<a name="bytebase-store-SensitiveData"></a>
+<a name="bytebase-store-MaskData"></a>
 
-### SensitiveData
+### MaskData
 
 
 
@@ -1883,15 +1883,15 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 
 
-<a name="bytebase-store-SensitiveDataPolicy"></a>
+<a name="bytebase-store-MaskingPolicy"></a>
 
-### SensitiveDataPolicy
+### MaskingPolicy
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sensitive_data | [SensitiveData](#bytebase-store-SensitiveData) | repeated |  |
+| mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
 
 
 

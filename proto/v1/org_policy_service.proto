@@ -207,7 +207,7 @@ message Policy {
     IamPolicy workspace_iam_policy = 6;
     DeploymentApprovalPolicy deployment_approval_policy = 7;
     BackupPlanPolicy backup_plan_policy = 8;
-    SensitiveDataPolicy sensitive_data_policy = 9;
+    MaskingPolicy masking_policy = 9;
     SQLReviewPolicy sql_review_policy = 11;
     SlowQueryPolicy slow_query_policy = 12;
     DisableCopyDataPolicy disable_copy_data_policy = 16;
@@ -289,11 +289,11 @@ enum BackupPlanSchedule {
   WEEKLY = 3;
 }
 
-message SensitiveDataPolicy {
-  repeated SensitiveData sensitive_data = 1;
+message MaskingPolicy {
+  repeated MaskData mask_data = 1;
 }
 
-message SensitiveData {
+message MaskData {
   string schema = 1;
   string table = 2;
   string column = 3;
@@ -338,7 +338,7 @@ message MaskingExceptionPolicy {
     // Members is the list of principals who bind to this exception policy instance.
     //
     // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-    repeated string members = 3;
+    repeated string members  = 3;
 
     // The condition that is associated with this exception policy instance.
     google.type.Expr condition = 4;

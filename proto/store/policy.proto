@@ -31,11 +31,11 @@ message Binding {
   google.type.Expr condition = 3;
 }
 
-message SensitiveDataPolicy {
-  repeated SensitiveData sensitive_data = 1;
+message MaskingPolicy {
+  repeated MaskData mask_data = 1;
 }
 
-message SensitiveData {
+message MaskData {
   string schema = 1;
   string table = 2;
   string column = 3;
