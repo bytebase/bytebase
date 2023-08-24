@@ -170,7 +170,10 @@ import {
 } from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
 import ResolveConflictPanel from "./ResolveConflictPanel.vue";
-import { mergeSchemaEditToMetadata } from "./common/util";
+import {
+  mergeSchemaEditToMetadata,
+  validateDatabaseMetadata,
+} from "./common/util";
 import SchemaDesigner from "./index.vue";
 
 interface LocalState {
@@ -367,6 +370,16 @@ const handleSaveSchemaDesignDraft = async () => {
         DatabaseMetadata.fromPartial({})
     )
   );
+  const validationMessages = validateDatabaseMetadata(mergedMetadata);
+  if (validationMessages.length > 0) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: "Invalid schema design",
+      description: validationMessages.join("\n"),
+    });
+    return;
+  }
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     updateMask.push("metadata");
   }
