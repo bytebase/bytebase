@@ -1634,7 +1634,7 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 }
 
 func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
-	if len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID > 0 {
+	if !(len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID == 0) {
 		return s.createIssueFromMigrationDetailsV2(ctx, project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList)
 	}
 
