@@ -21,7 +21,7 @@ import {
   PropType,
   onBeforeUnmount,
 } from "vue";
-import { Language, SQLDialect } from "@/types";
+import { Language } from "@/types";
 
 const props = defineProps({
   original: {
@@ -36,17 +36,9 @@ const props = defineProps({
     type: String as PropType<Language>,
     default: "sql",
   },
-  dialect: {
-    type: String as PropType<SQLDialect>,
-    default: "MYSQL",
-  },
   readonly: {
     type: Boolean,
     default: false,
-  },
-  autoFocus: {
-    type: Boolean,
-    default: true,
   },
 });
 
@@ -64,9 +56,10 @@ const editorInstanceRef = shallowRef<Editor.IStandaloneDiffEditor>();
 const isEditorLoaded = ref(false);
 
 const initEditorInstance = () => {
-  const originalModel = Editor.createModel(props.original, "text/sql");
-  const valueModel = Editor.createModel(sqlCode.value, "text/sql");
+  const originalModel = Editor.createModel(props.original, props.language);
+  const modifiedEditor = Editor.createModel(sqlCode.value, props.language);
   const editorInstance = Editor.createDiffEditor(editorContainerRef.value!, {
+    readOnly: readOnly.value,
     // Learn more: https://github.com/microsoft/monaco-editor/issues/311
     enableSplitViewResizing: false,
     renderValidationDecorations: "on",
@@ -74,7 +67,6 @@ const initEditorInstance = () => {
     autoClosingQuotes: "always",
     folding: false,
     automaticLayout: true,
-    readOnly: readOnly.value,
     minimap: {
       enabled: false,
     },
@@ -96,10 +88,10 @@ const initEditorInstance = () => {
 
   editorInstance.setModel({
     original: originalModel,
-    modified: valueModel,
+    modified: modifiedEditor,
   });
 
-  // typed something, change the text
+  // When typed something, change the text
   editorInstance.onDidUpdateDiff(() => {
     const value = editorInstance.getModifiedEditor().getValue();
     emit("change", value);
@@ -120,7 +112,6 @@ onMounted(async () => {
 
   const editorInstance = initEditorInstance();
   editorInstanceRef.value = editorInstance;
-
   isEditorLoaded.value = true;
 
   nextTick(() => {
