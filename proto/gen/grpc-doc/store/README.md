@@ -108,8 +108,6 @@
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
-    - [PlanCheckRunConfig.DatabaseGroupTarget](#bytebase-store-PlanCheckRunConfig-DatabaseGroupTarget)
-    - [PlanCheckRunConfig.DatabaseTarget](#bytebase-store-PlanCheckRunConfig-DatabaseTarget)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
@@ -1675,39 +1673,9 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | sheet_uid | [int32](#int32) |  |  |
 | change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
-| database_target | [PlanCheckRunConfig.DatabaseTarget](#bytebase-store-PlanCheckRunConfig-DatabaseTarget) |  |  |
-| database_group_target | [PlanCheckRunConfig.DatabaseGroupTarget](#bytebase-store-PlanCheckRunConfig-DatabaseGroupTarget) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig-DatabaseGroupTarget"></a>
-
-### PlanCheckRunConfig.DatabaseGroupTarget
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_group_uid | [int64](#int64) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig-DatabaseTarget"></a>
-
-### PlanCheckRunConfig.DatabaseTarget
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
 | instance_uid | [int32](#int32) |  |  |
 | database_name | [string](#string) |  |  |
+| database_group_uid | [int64](#int64) | optional | database_group_uid is optional. If it&#39;s set, it means the database is part of a database group. |
 
 
 
