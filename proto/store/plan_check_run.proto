@@ -9,19 +9,10 @@ option go_package = "generated-go/store";
 message PlanCheckRunConfig {
   int32 sheet_uid = 1;
   ChangeDatabaseType change_database_type = 2;
-
-  oneof target {
-    DatabaseTarget database_target = 3;
-    DatabaseGroupTarget database_group_target = 4;
-  }
-
-  message DatabaseTarget {
-    int32 instance_uid = 1;
-    string database_name = 2;
-  }
-  message DatabaseGroupTarget {
-    int64 database_group_uid = 1;
-  }
+  int32 instance_uid = 3;
+  string database_name = 4;
+  // database_group_uid is optional. If it's set, it means the database is part of a database group.
+  optional int64 database_group_uid = 5;
 
   enum ChangeDatabaseType {
     CHANGE_DATABASE_TYPE_UNSPECIFIED = 0;

@@ -10,7 +10,7 @@ import {
   Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
-import { databaseForTask, specForTask, targetForSpec } from ".";
+import { databaseForTask } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
   if (spec.createDatabaseConfig) {
@@ -36,12 +36,7 @@ export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
 };
 
 export const planCheckRunListForTask = (issue: ComposedIssue, task: Task) => {
-  const spec = specForTask(issue.planEntity, task);
-  // If the task's spec is found, use its target.
-  // This is useful when the spec's target is a database group, which means the
-  // planCheckRuns' targets will be the database group rather than the databases.
-  // Otherwise use database for task as the fallback target.
-  const target = targetForSpec(spec) ?? databaseForTask(issue, task).name;
+  const target = databaseForTask(issue, task).name;
   return issue.planCheckRunList.filter((check) => check.target === target);
 };
 

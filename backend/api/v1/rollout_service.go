@@ -161,7 +161,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
 	}
 
-	planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
+	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 	}
@@ -346,7 +346,7 @@ func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPla
 		return nil, status.Errorf(codes.NotFound, "plan not found")
 	}
 
-	planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
+	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 	}
