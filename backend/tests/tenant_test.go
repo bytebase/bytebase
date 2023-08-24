@@ -1321,8 +1321,9 @@ func TestTenantVCS_YAML(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                   t.TempDir(),
+				vcsProviderCreator:        test.vcsProviderCreator,
+				developmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -1448,7 +1449,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabaseV2(ctx, testInstance, project.Name, databaseName, "", nil /* labelMap */)
 				a.NoError(err)
 			}
 
@@ -1488,9 +1489,8 @@ func TestTenantVCS_YAML(t *testing.T) {
 			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
-			status, err := ctl.waitIssuePipeline(ctx, issues[0].ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 
 			// Simulate Git commits for data update.
 			database0Name := "TestTenantVCS_YAML_tenant0"
@@ -1521,9 +1521,8 @@ statement: |
 			// Get data update issues.
 			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
-			status, err = ctl.waitIssuePipeline(ctx, issues[0].ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 		})
 	}
 }
