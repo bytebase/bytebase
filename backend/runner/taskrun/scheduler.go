@@ -324,49 +324,6 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		if err := canUpdateTaskStatement(task); err != nil {
 			return err
 		}
-		// If task created in UI mode in VCS Project, we should give it a new migration version.
-		// https://linear.app/bytebase/issue/BYT-3311/the-executed-sql-is-not-expected
-		isUICreatedInVCSProject := false
-		if issue.Project.Workflow == api.VCSWorkflow {
-			switch task.Type {
-			case api.TaskDatabaseSchemaUpdate:
-				var payload api.TaskDatabaseSchemaUpdatePayload
-				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-					return errors.Wrapf(err, "failed to unmarshal task payload")
-				}
-				if payload.VCSPushEvent == nil {
-					isUICreatedInVCSProject = true
-				}
-			case api.TaskDatabaseSchemaUpdateSDL:
-				var payload api.TaskDatabaseSchemaUpdateSDLPayload
-				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-					return errors.Wrapf(err, "failed to unmarshal task payload")
-				}
-				if payload.VCSPushEvent == nil {
-					isUICreatedInVCSProject = true
-				}
-			case api.TaskDatabaseSchemaUpdateGhostSync:
-				var payload api.TaskDatabaseSchemaUpdateGhostSyncPayload
-				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-					return errors.Wrapf(err, "failed to unmarshal task payload")
-				}
-				if payload.VCSPushEvent == nil {
-					isUICreatedInVCSProject = true
-				}
-			case api.TaskDatabaseDataUpdate:
-				var payload api.TaskDatabaseDataUpdatePayload
-				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-					return errors.Wrapf(err, "failed to unmarshal task payload")
-				}
-				if payload.VCSPushEvent == nil {
-					isUICreatedInVCSProject = true
-				}
-			}
-		}
-		if issue.Project.Workflow == api.UIWorkflow || isUICreatedInVCSProject {
-			schemaVersion := common.DefaultMigrationVersion()
-			taskPatch.SchemaVersion = &schemaVersion
-		}
 	}
 
 	// Reset because we are trying to build
