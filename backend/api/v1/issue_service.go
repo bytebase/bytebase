@@ -681,7 +681,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					return nil, status.Errorf(codes.NotFound, "plan %q not found", *issue.PlanUID)
 				}
 
-				planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
+				planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 				}
