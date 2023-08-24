@@ -2191,7 +2191,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 					if !ok {
 						continue
 					}
-					if v.ChangeDatabaseConfig.SchemaVersion == schemaVersion {
+					if v.ChangeDatabaseConfig.SchemaVersion == schemaVersion && v.ChangeDatabaseConfig.Target == fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName) {
 						v.ChangeDatabaseConfig.Sheet = fmt.Sprintf("projects/%s/sheets/%d", issue.Project.ResourceID, sheet.UID)
 					}
 				}
