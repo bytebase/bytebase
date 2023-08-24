@@ -642,12 +642,19 @@ type DatabaseSchema struct {
 	// !!DEPRECATED!!, should use SchemaList instead.
 	// TODO(rebelice/zp): Migrate MySQL/PostgreSQL/Oracle to SchemaList.
 	TableList []TableSchema
+	ViewList  []ViewSchema
 }
 
 // SchemaSchema is the schema of the schema using to extract sensitive fields.
 type SchemaSchema struct {
 	Name      string
 	TableList []TableSchema
+}
+
+// ViewSchema is the view schema using to extract sensitive fields.
+type ViewSchema struct {
+	Name       string
+	Definition string
 }
 
 // TableSchema is the table schema using to extract sensitive fields.
