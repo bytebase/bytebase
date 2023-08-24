@@ -293,7 +293,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 }
 
-func TestVCS(t *testing.T) {
+func TestVCS1(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
