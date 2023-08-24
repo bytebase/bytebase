@@ -361,7 +361,8 @@ const handleSaveSchemaDesignDraft = async () => {
   const mergedMetadata = mergeSchemaEditToMetadata(
     designerState.editableSchemas,
     cloneDeep(
-      schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+      schemaDesign.value.baselineSchemaMetadata ||
+        DatabaseMetadata.fromPartial({})
     )
   );
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
