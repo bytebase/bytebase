@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -738,6 +739,11 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	}
 	oldSteps := convertToPlanSteps(oldPlan.Config.Steps)
 
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
+	}
+
 	removed, added, updated := diffSpecs(oldSteps, request.Plan.Steps)
 	if len(removed) > 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "cannot remove specs from plan")
@@ -754,6 +760,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		updatedByID[spec.Id] = spec
 	}
 
+	var doRefindApproval bool
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
@@ -839,6 +846,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						return status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 					}
 					doUpdate = true
+					doRefindApproval = true
 					// TODO(p0ny): update schema version
 					taskPatch.SheetID = &sheet.UID
 				}
@@ -871,6 +879,33 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 					// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
 				}
 			}
+		}
+	}
+
+	if issue != nil && doRefindApproval {
+		if err := func() error {
+			payload := &storepb.IssuePayload{}
+			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return errors.Errorf("failed to unmarshal issue payload: %v", err)
+			}
+			payload.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
+			payloadBytes, err := protojson.Marshal(payload)
+			if err != nil {
+				return errors.Errorf("failed to marshal issue payload: %v", err)
+			}
+			payloadStr := string(payloadBytes)
+			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+				Payload: &payloadStr,
+			}, api.SystemBotID)
+			if err != nil {
+				return errors.Errorf("failed to update issue: %v", err)
+			}
+			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+			return nil
+		}(); err != nil {
+			log.Error("failed to update issue to refind approval", zap.Error(err))
 		}
 	}
 
