@@ -356,7 +356,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
-		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunCanceled)
 		return
 	}
 

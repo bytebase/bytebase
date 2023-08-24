@@ -25,16 +25,27 @@
 
 <script setup lang="ts">
 import { zindexable as vZindexable } from "vdirs";
+import { watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { Drawer, DrawerContent } from "@/components/v2";
 
-defineProps<{
+const props = defineProps<{
   title: string;
   show: boolean;
   loading: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
+  (event: "show"): void;
   (event: "close"): void;
 }>();
+
+watch(
+  () => props.show,
+  (newShow, oldShow) => {
+    if (newShow && !oldShow) {
+      emit("show");
+    }
+  }
+);
 </script>

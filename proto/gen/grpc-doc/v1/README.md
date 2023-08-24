@@ -36,15 +36,15 @@
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
+    - [MaskData](#bytebase-v1-MaskData)
     - [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException)
+    - [MaskingPolicy](#bytebase-v1-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
-    - [SensitiveData](#bytebase-v1-SensitiveData)
-    - [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy)
     - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
@@ -55,7 +55,6 @@
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
     - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
-    - [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
@@ -325,8 +324,8 @@
     - [ApprovalStep](#bytebase-v1-ApprovalStep)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
     - [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest)
-    - [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest)
-    - [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse)
+    - [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest)
+    - [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse)
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
@@ -546,6 +545,8 @@
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
+    - [SemanticCategorySetting](#bytebase-v1-SemanticCategorySetting)
+    - [SemanticCategorySetting.SemanticCategory](#bytebase-v1-SemanticCategorySetting-SemanticCategory)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
@@ -1058,6 +1059,25 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 
 
 
+<a name="bytebase-v1-MaskData"></a>
+
+### MaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| semantic_category_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-MaskingExceptionPolicy"></a>
 
 ### MaskingExceptionPolicy
@@ -1087,6 +1107,21 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingPolicy"></a>
+
+### MaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [MaskData](#bytebase-v1-MaskData) | repeated |  |
 
 
 
@@ -1139,7 +1174,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 | deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
 | backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
-| sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
+| masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
 | slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
 | disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
@@ -1183,39 +1218,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SensitiveData"></a>
-
-### SensitiveData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| mask_type | [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SensitiveDataPolicy"></a>
-
-### SensitiveDataPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sensitive_data | [SensitiveData](#bytebase-v1-SensitiveData) | repeated |  |
 
 
 
@@ -1339,9 +1341,11 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | DEPLOYMENT_APPROVAL | 2 |  |
 | BACKUP_PLAN | 3 |  |
 | SQL_REVIEW | 4 |  |
-| SENSITIVE_DATA | 5 |  |
+| MASKING | 5 |  |
 | SLOW_QUERY | 7 |  |
 | DISABLE_COPY_DATA | 8 |  |
+| MASKING_RULE | 9 |  |
+| MASKING_EXCEPTION | 10 |  |
 
 
 
@@ -1356,18 +1360,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | ERROR | 1 |  |
 | WARNING | 2 |  |
 | DISABLED | 3 |  |
-
-
-
-<a name="bytebase-v1-SensitiveDataMaskType"></a>
-
-### SensitiveDataMaskType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASK_TYPE_UNSPECIFIED | 0 |  |
-| DEFAULT | 1 |  |
 
 
  
@@ -5336,31 +5328,28 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-BatchUpdateIssuesRequest"></a>
+<a name="bytebase-v1-BatchUpdateIssuesStatusRequest"></a>
 
-### BatchUpdateIssuesRequest
+### BatchUpdateIssuesStatusRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource shared by all issues being updated. Format: projects/{project} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the status of databases for now. |
-| requests | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
+| issues | [string](#string) | repeated | The list of issues to update. Format: projects/{project}/issues/{issue} |
+| status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The new status. |
+| reason | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-BatchUpdateIssuesResponse"></a>
+<a name="bytebase-v1-BatchUpdateIssuesStatusResponse"></a>
 
-### BatchUpdateIssuesResponse
+### BatchUpdateIssuesStatusResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issues | [Issue](#bytebase-v1-Issue) | repeated | Issues updated. |
 
 
 
@@ -5732,7 +5721,7 @@ ANY means approving any node will proceed.
 | SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) |  |
 | CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
-| BatchUpdateIssues | [BatchUpdateIssuesRequest](#bytebase-v1-BatchUpdateIssuesRequest) | [BatchUpdateIssuesResponse](#bytebase-v1-BatchUpdateIssuesResponse) |  |
+| BatchUpdateIssuesStatus | [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest) | [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse) |  |
 | ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
@@ -7095,6 +7084,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The name of the parent of the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
 | task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| reason | [string](#string) |  |  |
 
 
 
@@ -7121,6 +7111,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The name of the parent of the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| reason | [string](#string) |  |  |
 
 
 
@@ -7147,6 +7138,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The name of the parent of the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | tasks | [string](#string) | repeated | The tasks to skip. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| reason | [string](#string) |  |  |
 
 
 
@@ -8147,7 +8139,7 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the baseline schema. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema design. |
 | baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
-| baseline_sheet_name | [string](#string) |  | The name of the baseline sheet. Format: projects/{project}/sheets/{sheet} |
+| baseline_sheet_name | [string](#string) |  | The name of the baseline sheet. For main branch, its format will be: projects/{project}/sheets/{sheet} For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign} |
 | type | [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type) |  | The type of the schema design. |
 | etag | [string](#string) |  | The etag of the schema design. |
 | creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
@@ -8723,6 +8715,40 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
+<a name="bytebase-v1-SemanticCategorySetting"></a>
+
+### SemanticCategorySetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| categories | [SemanticCategorySetting.SemanticCategory](#bytebase-v1-SemanticCategorySetting-SemanticCategory) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SemanticCategorySetting-SemanticCategory"></a>
+
+### SemanticCategorySetting.SemanticCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic category. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| title | [string](#string) |  | the title of the category item, it should not be empty. |
+| description | [string](#string) |  | the description of the category item, it can be empty.
+
+We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
+
+
+
+
+
+
 <a name="bytebase-v1-SetSettingRequest"></a>
 
 ### SetSettingRequest
@@ -8775,6 +8801,7 @@ The data in setting value.
 | external_approval_setting_value | [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting) |  |  |
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
+| semantic_category_setting_value | [SemanticCategorySetting](#bytebase-v1-SemanticCategorySetting) |  |  |
 
 
 

@@ -207,7 +207,7 @@ message Policy {
     IamPolicy workspace_iam_policy = 6;
     DeploymentApprovalPolicy deployment_approval_policy = 7;
     BackupPlanPolicy backup_plan_policy = 8;
-    SensitiveDataPolicy sensitive_data_policy = 9;
+    MaskingPolicy masking_policy = 9;
     SQLReviewPolicy sql_review_policy = 11;
     SlowQueryPolicy slow_query_policy = 12;
     DisableCopyDataPolicy disable_copy_data_policy = 16;
@@ -232,9 +232,11 @@ enum PolicyType {
   DEPLOYMENT_APPROVAL = 2;
   BACKUP_PLAN = 3;
   SQL_REVIEW = 4;
-  SENSITIVE_DATA = 5;
+  MASKING = 5;
   SLOW_QUERY = 7;
   DISABLE_COPY_DATA = 8;
+  MASKING_RULE = 9;
+  MASKING_EXCEPTION = 10;
 }
 
 enum PolicyResourceType {
@@ -289,20 +291,16 @@ enum BackupPlanSchedule {
   WEEKLY = 3;
 }
 
-message SensitiveDataPolicy {
-  repeated SensitiveData sensitive_data = 1;
+message MaskingPolicy {
+  repeated MaskData mask_data = 1;
 }
 
-message SensitiveData {
+message MaskData {
   string schema = 1;
   string table = 2;
   string column = 3;
-  SensitiveDataMaskType mask_type = 4;
-}
-
-enum SensitiveDataMaskType {
-  MASK_TYPE_UNSPECIFIED = 0;
-  DEFAULT = 1;
+  string semantic_category_id = 4;
+  MaskingLevel masking_level = 5;
 }
 
 message SQLReviewPolicy {

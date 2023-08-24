@@ -10,6 +10,7 @@ import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { useSheetV1Store, useSheetStatementByUID } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
+  ActivityPipelineTaskRunStatusUpdatePayload,
   ActivityStageStatusUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
   ActivityTaskFileCommitPayload,
@@ -129,6 +130,55 @@ const renderActionSentence = () => {
           } else {
             params.verb = t("activity.sentence.skipped");
           }
+          break;
+        }
+        case "FAILED": {
+          params.verb = t("activity.sentence.failed");
+          break;
+        }
+        case "CANCELED": {
+          params.verb = t("activity.sentence.canceled");
+          break;
+        }
+        case "SKIPPED": {
+          params.verb = t("activity.sentence.skipped");
+          break;
+        }
+        default:
+          params.verb = t("activity.sentence.changed");
+      }
+      const task = findTaskByUID(issue.rolloutEntity, String(payload.taskId));
+      if (task) {
+        params.target = h(TaskName, { issue, task });
+      }
+      return renderVerbTypeTarget(params, {
+        tag: "span",
+      });
+    }
+    case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityPipelineTaskRunStatusUpdatePayload;
+      const params: VerbTypeTarget = {
+        activity,
+        verb: "",
+        type: t("common.task"),
+        target: "",
+      };
+      switch (payload.newStatus) {
+        case "PENDING": {
+          params.verb = maybeAutomaticallyVerb(
+            activity,
+            t("activity.sentence.rolled-out")
+          );
+          break;
+        }
+        case "RUNNING": {
+          params.verb = t("activity.sentence.started");
+          break;
+        }
+        case "DONE": {
+          params.verb = t("activity.sentence.completed");
           break;
         }
         case "FAILED": {

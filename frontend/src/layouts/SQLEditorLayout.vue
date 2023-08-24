@@ -24,11 +24,37 @@
 </template>
 
 <script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
+import { onMounted } from "vue";
+import { useRoute } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useSQLEditorStore,
+} from "@/store";
+import { SQLEditorMode } from "@/types";
 
 const actuatorStore = useActuatorV1Store();
+const sqlEditorStore = useSQLEditorStore();
+const route = useRoute();
+
+onMounted(() => {
+  let mode = route.query.mode as SQLEditorMode;
+  const storage = useLocalStorage<SQLEditorMode>(
+    "bb.sql-editor.mode",
+    "BUNDLED"
+  );
+  if (mode != "BUNDLED" && mode != "STANDALONE") {
+    mode = storage.value;
+  }
+
+  storage.value = mode;
+  sqlEditorStore.setSQLEditorState({
+    mode,
+  });
+});
 
 const ping = () => {
   actuatorStore.fetchServerInfo().then((info) => {

@@ -1,4 +1,7 @@
 <template>
+  <li class="issue-debug">
+    {{ LogEntity.toJSON(activity) }}
+  </li>
   <li>
     <div :id="`#${activity.name}`" class="relative pb-4">
       <span

@@ -32,6 +32,7 @@
     - [PageToken](#bytebase-store-PageToken)
   
     - [Engine](#bytebase-store-Engine)
+    - [MaskingLevel](#bytebase-store-MaskingLevel)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
@@ -120,6 +121,8 @@
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [IamPolicy](#bytebase-store-IamPolicy)
+    - [MaskData](#bytebase-store-MaskData)
+    - [MaskingPolicy](#bytebase-store-MaskingPolicy)
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
@@ -134,6 +137,8 @@
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
+    - [SemanticCategorySetting](#bytebase-store-SemanticCategorySetting)
+    - [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -552,6 +557,20 @@ Used internally for obfuscating the page token.
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
 | DM | 15 |  |
+
+
+
+<a name="bytebase-store-MaskingLevel"></a>
+
+### MaskingLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASKING_LEVEL_UNSPECIFIED | 0 |  |
+| NONE | 1 |  |
+| PARTIAL | 2 |  |
+| FULL | 3 |  |
 
 
  
@@ -1844,6 +1863,40 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 
 
+
+<a name="bytebase-store-MaskData"></a>
+
+### MaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| semantic_category_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingPolicy"></a>
+
+### MaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
+
+
+
+
+
  
 
  
@@ -2063,6 +2116,40 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SemanticCategorySetting"></a>
+
+### SemanticCategorySetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| categories | [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SemanticCategorySetting-SemanticCategory"></a>
+
+### SemanticCategorySetting.SemanticCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic category. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| title | [string](#string) |  | the title of the category item, it should not be empty. |
+| description | [string](#string) |  | the description of the category item, it can be empty.
+
+We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
 
 
 

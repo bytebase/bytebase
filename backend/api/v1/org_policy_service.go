@@ -522,11 +522,11 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		return payload.String()
-	case v1pb.PolicyType_SENSITIVE_DATA:
+	case v1pb.PolicyType_MASKING:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
-		payload, err := convertToSensitiveDataPolicyPayload(policy.GetSensitiveDataPolicy())
+		payload, err := convertToSensitiveDataPolicyPayload(policy.GetMaskingPolicy())
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -617,7 +617,7 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		}
 		policy.Policy = payload
 	case api.PolicyTypeSensitiveData:
-		pType = v1pb.PolicyType_SENSITIVE_DATA
+		pType = v1pb.PolicyType_MASKING
 		payload, err := convertToV1PBSensitiveDataPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
@@ -761,38 +761,42 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 	}, nil
 }
 
-func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPolicy, error) {
+func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_MaskingPolicy, error) {
 	payload, err := api.UnmarshalSensitiveDataPolicy(payloadStr)
 	if err != nil {
 		return nil, err
 	}
 
-	var sensitiveDataList []*v1pb.SensitiveData
+	var maskDataList []*v1pb.MaskData
 	for _, data := range payload.SensitiveDataList {
-		maskType := v1pb.SensitiveDataMaskType_MASK_TYPE_UNSPECIFIED
+		maskType := v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 		if data.Type == api.SensitiveDataMaskTypeDefault {
-			maskType = v1pb.SensitiveDataMaskType_DEFAULT
+			maskType = v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 		}
-		sensitiveDataList = append(sensitiveDataList, &v1pb.SensitiveData{
-			Schema:   data.Schema,
-			Table:    data.Table,
-			Column:   data.Column,
-			MaskType: maskType,
+		maskDataList = append(maskDataList, &v1pb.MaskData{
+			Schema:             data.Schema,
+			Table:              data.Table,
+			Column:             data.Column,
+			SemanticCategoryId: "",
+			MaskingLevel:       maskType,
 		})
 	}
 
-	return &v1pb.Policy_SensitiveDataPolicy{
-		SensitiveDataPolicy: &v1pb.SensitiveDataPolicy{
-			SensitiveData: sensitiveDataList,
+	return &v1pb.Policy_MaskingPolicy{
+		MaskingPolicy: &v1pb.MaskingPolicy{
+			MaskData: maskDataList,
 		},
 	}, nil
 }
 
-func convertToSensitiveDataPolicyPayload(policy *v1pb.SensitiveDataPolicy) (*api.SensitiveDataPolicy, error) {
+func convertToSensitiveDataPolicyPayload(policy *v1pb.MaskingPolicy) (*api.SensitiveDataPolicy, error) {
 	var sensitiveDataList []api.SensitiveData
-	for _, data := range policy.SensitiveData {
-		if data.MaskType != v1pb.SensitiveDataMaskType_DEFAULT {
-			return nil, errors.Errorf("invalid sensitive data mask type %v", data.MaskType)
+	for _, data := range policy.MaskData {
+		if data.MaskingLevel != v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
+			return nil, errors.Errorf("invalid sensitive data mask type %v", data.MaskingLevel)
+		}
+		if data.SemanticCategoryId != "" {
+			return nil, errors.Errorf("semantic category id is not supported")
 		}
 		sensitiveDataList = append(sensitiveDataList, api.SensitiveData{
 			Schema: data.Schema,
@@ -1010,7 +1014,7 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeBackupPlan, nil
 	case v1pb.PolicyType_SQL_REVIEW.String():
 		return api.PolicyTypeSQLReview, nil
-	case v1pb.PolicyType_SENSITIVE_DATA.String():
+	case v1pb.PolicyType_MASKING.String():
 		return api.PolicyTypeSensitiveData, nil
 	case v1pb.PolicyType_SLOW_QUERY.String():
 		return api.PolicyTypeSlowQuery, nil

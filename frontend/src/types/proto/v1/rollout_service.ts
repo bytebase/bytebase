@@ -324,6 +324,7 @@ export interface BatchRunTasksRequest {
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
    */
   tasks: string[];
+  reason: string;
 }
 
 export interface BatchRunTasksResponse {
@@ -340,6 +341,7 @@ export interface BatchSkipTasksRequest {
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
    */
   tasks: string[];
+  reason: string;
 }
 
 export interface BatchSkipTasksResponse {
@@ -357,6 +359,7 @@ export interface BatchCancelTaskRunsRequest {
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    */
   taskRuns: string[];
+  reason: string;
 }
 
 export interface BatchCancelTaskRunsResponse {
@@ -2593,7 +2596,7 @@ export const RunPlanChecksResponse = {
 };
 
 function createBaseBatchRunTasksRequest(): BatchRunTasksRequest {
-  return { parent: "", tasks: [] };
+  return { parent: "", tasks: [], reason: "" };
 }
 
 export const BatchRunTasksRequest = {
@@ -2603,6 +2606,9 @@ export const BatchRunTasksRequest = {
     }
     for (const v of message.tasks) {
       writer.uint32(18).string(v!);
+    }
+    if (message.reason !== "") {
+      writer.uint32(26).string(message.reason);
     }
     return writer;
   },
@@ -2628,6 +2634,13 @@ export const BatchRunTasksRequest = {
 
           message.tasks.push(reader.string());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2641,6 +2654,7 @@ export const BatchRunTasksRequest = {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
+      reason: isSet(object.reason) ? String(object.reason) : "",
     };
   },
 
@@ -2652,6 +2666,7 @@ export const BatchRunTasksRequest = {
     } else {
       obj.tasks = [];
     }
+    message.reason !== undefined && (obj.reason = message.reason);
     return obj;
   },
 
@@ -2663,6 +2678,7 @@ export const BatchRunTasksRequest = {
     const message = createBaseBatchRunTasksRequest();
     message.parent = object.parent ?? "";
     message.tasks = object.tasks?.map((e) => e) || [];
+    message.reason = object.reason ?? "";
     return message;
   },
 };
@@ -2712,7 +2728,7 @@ export const BatchRunTasksResponse = {
 };
 
 function createBaseBatchSkipTasksRequest(): BatchSkipTasksRequest {
-  return { parent: "", tasks: [] };
+  return { parent: "", tasks: [], reason: "" };
 }
 
 export const BatchSkipTasksRequest = {
@@ -2722,6 +2738,9 @@ export const BatchSkipTasksRequest = {
     }
     for (const v of message.tasks) {
       writer.uint32(18).string(v!);
+    }
+    if (message.reason !== "") {
+      writer.uint32(26).string(message.reason);
     }
     return writer;
   },
@@ -2747,6 +2766,13 @@ export const BatchSkipTasksRequest = {
 
           message.tasks.push(reader.string());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2760,6 +2786,7 @@ export const BatchSkipTasksRequest = {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
+      reason: isSet(object.reason) ? String(object.reason) : "",
     };
   },
 
@@ -2771,6 +2798,7 @@ export const BatchSkipTasksRequest = {
     } else {
       obj.tasks = [];
     }
+    message.reason !== undefined && (obj.reason = message.reason);
     return obj;
   },
 
@@ -2782,6 +2810,7 @@ export const BatchSkipTasksRequest = {
     const message = createBaseBatchSkipTasksRequest();
     message.parent = object.parent ?? "";
     message.tasks = object.tasks?.map((e) => e) || [];
+    message.reason = object.reason ?? "";
     return message;
   },
 };
@@ -2831,7 +2860,7 @@ export const BatchSkipTasksResponse = {
 };
 
 function createBaseBatchCancelTaskRunsRequest(): BatchCancelTaskRunsRequest {
-  return { parent: "", taskRuns: [] };
+  return { parent: "", taskRuns: [], reason: "" };
 }
 
 export const BatchCancelTaskRunsRequest = {
@@ -2841,6 +2870,9 @@ export const BatchCancelTaskRunsRequest = {
     }
     for (const v of message.taskRuns) {
       writer.uint32(18).string(v!);
+    }
+    if (message.reason !== "") {
+      writer.uint32(26).string(message.reason);
     }
     return writer;
   },
@@ -2866,6 +2898,13 @@ export const BatchCancelTaskRunsRequest = {
 
           message.taskRuns.push(reader.string());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2879,6 +2918,7 @@ export const BatchCancelTaskRunsRequest = {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       taskRuns: Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => String(e)) : [],
+      reason: isSet(object.reason) ? String(object.reason) : "",
     };
   },
 
@@ -2890,6 +2930,7 @@ export const BatchCancelTaskRunsRequest = {
     } else {
       obj.taskRuns = [];
     }
+    message.reason !== undefined && (obj.reason = message.reason);
     return obj;
   },
 
@@ -2901,6 +2942,7 @@ export const BatchCancelTaskRunsRequest = {
     const message = createBaseBatchCancelTaskRunsRequest();
     message.parent = object.parent ?? "";
     message.taskRuns = object.taskRuns?.map((e) => e) || [];
+    message.reason = object.reason ?? "";
     return message;
   },
 };

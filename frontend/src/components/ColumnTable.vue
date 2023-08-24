@@ -95,12 +95,8 @@ import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { ComposedDatabase } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { Engine } from "@/types/proto/v1/common";
-import {
-  PolicyType,
-  SensitiveData,
-  SensitiveDataMaskType,
-} from "@/types/proto/v1/org_policy_service";
+import { Engine, MaskingLevel } from "@/types/proto/v1/common";
+import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
@@ -125,9 +121,9 @@ const props = defineProps({
     required: true,
     type: Object as PropType<ColumnMetadata[]>,
   },
-  sensitiveDataList: {
+  maskDataList: {
     required: true,
-    type: Array as PropType<SensitiveData[]>,
+    type: Array as PropType<MaskData[]>,
   },
   classificationConfig: {
     required: false,
@@ -297,7 +293,7 @@ const columnNameList = computed(() => {
 
 const isSensitiveColumn = (column: ColumnMetadata) => {
   return (
-    props.sensitiveDataList.findIndex((sensitiveData) => {
+    props.maskDataList.findIndex((sensitiveData) => {
       return (
         sensitiveData.table === props.table.name &&
         sensitiveData.column === column.name
@@ -321,31 +317,32 @@ const toggleSensitiveColumn = (
     return;
   }
 
-  const index = props.sensitiveDataList.findIndex((sensitiveData) => {
+  const index = props.maskDataList.findIndex((sensitiveData) => {
     return (
       sensitiveData.table === props.table.name &&
       sensitiveData.column === column.name
     );
   });
-  const sensitiveDataList = cloneDeep(props.sensitiveDataList);
+  const maskDataList = cloneDeep(props.maskDataList);
   if (on && index < 0) {
     // Turn on sensitive
-    sensitiveDataList.push({
+    maskDataList.push({
       schema: props.schema,
       table: props.table.name,
       column: column.name,
-      maskType: SensitiveDataMaskType.DEFAULT,
+      semanticCategoryId: "",
+      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     });
   } else if (!on && index >= 0) {
-    sensitiveDataList.splice(index, 1);
+    maskDataList.splice(index, 1);
   }
 
   usePolicyV1Store().upsertPolicy({
     parentPath: props.database.name,
     policy: {
-      type: PolicyType.SENSITIVE_DATA,
-      sensitiveDataPolicy: {
-        sensitiveData: sensitiveDataList,
+      type: PolicyType.MASKING,
+      maskingPolicy: {
+        maskData: maskDataList,
       },
     },
     updateMask: ["payload"],

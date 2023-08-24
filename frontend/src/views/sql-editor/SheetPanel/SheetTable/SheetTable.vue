@@ -12,6 +12,9 @@
         {{ sheet.title }}
       </div>
       <div class="bb-grid-cell">
+        <SheetConnection :sheet="sheet" />
+      </div>
+      <div class="bb-grid-cell">
         <ProjectV1Name :project="projectForSheet(sheet)" :link="false" />
       </div>
       <div class="bb-grid-cell">
@@ -42,6 +45,7 @@ import { Sheet } from "@/types/proto/v1/sheet_service";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import { extractProjectResourceName } from "@/utils";
 import { SheetViewMode, useSheetContextByView, Dropdown } from "../../Sheet";
+import SheetConnection from "./SheetConnection.vue";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -70,13 +74,17 @@ const columns = computed(() => {
     title: t("common.name"),
     width: "2fr",
   };
+  const CONNECTION: BBGridColumn = {
+    title: t("sql-editor.sheet.connection"),
+    width: "minmax(auto, 2fr)",
+  };
   const PROJECT: BBGridColumn = {
     title: t("common.project"),
     width: "minmax(auto, 1fr)",
   };
   const VISIBILITY: BBGridColumn = {
     title: t("common.visibility"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(auto, 8rem)",
   };
   const CREATOR: BBGridColumn = {
     title: t("common.creator"),
@@ -84,13 +92,13 @@ const columns = computed(() => {
   };
   const UPDATED: BBGridColumn = {
     title: t("common.updated-at"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(auto, 10rem)",
   };
   const OPERATION: BBGridColumn = {
     title: "",
     width: "auto",
   };
-  const columns = [NAME, PROJECT, VISIBILITY];
+  const columns = [NAME, CONNECTION, PROJECT, VISIBILITY];
   if (showCreator.value) {
     columns.push(CREATOR);
   }

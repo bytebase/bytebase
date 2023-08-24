@@ -133,7 +133,7 @@ const allowAdmin = computed(() => {
 
 const policyList = usePolicyListByResourceTypeAndPolicyType({
   resourceType: PolicyResourceType.DATABASE,
-  policyType: PolicyType.SENSITIVE_DATA,
+  policyType: PolicyType.MASKING,
   showDeleted: false,
 });
 
@@ -152,14 +152,14 @@ const updateList = async () => {
   const sensitiveColumnList: SensitiveColumn[] = [];
   for (let i = 0; i < policyList.value.length; i++) {
     const policy = policyList.value[i];
-    if (!policy.sensitiveDataPolicy) {
+    if (!policy.maskingPolicy) {
       continue;
     }
 
     const databaseId = policy.resourceUid;
     const database = await databaseStore.getOrFetchDatabaseByUID(databaseId);
 
-    for (const sensitiveData of policy.sensitiveDataPolicy.sensitiveData) {
+    for (const sensitiveData of policy.maskingPolicy.maskData) {
       const { schema, table, column } = sensitiveData;
       sensitiveColumnList.push({ database, policy, schema, table, column });
     }
@@ -181,24 +181,24 @@ const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
     (policy) => policy.resourceUid == sensitiveColumn.database.uid
   );
   if (!policy) return;
-  const sensitiveData = policy.sensitiveDataPolicy?.sensitiveData;
-  if (!sensitiveData) return;
+  const maskData = policy.maskingPolicy?.maskData;
+  if (!maskData) return;
 
-  const index = sensitiveData.findIndex(
+  const index = maskData.findIndex(
     (sensitiveData) =>
       sensitiveData.table === table && sensitiveData.column === column
   );
   if (index >= 0) {
     // mutate the list and the item directly
     // so we don't need to re-fetch the whole list.
-    sensitiveData.splice(index, 1);
+    maskData.splice(index, 1);
 
     usePolicyV1Store().updatePolicy(["payload"], {
       name: policy.name,
-      type: PolicyType.SENSITIVE_DATA,
+      type: PolicyType.MASKING,
       resourceType: PolicyResourceType.DATABASE,
-      sensitiveDataPolicy: {
-        sensitiveData,
+      maskingPolicy: {
+        maskData,
       },
     });
   }

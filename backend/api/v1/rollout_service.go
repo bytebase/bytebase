@@ -512,7 +512,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to create pending task runs")
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, rolloutID, tasksToRun, issue, user.ID); err != nil {
+	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
 		log.Error("failed to batch create activities for running tasks", zap.Error(err))
 	}
 
@@ -521,19 +521,69 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 
 // BatchSkipTasks skips tasks in batch.
 func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.BatchSkipTasksRequest) (*v1pb.BatchSkipTasksResponse, error) {
+	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	rollout, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find rollout, error: %v", err)
+	}
+	if rollout == nil {
+		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
+	}
+
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
+	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue not found for rollout %v", rolloutID)
+	}
+
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
+	}
+
+	taskByID := make(map[int]*store.TaskMessage)
+	for _, task := range tasks {
+		taskByID[task.ID] = task
+	}
+
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	var taskUIDs []int
+	var tasksToSkip []*store.TaskMessage
 	for _, task := range request.Tasks {
 		_, _, _, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+		if _, ok := taskByID[taskID]; !ok {
+			return nil, status.Errorf(codes.NotFound, "task %v not found in the rollout", taskID)
+		}
 		taskUIDs = append(taskUIDs, taskID)
+		tasksToSkip = append(tasksToSkip, taskByID[taskID])
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, taskUIDs, "", updaterID); err != nil {
+	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason, updaterID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
 	}
+
+	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, updaterID); err != nil {
+		log.Error("failed to batch create activities for skipping tasks", zap.Error(err))
+	}
+
 	return &v1pb.BatchSkipTasksResponse{}, nil
 }
 
@@ -612,12 +662,19 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 	}
 
 	var taskRunIDs []int
+	var taskIDs []int
 	for _, taskRun := range request.TaskRuns {
-		_, _, _, _, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		_, _, _, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+		taskIDs = append(taskIDs, taskID)
 		taskRunIDs = append(taskRunIDs, taskRunID)
+	}
+
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{IDs: &taskIDs})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
 	}
 
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
@@ -646,6 +703,10 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 
 	if err := s.store.BatchPatchTaskRunStatus(ctx, taskRunIDs, api.TaskRunCanceled, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
+	}
+
+	if err := s.activityManager.BatchCreateActivitiesForCancelTaskRuns(ctx, tasks, issue, request.Reason, principalID); err != nil {
+		log.Error("failed to batch create activities for cancel task runs", zap.Error(err))
 	}
 
 	return &v1pb.BatchCancelTaskRunsResponse{}, nil
