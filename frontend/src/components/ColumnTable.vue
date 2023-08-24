@@ -331,7 +331,7 @@ const toggleSensitiveColumn = (
       table: props.table.name,
       column: column.name,
       semanticCategoryId: "",
-      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+      maskingLevel: MaskingLevel.FULL,
     });
   } else if (!on && index >= 0) {
     maskDataList.splice(index, 1);
