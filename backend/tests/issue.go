@@ -15,6 +15,17 @@ import (
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+func (ctl *controller) closeIssue(ctx context.Context, projectName, issueName string) error {
+	if _, err := ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, &v1.BatchUpdateIssuesStatusRequest{
+		Parent: projectName,
+		Issues: []string{issueName},
+		Status: v1.IssueStatus_DONE,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
 // createIssue creates an issue.
 func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, error) {
 	buf := new(bytes.Buffer)
