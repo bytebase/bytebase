@@ -2435,8 +2435,9 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                   t.TempDir(),
+				vcsProviderCreator:        test.vcsProviderCreator,
+				developmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -2540,7 +2541,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, instance, project.Name, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
@@ -2564,13 +2565,16 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 
 			// Get schema update issue
 			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			fmt.Printf("Barny0\n")
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
+			fmt.Printf("Barny2: %+v\n", issue)
 			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
+			fmt.Printf("Barny3: %+v\n", issue)
 			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("Apply schema diff by file prod/.%s##LATEST.sql", databaseName), issue.Description)
 			_, err = ctl.patchIssueStatus(
