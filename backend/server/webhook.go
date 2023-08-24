@@ -2180,6 +2180,31 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			return nil
 		}
 
+		if issue.PlanUID != nil {
+			plan, err := s.store.GetPlan(ctx, *issue.PlanUID)
+			if err != nil {
+				log.Error("failed to get plan", zap.Int64("plan ID", *issue.PlanUID), zap.Error(err))
+			}
+			for _, step := range plan.Config.Steps {
+				for _, spec := range step.Specs {
+					v, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig)
+					if !ok {
+						continue
+					}
+					if v.ChangeDatabaseConfig.SchemaVersion == schemaVersion {
+						v.ChangeDatabaseConfig.Sheet = fmt.Sprintf("projects/%s/sheets/%d", issue.Project.ResourceID, sheet.UID)
+					}
+				}
+			}
+			if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
+				UID:       *issue.PlanUID,
+				Config:    plan.Config,
+				UpdaterID: api.SystemBotID,
+			}); err != nil {
+				log.Error("failed to update plan", zap.Int64("plan ID", *issue.PlanUID), zap.Error(err))
+			}
+		}
+
 		// dismiss stale review, re-find the approval template
 		// it's ok if we failed
 		if err := func() error {
