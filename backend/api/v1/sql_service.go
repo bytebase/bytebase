@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -1366,18 +1367,30 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			return nil, errors.Errorf("database %q not found", databaseName)
 		}
 
-		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
+		policyResourceType := api.PolicyResourceTypeDatabase
+		policyType := api.PolicyTypeSensitiveData
+		policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+			ResourceType: &policyResourceType,
+			Type:         &policyType,
+			ResourceUID:  &database.UID,
+		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to find sensitive data policy for database %q in instance %q: %v", databaseName, instance.Title, err)
+			return nil, errors.Wrapf(err, "failed to find policy for database %q", databaseName)
+		}
+		maskingPolicy := &storepb.MaskingPolicy{}
+		if policy != nil {
+			if err := protojson.Unmarshal([]byte(policy.Payload), maskingPolicy); err != nil {
+				return nil, errors.Wrapf(err, "failed to unmarshal policy for database %q", databaseName)
+			}
 		}
 
 		columnMap := make(sensitiveDataMap)
-		for _, data := range policy.SensitiveDataList {
+		for _, data := range maskingPolicy.MaskData {
 			columnMap[api.SensitiveData{
 				Schema: data.Schema,
 				Table:  data.Table,
 				Column: data.Column,
-			}] = data.Type
+			}] = api.SensitiveDataMaskTypeDefault
 		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
