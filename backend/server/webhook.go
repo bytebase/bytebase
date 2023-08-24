@@ -1558,9 +1558,10 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		specs = append(specs, &v1pb.Plan_Spec{
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Type:   changeType,
-					Target: target,
-					Sheet:  fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+					Type:          changeType,
+					Target:        target,
+					Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+					SchemaVersion: migrationDetail.SchemaVersion,
 				},
 			},
 		})

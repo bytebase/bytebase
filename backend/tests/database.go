@@ -84,6 +84,8 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, instance *v1pb.Inst
 	if err != nil {
 		return err
 	}
+	// Add a second sleep to avoid schema version conflict.
+	time.Sleep(time.Second)
 	return nil
 }
 
