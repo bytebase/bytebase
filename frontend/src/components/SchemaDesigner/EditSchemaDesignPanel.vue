@@ -328,7 +328,9 @@ const handleCancelEdit = () => {
 
   const metadata = mergeSchemaEditToMetadata(
     schemaDesignerRef.value?.editableSchemas || [],
-    schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+    cloneDeep(
+      schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+    )
   );
   // If the metadata is changed, we need to rebuild the editing state.
   if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
