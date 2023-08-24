@@ -4,6 +4,7 @@
       class="name"
       :tooltip="{
         placement: 'top',
+        delay: 250,
       }"
       :class="state.editing && 'invisible'"
       @dblclick="beginEdit"
