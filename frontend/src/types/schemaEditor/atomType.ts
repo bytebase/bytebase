@@ -137,7 +137,7 @@ export const convertSchemaMetadataToSchema = (
 
 export const convertSchemaMetadataList = (
   schemaMetadataList: SchemaMetadata[]
-) => {
+): Schema[] => {
   // Compose all tables of each schema.
   const schemaList: Schema[] = schemaMetadataList.map((schemaMetadata) =>
     convertSchemaMetadataToSchema(schemaMetadata)
