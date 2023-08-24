@@ -1,12 +1,15 @@
 <template>
   <div class="label">
-    <span
+    <NEllipsis
       class="name"
+      :tooltip="{
+        placement: 'top',
+      }"
       :class="state.editing && 'invisible'"
       @dblclick="beginEdit"
     >
       {{ state.name }}
-    </span>
+    </NEllipsis>
 
     <input
       v-if="state.editing"
@@ -21,6 +24,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { NEllipsis } from "naive-ui";
 import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
 import { useSheetV1Store, useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
