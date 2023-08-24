@@ -57,6 +57,7 @@ message PlanCheckRunResult {
       repeated string statement_types = 2;
       int64 affected_rows = 3;
       ChangedResources changed_resources = 4;
+      int32 database_uid = 5;
     }
     message SqlReviewReport {
       int64 line = 1;
