@@ -470,7 +470,11 @@
       "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "service-key-copied": "Service Key 已复制，请勿泄漏",
       "create-as-service-account": "创建为服务账号",
-      "show-inactive": "查看未激活的成员"
+      "show-inactive": "查看未激活的成员",
+      "remove-self-owner": {
+        "title": "请确认您要移除您的 OWNER 角色。",
+        "description": "请确保剩下的 Owner 成员可以登录，否则就无人可以管理用户了。"
+      }
     },
     "im-integration": {
       "enable": "启用",
