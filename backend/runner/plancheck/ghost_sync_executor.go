@@ -52,12 +52,11 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 		}
 	}()
 
-	target := planCheckRun.Config.GetDatabaseTarget()
-	if target == nil {
-		return nil, errors.New("database target is required")
+	if planCheckRun.Config.DatabaseGroupUid != nil {
+		return nil, errors.Errorf("database group is not supported")
 	}
 
-	instanceUID := int(target.InstanceUid)
+	instanceUID := int(planCheckRun.Config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
@@ -66,12 +65,12 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 		return nil, errors.Errorf("instance not found UID %v", instanceUID)
 	}
 
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &planCheckRun.Config.DatabaseName})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", planCheckRun.Config.DatabaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found %q", target.DatabaseName)
+		return nil, errors.Errorf("database not found %q", planCheckRun.Config.DatabaseName)
 	}
 
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)

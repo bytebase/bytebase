@@ -387,7 +387,6 @@ message PlanCheckRun {
   Status status = 4;
 
   // Format: instances/{instance}/databases/{database}
-  // Format: projects/{project}/databaseGroups/{databaseGroup}
   string target = 5;
   // Format: projects/{project}/sheets/{sheet}
   string sheet = 6;

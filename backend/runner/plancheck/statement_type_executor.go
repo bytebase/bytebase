@@ -44,19 +44,17 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 		return nil, errors.Errorf("change database type is unspecified")
 	}
 
-	if target := planCheckRun.Config.GetDatabaseTarget(); target != nil {
-		return e.runForDatabaseTarget(ctx, planCheckRun, target)
+	if planCheckRun.Config.DatabaseGroupUid != nil {
+		return e.runForDatabaseGroupTarget(ctx, planCheckRun, *planCheckRun.Config.DatabaseGroupUid)
 	}
-	if target := planCheckRun.Config.GetDatabaseGroupTarget(); target != nil {
-		return e.runForDatabaseGroupTarget(ctx, planCheckRun, target)
-	}
-	return nil, errors.New("plan check run target is required")
+	return e.runForDatabaseTarget(ctx, planCheckRun)
 }
 
-func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, target *storepb.PlanCheckRunConfig_DatabaseTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
 	changeType := planCheckRun.Config.ChangeDatabaseType
+	config := planCheckRun.Config
 
-	instanceUID := int(target.InstanceUid)
+	instanceUID := int(config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
@@ -76,12 +74,12 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCh
 		}, nil
 	}
 
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found %q", target.DatabaseName)
+		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
@@ -160,17 +158,18 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCh
 	return results, nil
 }
 
-func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, target *storepb.PlanCheckRunConfig_DatabaseGroupTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, databaseGroupUID int64) ([]*storepb.PlanCheckRunResult_Result, error) {
 	changeType := planCheckRun.Config.ChangeDatabaseType
+	config := planCheckRun.Config
 
 	databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-		UID: &target.DatabaseGroupUid,
+		UID: &databaseGroupUID,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database group %d", target.DatabaseGroupUid)
+		return nil, errors.Wrapf(err, "failed to get database group %d", databaseGroupUID)
 	}
 	if databaseGroup == nil {
-		return nil, errors.Errorf("database group not found %d", target.DatabaseGroupUid)
+		return nil, errors.Errorf("database group not found %d", databaseGroupUID)
 	}
 
 	schemaGroups, err := e.store.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
@@ -226,6 +225,10 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, p
 	var results []*storepb.PlanCheckRunResult_Result
 
 	for _, database := range matchedDatabases {
+		if database.DatabaseName != config.DatabaseName {
+			continue
+		}
+
 		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
@@ -234,6 +237,9 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, p
 			return nil, errors.Errorf("instance %q not found", database.InstanceID)
 		}
 		if !isStatementTypeCheckSupported(instance.Engine) {
+			continue
+		}
+		if instance.UID != int(config.InstanceUid) {
 			continue
 		}
 

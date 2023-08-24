@@ -8,8 +8,10 @@ export const protobufPackage = "bytebase.store";
 export interface PlanCheckRunConfig {
   sheetUid: number;
   changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
-  databaseTarget?: PlanCheckRunConfig_DatabaseTarget | undefined;
-  databaseGroupTarget?: PlanCheckRunConfig_DatabaseGroupTarget | undefined;
+  instanceUid: number;
+  databaseName: string;
+  /** database_group_uid is optional. If it's set, it means the database is part of a database group. */
+  databaseGroupUid?: number | undefined;
 }
 
 export enum PlanCheckRunConfig_ChangeDatabaseType {
@@ -55,15 +57,6 @@ export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRun
     default:
       return "UNRECOGNIZED";
   }
-}
-
-export interface PlanCheckRunConfig_DatabaseTarget {
-  instanceUid: number;
-  databaseName: string;
-}
-
-export interface PlanCheckRunConfig_DatabaseGroupTarget {
-  databaseGroupUid: number;
 }
 
 export interface PlanCheckRunResult {
@@ -142,7 +135,7 @@ export interface PlanCheckRunResult_Result_SqlReviewReport {
 }
 
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
-  return { sheetUid: 0, changeDatabaseType: 0, databaseTarget: undefined, databaseGroupTarget: undefined };
+  return { sheetUid: 0, changeDatabaseType: 0, instanceUid: 0, databaseName: "", databaseGroupUid: undefined };
 }
 
 export const PlanCheckRunConfig = {
@@ -153,11 +146,14 @@ export const PlanCheckRunConfig = {
     if (message.changeDatabaseType !== 0) {
       writer.uint32(16).int32(message.changeDatabaseType);
     }
-    if (message.databaseTarget !== undefined) {
-      PlanCheckRunConfig_DatabaseTarget.encode(message.databaseTarget, writer.uint32(26).fork()).ldelim();
+    if (message.instanceUid !== 0) {
+      writer.uint32(24).int32(message.instanceUid);
     }
-    if (message.databaseGroupTarget !== undefined) {
-      PlanCheckRunConfig_DatabaseGroupTarget.encode(message.databaseGroupTarget, writer.uint32(34).fork()).ldelim();
+    if (message.databaseName !== "") {
+      writer.uint32(34).string(message.databaseName);
+    }
+    if (message.databaseGroupUid !== undefined) {
+      writer.uint32(40).int64(message.databaseGroupUid);
     }
     return writer;
   },
@@ -184,18 +180,25 @@ export const PlanCheckRunConfig = {
           message.changeDatabaseType = reader.int32() as any;
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag !== 24) {
             break;
           }
 
-          message.databaseTarget = PlanCheckRunConfig_DatabaseTarget.decode(reader, reader.uint32());
+          message.instanceUid = reader.int32();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.databaseGroupTarget = PlanCheckRunConfig_DatabaseGroupTarget.decode(reader, reader.uint32());
+          message.databaseName = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.databaseGroupUid = longToNumber(reader.int64() as Long);
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -212,12 +215,9 @@ export const PlanCheckRunConfig = {
       changeDatabaseType: isSet(object.changeDatabaseType)
         ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
         : 0,
-      databaseTarget: isSet(object.databaseTarget)
-        ? PlanCheckRunConfig_DatabaseTarget.fromJSON(object.databaseTarget)
-        : undefined,
-      databaseGroupTarget: isSet(object.databaseGroupTarget)
-        ? PlanCheckRunConfig_DatabaseGroupTarget.fromJSON(object.databaseGroupTarget)
-        : undefined,
+      instanceUid: isSet(object.instanceUid) ? Number(object.instanceUid) : 0,
+      databaseName: isSet(object.databaseName) ? String(object.databaseName) : "",
+      databaseGroupUid: isSet(object.databaseGroupUid) ? Number(object.databaseGroupUid) : undefined,
     };
   },
 
@@ -226,12 +226,9 @@ export const PlanCheckRunConfig = {
     message.sheetUid !== undefined && (obj.sheetUid = Math.round(message.sheetUid));
     message.changeDatabaseType !== undefined &&
       (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
-    message.databaseTarget !== undefined && (obj.databaseTarget = message.databaseTarget
-      ? PlanCheckRunConfig_DatabaseTarget.toJSON(message.databaseTarget)
-      : undefined);
-    message.databaseGroupTarget !== undefined && (obj.databaseGroupTarget = message.databaseGroupTarget
-      ? PlanCheckRunConfig_DatabaseGroupTarget.toJSON(message.databaseGroupTarget)
-      : undefined);
+    message.instanceUid !== undefined && (obj.instanceUid = Math.round(message.instanceUid));
+    message.databaseName !== undefined && (obj.databaseName = message.databaseName);
+    message.databaseGroupUid !== undefined && (obj.databaseGroupUid = Math.round(message.databaseGroupUid));
     return obj;
   },
 
@@ -243,139 +240,9 @@ export const PlanCheckRunConfig = {
     const message = createBasePlanCheckRunConfig();
     message.sheetUid = object.sheetUid ?? 0;
     message.changeDatabaseType = object.changeDatabaseType ?? 0;
-    message.databaseTarget = (object.databaseTarget !== undefined && object.databaseTarget !== null)
-      ? PlanCheckRunConfig_DatabaseTarget.fromPartial(object.databaseTarget)
-      : undefined;
-    message.databaseGroupTarget = (object.databaseGroupTarget !== undefined && object.databaseGroupTarget !== null)
-      ? PlanCheckRunConfig_DatabaseGroupTarget.fromPartial(object.databaseGroupTarget)
-      : undefined;
-    return message;
-  },
-};
-
-function createBasePlanCheckRunConfig_DatabaseTarget(): PlanCheckRunConfig_DatabaseTarget {
-  return { instanceUid: 0, databaseName: "" };
-}
-
-export const PlanCheckRunConfig_DatabaseTarget = {
-  encode(message: PlanCheckRunConfig_DatabaseTarget, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.instanceUid !== 0) {
-      writer.uint32(8).int32(message.instanceUid);
-    }
-    if (message.databaseName !== "") {
-      writer.uint32(18).string(message.databaseName);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRunConfig_DatabaseTarget {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRunConfig_DatabaseTarget();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.instanceUid = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.databaseName = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRunConfig_DatabaseTarget {
-    return {
-      instanceUid: isSet(object.instanceUid) ? Number(object.instanceUid) : 0,
-      databaseName: isSet(object.databaseName) ? String(object.databaseName) : "",
-    };
-  },
-
-  toJSON(message: PlanCheckRunConfig_DatabaseTarget): unknown {
-    const obj: any = {};
-    message.instanceUid !== undefined && (obj.instanceUid = Math.round(message.instanceUid));
-    message.databaseName !== undefined && (obj.databaseName = message.databaseName);
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRunConfig_DatabaseTarget>): PlanCheckRunConfig_DatabaseTarget {
-    return PlanCheckRunConfig_DatabaseTarget.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<PlanCheckRunConfig_DatabaseTarget>): PlanCheckRunConfig_DatabaseTarget {
-    const message = createBasePlanCheckRunConfig_DatabaseTarget();
     message.instanceUid = object.instanceUid ?? 0;
     message.databaseName = object.databaseName ?? "";
-    return message;
-  },
-};
-
-function createBasePlanCheckRunConfig_DatabaseGroupTarget(): PlanCheckRunConfig_DatabaseGroupTarget {
-  return { databaseGroupUid: 0 };
-}
-
-export const PlanCheckRunConfig_DatabaseGroupTarget = {
-  encode(message: PlanCheckRunConfig_DatabaseGroupTarget, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.databaseGroupUid !== 0) {
-      writer.uint32(8).int64(message.databaseGroupUid);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRunConfig_DatabaseGroupTarget {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRunConfig_DatabaseGroupTarget();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.databaseGroupUid = longToNumber(reader.int64() as Long);
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRunConfig_DatabaseGroupTarget {
-    return { databaseGroupUid: isSet(object.databaseGroupUid) ? Number(object.databaseGroupUid) : 0 };
-  },
-
-  toJSON(message: PlanCheckRunConfig_DatabaseGroupTarget): unknown {
-    const obj: any = {};
-    message.databaseGroupUid !== undefined && (obj.databaseGroupUid = Math.round(message.databaseGroupUid));
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRunConfig_DatabaseGroupTarget>): PlanCheckRunConfig_DatabaseGroupTarget {
-    return PlanCheckRunConfig_DatabaseGroupTarget.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<PlanCheckRunConfig_DatabaseGroupTarget>): PlanCheckRunConfig_DatabaseGroupTarget {
-    const message = createBasePlanCheckRunConfig_DatabaseGroupTarget();
-    message.databaseGroupUid = object.databaseGroupUid ?? 0;
+    message.databaseGroupUid = object.databaseGroupUid ?? undefined;
     return message;
   },
 };

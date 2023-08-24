@@ -426,7 +426,7 @@ type PlanConfig_ChangeDatabaseConfig struct {
 
 	// The resource name of the target.
 	// Format: instances/{instance-id}/databases/{database-name}.
-	// Format: projects/{project}/deploymentConfig.
+	// Format: projects/{project}/databaseGroups/{databaseGroup}
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
