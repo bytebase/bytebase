@@ -348,6 +348,35 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
+	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		PlanUID: &plan.UID,
+		Type:    &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
+	})
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
+	}
+	type Key struct {
+		InstanceUID  int
+		DatabaseName string
+	}
+	latestPlanCheckRun := map[Key]*store.PlanCheckRunMessage{}
+	for _, run := range planCheckRuns {
+		key := Key{
+			InstanceUID:  int(run.Config.InstanceUid),
+			DatabaseName: run.Config.DatabaseName,
+		}
+		oldValue, ok := latestPlanCheckRun[key]
+		if !ok || oldValue.UID < run.UID {
+			latestPlanCheckRun[key] = run
+		}
+	}
+	for _, run := range latestPlanCheckRun {
+		// the latest plan check run is not done yet, return done=false
+		if run.Status != store.PlanCheckRunStatusDone {
+			return 0, store.RiskSourceUnknown, false, nil
+		}
+	}
+
 	pipelineCreate, err := v1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
@@ -456,6 +485,33 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					}
 					if boolVal, ok := val.(bool); ok && boolVal {
 						return risk.Level, nil
+					}
+
+					if run, ok := latestPlanCheckRun[Key{
+						InstanceUID:  instance.UID,
+						DatabaseName: databaseName,
+					}]; ok {
+						for _, result := range run.Result.Results {
+							report := result.GetSqlSummaryReport()
+							if report == nil {
+								continue
+							}
+							args["affected_rows"] = report.AffectedRows
+							for _, statementType := range report.StatementTypes {
+								args["sql_type"] = statementType
+								res, _, err := prg.Eval(args)
+								if err != nil {
+									return 0, err
+								}
+								val, err := res.ConvertToNative(reflect.TypeOf(false))
+								if err != nil {
+									return 0, errors.Wrap(err, "expect bool result")
+								}
+								if boolVal, ok := val.(bool); ok && boolVal {
+									return risk.Level, nil
+								}
+							}
+						}
 					}
 				}
 				return 0, nil
