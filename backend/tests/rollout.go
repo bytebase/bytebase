@@ -30,7 +30,6 @@ func (ctl *controller) waitRollout(ctx context.Context, rolloutName string) erro
 		var runTasks []string
 		for _, stage := range rollout.Stages {
 			for _, task := range stage.Tasks {
-				fmt.Printf("Barny1: %s\n", task.Status)
 				switch task.Status {
 				case v1.Task_NOT_STARTED:
 					runTasks = append(runTasks, task.Name)

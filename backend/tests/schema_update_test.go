@@ -2565,24 +2565,16 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 
 			// Get schema update issue
 			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
-			fmt.Printf("Barny0\n")
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			fmt.Printf("Barny2: %+v\n", issue)
 			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
-			fmt.Printf("Barny3: %+v\n", issue)
 			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("Apply schema diff by file prod/.%s##LATEST.sql", databaseName), issue.Description)
-			_, err = ctl.patchIssueStatus(
-				api.IssueStatusPatch{
-					ID:     issue.ID,
-					Status: api.IssueDone,
-				},
-			)
+			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -2611,12 +2603,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Change data: Insert data", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("By VCS files:\n\nprod/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
-			_, err = ctl.patchIssueStatus(
-				api.IssueStatusPatch{
-					ID:     issue.ID,
-					Status: api.IssueDone,
-				},
-			)
+			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Get migration history
@@ -2690,7 +2677,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				a.True(proto.Equal(got, want))
+				a.Equal(got, want)
 				a.NotEqual(history.Version, "")
 			}
 
