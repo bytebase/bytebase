@@ -1467,7 +1467,6 @@ type PlanCheckRun struct {
 	Type   PlanCheckRun_Type   `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.PlanCheckRun_Type" json:"type,omitempty"`
 	Status PlanCheckRun_Status `protobuf:"varint,4,opt,name=status,proto3,enum=bytebase.v1.PlanCheckRun_Status" json:"status,omitempty"`
 	// Format: instances/{instance}/databases/{database}
-	// Format: projects/{project}/databaseGroups/{databaseGroup}
 	Target string `protobuf:"bytes,5,opt,name=target,proto3" json:"target,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet   string                 `protobuf:"bytes,6,opt,name=sheet,proto3" json:"sheet,omitempty"`

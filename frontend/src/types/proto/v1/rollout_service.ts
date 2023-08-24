@@ -372,10 +372,7 @@ export interface PlanCheckRun {
   uid: string;
   type: PlanCheckRun_Type;
   status: PlanCheckRun_Status;
-  /**
-   * Format: instances/{instance}/databases/{database}
-   * Format: projects/{project}/databaseGroups/{databaseGroup}
-   */
+  /** Format: instances/{instance}/databases/{database} */
   target: string;
   /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
