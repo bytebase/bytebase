@@ -194,6 +194,44 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 	return planCheckRuns, nil
 }
 
+func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(config.Target)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", config.Target)
+	}
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", instanceID)
+	}
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+	}
+	if database == nil {
+		return nil, errors.Errorf("database %q not found", databaseName)
+	}
+
+	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.Sheet)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
+	}
+	sheetUID, err := strconv.Atoi(sheetUIDStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
+	}
+
+	return getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
+}
+
 func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig, sheetUID int, database *store.DatabaseMessage) ([]*store.PlanCheckRunMessage, error) {
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
@@ -277,44 +315,6 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	}
 
 	return planCheckRuns, nil
-}
-
-func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(config.Target)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", config.Target)
-	}
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %q not found", instanceID)
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database %q not found", databaseName)
-	}
-
-	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.Sheet)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
-	}
-	sheetUID, err := strconv.Atoi(sheetUIDStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
-	}
-
-	return getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
 }
 
 func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) storepb.PlanCheckRunConfig_ChangeDatabaseType {
