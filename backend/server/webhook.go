@@ -1685,7 +1685,6 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, project
 		return s.createIssueFromMigrationDetailsV2(ctx, project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList)
 	}
 
-	// TODO(d): use new API.
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			VCSPushEvent: &pushEvent,
