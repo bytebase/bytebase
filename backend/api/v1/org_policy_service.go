@@ -534,10 +534,10 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			if v.Table == "" || v.Column == "" {
 				return "", status.Errorf(codes.InvalidArgument, "sensitive data policy rule cannot have empty table or column name")
 			}
+			// TODO(zp): remove the following validation.
 			if v.MaskingLevel != storepb.MaskingLevel_FULL {
-				return "", status.Errorf(codes.InvalidArgument, "sensitive data policy rule must have mask type %q", api.SensitiveDataMaskTypeDefault)
+				return "", status.Errorf(codes.InvalidArgument, "sensitive data policy rule can only have full masking level for now")
 			}
-			// TODO(zp): remove this validation.
 			if v.SemanticCategoryId != "" {
 				return "", status.Errorf(codes.InvalidArgument, "unsupported semantic category id for now")
 			}
