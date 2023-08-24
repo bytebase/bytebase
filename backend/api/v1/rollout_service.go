@@ -760,7 +760,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		updatedByID[spec.Id] = spec
 	}
 
-	var doRefindApproval bool
+	var doUpdateSheet bool
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
@@ -846,7 +846,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						return status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 					}
 					doUpdate = true
-					doRefindApproval = true
+					doUpdateSheet = true
 					// TODO(p0ny): update schema version
 					taskPatch.SheetID = &sheet.UID
 				}
@@ -882,7 +882,35 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 	}
 
-	if issue != nil && doRefindApproval {
+	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:       oldPlan.UID,
+		UpdaterID: updaterID,
+		Config: &storepb.PlanConfig{
+			Steps: convertPlanSteps(request.Plan.Steps),
+		},
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update plan %q: %v", request.Plan.Name, err)
+	}
+
+	updatedPlan, err := s.store.GetPlan(ctx, oldPlan.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get updated plan %q: %v", request.Plan.Name, err)
+	}
+	if updatedPlan == nil {
+		return nil, status.Errorf(codes.NotFound, "updated plan %q not found", request.Plan.Name)
+	}
+
+	if doUpdateSheet {
+		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, updatedPlan)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
+		}
+		if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+		}
+	}
+
+	if issue != nil && doUpdateSheet {
 		if err := func() error {
 			payload := &storepb.IssuePayload{}
 			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
@@ -909,23 +937,6 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 	}
 
-	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       oldPlan.UID,
-		UpdaterID: updaterID,
-		Config: &storepb.PlanConfig{
-			Steps: convertPlanSteps(request.Plan.Steps),
-		},
-	}); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update plan %q: %v", request.Plan.Name, err)
-	}
-
-	updatedPlan, err := s.store.GetPlan(ctx, oldPlan.UID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get updated plan %q: %v", request.Plan.Name, err)
-	}
-	if updatedPlan == nil {
-		return nil, status.Errorf(codes.NotFound, "updated plan %q not found", request.Plan.Name)
-	}
 	return convertToPlan(updatedPlan), nil
 }
 
