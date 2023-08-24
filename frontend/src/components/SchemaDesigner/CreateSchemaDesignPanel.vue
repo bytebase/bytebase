@@ -12,7 +12,7 @@
       :closable="true"
     >
       <div
-        class="space-y-3 py-1 w-[calc(100vw-24rem)] min-w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+        class="space-y-3 w-full sm:w-[calc(100vw-16rem)] max-w-[calc(100vw-8rem)] overflow-x-auto"
       >
         <div class="w-full flex flex-row justify-start items-center">
           <span class="flex w-40 items-center text-sm">{{
