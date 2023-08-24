@@ -1421,6 +1421,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			Name:       databaseName,
 			SchemaList: []db.SchemaSchema{},
 			TableList:  []db.TableSchema{},
+			ViewList:   []db.ViewSchema{},
 		}
 		for _, schema := range dbSchema.Metadata.Schemas {
 			schemaSchema := db.SchemaSchema{
@@ -1461,6 +1462,13 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				} else {
 					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
 				}
+			}
+			for _, view := range schema.Views {
+				viewSchema := db.ViewSchema{
+					Name:       view.Name,
+					Definition: view.Definition,
+				}
+				databaseSchema.ViewList = append(databaseSchema.ViewList, viewSchema)
 			}
 			if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
 				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
