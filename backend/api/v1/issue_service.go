@@ -751,6 +751,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 
 	var issueIDs []int
+	var issues []*store.IssueMessage
 	for _, issueName := range request.Issues {
 		issue, err := s.getIssueMessage(ctx, issueName)
 		if err != nil {
@@ -760,6 +761,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 			return nil, status.Errorf(codes.NotFound, "cannot find issue %v", issueName)
 		}
 		issueIDs = append(issueIDs, issue.UID)
+		issues = append(issues, issue)
 	}
 
 	if len(issueIDs) == 0 {
@@ -777,16 +779,16 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 
 	if err := func() error {
 		var errs error
-		for _, issueID := range issueIDs {
-			updatedIssue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
+		for _, issue := range issues {
+			updatedIssue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issue.UID})
 			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to get issue %v", issueID))
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to get issue %v", issue.UID))
 				continue
 			}
 
 			payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-				OldStatus: updatedIssue.Status,
-				NewStatus: newStatus,
+				OldStatus: issue.Status,
+				NewStatus: updatedIssue.Status,
 				IssueName: updatedIssue.Title,
 			})
 			if err != nil {
