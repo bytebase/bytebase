@@ -33,7 +33,7 @@
 
             <NDropdown
               v-if="!state.isEditing && schemaDesignDrafts.length > 0"
-              class="max-w-[10rem]"
+              class="max-w-[16rem]"
               trigger="click"
               :options="schemaDesignDraftDropdownOptions"
               :render-label="renderDraftsLabel"
@@ -289,7 +289,7 @@ const renderDraftsLabel = (option: DropdownOption) => {
       h(
         "span",
         {
-          class: "text-xs font-mono shrink-0 text-gray-400 ml-1 mt-0.5",
+          class: "text-xs font-mono shrink-0 text-gray-400 ml-2 mt-0.5",
         },
         [
           schemaDesign.name === props.schemaDesignName
