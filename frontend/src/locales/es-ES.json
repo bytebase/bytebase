@@ -2511,17 +2511,6 @@
           "create_database": "Crear base de datos",
           "query": "Solicitar consulta",
           "export": "Solicitar exportación"
-        },
-        "factor": {
-          "affected_rows": "Filas afectadas",
-          "environment_id": "ID de entorno",
-          "project_id": "ID de proyecto",
-          "database_name": "Nombre de base de datos",
-          "db_engine": "Motor de base de datos",
-          "sql_type": "Tipo SQL",
-          "expiration_days": "Días de caducidad",
-          "export_rows": "Exportar filas",
-          "table_name": "Nombre de la tabla"
         }
       },
       "condition": {
@@ -2822,6 +2811,19 @@
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito",
       "merge-to-main-successfully": "Fusionar con el principal exitosamente"
+    }
+  },
+  "cel": {
+    "factor": {
+      "affected_rows": "Filas afectadas",
+      "environment_id": "ID de entorno",
+      "project_id": "ID de proyecto",
+      "database_name": "Nombre de base de datos",
+      "db_engine": "Motor de base de datos",
+      "sql_type": "Tipo SQL",
+      "expiration_days": "Días de caducidad",
+      "export_rows": "Exportar filas",
+      "table_name": "Nombre de la tabla"
     }
   }
 }

@@ -2516,17 +2516,6 @@
           "create_database": "Create Database",
           "query": "Request Query",
           "export": "Request Export"
-        },
-        "factor": {
-          "affected_rows": "Affected rows",
-          "environment_id": "Environment ID",
-          "project_id": "Project ID",
-          "database_name": "Database name",
-          "db_engine": "DB engine",
-          "sql_type": "SQL type",
-          "expiration_days": "Expiration days",
-          "export_rows": "Export rows",
-          "table_name": "Table name"
         }
       },
       "condition": {
@@ -2826,6 +2815,19 @@
       "created-succeed": "Schema design created successfully",
       "updated-succeed": "Schema design updated successfully",
       "merge-to-main-successfully": "Merge to main successfully"
+    }
+  },
+  "cel": {
+    "factor": {
+      "affected_rows": "Affected rows",
+      "environment_id": "Environment ID",
+      "project_id": "Project ID",
+      "database_name": "Database name",
+      "db_engine": "DB engine",
+      "sql_type": "SQL type",
+      "expiration_days": "Expiration days",
+      "export_rows": "Export rows",
+      "table_name": "Table name"
     }
   }
 }

@@ -54,12 +54,12 @@ import {
   isNumberFactor,
   isStringFactor,
 } from "@/plugins/cel";
+import { useExprEditorContext } from "../context";
 import MultiSelect from "./MultiSelect.vue";
 import MultiStringInput from "./MultiStringInput.vue";
 import NumberInput from "./NumberInput.vue";
 import SingleSelect from "./SingleSelect.vue";
 import StringInput from "./StringInput.vue";
-import { factorSupportDropdown } from "./common";
 
 type InputType = "INPUT" | "SINGLE-SELECT" | "MULTI-SELECT" | "MULTI-INPUT";
 
@@ -74,6 +74,8 @@ const operator = computed(() => {
 const factor = computed(() => {
   return props.expr.args[0];
 });
+
+const { factorSupportDropdown } = useExprEditorContext();
 
 const isNumberValue = computed(() => {
   if (isCompareOperator(operator.value)) return true;
@@ -94,10 +96,12 @@ const isArrayValue = computed(() => {
 });
 const inputType = computed((): InputType => {
   if (isArrayValue.value) {
-    return factorSupportDropdown(factor.value) ? "MULTI-SELECT" : "MULTI-INPUT";
+    return factorSupportDropdown.value.includes(factor.value)
+      ? "MULTI-SELECT"
+      : "MULTI-INPUT";
   }
   if (isEqualityOperator(operator.value)) {
-    if (factorSupportDropdown(factor.value)) {
+    if (factorSupportDropdown.value.includes(factor.value)) {
       return "SINGLE-SELECT";
     }
   }

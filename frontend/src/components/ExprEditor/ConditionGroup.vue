@@ -126,14 +126,13 @@ import {
   type ConditionExpr,
   type ConditionGroupExpr,
   type LogicalOperator,
-  StringOperatorList,
   LogicalOperatorList,
   isConditionGroupExpr,
   isConditionExpr,
+  getOperatorListByFactor,
 } from "@/plugins/cel";
 import Condition from "./Condition.vue";
 import { useExprEditorContext } from "./context";
-import { StringFactorList } from "./factor";
 
 const props = defineProps<{
   expr: ConditionGroupExpr;
@@ -146,7 +145,7 @@ const emit = defineEmits<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin } = context;
+const { allowAdmin, factorList } = context;
 
 const operator = computed({
   get() {
@@ -170,10 +169,13 @@ const OPERATORS: SelectOption[] = [
 ];
 
 const addCondition = () => {
+  const factor = factorList.value[0];
+  const operators = getOperatorListByFactor(factor);
+
   args.value.push({
-    operator: StringOperatorList[0],
-    args: [StringFactorList[0], ""],
-  });
+    operator: operators[0],
+    args: [factor, ""],
+  } as any);
   emit("update");
 };
 
