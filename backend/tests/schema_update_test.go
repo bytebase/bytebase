@@ -620,6 +620,8 @@ func TestVCS(t *testing.T) {
 			a.Len(issues, 1)
 			issue = issues[0]
 
+			// TODO(d): waiting for approval finding to complete.
+			time.Sleep(2 * time.Second)
 			rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{Name: fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID)})
 			a.NoError(err)
 			a.Len(rollout.Stages, 1)
@@ -634,7 +636,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
-			a.Error(err)
+			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
