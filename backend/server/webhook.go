@@ -1528,54 +1528,87 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 }
 
 func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
-	var specs []*v1pb.Plan_Spec
-	for _, migrationDetail := range migrationDetailList {
-		var changeType v1pb.Plan_ChangeDatabaseConfig_Type
-		switch migrationDetail.MigrationType {
-		case db.Baseline:
-			changeType = v1pb.Plan_ChangeDatabaseConfig_BASELINE
-		case db.Migrate:
-			changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE
-		case db.MigrateSDL:
-			changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL
-		case db.Data:
-			changeType = v1pb.Plan_ChangeDatabaseConfig_DATA
+	var steps []*v1pb.Plan_Step
+	if len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID == 0 {
+		migrationDetail := migrationDetailList[0]
+		deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
+		if err != nil {
+			return err
 		}
-		var target string
-		if migrationDetail.DatabaseID != 0 {
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.DatabaseID})
-			if err != nil {
-				return err
-			}
-			if database == nil {
-				return errors.Errorf("database %d not found", migrationDetail.DatabaseID)
-			}
-			target = fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
-		} else {
-			return errors.Errorf("tenant database is not supported yet")
-			// TODO(d): support tenant databases.
+		apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+		if err != nil {
+			return err
 		}
-		specs = append(specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Type:          changeType,
-					Target:        target,
-					Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
-					SchemaVersion: migrationDetail.SchemaVersion,
+		deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
+		if err != nil {
+			return err
+		}
+		allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return err
+		}
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, allDatabases)
+		if err != nil {
+			return err
+		}
+		changeType := getChangeType(migrationDetail.MigrationType)
+		for _, stage := range matrix {
+			step := &v1pb.Plan_Step{}
+			for _, database := range stage {
+				step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Type:          changeType,
+							Target:        fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+							Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+							SchemaVersion: migrationDetail.SchemaVersion,
+						},
+					},
+				})
+			}
+			steps = append(steps, step)
+		}
+	} else {
+		var specs []*v1pb.Plan_Spec
+		for _, migrationDetail := range migrationDetailList {
+			changeType := getChangeType(migrationDetail.MigrationType)
+			var target string
+			if migrationDetail.DatabaseID != 0 {
+				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.DatabaseID})
+				if err != nil {
+					return err
+				}
+				if database == nil {
+					return errors.Errorf("database %d not found", migrationDetail.DatabaseID)
+				}
+				target = fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+			} else {
+				// TODO(d): should never reach this.
+				return errors.Errorf("tenant database is not supported yet")
+			}
+			specs = append(specs, &v1pb.Plan_Spec{
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          changeType,
+						Target:        target,
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+						SchemaVersion: migrationDetail.SchemaVersion,
+					},
 				},
+			})
+		}
+		steps = []*v1pb.Plan_Step{
+			{
+				Specs: specs,
 			},
-		})
+		}
 	}
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
 	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Plan: &v1pb.Plan{
 			Title: issueName,
-			Steps: []*v1pb.Plan_Step{
-				{
-					Specs: specs,
-				},
-			},
+			Steps: steps,
 		},
 	})
 	if err != nil {
@@ -1633,8 +1666,22 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 	return nil
 }
 
+func getChangeType(migrationType db.MigrationType) v1pb.Plan_ChangeDatabaseConfig_Type {
+	switch migrationType {
+	case db.Baseline:
+		return v1pb.Plan_ChangeDatabaseConfig_BASELINE
+	case db.Migrate:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	case db.MigrateSDL:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL
+	case db.Data:
+		return v1pb.Plan_ChangeDatabaseConfig_DATA
+	}
+	return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
+}
+
 func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
-	if !(len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID == 0) {
+	if s.profile.DevelopmentUseV2Scheduler {
 		return s.createIssueFromMigrationDetailsV2(ctx, project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList)
 	}
 
