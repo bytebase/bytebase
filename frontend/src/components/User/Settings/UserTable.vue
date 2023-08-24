@@ -134,12 +134,8 @@
           :style="'ARCHIVE'"
           :require-confirm="true"
           :ok-text="$t('settings.members.action.deactivate')"
-          :confirm-title="`${$t(
-            'settings.members.action.deactivate-confirm-title'
-          )} '${user.title}'?`"
-          :confirm-description="
-            $t('settings.members.action.deactivate-confirm-description')
-          "
+          :confirm-title="deactivateConfirmation(user).title"
+          :confirm-description="deactivateConfirmation(user).description"
           @confirm="changeRowStatus(user, State.DELETED)"
         />
         <BBButtonConfirm
@@ -165,13 +161,21 @@
     @ok="resetServiceKey"
     @cancel="state.showResetKeyAlert = false"
   />
+  <BBAlertDialog
+    ref="removeSelfOwnerDialog"
+    :style="'CRITICAL'"
+    :ok-text="$t('common.confirm')"
+    :title="$t('settings.members.remove-self-owner.title')"
+    :description="$t('settings.members.remove-self-owner.description')"
+  />
 </template>
 
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { cloneDeep } from "lodash-es";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBAlertDialog } from "@/bbkit";
 import { BBTableSectionDataSource } from "@/bbkit/types";
 import { RoleSelect } from "@/components/v2";
 import {
@@ -214,6 +218,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
+const removeSelfOwnerDialog = ref<InstanceType<typeof BBAlertDialog>>();
 
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 
@@ -336,7 +341,37 @@ const allowActivateMember = (user: User) => {
   return allowEdit.value && user.state === State.DELETED;
 };
 
-const changeRole = (user: User, role: UserRole) => {
+const deactivateConfirmation = (user: User) => {
+  const me = currentUserV1.value;
+  if (user.name === me.name && user.userRole === UserRole.OWNER) {
+    return {
+      title: t("settings.members.remove-self-owner.title"),
+      description: t("settings.members.remove-self-owner.description"),
+    };
+  }
+  return {
+    title: `${t("settings.members.action.deactivate-confirm-title")} '${
+      user.title
+    }'?`,
+    description: t("settings.members.action.deactivate-confirm-description"),
+  };
+};
+
+const changeRole = async (user: User, role: UserRole) => {
+  const me = currentUserV1.value;
+  if (user.name === me.name) {
+    if (user.userRole === UserRole.OWNER && role !== UserRole.OWNER) {
+      const dialog = removeSelfOwnerDialog.value;
+      if (!dialog) {
+        throw new Error("dialog is not loaded");
+      }
+      const result = await dialog.open();
+      if (!result) {
+        return;
+      }
+    }
+  }
+
   const userPatch = cloneDeep(user);
   userPatch.userRole = role;
   userStore.updateUser({
