@@ -5,6 +5,7 @@ import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -186,6 +187,7 @@ export interface Sheet {
   starred: boolean;
   /** TODO: deprecate this field. */
   payload: string;
+  pushEvent?: PushEvent | undefined;
 }
 
 export enum Sheet_Visibility {
@@ -1001,6 +1003,7 @@ function createBaseSheet(): Sheet {
     type: 0,
     starred: false,
     payload: "",
+    pushEvent: undefined,
   };
 }
 
@@ -1044,6 +1047,9 @@ export const Sheet = {
     }
     if (message.payload !== "") {
       writer.uint32(106).string(message.payload);
+    }
+    if (message.pushEvent !== undefined) {
+      PushEvent.encode(message.pushEvent, writer.uint32(114).fork()).ldelim();
     }
     return writer;
   },
@@ -1146,6 +1152,13 @@ export const Sheet = {
 
           message.payload = reader.string();
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.pushEvent = PushEvent.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1170,6 +1183,7 @@ export const Sheet = {
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
       starred: isSet(object.starred) ? Boolean(object.starred) : false,
       payload: isSet(object.payload) ? String(object.payload) : "",
+      pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
   },
 
@@ -1189,6 +1203,8 @@ export const Sheet = {
     message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
     message.starred !== undefined && (obj.starred = message.starred);
     message.payload !== undefined && (obj.payload = message.payload);
+    message.pushEvent !== undefined &&
+      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
   },
 
@@ -1211,6 +1227,9 @@ export const Sheet = {
     message.type = object.type ?? 0;
     message.starred = object.starred ?? false;
     message.payload = object.payload ?? "";
+    message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
+      ? PushEvent.fromPartial(object.pushEvent)
+      : undefined;
     return message;
   },
 };
