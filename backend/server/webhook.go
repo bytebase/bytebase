@@ -1934,7 +1934,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
 		},
 	}
-	payload, err := json.Marshal(sheetPayload)
+	payload, err := protojson.Marshal(sheetPayload)
 	if err != nil {
 		return nil, nil
 	}
@@ -2007,7 +2007,7 @@ func (s *Server) prepareIssueFromFile(
 			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
 		},
 	}
-	payload, err := json.Marshal(sheetPayload)
+	payload, err := protojson.Marshal(sheetPayload)
 	if err != nil {
 		return nil, nil
 	}
@@ -2182,7 +2182,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 				PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
 			},
 		}
-		payload, err := json.Marshal(sheetPayload)
+		payload, err := protojson.Marshal(sheetPayload)
 		if err != nil {
 			return err
 		}
