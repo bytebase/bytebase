@@ -41,17 +41,17 @@ type StatementReportExecutor struct {
 
 // Run runs the statement report executor.
 func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	if target := planCheckRun.Config.GetDatabaseTarget(); target != nil {
-		return e.runForDatabaseTarget(ctx, planCheckRun, target)
+	if planCheckRun.Config.DatabaseGroupUid != nil {
+		return e.runForDatabaseGroupTarget(ctx, planCheckRun, *planCheckRun.Config.DatabaseGroupUid)
+	} else {
+		return e.runForDatabaseTarget(ctx, planCheckRun)
 	}
-	if target := planCheckRun.Config.GetDatabaseGroupTarget(); target != nil {
-		return e.runForDatabaseGroupTarget(ctx, planCheckRun, target)
-	}
-	return nil, errors.New("plan check run target is required")
 }
 
-func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, target *storepb.PlanCheckRunConfig_DatabaseTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
-	instanceUID := int(target.InstanceUid)
+func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
+	config := planCheckRun.Config
+
+	instanceUID := int(config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
@@ -71,12 +71,12 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, plan
 		}, nil
 	}
 
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found %q", target.DatabaseName)
+		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
@@ -157,15 +157,17 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, plan
 	}
 }
 
-func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, target *storepb.PlanCheckRunConfig_DatabaseGroupTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, databaseGroupUID int64) ([]*storepb.PlanCheckRunResult_Result, error) {
+	config := planCheckRun.Config
+
 	databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-		UID: &target.DatabaseGroupUid,
+		UID: &databaseGroupUID,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database group %d", target.DatabaseGroupUid)
+		return nil, errors.Wrapf(err, "failed to get database group %d", databaseGroupUID)
 	}
 	if databaseGroup == nil {
-		return nil, errors.Errorf("database group not found %d", target.DatabaseGroupUid)
+		return nil, errors.Errorf("database group not found %d", databaseGroupUID)
 	}
 	schemaGroups, err := e.store.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
 	if err != nil {
@@ -220,12 +222,19 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	var results []*storepb.PlanCheckRunResult_Result
 
 	for _, database := range matchedDatabases {
+		if database.DatabaseName != config.DatabaseName {
+			continue
+		}
+
 		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
 		}
 		if instance == nil {
 			return nil, errors.Errorf("instance %q not found", database.InstanceID)
+		}
+		if instance.UID != int(config.InstanceUid) {
+			continue
 		}
 
 		environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
