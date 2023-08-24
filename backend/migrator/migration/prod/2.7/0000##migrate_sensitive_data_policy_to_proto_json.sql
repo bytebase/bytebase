@@ -52,4 +52,4 @@ WHERE
   type = 'bb.policy.sensitive-data' 
   AND payload != '{}' :: jsonb;
 
-SELECT payload FROM policy WHERE type = 'bb.policy.sensitive-data';
+UPDATE policy SET type = 'bb.policy.masking' WHERE type = 'bb.policy.sensitive-data';

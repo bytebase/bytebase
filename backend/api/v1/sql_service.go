@@ -1368,7 +1368,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		}
 
 		policyResourceType := api.PolicyResourceTypeDatabase
-		policyType := api.PolicyTypeSensitiveData
+		policyType := api.PolicyTypeMasking
 		policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
 			ResourceType: &policyResourceType,
 			Type:         &policyType,

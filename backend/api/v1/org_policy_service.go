@@ -624,7 +624,7 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 			return nil, err
 		}
 		policy.Policy = payload
-	case api.PolicyTypeSensitiveData:
+	case api.PolicyTypeMasking:
 		pType = v1pb.PolicyType_MASKING
 		payload, err := convertToV1PBSensitiveDataPolicy(policyMessage.Payload)
 		if err != nil {
@@ -1046,7 +1046,7 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 	case v1pb.PolicyType_SQL_REVIEW.String():
 		return api.PolicyTypeSQLReview, nil
 	case v1pb.PolicyType_MASKING.String():
-		return api.PolicyTypeSensitiveData, nil
+		return api.PolicyTypeMasking, nil
 	case v1pb.PolicyType_SLOW_QUERY.String():
 		return api.PolicyTypeSlowQuery, nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA.String():
