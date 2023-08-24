@@ -882,33 +882,6 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 	}
 
-	if issue != nil && doUpdateSheet {
-		if err := func() error {
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return errors.Errorf("failed to unmarshal issue payload: %v", err)
-			}
-			payload.Approval = &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			}
-			payloadBytes, err := protojson.Marshal(payload)
-			if err != nil {
-				return errors.Errorf("failed to marshal issue payload: %v", err)
-			}
-			payloadStr := string(payloadBytes)
-			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-				Payload: &payloadStr,
-			}, api.SystemBotID)
-			if err != nil {
-				return errors.Errorf("failed to update issue: %v", err)
-			}
-			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-			return nil
-		}(); err != nil {
-			log.Error("failed to update issue to refind approval", zap.Error(err))
-		}
-	}
-
 	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:       oldPlan.UID,
 		UpdaterID: updaterID,
@@ -934,6 +907,33 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 		if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+		}
+	}
+
+	if issue != nil && doUpdateSheet {
+		if err := func() error {
+			payload := &storepb.IssuePayload{}
+			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return errors.Errorf("failed to unmarshal issue payload: %v", err)
+			}
+			payload.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
+			payloadBytes, err := protojson.Marshal(payload)
+			if err != nil {
+				return errors.Errorf("failed to marshal issue payload: %v", err)
+			}
+			payloadStr := string(payloadBytes)
+			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+				Payload: &payloadStr,
+			}, api.SystemBotID)
+			if err != nil {
+				return errors.Errorf("failed to update issue: %v", err)
+			}
+			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+			return nil
+		}(); err != nil {
+			log.Error("failed to update issue to refind approval", zap.Error(err))
 		}
 	}
 
