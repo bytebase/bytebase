@@ -50,9 +50,8 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, planCheckRun *store.P
 
 	if planCheckRun.Config.DatabaseGroupUid != nil {
 		return e.runForDatabaseGroupTarget(ctx, planCheckRun, *planCheckRun.Config.DatabaseGroupUid)
-	} else {
-		return e.runForDatabaseTarget(ctx, planCheckRun)
 	}
+	return e.runForDatabaseTarget(ctx, planCheckRun)
 }
 
 func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {

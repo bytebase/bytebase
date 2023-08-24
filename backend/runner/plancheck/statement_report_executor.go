@@ -43,9 +43,8 @@ type StatementReportExecutor struct {
 func (e *StatementReportExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
 	if planCheckRun.Config.DatabaseGroupUid != nil {
 		return e.runForDatabaseGroupTarget(ctx, planCheckRun, *planCheckRun.Config.DatabaseGroupUid)
-	} else {
-		return e.runForDatabaseTarget(ctx, planCheckRun)
 	}
+	return e.runForDatabaseTarget(ctx, planCheckRun)
 }
 
 func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
