@@ -68,6 +68,7 @@ export const mergeSchemaEditToMetadata = (
                 (item) => item.name === columnEdit.name
               );
               if (!column) {
+                table.columns.push(transformColumnEditToMetadata(columnEdit));
                 continue;
               }
               column.type = columnEdit.type;
@@ -75,6 +76,16 @@ export const mergeSchemaEditToMetadata = (
               column.comment = columnEdit.comment;
               column.userComment = columnEdit.userComment;
               column.default = columnEdit.default;
+            }
+          }
+          for (const column of table.columns) {
+            const columnEdit = tableEdit.columnList.find(
+              (item) => item.name === column.name
+            );
+            if (!columnEdit) {
+              table.columns = table.columns.filter(
+                (item) => item.name !== column.name
+              );
             }
           }
         }

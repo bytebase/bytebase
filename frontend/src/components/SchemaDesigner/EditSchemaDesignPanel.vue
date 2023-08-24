@@ -161,7 +161,11 @@ import { computed, h, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+} from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -193,6 +197,7 @@ const emit = defineEmits(["dismiss"]);
 
 const { t } = useI18n();
 const router = useRouter();
+const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const dialog = useDialog();
@@ -220,7 +225,8 @@ const schemaDesignDrafts = computed(() => {
   return schemaDesignStore.schemaDesignList.filter((schemaDesign) => {
     return (
       schemaDesign.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-      schemaDesign.baselineSheetName === props.schemaDesignName
+      schemaDesign.baselineSheetName === props.schemaDesignName &&
+      schemaDesign.creator === `users/${currentUserV1.value.email}`
     );
   });
 });
