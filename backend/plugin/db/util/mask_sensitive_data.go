@@ -952,6 +952,7 @@ func (extractor *sensitiveFieldExtractor) extractMySQLSensitiveField(statement s
 	switch node.(type) {
 	case *tidbast.SelectStmt:
 	case *tidbast.SetOprStmt:
+	case *tidbast.CreateViewStmt:
 	case *tidbast.ExplainStmt:
 		// Skip the EXPLAIN statement.
 		return nil, nil
@@ -997,6 +998,29 @@ func (extractor *sensitiveFieldExtractor) extractNode(in tidbast.Node) ([]fieldI
 		return extractor.extractTableName(node)
 	case *tidbast.SetOprStmt:
 		return extractor.extractSetOpr(node)
+	case *tidbast.CreateViewStmt:
+		list, err := extractor.extractNode(node.Select)
+		if err != nil {
+			return nil, err
+		}
+		var result []fieldInfo
+		if len(node.Cols) > 0 && len(node.Cols) != len(list) {
+			return nil, errors.Errorf("The used SELECT statements have a different number of columns for view %s", node.ViewName.Name.O)
+		}
+		for i, item := range list {
+			field := fieldInfo{
+				database: item.database,
+				schema:   item.schema,
+				table:    node.ViewName.Name.O,
+				name:     item.name,
+			}
+			if len(node.Cols) > 0 {
+				// The column name for MySQL is case insensitive.
+				field.name = node.Cols[i].L
+			}
+			result = append(result, field)
+		}
+		return result, nil
 	}
 	return nil, nil
 }
@@ -1478,7 +1502,70 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 			}
 		}
 	}
-	return "", db.TableSchema{}, errors.Errorf("Table %q.%q not found", databaseName, tableName)
+
+	if database, schema, err := extractor.findViewSchema(databaseName, tableName); err == nil {
+		// nolint:nilerr
+		return database, schema, nil
+	}
+	return "", db.TableSchema{}, errors.Errorf("Table or view %q.%q not found", databaseName, tableName)
+}
+
+func (extractor *sensitiveFieldExtractor) buildTableSchemaForView(viewName string, definition string) (db.TableSchema, error) {
+	newExtractor := &sensitiveFieldExtractor{
+		currentDatabase: extractor.currentDatabase,
+		schemaInfo:      extractor.schemaInfo,
+	}
+	fields, err := newExtractor.extractMySQLSensitiveField(definition)
+	if err != nil {
+		return db.TableSchema{}, err
+	}
+
+	result := db.TableSchema{
+		Name:       viewName,
+		ColumnList: []db.ColumnInfo{},
+	}
+	for _, field := range fields {
+		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+			Name:      field.Name,
+			Sensitive: field.Sensitive,
+		})
+	}
+	return result, nil
+}
+
+func (extractor *sensitiveFieldExtractor) findViewSchema(databaseName string, viewName string) (string, db.TableSchema, error) {
+	for _, database := range extractor.schemaInfo.DatabaseList {
+		if extractor.schemaInfo.IgnoreCaseSensitive {
+			lowerDatabase := strings.ToLower(database.Name)
+			lowerView := strings.ToLower(viewName)
+			if lowerDatabase == strings.ToLower(database.Name) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+				for _, view := range database.ViewList {
+					if lowerView == strings.ToLower(view.Name) {
+						explicitDatabase := databaseName
+						if explicitDatabase == "" {
+							explicitDatabase = extractor.currentDatabase
+						}
+
+						table, err := extractor.buildTableSchemaForView(view.Name, view.Definition)
+						return explicitDatabase, table, err
+					}
+				}
+			}
+		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
+			for _, view := range database.ViewList {
+				if viewName == view.Name {
+					explicitDatabase := databaseName
+					if explicitDatabase == "" {
+						explicitDatabase = extractor.currentDatabase
+					}
+
+					table, err := extractor.buildTableSchemaForView(view.Name, view.Definition)
+					return explicitDatabase, table, err
+				}
+			}
+		}
+	}
+	return "", db.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
 }
 
 func (extractor *sensitiveFieldExtractor) extractTableName(node *tidbast.TableName) ([]fieldInfo, error) {
