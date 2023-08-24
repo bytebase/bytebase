@@ -1525,6 +1525,7 @@ func (extractor *sensitiveFieldExtractor) buildTableSchemaForView(viewName strin
 		ColumnList: []db.ColumnInfo{},
 	}
 	for _, field := range fields {
+		// nolint:gosimple
 		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
 			Name:      field.Name,
 			Sensitive: field.Sensitive,
