@@ -244,7 +244,7 @@ const handleConfirm = async () => {
       baselineSchema: state.schemaDesign.baselineSchema,
       baselineSchemaMetadata: state.schemaDesign.baselineSchemaMetadata,
       engine: state.schemaDesign.engine,
-      type: state.schemaDesign.type,
+      type: SchemaDesign_Type.MAIN_BRANCH,
       baselineDatabase: baselineDatabase,
       baselineSheetName: baselineSheet.name,
     })

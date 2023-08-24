@@ -61,6 +61,7 @@ const initEditorInstance = () => {
   const editorInstance = Editor.createDiffEditor(editorContainerRef.value!, {
     readOnly: readOnly.value,
     // Learn more: https://github.com/microsoft/monaco-editor/issues/311
+    diffAlgorithm: "advanced",
     enableSplitViewResizing: false,
     renderValidationDecorations: "on",
     theme: "bb",

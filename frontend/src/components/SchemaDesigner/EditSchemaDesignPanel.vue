@@ -33,7 +33,7 @@
 
             <NDropdown
               v-if="!state.isEditing && schemaDesignDrafts.length > 0"
-              class="max-w-[10rem]"
+              class="max-w-[16rem]"
               trigger="click"
               :options="schemaDesignDraftDropdownOptions"
               :render-label="renderDraftsLabel"
@@ -170,7 +170,10 @@ import {
 } from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
 import ResolveConflictPanel from "./ResolveConflictPanel.vue";
-import { mergeSchemaEditToMetadata } from "./common/util";
+import {
+  mergeSchemaEditToMetadata,
+  validateDatabaseMetadata,
+} from "./common/util";
 import SchemaDesigner from "./index.vue";
 
 interface LocalState {
@@ -286,7 +289,7 @@ const renderDraftsLabel = (option: DropdownOption) => {
       h(
         "span",
         {
-          class: "text-xs font-mono shrink-0 text-gray-400 ml-1 mt-0.5",
+          class: "text-xs font-mono shrink-0 text-gray-400 ml-2 mt-0.5",
         },
         [
           schemaDesign.name === props.schemaDesignName
@@ -328,7 +331,9 @@ const handleCancelEdit = () => {
 
   const metadata = mergeSchemaEditToMetadata(
     schemaDesignerRef.value?.editableSchemas || [],
-    schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+    cloneDeep(
+      schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+    )
   );
   // If the metadata is changed, we need to rebuild the editing state.
   if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
@@ -361,9 +366,20 @@ const handleSaveSchemaDesignDraft = async () => {
   const mergedMetadata = mergeSchemaEditToMetadata(
     designerState.editableSchemas,
     cloneDeep(
-      schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+      schemaDesign.value.baselineSchemaMetadata ||
+        DatabaseMetadata.fromPartial({})
     )
   );
+  const validationMessages = validateDatabaseMetadata(mergedMetadata);
+  if (validationMessages.length > 0) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: "Invalid schema design",
+      description: validationMessages.join("\n"),
+    });
+    return;
+  }
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     updateMask.push("metadata");
   }
