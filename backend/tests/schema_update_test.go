@@ -2567,9 +2567,8 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
@@ -2602,9 +2601,8 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Change data: Insert data", databaseName), issue.Name)

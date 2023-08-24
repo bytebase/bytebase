@@ -162,6 +162,7 @@ type controller struct {
 	client                   *http.Client
 	grpcConn                 *grpc.ClientConn
 	issueServiceClient       v1pb.IssueServiceClient
+	rolloutServiceClient     v1pb.RolloutServiceClient
 	orgPolicyServiceClient   v1pb.OrgPolicyServiceClient
 	projectServiceClient     v1pb.ProjectServiceClient
 	authServiceClient        v1pb.AuthServiceClient
@@ -436,6 +437,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	}
 	ctl.grpcConn = grpcConn
 	ctl.issueServiceClient = v1pb.NewIssueServiceClient(ctl.grpcConn)
+	ctl.rolloutServiceClient = v1pb.NewRolloutServiceClient(ctl.grpcConn)
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)

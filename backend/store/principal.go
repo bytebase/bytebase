@@ -92,6 +92,14 @@ type UserMessage struct {
 
 // GetUser gets an user.
 func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessage, error) {
+	if find.Email != nil && *find.Email == api.SystemBotEmail {
+		return &UserMessage{
+			ID:    api.SystemBotID,
+			Email: api.SystemBotEmail,
+			Type:  api.SystemBot,
+			Role:  api.Owner,
+		}, nil
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
