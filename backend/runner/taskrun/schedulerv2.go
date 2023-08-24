@@ -446,6 +446,9 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 		if err != nil {
 			return errors.Wrap(err, "failed to get issue")
 		}
+		if issue == nil {
+			return nil
+		}
 
 		createActivityPayload := api.ActivityPipelineTaskRunStatusUpdatePayload{
 			TaskID:    task.ID,
