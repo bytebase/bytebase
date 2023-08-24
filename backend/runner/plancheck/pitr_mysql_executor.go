@@ -28,12 +28,11 @@ type PITRMySQLExecutor struct {
 
 // Run runs the PITR MySQL executor.
 func (e *PITRMySQLExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	target := planCheckRun.Config.GetDatabaseTarget()
-	if target == nil {
-		return nil, errors.New("database target is required")
+	if planCheckRun.Config.DatabaseGroupUid != nil {
+		return nil, errors.Errorf("database group is not supported")
 	}
 
-	instanceUID := int(target.InstanceUid)
+	instanceUID := int(planCheckRun.Config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
@@ -41,7 +40,7 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 	if instance == nil {
 		return nil, errors.Errorf("instance not found UID %v", instanceUID)
 	}
-	databaseName := target.DatabaseName
+	databaseName := planCheckRun.Config.DatabaseName
 
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
