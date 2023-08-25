@@ -50,9 +50,9 @@ const shouldShowTaskBar = computed(() => {
   box-shadow: none;
 }
 .task-list.more-top::before {
-  box-shadow: inset 0 0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
+  box-shadow: inset 0 0.3rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
 }
 .task-list.more-bottom::after {
-  box-shadow: inset 0 -0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
+  box-shadow: inset 0 -0.3rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
 }
 </style>
