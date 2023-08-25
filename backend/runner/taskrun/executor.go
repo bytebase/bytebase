@@ -527,7 +527,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	return true, &api.TaskRunResultPayload{
 		Detail:        detail,
 		MigrationID:   migrationID,
-		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/migrations/%s", instance.ResourceID, database.DatabaseName, migrationID),
+		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, database.DatabaseName, migrationID),
 		Version:       mi.Version,
 	}, nil
 }
