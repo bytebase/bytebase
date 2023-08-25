@@ -854,3 +854,17 @@ func PLSQLNormalizeIDExpression(idExpression parser.IId_expressionContext) strin
 
 	return ""
 }
+
+// PLSQLNormalizeIndexName returns the normalized index name from the given context.
+func PLSQLNormalizeIndexName(indexName parser.IIndex_nameContext) (string, string) {
+	if indexName == nil {
+		return "", ""
+	}
+
+	if indexName.Id_expression() != nil {
+		return PLSQLNormalizeIdentifierContext(indexName.Identifier()),
+			PLSQLNormalizeIDExpression(indexName.Id_expression())
+	}
+
+	return "", PLSQLNormalizeIdentifierContext(indexName.Identifier())
+}
