@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -24,6 +25,7 @@ import (
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -873,6 +875,15 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with id %d not found", sheet.ProjectUID))
 	}
+	sheetPayload := new(storepb.SheetPayload)
+	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := decoder.Unmarshal([]byte(sheet.Payload), sheetPayload); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal sheet payload: %v", err)
+	}
+	var v1PushEvent *v1pb.PushEvent
+	if sheetPayload.VcsPayload != nil && sheetPayload.VcsPayload.PushEvent != nil {
+		v1PushEvent = convertToPushEvent(sheetPayload.VcsPayload.PushEvent)
+	}
 
 	return &v1pb.Sheet{
 		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.UID),
@@ -888,6 +899,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Type:        tp,
 		Starred:     sheet.Starred,
 		Payload:     sheet.Payload,
+		PushEvent:   v1PushEvent,
 	}, nil
 }
 
