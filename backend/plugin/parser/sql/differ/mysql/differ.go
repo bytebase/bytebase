@@ -820,6 +820,7 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 			})
 		}
 	} else {
+		//nolint
 		switch stmt.Select.(type) {
 		case *ast.SelectStmt:
 			for _, field := range stmt.Select.(*ast.SelectStmt).Fields.Fields {
