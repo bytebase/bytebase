@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -761,6 +762,8 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 	return functionMap, nil
 }
 
+var statPluginVersion = semver.MustParse("1.8.0")
+
 // SyncSlowQuery syncs the slow query.
 func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	var now time.Time
@@ -788,8 +791,11 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	// pg_stat_statements version 1.8 changed the column names of pg_stat_statements.
 	// version is a string in the form of "major.minor".
 	// We need to check if the major version is greater than or equal to 1 and the minor version is greater than or equal to 8.
-	versions := strings.Split(version, ".")
-	if len(versions) == 2 && ((versions[0] == "1" && versions[1] >= "8") || versions[0] > "1") {
+	sv, err := semver.ParseTolerant(version)
+	if err != nil {
+		return nil, err
+	}
+	if sv.GTE(statPluginVersion) {
 		query = `
 		SELECT
 			pg_database.datname,
