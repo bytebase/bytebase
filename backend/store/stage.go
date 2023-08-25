@@ -15,6 +15,8 @@ type StageMessage struct {
 	TaskList      []*TaskMessage
 
 	// Active is true if not all tasks are done within the stage.
+	// Deprecated: deprecated in favor of TaskSchedulerV2, should be removed after we switch over.
+	// TODO(p0ny): remove
 	Active bool
 	// Output only.
 	ID int
