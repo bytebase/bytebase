@@ -217,6 +217,7 @@
         </div>
         <!-- This area may scroll -->
         <div
+          id="bb-layout-main"
           class="md:min-w-0 md:flex-1 overflow-y-auto"
           :class="showBreadcrumb || quickActionList.length > 0 ? 'mt-2' : ''"
         >

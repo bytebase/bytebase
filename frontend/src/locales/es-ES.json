@@ -2836,6 +2836,7 @@
       "affected_rows": "Filas afectadas",
       "environment_id": "ID de entorno",
       "project_id": "ID de proyecto",
+      "instance_id": "ID de instancia",
       "database_name": "Nombre de base de datos",
       "db_engine": "Motor de base de datos",
       "sql_type": "Tipo SQL",
