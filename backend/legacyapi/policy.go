@@ -46,6 +46,8 @@ const (
 	PolicyTypeSlowQuery PolicyType = "bb.policy.slow-query"
 	// PolicyTypeDisableCopyData is the disable copy data policy type.
 	PolicyTypeDisableCopyData PolicyType = "bb.policy.disable-copy-data"
+	// PolicyTypeMaskingRule is the masking rule policy type.
+	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -94,6 +96,7 @@ var (
 		PolicyTypeMasking:          {PolicyResourceTypeDatabase},
 		PolicyTypeSlowQuery:        {PolicyResourceTypeInstance},
 		PolicyTypeDisableCopyData:  {PolicyResourceTypeEnvironment},
+		PolicyTypeMaskingRule:      {PolicyResourceTypeWorkspace},
 	}
 )
 
