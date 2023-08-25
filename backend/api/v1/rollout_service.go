@@ -585,6 +585,10 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
 	}
 
+	for _, task := range tasksToSkip {
+		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
+	}
+
 	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, updaterID); err != nil {
 		log.Error("failed to batch create activities for skipping tasks", zap.Error(err))
 	}
@@ -840,6 +844,10 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 					if err != nil {
 						return status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 					}
+					if taskPayload.SheetID == sheetID {
+						return nil
+					}
+
 					sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 						UID: &sheetID,
 					}, api.SystemBotID)
@@ -863,15 +871,19 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				continue
 			}
 
-			taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
-			if err != nil {
+			if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+			}
+
+			taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
 			}
 
 			// enqueue or cancel after it's written to the database.
 			if taskPatch.RollbackEnabled != nil {
 				// Enqueue the rollback sql generation if the task done.
-				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus != nil && *taskPatched.LatestTaskRunStatus == api.TaskRunDone {
+				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
 					s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 				} else if !*taskPatch.RollbackEnabled {
 					// Cancel running rollback sql generation.

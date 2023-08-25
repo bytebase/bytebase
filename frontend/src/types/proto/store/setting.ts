@@ -242,10 +242,7 @@ export interface SemanticCategorySetting {
 }
 
 export interface SemanticCategorySetting_SemanticCategory {
-  /**
-   * id is the uuid for semantic category.
-   * The id should in [0-9]+-[0-9]+-[0-9]+ format.
-   */
+  /** id is the uuid for category item. */
   id: string;
   /** the title of the category item, it should not be empty. */
   title: string;

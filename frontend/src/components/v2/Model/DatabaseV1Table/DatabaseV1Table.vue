@@ -55,22 +55,22 @@
           </DatabaseTableRow>
         </template>
         <template v-else>
-          <div class="bb-grid-cell">
-            <div class="flex items-center space-x-2">
-              <SQLEditorButtonV1 :disabled="true" :tooltip="true" />
-              <span>{{ getDatabaseGroup(database).databasePlaceholder }}</span>
-              <BBBadge text="GROUP" :can-remove="false" class="text-xs" />
-            </div>
-          </div>
-          <div class="bb-grid-cell">-</div>
-          <div class="bb-grid-cell">
-            {{ getDatabaseGroup(database).project.title }}
-          </div>
-          <div class="bb-grid-cell">
-            {{ getDatabaseGroup(database).environment.title }}
-          </div>
-          <div class="bb-grid-cell">-</div>
-          <div class="bb-grid-cell justify-center">-</div>
+          <DatabaseGroupTableRow
+            :database-group="(database as ComposedDatabaseGroup)"
+            :mode="mode"
+            :show-selection-column="showSelectionColumn"
+            :show-misc-column="showMiscColumn"
+            :show-schema-version-column="showSchemaVersionColumn"
+            :show-project-column="showProjectColumn"
+            :show-environment-column="showEnvironmentColumn"
+            :show-tenant-icon="showTenantIcon"
+            :show-instance-column="showInstanceColumn"
+            :allow-query="allowQuery(database as ComposedDatabase)"
+          >
+            <template v-if="showSelectionColumn" #selection>
+              <slot name="selection" :database="database" />
+            </template>
+          </DatabaseGroupTableRow>
         </template>
       </template>
 
@@ -150,7 +150,6 @@ import {
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit/types";
-import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { getScrollParent } from "@/plugins/demo/utils";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
@@ -167,6 +166,7 @@ import {
   isPITRDatabaseV1,
   VueClass,
 } from "@/utils";
+import DatabaseGroupTableRow from "./DatabaseGroupTableRow.vue";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
 
 type Mode =
@@ -287,12 +287,6 @@ const isDatabase = (
   data: ComposedDatabase | ComposedDatabaseGroup
 ): boolean => {
   return has(data, "uid");
-};
-
-const getDatabaseGroup = (
-  data: ComposedDatabase | ComposedDatabaseGroup
-): ComposedDatabaseGroup => {
-  return data as ComposedDatabaseGroup;
 };
 
 const policyList = ref<Policy[]>([]);

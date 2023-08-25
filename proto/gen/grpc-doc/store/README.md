@@ -119,9 +119,13 @@
     - [Binding](#bytebase-store-Binding)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
+    - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
+    - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
     - [MaskingPolicy](#bytebase-store-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+  
+    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
@@ -1852,6 +1856,41 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 
 
+<a name="bytebase-store-MaskingExceptionPolicy"></a>
+
+### MaskingExceptionPolicy
+MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingExceptionPolicy-MaskingException"></a>
+
+### MaskingExceptionPolicy.MaskingException
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
+| members | [string](#string) | repeated | Members is the list of principals who bind to this exception policy instance.
+
+* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+
+
+
+
+
+
 <a name="bytebase-store-MaskingPolicy"></a>
 
 ### MaskingPolicy
@@ -1890,6 +1929,7 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
 
@@ -1898,6 +1938,19 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 
  
+
+
+<a name="bytebase-store-MaskingExceptionPolicy-MaskingException-Action"></a>
+
+### MaskingExceptionPolicy.MaskingException.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 |  |
+| QUERY | 1 |  |
+| EXPORT | 2 |  |
+
 
  
 
@@ -2145,7 +2198,7 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for semantic category. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| id | [string](#string) |  | id is the uuid for category item. |
 | title | [string](#string) |  | the title of the category item, it should not be empty. |
 | description | [string](#string) |  | the description of the category item, it can be empty.
 

@@ -146,19 +146,19 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				}
 				for _, stage := range issue.Pipeline.StageList {
 					for _, task := range stage.TaskList {
-						if task.LatestTaskRunStatus != nil {
-							switch *task.LatestTaskRunStatus {
-							case api.TaskRunPending:
-								task.Status = api.TaskPending
-							case api.TaskRunRunning:
-								task.Status = api.TaskRunning
-							case api.TaskRunDone:
-								task.Status = api.TaskDone
-							case api.TaskRunFailed:
-								task.Status = api.TaskFailed
-							case api.TaskRunCanceled:
-								task.Status = api.TaskCanceled
-							}
+						switch task.LatestTaskRunStatus {
+						case api.TaskRunNotStarted:
+							task.Status = api.TaskPendingApproval
+						case api.TaskRunPending:
+							task.Status = api.TaskPending
+						case api.TaskRunRunning:
+							task.Status = api.TaskRunning
+						case api.TaskRunDone:
+							task.Status = api.TaskDone
+						case api.TaskRunFailed:
+							task.Status = api.TaskFailed
+						case api.TaskRunCanceled:
+							task.Status = api.TaskCanceled
 						}
 					}
 				}

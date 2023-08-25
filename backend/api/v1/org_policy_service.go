@@ -8,6 +8,7 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	expr "google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -151,6 +152,9 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		case "inherit_from_parent":
 			patch.InheritFromParent = &request.Policy.InheritFromParent
 		case "payload":
+			if err := validatePolicyPayload(policy.Type, request.Policy); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid policy: %v", err)
+			}
 			payloadStr, err := s.convertPolicyPayloadToString(request.Policy)
 			if err != nil {
 				return nil, err
@@ -237,7 +241,9 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-
+		if projectID == "-" {
+			return api.PolicyResourceTypeProject, nil, nil
+		}
 		project, err := s.findActiveProject(ctx, &store.FindProjectMessage{
 			ResourceID: &projectID,
 		})
@@ -387,6 +393,10 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 		return nil, err
 	}
 
+	if err := validatePolicyPayload(policyType, policy); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid policy: %v", err)
+	}
+
 	payloadStr, err := s.convertPolicyPayloadToString(policy)
 	if err != nil {
 		return nil, err
@@ -459,6 +469,59 @@ func validatePolicyType(policyType api.PolicyType, policyResourceType api.Policy
 		}
 	}
 	return status.Errorf(codes.InvalidArgument, "policy %v is not allowed in resource %v", policyType, policyResourceType)
+}
+
+func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error {
+	switch policyType {
+	case api.PolicyTypeMaskingRule:
+		maskingRulePolicy, ok := policy.Policy.(*v1pb.Policy_MaskingRulePolicy)
+		if !ok {
+			return status.Errorf(codes.InvalidArgument, "unmatched policy type %v and policy %v", policyType, policy.Policy)
+		}
+		if maskingRulePolicy.MaskingRulePolicy == nil {
+			return status.Errorf(codes.InvalidArgument, "masking rule policy must be set")
+		}
+		for _, rule := range maskingRulePolicy.MaskingRulePolicy.Rules {
+			if rule.Id == "" {
+				return status.Errorf(codes.InvalidArgument, "masking rule must have ID set")
+			}
+			if rule.MaskingLevel == v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
+				return status.Errorf(codes.InvalidArgument, "masking rule must have masking level set")
+			}
+			if _, err := common.ValidateMaskingRuleCELExpr(rule.Condition.Expression); err != nil {
+				return status.Errorf(codes.InvalidArgument, "invalid masking rule expression: %v", err)
+			}
+		}
+	case api.PolicyTypeMaskingException:
+		maskingExceptionPolicy, ok := policy.Policy.(*v1pb.Policy_MaskingExceptionPolicy)
+		if !ok {
+			return status.Errorf(codes.InvalidArgument, "unmatched policy type %v and policy %v", policyType, policy.Policy)
+		}
+		if maskingExceptionPolicy.MaskingExceptionPolicy == nil {
+			return status.Errorf(codes.InvalidArgument, "masking exception policy must be set")
+		}
+		for _, exception := range maskingExceptionPolicy.MaskingExceptionPolicy.MaskingExceptions {
+			if exception.Action == v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED {
+				return status.Errorf(codes.InvalidArgument, "masking exception must have action set")
+			}
+			if exception.MaskingLevel == v1pb.MaskingLevel_FULL {
+				return status.Errorf(codes.InvalidArgument, "masking exception cannot have full masking level")
+			}
+			if exception.MaskingLevel == v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
+				return status.Errorf(codes.InvalidArgument, "masking exception must have masking level set")
+			}
+			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition.Expression); err != nil {
+				return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid masking exception expression: %v", err))
+			}
+			for _, member := range exception.Members {
+				if !strings.HasPrefix(member, "user:") {
+					return status.Errorf(codes.InvalidArgument, "masking exception member must start with user:")
+				}
+			}
+		}
+	default:
+	}
+	return nil
 }
 
 func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
@@ -562,6 +625,32 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		return payload.String()
+	case v1pb.PolicyType_MASKING_RULE:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
+			return "", status.Errorf(codes.PermissionDenied, err.Error())
+		}
+		payload, err := convertToStorePBMskingRulePolicy(policy.GetMaskingRulePolicy())
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal masking rule policy")
+		}
+		return string(payloadBytes), nil
+	case v1pb.PolicyType_MASKING_EXCEPTION:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
+			return "", status.Errorf(codes.PermissionDenied, err.Error())
+		}
+		payload, err := convertToStorePBMaskingExceptionPolicyPayload(policy.GetMaskingExceptionPolicy())
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal masking exception policy")
+		}
+		return string(payloadBytes), nil
 	}
 
 	return "", status.Errorf(codes.InvalidArgument, "invalid policy %v", policy.Type)
@@ -645,6 +734,32 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 			return nil, err
 		}
 		policy.Policy = payload
+	case api.PolicyTypeMaskingRule:
+		pType = v1pb.PolicyType_MASKING_RULE
+		maskingRulePolicy := &storepb.MaskingRulePolicy{}
+		if err := protojson.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal masking rule policy")
+		}
+		payload, err := convertToV1PBMaskingRulePolicy(maskingRulePolicy)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to convert masking rule policy")
+		}
+		policy.Policy = &v1pb.Policy_MaskingRulePolicy{
+			MaskingRulePolicy: payload,
+		}
+	case api.PolicyTypeMaskingException:
+		pType = v1pb.PolicyType_MASKING_EXCEPTION
+		maskingRulePolicy := &storepb.MaskingExceptionPolicy{}
+		if err := protojson.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal masking exception policy")
+		}
+		payload, err := convertToV1PBMaskingExceptionPolicyPayload(maskingRulePolicy)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to convert masking exception policy")
+		}
+		policy.Policy = &v1pb.Policy_MaskingExceptionPolicy{
+			MaskingExceptionPolicy: payload,
+		}
 	}
 
 	policy.Type = pType
@@ -793,21 +908,6 @@ func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_MaskingPo
 	}, nil
 }
 
-func convertToV1PBMaskingLevel(level storepb.MaskingLevel) v1pb.MaskingLevel {
-	switch level {
-	case storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED:
-		return v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
-	case storepb.MaskingLevel_NONE:
-		return v1pb.MaskingLevel_NONE
-	case storepb.MaskingLevel_PARTIAL:
-		return v1pb.MaskingLevel_PARTIAL
-	case storepb.MaskingLevel_FULL:
-		return v1pb.MaskingLevel_FULL
-	default:
-		return v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
-	}
-}
-
 func convertToStorePBMaskingPolicyPayload(policy *v1pb.MaskingPolicy) (*storepb.MaskingPolicy, error) {
 	var maskData []*storepb.MaskData
 
@@ -824,6 +924,45 @@ func convertToStorePBMaskingPolicyPayload(policy *v1pb.MaskingPolicy) (*storepb.
 	return &storepb.MaskingPolicy{
 		MaskData: maskData,
 	}, nil
+}
+
+func convertToV1PBAction(action storepb.MaskingExceptionPolicy_MaskingException_Action) v1pb.MaskingExceptionPolicy_MaskingException_Action {
+	switch action {
+	case storepb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED:
+		return v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
+	case storepb.MaskingExceptionPolicy_MaskingException_QUERY:
+		return v1pb.MaskingExceptionPolicy_MaskingException_QUERY
+	case storepb.MaskingExceptionPolicy_MaskingException_EXPORT:
+		return v1pb.MaskingExceptionPolicy_MaskingException_EXPORT
+	}
+	return v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
+}
+
+func convertToStorePBAction(action v1pb.MaskingExceptionPolicy_MaskingException_Action) storepb.MaskingExceptionPolicy_MaskingException_Action {
+	switch action {
+	case v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED:
+		return storepb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
+	case v1pb.MaskingExceptionPolicy_MaskingException_QUERY:
+		return storepb.MaskingExceptionPolicy_MaskingException_QUERY
+	case v1pb.MaskingExceptionPolicy_MaskingException_EXPORT:
+		return storepb.MaskingExceptionPolicy_MaskingException_EXPORT
+	}
+	return storepb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
+}
+
+func convertToV1PBMaskingLevel(level storepb.MaskingLevel) v1pb.MaskingLevel {
+	switch level {
+	case storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED:
+		return v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
+	case storepb.MaskingLevel_NONE:
+		return v1pb.MaskingLevel_NONE
+	case storepb.MaskingLevel_PARTIAL:
+		return v1pb.MaskingLevel_PARTIAL
+	case storepb.MaskingLevel_FULL:
+		return v1pb.MaskingLevel_FULL
+	default:
+		return v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
+	}
 }
 
 func convertToStorePBMaskingLevel(level v1pb.MaskingLevel) storepb.MaskingLevel {
@@ -1013,6 +1152,98 @@ func convertToV1PBDisableCopyDataPolicy(payloadStr string) (*v1pb.Policy_Disable
 func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) (*api.DisableCopyDataPolicy, error) {
 	return &api.DisableCopyDataPolicy{
 		Active: policy.Active,
+	}, nil
+}
+
+func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) (*storepb.MaskingRulePolicy, error) {
+	var rules []*storepb.MaskingRulePolicy_MaskingRule
+	for _, rule := range policy.Rules {
+		rules = append(rules, &storepb.MaskingRulePolicy_MaskingRule{
+			Id: rule.Id,
+			Condition: &expr.Expr{
+				Title:       rule.Condition.Title,
+				Expression:  rule.Condition.Expression,
+				Description: rule.Condition.Description,
+				Location:    rule.Condition.Location,
+			},
+			MaskingLevel: convertToStorePBMaskingLevel(rule.MaskingLevel),
+		})
+	}
+
+	return &storepb.MaskingRulePolicy{
+		Rules: rules,
+	}, nil
+}
+
+func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.MaskingRulePolicy, error) {
+	var rules []*v1pb.MaskingRulePolicy_MaskingRule
+	for _, rule := range policy.Rules {
+		rules = append(rules, &v1pb.MaskingRulePolicy_MaskingRule{
+			Id: rule.Id,
+			Condition: &expr.Expr{
+				Title:       rule.Condition.Title,
+				Expression:  rule.Condition.Expression,
+				Description: rule.Condition.Description,
+				Location:    rule.Condition.Location,
+			},
+			MaskingLevel: convertToV1PBMaskingLevel(rule.MaskingLevel),
+		})
+	}
+
+	return &v1pb.MaskingRulePolicy{
+		Rules: rules,
+	}, nil
+}
+
+func convertToStorePBMaskingExceptionPolicyPayload(policy *v1pb.MaskingExceptionPolicy) (*storepb.MaskingExceptionPolicy, error) {
+	var exceptions []*storepb.MaskingExceptionPolicy_MaskingException
+	for _, exception := range policy.MaskingExceptions {
+		var members []string
+		for _, member := range exception.Members {
+			member = strings.TrimPrefix(member, "user:")
+			members = append(members, member)
+		}
+		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
+			Action:       convertToStorePBAction(exception.Action),
+			MaskingLevel: convertToStorePBMaskingLevel(exception.MaskingLevel),
+			Members:      members,
+			Condition: &expr.Expr{
+				Title:       exception.Condition.Title,
+				Expression:  exception.Condition.Expression,
+				Description: exception.Condition.Description,
+				Location:    exception.Condition.Location,
+			},
+		})
+	}
+
+	return &storepb.MaskingExceptionPolicy{
+		MaskingExceptions: exceptions,
+	}, nil
+}
+
+func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingExceptionPolicy) (*v1pb.MaskingExceptionPolicy, error) {
+	var exceptions []*v1pb.MaskingExceptionPolicy_MaskingException
+	for _, exception := range policy.MaskingExceptions {
+		var members []string
+		for _, member := range exception.Members {
+			member = fmt.Sprintf("user:%s", member)
+			members = append(members, member)
+		}
+		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
+			Action:       convertToV1PBAction(exception.Action),
+			MaskingLevel: convertToV1PBMaskingLevel(exception.MaskingLevel),
+			Members:      members,
+			Condition: &expr.Expr{
+				Title:       exception.Condition.Title,
+				Expression:  exception.Condition.Expression,
+				Description: exception.Condition.Description,
+				Location:    exception.Condition.Location,
+			},
+		})
+	}
+
+	return &v1pb.MaskingExceptionPolicy{
+		MaskingExceptions: exceptions,
 	}, nil
 }
 

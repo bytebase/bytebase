@@ -43,6 +43,25 @@ var QueryExportPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.table", cel.StringType),
 }
 
+// MaskingRulePolicyCELAttributes are the variables when evaluating masking rule.
+var MaskingRulePolicyCELAttributes = []cel.EnvOption{
+	cel.Variable("environment_id", cel.StringType),
+	cel.Variable("project_id", cel.StringType),
+	cel.Variable("instance_id", cel.StringType),
+	cel.Variable("database_name", cel.StringType),
+	cel.Variable("table_name", cel.StringType),
+	cel.Variable("column_classification", cel.StringType),
+}
+
+// MaskingExceptionPolicyCELAttributes are the variables when evaluating masking exception.
+var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
+	cel.Variable("resource.instance_id", cel.StringType),
+	cel.Variable("resource.database_name", cel.StringType),
+	cel.Variable("resource.table_name", cel.StringType),
+	cel.Variable("resource.column_name", cel.StringType),
+	cel.Variable("request.time", cel.TimestampType),
+}
+
 // ConvertParsedRisk converts parsed risk to unparsed format.
 func ConvertParsedRisk(expression *v1alpha1.ParsedExpr) (*expr.Expr, error) {
 	if expression == nil || expression.Expr == nil {
@@ -119,6 +138,44 @@ func ConvertUnparsedApproval(expression *expr.Expr) (*v1alpha1.ParsedExpr, error
 func ValidateGroupCELExpr(expr string) (cel.Program, error) {
 	e, err := cel.NewEnv(
 		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(expr)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	return prog, nil
+}
+
+// ValidateMaskingRuleCELExpr validates masking rule expr.
+func ValidateMaskingRuleCELExpr(expr string) (cel.Program, error) {
+	e, err := cel.NewEnv(
+		MaskingRulePolicyCELAttributes...,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(expr)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	return prog, nil
+}
+
+// ValidateMaskingExceptionCELExpr validates masking exception expr.
+func ValidateMaskingExceptionCELExpr(expr string) (cel.Program, error) {
+	e, err := cel.NewEnv(
+		MaskingExceptionPolicyCELAttributes...,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

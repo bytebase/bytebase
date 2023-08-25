@@ -45,11 +45,76 @@ export interface MaskData {
   maskingLevel: MaskingLevel;
 }
 
+/** MaskingExceptionPolicy is the allowlist of users who can access sensitive data. */
+export interface MaskingExceptionPolicy {
+  maskingExceptions: MaskingExceptionPolicy_MaskingException[];
+}
+
+export interface MaskingExceptionPolicy_MaskingException {
+  /** action is the action that the user can access sensitive data. */
+  action: MaskingExceptionPolicy_MaskingException_Action;
+  /** Level is the masking level that the user can access sensitive data. */
+  maskingLevel: MaskingLevel;
+  /**
+   * Members is the list of principals who bind to this exception policy instance.
+   *
+   * * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+   */
+  members: string[];
+  /** The condition that is associated with this exception policy instance. */
+  condition?: Expr | undefined;
+}
+
+export enum MaskingExceptionPolicy_MaskingException_Action {
+  ACTION_UNSPECIFIED = 0,
+  QUERY = 1,
+  EXPORT = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function maskingExceptionPolicy_MaskingException_ActionFromJSON(
+  object: any,
+): MaskingExceptionPolicy_MaskingException_Action {
+  switch (object) {
+    case 0:
+    case "ACTION_UNSPECIFIED":
+      return MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED;
+    case 1:
+    case "QUERY":
+      return MaskingExceptionPolicy_MaskingException_Action.QUERY;
+    case 2:
+    case "EXPORT":
+      return MaskingExceptionPolicy_MaskingException_Action.EXPORT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return MaskingExceptionPolicy_MaskingException_Action.UNRECOGNIZED;
+  }
+}
+
+export function maskingExceptionPolicy_MaskingException_ActionToJSON(
+  object: MaskingExceptionPolicy_MaskingException_Action,
+): string {
+  switch (object) {
+    case MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED:
+      return "ACTION_UNSPECIFIED";
+    case MaskingExceptionPolicy_MaskingException_Action.QUERY:
+      return "QUERY";
+    case MaskingExceptionPolicy_MaskingException_Action.EXPORT:
+      return "EXPORT";
+    case MaskingExceptionPolicy_MaskingException_Action.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface MaskingRulePolicy {
   rules: MaskingRulePolicy_MaskingRule[];
 }
 
 export interface MaskingRulePolicy_MaskingRule {
+  /** A unique identifier for a node in UUID format. */
+  id: string;
   condition?: Expr | undefined;
   maskingLevel: MaskingLevel;
 }
@@ -374,6 +439,176 @@ export const MaskData = {
   },
 };
 
+function createBaseMaskingExceptionPolicy(): MaskingExceptionPolicy {
+  return { maskingExceptions: [] };
+}
+
+export const MaskingExceptionPolicy = {
+  encode(message: MaskingExceptionPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.maskingExceptions) {
+      MaskingExceptionPolicy_MaskingException.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingExceptionPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingExceptionPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.maskingExceptions.push(MaskingExceptionPolicy_MaskingException.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingExceptionPolicy {
+    return {
+      maskingExceptions: Array.isArray(object?.maskingExceptions)
+        ? object.maskingExceptions.map((e: any) => MaskingExceptionPolicy_MaskingException.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MaskingExceptionPolicy): unknown {
+    const obj: any = {};
+    if (message.maskingExceptions) {
+      obj.maskingExceptions = message.maskingExceptions.map((e) =>
+        e ? MaskingExceptionPolicy_MaskingException.toJSON(e) : undefined
+      );
+    } else {
+      obj.maskingExceptions = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingExceptionPolicy>): MaskingExceptionPolicy {
+    return MaskingExceptionPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingExceptionPolicy>): MaskingExceptionPolicy {
+    const message = createBaseMaskingExceptionPolicy();
+    message.maskingExceptions =
+      object.maskingExceptions?.map((e) => MaskingExceptionPolicy_MaskingException.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMaskingExceptionPolicy_MaskingException(): MaskingExceptionPolicy_MaskingException {
+  return { action: 0, maskingLevel: 0, members: [], condition: undefined };
+}
+
+export const MaskingExceptionPolicy_MaskingException = {
+  encode(message: MaskingExceptionPolicy_MaskingException, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.action !== 0) {
+      writer.uint32(8).int32(message.action);
+    }
+    if (message.maskingLevel !== 0) {
+      writer.uint32(16).int32(message.maskingLevel);
+    }
+    for (const v of message.members) {
+      writer.uint32(26).string(v!);
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingExceptionPolicy_MaskingException {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingExceptionPolicy_MaskingException();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maskingLevel = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.members.push(reader.string());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingExceptionPolicy_MaskingException {
+    return {
+      action: isSet(object.action) ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action) : 0,
+      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+      members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+    };
+  },
+
+  toJSON(message: MaskingExceptionPolicy_MaskingException): unknown {
+    const obj: any = {};
+    message.action !== undefined && (obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action));
+    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    if (message.members) {
+      obj.members = message.members.map((e) => e);
+    } else {
+      obj.members = [];
+    }
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
+    return MaskingExceptionPolicy_MaskingException.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
+    const message = createBaseMaskingExceptionPolicy_MaskingException();
+    message.action = object.action ?? 0;
+    message.maskingLevel = object.maskingLevel ?? 0;
+    message.members = object.members?.map((e) => e) || [];
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseMaskingRulePolicy(): MaskingRulePolicy {
   return { rules: [] };
 }
@@ -439,16 +674,19 @@ export const MaskingRulePolicy = {
 };
 
 function createBaseMaskingRulePolicy_MaskingRule(): MaskingRulePolicy_MaskingRule {
-  return { condition: undefined, maskingLevel: 0 };
+  return { id: "", condition: undefined, maskingLevel: 0 };
 }
 
 export const MaskingRulePolicy_MaskingRule = {
   encode(message: MaskingRulePolicy_MaskingRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
     if (message.condition !== undefined) {
-      Expr.encode(message.condition, writer.uint32(10).fork()).ldelim();
+      Expr.encode(message.condition, writer.uint32(18).fork()).ldelim();
     }
     if (message.maskingLevel !== 0) {
-      writer.uint32(16).int32(message.maskingLevel);
+      writer.uint32(24).int32(message.maskingLevel);
     }
     return writer;
   },
@@ -465,10 +703,17 @@ export const MaskingRulePolicy_MaskingRule = {
             break;
           }
 
-          message.condition = Expr.decode(reader, reader.uint32());
+          message.id = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
@@ -485,6 +730,7 @@ export const MaskingRulePolicy_MaskingRule = {
 
   fromJSON(object: any): MaskingRulePolicy_MaskingRule {
     return {
+      id: isSet(object.id) ? String(object.id) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
@@ -492,6 +738,7 @@ export const MaskingRulePolicy_MaskingRule = {
 
   toJSON(message: MaskingRulePolicy_MaskingRule): unknown {
     const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
     message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
     return obj;
@@ -503,6 +750,7 @@ export const MaskingRulePolicy_MaskingRule = {
 
   fromPartial(object: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
     const message = createBaseMaskingRulePolicy_MaskingRule();
+    message.id = object.id ?? "";
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
       : undefined;
