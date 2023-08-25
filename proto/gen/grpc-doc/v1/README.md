@@ -9054,6 +9054,7 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | type | [Sheet.Type](#bytebase-v1-Sheet-Type) |  | The type of the sheet. |
 | starred | [bool](#bool) |  | starred indicates whether the sheet is starred by the current authenticated user. |
 | payload | [string](#string) |  | TODO: deprecate this field. |
+| push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 
 
 
