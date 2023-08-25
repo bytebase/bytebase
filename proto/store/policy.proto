@@ -45,9 +45,12 @@ message MaskData {
 
 message MaskingRulePolicy {
   message MaskingRule {
-    google.type.Expr condition = 1;
+    // A unique identifier for a node in UUID format.
+    string id = 1;
 
-    MaskingLevel masking_level = 2;
+    google.type.Expr condition = 2;
+
+    MaskingLevel masking_level = 3;
   }
   repeated MaskingRule rules = 1;
 }
