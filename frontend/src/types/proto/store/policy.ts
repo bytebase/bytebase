@@ -50,6 +50,8 @@ export interface MaskingRulePolicy {
 }
 
 export interface MaskingRulePolicy_MaskingRule {
+  /** A unique identifier for a node in UUID format. */
+  id: string;
   condition?: Expr | undefined;
   maskingLevel: MaskingLevel;
 }
@@ -439,16 +441,19 @@ export const MaskingRulePolicy = {
 };
 
 function createBaseMaskingRulePolicy_MaskingRule(): MaskingRulePolicy_MaskingRule {
-  return { condition: undefined, maskingLevel: 0 };
+  return { id: "", condition: undefined, maskingLevel: 0 };
 }
 
 export const MaskingRulePolicy_MaskingRule = {
   encode(message: MaskingRulePolicy_MaskingRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
     if (message.condition !== undefined) {
-      Expr.encode(message.condition, writer.uint32(10).fork()).ldelim();
+      Expr.encode(message.condition, writer.uint32(18).fork()).ldelim();
     }
     if (message.maskingLevel !== 0) {
-      writer.uint32(16).int32(message.maskingLevel);
+      writer.uint32(24).int32(message.maskingLevel);
     }
     return writer;
   },
@@ -465,10 +470,17 @@ export const MaskingRulePolicy_MaskingRule = {
             break;
           }
 
-          message.condition = Expr.decode(reader, reader.uint32());
+          message.id = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
@@ -485,6 +497,7 @@ export const MaskingRulePolicy_MaskingRule = {
 
   fromJSON(object: any): MaskingRulePolicy_MaskingRule {
     return {
+      id: isSet(object.id) ? String(object.id) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
@@ -492,6 +505,7 @@ export const MaskingRulePolicy_MaskingRule = {
 
   toJSON(message: MaskingRulePolicy_MaskingRule): unknown {
     const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
     message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
     return obj;
@@ -503,6 +517,7 @@ export const MaskingRulePolicy_MaskingRule = {
 
   fromPartial(object: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
     const message = createBaseMaskingRulePolicy_MaskingRule();
+    message.id = object.id ?? "";
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
       : undefined;
