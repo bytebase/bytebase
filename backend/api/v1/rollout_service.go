@@ -585,6 +585,10 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
 	}
 
+	for _, task := range tasksToSkip {
+		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
+	}
+
 	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, updaterID); err != nil {
 		log.Error("failed to batch create activities for skipping tasks", zap.Error(err))
 	}
