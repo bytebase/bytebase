@@ -63,31 +63,12 @@ const errors = asyncComputed(async () => {
   return errors;
 }, []);
 
-// const errors = computed(() => {
-//   const errors: string[] = [];
-//   if (!allPlanChecksPassedForTask(issue.value, activeTask.value)) {
-//     errors.push("Some checks failed.");
-//   }
-//   if (
-//     !isUserAllowedToApplyTaskRolloutAction(
-//       issue.value,
-//       activeTask.value,
-//       currentUser.value,
-//       props.action
-//     )
-//   ) {
-//     errors.push("You are not assignee of this issue.");
-//   }
-//   return errors;
-// });
-
 const actionList = computed(() => {
   const { action } = props;
 
   const text = taskRolloutActionDisplayName(action);
   const actionProps: RolloutButtonAction["props"] = {
     ...taskRolloutActionButtonProps(action),
-    size: "large",
     tag: "div",
     disabled: errors.value.length > 0,
   };
