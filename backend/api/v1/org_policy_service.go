@@ -481,6 +481,9 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 			return status.Errorf(codes.InvalidArgument, "masking rule policy must be set")
 		}
 		for _, rule := range maskingRulePolicy.MaskingRulePolicy.Rules {
+			if rule.Id == "" {
+				return status.Errorf(codes.InvalidArgument, "masking rule must have ID set")
+			}
 			if rule.MaskingLevel == v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
 				return status.Errorf(codes.InvalidArgument, "masking rule must have masking level set")
 			}
@@ -1076,6 +1079,7 @@ func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) (*storepb.
 	var rules []*storepb.MaskingRulePolicy_MaskingRule
 	for _, rule := range policy.Rules {
 		rules = append(rules, &storepb.MaskingRulePolicy_MaskingRule{
+			Id: rule.Id,
 			Condition: &expr.Expr{
 				Title:       rule.Condition.Title,
 				Expression:  rule.Condition.Expression,
@@ -1095,6 +1099,7 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.Ma
 	var rules []*v1pb.MaskingRulePolicy_MaskingRule
 	for _, rule := range policy.Rules {
 		rules = append(rules, &v1pb.MaskingRulePolicy_MaskingRule{
+			Id: rule.Id,
 			Condition: &expr.Expr{
 				Title:       rule.Condition.Title,
 				Expression:  rule.Condition.Expression,
