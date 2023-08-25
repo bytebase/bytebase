@@ -250,6 +250,11 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			DatabaseGroupUid:   nil,
 		},
 	})
+
+	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_BASELINE || config.Type == storepb.PlanConfig_ChangeDatabaseConfig_BRANCH {
+		return planCheckRuns, nil
+	}
+
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 		CreatorUID: api.SystemBotID,
 		UpdaterUID: api.SystemBotID,
