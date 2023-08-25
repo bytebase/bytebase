@@ -473,6 +473,19 @@ func validatePolicyType(policyType api.PolicyType, policyResourceType api.Policy
 
 func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error {
 	switch policyType {
+	case api.PolicyTypeMasking:
+		maskingPolicy, ok := policy.Policy.(*v1pb.Policy_MaskingPolicy)
+		if !ok {
+			return status.Errorf(codes.InvalidArgument, "unmatched policy type %v and policy %v", policyType, policy.Policy)
+		}
+		if maskingPolicy.MaskingPolicy == nil {
+			return status.Errorf(codes.InvalidArgument, "masking policy must be set")
+		}
+		for _, maskData := range maskingPolicy.MaskingPolicy.MaskData {
+			if maskData.Column == "" || maskData.Table == "" {
+				return status.Errorf(codes.InvalidArgument, "masking column and table must be set")
+			}
+		}
 	case api.PolicyTypeMaskingRule:
 		maskingRulePolicy, ok := policy.Policy.(*v1pb.Policy_MaskingRulePolicy)
 		if !ok {
@@ -593,18 +606,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		for _, v := range payload.MaskData {
-			if v.Table == "" || v.Column == "" {
-				return "", status.Errorf(codes.InvalidArgument, "sensitive data policy rule cannot have empty table or column name")
-			}
-			// TODO(zp): remove the following validation.
-			if v.MaskingLevel != storepb.MaskingLevel_FULL {
-				return "", status.Errorf(codes.InvalidArgument, "sensitive data policy rule can only have full masking level for now")
-			}
-			if v.SemanticCategoryId != "" {
-				return "", status.Errorf(codes.InvalidArgument, "unsupported semantic category id for now")
-			}
-		}
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal masking policy")
@@ -715,7 +716,7 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		policy.Policy = payload
 	case api.PolicyTypeMasking:
 		pType = v1pb.PolicyType_MASKING
-		payload, err := convertToV1PBSensitiveDataPolicy(policyMessage.Payload)
+		payload, err := convertToV1PBMaskingPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -884,7 +885,7 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 	}, nil
 }
 
-func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_MaskingPolicy, error) {
+func convertToV1PBMaskingPolicy(payloadStr string) (*v1pb.Policy_MaskingPolicy, error) {
 	var maskingPolicy storepb.MaskingPolicy
 	if err := protojson.Unmarshal([]byte(payloadStr), &maskingPolicy); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal masking policy")
