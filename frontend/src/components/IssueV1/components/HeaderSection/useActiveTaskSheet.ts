@@ -12,7 +12,7 @@ export const useActiveTaskSheet = () => {
   });
   const sheetReady = ref(false);
   const sheet = computed(() => {
-    if (isCreating) {
+    if (isCreating.value) {
       return undefined;
     }
     const name = sheetName.value;
