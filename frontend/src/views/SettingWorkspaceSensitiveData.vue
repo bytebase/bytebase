@@ -17,6 +17,9 @@
         <BBTabPanel :active="state.selectedIndex === 0">
           <SensitiveColumnList />
         </BBTabPanel>
+        <BBTabPanel :active="state.selectedIndex === 1">
+          <GlobalMaskingRule />
+        </BBTabPanel>
       </div>
     </BBTab>
     <SensitiveColumnList v-else />
@@ -28,7 +31,10 @@ import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { BBTabItem } from "@/bbkit/types";
-import { SensitiveColumnList } from "@/components/SensitiveData";
+import {
+  SensitiveColumnList,
+  GlobalMaskingRule,
+} from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
 import { isDev } from "@/utils";
 

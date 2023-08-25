@@ -2839,6 +2839,7 @@
       "affected_rows": "Affected rows",
       "environment_id": "Environment ID",
       "project_id": "Project ID",
+      "instance_id": "Instance ID",
       "database_name": "Database name",
       "db_engine": "DB engine",
       "sql_type": "SQL type",

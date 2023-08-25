@@ -7,7 +7,7 @@
 <script lang="ts" setup>
 import type { SelectOption } from "naive-ui";
 import { toRef } from "vue";
-import type { ConditionGroupExpr, Factor } from "@/plugins/cel";
+import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import ConditionGroup from "./ConditionGroup.vue";
 import { provideExprEditorContext } from "./context";
 
@@ -18,10 +18,11 @@ const props = withDefaults(
     factorList: Factor[];
     factorSupportDropdown: Factor[];
     factorOptionsMap: Map<Factor, SelectOption[]>;
+    factorOperatorOverrideMap?: Map<Factor, Operator[]>;
   }>(),
   {
     allowAdmin: false,
-    riskSource: undefined,
+    factorOperatorOverrideMap: undefined,
   }
 );
 
@@ -34,6 +35,7 @@ provideExprEditorContext({
   factorList: toRef(props, "factorList"),
   factorSupportDropdown: toRef(props, "factorSupportDropdown"),
   factorOptionsMap: toRef(props, "factorOptionsMap"),
+  factorOperatorOverrideMap: toRef(props, "factorOperatorOverrideMap"),
 });
 </script>
 

@@ -2831,6 +2831,7 @@
       "affected_rows": "影响行数",
       "environment_id": "环境 ID",
       "project_id": "项目 ID",
+      "instance_id": "实例 ID",
       "database_name": "数据库名称",
       "db_engine": "数据库引擎",
       "sql_type": "SQL 类型",
