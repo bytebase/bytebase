@@ -257,7 +257,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 			continue
 		}
 
-		if blockingTask.LatestTaskRunStatus == nil || *blockingTask.LatestTaskRunStatus != api.TaskRunDone {
+		if blockingTask.LatestTaskRunStatus != api.TaskRunDone {
 			return nil
 		}
 	}

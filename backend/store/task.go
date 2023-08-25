@@ -46,7 +46,7 @@ type TaskMessage struct {
 	// Statement used by grouping batch change, Bytebase use it to render.
 	Statement string
 
-	LatestTaskRunStatus *api.TaskRunStatus
+	LatestTaskRunStatus api.TaskRunStatus
 }
 
 func (task *TaskMessage) toTask() *api.Task {

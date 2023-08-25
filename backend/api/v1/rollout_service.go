@@ -879,7 +879,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			// enqueue or cancel after it's written to the database.
 			if taskPatch.RollbackEnabled != nil {
 				// Enqueue the rollback sql generation if the task done.
-				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus != nil && *taskPatched.LatestTaskRunStatus == api.TaskRunDone {
+				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
 					s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 				} else if !*taskPatch.RollbackEnabled {
 					// Cancel running rollback sql generation.
