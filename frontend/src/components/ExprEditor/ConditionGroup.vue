@@ -129,9 +129,9 @@ import {
   LogicalOperatorList,
   isConditionGroupExpr,
   isConditionExpr,
-  getOperatorListByFactor,
 } from "@/plugins/cel";
 import Condition from "./Condition.vue";
+import { getOperatorListByFactor } from "./components/common";
 import { useExprEditorContext } from "./context";
 
 const props = defineProps<{
@@ -145,7 +145,7 @@ const emit = defineEmits<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin, factorList } = context;
+const { allowAdmin, factorList, factorOperatorOverrideMap } = context;
 
 const operator = computed({
   get() {
@@ -170,10 +170,13 @@ const OPERATORS: SelectOption[] = [
 
 const addCondition = () => {
   const factor = factorList.value[0];
-  const operators = getOperatorListByFactor(factor);
+  const operators = getOperatorListByFactor(
+    factor,
+    factorOperatorOverrideMap.value
+  );
 
   args.value.push({
-    operator: operators[0],
+    operator: operators[0] ?? "",
     args: [factor, ""],
   } as any);
   emit("update");
