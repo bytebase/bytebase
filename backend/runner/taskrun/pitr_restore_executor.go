@@ -178,7 +178,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	return &api.TaskRunResultPayload{
 		Detail:        fmt.Sprintf("Restored database %q from backup %q", targetDatabase.DatabaseName, backup.Name),
 		MigrationID:   migrationID,
-		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/migrations/%s", instance.ResourceID, targetDatabase.DatabaseName, migrationID),
+		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, targetDatabase.DatabaseName, migrationID),
 		Version:       version,
 	}, nil
 }
