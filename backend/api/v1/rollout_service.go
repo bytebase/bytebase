@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -508,6 +509,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		}
 		taskRunCreates = append(taskRunCreates, create)
 	}
+	sort.Slice(taskRunCreates, func(i, j int) bool {
+		return taskRunCreates[i].TaskUID < taskRunCreates[j].TaskUID
+	})
 
 	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create pending task runs")

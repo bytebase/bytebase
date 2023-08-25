@@ -1479,7 +1479,7 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 		if extractor.schemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerTable := strings.ToLower(tableName)
-			if lowerDatabase == strings.ToLower(database.Name) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
 				for _, table := range database.TableList {
 					if lowerTable == strings.ToLower(table.Name) {
 						explicitDatabase := databaseName
@@ -1503,11 +1503,11 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 		}
 	}
 
-	if database, schema, err := extractor.findViewSchema(databaseName, tableName); err == nil {
-		// nolint:nilerr
+	database, schema, err := extractor.findViewSchema(databaseName, tableName)
+	if err == nil {
 		return database, schema, nil
 	}
-	return "", db.TableSchema{}, errors.Errorf("Table or view %q.%q not found", databaseName, tableName)
+	return "", db.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
 }
 
 func (extractor *sensitiveFieldExtractor) buildTableSchemaForView(viewName string, definition string) (db.TableSchema, error) {
@@ -1539,7 +1539,7 @@ func (extractor *sensitiveFieldExtractor) findViewSchema(databaseName string, vi
 		if extractor.schemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerView := strings.ToLower(viewName)
-			if lowerDatabase == strings.ToLower(database.Name) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
 				for _, view := range database.ViewList {
 					if lowerView == strings.ToLower(view.Name) {
 						explicitDatabase := databaseName
