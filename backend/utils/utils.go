@@ -370,6 +370,17 @@ func GetTaskSkippedAndReason(task *api.Task) (bool, string, error) {
 	return payload.Skipped, payload.SkippedReason, nil
 }
 
+// GetTaskSkipped gets skipped from a task.
+func GetTaskSkipped(task *store.TaskMessage) (bool, error) {
+	var payload struct {
+		Skipped bool `json:"skipped,omitempty"`
+	}
+	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+		return false, err
+	}
+	return payload.Skipped, nil
+}
+
 // MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
 // The index of returned taskIndexDAG list is set regarding the merged taskCreate.
 func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLists [][]store.TaskIndexDAG) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
