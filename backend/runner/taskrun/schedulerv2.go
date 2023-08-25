@@ -214,6 +214,11 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	if err := s.store.CreatePendingTaskRuns(ctx, create); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
+
+	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, []*store.TaskMessage{task}, issue, "", api.SystemBotID); err != nil {
+		log.Error("failed to create activities for running tasks", zap.Error(err))
+	}
+
 	return nil
 }
 
