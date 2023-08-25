@@ -540,11 +540,18 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				}
 
 				var taskStage *store.StageMessage
+				var pipelineDone bool
 				for i, stage := range stages {
 					if stage.ID == task.StageID {
 						taskStage = stages[i]
+						if i == len(stages)-1 {
+							pipelineDone = true
+						}
 						break
 					}
+				}
+				if taskStage == nil {
+					return errors.Errorf("failed to find stage")
 				}
 
 				issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
@@ -585,6 +592,42 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
 				}
 
+				if pipelineDone {
+					// Every task in the pipeline has finished.
+					// Resolve the issue.
+					if err := func() error {
+						newStatus := api.IssueDone
+						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}, api.SystemBotID)
+						if err != nil {
+							return errors.Wrapf(err, "failed to update issue status")
+						}
+
+						payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+							OldStatus: issue.Status,
+							NewStatus: updatedIssue.Status,
+							IssueName: updatedIssue.Title,
+						})
+						if err != nil {
+							return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
+						}
+						activityCreate := &store.ActivityMessage{
+							CreatorUID:   api.SystemBotID,
+							ContainerUID: updatedIssue.UID,
+							Type:         api.ActivityIssueStatusUpdate,
+							Level:        api.ActivityInfo,
+							Comment:      "",
+							Payload:      string(payload),
+						}
+						if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+							Issue: updatedIssue,
+						}); err != nil {
+							return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
+						}
+						return nil
+					}(); err != nil {
+						log.Error("failed to update issue status", zap.Error(err))
+					}
+				}
 				return nil
 			}(); err != nil {
 				log.Error("failed to handle task skipped or done", zap.Error(err))
