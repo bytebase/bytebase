@@ -42,8 +42,6 @@ const (
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 	// PolicyTypeMasking is the masking policy type.
 	PolicyTypeMasking PolicyType = "bb.policy.masking"
-	// PolicyTypeMaskingRule is the masking rule policy type.
-	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
 	// PolicyTypeMaskingException is the masking exception policy type.
 	PolicyTypeMaskingException PolicyType = "bb.policy.masking-exception"
 	// PolicyTypeSlowQuery is the slow query policy type.
