@@ -1151,6 +1151,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
 

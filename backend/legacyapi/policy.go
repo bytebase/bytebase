@@ -42,6 +42,10 @@ const (
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 	// PolicyTypeSensitiveData is the sensitive data policy type.
 	PolicyTypeSensitiveData PolicyType = "bb.policy.sensitive-data"
+	// PolicyTypeMaskingRule is the masking rule policy type.
+	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
+	// PolicyTypeMaskingException is the masking exception policy type.
+	PolicyTypeMaskingException PolicyType = "bb.policy.masking-exception"
 	// PolicyTypeSlowQuery is the slow query policy type.
 	PolicyTypeSlowQuery PolicyType = "bb.policy.slow-query"
 	// PolicyTypeDisableCopyData is the disable copy data policy type.

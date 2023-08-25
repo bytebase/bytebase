@@ -1016,6 +1016,10 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeSQLReview, nil
 	case v1pb.PolicyType_MASKING.String():
 		return api.PolicyTypeSensitiveData, nil
+	case v1pb.PolicyType_MASKING_RULE.String():
+		return api.PolicyTypeMaskingRule, nil
+	case v1pb.PolicyType_MASKING_EXCEPTION.String():
+		return api.PolicyTypeMaskingException, nil
 	case v1pb.PolicyType_SLOW_QUERY.String():
 		return api.PolicyTypeSlowQuery, nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA.String():
