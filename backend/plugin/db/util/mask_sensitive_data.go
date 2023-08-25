@@ -6,9 +6,7 @@ import (
 	"strings"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
-	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -1509,8 +1507,7 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 	if err == nil {
 		return database, schema, nil
 	}
-	log.Debug("failed to extract sensitive field from view", zap.Error(err))
-	return "", db.TableSchema{}, errors.Errorf("Table or view %q.%q not found", databaseName, tableName)
+	return "", db.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
 }
 
 func (extractor *sensitiveFieldExtractor) buildTableSchemaForView(viewName string, definition string) (db.TableSchema, error) {
