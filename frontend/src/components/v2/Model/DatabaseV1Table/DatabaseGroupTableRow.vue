@@ -1,4 +1,7 @@
 <template>
+  <div v-if="showSelectionColumn" class="bb-grid-cell !px-2">
+    <slot name="selection" :database="databaseGroup" />
+  </div>
   <div class="bb-grid-cell">
     <div class="flex items-center space-x-2">
       <SQLEditorButtonV1 :disabled="true" :tooltip="true" />
@@ -19,6 +22,7 @@
     <span>-</span>
   </div>
   <div class="bb-grid-cell">
+    <!-- project -->
     <ProjectCol
       :project="databaseGroup.project"
       :mode="mode"
