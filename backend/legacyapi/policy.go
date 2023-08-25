@@ -99,6 +99,7 @@ var (
 		PolicyTypeSlowQuery:        {PolicyResourceTypeInstance},
 		PolicyTypeDisableCopyData:  {PolicyResourceTypeEnvironment},
 		PolicyTypeMaskingRule:      {PolicyResourceTypeWorkspace},
+		PolicyTypeMaskingException: {PolicyResourceTypeProject},
 	}
 )
 
