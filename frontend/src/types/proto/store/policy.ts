@@ -45,6 +45,15 @@ export interface MaskData {
   maskingLevel: MaskingLevel;
 }
 
+export interface MaskingRulePolicy {
+  rules: MaskingRulePolicy_MaskingRule[];
+}
+
+export interface MaskingRulePolicy_MaskingRule {
+  condition?: Expr | undefined;
+  maskingLevel: MaskingLevel;
+}
+
 function createBaseIamPolicy(): IamPolicy {
   return { bindings: [] };
 }
@@ -360,6 +369,143 @@ export const MaskData = {
     message.table = object.table ?? "";
     message.column = object.column ?? "";
     message.semanticCategoryId = object.semanticCategoryId ?? "";
+    message.maskingLevel = object.maskingLevel ?? 0;
+    return message;
+  },
+};
+
+function createBaseMaskingRulePolicy(): MaskingRulePolicy {
+  return { rules: [] };
+}
+
+export const MaskingRulePolicy = {
+  encode(message: MaskingRulePolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.rules) {
+      MaskingRulePolicy_MaskingRule.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingRulePolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingRulePolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rules.push(MaskingRulePolicy_MaskingRule.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingRulePolicy {
+    return {
+      rules: Array.isArray(object?.rules)
+        ? object.rules.map((e: any) => MaskingRulePolicy_MaskingRule.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MaskingRulePolicy): unknown {
+    const obj: any = {};
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? MaskingRulePolicy_MaskingRule.toJSON(e) : undefined);
+    } else {
+      obj.rules = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingRulePolicy>): MaskingRulePolicy {
+    return MaskingRulePolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingRulePolicy>): MaskingRulePolicy {
+    const message = createBaseMaskingRulePolicy();
+    message.rules = object.rules?.map((e) => MaskingRulePolicy_MaskingRule.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMaskingRulePolicy_MaskingRule(): MaskingRulePolicy_MaskingRule {
+  return { condition: undefined, maskingLevel: 0 };
+}
+
+export const MaskingRulePolicy_MaskingRule = {
+  encode(message: MaskingRulePolicy_MaskingRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.maskingLevel !== 0) {
+      writer.uint32(16).int32(message.maskingLevel);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingRulePolicy_MaskingRule {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingRulePolicy_MaskingRule();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maskingLevel = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingRulePolicy_MaskingRule {
+    return {
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+    };
+  },
+
+  toJSON(message: MaskingRulePolicy_MaskingRule): unknown {
+    const obj: any = {};
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
+    return MaskingRulePolicy_MaskingRule.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
+    const message = createBaseMaskingRulePolicy_MaskingRule();
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
+      : undefined;
     message.maskingLevel = object.maskingLevel ?? 0;
     return message;
   },
