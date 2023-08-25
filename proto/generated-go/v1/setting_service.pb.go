@@ -1954,8 +1954,7 @@ type SemanticCategorySetting_SemanticCategory struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// id is the uuid for semantic category.
-	// The id should in [0-9]+-[0-9]+-[0-9]+ format.
+	// id is the uuid for category item.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// the title of the category item, it should not be empty.
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
