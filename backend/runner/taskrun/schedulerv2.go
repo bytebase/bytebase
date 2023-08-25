@@ -91,7 +91,6 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 }
 
 func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
-	// TODO(p0ny): check if the task can be rolled out.
 	taskIDs, err := s.store.ListTasksWithNoTaskRun(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list tasks with zero task run")
@@ -154,6 +153,55 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		if !approved {
 			return nil
 		}
+	}
+
+	// the latest checks of the plan must pass
+	pass, err := func() (bool, error) {
+		if issue.PlanUID == nil {
+			return true, nil
+		}
+		plan, err := s.store.GetPlan(ctx, *issue.PlanUID)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get plan")
+		}
+		if plan == nil {
+			return false, errors.Errorf("plan %d not found", *issue.PlanUID)
+		}
+		planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{PlanUID: &plan.UID})
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to list plan check runs")
+		}
+		type key struct {
+			instanceUID  int
+			databaseName string
+		}
+		latestRun := map[key]*store.PlanCheckRunMessage{}
+		for _, run := range planCheckRuns {
+			k := key{
+				instanceUID:  int(run.Config.InstanceUid),
+				databaseName: run.Config.DatabaseName,
+			}
+			if latest, ok := latestRun[k]; !ok || latest.UID < run.UID {
+				latestRun[k] = run
+			}
+		}
+		for _, run := range latestRun {
+			if run.Status != store.PlanCheckRunStatusDone {
+				return false, nil
+			}
+			for _, result := range run.Result.Results {
+				if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
+					return false, nil
+				}
+			}
+		}
+		return true, nil
+	}()
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if plan check passes")
+	}
+	if !pass {
+		return nil
 	}
 
 	create := &store.TaskRunMessage{
