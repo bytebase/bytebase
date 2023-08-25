@@ -85,7 +85,7 @@
           class="flex flex-col items-center w-24"
         >
           <button class="btn-icon-primary p-3" @click.prevent="designSchema">
-            <img src="../assets/branch.svg" class="w-5 h-5" />
+            <GitBranch class="w-5 h-auto" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -326,6 +326,7 @@
 
 <script lang="ts" setup>
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { GitBranch } from "lucide-vue-next";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
