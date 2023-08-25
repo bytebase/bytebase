@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -24,8 +25,9 @@ import (
 )
 
 // NewRunner creates a new rollback runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State) *Runner {
+func NewRunner(profile *config.Profile, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State) *Runner {
 	return &Runner{
+		profile:   profile,
 		store:     store,
 		dbFactory: dbFactory,
 		stateCfg:  stateCfg,
@@ -34,6 +36,7 @@ func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *sta
 
 // Runner is the rollback runner generating rollback SQL statements.
 type Runner struct {
+	profile   *config.Profile
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 	stateCfg  *state.State
@@ -69,9 +72,16 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 // It is currently called when Bytebase server starts and only rerun unfinished generation.
 func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
-		LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunDone},
-		TypeList:                &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:                 "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
+		StatusList: &[]api.TaskStatus{api.TaskDone},
+		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
+		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
+	}
+	if r.profile.DevelopmentUseV2Scheduler {
+		find = &api.TaskFind{
+			LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunDone},
+			TypeList:                &[]api.TaskType{api.TaskDatabaseDataUpdate},
+			Payload:                 "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
+		}
 	}
 	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
