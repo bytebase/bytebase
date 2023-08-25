@@ -5,6 +5,7 @@
         :preference-key="`bb-rollout-action-${action}`"
         :action-list="actionList"
         :default-action-key="`${action}-STAGE`"
+        size="medium"
         @click="$emit('perform-action', ($event as RolloutButtonAction).params)"
       />
     </template>
