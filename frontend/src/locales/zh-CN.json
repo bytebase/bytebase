@@ -593,7 +593,17 @@
     },
     "sensitive-data": {
       "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，您可以将多个列标记为敏感数据。",
-      "remove-sensitive-column-tips": "不再对此列数据脱敏？"
+      "remove-sensitive-column-tips": "不再对此列数据脱敏？",
+      "sensitive-column-list": "敏感数据列表",
+      "global-masking-rule": "全局脱敏规则",
+      "data-feature": "数据特征",
+      "add-rule": "添加规则",
+      "masking-level": {
+        "self": "脱敏程度",
+        "none": "明文",
+        "partial": "半脱敏",
+        "full": "全脱敏"
+      }
     },
     "access-control": {
       "description": "配置审批流来控制数据的查询和导出。{link}",
