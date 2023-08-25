@@ -594,7 +594,18 @@
     },
     "sensitive-data": {
       "description": "El resultado de la consulta de las siguientes columnas se muestra como \"******\". \nPuede marcar más columnas como datos sensibles en la página de detalles de la tabla.",
-      "remove-sensitive-column-tips": "¿Exponer esta columna?"
+      "remove-sensitive-column-tips": "¿Exponer esta columna?",
+      "sensitive-column-list": "Lista de columnas confidenciales",
+      "global-masking-rule": "Regla de enmascaramiento global",
+      "data-feature": "Característica de datos",
+      "add-rule": "Agregar regla",
+      "masking-level": {
+        "self": "Nivel de enmascaramiento",
+        "selet-level": "Selecciona el nivel",
+        "none": "Ninguna",
+        "partial": "Parcial",
+        "full": "Llena"
+      }
     },
     "access-control": {
       "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
