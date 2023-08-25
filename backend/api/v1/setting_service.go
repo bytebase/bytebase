@@ -496,7 +496,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if _, ok := idMap[category.Id]; ok {
 				return nil, status.Errorf(codes.InvalidArgument, "duplicate category id: %s", category.Id)
 			}
-			idMap[category.Id] = interface{}(nil)
+			idMap[category.Id] = any(nil)
 		}
 		bytes, err := protojson.Marshal(storeCategorySetting)
 		if err != nil {
