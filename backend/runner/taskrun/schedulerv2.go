@@ -588,38 +588,6 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
 				}
 
-				// every task in the stage completes and this is not the last stage.
-				// create "stage begins" activity.
-				if nextStage != nil {
-					if err := func() error {
-						createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-							StageID:               nextStage.ID,
-							StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
-							IssueName:             issue.Title,
-							StageName:             nextStage.Name,
-						}
-						bytes, err := json.Marshal(createActivityPayload)
-						if err != nil {
-							return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
-						}
-						activityCreate := &store.ActivityMessage{
-							CreatorUID:   api.SystemBotID,
-							ContainerUID: *issue.PipelineUID,
-							Type:         api.ActivityPipelineStageStatusUpdate,
-							Level:        api.ActivityInfo,
-							Payload:      string(bytes),
-						}
-						if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-							Issue: issue,
-						}); err != nil {
-							return errors.Wrap(err, "failed to create activity")
-						}
-						return nil
-					}(); err != nil {
-						log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
-					}
-				}
-
 				return nil
 			}(); err != nil {
 				log.Error("failed to handle task skipped or done", zap.Error(err))
