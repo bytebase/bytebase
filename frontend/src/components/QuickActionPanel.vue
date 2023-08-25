@@ -81,16 +81,16 @@
         </div>
 
         <div
-          v-if="quickAction === 'quickaction.bb.database.schema.design'"
+          v-if="quickAction === 'quickaction.bb.database.branching'"
           class="flex flex-col items-center w-24"
         >
           <button class="btn-icon-primary p-3" @click.prevent="designSchema">
-            <heroicons-outline:table-cells class="w-5 h-5" />
+            <img src="../assets/branch.svg" class="w-5 h-5" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
-            {{ $t("schema-designer.quick-action") }}
+            {{ $t("database.branching") }}
           </h3>
         </div>
       </template>
@@ -278,7 +278,7 @@
       @dismiss="state.quickActionType = undefined"
     />
     <DesignSchemaPrepForm
-      v-if="state.quickActionType === 'quickaction.bb.database.schema.design'"
+      v-if="state.quickActionType === 'quickaction.bb.database.branching'"
       :project-id="projectId"
       @dismiss="state.quickActionType = undefined"
     />
@@ -431,7 +431,7 @@ const alterSchema = () => {
 };
 
 const designSchema = () => {
-  state.quickActionType = "quickaction.bb.database.schema.design";
+  state.quickActionType = "quickaction.bb.database.branching";
 };
 
 const changeData = () => {

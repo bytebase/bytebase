@@ -72,7 +72,7 @@ const projectV1Store = useProjectV1Store();
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
-    { title: t("common.name"), width: "1fr" },
+    { title: t("database.branch"), width: "1fr" },
     {
       title: t("common.project"),
       width: "1fr",
