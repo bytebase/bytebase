@@ -342,7 +342,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		where = append(where, fmt.Sprintf("task.status in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.LatestTaskRunStatusList; v != nil {
-		where = append(where, fmt.Sprintf("latest_task_run_status = ANY($%d)", len(args)+1))
+		where = append(where, fmt.Sprintf("latest_task_run.status = ANY($%d)", len(args)+1))
 		args = append(args, *v)
 	}
 	if v := find.TypeList; v != nil {
