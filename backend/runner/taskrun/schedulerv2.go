@@ -52,6 +52,8 @@ func (s *SchedulerV2) Register(taskType api.TaskType, executorGetter Executor) {
 
 // Run will start the scheduler.
 func (s *SchedulerV2) Run(ctx context.Context, wg *sync.WaitGroup) {
+	go s.ListenTaskSkippedOrDone(ctx)
+
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -483,7 +485,113 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			return
 		}
 		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunDone)
+		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
+	}
+}
+
+func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			log.Error("ListenTaskSkippedOrDone PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+		}
+	}()
+	log.Info("TaskSkippedOrDoneListener started")
+	stageDoneConfirmed := map[int]bool{}
+
+	for {
+		select {
+		case taskUID := <-s.stateCfg.TaskSkippedOrDoneChan:
+			if err := func() error {
+				task, err := s.store.GetTaskV2ByID(ctx, taskUID)
+				if err != nil {
+					return errors.Wrapf(err, "failed to get task")
+				}
+				if stageDoneConfirmed[task.StageID] {
+					return nil
+				}
+
+				stageTasks, err := s.store.ListTasks(ctx, &api.TaskFind{StageID: &task.StageID})
+				if err != nil {
+					return errors.Wrapf(err, "failed to list tasks")
+				}
+
+				skippedOrDone, err := tasksSkippedOrDone(stageTasks)
+				if err != nil {
+					return errors.Wrapf(err, "failed to check if tasks are skipped or done")
+				}
+				if !skippedOrDone {
+					return nil
+				}
+
+				stageDoneConfirmed[task.StageID] = true
+				go func(stageID int) {
+					time.Sleep(1 * time.Minute)
+					delete(stageDoneConfirmed, stageID)
+				}(task.StageID)
+
+				stages, err := s.store.ListStageV2(ctx, task.PipelineID)
+				if err != nil {
+					return errors.Wrapf(err, "failed to list stages")
+				}
+
+				var taskStage *store.StageMessage
+				for i, stage := range stages {
+					if stage.ID == task.StageID {
+						taskStage = stages[i]
+						break
+					}
+				}
+
+				issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get issue")
+				}
+				if issue == nil {
+					return nil
+				}
+
+				// every task in the stage terminated
+				// create "stage ends" activity.
+				if err := func() error {
+					createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+						StageID:               taskStage.ID,
+						StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
+						IssueName:             issue.Title,
+						StageName:             taskStage.Name,
+					}
+					bytes, err := json.Marshal(createActivityPayload)
+					if err != nil {
+						return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
+					}
+					activityCreate := &store.ActivityMessage{
+						CreatorUID:   api.SystemBotID,
+						ContainerUID: *issue.PipelineUID,
+						Type:         api.ActivityPipelineStageStatusUpdate,
+						Level:        api.ActivityInfo,
+						Payload:      string(bytes),
+					}
+					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+						Issue: issue,
+					}); err != nil {
+						return errors.Wrap(err, "failed to create activity")
+					}
+					return nil
+				}(); err != nil {
+					log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
+				}
+
+				return nil
+			}(); err != nil {
+				log.Error("failed to handle task skipped or done", zap.Error(err))
+			}
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
@@ -551,4 +659,18 @@ func (s *SchedulerV2) ClearRunningTaskRuns(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
+	for _, task := range tasks {
+		skipped, err := utils.GetTaskSkipped(task)
+		if err != nil {
+			return false, err
+		}
+		done := task.LatestTaskRunStatus == api.TaskRunDone
+		if !skipped && !done {
+			return false, nil
+		}
+	}
+	return true, nil
 }

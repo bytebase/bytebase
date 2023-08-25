@@ -51,6 +51,9 @@ type State struct {
 	// IssueExternalApprovalRelayCancelChan cancels the external approval from relay for issue issueUID.
 	IssueExternalApprovalRelayCancelChan chan int
 
+	// TaskSkippedOrDoneChan is the channel for notifying the task is skipped or done.
+	TaskSkippedOrDoneChan chan int
+
 	sync.Mutex
 }
 
