@@ -539,13 +539,10 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					return errors.Wrapf(err, "failed to list stages")
 				}
 
-				var taskStage, nextStage *store.StageMessage
+				var taskStage *store.StageMessage
 				for i, stage := range stages {
 					if stage.ID == task.StageID {
 						taskStage = stages[i]
-						if i+1 < len(stages) {
-							nextStage = stages[i+1]
-						}
 						break
 					}
 				}
