@@ -33,6 +33,7 @@
   
     - [Engine](#bytebase-store-Engine)
     - [MaskingLevel](#bytebase-store-MaskingLevel)
+    - [VcsType](#bytebase-store-VcsType)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
@@ -79,8 +80,6 @@
     - [Commit](#bytebase-store-Commit)
     - [FileCommit](#bytebase-store-FileCommit)
     - [PushEvent](#bytebase-store-PushEvent)
-  
-    - [VcsType](#bytebase-store-VcsType)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
@@ -569,6 +568,20 @@ Used internally for obfuscating the page token.
 | NONE | 1 |  |
 | PARTIAL | 2 |  |
 | FULL | 3 |  |
+
+
+
+<a name="bytebase-store-VcsType"></a>
+
+### VcsType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITLAB | 1 |  |
+| GITHUB | 2 |  |
+| BITBUCKET | 3 |  |
 
 
  
@@ -1296,20 +1309,6 @@ InstanceOptions is the option for instances.
 
 
  
-
-
-<a name="bytebase-store-VcsType"></a>
-
-### VcsType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITLAB | 1 |  |
-| GITHUB | 2 |  |
-| BITBUCKET | 3 |  |
-
 
  
 
@@ -2289,6 +2288,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | author | [string](#string) |  |  |
 | last_commit_id | [string](#string) |  |  |
 | last_sync_ts | [int64](#int64) |  |  |
+| push_event | [PushEvent](#bytebase-store-PushEvent) |  |  |
 
 
 
