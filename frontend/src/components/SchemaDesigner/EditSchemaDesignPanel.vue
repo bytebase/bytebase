@@ -6,10 +6,7 @@
     :close-on-esc="true"
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
-    <NDrawerContent
-      :title="$t('schema-designer.quick-action')"
-      :closable="true"
-    >
+    <NDrawerContent :title="$t('database.branch')" :closable="true">
       <div
         class="space-y-3 w-full sm:w-[calc(100vw-16rem)] max-w-[calc(100vw-8rem)] overflow-x-auto"
       >
@@ -112,7 +109,7 @@
         <div v-if="!viewMode">
           <BBButtonConfirm
             :style="'DELETE'"
-            :button-text="$t('schema-designer.delete-this-design')"
+            :button-text="$t('database.delete-this-branch')"
             :require-confirm="true"
             @confirm="deleteSchemaDesign"
           />
