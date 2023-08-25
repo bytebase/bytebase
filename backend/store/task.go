@@ -46,7 +46,7 @@ type TaskMessage struct {
 	// Statement used by grouping batch change, Bytebase use it to render.
 	Statement string
 
-	LatestTaskRunStatus *api.TaskRunStatus
+	LatestTaskRunStatus api.TaskRunStatus
 }
 
 func (task *TaskMessage) toTask() *api.Task {
@@ -341,6 +341,10 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		}
 		where = append(where, fmt.Sprintf("task.status in (%s)", strings.Join(list, ",")))
 	}
+	if v := find.LatestTaskRunStatusList; v != nil {
+		where = append(where, fmt.Sprintf("latest_task_run.status = ANY($%d)", len(args)+1))
+		args = append(args, *v)
+	}
 	if v := find.TypeList; v != nil {
 		var list []string
 		for _, taskType := range *v {
@@ -378,7 +382,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			task.database_id,
 			task.name,
 			task.status,
-			latest_task_run.status,
+			COALESCE(latest_task_run.status, 'NOT_STARTED') AS latest_task_run_status,
 			task.type,
 			task.payload,
 			task.earliest_allowed_ts,
@@ -659,8 +663,8 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 	return nil
 }
 
-// ListTasksWithNoTaskRun returns tasks that have no task run.
-func (s *Store) ListTasksWithNoTaskRun(ctx context.Context) ([]int, error) {
+// ListNotSkippedTasksWithNoTaskRun returns tasks that have no task run.
+func (s *Store) ListNotSkippedTasksWithNoTaskRun(ctx context.Context) ([]int, error) {
 	rows, err := s.db.db.QueryContext(ctx, `
 	SELECT
 		task.id
@@ -669,6 +673,7 @@ func (s *Store) ListTasksWithNoTaskRun(ctx context.Context) ([]int, error) {
 		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run
 		ON TRUE
 	WHERE task_run.e IS NULL
+	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
 	ORDER BY task.id`)
 	if err != nil {
 		return nil, err

@@ -545,6 +545,7 @@ func getDatabaseChangeIssueRisk(ctx context.Context, s *store.Store, issue *stor
 	var maxRiskLevel int64
 	tasks, err := s.ListTasks(ctx, &api.TaskFind{
 		PipelineID: issue.PipelineUID,
+		// TODO(p0ny): use latestTaskRunStatus
 		StatusList: &[]api.TaskStatus{api.TaskPendingApproval},
 	})
 	if err != nil {
