@@ -18,7 +18,7 @@ func runExecutorOnce(ctx context.Context, exec Executor, taskCheckRun *store.Tas
 			if !ok {
 				panicErr = errors.Errorf("%v", r)
 			}
-			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("panic-stack"))
+			log.Error("TaskChecker PANIC RECOVER", zap.Error(panicErr), zap.Stack("panic-stack"))
 			result = nil
 			err = errors.Errorf("encounter internal error when executing check")
 		}
