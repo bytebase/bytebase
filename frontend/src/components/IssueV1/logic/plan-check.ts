@@ -5,7 +5,6 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
-  Plan_ChangeDatabaseConfig_Type,
   Plan_Spec,
   Task,
   Task_Status,
@@ -17,14 +16,6 @@ export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
     return false;
   }
   if (spec.changeDatabaseConfig !== undefined) {
-    if (
-      [
-        Plan_ChangeDatabaseConfig_Type.BASELINE,
-        Plan_ChangeDatabaseConfig_Type.BRANCH,
-      ].includes(spec.changeDatabaseConfig.type)
-    ) {
-      return false;
-    }
     return true;
   }
   if (spec.restoreDatabaseConfig !== undefined) {
