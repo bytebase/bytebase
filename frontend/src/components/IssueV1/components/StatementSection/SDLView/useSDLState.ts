@@ -34,7 +34,7 @@ export type SDLEvents = Emittery<{
 
 export const useSDLState = () => {
   const { issue, selectedTask } = useIssueContext();
-  const { sheetStatement } = useTaskSheet();
+  const { sheetStatement, sheetReady } = useTaskSheet();
   const databaseStore = useDatabaseV1Store();
   const events: SDLEvents = new Emittery();
 
@@ -91,11 +91,16 @@ export const useSDLState = () => {
     };
     const diffDDL = await useSilentRequest(getSchemaDiff);
 
-    const { currentSchema, expectedSchema } = await sqlServiceClient.pretty({
-      engine: database.instanceEntity.engine,
-      currentSchema: previousSDL ?? "",
-      expectedSchema: expectedSDL ?? "",
-    });
+    const { currentSchema, expectedSchema } = await sqlServiceClient.pretty(
+      {
+        engine: database.instanceEntity.engine,
+        currentSchema: previousSDL ?? "",
+        expectedSchema: expectedSDL ?? "",
+      },
+      {
+        silent: true,
+      }
+    );
 
     if (task.status === Task_Status.DONE) {
       throw new Error();
@@ -138,8 +143,15 @@ export const useSDLState = () => {
   };
 
   watch(
-    [() => selectedTask.value.name, sheetStatement, changeHistoryName],
-    async ([taskName, statement, changeHistoryName]) => {
+    [
+      () => selectedTask.value.name,
+      sheetStatement,
+      sheetReady,
+      changeHistoryName,
+    ],
+    async ([taskName, statement, sheetReady, changeHistoryName]) => {
+      if (!sheetReady) return;
+
       const task = selectedTask.value;
       if (!map.has(taskName)) {
         map.set(taskName, emptyState(task));
