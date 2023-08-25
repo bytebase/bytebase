@@ -129,7 +129,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							s.stateCfg.InstanceOutstandingConnections[task.InstanceID]--
 							s.stateCfg.Unlock()
 						}()
-						checkResultList, err := executor.Run(ctx, taskCheckRun, task)
+						checkResultList, err := runExecutorOnce(ctx, executor, taskCheckRun, task)
 
 						if err == nil {
 							bytes, err := json.Marshal(api.TaskCheckRunResultPayload{

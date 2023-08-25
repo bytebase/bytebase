@@ -121,7 +121,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 			s.stateCfg.InstanceOutstandingConnections[instanceUID]--
 			s.stateCfg.Unlock()
 		}()
-		results, err := executor.Run(ctx, planCheckRun)
+		results, err := runExecutorOnce(ctx, executor, planCheckRun)
 		if err != nil {
 			s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
 			return
