@@ -42,3 +42,12 @@ message MaskData {
   string semantic_category_id = 4;
   MaskingLevel masking_level = 5;
 }
+
+message MaskingRulePolicy {
+  message MaskingRule {
+    google.type.Expr condition = 1;
+
+    MaskingLevel masking_level = 2;
+  }
+  repeated MaskingRule rules = 1;
+}
