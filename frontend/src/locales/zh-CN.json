@@ -2513,17 +2513,6 @@
           "create_database": "创建数据库",
           "query": "申请查询权限",
           "export": "申请导出数据"
-        },
-        "factor": {
-          "affected_rows": "影响行数",
-          "environment_id": "环境 ID",
-          "project_id": "项目 ID",
-          "database_name": "数据库名称",
-          "db_engine": "数据库引擎",
-          "sql_type": "SQL 类型",
-          "expiration_days": "过期天数",
-          "export_rows": "导出行数",
-          "table_name": "表名称"
         }
       },
       "condition": {
@@ -2822,6 +2811,19 @@
       "created-succeed": "Schema 设计创建成功",
       "updated-succeed": "Schema 设计更新成功",
       "merge-to-main-successfully": "成功合并到主版本"
+    }
+  },
+  "cel": {
+    "factor": {
+      "affected_rows": "影响行数",
+      "environment_id": "环境 ID",
+      "project_id": "项目 ID",
+      "database_name": "数据库名称",
+      "db_engine": "数据库引擎",
+      "sql_type": "SQL 类型",
+      "expiration_days": "过期天数",
+      "export_rows": "导出行数",
+      "table_name": "表名称"
     }
   }
 }

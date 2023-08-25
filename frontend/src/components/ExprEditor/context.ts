@@ -1,15 +1,15 @@
+import type { SelectOption } from "naive-ui";
 import { inject, provide, type InjectionKey, type Ref } from "vue";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { type Factor } from "@/plugins/cel";
 
 export type ExprEditorContext = {
   allowAdmin: Ref<boolean>;
-  allowHighLevelFactors: Ref<boolean>;
-  riskSource: Ref<Risk_Source | undefined>;
+  factorList: Ref<Factor[]>;
+  factorSupportDropdown: Ref<Factor[]>;
+  factorOptionsMap: Ref<Map<Factor, SelectOption[]>>;
 };
 
-export const KEY = Symbol(
-  "bb.custom-approval.expr-editor"
-) as InjectionKey<ExprEditorContext>;
+export const KEY = Symbol("bb.expr-editor") as InjectionKey<ExprEditorContext>;
 
 export const useExprEditorContext = () => {
   return inject(KEY)!;
