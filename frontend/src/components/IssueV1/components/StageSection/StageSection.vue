@@ -2,10 +2,10 @@
   <div class="w-full flex flex-col px-4">
     <div class="flex flex-col lg:flex-row justify-between">
       <template v-for="(stage, index) in stageList" :key="stage.uid">
-        <StageCard :stage="stage" :index="index" class="h-[60px]" />
+        <StageCard :stage="stage" :index="index" class="h-[68px]" />
         <div
           v-if="index < stageList.length - 1"
-          class="hidden lg:block w-5 h-[60px] mr-2 pointer-events-none shrink-0"
+          class="hidden lg:block w-5 h-[68px] mr-2 pointer-events-none shrink-0"
           aria-hidden="true"
         >
           <svg
