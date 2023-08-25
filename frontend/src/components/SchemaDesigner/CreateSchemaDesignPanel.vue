@@ -7,21 +7,18 @@
     :close-on-esc="true"
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
-    <NDrawerContent
-      :title="$t('schema-designer.quick-action')"
-      :closable="true"
-    >
+    <NDrawerContent :title="$t('database.new-branch')" :closable="true">
       <div
-        class="space-y-3 py-1 w-[calc(100vw-24rem)] min-w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+        class="space-y-3 w-full sm:w-[calc(100vw-16rem)] max-w-[calc(100vw-8rem)] overflow-x-auto"
       >
         <div class="w-full flex flex-row justify-start items-center">
           <span class="flex w-40 items-center text-sm">{{
-            $t("common.name")
+            $t("database.branch-name")
           }}</span>
           <BBTextField
             class="w-60 !py-1.5 text-sm"
             :value="state.schemaDesignName"
-            :placeholder="$t('schema-designer.schema-design')"
+            :placeholder="$t('database.branch-name')"
             @input="
               state.schemaDesignName = ($event.target as HTMLInputElement).value
             "
@@ -244,7 +241,7 @@ const handleConfirm = async () => {
       baselineSchema: state.schemaDesign.baselineSchema,
       baselineSchemaMetadata: state.schemaDesign.baselineSchemaMetadata,
       engine: state.schemaDesign.engine,
-      type: state.schemaDesign.type,
+      type: SchemaDesign_Type.MAIN_BRANCH,
       baselineDatabase: baselineDatabase,
       baselineSheetName: baselineSheet.name,
     })

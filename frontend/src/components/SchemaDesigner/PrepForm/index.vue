@@ -2,12 +2,12 @@
   <DrawerContent>
     <template #header>
       <div class="flex flex-col gap-y-1">
-        <span>{{ $t("schema-designer.quick-action") }}</span>
+        <span>{{ $t("database.branches") }}</span>
       </div>
     </template>
 
     <div
-      class="space-y-3 w-[calc(100vw-24rem)] min-w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+      class="space-y-3 w-full sm:w-[calc(100vw-16rem)] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
       <div
         class="w-full border-b pb-2 mb-2 flex flex-row justify-between items-center"
@@ -16,7 +16,7 @@
         <div>
           <NButton type="primary" @click="state.showCreatePanel = true">
             <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
-            <span>{{ $t("schema-designer.new-design") }}</span>
+            <span>{{ $t("database.new-branch") }}</span>
           </NButton>
         </div>
       </div>

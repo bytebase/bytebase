@@ -1496,7 +1496,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ResourceUID:       prodDatabase.UID,
 		ResourceType:      api.PolicyResourceTypeDatabase,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeSensitiveData,
+		Type:              api.PolicyTypeMasking,
 		InheritFromParent: true,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,

@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "store/common.proto";
+import "store/vcs.proto";
 
 option go_package = "generated-go/store";
 
@@ -21,6 +22,8 @@ message SheetPayload {
     string author = 4;
     string last_commit_id = 5;
     int64 last_sync_ts = 6;
+
+    PushEvent push_event = 7;
   }
   VCSPayload vcs_payload = 2;
 

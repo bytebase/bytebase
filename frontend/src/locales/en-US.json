@@ -473,7 +473,11 @@
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account",
-      "show-inactive": "Show inactive members"
+      "show-inactive": "Show inactive members",
+      "remove-self-owner": {
+        "title": "Are you sure to revoke OWNER from yourself?",
+        "description": "Please make sure the remaining OWNER(s) can sign in, otherwise, no one can manage users."
+      }
     },
     "im-integration": {
       "enable": "Enable",
@@ -1173,7 +1177,13 @@
     "alter-schema-in-vcs": "Alter Schema in VCS",
     "change-data": "Change Data",
     "change-data-in-vcs": "Change Data in VCS",
-    "design-schema": "Design Schema",
+    "branch": "Branch",
+    "branches": "Branches",
+    "branching": "Branching",
+    "new-branch": "New branch",
+    "branch-name": "Branch name",
+    "select-branch": "Select a branch",
+    "delete-this-branch": "Delete this branch",
     "table-detail": "Table detail",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
@@ -2785,9 +2795,6 @@
   },
   "schema-designer": {
     "self": "Schema Designer",
-    "new-design": "New Design",
-    "select-design": "Select a schema design",
-    "quick-action": "Design Schema",
     "schema-design": "Schema Design",
     "schema-design-list": "Schema Design List",
     "new-schema-design": "New Schema Design",
@@ -2809,7 +2816,6 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply to database",
-    "delete-this-design": "Delete this design",
     "select-database-placeholder": "Select a database (MySQL only)",
     "message": {
       "created-succeed": "Schema design created successfully",

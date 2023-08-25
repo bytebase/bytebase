@@ -162,6 +162,7 @@ type controller struct {
 	client                   *http.Client
 	grpcConn                 *grpc.ClientConn
 	issueServiceClient       v1pb.IssueServiceClient
+	rolloutServiceClient     v1pb.RolloutServiceClient
 	orgPolicyServiceClient   v1pb.OrgPolicyServiceClient
 	projectServiceClient     v1pb.ProjectServiceClient
 	authServiceClient        v1pb.AuthServiceClient
@@ -189,11 +190,12 @@ type controller struct {
 }
 
 type config struct {
-	dataDir                 string
-	vcsProviderCreator      fake.VCSProviderCreator
-	feishuProverdierCreator fake.FeishuProviderCreator
-	readOnly                bool
-	skipOnboardingData      bool
+	dataDir                   string
+	vcsProviderCreator        fake.VCSProviderCreator
+	feishuProverdierCreator   fake.FeishuProviderCreator
+	readOnly                  bool
+	skipOnboardingData        bool
+	developmentUseV2Scheduler bool
 }
 
 var (
@@ -258,7 +260,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL), config.skipOnboardingData)
+	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL), config.skipOnboardingData, config.developmentUseV2Scheduler)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -337,7 +339,7 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string, skipOnboardingData bool) componentConfig.Profile {
+func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string, skipOnboardingData, developmentUseV2Scheduler bool) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                       testReleaseMode,
 		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
@@ -352,6 +354,7 @@ func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser 
 		FeishuAPIURL:               feishuAPIURL,
 		PgURL:                      pgURL,
 		TestOnlySkipOnboardingData: skipOnboardingData,
+		DevelopmentUseV2Scheduler:  developmentUseV2Scheduler,
 	}
 }
 
@@ -436,6 +439,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	}
 	ctl.grpcConn = grpcConn
 	ctl.issueServiceClient = v1pb.NewIssueServiceClient(ctl.grpcConn)
+	ctl.rolloutServiceClient = v1pb.NewRolloutServiceClient(ctl.grpcConn)
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)

@@ -543,6 +543,10 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		}
 	}
 
+	// If the baseline schema is not found or empty, we use the current schema as the baseline schema.
+	if baselineSchema == "" {
+		baselineSchema = schema
+	}
 	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, baselineSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))

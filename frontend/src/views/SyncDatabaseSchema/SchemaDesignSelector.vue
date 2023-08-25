@@ -4,12 +4,12 @@
       class="w-full mb-4 flex flex-row justify-between items-center space-x-2"
     >
       <span>
-        {{ $t("schema-designer.select-design") }}
+        {{ $t("database.select-branch") }}
       </span>
       <div>
         <NButton @click="state.showCreatePanel = true">
           <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
-          <span>{{ $t("schema-designer.new-design") }}</span>
+          <span>{{ $t("database.new-branch") }}</span>
         </NButton>
       </div>
     </div>
@@ -121,7 +121,7 @@ const selectedSchemaDesign = ref<SchemaDesign | undefined>(
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     { title: "", width: "3rem" },
-    { title: t("common.name"), width: "1fr" },
+    { title: t("database.branch"), width: "1fr" },
     {
       title: t("common.project"),
       width: "1fr",

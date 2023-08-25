@@ -40,8 +40,8 @@ const (
 	PolicyTypeSQLReview PolicyType = "bb.policy.sql-review"
 	// PolicyTypeEnvironmentTier is the tier of an environment.
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
-	// PolicyTypeSensitiveData is the sensitive data policy type.
-	PolicyTypeSensitiveData PolicyType = "bb.policy.sensitive-data"
+	// PolicyTypeMasking is the masking policy type.
+	PolicyTypeMasking PolicyType = "bb.policy.masking"
 	// PolicyTypeMaskingRule is the masking rule policy type.
 	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
 	// PolicyTypeMaskingException is the masking exception policy type.
@@ -95,7 +95,7 @@ var (
 		PolicyTypeBackupPlan:       {PolicyResourceTypeEnvironment},
 		PolicyTypeSQLReview:        {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:  {PolicyResourceTypeEnvironment},
-		PolicyTypeSensitiveData:    {PolicyResourceTypeDatabase},
+		PolicyTypeMasking:          {PolicyResourceTypeDatabase},
 		PolicyTypeSlowQuery:        {PolicyResourceTypeInstance},
 		PolicyTypeDisableCopyData:  {PolicyResourceTypeEnvironment},
 	}

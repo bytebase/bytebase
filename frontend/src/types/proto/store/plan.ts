@@ -59,7 +59,7 @@ export interface PlanConfig_ChangeDatabaseConfig {
   /**
    * The resource name of the target.
    * Format: instances/{instance-id}/databases/{database-name}.
-   * Format: projects/{project}/deploymentConfig.
+   * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
   target: string;
   /**

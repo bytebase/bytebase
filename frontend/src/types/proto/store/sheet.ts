@@ -2,6 +2,7 @@
 import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.store";
 
@@ -56,6 +57,7 @@ export interface SheetPayload_VCSPayload {
   author: string;
   lastCommitId: string;
   lastSyncTs: number;
+  pushEvent?: PushEvent | undefined;
 }
 
 export interface SheetPayload_UsedByIssue {
@@ -225,7 +227,7 @@ export const SheetPayload = {
 };
 
 function createBaseSheetPayload_VCSPayload(): SheetPayload_VCSPayload {
-  return { fileName: "", filePath: "", size: 0, author: "", lastCommitId: "", lastSyncTs: 0 };
+  return { fileName: "", filePath: "", size: 0, author: "", lastCommitId: "", lastSyncTs: 0, pushEvent: undefined };
 }
 
 export const SheetPayload_VCSPayload = {
@@ -247,6 +249,9 @@ export const SheetPayload_VCSPayload = {
     }
     if (message.lastSyncTs !== 0) {
       writer.uint32(48).int64(message.lastSyncTs);
+    }
+    if (message.pushEvent !== undefined) {
+      PushEvent.encode(message.pushEvent, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -300,6 +305,13 @@ export const SheetPayload_VCSPayload = {
 
           message.lastSyncTs = longToNumber(reader.int64() as Long);
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.pushEvent = PushEvent.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -317,6 +329,7 @@ export const SheetPayload_VCSPayload = {
       author: isSet(object.author) ? String(object.author) : "",
       lastCommitId: isSet(object.lastCommitId) ? String(object.lastCommitId) : "",
       lastSyncTs: isSet(object.lastSyncTs) ? Number(object.lastSyncTs) : 0,
+      pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
   },
 
@@ -328,6 +341,8 @@ export const SheetPayload_VCSPayload = {
     message.author !== undefined && (obj.author = message.author);
     message.lastCommitId !== undefined && (obj.lastCommitId = message.lastCommitId);
     message.lastSyncTs !== undefined && (obj.lastSyncTs = Math.round(message.lastSyncTs));
+    message.pushEvent !== undefined &&
+      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
   },
 
@@ -343,6 +358,9 @@ export const SheetPayload_VCSPayload = {
     message.author = object.author ?? "";
     message.lastCommitId = object.lastCommitId ?? "";
     message.lastSyncTs = object.lastSyncTs ?? 0;
+    message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
+      ? PushEvent.fromPartial(object.pushEvent)
+      : undefined;
     return message;
   },
 };

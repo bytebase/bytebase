@@ -442,8 +442,9 @@ func TestVCS(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                   t.TempDir(),
+				vcsProviderCreator:        test.vcsProviderCreator,
+				developmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -519,7 +520,7 @@ func TestVCS(t *testing.T) {
 
 			// Create an issue that creates a database.
 			databaseName := "testVCSSchemaUpdate"
-			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, instance, project.Name, databaseName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -563,9 +564,8 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			// TODO(p0ny): expose task DAG list and check the dependency.
@@ -573,12 +573,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema: 😊create table book", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
-			_, err = ctl.patchIssueStatus(
-				api.IssueStatusPatch{
-					ID:     issue.ID,
-					Status: api.IssueDone,
-				},
-			)
+			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Query schema.
@@ -604,9 +599,8 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.Error(err)
-			a.Equal(api.TaskFailed, status)
 
 			// Simulate Git commits for a correct modified date update.
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile4: dataUpdateStatement})
@@ -626,32 +620,29 @@ func TestVCS(t *testing.T) {
 			a.Len(issues, 1)
 			issue = issues[0]
 
-			a.Len(issue.Pipeline.StageList, 1)
-			stage := issue.Pipeline.StageList[0]
-			a.Len(stage.TaskList, 1)
-			task := stage.TaskList[0]
+			// TODO(d): waiting for approval finding to complete.
+			time.Sleep(2 * time.Second)
+			rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{Name: fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID)})
+			a.NoError(err)
+			a.Len(rollout.Stages, 1)
+			stage := rollout.Stages[0]
+			a.Len(stage.Tasks, 1)
+			task := stage.Tasks[0]
 			// simulate retrying the failed task.
-			_, err = ctl.patchTaskStatus(api.TaskStatusPatch{
-				ID:        task.ID,
-				UpdaterID: api.SystemBotID,
-				Status:    api.TaskPendingApproval,
-			}, issue.Pipeline.ID, task.ID)
+			_, err = ctl.rolloutServiceClient.BatchRunTasks(ctx, &v1pb.BatchRunTasksRequest{
+				Parent: fmt.Sprintf("%s/stages/-", rollout.Name),
+				Tasks:  []string{task.Name},
+			})
 			a.NoError(err)
 
-			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Change data: Insert data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
-			_, err = ctl.patchIssueStatus(
-				api.IssueStatusPatch{
-					ID:     issue.ID,
-					Status: api.IssueDone,
-				},
-			)
+			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
@@ -689,9 +680,8 @@ func TestVCS(t *testing.T) {
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
-			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			environmentResourceID := strings.TrimPrefix(prodEnvironment.Name, "environments/")
 			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, environmentResourceID, databaseName)
 			files, err := ctl.vcsProvider.GetFiles(test.externalID, latestFileName)
@@ -707,35 +697,30 @@ func TestVCS(t *testing.T) {
 			histories := resp.ChangeHistories
 			wantHistories := []*v1pb.ChangeHistory{
 				{
-					Source:     v1pb.ChangeHistory_UI,
 					Type:       v1pb.ChangeHistory_MIGRATE,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema4,
 					PrevSchema: dumpedSchema3,
 				},
 				{
-					Source:     v1pb.ChangeHistory_VCS,
 					Type:       v1pb.ChangeHistory_DATA,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema3,
 					PrevSchema: dumpedSchema3,
 				},
 				{
-					Source:     v1pb.ChangeHistory_VCS,
 					Type:       v1pb.ChangeHistory_MIGRATE,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema3,
 					PrevSchema: dumpedSchema2,
 				},
 				{
-					Source:     v1pb.ChangeHistory_VCS,
 					Type:       v1pb.ChangeHistory_MIGRATE,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema2,
 					PrevSchema: dumpedSchema,
 				},
 				{
-					Source:     v1pb.ChangeHistory_VCS,
 					Type:       v1pb.ChangeHistory_MIGRATE,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema,
@@ -745,14 +730,13 @@ func TestVCS(t *testing.T) {
 			a.Equal(len(wantHistories), len(histories))
 			for i, history := range histories {
 				got := &v1pb.ChangeHistory{
-					Source:     history.Source,
 					Type:       history.Type,
 					Status:     history.Status,
 					Schema:     history.Schema,
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				a.True(proto.Equal(got, want))
+				a.Equal(got, want)
 				a.NotEqual(history.Version, "")
 			}
 
@@ -848,8 +832,9 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                   t.TempDir(),
+				vcsProviderCreator:        test.vcsProviderCreator,
+				developmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -944,7 +929,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, instance, project.Name, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
@@ -971,19 +956,13 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
 			a.Equal("Apply schema diff by file prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
-			_, err = ctl.patchIssueStatus(
-				api.IssueStatusPatch{
-					ID:     issue.ID,
-					Status: api.IssueDone,
-				},
-			)
+			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -1006,19 +985,13 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
-			_, err = ctl.patchIssueStatus(
-				api.IssueStatusPatch{
-					ID:     issue.ID,
-					Status: api.IssueDone,
-				},
-			)
+			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Get migration history
@@ -1103,21 +1076,18 @@ ALTER TABLE ONLY public.users
 			histories := resp.ChangeHistories
 			wantHistories := []*v1pb.ChangeHistory{
 				{
-					Source:     v1pb.ChangeHistory_VCS,
 					Type:       v1pb.ChangeHistory_DATA,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     updatedSchema,
 					PrevSchema: updatedSchema,
 				},
 				{
-					Source:     v1pb.ChangeHistory_VCS,
 					Type:       v1pb.ChangeHistory_MIGRATE_SDL,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     updatedSchema,
 					PrevSchema: initialSchema,
 				},
 				{
-					Source:     v1pb.ChangeHistory_UI,
 					Type:       v1pb.ChangeHistory_MIGRATE,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     initialSchema,
@@ -1127,7 +1097,6 @@ ALTER TABLE ONLY public.users
 			a.Equal(len(wantHistories), len(histories))
 			for i, history := range histories {
 				got := &v1pb.ChangeHistory{
-					Source:     history.Source,
 					Type:       history.Type,
 					Status:     history.Status,
 					Schema:     history.Schema,
@@ -1351,8 +1320,9 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                   t.TempDir(),
+				vcsProviderCreator:        test.vcsProviderCreator,
+				developmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -1432,7 +1402,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabase(ctx, projectUID, instance, dbName, "", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, instance, project.Name, dbName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			a.Equal(len(test.expect), len(test.commitNewFileNames))
@@ -1460,15 +1430,9 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				if test.expect[idx] {
 					a.Len(issues, 1)
 					issue := issues[0]
-					status, err := ctl.waitIssuePipeline(ctx, issue.ID)
+					err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 					a.NoError(err)
-					a.Equal(api.TaskDone, status)
-					_, err = ctl.patchIssueStatus(
-						api.IssueStatusPatch{
-							ID:     issue.ID,
-							Status: api.IssueDone,
-						},
-					)
+					err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 					a.NoError(err)
 				} else {
 					a.Len(issues, 0)
@@ -2435,8 +2399,9 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                   t.TempDir(),
+				vcsProviderCreator:        test.vcsProviderCreator,
+				developmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -2540,7 +2505,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, instance, project.Name, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
@@ -2567,19 +2532,13 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("Apply schema diff by file prod/.%s##LATEST.sql", databaseName), issue.Description)
-			_, err = ctl.patchIssueStatus(
-				api.IssueStatusPatch{
-					ID:     issue.ID,
-					Status: api.IssueDone,
-				},
-			)
+			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -2602,19 +2561,13 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Change data: Insert data", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("By VCS files:\n\nprod/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
-			_, err = ctl.patchIssueStatus(
-				api.IssueStatusPatch{
-					ID:     issue.ID,
-					Status: api.IssueDone,
-				},
-			)
+			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Get migration history
@@ -2664,14 +2617,12 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			histories := resp.ChangeHistories
 			wantHistories := []*v1pb.ChangeHistory{
 				{
-					Source:     v1pb.ChangeHistory_VCS,
 					Type:       v1pb.ChangeHistory_DATA,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     updatedSchema,
 					PrevSchema: updatedSchema,
 				},
 				{
-					Source:     v1pb.ChangeHistory_VCS,
 					Type:       v1pb.ChangeHistory_MIGRATE_SDL,
 					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     updatedSchema,
@@ -2681,14 +2632,13 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.Equal(len(wantHistories), len(histories))
 			for i, history := range histories {
 				got := &v1pb.ChangeHistory{
-					Source:     history.Source,
 					Type:       history.Type,
 					Status:     history.Status,
 					Schema:     history.Schema,
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				a.True(proto.Equal(got, want))
+				a.Equal(got, want)
 				a.NotEqual(history.Version, "")
 			}
 

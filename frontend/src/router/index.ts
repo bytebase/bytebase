@@ -158,16 +158,16 @@ const routes: Array<RouteRecordRaw> = [
               quickActionListByRole: () => {
                 const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
                   "quickaction.bb.database.schema.update",
-                  "quickaction.bb.database.schema.design",
                   "quickaction.bb.database.data.update",
+                  "quickaction.bb.database.branching",
                   "quickaction.bb.database.create",
                   "quickaction.bb.instance.create",
                   "quickaction.bb.project.create",
                 ];
                 const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
                   "quickaction.bb.database.schema.update",
-                  "quickaction.bb.database.schema.design",
                   "quickaction.bb.database.data.update",
+                  "quickaction.bb.database.branching",
                   "quickaction.bb.database.create",
                   "quickaction.bb.issue.grant.request.querier",
                   "quickaction.bb.issue.grant.request.exporter",
@@ -673,7 +673,7 @@ const routes: Array<RouteRecordRaw> = [
                 if (project.state === State.ACTIVE) {
                   const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
                     "quickaction.bb.database.schema.update",
-                    "quickaction.bb.database.schema.design",
+                    "quickaction.bb.database.branching",
                     "quickaction.bb.database.data.update",
                     "quickaction.bb.database.create",
                     "quickaction.bb.project.database.transfer",
@@ -694,8 +694,8 @@ const routes: Array<RouteRecordRaw> = [
                     // to be changed.
                     DEVELOPER_QUICK_ACTION_LIST.push(
                       "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.schema.design",
                       "quickaction.bb.database.data.update",
+                      "quickaction.bb.database.branching",
                       "quickaction.bb.database.create"
                     );
                   }
@@ -835,14 +835,14 @@ const routes: Array<RouteRecordRaw> = [
               quickActionListByRole: () => {
                 const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
                   "quickaction.bb.database.schema.update",
-                  "quickaction.bb.database.schema.design",
                   "quickaction.bb.database.data.update",
+                  "quickaction.bb.database.branching",
                   "quickaction.bb.database.create",
                 ];
                 const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
                   "quickaction.bb.database.schema.update",
-                  "quickaction.bb.database.schema.design",
                   "quickaction.bb.database.data.update",
+                  "quickaction.bb.database.branching",
                   "quickaction.bb.database.create",
                   "quickaction.bb.issue.grant.request.querier",
                   "quickaction.bb.issue.grant.request.exporter",

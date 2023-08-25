@@ -6,12 +6,9 @@
     :close-on-esc="true"
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
-    <NDrawerContent
-      :title="$t('schema-designer.quick-action')"
-      :closable="true"
-    >
+    <NDrawerContent :title="$t('database.branch')" :closable="true">
       <div
-        class="space-y-3 w-[calc(100vw-24rem)] min-w-[64rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+        class="space-y-3 w-full sm:w-[calc(100vw-16rem)] max-w-[calc(100vw-8rem)] overflow-x-auto"
       >
         <div
           class="w-full border-b pb-2 mb-2 flex flex-row justify-between items-center"
@@ -33,7 +30,7 @@
 
             <NDropdown
               v-if="!state.isEditing && schemaDesignDrafts.length > 0"
-              class="max-w-[10rem]"
+              class="max-w-[16rem]"
               trigger="click"
               :options="schemaDesignDraftDropdownOptions"
               :render-label="renderDraftsLabel"
@@ -112,7 +109,7 @@
         <div v-if="!viewMode">
           <BBButtonConfirm
             :style="'DELETE'"
-            :button-text="$t('schema-designer.delete-this-design')"
+            :button-text="$t('database.delete-this-branch')"
             :require-confirm="true"
             @confirm="deleteSchemaDesign"
           />
@@ -161,7 +158,11 @@ import { computed, h, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DatabaseV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+} from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -170,7 +171,10 @@ import {
 } from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
 import ResolveConflictPanel from "./ResolveConflictPanel.vue";
-import { mergeSchemaEditToMetadata } from "./common/util";
+import {
+  mergeSchemaEditToMetadata,
+  validateDatabaseMetadata,
+} from "./common/util";
 import SchemaDesigner from "./index.vue";
 
 interface LocalState {
@@ -190,6 +194,7 @@ const emit = defineEmits(["dismiss"]);
 
 const { t } = useI18n();
 const router = useRouter();
+const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const dialog = useDialog();
@@ -217,7 +222,8 @@ const schemaDesignDrafts = computed(() => {
   return schemaDesignStore.schemaDesignList.filter((schemaDesign) => {
     return (
       schemaDesign.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-      schemaDesign.baselineSheetName === props.schemaDesignName
+      schemaDesign.baselineSheetName === props.schemaDesignName &&
+      schemaDesign.creator === `users/${currentUserV1.value.email}`
     );
   });
 });
@@ -286,7 +292,7 @@ const renderDraftsLabel = (option: DropdownOption) => {
       h(
         "span",
         {
-          class: "text-xs font-mono shrink-0 text-gray-400 ml-1 mt-0.5",
+          class: "text-xs font-mono shrink-0 text-gray-400 ml-2 mt-0.5",
         },
         [
           schemaDesign.name === props.schemaDesignName
@@ -328,7 +334,9 @@ const handleCancelEdit = () => {
 
   const metadata = mergeSchemaEditToMetadata(
     schemaDesignerRef.value?.editableSchemas || [],
-    schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+    cloneDeep(
+      schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+    )
   );
   // If the metadata is changed, we need to rebuild the editing state.
   if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
@@ -361,9 +369,20 @@ const handleSaveSchemaDesignDraft = async () => {
   const mergedMetadata = mergeSchemaEditToMetadata(
     designerState.editableSchemas,
     cloneDeep(
-      schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
+      schemaDesign.value.baselineSchemaMetadata ||
+        DatabaseMetadata.fromPartial({})
     )
   );
+  const validationMessages = validateDatabaseMetadata(mergedMetadata);
+  if (validationMessages.length > 0) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: "Invalid schema design",
+      description: validationMessages.join("\n"),
+    });
+    return;
+  }
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     updateMask.push("metadata");
   }

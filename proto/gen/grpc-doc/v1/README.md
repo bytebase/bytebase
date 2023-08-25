@@ -7482,7 +7482,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
-| target | [string](#string) |  | Format: instances/{instance}/databases/{database} Format: projects/{project}/databaseGroups/{databaseGroup} |
+| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 | error | [string](#string) |  | error is set if the Status is FAILED. |
@@ -9055,6 +9055,7 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | type | [Sheet.Type](#bytebase-v1-Sheet-Type) |  | The type of the sheet. |
 | starred | [bool](#bool) |  | starred indicates whether the sheet is starred by the current authenticated user. |
 | payload | [string](#string) |  | TODO: deprecate this field. |
+| push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 
 
 
