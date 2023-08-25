@@ -43,6 +43,32 @@ message MaskData {
   MaskingLevel masking_level = 5;
 }
 
+// MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+message MaskingExceptionPolicy {
+  message MaskingException {
+    enum Action {
+      ACTION_UNSPECIFIED = 0;
+      QUERY = 1;
+      EXPORT = 2;
+    }
+    // action is the action that the user can access sensitive data.
+    Action action = 1;
+
+    // Level is the masking level that the user can access sensitive data.
+    MaskingLevel masking_level = 2;
+
+    // Members is the list of principals who bind to this exception policy instance.
+    //
+    // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+    repeated string members = 3;
+
+    // The condition that is associated with this exception policy instance.
+    google.type.Expr condition = 4;
+  }
+
+  repeated MaskingException masking_exceptions = 1;
+}
+
 message MaskingRulePolicy {
   message MaskingRule {
     // A unique identifier for a node in UUID format.
