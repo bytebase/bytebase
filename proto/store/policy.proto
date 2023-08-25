@@ -51,8 +51,8 @@ message MaskingExceptionPolicy {
       QUERY = 1;
       EXPORT = 2;
     }
-    // action is the action that the user can access sensitive data.
-    Action action = 1;
+    // actions are the actions that the user can access sensitive data.
+    repeated Action actions = 1;
 
     // Level is the masking level that the user can access sensitive data.
     MaskingLevel masking_level = 2;

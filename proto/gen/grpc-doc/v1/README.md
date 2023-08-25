@@ -1101,7 +1101,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
+| actions | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) | repeated | actions are the actions that the user can access sensitive data. |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
 | members | [string](#string) | repeated | Members is the list of principals who bind to this exception policy instance.
 

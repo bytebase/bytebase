@@ -51,8 +51,8 @@ export interface MaskingExceptionPolicy {
 }
 
 export interface MaskingExceptionPolicy_MaskingException {
-  /** action is the action that the user can access sensitive data. */
-  action: MaskingExceptionPolicy_MaskingException_Action;
+  /** actions are the actions that the user can access sensitive data. */
+  actions: MaskingExceptionPolicy_MaskingException_Action[];
   /** Level is the masking level that the user can access sensitive data. */
   maskingLevel: MaskingLevel;
   /**
@@ -507,14 +507,16 @@ export const MaskingExceptionPolicy = {
 };
 
 function createBaseMaskingExceptionPolicy_MaskingException(): MaskingExceptionPolicy_MaskingException {
-  return { action: 0, maskingLevel: 0, members: [], condition: undefined };
+  return { actions: [], maskingLevel: 0, members: [], condition: undefined };
 }
 
 export const MaskingExceptionPolicy_MaskingException = {
   encode(message: MaskingExceptionPolicy_MaskingException, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.action !== 0) {
-      writer.uint32(8).int32(message.action);
+    writer.uint32(10).fork();
+    for (const v of message.actions) {
+      writer.int32(v);
     }
+    writer.ldelim();
     if (message.maskingLevel !== 0) {
       writer.uint32(16).int32(message.maskingLevel);
     }
@@ -535,12 +537,22 @@ export const MaskingExceptionPolicy_MaskingException = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
-            break;
+          if (tag === 8) {
+            message.actions.push(reader.int32() as any);
+
+            continue;
           }
 
-          message.action = reader.int32() as any;
-          continue;
+          if (tag === 10) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.actions.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
         case 2:
           if (tag !== 16) {
             break;
@@ -573,7 +585,9 @@ export const MaskingExceptionPolicy_MaskingException = {
 
   fromJSON(object: any): MaskingExceptionPolicy_MaskingException {
     return {
-      action: isSet(object.action) ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action) : 0,
+      actions: Array.isArray(object?.actions)
+        ? object.actions.map((e: any) => maskingExceptionPolicy_MaskingException_ActionFromJSON(e))
+        : [],
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
       members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
@@ -582,7 +596,11 @@ export const MaskingExceptionPolicy_MaskingException = {
 
   toJSON(message: MaskingExceptionPolicy_MaskingException): unknown {
     const obj: any = {};
-    message.action !== undefined && (obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action));
+    if (message.actions) {
+      obj.actions = message.actions.map((e) => maskingExceptionPolicy_MaskingException_ActionToJSON(e));
+    } else {
+      obj.actions = [];
+    }
     message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
     if (message.members) {
       obj.members = message.members.map((e) => e);
@@ -599,7 +617,7 @@ export const MaskingExceptionPolicy_MaskingException = {
 
   fromPartial(object: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
     const message = createBaseMaskingExceptionPolicy_MaskingException();
-    message.action = object.action ?? 0;
+    message.actions = object.actions?.map((e) => e) || [];
     message.maskingLevel = object.maskingLevel ?? 0;
     message.members = object.members?.map((e) => e) || [];
     message.condition = (object.condition !== undefined && object.condition !== null)
