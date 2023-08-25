@@ -648,7 +648,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		}
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal masking rule policy")
+			return "", errors.Wrap(err, "failed to marshal masking exception policy")
 		}
 		return string(payloadBytes), nil
 	}
@@ -751,11 +751,11 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		pType = v1pb.PolicyType_MASKING_EXCEPTION
 		maskingRulePolicy := &storepb.MaskingExceptionPolicy{}
 		if err := protojson.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal masking rule policy")
+			return nil, errors.Wrap(err, "failed to unmarshal masking exception policy")
 		}
 		payload, err := convertToV1PBMaskingExceptionPolicyPayload(maskingRulePolicy)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert masking rule policy")
+			return nil, errors.Wrap(err, "failed to convert masking exception policy")
 		}
 		policy.Policy = &v1pb.Policy_MaskingExceptionPolicy{
 			MaskingExceptionPolicy: payload,
