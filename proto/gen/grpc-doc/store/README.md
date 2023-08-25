@@ -2198,7 +2198,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for semantic category. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| id | [string](#string) |  | id is the uuid for category item. |
 | title | [string](#string) |  | the title of the category item, it should not be empty. |
 | description | [string](#string) |  | the description of the category item, it can be empty.
 
