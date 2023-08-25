@@ -841,7 +841,7 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to convert create view statement to string")
 			}
-			return nil, errors.Errorf("unsupported create view statement which select is not select ast node", stmtStr)
+			return nil, errors.Errorf("unsupported create view statement %q which select is not select ast node", stmtStr)
 		}
 	}
 
