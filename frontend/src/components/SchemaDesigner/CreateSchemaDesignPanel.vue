@@ -1,17 +1,17 @@
 <template>
   <NDrawer
+    class="min-w-[calc(100%-10rem)] max-w-full"
     :show="true"
-    width="auto"
     :auto-focus="false"
     :trap-focus="false"
     :close-on-esc="true"
+    :native-scrollbar="true"
+    resizable
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
     <NDrawerContent :title="$t('database.new-branch')" :closable="true">
-      <div
-        class="space-y-3 w-full sm:w-[calc(100vw-16rem)] max-w-[calc(100vw-8rem)] overflow-x-auto"
-      >
-        <div class="w-full flex flex-row justify-start items-center">
+      <div class="space-y-3 w-full overflow-x-auto">
+        <div class="w-full flex flex-row justify-start items-center mt-1">
           <span class="flex w-40 items-center text-sm">{{
             $t("database.branch-name")
           }}</span>
