@@ -2151,6 +2151,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 	for _, database := range databases {
 		find := &api.TaskFind{
 			DatabaseID: &database.UID,
+			// TODO(p0ny): use latestTaskRunStatus
 			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
 			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
 			Payload:    fmt.Sprintf("task.payload->>'schemaVersion' = '%s'", schemaVersion),
