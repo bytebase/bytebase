@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
+	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -1479,7 +1481,7 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 		if extractor.schemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerTable := strings.ToLower(tableName)
-			if lowerDatabase == strings.ToLower(database.Name) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
 				for _, table := range database.TableList {
 					if lowerTable == strings.ToLower(table.Name) {
 						explicitDatabase := databaseName
@@ -1503,10 +1505,11 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 		}
 	}
 
-	if database, schema, err := extractor.findViewSchema(databaseName, tableName); err == nil {
-		// nolint:nilerr
+	database, schema, err := extractor.findViewSchema(databaseName, tableName)
+	if err == nil {
 		return database, schema, nil
 	}
+	log.Debug("failed to extract sensitive field from view", zap.Error(err))
 	return "", db.TableSchema{}, errors.Errorf("Table or view %q.%q not found", databaseName, tableName)
 }
 
@@ -1539,7 +1542,7 @@ func (extractor *sensitiveFieldExtractor) findViewSchema(databaseName string, vi
 		if extractor.schemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerView := strings.ToLower(viewName)
-			if lowerDatabase == strings.ToLower(database.Name) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
 				for _, view := range database.ViewList {
 					if lowerView == strings.ToLower(view.Name) {
 						explicitDatabase := databaseName
