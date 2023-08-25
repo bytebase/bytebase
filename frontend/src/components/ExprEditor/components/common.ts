@@ -1,5 +1,10 @@
 import { type Ref, computed } from "vue";
-import { ConditionExpr, type Factor } from "@/plugins/cel";
+import {
+  ConditionExpr,
+  getOperatorListByFactor as getRawOperatorListByFactor,
+  type Factor,
+  type Operator,
+} from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 import { useExprEditorContext } from "../context";
 
@@ -21,4 +26,13 @@ export const factorText = (factor: Factor) => {
     return t(keypath);
   }
   return factor;
+};
+
+export const getOperatorListByFactor = (
+  factor: Factor,
+  factorOperatorOverrideMap: Map<Factor, Operator[]> | undefined
+): Operator[] => {
+  return (
+    factorOperatorOverrideMap?.get(factor) ?? getRawOperatorListByFactor(factor)
+  );
 };

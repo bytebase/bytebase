@@ -18,16 +18,16 @@ import {
   type Operator,
   type ConditionOperator,
   type ConditionExpr,
-  getOperatorListByFactor,
 } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
+import { getOperatorListByFactor } from "./common";
 
 const props = defineProps<{
   expr: ConditionExpr;
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin } = context;
+const { allowAdmin, factorOperatorOverrideMap } = context;
 
 const operator = computed({
   get() {
@@ -52,7 +52,10 @@ const OPERATOR_DICT = new Map([
 ]);
 
 const options = computed(() => {
-  const operators = getOperatorListByFactor(factor.value);
+  const operators = getOperatorListByFactor(
+    factor.value,
+    factorOperatorOverrideMap.value
+  );
 
   const mapOption = (op: Operator): SelectOption => {
     const label = OPERATOR_DICT.get(op) ?? op.replace(/^@/g, "");

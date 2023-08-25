@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watch } from "vue";
+import { computed, reactive, ref, unref, watch, watchEffect } from "vue";
 import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
 import {
   ComposedInstance,
@@ -248,19 +248,23 @@ export const useInstanceV1ByUID = (uid: MaybeRef<string>) => {
   return { instance, ready };
 };
 
-export const useInstanceV1List = (showDeleted: MaybeRef<boolean> = false) => {
+export const useInstanceV1List = (
+  showDeleted: MaybeRef<boolean> = false,
+  forceUpdate = false
+) => {
   const store = useInstanceV1Store();
   const ready = ref(false);
-  watch(
-    () => unref(showDeleted),
-    (showDeleted) => {
-      ready.value = false;
-      store.fetchInstanceList(showDeleted).then(() => {
-        ready.value = true;
-      });
-    },
-    { immediate: true }
-  );
+  watchEffect(() => {
+    if (!unref(forceUpdate)) {
+      ready.value = true;
+      return;
+    }
+
+    ready.value = false;
+    store.fetchInstanceList(unref(showDeleted)).then(() => {
+      ready.value = true;
+    });
+  });
   const instanceList = computed(() => {
     if (unref(showDeleted)) {
       return store.instanceList;
