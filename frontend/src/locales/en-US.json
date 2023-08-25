@@ -2826,7 +2826,7 @@
     "tables": "Tables",
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
-    "apply-to-database": "Apply to database",
+    "apply-to-database": "Apply change to database",
     "select-database-placeholder": "Select a database (MySQL only)",
     "message": {
       "created-succeed": "Schema design created successfully",

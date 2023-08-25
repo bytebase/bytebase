@@ -91,6 +91,7 @@
     "id": "ID",
     "name": "Nombre",
     "creator": "Creador",
+    "updater": "Actualizador",
     "version": "Versión",
     "issue": "Incidencia",
     "issues": "Incidencias",
@@ -2823,7 +2824,7 @@
     "tables": "Tablas",
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
-    "apply-to-database": "Aplicar a la base de datos",
+    "apply-to-database": "Aplicar cambio a la base de datos",
     "select-database-placeholder": "Seleccionar base de datos (sólo MySQL)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
