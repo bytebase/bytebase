@@ -951,14 +951,13 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 	return v1pbTask, nil
 }
 
-func convertToTaskStatus(latestTaskRunStatus *api.TaskRunStatus, skipped bool) v1pb.Task_Status {
+func convertToTaskStatus(latestTaskRunStatus api.TaskRunStatus, skipped bool) v1pb.Task_Status {
 	if skipped {
 		return v1pb.Task_SKIPPED
 	}
-	if latestTaskRunStatus == nil {
+	switch latestTaskRunStatus {
+	case api.TaskRunNotStarted:
 		return v1pb.Task_NOT_STARTED
-	}
-	switch *latestTaskRunStatus {
 	case api.TaskRunPending:
 		return v1pb.Task_PENDING
 	case api.TaskRunRunning:
