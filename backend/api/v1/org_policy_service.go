@@ -606,6 +606,9 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal masking rule policy")
+		}
 
 		return string(payloadBytes), nil
 	}
@@ -1154,8 +1157,6 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeSlowQuery, nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA.String():
 		return api.PolicyTypeDisableCopyData, nil
-	case v1pb.PolicyType_MASKING_RULE.String():
-		return api.PolicyTypeMaskingRule, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
 }
