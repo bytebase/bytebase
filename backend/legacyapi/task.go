@@ -275,7 +275,7 @@ type Task struct {
 	// OUTPUT ONLY, used by grouping batch change.
 	Statement string `jsonapi:"attr,statement"`
 	// For v1 api compatibility.
-	LatestTaskRunStatus *TaskRunStatus
+	LatestTaskRunStatus TaskRunStatus
 }
 
 // Progress is a generalized struct which can track the progress of a task.
@@ -311,6 +311,8 @@ type TaskFind struct {
 	Payload         string
 	NoBlockingStage bool
 	NonRollbackTask bool
+
+	LatestTaskRunStatusList *[]TaskRunStatus
 }
 
 func (find *TaskFind) String() string {
