@@ -2,7 +2,7 @@
   <DrawerContent>
     <template #header>
       <div class="flex flex-col gap-y-1">
-        <span>{{ $t("schema-designer.quick-action") }}</span>
+        <span>{{ $t("database.branches") }}</span>
       </div>
     </template>
 
@@ -16,7 +16,7 @@
         <div>
           <NButton type="primary" @click="state.showCreatePanel = true">
             <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
-            <span>{{ $t("schema-designer.new-design") }}</span>
+            <span>{{ $t("database.new-branch") }}</span>
           </NButton>
         </div>
       </div>

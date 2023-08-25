@@ -63,7 +63,7 @@
           >
         </div>
         <div>
-          <span>{{ $t("schema-designer.schema-design") }} - </span>
+          <span>{{ $t("database.branch") }} - </span>
           <span
             class="normal-link inline-flex items-center"
             @click="state.showViewSchemaDesignPanel = true"
