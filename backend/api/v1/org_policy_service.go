@@ -513,6 +513,11 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition.Expression); err != nil {
 				return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid masking exception expression: %v", err))
 			}
+			for _, member := range exception.Members {
+				if !strings.HasPrefix(member, "user:") {
+					return status.Errorf(codes.InvalidArgument, "masking exception member must start with user:")
+				}
+			}
 		}
 	default:
 	}
@@ -1193,10 +1198,15 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.Ma
 func convertToStorePBMaskingExceptionPolicyPayload(policy *v1pb.MaskingExceptionPolicy) (*storepb.MaskingExceptionPolicy, error) {
 	var exceptions []*storepb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
+		var members []string
+		for _, member := range exception.Members {
+			member = strings.TrimPrefix(member, "user:")
+			members = append(members, member)
+		}
 		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToStorePBAction(exception.Action),
 			MaskingLevel: convertToStorePBMaskingLevel(exception.MaskingLevel),
-			Members:      exception.Members,
+			Members:      members,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,
@@ -1214,10 +1224,15 @@ func convertToStorePBMaskingExceptionPolicyPayload(policy *v1pb.MaskingException
 func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingExceptionPolicy) (*v1pb.MaskingExceptionPolicy, error) {
 	var exceptions []*v1pb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
+		var members []string
+		for _, member := range exception.Members {
+			member = fmt.Sprintf("user:%s", member)
+			members = append(members, member)
+		}
 		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToV1PBAction(exception.Action),
 			MaskingLevel: convertToV1PBMaskingLevel(exception.MaskingLevel),
-			Members:      exception.Members,
+			Members:      members,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,
