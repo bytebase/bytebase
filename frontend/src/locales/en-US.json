@@ -596,7 +596,18 @@
     },
     "sensitive-data": {
       "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
-      "remove-sensitive-column-tips": "Expose this column?"
+      "remove-sensitive-column-tips": "Expose this column?",
+      "sensitive-column-list": "Sensitive Column List",
+      "global-masking-rule": "Global Masking Rule",
+      "data-feature": "Data Feature",
+      "add-rule": "Add rule",
+      "masking-level": {
+        "self": "Masking Level",
+        "selet-level": "Select level",
+        "none": "None",
+        "partial": "Partial",
+        "full": "Full"
+      }
     },
     "access-control": {
       "description": "Configure approval flow to control data query and export. {link}",
