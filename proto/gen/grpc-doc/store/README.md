@@ -120,6 +120,8 @@
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingPolicy](#bytebase-store-MaskingPolicy)
+    - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
+    - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
@@ -1859,6 +1861,37 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingRulePolicy"></a>
+
+### MaskingRulePolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingRulePolicy-MaskingRule"></a>
+
+### MaskingRulePolicy.MaskingRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
 
 
 
