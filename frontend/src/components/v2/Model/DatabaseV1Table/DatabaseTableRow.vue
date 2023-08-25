@@ -47,45 +47,11 @@
     {{ database.schemaVersion }}
   </div>
   <div v-if="showProjectColumn" class="bb-grid-cell">
-    <div class="flex flex-row space-x-2 items-center">
-      <ProjectV1Name
-        :project="database.projectEntity"
-        :link="false"
-        tag="div"
-      />
-      <div
-        v-if="
-          showTenantIcon &&
-          database.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
-        "
-        class="tooltip-wrapper"
-      >
-        <span class="tooltip whitespace-nowrap">
-          {{ $t("project.mode.batch") }}
-        </span>
-        <TenantIcon class="w-4 h-4 text-control" />
-      </div>
-      <div class="tooltip-wrapper">
-        <svg
-          v-if="database.projectEntity.workflow === Workflow.UI"
-          class="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        ></svg>
-        <template v-else-if="database.projectEntity.workflow === Workflow.VCS">
-          <span v-if="mode === 'ALL_SHORT'" class="tooltip w-40">
-            {{ $t("alter-schema.vcs-info") }}
-          </span>
-          <span v-else class="tooltip whitespace-nowrap">
-            {{ $t("database.gitops-enabled") }}
-          </span>
-
-          <GitIcon class="w-4 h-4 text-control hover:text-control-hover" />
-        </template>
-      </div>
-    </div>
+    <ProjectCol
+      :project="database.projectEntity"
+      :mode="mode"
+      :show-tenant-icon="showTenantIcon"
+    />
   </div>
   <div v-if="showInstanceColumn" class="bb-grid-cell">
     <InstanceV1Name
@@ -144,8 +110,8 @@ import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import { isPITRDatabaseV1 } from "@/utils";
+import ProjectCol from "./ProjectCol.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;
