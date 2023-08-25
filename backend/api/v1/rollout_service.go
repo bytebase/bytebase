@@ -840,6 +840,10 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 					if err != nil {
 						return status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 					}
+					if taskPayload.SheetID == sheetID {
+						return nil
+					}
+
 					sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 						UID: &sheetID,
 					}, api.SystemBotID)
@@ -863,9 +867,13 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				continue
 			}
 
-			taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
-			if err != nil {
+			if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+			}
+
+			taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
 			}
 
 			// enqueue or cancel after it's written to the database.

@@ -311,6 +311,8 @@ type TaskFind struct {
 	Payload         string
 	NoBlockingStage bool
 	NonRollbackTask bool
+
+	LatestTaskRunStatusList *[]TaskRunStatus
 }
 
 func (find *TaskFind) String() string {

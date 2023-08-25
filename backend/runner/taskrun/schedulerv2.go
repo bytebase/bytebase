@@ -91,7 +91,7 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 }
 
 func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
-	taskIDs, err := s.store.ListTasksWithNoTaskRun(ctx)
+	taskIDs, err := s.store.ListNotSkippedTasksWithNoTaskRun(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list tasks with zero task run")
 	}
@@ -108,6 +108,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
+
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return err

@@ -69,9 +69,9 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 // It is currently called when Bytebase server starts and only rerun unfinished generation.
 func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
-		StatusList: &[]api.TaskStatus{api.TaskDone},
-		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
+		LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunDone},
+		TypeList:                &[]api.TaskType{api.TaskDatabaseDataUpdate},
+		Payload:                 "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
 	}
 	taskList, err := r.store.ListTasks(ctx, find)
 	if err != nil {
