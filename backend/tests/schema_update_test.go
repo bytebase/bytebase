@@ -68,16 +68,15 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                   dataDir,
+		vcsProviderCreator:        fake.NewGitLab,
+		developmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
 	// Create a project.
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision an instance.
@@ -103,14 +102,12 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
-	a.NoError(err)
-	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
@@ -124,32 +121,10 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	createContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Migrate,
-				DatabaseID:    databaseUID,
-				SheetID:       sheetUID,
-			},
-		},
-	})
+	_, _, err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("update schema for database %q", databaseName),
-		Type:          api.IssueDatabaseSchemaUpdate,
-		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
@@ -167,32 +142,10 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	sheetUID, err = strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
 	// Create an issue that updates database data.
-	createContext, err = json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Data,
-				DatabaseID:    databaseUID,
-				SheetID:       sheetUID,
-			},
-		},
-	})
+	_, _, err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
 	a.NoError(err)
-	issue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("update data for database %q", databaseName),
-		Type:          api.IssueDatabaseDataUpdate,
-		Description:   fmt.Sprintf("This updates the data of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-	status, err = ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	// Get migration history.
 	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
@@ -226,7 +179,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			PrevSchema: history.PrevSchema,
 		}
 		want := wantHistories[i]
-		a.True(proto.Equal(got, want))
+		a.Equal(want, got)
 		a.NotEqual(history.Version, "")
 	}
 
@@ -244,7 +197,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	cloneDatabaseName := "testClone"
-	err = ctl.cloneDatabaseFromBackup(ctx, projectUID, instance, cloneDatabaseName, backup, nil /* labelMap */)
+	err = ctl.createDatabaseFromBackup(ctx, project, instance, cloneDatabaseName, "" /* owner */, nil /* labels */, backup)
 	a.NoError(err)
 	cloneDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, cloneDatabaseName)})
 	a.NoError(err)
@@ -520,7 +473,7 @@ func TestVCS(t *testing.T) {
 
 			// Create an issue that creates a database.
 			databaseName := "testVCSSchemaUpdate"
-			err = ctl.createDatabaseV2(ctx, instance, project.Name, databaseName, "", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -929,7 +882,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabaseV2(ctx, instance, project.Name, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
@@ -1402,7 +1355,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabaseV2(ctx, instance, project.Name, dbName, "", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, dbName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			a.Equal(len(test.expect), len(test.commitNewFileNames))
@@ -2505,7 +2458,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabaseV2(ctx, instance, project.Name, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
