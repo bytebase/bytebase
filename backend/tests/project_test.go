@@ -2,9 +2,7 @@ package tests
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,8 +21,9 @@ func TestArchiveProject(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                   dataDir,
+		vcsProviderCreator:        fake.NewGitLab,
+		developmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -49,17 +48,13 @@ func TestArchiveProject(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
 
 	t.Run("ArchiveProjectWithDatbase", func(t *testing.T) {
 		project, err := ctl.createProject(ctx)
 		a.NoError(err)
-		projectUID, err := strconv.Atoi(project.Uid)
-		a.NoError(err)
 
 		databaseName := "db1"
-		err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
+		err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "", nil)
 		a.NoError(err)
 
 		_, err = ctl.projectServiceClient.DeleteProject(ctx, &v1pb.DeleteProjectRequest{
@@ -71,28 +66,36 @@ func TestArchiveProject(t *testing.T) {
 	t.Run("ArchiveProjectWithOpenIssue", func(t *testing.T) {
 		project, err := ctl.createProject(ctx)
 		a.NoError(err)
-		projectUID, err := strconv.Atoi(project.Uid)
+
+		plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+			Parent: project.Name,
+			Plan: &v1pb.Plan{
+				Steps: []*v1pb.Plan_Step{
+					{
+						Specs: []*v1pb.Plan_Spec{
+							{
+								Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
+									CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+										Target:   instance.Name,
+										Database: "fakedb",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
 		a.NoError(err)
-
-		databaseName := "fakedb"
-		createDatabaseCtx := &api.CreateDatabaseContext{
-			InstanceID:   instanceUID,
-			DatabaseName: databaseName,
-			Labels:       "",
-			CharacterSet: "utf8mb4",
-			Collation:    "utf8mb4_general_ci",
-		}
-
-		c, err := json.Marshal(createDatabaseCtx)
-		a.NoError(err)
-
-		_, err = ctl.createIssue(api.IssueCreate{
-			ProjectID:     projectUID,
-			Name:          fmt.Sprintf("create database %q", databaseName),
-			Type:          api.IssueDatabaseCreate,
-			Description:   fmt.Sprintf("This creates a database %q.", databaseName),
-			AssigneeID:    api.SystemBotID,
-			CreateContext: string(c),
+		_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+			Parent: project.Name,
+			Issue: &v1pb.Issue{
+				Title:       "dummy issue",
+				Description: "dummy issue",
+				Type:        v1pb.Issue_DATABASE_CHANGE,
+				Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+				Plan:        plan.Name,
+			},
 		})
 		a.NoError(err)
 

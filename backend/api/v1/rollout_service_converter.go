@@ -544,7 +544,7 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	case api.TaskDatabaseDataUpdate:
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
 	case api.TaskDatabaseBackup:
-		return convertToTaskFromDatabaseBackUp(ctx, s, project, task)
+		return convertToTaskFromDatabaseBackup(ctx, s, project, task)
 	case api.TaskDatabaseRestorePITRRestore:
 		return convertToTaskFromDatabaseRestoreRestore(ctx, s, project, task)
 	case api.TaskDatabaseRestorePITRCutover:
@@ -789,7 +789,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	return v1pbTask, nil
 }
 
-func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+func convertToTaskFromDatabaseBackup(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}

@@ -621,6 +621,18 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 	if instance == nil {
 		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
+
+	if c.CreateDatabaseConfig != nil {
+		// Create an empty dummy database.
+		if err := s.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
+			InstanceID:   instance.ResourceID,
+			DatabaseName: databaseName,
+			ProjectID:    project.ResourceID,
+		}); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
@@ -723,7 +735,6 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		taskCreates = append(taskCreates, restoreTaskCreate)
 	} else {
 		// in-place restore
-
 		// task 1: restore
 		restorePayload := api.TaskDatabasePITRRestorePayload{
 			SpecID:    spec.Id,
