@@ -621,28 +621,37 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 	if instance == nil {
 		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, nil, errors.Errorf("database %q not found", databaseName)
-	}
-	if database.ProjectID != project.ResourceID {
-		return nil, nil, errors.Errorf("database %q is not in project %q", databaseName, project.ResourceID)
-	}
-
-	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
-		return nil, nil, err
-	}
 
 	var taskCreates []*store.TaskMessage
 
 	if c.CreateDatabaseConfig != nil {
+		// Create an empty database.
+		if err := s.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
+			InstanceID:   instance.ResourceID,
+			DatabaseName: databaseName,
+			ProjectID:    project.ResourceID,
+		}); err != nil {
+			return nil, nil, err
+		}
+		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instanceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+		}
+		if database == nil {
+			return nil, nil, errors.Errorf("database %q not found", databaseName)
+		}
+		if database.ProjectID != project.ResourceID {
+			return nil, nil, errors.Errorf("database %q is not in project %q", databaseName, project.ResourceID)
+		}
+
+		if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
+			return nil, nil, err
+		}
+
 		restorePayload := api.TaskDatabasePITRRestorePayload{
 			SpecID:    spec.Id,
 			ProjectID: project.UID,
@@ -723,6 +732,24 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		taskCreates = append(taskCreates, restoreTaskCreate)
 	} else {
 		// in-place restore
+		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instanceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+		}
+		if database == nil {
+			return nil, nil, errors.Errorf("database %q not found", databaseName)
+		}
+		if database.ProjectID != project.ResourceID {
+			return nil, nil, errors.Errorf("database %q is not in project %q", databaseName, project.ResourceID)
+		}
+
+		if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
+			return nil, nil, err
+		}
 
 		// task 1: restore
 		restorePayload := api.TaskDatabasePITRRestorePayload{
