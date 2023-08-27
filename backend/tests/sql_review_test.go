@@ -477,17 +477,14 @@ func readTestData(path string) ([]test, error) {
 			Run:       yamlTest.Run,
 		}
 		for _, r := range yamlTest.Result {
-			fmt.Printf("Barny1: %+v\n", r)
 			jsonData, err := json.MarshalIndent(r, "", "  ")
 			if err != nil {
 				return nil, err
 			}
-			fmt.Printf("Barny2: %+v\n", string(jsonData))
 			result := &v1pb.PlanCheckRun_Result{}
 			if err := protojson.Unmarshal(jsonData, result); err != nil {
 				return nil, err
 			}
-			fmt.Printf("Barny3: %+v\n", result)
 			t.Result = append(t.Result, result)
 		}
 		tests = append(tests, t)
