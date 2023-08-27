@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -38,65 +37,23 @@ func (ctl *controller) adminQuery(ctx context.Context, instance *v1pb.Instance, 
 	return resp.Results, nil
 }
 
-// sqlReviewTaskCheckRunFinished will return SQL review task check result for next task.
-// If the SQL review task check is not done, return nil, false, nil.
-func (*controller) sqlReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
-	var result []api.TaskCheckResult
-	var latestTs int64
-	for _, stage := range issue.Pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if task.Status == api.TaskPendingApproval {
-				for _, taskCheck := range task.TaskCheckRunList {
-					if taskCheck.Type == api.TaskCheckDatabaseStatementAdvise {
-						switch taskCheck.Status {
-						case api.TaskCheckRunRunning:
-							return nil, false, nil
-						case api.TaskCheckRunDone:
-							// return the latest result
-							if latestTs != 0 && latestTs > taskCheck.UpdatedTs {
-								continue
-							}
-							checkResult := &api.TaskCheckRunResultPayload{}
-							if err := json.Unmarshal([]byte(taskCheck.Result), checkResult); err != nil {
-								return nil, false, err
-							}
-							result = checkResult.ResultList
-						}
-					}
-				}
-				return result, true, nil
-			}
-		}
-	}
-	return nil, true, nil
-}
-
 // GetSQLReviewResult will wait for next task SQL review task check to finish and return the task check result.
-func (ctl *controller) GetSQLReviewResult(id int) ([]api.TaskCheckResult, error) {
+func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) (*v1pb.PlanCheckRun, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		issue, err := ctl.getIssue(id)
+		resp, err := ctl.rolloutServiceClient.ListPlanCheckRuns(ctx, &v1pb.ListPlanCheckRunsRequest{
+			Parent: plan.Name,
+		})
 		if err != nil {
 			return nil, err
 		}
-
-		status, err := getNextTaskStatus(issue)
-		if err != nil {
-			return nil, err
-		}
-
-		if status != api.TaskPendingApproval {
-			return nil, errors.Errorf("the status of issue %v is not pending approval", id)
-		}
-
-		result, yes, err := ctl.sqlReviewTaskCheckRunFinished(issue)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get SQL review result for issue %v", id)
-		}
-		if yes {
-			return result, nil
+		// resp.PlanCheckRuns[0].
+		for _, check := range resp.PlanCheckRuns {
+			if check.Status == v1pb.PlanCheckRun_DONE && check.Type == v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE {
+				return check, nil
+			}
 		}
 	}
 	return nil, nil

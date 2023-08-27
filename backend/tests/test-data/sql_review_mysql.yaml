@@ -1,8 +1,7 @@
 - statement: CREATE TABLE user(id INT PRIMARY KEY COMMENT 'comment',name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',INDEX idx_user_name(name),UNIQUE KEY uk_user_id_name(id, name)) ENGINE = INNODB COMMENT 'comment'
   result:
-    - namespace: bb.core
-      code: 0
-      status: SUCCESS
+    - code: 0
+      status: 3
       title: OK
       content: ""
       line: 0
@@ -10,9 +9,8 @@
   run: false
 - statement: CREATE TABLE user(id);
   result:
-    - namespace: bb.advisor
-      code: 201
-      status: ERROR
+    - code: 201
+      status: 1
       title: Syntax error
       content: |-
         Syntax error at line 1:20 
@@ -23,183 +21,158 @@
   run: false
 - statement: CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
   result:
-    - namespace: bb.advisor
-      code: 501
-      status: ERROR
+    - code: 501
+      status: 1
       title: engine.mysql.use-innodb
       content: |-
         "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
         ;" doesn't use InnoDB engine
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 601
-      status: ERROR
+    - code: 601
+      status: 1
       title: table.require-pk
       content: Table `userTable` requires PRIMARY KEY
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 602
-      status: ERROR
+    - code: 602
+      status: 1
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `userTable`
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 411
-      status: ERROR
+    - code: 411
+      status: 1
       title: column.type-disallow-list
       content: Disallow column type JSON but column `userTable`.`json_content` is
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 301
-      status: WARN
+    - code: 301
+      status: 2
       title: naming.table
       content: '`userTable` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 302
-      status: WARN
+    - code: 302
+      status: 2
       title: naming.column
       content: '`userTable`.`roomId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 303
-      status: WARN
+    - code: 303
+      status: 2
       title: naming.index.idx
       content: Index in table `userTable` mismatches the naming convention, expect "^$|^idx_userTable_name$" but found `idx1`
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 304
-      status: WARN
+    - code: 304
+      status: 2
       title: naming.index.uk
       content: Unique key in table `userTable` mismatches the naming convention, expect "^$|^uk_userTable_id_name$" but found `uk1`
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 305
-      status: WARN
+    - code: 305
+      status: 2
       title: naming.index.fk
       content: Foreign key in table `userTable` mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found `fk1`
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 605
-      status: WARN
+    - code: 605
+      status: 2
       title: table.comment
       content: Table `userTable` requires comments
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 401
-      status: WARN
+    - code: 401
+      status: 2
       title: column.required
       content: "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id"
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 402
-      status: WARN
+    - code: 402
+      status: 2
       title: column.no-null
       content: "`userTable`.`name` cannot have NULL value"
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 402
-      status: WARN
+    - code: 402
+      status: 2
       title: column.no-null
       content: "`userTable`.`roomId` cannot have NULL value"
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 404
-      status: WARN
+    - code: 404
+      status: 2
       title: column.set-default-for-not-null
       content: Column `userTable`.`id` is NOT NULL but doesn't have DEFAULT
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 408
-      status: WARN
+    - code: 408
+      status: 2
       title: column.comment
       content: Column `userTable`.`id` requires comments
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 408
-      status: WARN
+    - code: 408
+      status: 2
       title: column.comment
       content: Column `userTable`.`name` requires comments
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 408
-      status: WARN
+    - code: 408
+      status: 2
       title: column.comment
       content: Column `userTable`.`roomId` requires comments
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 414
-      status: WARN
+    - code: 414
+      status: 2
       title: column.disallow-set-charset
       content: |-
         Disallow set column charset but "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
         ;" does
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 419
-      status: WARN
+    - code: 419
+      status: 2
       title: column.current-time-count-limit
       content: Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 420
-      status: WARN
+    - code: 420
+      status: 2
       title: column.require-default
       content: Column `userTable`.`id` doesn't have DEFAULT.
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 420
-      status: WARN
+    - code: 420
+      status: 2
       title: column.require-default
       content: Column `userTable`.`name` doesn't have DEFAULT.
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 420
-      status: WARN
+    - code: 420
+      status: 2
       title: column.require-default
       content: Column `userTable`.`roomId` doesn't have DEFAULT.
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 804
-      status: WARN
+    - code: 804
+      status: 2
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `userTable`.`content` is blob
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 1001
-      status: WARN
+    - code: 1001
+      status: 2
       title: system.charset.allowlist
       content: |-
         "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
         ;" used disabled charset 'ascii'
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 1201
-      status: WARN
+    - code: 1201
+      status: 2
       title: system.collation.allowlist
       content: |-
         "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
@@ -209,44 +182,38 @@
   run: false
 - statement: CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'
   result:
-    - namespace: bb.advisor
-      code: 410
-      status: ERROR
+    - code: 410
+      status: 1
       title: column.auto-increment-must-integer
       content: Auto-increment column `t_auto`.`auto_id` requires integer type
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 307
-      status: WARN
+    - code: 307
+      status: 2
       title: naming.column.auto-increment
       content: '`t_auto`.`auto_id` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 401
-      status: WARN
+    - code: 401
+      status: 2
       title: column.required
       content: "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 416
-      status: WARN
+    - code: 416
+      status: 2
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t_auto` is 2, which doesn't equal 20
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 417
-      status: WARN
+    - code: 417
+      status: 2
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t_auto`.`auto_id` is not UNSIGNED type
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 803
-      status: WARN
+    - code: 803
+      status: 2
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)
       line: 1
@@ -254,27 +221,24 @@
   run: false
 - statement: "        DELETE FROM tech_book"
   result:
-    - namespace: bb.advisor
-      code: 202
-      status: ERROR
+    - code: 202
+      status: 1
       title: statement.where.require
       content: |-
         "        DELETE FROM tech_book
         ;" requires WHERE clause
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 208
-      status: ERROR
+    - code: 208
+      status: 1
       title: statement.dml-dry-run
       content: |-
         "        DELETE FROM tech_book
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 209
-      status: WARN
+    - code: 209
+      status: 2
       title: statement.affected-row-limit
       content: |-
         "        DELETE FROM tech_book
@@ -284,27 +248,24 @@
   run: false
 - statement: DELETE FROM tech_book WHERE name like `%abc`
   result:
-    - namespace: bb.advisor
-      code: 204
-      status: ERROR
+    - code: 204
+      status: 1
       title: statement.where.no-leading-wildcard-like
       content: |-
         "DELETE FROM tech_book WHERE name like `%abc`
         ;" uses leading wildcard LIKE
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 208
-      status: ERROR
+    - code: 208
+      status: 1
       title: statement.dml-dry-run
       content: |-
         "DELETE FROM tech_book WHERE name like `%abc`
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 209
-      status: WARN
+    - code: 209
+      status: 2
       title: statement.affected-row-limit
       content: |-
         "DELETE FROM tech_book WHERE name like `%abc`
@@ -314,45 +275,40 @@
   run: false
 - statement: "        INSERT INTO t_copy SELECT * FROM t"
   result:
-    - namespace: bb.advisor
-      code: 203
-      status: ERROR
+    - code: 203
+      status: 1
       title: statement.select.no-select-all
       content: |-
         "        INSERT INTO t_copy SELECT * FROM t
         ;" uses SELECT all
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 202
-      status: ERROR
+    - code: 202
+      status: 1
       title: statement.where.require
       content: |-
         "        INSERT INTO t_copy SELECT * FROM t
         ;" requires WHERE clause
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 208
-      status: ERROR
+    - code: 208
+      status: 1
       title: statement.dml-dry-run
       content: |-
         "        INSERT INTO t_copy SELECT * FROM t
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 1101
-      status: WARN
+    - code: 1101
+      status: 2
       title: statement.insert.row-limit
       content: |-
         "        INSERT INTO t_copy SELECT * FROM t
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 1107
-      status: WARN
+    - code: 1107
+      status: 2
       title: statement.insert.must-specify-column
       content: |-
         The INSERT statement must specify columns but "        INSERT INTO t_copy SELECT * FROM t
@@ -362,18 +318,16 @@
   run: false
 - statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
   result:
-    - namespace: bb.advisor
-      code: 208
-      status: ERROR
+    - code: 208
+      status: 1
       title: statement.dml-dry-run
       content: |-
         "        INSERT INTO t VALUES (1, 1, now(), 1, now())
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 1107
-      status: WARN
+    - code: 1107
+      status: 2
       title: statement.insert.must-specify-column
       content: |-
         The INSERT statement must specify columns but "        INSERT INTO t VALUES (1, 1, now(), 1, now())
@@ -383,18 +337,16 @@
   run: false
 - statement: DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
   result:
-    - namespace: bb.advisor
-      code: 208
-      status: ERROR
+    - code: 208
+      status: 1
       title: statement.dml-dry-run
       content: |-
         "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 209
-      status: WARN
+    - code: 209
+      status: 2
       title: statement.affected-row-limit
       content: |-
         "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
@@ -404,9 +356,8 @@
   run: false
 - statement: COMMIT;
   result:
-    - namespace: bb.advisor
-      code: 206
-      status: ERROR
+    - code: 206
+      status: 1
       title: statement.disallow-commit
       content: |-
         Commit is not allowed, related statement: "COMMIT
@@ -418,7 +369,7 @@
   result:
     - namespace: bb.core
       code: 0
-      status: SUCCESS
+      status: 3
       title: OK
       content: ""
       line: 0
@@ -428,7 +379,7 @@
   result:
     - namespace: bb.core
       code: 0
-      status: SUCCESS
+      status: 3
       title: OK
       content: ""
       line: 0
@@ -438,7 +389,7 @@
   result:
     - namespace: bb.core
       code: 0
-      status: SUCCESS
+      status: 3
       title: OK
       content: ""
       line: 0
@@ -448,7 +399,7 @@
   result:
     - namespace: bb.core
       code: 0
-      status: SUCCESS
+      status: 3
       title: OK
       content: ""
       line: 0
@@ -456,9 +407,8 @@
   run: true
 - statement: DELETE FROM user WHERE id <= 10
   result:
-    - namespace: bb.advisor
-      code: 209
-      status: WARN
+    - code: 209
+      status: 2
       title: statement.affected-row-limit
       content: |-
         "DELETE FROM user WHERE id <= 10
@@ -478,9 +428,8 @@
           SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL
           SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1
   result:
-    - namespace: bb.advisor
-      code: 1101
-      status: WARN
+    - code: 1101
+      status: 2
       title: statement.insert.row-limit
       content: |-
         "INSERT INTO user(id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL
@@ -499,9 +448,8 @@
   run: false
 - statement: INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1
   result:
-    - namespace: bb.advisor
-      code: 1103
-      status: WARN
+    - code: 1103
+      status: 2
       title: statement.disallow-limit
       content: |-
         LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1
@@ -511,9 +459,8 @@
   run: false
 - statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
   result:
-    - namespace: bb.advisor
-      code: 608
-      status: WARN
+    - code: 608
+      status: 2
       title: table.disallow-partition
       content: |-
         Table partition is forbidden, but "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8
@@ -525,37 +472,32 @@
     ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
     ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
   result:
-    - namespace: bb.advisor
-      code: 207
-      status: WARN
+    - code: 207
+      status: 2
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `user`
       line: 3
       details: ""
-    - namespace: bb.advisor
-      code: 403
-      status: WARN
+    - code: 403
+      status: 2
       title: column.disallow-change-type
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" changes column type'
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 406
-      status: WARN
+    - code: 406
+      status: 2
       title: column.disallow-change
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" contains CHANGE COLUMN statement'
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 407
-      status: WARN
+    - code: 407
+      status: 2
       title: column.disallow-changing-order
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" changes column order'
       line: 1
       details: ""
-    - namespace: bb.advisor
-      code: 111
-      status: WARN
+    - code: 111
+      status: 2
       title: schema.backward-compatibility
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" may cause incompatibility with the existing data and code'
       line: 1
@@ -563,16 +505,14 @@
   run: false
 - statement: "        DROP TABLE user;"
   result:
-    - namespace: bb.advisor
-      code: 603
-      status: ERROR
+    - code: 603
+      status: 1
       title: table.drop-naming-convention
       content: '`user` mismatches drop table naming convention, naming format should be "_delete$"'
       line: 2
       details: ""
-    - namespace: bb.advisor
-      code: 103
-      status: WARN
+    - code: 103
+      status: 2
       title: schema.backward-compatibility
       content: |-
         "        DROP TABLE user
