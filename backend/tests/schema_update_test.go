@@ -123,7 +123,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	_, _, err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+	err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
 	// Query schema.
@@ -144,7 +144,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database data.
-	_, _, err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
+	err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
 	a.NoError(err)
 
 	// Get migration history.
