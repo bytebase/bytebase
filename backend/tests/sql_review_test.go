@@ -42,7 +42,7 @@ var (
 
 type test struct {
 	Statement string
-	Results   []*v1pb.PlanCheckRun_Result
+	Result    []*v1pb.PlanCheckRun_Result
 	Run       bool
 }
 
@@ -185,11 +185,11 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		results := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, t.Statement, t.Run)
 		if record {
-			tests[i].Results = results
+			tests[i].Result = result
 		} else {
-			equalReviewResultProtos(a, tests[i].Results, tests[i].Results)
+			equalReviewResultProtos(a, tests[i].Result, tests[i].Result)
 		}
 	}
 
@@ -210,8 +210,8 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	results := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, results)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
+	equalReviewResultProtos(a, noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
 	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
@@ -219,8 +219,8 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	results = createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, results)
+	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
+	equalReviewResultProtos(a, noSQLReviewPolicy, result)
 }
 
 func TestSQLReviewForMySQL(t *testing.T) {
@@ -392,11 +392,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		results := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, t.Statement, t.Run)
 		if record {
-			tests[i].Results = results
+			tests[i].Result = result
 		} else {
-			equalReviewResultProtos(a, t.Results, results)
+			equalReviewResultProtos(a, t.Result, result)
 		}
 	}
 
@@ -461,8 +461,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	results := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, results)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
+	equalReviewResultProtos(a, noSQLReviewPolicy, result)
 }
 
 func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Assertions, ctl *controller, project *v1pb.Project, database *v1pb.Database, statement string, wait bool) []*v1pb.PlanCheckRun_Result {

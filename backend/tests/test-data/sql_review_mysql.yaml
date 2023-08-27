@@ -3,9 +3,7 @@
     - code: 0
       status: 3
       title: OK
-      content: ""
       line: 0
-      details: ""
   run: false
 - statement: CREATE TABLE user(id);
   result:
@@ -17,7 +15,6 @@
         related text: CREATE TABLE user(id)
       line: 1
       column: 20
-      details: ""
   run: false
 - statement: CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
   result:
@@ -28,103 +25,86 @@
         "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
         ;" doesn't use InnoDB engine
       line: 2
-      details: ""
     - code: 601
       status: 1
       title: table.require-pk
       content: Table `userTable` requires PRIMARY KEY
       line: 2
-      details: ""
     - code: 602
       status: 1
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `userTable`
       line: 1
-      details: ""
     - code: 411
       status: 1
       title: column.type-disallow-list
       content: Disallow column type JSON but column `userTable`.`json_content` is
       line: 1
-      details: ""
     - code: 301
       status: 2
       title: naming.table
       content: '`userTable` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
-      details: ""
     - code: 302
       status: 2
       title: naming.column
       content: '`userTable`.`roomId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
-      details: ""
     - code: 303
       status: 2
       title: naming.index.idx
       content: Index in table `userTable` mismatches the naming convention, expect "^$|^idx_userTable_name$" but found `idx1`
       line: 1
-      details: ""
     - code: 304
       status: 2
       title: naming.index.uk
       content: Unique key in table `userTable` mismatches the naming convention, expect "^$|^uk_userTable_id_name$" but found `uk1`
       line: 1
-      details: ""
     - code: 305
       status: 2
       title: naming.index.fk
       content: Foreign key in table `userTable` mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found `fk1`
       line: 1
-      details: ""
     - code: 605
       status: 2
       title: table.comment
       content: Table `userTable` requires comments
       line: 2
-      details: ""
     - code: 401
       status: 2
       title: column.required
       content: "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id"
       line: 2
-      details: ""
     - code: 402
       status: 2
       title: column.no-null
       content: "`userTable`.`name` cannot have NULL value"
       line: 1
-      details: ""
     - code: 402
       status: 2
       title: column.no-null
       content: "`userTable`.`roomId` cannot have NULL value"
       line: 1
-      details: ""
     - code: 404
       status: 2
       title: column.set-default-for-not-null
       content: Column `userTable`.`id` is NOT NULL but doesn't have DEFAULT
       line: 1
-      details: ""
     - code: 408
       status: 2
       title: column.comment
       content: Column `userTable`.`id` requires comments
       line: 1
-      details: ""
     - code: 408
       status: 2
       title: column.comment
       content: Column `userTable`.`name` requires comments
       line: 1
-      details: ""
     - code: 408
       status: 2
       title: column.comment
       content: Column `userTable`.`roomId` requires comments
       line: 1
-      details: ""
     - code: 414
       status: 2
       title: column.disallow-set-charset
@@ -132,37 +112,31 @@
         Disallow set column charset but "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
         ;" does
       line: 2
-      details: ""
     - code: 419
       status: 2
       title: column.current-time-count-limit
       content: Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
       line: 2
-      details: ""
     - code: 420
       status: 2
       title: column.require-default
       content: Column `userTable`.`id` doesn't have DEFAULT.
       line: 1
-      details: ""
     - code: 420
       status: 2
       title: column.require-default
       content: Column `userTable`.`name` doesn't have DEFAULT.
       line: 1
-      details: ""
     - code: 420
       status: 2
       title: column.require-default
       content: Column `userTable`.`roomId` doesn't have DEFAULT.
       line: 1
-      details: ""
     - code: 804
       status: 2
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `userTable`.`content` is blob
       line: 1
-      details: ""
     - code: 1001
       status: 2
       title: system.charset.allowlist
@@ -170,7 +144,6 @@
         "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
         ;" used disabled charset 'ascii'
       line: 1
-      details: ""
     - code: 1201
       status: 2
       title: system.collation.allowlist
@@ -178,7 +151,6 @@
         "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
         ;" used disabled collation 'latin1_bin'
       line: 2
-      details: ""
   run: false
 - statement: CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'
   result:
@@ -187,37 +159,31 @@
       title: column.auto-increment-must-integer
       content: Auto-increment column `t_auto`.`auto_id` requires integer type
       line: 2
-      details: ""
     - code: 307
       status: 2
       title: naming.column.auto-increment
       content: '`t_auto`.`auto_id` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 1
-      details: ""
     - code: 401
       status: 2
       title: column.required
       content: "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
       line: 2
-      details: ""
     - code: 416
       status: 2
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t_auto` is 2, which doesn't equal 20
       line: 2
-      details: ""
     - code: 417
       status: 2
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t_auto`.`auto_id` is not UNSIGNED type
       line: 2
-      details: ""
     - code: 803
       status: 2
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)
       line: 1
-      details: ""
   run: false
 - statement: "        DELETE FROM tech_book"
   result:
@@ -228,7 +194,6 @@
         "        DELETE FROM tech_book
         ;" requires WHERE clause
       line: 2
-      details: ""
     - code: 208
       status: 1
       title: statement.dml-dry-run
@@ -236,7 +201,6 @@
         "        DELETE FROM tech_book
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
-      details: ""
     - code: 209
       status: 2
       title: statement.affected-row-limit
@@ -244,7 +208,6 @@
         "        DELETE FROM tech_book
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
-      details: ""
   run: false
 - statement: DELETE FROM tech_book WHERE name like `%abc`
   result:
@@ -255,7 +218,6 @@
         "DELETE FROM tech_book WHERE name like `%abc`
         ;" uses leading wildcard LIKE
       line: 2
-      details: ""
     - code: 208
       status: 1
       title: statement.dml-dry-run
@@ -263,7 +225,6 @@
         "DELETE FROM tech_book WHERE name like `%abc`
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
-      details: ""
     - code: 209
       status: 2
       title: statement.affected-row-limit
@@ -271,7 +232,6 @@
         "DELETE FROM tech_book WHERE name like `%abc`
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
-      details: ""
   run: false
 - statement: "        INSERT INTO t_copy SELECT * FROM t"
   result:
@@ -282,7 +242,6 @@
         "        INSERT INTO t_copy SELECT * FROM t
         ;" uses SELECT all
       line: 2
-      details: ""
     - code: 202
       status: 1
       title: statement.where.require
@@ -290,7 +249,6 @@
         "        INSERT INTO t_copy SELECT * FROM t
         ;" requires WHERE clause
       line: 2
-      details: ""
     - code: 208
       status: 1
       title: statement.dml-dry-run
@@ -298,7 +256,6 @@
         "        INSERT INTO t_copy SELECT * FROM t
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
       line: 2
-      details: ""
     - code: 1101
       status: 2
       title: statement.insert.row-limit
@@ -306,7 +263,6 @@
         "        INSERT INTO t_copy SELECT * FROM t
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
       line: 2
-      details: ""
     - code: 1107
       status: 2
       title: statement.insert.must-specify-column
@@ -314,7 +270,6 @@
         The INSERT statement must specify columns but "        INSERT INTO t_copy SELECT * FROM t
         ;" does not
       line: 2
-      details: ""
   run: false
 - statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
   result:
@@ -325,7 +280,6 @@
         "        INSERT INTO t VALUES (1, 1, now(), 1, now())
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist
       line: 2
-      details: ""
     - code: 1107
       status: 2
       title: statement.insert.must-specify-column
@@ -333,7 +287,6 @@
         The INSERT statement must specify columns but "        INSERT INTO t VALUES (1, 1, now(), 1, now())
         ;" does not
       line: 2
-      details: ""
   run: false
 - statement: DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
   result:
@@ -344,7 +297,6 @@
         "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
-      details: ""
     - code: 209
       status: 2
       title: statement.affected-row-limit
@@ -352,7 +304,6 @@
         "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
         ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
       line: 2
-      details: ""
   run: false
 - statement: COMMIT;
   result:
@@ -363,7 +314,6 @@
         Commit is not allowed, related statement: "COMMIT
         ;"
       line: 2
-      details: ""
   run: false
 - statement: CREATE TABLE user(id INT PRIMARY KEY COMMENT 'comment',name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',INDEX idx_user_name(name),UNIQUE KEY uk_user_id_name(id, name)) ENGINE = INNODB COMMENT 'comment'
   result:
@@ -373,7 +323,6 @@
       title: OK
       content: ""
       line: 0
-      details: ""
   run: true
 - statement: INSERT INTO user(id, name) values (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e')
   result:
@@ -383,7 +332,6 @@
       title: OK
       content: ""
       line: 0
-      details: ""
   run: true
 - statement: DELETE FROM user WHERE id < 10
   result:
@@ -393,7 +341,6 @@
       title: OK
       content: ""
       line: 0
-      details: ""
   run: false
 - statement: INSERT INTO user(id, name) values (6, 'f'), (7, 'g'), (8, 'h'), (9, 'i'), (10, 'j')
   result:
@@ -403,7 +350,6 @@
       title: OK
       content: ""
       line: 0
-      details: ""
   run: true
 - statement: DELETE FROM user WHERE id <= 10
   result:
@@ -414,7 +360,6 @@
         "DELETE FROM user WHERE id <= 10
         ;" affected 10 rows. The count exceeds 5.
       line: 2
-      details: ""
   run: false
 - statement: |-
     INSERT INTO user(id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL
@@ -444,7 +389,6 @@
               SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1
         ;" inserts 10 rows. The count exceeds 5.
       line: 11
-      details: ""
   run: false
 - statement: INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1
   result:
@@ -455,7 +399,6 @@
         LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1
         ;" uses
       line: 2
-      details: ""
   run: false
 - statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
   result:
@@ -466,7 +409,6 @@
         Table partition is forbidden, but "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8
         ;" creates
       line: 2
-      details: ""
   run: false
 - statement: |-
     ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
@@ -477,31 +419,26 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `user`
       line: 3
-      details: ""
     - code: 403
       status: 2
       title: column.disallow-change-type
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" changes column type'
       line: 1
-      details: ""
     - code: 406
       status: 2
       title: column.disallow-change
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" contains CHANGE COLUMN statement'
       line: 1
-      details: ""
     - code: 407
       status: 2
       title: column.disallow-changing-order
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" changes column order'
       line: 1
-      details: ""
     - code: 111
       status: 2
       title: schema.backward-compatibility
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" may cause incompatibility with the existing data and code'
       line: 1
-      details: ""
   run: false
 - statement: "        DROP TABLE user;"
   result:
@@ -510,7 +447,6 @@
       title: table.drop-naming-convention
       content: '`user` mismatches drop table naming convention, naming format should be "_delete$"'
       line: 2
-      details: ""
     - code: 103
       status: 2
       title: schema.backward-compatibility
@@ -518,5 +454,4 @@
         "        DROP TABLE user
         ;" may cause incompatibility with the existing data and code
       line: 2
-      details: ""
   run: false
