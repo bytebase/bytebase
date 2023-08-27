@@ -11,7 +11,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, changeType v1pb.Plan_ChangeDatabaseConfig_Type) (*v1pb.Plan, *v1pb.Rollout, error) {
+func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, changeType v1pb.Plan_ChangeDatabaseConfig_Type) error {
 	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
@@ -33,11 +33,11 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 		},
 	})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to create plan")
+		return errors.Wrapf(err, "failed to create plan")
 	}
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to create rollout")
+		return errors.Wrapf(err, "failed to create rollout")
 	}
 	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
@@ -51,13 +51,13 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 		},
 	})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to create issue")
+		return errors.Wrapf(err, "failed to create issue")
 	}
 	err = ctl.waitRollout(ctx, rollout.Name)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
-	return plan, rollout, nil
+	return nil
 }
 
 // waitRollout waits for pipeline to finish and approves tasks when necessary.
