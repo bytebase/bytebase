@@ -6,6 +6,7 @@ package tests
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -80,7 +81,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
+	tests, err := readTestData(filepath)
+	a.NoError(err)
+	ctx, err = ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:                   dataDir,
 		vcsProviderCreator:        fake.NewGitLab,
 		developmentUseV2Scheduler: true,
@@ -174,22 +177,12 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-
-	tests := []test{}
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	err = yaml.Unmarshal(byteValue, &tests)
-	a.NoError(err)
-
 	for i, t := range tests {
 		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
-			equalReviewResultProtos(a, tests[i].Result, tests[i].Result)
+			equalReviewResultProtos(a, t.Result, result, t.Statement)
 		}
 	}
 
@@ -211,7 +204,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, result)
+	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
 
 	// delete the SQL review policy
 	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
@@ -220,7 +213,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, result)
+	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
 }
 
 func TestSQLReviewForMySQL(t *testing.T) {
@@ -286,8 +279,10 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
+	tests, err := readTestData(filepath)
+	a.NoError(err)
 	dataDir := t.TempDir()
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err = ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -381,22 +376,12 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-
-	tests := []test{}
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	err = yaml.Unmarshal(byteValue, &tests)
-	a.NoError(err)
-
 	for i, t := range tests {
 		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
-			equalReviewResultProtos(a, t.Result, result)
+			equalReviewResultProtos(a, t.Result, result, tests[i].Statement)
 		}
 	}
 
@@ -462,7 +447,52 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, result)
+	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
+}
+
+func readTestData(path string) ([]test, error) {
+	yamlFile, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer yamlFile.Close()
+	byteValue, err := io.ReadAll(yamlFile)
+	if err != nil {
+		return nil, err
+	}
+	type yamlStruct struct {
+		Statement string
+		Result    []any
+		Run       bool
+	}
+	var yamlTests []yamlStruct
+	if err := yaml.Unmarshal(byteValue, &yamlTests); err != nil {
+		return nil, err
+	}
+
+	var tests []test
+	for _, yamlTest := range yamlTests {
+		t := test{
+			Statement: yamlTest.Statement,
+			Run:       yamlTest.Run,
+		}
+		for _, r := range yamlTest.Result {
+			fmt.Printf("Barny1: %+v\n", r)
+			jsonData, err := json.MarshalIndent(r, "", "  ")
+			if err != nil {
+				return nil, err
+			}
+			fmt.Printf("Barny2: %+v\n", string(jsonData))
+			result := &v1pb.PlanCheckRun_Result{}
+			if err := protojson.Unmarshal(jsonData, result); err != nil {
+				return nil, err
+			}
+			fmt.Printf("Barny3: %+v\n", result)
+			t.Result = append(t.Result, result)
+		}
+		tests = append(tests, t)
+	}
+	return tests, nil
 }
 
 func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Assertions, ctl *controller, project *v1pb.Project, database *v1pb.Database, statement string, wait bool) []*v1pb.PlanCheckRun_Result {
@@ -528,13 +558,13 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	return result.Results
 }
 
-func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckRun_Result) {
+func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckRun_Result, message string) {
 	a.Equal(len(want), len(got))
 	for i := 0; i < len(want); i++ {
 		wantJSON, err := protojson.Marshal(want[i])
 		a.NoError(err)
 		gotJSON, err := protojson.Marshal(got[i])
 		a.NoError(err)
-		a.Equal(wantJSON, gotJSON)
+		a.Equal(string(wantJSON), string(gotJSON), message)
 	}
 }
