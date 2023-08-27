@@ -375,8 +375,6 @@
       status: 3
       title: OK
       content: ""
-      sql_review_report:
-        line: 0
   run: true
 - statement: DELETE FROM user WHERE id < 10
   result:

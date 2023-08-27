@@ -283,8 +283,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	dataDir := t.TempDir()
 	ctx, err = ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                   dataDir,
+		vcsProviderCreator:        fake.NewGitLab,
+		developmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -311,8 +312,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
@@ -368,7 +367,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
