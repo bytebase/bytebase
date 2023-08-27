@@ -27,8 +27,9 @@ func TestSubscription(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                   dataDir,
+		vcsProviderCreator:        fake.NewGitLab,
+		developmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)

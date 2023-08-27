@@ -99,29 +99,58 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		Payload:     &storepb.InstanceChangeHistoryPayload{},
 	}
 
-	taskCheckType := api.TaskCheckDatabaseStatementTypeReport
-	typeReportTaskCheckRunFind := &store.TaskCheckRunFind{
-		TaskID:     &task.ID,
-		StageID:    &task.StageID,
-		PipelineID: &task.PipelineID,
-		Type:       &taskCheckType,
-		StatusList: &[]api.TaskCheckRunStatus{api.TaskCheckRunDone},
-	}
-	taskCheckRun, err := stores.ListTaskCheckRuns(ctx, typeReportTaskCheckRunFind)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list task check runs")
-	}
-	sort.Slice(taskCheckRun, func(i, j int) bool {
-		return taskCheckRun[i].ID > taskCheckRun[j].ID
-	})
-	if len(taskCheckRun) > 0 {
-		checkResult := &api.TaskCheckRunResultPayload{}
-		if err := json.Unmarshal([]byte(taskCheckRun[0].Result), checkResult); err != nil {
-			return nil, err
-		}
-		mi.Payload.ChangedResources, err = mergeChangedResources(checkResult.ResultList)
+	if profile.DevelopmentUseV2Scheduler {
+		plans, err := stores.ListPlans(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return nil, err
+		}
+		if len(plans) == 1 {
+			planTypes := []store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport}
+			status := []store.PlanCheckRunStatus{store.PlanCheckRunStatusDone}
+			checks, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+				PlanUID: &plans[0].UID,
+				Type:    &planTypes,
+				Status:  &status,
+			})
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to list plan check runs")
+			}
+			sort.Slice(checks, func(i, j int) bool {
+				return checks[i].UID > checks[j].UID
+			})
+			if len(checks) > 0 && checks[0].Result != nil {
+				for _, result := range checks[0].Result.Results {
+					if report, ok := result.Report.(*storepb.PlanCheckRunResult_Result_SqlSummaryReport_); ok && report.SqlSummaryReport != nil {
+						mi.Payload.ChangedResources = report.SqlSummaryReport.ChangedResources
+					}
+				}
+			}
+		}
+	} else {
+		taskCheckType := api.TaskCheckDatabaseStatementTypeReport
+		typeReportTaskCheckRunFind := &store.TaskCheckRunFind{
+			TaskID:     &task.ID,
+			StageID:    &task.StageID,
+			PipelineID: &task.PipelineID,
+			Type:       &taskCheckType,
+			StatusList: &[]api.TaskCheckRunStatus{api.TaskCheckRunDone},
+		}
+		taskCheckRun, err := stores.ListTaskCheckRuns(ctx, typeReportTaskCheckRunFind)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to list task check runs")
+		}
+		sort.Slice(taskCheckRun, func(i, j int) bool {
+			return taskCheckRun[i].ID > taskCheckRun[j].ID
+		})
+		if len(taskCheckRun) > 0 {
+			checkResult := &api.TaskCheckRunResultPayload{}
+			if err := json.Unmarshal([]byte(taskCheckRun[0].Result), checkResult); err != nil {
+				return nil, err
+			}
+			mi.Payload.ChangedResources, err = mergeChangedResources(checkResult.ResultList)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
