@@ -1397,6 +1397,9 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		if instance.Engine == db.Oracle || instance.Engine == db.DM {
 			for _, schema := range dbSchema.Metadata.Schemas {
 				databaseSchema := db.DatabaseSchema{
+					Name: schema.Name,
+				}
+				schemaSchema := db.SchemaSchema{
 					Name:      schema.Name,
 					TableList: []db.TableSchema{},
 				}
@@ -1419,8 +1422,9 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 							Sensitive: sensitive,
 						})
 					}
-					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
 				}
+				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 				result.DatabaseList = append(result.DatabaseList, databaseSchema)
 			}
 			continue

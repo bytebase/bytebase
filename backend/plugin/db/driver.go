@@ -630,7 +630,7 @@ type DatabaseSchema struct {
 	SchemaList []SchemaSchema
 
 	// !!DEPRECATED!!, should use SchemaList instead.
-	// TODO(rebelice/zp): Migrate PostgreSQL/Oracle to SchemaList.
+	// TODO(rebelice/zp): Migrate PostgreSQL to SchemaList.
 	TableList []TableSchema
 	ViewList  []ViewSchema
 }
