@@ -459,10 +459,9 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit                 int
-	ReadOnly              bool
-	SensitiveDataMaskType SensitiveDataMaskType
-	SensitiveSchemaInfo   *SensitiveSchemaInfo
+	Limit               int
+	ReadOnly            bool
+	SensitiveSchemaInfo *SensitiveSchemaInfo
 	// EnableSensitive will set to be true if the database instance has license.
 	EnableSensitive bool
 
@@ -616,15 +615,6 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	}
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
-
-// SensitiveDataMaskType is the mask type for sensitive data.
-type SensitiveDataMaskType string
-
-const (
-	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
-	// The default method is subject to change.
-	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
-)
 
 // SensitiveSchemaInfo is the schema info using to extract sensitive fields.
 type SensitiveSchemaInfo struct {
