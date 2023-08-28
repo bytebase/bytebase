@@ -119,7 +119,7 @@
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
     :database-id="currentTab.connection.databaseId"
-    :statement="currentTab.statement"
+    :statement="result.statement"
     @close="state.showRequestExportPanel = false"
   />
 </template>
