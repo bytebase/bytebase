@@ -46,7 +46,7 @@
     "lucide-vue-next": "^0.268.0",
     "markdown-it": "^13.0.1",
     "maz-ui": "^3.9.0",
-    "monaco-editor": "0.41.0",
+    "monaco-editor": "0.34.1",
     "monaco-languageclient": "4.0.1",
     "naive-ui": "2.34.4",
     "nice-grpc-common": "^2.0.0",
