@@ -349,13 +349,11 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 
 	start := time.Now().UnixNano()
 	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:           int(request.Limit),
-		ReadOnly:        true,
-		CurrentDatabase: request.ConnectionDatabase,
-		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
-		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
-		SensitiveSchemaInfo:   sensitiveSchemaInfo,
-		EnableSensitive:       s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		Limit:               int(request.Limit),
+		ReadOnly:            true,
+		CurrentDatabase:     request.ConnectionDatabase,
+		SensitiveSchemaInfo: sensitiveSchemaInfo,
+		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	durationNs := time.Now().UnixNano() - start
 	if err != nil {
@@ -1082,13 +1080,11 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 
 	start := time.Now().UnixNano()
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:           int(request.Limit),
-		ReadOnly:        true,
-		CurrentDatabase: request.ConnectionDatabase,
-		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
-		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
-		SensitiveSchemaInfo:   sensitiveSchemaInfo,
-		EnableSensitive:       s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		Limit:               int(request.Limit),
+		ReadOnly:            true,
+		CurrentDatabase:     request.ConnectionDatabase,
+		SensitiveSchemaInfo: sensitiveSchemaInfo,
+		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	select {
 	case <-ctx.Done():
