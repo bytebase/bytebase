@@ -8,12 +8,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
+	"github.com/go-ego/gse"
+	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
+
+var getSegmenter func() *gse.Segmenter
+
+func init() {
+	var segmenterDic gse.Segmenter
+	if err := segmenterDic.LoadDict(); err != nil {
+		panic(errors.Wrapf(err, "failed to load segmenter dictionary"))
+	}
+	getSegmenter = func() *gse.Segmenter {
+		var segmenter gse.Segmenter
+		segmenter.Dict = segmenterDic.Dict
+		return &segmenter
+	}
+}
 
 // GetIssueByID gets an instance of Issue.
 func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
@@ -554,9 +569,12 @@ type FindIssueMessage struct {
 	// If specified, only find issues whose ID is smaller that SinceID.
 	SinceID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
-	Limit *int
+	Limit  *int
+	Offset *int
 
 	Stripped bool
+
+	Query *string
 }
 
 // GetIssueV2 gets issue by issue UID.
@@ -600,6 +618,8 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		return nil, err
 	}
 
+	tsVector := getTsVector(fmt.Sprintf("%s %s", create.Title, create.Description))
+
 	query := `
 		INSERT INTO issue (
 			creator_id,
@@ -613,9 +633,10 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			description,
 			assignee_id,
 			assignee_need_attention,
-			payload
+			payload,
+			ts_vector
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING id, created_ts, updated_ts
 	`
 
@@ -638,6 +659,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Assignee.ID,
 		create.NeedAttention,
 		create.Payload,
+		tsVector,
 	).Scan(
 		&create.UID,
 		&create.createdTs,
@@ -692,6 +714,21 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	if v := patch.Payload; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
+	if patch.Title != nil || patch.Description != nil {
+		title := oldIssue.Title
+		if patch.Title != nil {
+			title = *patch.Title
+		}
+		description := oldIssue.Description
+		if patch.Description != nil {
+			description = *patch.Description
+		}
+
+		tsVector := getTsVector(fmt.Sprintf("%s %s", title, description))
+		set = append(set, fmt.Sprintf("ts_vector = $%d", len(args)+1))
+		args = append(args, tsVector)
+	}
+
 	args = append(args, uid)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -798,6 +835,8 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 
 // ListIssueV2 returns the list of issues by find query.
 func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
+	orderByClause := "ORDER BY issue.id DESC"
+	from := "issue"
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id = $%d", len(args)+1)), append(args, *v)
@@ -835,6 +874,13 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.SinceID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.Query; v != nil {
+		tsQuery := getTsQuery(*v)
+		from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
+		args = append(args, tsQuery)
+		where = append(where, "issue.ts_vector @@ query")
+		orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+	}
 	if len(find.StatusList) != 0 {
 		var list []string
 		for _, status := range find.StatusList {
@@ -843,9 +889,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		where = append(where, fmt.Sprintf("issue.status IN (%s)", strings.Join(list, ", ")))
 	}
-	limitClause := ""
+	limitOffsetClause := ""
 	if v := find.Limit; v != nil {
-		limitClause = fmt.Sprintf(" LIMIT %d", *v)
+		limitOffsetClause = fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
 	var issues []*IssueMessage
@@ -855,42 +904,38 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
-		SELECT
-			issue.id,
-			issue.creator_id,
-			issue.created_ts,
-			issue.updater_id,
-			issue.updated_ts,
-			issue.project_id,
-			issue.pipeline_id,
-			issue.plan_id,
-			issue.name,
-			issue.status,
-			issue.type,
-			issue.description,
-			issue.assignee_id,
-			issue.assignee_need_attention,
-			issue.payload,
-			ARRAY_AGG (
-				issue_subscriber.subscriber_id
-			) subscribers
-		FROM issue
-		LEFT JOIN issue_subscriber ON issue.id = issue_subscriber.issue_id
-		WHERE %s
-		GROUP BY issue.id
-		ORDER BY issue.id DESC
-		%s`, strings.Join(where, " AND "), limitClause),
-		args...,
-	)
+	query := fmt.Sprintf(`
+	SELECT
+		issue.id,
+		issue.creator_id,
+		issue.created_ts,
+		issue.updater_id,
+		issue.updated_ts,
+		issue.project_id,
+		issue.pipeline_id,
+		issue.plan_id,
+		issue.name,
+		issue.status,
+		issue.type,
+		issue.description,
+		issue.assignee_id,
+		issue.assignee_need_attention,
+		issue.payload,
+		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
+	FROM %s
+	WHERE %s
+	%s
+	%s`, from, strings.Join(where, " AND "), orderByClause, limitOffsetClause)
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var issue IssueMessage
-		var subscribers []sql.NullInt32
 		var pipelineUID sql.NullInt32
+		var subscriberUIDs pgtype.Int4Array
 		if err := rows.Scan(
 			&issue.UID,
 			&issue.creatorUID,
@@ -907,19 +952,16 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.assigneeUID,
 			&issue.NeedAttention,
 			&issue.Payload,
-			pq.Array(&subscribers),
+			&subscriberUIDs,
 		); err != nil {
+			return nil, err
+		}
+		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
 		}
 		if pipelineUID.Valid {
 			v := int(pipelineUID.Int32)
 			issue.PipelineUID = &v
-		}
-		for _, subscriber := range subscribers {
-			if !subscriber.Valid {
-				continue
-			}
-			issue.subscriberUIDs = append(issue.subscriberUIDs, int(subscriber.Int32))
 		}
 		issues = append(issues, &issue)
 	}
@@ -1024,4 +1066,33 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	}
 
 	return nil
+}
+
+func getTsVector(text string) string {
+	seg := getSegmenter()
+	parts := seg.CutTrim(text)
+	var tsVector strings.Builder
+	for i, part := range parts {
+		if i != 0 {
+			_, _ = tsVector.WriteString(" ")
+		}
+		_, _ = tsVector.WriteString(fmt.Sprintf("%s:%d", part, i+1))
+	}
+	return tsVector.String()
+}
+
+func getTsQuery(text string) string {
+	seg := getSegmenter()
+	parts := seg.Trim(seg.CutSearch(text))
+	var tsQuery strings.Builder
+	for i, part := range parts {
+		if i != 0 {
+			_, _ = tsQuery.WriteString("|")
+		}
+		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", part))
+	}
+	if tsQuery.Len() == 0 {
+		return text
+	}
+	return tsQuery.String()
 }
