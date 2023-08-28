@@ -162,7 +162,6 @@ import {
 } from "@/types/proto/v1/sheet_service";
 import {
   extractSheetUID,
-  getBacktracePayloadWithIssue,
   sheetNameOfTask,
   useInstanceV1EditorLanguage,
 } from "@/utils";
@@ -510,10 +509,6 @@ const handleUploadAndOverwrite = async (event: Event) => {
       100
     );
     const projectName = selectedDatabase.value.project;
-    let payload = {};
-    if (!create.value) {
-      payload = getBacktracePayloadWithIssue(issue.value as Issue);
-    }
     // TODO: upload process
     const sheet = await sheetV1Store.createSheet(projectName, {
       title: filename,
@@ -521,7 +516,6 @@ const handleUploadAndOverwrite = async (event: Event) => {
       visibility: Sheet_Visibility.VISIBILITY_PROJECT,
       source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
       type: Sheet_Type.TYPE_SQL,
-      payload: JSON.stringify(payload),
     });
 
     resetTempEditState();
