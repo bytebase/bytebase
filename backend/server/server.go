@@ -348,6 +348,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
 	}
 	s.store = storeInstance
+
+	if err := s.store.BackfillIssueTsVector(ctx); err != nil {
+		log.Warn("failed to backfill issue ts vector", zap.Error(err))
+	}
+
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
