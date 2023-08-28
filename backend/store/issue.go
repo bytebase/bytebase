@@ -702,6 +702,24 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	if v := patch.Payload; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
+	if patch.Title != nil || patch.Description != nil {
+		title := oldIssue.Title
+		if patch.Title != nil {
+			title = *patch.Title
+		}
+		description := oldIssue.Description
+		if patch.Description != nil {
+			description = *patch.Description
+		}
+
+		var seg gse.Segmenter
+		seg.LoadDict()
+
+		tsVector := toTsVector(seg.CutTrim(fmt.Sprintf("%s %s", title, description)))
+		set = append(set, fmt.Sprintf("ts_vector = $%d", len(args)+1))
+		args = append(args, tsVector)
+	}
+
 	args = append(args, uid)
 
 	tx, err := s.db.BeginTx(ctx, nil)
