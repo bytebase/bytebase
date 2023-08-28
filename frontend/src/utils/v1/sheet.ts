@@ -1,4 +1,3 @@
-import { isUndefined } from "lodash-es";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   getUserEmailFromIdentifier,
@@ -7,7 +6,6 @@ import {
 } from "@/store/modules/v1/common";
 import {
   Task,
-  SheetIssueBacktracePayload,
   TaskDatabaseCreatePayload,
   TaskDatabaseDataUpdatePayload,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
@@ -66,11 +64,6 @@ export const isSheetReadableV1 = (sheet: Sheet) => {
 };
 
 export const isSheetWritableV1 = (sheet: Sheet) => {
-  // If the sheet is linked to an issue, it's NOT writable
-  if (getSheetIssueBacktracePayloadV1(sheet)) {
-    return false;
-  }
-
   const currentUserV1 = useCurrentUserV1();
 
   // writable to
@@ -111,21 +104,6 @@ export const isSheetWritableV1 = (sheet: Sheet) => {
   }
   // visibility === "PUBLIC"
   return false;
-};
-
-export const getSheetIssueBacktracePayloadV1 = (sheet: Sheet) => {
-  const maybePayload = JSON.parse(
-    sheet.payload ?? "{}"
-  ) as SheetIssueBacktracePayload;
-  if (
-    maybePayload.type === "bb.sheet.issue-backtrace" &&
-    !isUndefined(maybePayload.issueId) &&
-    !isUndefined(maybePayload.issueName)
-  ) {
-    return maybePayload;
-  }
-
-  return undefined;
 };
 
 export const sheetNameOfTask = (task: Task) => {
