@@ -546,11 +546,16 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 	}
 
 	for _, database := range extractor.schemaInfo.DatabaseList {
+		if len(database.SchemaList) == 0 {
+			continue
+		}
+		tableList := database.SchemaList[0].TableList
+
 		if extractor.schemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerTable := strings.ToLower(tableName)
 			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
-				for _, table := range database.TableList {
+				for _, table := range tableList {
 					if lowerTable == strings.ToLower(table.Name) {
 						explicitDatabase := databaseName
 						if explicitDatabase == "" {
@@ -561,7 +566,7 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 				}
 			}
 		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
-			for _, table := range database.TableList {
+			for _, table := range tableList {
 				if tableName == table.Name {
 					explicitDatabase := databaseName
 					if explicitDatabase == "" {
@@ -606,11 +611,16 @@ func (extractor *sensitiveFieldExtractor) buildTableSchemaForView(viewName strin
 
 func (extractor *sensitiveFieldExtractor) findViewSchema(databaseName string, viewName string) (string, db.TableSchema, error) {
 	for _, database := range extractor.schemaInfo.DatabaseList {
+		if len(database.SchemaList) == 0 {
+			continue
+		}
+		viewList := database.SchemaList[0].ViewList
+
 		if extractor.schemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerView := strings.ToLower(viewName)
 			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
-				for _, view := range database.ViewList {
+				for _, view := range viewList {
 					if lowerView == strings.ToLower(view.Name) {
 						explicitDatabase := databaseName
 						if explicitDatabase == "" {
@@ -623,7 +633,7 @@ func (extractor *sensitiveFieldExtractor) findViewSchema(databaseName string, vi
 				}
 			}
 		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
-			for _, view := range database.ViewList {
+			for _, view := range viewList {
 				if viewName == view.Name {
 					explicitDatabase := databaseName
 					if explicitDatabase == "" {
