@@ -184,7 +184,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.
 				columnName = columnNameList[i]
 			}
 			result = append(result, fieldInfo{
-				schema:    item.schema,
+				schema:    "public",
 				table:     aliasName,
 				name:      columnName,
 				sensitive: item.sensitive,
