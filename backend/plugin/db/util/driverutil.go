@@ -170,7 +170,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows2(rows, columnTypes, columnTypeNames, fieldMaskInfo)
+	data, err := readRows(rows, columnTypes, columnTypeNames, fieldMaskInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows2(rows, columnTypes, columnTypeNames, nil)
+	data, err := readRows(rows, columnTypes, columnTypeNames, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -297,8 +297,7 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	}, nil
 }
 
-// TODO(rebelice): remove the readRows and rename readRows2 to readRows if legacy API is deprecated.
-func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldMaskInfo []bool) ([]*v1pb.QueryRow, error) {
+func readRows(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldMaskInfo []bool) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
 	if len(columnTypes) == 0 {
 		// No rows.
