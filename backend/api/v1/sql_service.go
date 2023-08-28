@@ -1423,8 +1423,8 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						})
 					}
 					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
-					databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 				}
+				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 				result.DatabaseList = append(result.DatabaseList, databaseSchema)
 			}
 			continue
