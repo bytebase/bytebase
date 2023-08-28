@@ -1466,7 +1466,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					})
 				}
 				schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
-
 			}
 			for _, view := range schema.Views {
 				viewSchema := db.ViewSchema{
