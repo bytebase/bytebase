@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-ego/gse"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
@@ -557,6 +558,8 @@ type FindIssueMessage struct {
 	Limit *int
 
 	Stripped bool
+
+	Query *string
 }
 
 // GetIssueV2 gets issue by issue UID.
@@ -600,6 +603,11 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		return nil, err
 	}
 
+	var seg gse.Segmenter
+	seg.LoadDict()
+
+	tsVector := toTsVector(seg.CutTrim(fmt.Sprintf("%s %s", create.Title, create.Description)))
+
 	query := `
 		INSERT INTO issue (
 			creator_id,
@@ -613,9 +621,10 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			description,
 			assignee_id,
 			assignee_need_attention,
-			payload
+			payload,
+			ts_vector
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tsvector)
 		RETURNING id, created_ts, updated_ts
 	`
 
@@ -638,6 +647,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Assignee.ID,
 		create.NeedAttention,
 		create.Payload,
+		tsVector,
 	).Scan(
 		&create.UID,
 		&create.createdTs,
@@ -835,6 +845,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.SinceID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.Query; v != nil {
+		var seg gse.Segmenter
+		seg.LoadDict()
+		tsQuery := toTsQuery(seg.Trim(seg.CutSearch(*v)))
+		where, args = append(where, fmt.Sprintf("issue.ts_vector @@ $%d::tsquery", len(args)+1)), append(args, tsQuery)
+	}
 	if len(find.StatusList) != 0 {
 		var list []string
 		for _, status := range find.StatusList {
@@ -1024,4 +1040,26 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	}
 
 	return nil
+}
+
+func toTsVector(lexemes []string) string {
+	var tsVector strings.Builder
+	for i, lexeme := range lexemes {
+		if i != 0 {
+			_, _ = tsVector.WriteString(" ")
+		}
+		_, _ = tsVector.WriteString(fmt.Sprintf("%s:%d", lexeme, i+1))
+	}
+	return tsVector.String()
+}
+
+func toTsQuery(lexemes []string) string {
+	var tsQuery strings.Builder
+	for i, lexeme := range lexemes {
+		if i != 0 {
+			_, _ = tsQuery.WriteString("|")
+		}
+		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", lexeme))
+	}
+	return tsQuery.String()
 }

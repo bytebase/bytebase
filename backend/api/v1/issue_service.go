@@ -93,6 +93,24 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	return issueV1, nil
 }
 
+func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIssuesRequest) (*v1pb.SearchIssuesResponse, error) {
+	limit := 10
+	issues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{
+		Query: &request.Query,
+		Limit: &limit,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
+	}
+	converted, err := convertToIssues(ctx, s.store, issues)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+	}
+	return &v1pb.SearchIssuesResponse{
+		Issues: converted,
+	}, nil
+}
+
 // CreateIssue creates a issue.
 func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
 	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -996,6 +1014,18 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 	}
 
 	return false, nil
+}
+
+func convertToIssues(ctx context.Context, s *store.Store, issues []*store.IssueMessage) ([]*v1pb.Issue, error) {
+	var converted []*v1pb.Issue
+	for _, issue := range issues {
+		v1Issue, err := convertToIssue(ctx, s, issue)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert to issue")
+		}
+		converted = append(converted, v1Issue)
+	}
+	return converted, nil
 }
 
 func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessage) (*v1pb.Issue, error) {
