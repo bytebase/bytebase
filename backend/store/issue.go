@@ -16,6 +16,20 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
+var getSegmenter func() *gse.Segmenter
+
+func init() {
+	var segmenterDic gse.Segmenter
+	if err := segmenterDic.LoadDict(); err != nil {
+		panic(errors.Wrapf(err, "failed to load segmenter dictionary"))
+	}
+	getSegmenter = func() *gse.Segmenter {
+		var segmenter gse.Segmenter
+		segmenter.Dict = segmenterDic.Dict
+		return &segmenter
+	}
+}
+
 // GetIssueByID gets an instance of Issue.
 func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	issue, err := s.GetIssueV2(ctx, &FindIssueMessage{UID: &id})
@@ -603,9 +617,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		return nil, err
 	}
 
-	var seg gse.Segmenter
-	seg.LoadDict()
-	tsVector := getTsVector(&seg, fmt.Sprintf("%s %s", create.Title, create.Description))
+	tsVector := getTsVector(fmt.Sprintf("%s %s", create.Title, create.Description))
 
 	query := `
 		INSERT INTO issue (
@@ -711,10 +723,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 			description = *patch.Description
 		}
 
-		var seg gse.Segmenter
-		seg.LoadDict()
-
-		tsVector := getTsVector(&seg, fmt.Sprintf("%s %s", title, description))
+		tsVector := getTsVector(fmt.Sprintf("%s %s", title, description))
 		set = append(set, fmt.Sprintf("ts_vector = $%d", len(args)+1))
 		args = append(args, tsVector)
 	}
@@ -865,9 +874,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Query; v != nil {
-		var seg gse.Segmenter
-		seg.LoadDict()
-		tsQuery := getTsQuery(&seg, *v)
+		tsQuery := getTsQuery(*v)
 		from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
 		args = append(args, tsQuery)
 		where = append(where, "issue.ts_vector @@ query")
@@ -1057,7 +1064,8 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	return nil
 }
 
-func getTsVector(seg *gse.Segmenter, text string) string {
+func getTsVector(text string) string {
+	seg := getSegmenter()
 	parts := seg.CutTrim(text)
 	var tsVector strings.Builder
 	for i, part := range parts {
@@ -1069,7 +1077,8 @@ func getTsVector(seg *gse.Segmenter, text string) string {
 	return tsVector.String()
 }
 
-func getTsQuery(seg *gse.Segmenter, text string) string {
+func getTsQuery(text string) string {
+	seg := getSegmenter()
 	parts := seg.Trim(seg.CutSearch(text))
 	var tsQuery strings.Builder
 	for i, part := range parts {
