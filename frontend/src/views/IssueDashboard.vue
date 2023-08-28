@@ -84,36 +84,6 @@
       </template>
     </PagedIssueTable>
   </div>
-
-  <Drawer>
-    <DrawerContent class="w-[80vw]">
-      <DiffEditor
-        class="h-[40rem]"
-        :original="`1
-        2
-        3
-        4
-        5
-        6
-        7
-        8
-        9`"
-        :value="`1
-        2
-        // removed line 3
-        4
-        5 // updated line
-        6
-        // added lines
-        // 6-1
-        // 6-2
-        // 6-3
-        7
-        8
-        9`"
-      />
-    </DrawerContent>
-  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -121,14 +91,7 @@ import { NInputGroup, NButton } from "naive-ui";
 import { reactive, computed, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
-import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
-import {
-  EnvironmentTabFilter,
-  UserSelect,
-  SearchBox,
-  Drawer,
-  DrawerContent,
-} from "@/components/v2";
+import { EnvironmentTabFilter, UserSelect, SearchBox } from "@/components/v2";
 import {
   useCurrentUserV1,
   useEnvironmentV1Store,
