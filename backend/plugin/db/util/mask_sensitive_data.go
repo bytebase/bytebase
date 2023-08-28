@@ -3,6 +3,8 @@ package util
 import (
 	"regexp"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -32,6 +34,17 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 
 	switch dbType {
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		for _, database := range schemaInfo.DatabaseList {
+			if len(database.SchemaList) == 0 {
+				continue
+			}
+			if len(database.SchemaList) > 1 {
+				return nil, errors.Errorf("MySQL schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
+			}
+			if database.SchemaList[0].Name != "" {
+				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
+			}
+		}
 		extractor := &sensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
