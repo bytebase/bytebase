@@ -605,8 +605,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 
 	var seg gse.Segmenter
 	seg.LoadDict()
-
-	tsVector := toTsVector(seg.CutTrim(fmt.Sprintf("%s %s", create.Title, create.Description)))
+	tsVector := getTsVector(&seg, fmt.Sprintf("%s %s", create.Title, create.Description))
 
 	query := `
 		INSERT INTO issue (
@@ -715,7 +714,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		var seg gse.Segmenter
 		seg.LoadDict()
 
-		tsVector := toTsVector(seg.CutTrim(fmt.Sprintf("%s %s", title, description)))
+		tsVector := getTsVector(&seg, fmt.Sprintf("%s %s", title, description))
 		set = append(set, fmt.Sprintf("ts_vector = $%d", len(args)+1))
 		args = append(args, tsVector)
 	}
@@ -1061,13 +1060,14 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	return nil
 }
 
-func toTsVector(lexemes []string) string {
+func getTsVector(seg *gse.Segmenter, text string) string {
+	parts := seg.CutTrim(text)
 	var tsVector strings.Builder
-	for i, lexeme := range lexemes {
+	for i, part := range parts {
 		if i != 0 {
 			_, _ = tsVector.WriteString(" ")
 		}
-		_, _ = tsVector.WriteString(fmt.Sprintf("%s:%d", lexeme, i+1))
+		_, _ = tsVector.WriteString(fmt.Sprintf("%s:%d", part, i+1))
 	}
 	return tsVector.String()
 }
