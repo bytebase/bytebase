@@ -1466,7 +1466,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						Sensitive: sensitive,
 					})
 				}
-				if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
+				if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL || instance.Engine == db.MySQL {
 					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
 				} else {
 					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
@@ -1477,9 +1477,13 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					Name:       view.Name,
 					Definition: view.Definition,
 				}
-				databaseSchema.ViewList = append(databaseSchema.ViewList, viewSchema)
+				if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL || instance.Engine == db.MySQL {
+					databaseSchema.ViewList = append(schemaSchema.ViewList, viewSchema)
+				} else {
+					databaseSchema.ViewList = append(databaseSchema.ViewList, viewSchema)
+				}
 			}
-			if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL {
+			if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL || instance.Engine == db.MySQL {
 				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 			}
 		}
