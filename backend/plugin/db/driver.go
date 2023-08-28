@@ -628,11 +628,6 @@ type SensitiveSchemaInfo struct {
 type DatabaseSchema struct {
 	Name       string
 	SchemaList []SchemaSchema
-
-	// !!DEPRECATED!!, should use SchemaList instead.
-	// TODO(rebelice/zp): Migrate PostgreSQL to SchemaList.
-	TableList []TableSchema
-	ViewList  []ViewSchema
 }
 
 // SchemaSchema is the schema of the schema using to extract sensitive fields.
