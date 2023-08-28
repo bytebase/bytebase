@@ -184,7 +184,8 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.
 				columnName = columnNameList[i]
 			}
 			result = append(result, fieldInfo{
-				table:     fmt.Sprintf("public.%s", aliasName),
+				schema:    item.schema,
+				table:     aliasName,
 				name:      columnName,
 				sensitive: item.sensitive,
 			})
@@ -192,16 +193,6 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.
 		return result, nil
 	}
 	return fieldList, nil
-}
-
-func pgNormalizeTableName(schemaName string, tableName string) string {
-	if tableName == "" {
-		return ""
-	}
-	if schemaName == "" {
-		schemaName = "public"
-	}
-	return fmt.Sprintf("%s.%s", schemaName, tableName)
 }
 
 func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
@@ -220,7 +211,7 @@ func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
 }
 
 func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]fieldInfo, error) {
-	tableSchema, err := extractor.pgFindTableSchema(pgNormalizeTableName(node.RangeVar.Schemaname, node.RangeVar.Relname))
+	tableSchema, err := extractor.pgFindTableSchema(node.RangeVar.Schemaname, node.RangeVar.Relname)
 	if err != nil {
 		return nil, err
 	}
@@ -244,14 +235,14 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_R
 		}
 
 		for i, column := range tableSchema.ColumnList {
-			tableName := fmt.Sprintf("public.%s", aliasName)
 			columnName := column.Name
 			if len(columnNameList) > 0 {
 				columnName = columnNameList[i]
 			}
 			res = append(res, fieldInfo{
+				schema:    "public",
 				name:      columnName,
-				table:     tableName,
+				table:     aliasName,
 				sensitive: column.Sensitive,
 			})
 		}
@@ -260,7 +251,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_R
 	return res, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgFindTableSchema(tableName string) (db.TableSchema, error) {
+func (extractor *sensitiveFieldExtractor) pgFindTableSchema(schemaName string, tableName string) (db.TableSchema, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -278,9 +269,13 @@ func (extractor *sensitiveFieldExtractor) pgFindTableSchema(tableName string) (d
 	}
 
 	for _, database := range extractor.schemaInfo.DatabaseList {
-		for _, table := range database.TableList {
-			if tableName == table.Name {
-				return table, nil
+		for _, schema := range database.SchemaList {
+			if schemaName == "" && schema.Name == "public" || schemaName == schema.Name {
+				for _, table := range schema.TableList {
+					if tableName == table.Name {
+						return table, nil
+					}
+				}
 			}
 		}
 	}
@@ -312,7 +307,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.No
 			}
 		}
 
-		cteInfo := db.TableSchema{Name: pgNormalizeTableName("public", node.CommonTableExpr.Ctename)}
+		cteInfo := db.TableSchema{Name: node.CommonTableExpr.Ctename}
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
 				Name:      field.name,
@@ -384,7 +379,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery
 		}
 	}
 	result := db.TableSchema{
-		Name:       pgNormalizeTableName("public", node.CommonTableExpr.Ctename),
+		Name:       node.CommonTableExpr.Ctename,
 		ColumnList: []db.ColumnInfo{},
 	}
 
@@ -512,9 +507,9 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 				if columnRef.Table.Name == "" {
 					result = append(result, fromFieldList...)
 				} else {
-					tableName, _ := pgNormalizeColumnName(columnRef)
+					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
 					for _, fromField := range fromFieldList {
-						if fromField.table == tableName {
+						if fromField.schema == schemaName && fromField.table == tableName {
 							result = append(result, fromField)
 						}
 					}
@@ -705,11 +700,11 @@ func pgExtractFieldName(in *pgquery.Node) (string, error) {
 	return pgUnknownFieldName, nil
 }
 
-func pgNormalizeColumnName(columnName *ast.ColumnNameDef) (string, string) {
-	return pgNormalizeTableName(columnName.Table.Schema, columnName.Table.Name), columnName.ColumnName
+func extractSchemaTableColumnName(columnName *ast.ColumnNameDef) (string, string, string) {
+	return columnName.Table.Schema, columnName.Table.Name, columnName.ColumnName
 }
 
-func (extractor *sensitiveFieldExtractor) pgCheckFieldSensitive(tableName string, fieldName string) bool {
+func (extractor *sensitiveFieldExtractor) pgCheckFieldSensitive(schemaName string, tableName string, fieldName string) bool {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -725,10 +720,12 @@ func (extractor *sensitiveFieldExtractor) pgCheckFieldSensitive(tableName string
 	// This is the reason we loop the slice in reversed order.
 	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
 		field := extractor.outerSchemaInfo[i]
-		sameTable := (tableName == field.table || tableName == "")
-		sameField := (fieldName == field.name)
-		if sameTable && sameField {
-			return field.sensitive
+		if (schemaName == "" && field.schema == "public") || schemaName == field.schema {
+			sameTable := (tableName == field.table || tableName == "")
+			sameField := (fieldName == field.name)
+			if sameTable && sameField {
+				return field.sensitive
+			}
 		}
 	}
 
@@ -775,7 +772,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(i
 		if err != nil {
 			return false, err
 		}
-		return extractor.pgCheckFieldSensitive(pgNormalizeColumnName(columnNameDef)), nil
+		return extractor.pgCheckFieldSensitive(extractSchemaTableColumnName(columnNameDef)), nil
 	case *pgquery.Node_AExpr:
 		var nodeList []*pgquery.Node
 		nodeList = append(nodeList, node.AExpr.Lexpr)
