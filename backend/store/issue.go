@@ -569,7 +569,8 @@ type FindIssueMessage struct {
 	// If specified, only find issues whose ID is smaller that SinceID.
 	SinceID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
-	Limit *int
+	Limit  *int
+	Offset *int
 
 	Stripped bool
 
@@ -888,9 +889,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		where = append(where, fmt.Sprintf("issue.status IN (%s)", strings.Join(list, ", ")))
 	}
-	limitClause := ""
+	limitOffsetClause := ""
 	if v := find.Limit; v != nil {
-		limitClause = fmt.Sprintf(" LIMIT %d", *v)
+		limitOffsetClause = fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
 	var issues []*IssueMessage
@@ -921,7 +925,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	FROM %s
 	WHERE %s
 	%s
-	%s`, from, strings.Join(where, " AND "), orderByClause, limitClause)
+	%s`, from, strings.Join(where, " AND "), orderByClause, limitOffsetClause)
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {

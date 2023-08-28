@@ -94,6 +94,10 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 }
 
 func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIssuesRequest) (*v1pb.SearchIssuesResponse, error) {
+	if request.PageSize < 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
+	}
+
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -112,21 +116,56 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		projectUID = &project.UID
 	}
 
-	limit := 10
+	limit := int(request.PageSize)
+	offset := 0
+	if request.PageToken != "" {
+		var pageToken storepb.PageToken
+		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+		offset = int(pageToken.Offset)
+	}
+	if limit == 0 {
+		limit = 10
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	limitPlusOne := limit + 1
+
 	issues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{
 		ProjectUID: projectUID,
 		Query:      &request.Query,
-		Limit:      &limit,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
 	}
+
+	if len(issues) == limitPlusOne {
+		nextPageToken, err := getPageToken(limit, offset+limit)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+		}
+		converted, err := convertToIssues(ctx, s.store, issues[:limit])
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+		}
+		return &v1pb.SearchIssuesResponse{
+			Issues:        converted,
+			NextPageToken: nextPageToken,
+		}, nil
+	}
+
+	// No subsequent pages.
 	converted, err := convertToIssues(ctx, s.store, issues)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return &v1pb.SearchIssuesResponse{
-		Issues: converted,
+		Issues:        converted,
+		NextPageToken: "",
 	}, nil
 }
 
