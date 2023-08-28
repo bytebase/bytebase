@@ -94,10 +94,29 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 }
 
 func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIssuesRequest) (*v1pb.SearchIssuesResponse, error) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	var projectUID *int
+	if projectID != "-" {
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
+		}
+		projectUID = &project.UID
+	}
+
 	limit := 10
 	issues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		Query: &request.Query,
-		Limit: &limit,
+		ProjectUID: projectUID,
+		Query:      &request.Query,
+		Limit:      &limit,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
