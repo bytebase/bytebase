@@ -11,7 +11,11 @@ import (
 
 func TestGse(t *testing.T) {
 	var (
-		text = "I I I Idol.To be or not to be has tries trying try The, that's the question! 今天天气不错！你好世界👋 انا احب الموز. يعجبني ، هل يعجبك؟"
+		text = `I I I Idol.To be or not to be has tries trying try The, that's the question! 今天天气不错！你好世界👋 انا احب الموز. يعجبني ، هل يعجبك؟
+		
+		find my website at http://pony.ville
+		
+		`
 	)
 	var seg1 gse.Segmenter
 	seg1.LoadDict()
