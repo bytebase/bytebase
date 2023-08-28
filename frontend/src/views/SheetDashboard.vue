@@ -97,7 +97,6 @@ import {
 } from "@/store";
 import { Workflow } from "@/types/proto/v1/project_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { getSheetIssueBacktracePayloadV1 } from "@/utils";
 import {
   type SheetViewMode,
   SheetTable,
@@ -220,10 +219,7 @@ const fetchSheetData = async () => {
     sheetList = await sheetV1Store.fetchSharedSheetList();
   }
 
-  // Hide those sheets from issue.
-  state.sheetList = sheetList.filter((sheet) => {
-    return !getSheetIssueBacktracePayloadV1(sheet);
-  });
+  state.sheetList = sheetList;
 };
 
 onMounted(async () => {

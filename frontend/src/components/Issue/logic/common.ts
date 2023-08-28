@@ -42,7 +42,6 @@ import {
   defer,
   extractSheetUID,
   extractUserUID,
-  getBacktracePayloadWithIssue,
   hasWorkspacePermissionV1,
   isDev,
   isTaskTriggeredByVCS,
@@ -244,9 +243,6 @@ export const useCommonLogic = () => {
         visibility: Sheet_Visibility.VISIBILITY_PROJECT,
         source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
         type: Sheet_Type.TYPE_SQL,
-        payload: JSON.stringify(
-          getBacktracePayloadWithIssue(issue.value as Issue)
-        ),
       });
 
       const patchRequestList = patchingTaskList.map((task) => {
