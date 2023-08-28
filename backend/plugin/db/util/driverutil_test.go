@@ -1232,25 +1232,30 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			DatabaseList: []db.DatabaseSchema{
 				{
 					Name: defaultSchema,
-					TableList: []db.TableSchema{
+					SchemaList: []db.SchemaSchema{
 						{
-							Name: "T",
-							ColumnList: []db.ColumnInfo{
+							Name: defaultSchema,
+							TableList: []db.TableSchema{
 								{
-									Name:      "A",
-									Sensitive: true,
-								},
-								{
-									Name:      "B",
-									Sensitive: false,
-								},
-								{
-									Name:      "C",
-									Sensitive: false,
-								},
-								{
-									Name:      "D",
-									Sensitive: true,
+									Name: "T",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "A",
+											Sensitive: true,
+										},
+										{
+											Name:      "B",
+											Sensitive: false,
+										},
+										{
+											Name:      "C",
+											Sensitive: false,
+										},
+										{
+											Name:      "D",
+											Sensitive: true,
+										},
+									},
 								},
 							},
 						},
