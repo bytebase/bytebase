@@ -2805,6 +2805,7 @@
     "baseline-database": "基准数据库",
     "schema-version": "Schema 版本",
     "personal-draft": "个人草稿",
+    "baseline-version": "基线版本",
     "save-draft": "保存草稿",
     "merge-to-main": "合并到主版本",
     "diff-editor": {
