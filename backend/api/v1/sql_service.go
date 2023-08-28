@@ -1433,8 +1433,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		databaseSchema := db.DatabaseSchema{
 			Name:       databaseName,
 			SchemaList: []db.SchemaSchema{},
-			TableList:  []db.TableSchema{},
-			ViewList:   []db.ViewSchema{},
 		}
 		for _, schema := range dbSchema.Metadata.Schemas {
 			schemaSchema := db.SchemaSchema{
@@ -1445,9 +1443,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				tableSchema := db.TableSchema{
 					Name:       table.Name,
 					ColumnList: []db.ColumnInfo{},
-				}
-				if instance.Engine == db.Postgres || instance.Engine == db.Redshift || instance.Engine == db.RisingWave {
-					tableSchema.Name = fmt.Sprintf("%s.%s", schema.Name, table.Name)
 				}
 				for _, column := range table.Columns {
 					_, sensitive := columnMap[api.SensitiveData{
@@ -1470,22 +1465,14 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						Sensitive: sensitive,
 					})
 				}
-				if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL || instance.Engine == db.MySQL {
-					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
-				} else {
-					databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
-				}
+				schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
 			}
 			for _, view := range schema.Views {
 				viewSchema := db.ViewSchema{
 					Name:       view.Name,
 					Definition: view.Definition,
 				}
-				if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL || instance.Engine == db.MySQL {
-					schemaSchema.ViewList = append(schemaSchema.ViewList, viewSchema)
-				} else {
-					databaseSchema.ViewList = append(databaseSchema.ViewList, viewSchema)
-				}
+				schemaSchema.ViewList = append(schemaSchema.ViewList, viewSchema)
 			}
 			if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL || instance.Engine == db.MySQL {
 				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
