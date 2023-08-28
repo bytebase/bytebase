@@ -178,7 +178,7 @@ func generateOneMBInsert() string {
 	return fmt.Sprintf("INSERT INTO t values('%s')", string(b))
 }
 
-func TestExtractSensitiveField(t *testing.T) {
+func TestMySQLExtractSensitiveField(t *testing.T) {
 	const (
 		defaultDatabase = "db"
 	)
@@ -187,25 +187,30 @@ func TestExtractSensitiveField(t *testing.T) {
 			DatabaseList: []db.DatabaseSchema{
 				{
 					Name: defaultDatabase,
-					TableList: []db.TableSchema{
+					SchemaList: []db.SchemaSchema{
 						{
-							Name: "t",
-							ColumnList: []db.ColumnInfo{
+							Name: "",
+							TableList: []db.TableSchema{
 								{
-									Name:      "a",
-									Sensitive: true,
-								},
-								{
-									Name:      "b",
-									Sensitive: false,
-								},
-								{
-									Name:      "c",
-									Sensitive: false,
-								},
-								{
-									Name:      "d",
-									Sensitive: true,
+									Name: "t",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "a",
+											Sensitive: true,
+										},
+										{
+											Name:      "b",
+											Sensitive: false,
+										},
+										{
+											Name:      "c",
+											Sensitive: false,
+										},
+										{
+											Name:      "d",
+											Sensitive: true,
+										},
+									},
 								},
 							},
 						},
