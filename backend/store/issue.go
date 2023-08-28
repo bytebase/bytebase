@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/go-ego/gse"
-	"github.com/lib/pq"
+	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -901,8 +901,8 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	defer rows.Close()
 	for rows.Next() {
 		var issue IssueMessage
-		var subscribers []sql.NullInt32
 		var pipelineUID sql.NullInt32
+		var subscriberUIDs pgtype.Int4Array
 		if err := rows.Scan(
 			&issue.UID,
 			&issue.creatorUID,
@@ -919,19 +919,16 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.assigneeUID,
 			&issue.NeedAttention,
 			&issue.Payload,
-			pq.Array(&subscribers),
+			&subscriberUIDs,
 		); err != nil {
+			return nil, err
+		}
+		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
 		}
 		if pipelineUID.Valid {
 			v := int(pipelineUID.Int32)
 			issue.PipelineUID = &v
-		}
-		for _, subscriber := range subscribers {
-			if !subscriber.Valid {
-				continue
-			}
-			issue.subscriberUIDs = append(issue.subscriberUIDs, int(subscriber.Int32))
 		}
 		issues = append(issues, &issue)
 	}
