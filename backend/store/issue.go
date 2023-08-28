@@ -808,6 +808,8 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 
 // ListIssueV2 returns the list of issues by find query.
 func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
+	orderByClause := "ORDER BY issue.id DESC"
+	from := "issue"
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id = $%d", len(args)+1)), append(args, *v)
@@ -849,7 +851,13 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		var seg gse.Segmenter
 		seg.LoadDict()
 		tsQuery := toTsQuery(seg.Trim(seg.CutSearch(*v)))
-		where, args = append(where, fmt.Sprintf("issue.ts_vector @@ $%d::tsquery", len(args)+1)), append(args, tsQuery)
+		if tsQuery == "" {
+			tsQuery = *v
+		}
+		from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
+		args = append(args, tsQuery)
+		where = append(where, "issue.ts_vector @@ query")
+		orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
 	}
 	if len(find.StatusList) != 0 {
 		var list []string
@@ -871,30 +879,30 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
-		SELECT
-			issue.id,
-			issue.creator_id,
-			issue.created_ts,
-			issue.updater_id,
-			issue.updated_ts,
-			issue.project_id,
-			issue.pipeline_id,
-			issue.plan_id,
-			issue.name,
-			issue.status,
-			issue.type,
-			issue.description,
-			issue.assignee_id,
-			issue.assignee_need_attention,
-			issue.payload,
-			(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
-		FROM issue
-		WHERE %s
-		ORDER BY issue.id DESC
-		%s`, strings.Join(where, " AND "), limitClause),
-		args...,
-	)
+	query := fmt.Sprintf(`
+	SELECT
+		issue.id,
+		issue.creator_id,
+		issue.created_ts,
+		issue.updater_id,
+		issue.updated_ts,
+		issue.project_id,
+		issue.pipeline_id,
+		issue.plan_id,
+		issue.name,
+		issue.status,
+		issue.type,
+		issue.description,
+		issue.assignee_id,
+		issue.assignee_need_attention,
+		issue.payload,
+		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
+	FROM %s
+	WHERE %s
+	%s
+	%s`, from, strings.Join(where, " AND "), orderByClause, limitClause)
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
