@@ -754,7 +754,7 @@ CREATE TABLE issue (
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
     assignee_need_attention BOOLEAN NOT NULL DEFAULT FALSE, 
     payload JSONB NOT NULL DEFAULT '{}',
-    ts_vector TSVECTOR,
+    ts_vector TSVECTOR
 );
 
 CREATE INDEX idx_issue_project_id ON issue(project_id);
