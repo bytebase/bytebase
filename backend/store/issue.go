@@ -1096,3 +1096,69 @@ func getTsQuery(text string) string {
 	}
 	return tsQuery.String()
 }
+
+func (s *Store) BackfillIssueTsVector(ctx context.Context) error {
+	chunkSize := 50
+	offset := 0
+	selectQuery := `
+		SELECT id, name, description
+		FROM issue
+		WHERE ts_vector IS NULL
+		ORDER BY id
+		LIMIT $1
+		OFFSET $2
+	`
+	updateStatement := `
+		UPDATE issue
+		SET ts_vector = $1
+		WHERE id = $2
+	`
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	for {
+		var issues []*IssueMessage
+		if err := func() error {
+			rows, err := tx.QueryContext(ctx, selectQuery, chunkSize, offset)
+			if err != nil {
+				return errors.Wrapf(err, "failed to query")
+			}
+			defer rows.Close()
+			for rows.Next() {
+				var issue IssueMessage
+				if err := rows.Scan(&issue.UID, &issue.Title, &issue.Description); err != nil {
+					return errors.Wrapf(err, "failed to scan")
+				}
+				issues = append(issues, &issue)
+			}
+			if err := rows.Err(); err != nil {
+				return errors.Wrapf(err, "failed to scan")
+			}
+			return nil
+		}(); err != nil {
+			return err
+		}
+
+		if len(issues) == 0 {
+			break
+		}
+		offset += len(issues)
+
+		for _, issue := range issues {
+			tsVector := getTsVector(fmt.Sprintf("%s %s", issue.Title, issue.Description))
+			if _, err := tx.ExecContext(ctx, updateStatement, tsVector, issue.UID); err != nil {
+				return errors.Wrapf(err, "failed to update")
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit")
+	}
+
+	return nil
+}
