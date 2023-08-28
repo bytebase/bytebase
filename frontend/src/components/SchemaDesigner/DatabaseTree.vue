@@ -4,8 +4,8 @@
       <p class="w-full flex flex-row justify-between items-center h-8 px-1">
         <span class="text-sm">{{ $t("schema-designer.tables") }}</span>
         <button
+          v-if="!readonly"
           class="text-gray-400 hover:text-gray-500 disabled:cursor-not-allowed"
-          :disabled="readonly"
           @click="handleCreateTable"
         >
           <heroicons-outline:plus class="w-4 h-auto" />
@@ -352,6 +352,10 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
 
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
+  if (readonly.value) {
+    return null;
+  }
+
   const menuIcon = h(EllipsisIcon, {
     class: "w-4 h-auto text-gray-600",
     onClick: (e) => {
