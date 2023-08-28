@@ -867,10 +867,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.Query; v != nil {
 		var seg gse.Segmenter
 		seg.LoadDict()
-		tsQuery := toTsQuery(seg.Trim(seg.CutSearch(*v)))
-		if tsQuery == "" {
-			tsQuery = *v
-		}
+		tsQuery := getTsQuery(&seg, *v)
 		from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
 		args = append(args, tsQuery)
 		where = append(where, "issue.ts_vector @@ query")
@@ -1072,13 +1069,17 @@ func getTsVector(seg *gse.Segmenter, text string) string {
 	return tsVector.String()
 }
 
-func toTsQuery(lexemes []string) string {
+func getTsQuery(seg *gse.Segmenter, text string) string {
+	parts := seg.Trim(seg.CutSearch(text))
 	var tsQuery strings.Builder
-	for i, lexeme := range lexemes {
+	for i, part := range parts {
 		if i != 0 {
 			_, _ = tsQuery.WriteString("|")
 		}
-		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", lexeme))
+		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", part))
+	}
+	if tsQuery.Len() == 0 {
+		return text
 	}
 	return tsQuery.String()
 }
