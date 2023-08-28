@@ -888,13 +888,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			issue.assignee_id,
 			issue.assignee_need_attention,
 			issue.payload,
-			ARRAY_AGG (
-				issue_subscriber.subscriber_id
-			) subscribers
+			(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
 		FROM issue
-		LEFT JOIN issue_subscriber ON issue.id = issue_subscriber.issue_id
 		WHERE %s
-		GROUP BY issue.id
 		ORDER BY issue.id DESC
 		%s`, strings.Join(where, " AND "), limitClause),
 		args...,
