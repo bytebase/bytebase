@@ -754,7 +754,8 @@ CREATE TABLE issue (
     -- While changing assignee_id, one should only change it to a non-robot DBA/owner.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
     assignee_need_attention BOOLEAN NOT NULL DEFAULT FALSE, 
-    payload JSONB NOT NULL DEFAULT '{}'
+    payload JSONB NOT NULL DEFAULT '{}',
+    ts_vector TSVECTOR,
 );
 
 CREATE INDEX idx_issue_project_id ON issue(project_id);
@@ -768,6 +769,8 @@ CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
 CREATE INDEX idx_issue_created_ts ON issue(created_ts);
+
+CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 
