@@ -177,12 +177,14 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		type key struct {
 			instanceUID  int
 			databaseName string
+			checkType    store.PlanCheckRunType
 		}
 		latestRun := map[key]*store.PlanCheckRunMessage{}
 		for _, run := range planCheckRuns {
 			k := key{
 				instanceUID:  int(run.Config.InstanceUid),
 				databaseName: run.Config.DatabaseName,
+				checkType:    run.Type,
 			}
 			if latest, ok := latestRun[k]; !ok || latest.UID < run.UID {
 				latestRun[k] = run
