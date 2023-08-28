@@ -2810,6 +2810,7 @@
     "baseline-database": "Base de datos de referencia",
     "schema-version": "Versión del esquema",
     "personal-draft": "Borrador personal",
+    "baseline-version": "Versión de referencia",
     "save-draft": "Guardar borrador",
     "merge-to-main": "Fusionar a principal",
     "diff-editor": {

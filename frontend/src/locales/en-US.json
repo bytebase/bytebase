@@ -2812,6 +2812,7 @@
     "baseline-database": "Baseline database",
     "schema-version": "Schema version",
     "personal-draft": "Personal draft",
+    "baseline-version": "Baseline version",
     "save-draft": "Save draft",
     "merge-to-main": "Merge to main",
     "diff-editor": {
