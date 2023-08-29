@@ -1,18 +1,21 @@
-import { EMPTY_ID, UNKNOWN_ID } from "../../const";
-import { Issue, Issue_Type } from "../../proto/v1/issue_service";
-import {
-  Plan,
-  PlanCheckRun,
-  Rollout,
-  TaskRun,
-} from "../../proto/v1/rollout_service";
 import {
   ComposedProject,
   EMPTY_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
   emptyProject,
   unknownProject,
-} from "../project";
+  emptyUser,
+  unknownUser,
+} from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
+import { EMPTY_ID, UNKNOWN_ID } from "../../const";
+import { Issue, Issue_Type, IssueStatus } from "../../proto/v1/issue_service";
+import {
+  Plan,
+  PlanCheckRun,
+  Rollout,
+  TaskRun,
+} from "../../proto/v1/rollout_service";
 import {
   EMPTY_ROLLOUT_NAME,
   UNKNOWN_ROLLOUT_NAME,
@@ -27,6 +30,8 @@ export interface ComposedIssue extends Issue {
   rolloutTaskRunList: TaskRun[];
   project: string;
   projectEntity: ComposedProject;
+  assigneeEntity?: User;
+  creatorEntity: User;
 }
 
 export const ESTABLISH_BASELINE_SQL =
@@ -49,6 +54,7 @@ export const emptyIssue = (): ComposedIssue => {
     rolloutTaskRunList: [],
     project: EMPTY_PROJECT_NAME,
     projectEntity: emptyProject(),
+    creatorEntity: emptyUser(),
   };
 };
 
@@ -66,5 +72,16 @@ export const unknownIssue = (): ComposedIssue => {
     rolloutTaskRunList: [],
     project: UNKNOWN_PROJECT_NAME,
     projectEntity: unknownProject(),
+    creatorEntity: unknownUser(),
   };
 };
+
+export interface IssueFilter {
+  project: string;
+  query: string;
+  principal?: string;
+  creator?: string;
+  assignee?: string;
+  subscriber?: string;
+  statusList?: IssueStatus[];
+}

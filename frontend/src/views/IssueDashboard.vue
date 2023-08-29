@@ -1,5 +1,13 @@
 <template>
   <div class="flex flex-col">
+    <AdvancedSearch
+      v-if="isDev()"
+      custom-class="m-4"
+      :params="initSearchParams"
+      :autofocus="autofocus"
+      @update="onSearchParamsUpdate($event)"
+    />
+
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
@@ -20,31 +28,27 @@
             @update:user="changeUserUID"
           />
           <SearchBox
-            :value="state.searchText"
-            :placeholder="$t('issue.search-issue-name')"
-            :autofocus="true"
-            @update:value="changeSearchText($event)"
+            :value="state.filterText"
+            :placeholder="$t('issue.filter-issue-by-name')"
+            :autofocus="false"
+            @update:value="state.filterText = $event"
           />
         </NInputGroup>
       </div>
     </div>
 
     <!-- show all OPEN issues with pageSize=10  -->
-    <PagedIssueTable
+    <PagedIssueTableV1
       v-if="showOpen"
       session-key="dashboard-open"
-      :issue-find="{
-        statusList: ['OPEN'],
-        principalId:
-          selectedUserUID && selectedUserUID !== String(UNKNOWN_ID)
-            ? selectedUserUID
-            : undefined,
-        projectId: selectedProjectId,
+      :issue-filter="{
+        ...issueFilter,
+        statusList: [IssueStatus.OPEN],
       }"
       :page-size="10"
     >
       <template #table="{ issueList, loading }">
-        <IssueTable
+        <IssueTableV1
           :left-bordered="false"
           :right-bordered="false"
           :top-bordered="true"
@@ -52,26 +56,23 @@
           :show-placeholder="!loading"
           :title="$t('issue.table.open')"
           :issue-list="issueList.filter(filter)"
+          :highlight-text="state.searchParams.query"
         />
       </template>
-    </PagedIssueTable>
+    </PagedIssueTableV1>
 
     <!-- show all DONE and CANCELED issues with pageSize=10 -->
-    <PagedIssueTable
+    <PagedIssueTableV1
       v-if="showClosed"
       session-key="dashboard-closed"
-      :issue-find="{
-        statusList: ['DONE', 'CANCELED'],
-        principalId:
-          selectedUserUID && selectedUserUID !== String(UNKNOWN_ID)
-            ? selectedUserUID
-            : undefined,
-        projectId: selectedProjectId,
+      :issue-filter="{
+        ...issueFilter,
+        statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
       }"
       :page-size="10"
     >
       <template #table="{ issueList, loading }">
-        <IssueTable
+        <IssueTableV1
           class="-mt-px"
           :left-bordered="false"
           :right-bordered="false"
@@ -80,36 +81,43 @@
           :show-placeholder="!loading"
           :title="$t('issue.table.closed')"
           :issue-list="issueList.filter(filter)"
+          :highlight-text="state.searchParams.query"
         />
       </template>
-    </PagedIssueTable>
+    </PagedIssueTableV1>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { NInputGroup, NButton } from "naive-ui";
-import { reactive, computed, watchEffect } from "vue";
+import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
+import { SearchParams } from "@/components/AdvancedSearch.vue";
+import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
+import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { EnvironmentTabFilter, UserSelect, SearchBox } from "@/components/v2";
 import {
   useCurrentUserV1,
   useEnvironmentV1Store,
   useProjectV1Store,
+  useUserStore,
 } from "@/store";
+import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
+import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { IssueTable } from "../components/Issue";
-import { type Issue, UNKNOWN_ID } from "../types";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  activeEnvironment,
+  isDev,
   extractUserUID,
   hasWorkspacePermissionV1,
-  isDatabaseRelatedIssueType,
+  isDatabaseRelatedIssue,
+  activeEnvironmentInRollout,
   projectV1Slug,
-} from "../utils";
+} from "@/utils";
 
 interface LocalState {
-  searchText: string;
+  filterText: string;
+  searchParams: SearchParams;
 }
 
 const router = useRouter();
@@ -123,8 +131,37 @@ const statusList = computed((): string[] =>
   route.query.status ? (route.query.status as string).split(",") : []
 );
 
+const autofocus = computed((): boolean => {
+  return !!route.query.autofocus;
+});
+
+const initSearchParams = computed((): SearchParams => {
+  const projectName = project.value?.name ?? "";
+  const query = (route.query.query as string) ?? "";
+
+  if (!projectName) {
+    return {
+      query,
+      scopes: [],
+    };
+  }
+  return {
+    query,
+    scopes: [
+      {
+        id: "project",
+        value: projectName,
+      },
+    ],
+  };
+});
+
 const state = reactive<LocalState>({
-  searchText: "",
+  filterText: "",
+  searchParams: {
+    query: "",
+    scopes: [],
+  },
 });
 
 const project = computed(() => {
@@ -175,6 +212,14 @@ const selectedUserUID = computed((): string => {
     : extractUserUID(currentUserV1.value.name); // default to current user otherwise
 });
 
+const selectedUser = computed(() => {
+  const uid = selectedUserUID.value;
+  if (uid === String(UNKNOWN_ID)) {
+    return;
+  }
+  return useUserStore().getUserById(uid);
+});
+
 const selectedEnvironment = computed((): Environment | undefined => {
   const { environment } = route.query;
   return environment
@@ -187,21 +232,21 @@ const selectedProjectId = computed((): string | undefined => {
   return project ? (project as string) : undefined;
 });
 
-const filter = (issue: Issue) => {
+const filter = (issue: ComposedIssue) => {
   if (selectedEnvironment.value) {
-    if (!isDatabaseRelatedIssueType(issue.type)) {
+    if (!isDatabaseRelatedIssue(issue)) {
       return false;
     }
     if (
-      String(activeEnvironment(issue.pipeline).id) !==
-      selectedEnvironment.value.uid
+      activeEnvironmentInRollout(issue.rolloutEntity) !==
+      selectedEnvironment.value.name
     ) {
       return false;
     }
   }
-  const keyword = state.searchText.trim().toLowerCase();
+  const keyword = state.filterText.trim().toLowerCase();
   if (keyword) {
-    if (!issue.name.toLowerCase().includes(keyword)) {
+    if (!issue.title.toLowerCase().includes(keyword)) {
       return false;
     }
   }
@@ -241,10 +286,6 @@ const changeUserUID = (user: string | undefined) => {
   });
 };
 
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
-
 const goProject = () => {
   if (!project.value) return;
   router.push({
@@ -259,5 +300,28 @@ watchEffect(() => {
   if (selectedProjectId.value) {
     projectV1Store.getOrFetchProjectByUID(selectedProjectId.value);
   }
+});
+
+onMounted(() => {
+  state.searchParams = initSearchParams.value;
+});
+
+const onSearchParamsUpdate = (params: SearchParams) => {
+  state.searchParams = params;
+};
+
+const issueFilter = computed((): IssueFilter => {
+  const { query, scopes } = state.searchParams;
+  const projectScope = scopes.find((s) => s.id === "project");
+  const project = projectScope?.value ?? `${projectNamePrefix}-`;
+  let principal = "";
+  if (selectedUser.value) {
+    principal = `${userNamePrefix}${selectedUser.value.email}`;
+  }
+  return {
+    project,
+    query,
+    principal,
+  };
 });
 </script>
