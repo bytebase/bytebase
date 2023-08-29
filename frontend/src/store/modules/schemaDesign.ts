@@ -172,10 +172,7 @@ export const useSchemaDesignList = () => {
   });
 
   const schemaDesignList = computed(() => {
-    // Only return main branch schema designs in the list.
-    return store.schemaDesignList.filter((schemaDesign) => {
-      return schemaDesign.type === SchemaDesign_Type.MAIN_BRANCH;
-    });
+    return store.schemaDesignList;
   });
 
   return { schemaDesignList, ready };
