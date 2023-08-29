@@ -92,7 +92,11 @@
         "sync-schema-advanced": "Advanced",
         "sync-schema-advanced-tooltip": "Sync from arbitrary schema version",
         "terraform-provider": "Terraform Integration",
-        "custom-approval": "Custom approval"
+        "custom-approval": "Custom approval",
+        "issue-advanced-search": "Issue advanced search",
+        "issue-advanced-search-basic": "30-day limit",
+        "issue-advanced-search-basic-tooltip": "Issues older than 30 days are hidden",
+        "issue-advanced-search-advanced": "Unlimited"
       }
     },
     "sql-editor": {

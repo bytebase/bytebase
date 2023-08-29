@@ -8,6 +8,12 @@
       @update="onSearchParamsUpdate($event)"
     />
 
+    <FeatureAttention
+      v-if="!!state.searchParams.query || state.searchParams.scopes.length > 0"
+      custom-class="m-4"
+      feature="bb.feature.issue-advanced-search"
+    />
+
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"

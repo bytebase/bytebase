@@ -661,7 +661,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.SchemaSyncer, s.dbFactory, s.ActivityManager, s.licenseService))
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
-	s.issueService = v1.NewIssueService(s.store, s.ActivityManager, s.TaskScheduler, s.RelayRunner, s.stateCfg)
+	s.issueService = v1.NewIssueService(s.store, s.ActivityManager, s.TaskScheduler, s.RelayRunner, s.stateCfg, s.licenseService)
 	v1pb.RegisterIssueServiceServer(s.grpcServer, s.issueService)
 	s.rolloutService = v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager)
 	v1pb.RegisterRolloutServiceServer(s.grpcServer, s.rolloutService)

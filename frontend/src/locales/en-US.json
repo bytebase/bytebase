@@ -757,7 +757,15 @@
     },
     "view-commit": "View commit",
     "search-issue-name": "Search issue name",
-    "advanced-search": "Advanced search",
+    "advanced-search": {
+      "self": "Advanced search",
+      "scope": {
+        "project": {
+          "title": "Project",
+          "description": "Include only issues from this project"
+        }
+      }
+    },
     "filter-issue-by-name": "Filter issue by name",
     "table": {
       "open": "Open",
@@ -2216,6 +2224,10 @@
       "bb-feature-secure-token": {
         "title": "Sign-in frequency",
         "desc": "Sign-in frequency is the period before a user must sign in again."
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "Advanced issue search",
+        "desc": "Access unlimited issue history with advanced issue search."
       }
     }
   },
