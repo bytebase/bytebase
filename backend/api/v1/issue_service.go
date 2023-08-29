@@ -178,6 +178,20 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 				}
 				issueFind.StatusList = append(issueFind.StatusList, newStatus)
 			}
+		case "create_time_before":
+			t, err := time.Parse(time.RFC3339, spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_before %s, err: %v", spec.value, err)
+			}
+			ts := t.Unix()
+			issueFind.CreatedTsBefore = &ts
+		case "create_time_after":
+			t, err := time.Parse(time.RFC3339, spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.value, err)
+			}
+			ts := t.Unix()
+			issueFind.CreatedTsAfter = &ts
 		}
 	}
 

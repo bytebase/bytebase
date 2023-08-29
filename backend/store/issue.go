@@ -560,10 +560,12 @@ type FindIssueMessage struct {
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
 	// Only principleID or one of the following three fields can be set.
-	CreatorID     *int
-	AssigneeID    *int
-	SubscriberID  *int
-	NeedAttention *bool
+	CreatorID       *int
+	AssigneeID      *int
+	SubscriberID    *int
+	NeedAttention   *bool
+	CreatedTsBefore *int64
+	CreatedTsAfter  *int64
 
 	StatusList []api.IssueStatus
 	// If specified, only find issues whose ID is smaller that SinceID.
@@ -864,6 +866,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.AssigneeID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.assignee_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.created_ts < $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.created_ts > $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.NeedAttention; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.assignee_need_attention = $%d", len(args)+1)), append(args, *v)
