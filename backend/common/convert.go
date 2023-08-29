@@ -49,6 +49,7 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("project_id", cel.StringType),
 	cel.Variable("instance_id", cel.StringType),
 	cel.Variable("database_name", cel.StringType),
+	cel.Variable("schema_name", cel.StringType),
 	cel.Variable("table_name", cel.StringType),
 	cel.Variable("column_classification", cel.StringType),
 }
@@ -58,6 +59,7 @@ var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.instance_id", cel.StringType),
 	cel.Variable("resource.database_name", cel.StringType),
 	cel.Variable("resource.table_name", cel.StringType),
+	cel.Variable("resource.schema_name", cel.StringType),
 	cel.Variable("resource.column_name", cel.StringType),
 	cel.Variable("request.time", cel.TimestampType),
 }

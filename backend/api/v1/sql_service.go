@@ -1489,6 +1489,186 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 	return result, nil
 }
 
+// evalMaskingLevelOfDatabaseColumn evaluates the masking level of each column in given database mesassge.
+// TODO(zp): split this function into smaller functions.
+// nolint
+func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, databaseSchemaMetadata *storepb.DatabaseSchemaMetadata, maskingPolicy *storepb.MaskingPolicy, maskingRulePolicy *storepb.MaskingRulePolicy, maskingExceptionPolicy *storepb.MaskingExceptionPolicy, currentPrincipal *store.UserMessage, requestTime time.Time) (db.DatabaseSchema, error) {
+	// Convert the maskingPolicy to a map to reduce the time complexity of searching.
+	type maskingPolicyKey struct {
+		schema string
+		table  string
+		column string
+	}
+	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
+	for _, maskData := range maskingPolicy.MaskData {
+		maskingPolicyMap[maskingPolicyKey{
+			schema: maskData.Schema,
+			table:  maskData.Table,
+			column: maskData.Column,
+		}] = maskData
+	}
+
+	// Build the filtered maskingExceptionPolicy for current principal.
+	var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
+	for _, maskingExceptionPolicy := range maskingExceptionPolicy.MaskingExceptions {
+		for _, member := range maskingExceptionPolicy.Members {
+			if member == currentPrincipal.Email {
+				maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingExceptionPolicy)
+				break
+			}
+		}
+	}
+
+	// Build the CEL env for maskingExceptionPolicy.
+	maskingExceptionPolicyCELEnv, err := cel.NewEnv(cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)))
+	if err != nil {
+		return db.DatabaseSchema{}, errors.Wrapf(err, "failed to create CEL environment for masking exception policy")
+	}
+
+	// Build the CEL env for maskingRulePolicy.
+	maskingRulePolicyEnv, err := cel.NewEnv(common.MaskingRulePolicyCELAttributes...)
+	if err != nil {
+		return db.DatabaseSchema{}, errors.Wrapf(err, "failed to create CEL environment for masking rule policy")
+	}
+
+	ret := db.DatabaseSchema{
+		Name:       databaseMessage.DatabaseName,
+		SchemaList: []db.SchemaSchema{},
+	}
+	for _, schema := range databaseSchemaMetadata.Schemas {
+		schemaSchema := db.SchemaSchema{
+			Name: schema.Name,
+		}
+		for _, table := range schema.Tables {
+			tableSchema := db.TableSchema{
+				Name:       table.Name,
+				ColumnList: []db.ColumnInfo{},
+			}
+			for _, column := range table.Columns {
+				columnInfo := db.ColumnInfo{
+					Name: column.Name,
+				}
+				evalFinalLevel := func() (storepb.MaskingLevel, error) {
+					finalLevel := storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
+
+					key := maskingPolicyKey{
+						schema: schema.Name,
+						table:  table.Name,
+						column: column.Name,
+					}
+					maskingData, ok := maskingPolicyMap[key]
+					if (!ok) || (maskingData.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED) {
+						// If the column has DEFAULT masking level in maskingPolicy or not set yet,
+						// we will eval the maskingRulePolicy to get the maskingLevel.
+						for _, maskingRule := range maskingRulePolicy.Rules {
+							maskingRuleAttributes := map[string]any{
+								"environment_id": databaseMessage.EnvironmentID,
+								"project_id":     databaseMessage.ProjectID,
+								"instance_id":    databaseMessage.InstanceID,
+								"database_name":  databaseMessage.DatabaseName,
+								"schema_name":    schema.Name,
+								"table_name":     table.Name,
+								// TODO(zp): Fill the column classification.
+								"column_classification": "",
+							}
+							ast, issues := maskingRulePolicyEnv.Compile(maskingRule.Condition.Expression)
+							if issues != nil && issues.Err() != nil {
+								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking rule")
+							}
+							prg, err := maskingRulePolicyEnv.Program(ast)
+							if err != nil {
+								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to create CEL program for masking rule")
+							}
+							out, _, err := prg.Eval(maskingRuleAttributes)
+							if err != nil {
+								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to eval CEL program for masking rule")
+							}
+							val, err := out.ConvertToNative(reflect.TypeOf(false))
+							if err != nil {
+								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking rule")
+							}
+							boolVar, ok := val.(bool)
+							if !ok {
+								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking rule")
+							}
+							if boolVar {
+								finalLevel = theStrictestMaskingLevel(finalLevel, maskingRule.MaskingLevel)
+								break
+							}
+						}
+					} else {
+						finalLevel = maskingData.MaskingLevel
+					}
+
+					if finalLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED || finalLevel == storepb.MaskingLevel_NONE {
+						// After looking up the maskingPolicy and maskingRulePolicy, if the maskingLevel is still MASKING_LEVEL_UNSPECIFIED or NONE,
+						// return the MASKING_LEVLE_NONE, which means no masking and do not need eval exceptions anymore.
+						return storepb.MaskingLevel_NONE, nil
+					}
+
+					// If the column has PARTIAL/FULL masking level,
+					// try to find the MaskingExceptionPolicy for current principal, return the minimum level of two.
+					// If there is no MaskingExceptionPolicy for current principal, return the masking level in maskingPolicy.
+					for _, filteredMaskingException := range maskingExceptionContainsCurrentPrincipal {
+						maskingExceptionAttributes := map[string]any{
+							"resource": map[string]any{
+								"instance_id":   databaseMessage.InstanceID,
+								"database_name": databaseMessage.DatabaseName,
+								"schema_name":   schema.Name,
+								"table_name":    table.Name,
+								"column_name":   column.Name,
+								"request.time":  requestTime,
+							},
+						}
+						ast, issues := maskingExceptionPolicyCELEnv.Compile(filteredMaskingException.Condition.Expression)
+						if issues != nil && issues.Err() != nil {
+							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking exception")
+						}
+						prg, err := maskingExceptionPolicyCELEnv.Program(ast)
+						if err != nil {
+							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to create CEL program for masking exception")
+						}
+						out, _, err := prg.Eval(maskingExceptionAttributes)
+						if err != nil {
+							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to eval CEL program for masking exception")
+						}
+						val, err := out.ConvertToNative(reflect.TypeOf(false))
+						if err != nil {
+							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking exception")
+						}
+						boolVar, ok := val.(bool)
+						if !ok {
+							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking exception")
+						}
+						if !boolVar {
+							continue
+						}
+
+						// TODO(zp): Expectedly, a column should hit only one exception,
+						// but we can take the strictest level here to make the whole program more robust.
+						finalLevel = theKindestMaskingRule(finalLevel, filteredMaskingException.MaskingLevel)
+					}
+					return finalLevel, nil
+				}
+
+				level, err := evalFinalLevel()
+				if err != nil {
+					return db.DatabaseSchema{}, errors.Wrapf(err, "failed to eval final masking level for database %q, schema: %q, table: %q, column: %q", databaseMessage.DatabaseName, schema.Name, table.Name, column.Name)
+				}
+
+				columnInfo.MaskingLevel = level
+				// TODO(zp): retire the sensitive boolean flag.
+				columnInfo.Sensitive = columnInfo.MaskingLevel == storepb.MaskingLevel_FULL || columnInfo.MaskingLevel == storepb.MaskingLevel_PARTIAL
+				tableSchema.ColumnList = append(tableSchema.ColumnList, columnInfo)
+			}
+			schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
+		}
+		ret.SchemaList = append(ret.SchemaList, schemaSchema)
+	}
+
+	return ret, nil
+}
+
 func (s *SQLService) getSensitiveForClassification(ctx context.Context, classificationID string, projectID string, classificationSetting *storepb.DataClassificationSetting) (bool, error) {
 	if classificationID == "" || projectID == "" {
 		return false, nil

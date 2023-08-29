@@ -410,3 +410,18 @@ func unmarshalPageToken(s string, pageToken *storepb.PageToken) error {
 func isValidUUID(id string) bool {
 	return uuidMatcher.MatchString(id)
 }
+
+// theStrictestMaskingLevel returns the strictest masking level from the given levels.
+func theStrictestMaskingLevel(a, b storepb.MaskingLevel) storepb.MaskingLevel {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func theKindestMaskingRule(a, b storepb.MaskingLevel) storepb.MaskingLevel {
+	if a < b {
+		return a
+	}
+	return b
+}
