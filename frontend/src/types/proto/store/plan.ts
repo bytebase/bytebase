@@ -45,7 +45,16 @@ export interface PlanConfig_CreateDatabaseConfig {
   cluster: string;
   /** owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>". */
   owner: string;
+  /**
+   * backup is the resource name of the backup.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
+   */
   backup: string;
+  /**
+   * The environment resource.
+   * Format: environments/prod where prod is the environment resource ID.
+   */
+  environment: string;
   /** labels of the database. */
   labels: { [key: string]: string };
 }
@@ -453,6 +462,7 @@ function createBasePlanConfig_CreateDatabaseConfig(): PlanConfig_CreateDatabaseC
     cluster: "",
     owner: "",
     backup: "",
+    environment: "",
     labels: {},
   };
 }
@@ -483,8 +493,11 @@ export const PlanConfig_CreateDatabaseConfig = {
     if (message.backup !== "") {
       writer.uint32(66).string(message.backup);
     }
+    if (message.environment !== "") {
+      writer.uint32(74).string(message.environment);
+    }
     Object.entries(message.labels).forEach(([key, value]) => {
-      PlanConfig_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
+      PlanConfig_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(82).fork()).ldelim();
     });
     return writer;
   },
@@ -557,9 +570,16 @@ export const PlanConfig_CreateDatabaseConfig = {
             break;
           }
 
-          const entry9 = PlanConfig_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
-          if (entry9.value !== undefined) {
-            message.labels[entry9.key] = entry9.value;
+          message.environment = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          const entry10 = PlanConfig_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
+          if (entry10.value !== undefined) {
+            message.labels[entry10.key] = entry10.value;
           }
           continue;
       }
@@ -581,6 +601,7 @@ export const PlanConfig_CreateDatabaseConfig = {
       cluster: isSet(object.cluster) ? String(object.cluster) : "",
       owner: isSet(object.owner) ? String(object.owner) : "",
       backup: isSet(object.backup) ? String(object.backup) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -600,6 +621,7 @@ export const PlanConfig_CreateDatabaseConfig = {
     message.cluster !== undefined && (obj.cluster = message.cluster);
     message.owner !== undefined && (obj.owner = message.owner);
     message.backup !== undefined && (obj.backup = message.backup);
+    message.environment !== undefined && (obj.environment = message.environment);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -623,6 +645,7 @@ export const PlanConfig_CreateDatabaseConfig = {
     message.cluster = object.cluster ?? "";
     message.owner = object.owner ?? "";
     message.backup = object.backup ?? "";
+    message.environment = object.environment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);
