@@ -102,7 +102,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -473,7 +473,7 @@ func TestVCS(t *testing.T) {
 
 			// Create an issue that creates a database.
 			databaseName := "testVCSSchemaUpdate"
-			err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -882,7 +882,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
@@ -1355,7 +1355,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabaseV2(ctx, project, instance, dbName, "", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, dbName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			a.Equal(len(test.expect), len(test.commitNewFileNames))
@@ -2458,7 +2458,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})

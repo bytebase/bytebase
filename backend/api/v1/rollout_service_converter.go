@@ -607,7 +607,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Sheet:        getResourceNameForSheet(project, payload.SheetID),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
-				Environment:  payload.Environment,
+				Environment:  fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, payload.EnvironmentID),
 				Labels:       labels,
 			},
 		},

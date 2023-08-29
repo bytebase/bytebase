@@ -104,14 +104,14 @@ type TaskDatabaseCreatePayload struct {
 	SpecID        string `json:"specId,omitempty"`
 
 	// The project owning the database.
-	ProjectID    int    `json:"projectId,omitempty"`
-	DatabaseName string `json:"databaseName,omitempty"`
-	TableName    string `json:"tableName,omitempty"`
-	SheetID      int    `json:"sheetId,omitempty"`
-	CharacterSet string `json:"character,omitempty"`
-	Collation    string `json:"collation,omitempty"`
-	Environment  string `json:"environment,omitempty"`
-	Labels       string `json:"labels,omitempty"`
+	ProjectID     int    `json:"projectId,omitempty"`
+	DatabaseName  string `json:"databaseName,omitempty"`
+	TableName     string `json:"tableName,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	CharacterSet  string `json:"character,omitempty"`
+	Collation     string `json:"collation,omitempty"`
+	EnvironmentID string `json:"environmentId,omitempty"`
+	Labels        string `json:"labels,omitempty"`
 }
 
 // TaskDatabaseSchemaBaselinePayload is the task payload for database schema baseline.

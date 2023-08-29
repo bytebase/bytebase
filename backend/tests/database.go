@@ -18,11 +18,15 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Project, instance *v1pb.Instance, databaseName string, owner string, labels map[string]string) error {
+func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Project, instance *v1pb.Instance, environment *v1pb.Environment, databaseName string, owner string, labels map[string]string) error {
 	characterSet, collation := "utf8mb4", "utf8mb4_general_ci"
 	if instance.Engine == v1pb.Engine_POSTGRES {
 		characterSet = "UTF8"
 		collation = "en_US.UTF-8"
+	}
+	environmentName := ""
+	if environment != nil {
+		environmentName = environment.Name
 	}
 
 	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
@@ -39,6 +43,7 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 									CharacterSet: characterSet,
 									Collation:    collation,
 									Owner:        owner,
+									Environment:  environmentName,
 									Labels:       labels,
 								},
 							},
