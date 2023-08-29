@@ -2656,7 +2656,8 @@
       "re-request-review-issue": "请求再次审批工单？",
       "sent-back-issue": "退回工单",
       "re-requested-review": "再次请求审批工单",
-      "no-one-matches-role": "没有符合这个角色的用户，请联系项目管理员分配角色。"
+      "no-one-matches-role": "没有符合这个角色的用户，请联系项目管理员分配角色。",
+      "any-n-role-can-approve": "任意 {role} 可审批"
     },
     "send-back": "退回"
   },
