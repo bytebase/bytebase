@@ -883,11 +883,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Query; v != nil && *v != "" {
-		tsQuery := getTsQuery(*v)
-		from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
-		args = append(args, tsQuery)
-		where = append(where, "issue.ts_vector @@ query")
-		orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+		if tsQuery := getTsQuery(*v); tsQuery != "" {
+			from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
+			args = append(args, tsQuery)
+			where = append(where, "issue.ts_vector @@ query")
+			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+		}
 	}
 	if len(find.StatusList) != 0 {
 		var list []string
@@ -1098,9 +1099,6 @@ func getTsQuery(text string) string {
 			_, _ = tsQuery.WriteString("|")
 		}
 		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", part))
-	}
-	if tsQuery.Len() == 0 {
-		return text
 	}
 	return tsQuery.String()
 }
