@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
@@ -37,16 +38,25 @@ type IssueService struct {
 	taskScheduler   *taskrun.Scheduler
 	relayRunner     *relay.Runner
 	stateCfg        *state.State
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewIssueService creates a new IssueService.
-func NewIssueService(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, relayRunner *relay.Runner, stateCfg *state.State) *IssueService {
+func NewIssueService(
+	store *store.Store,
+	activityManager *activity.Manager,
+	taskScheduler *taskrun.Scheduler,
+	relayRunner *relay.Runner,
+	stateCfg *state.State,
+	licenseService enterpriseAPI.LicenseService,
+) *IssueService {
 	return &IssueService{
 		store:           store,
 		activityManager: activityManager,
 		taskScheduler:   taskScheduler,
 		relayRunner:     relayRunner,
 		stateCfg:        stateCfg,
+		licenseService:  licenseService,
 	}
 }
 
@@ -279,30 +289,45 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	for _, spec := range filters {
 		switch spec.key {
 		case "principal":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.PrincipalID = &user.ID
 		case "creator":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.AssigneeID = &user.ID
 		case "assignee":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.AssigneeID = &user.ID
 		case "subscriber":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.SubscriberID = &user.ID
 		case "status":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
 			for _, raw := range strings.Split(spec.value, " | ") {
 				newStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[raw]))
 				if err != nil {
@@ -310,21 +335,31 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 				}
 				issueFind.StatusList = append(issueFind.StatusList, newStatus)
 			}
-		case "create_time_before":
+		case "create_time":
+			if spec.operator != comparatorTypeGreaterEqual && spec.operator != comparatorTypeLessEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "<=" or ">=" operation for "create_time" filter`)
+			}
 			t, err := time.Parse(time.RFC3339, spec.value)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_before %s, err: %v", spec.value, err)
 			}
 			ts := t.Unix()
-			issueFind.CreatedTsBefore = &ts
-		case "create_time_after":
-			t, err := time.Parse(time.RFC3339, spec.value)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.value, err)
+			if spec.operator == comparatorTypeGreaterEqual {
+				issueFind.CreatedTsAfter = &ts
+			} else {
+				issueFind.CreatedTsBefore = &ts
 			}
-			ts := t.Unix()
-			issueFind.CreatedTsAfter = &ts
 		}
+	}
+
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureIssueAdvancedSearch); err != nil {
+		limitedSearchTs := time.Now().AddDate(0, 0, -30).Unix()
+		if v := issueFind.CreatedTsBefore; v != nil {
+			if limitedSearchTs >= *v {
+				return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			}
+		}
+		issueFind.CreatedTsAfter = &limitedSearchTs
 	}
 
 	issues, err := s.store.ListIssueV2(ctx, issueFind)

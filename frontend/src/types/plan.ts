@@ -17,6 +17,7 @@ export type FeatureType =
   | "bb.feature.disallow-signup"
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
+  | "bb.feature.issue-advanced-search"
   // Branding
   | "bb.feature.branding"
   // Change Workflow

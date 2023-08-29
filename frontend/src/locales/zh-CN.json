@@ -753,7 +753,15 @@
     },
     "view-commit": "查看提交",
     "search-issue-name": "搜索工单名称",
-    "advanced-search": "高级搜素",
+    "advanced-search": {
+      "self": "高级搜素",
+      "scope": {
+        "project": {
+          "title": "项目",
+          "description": "仅搜索某个项目下的工单"
+        }
+      }
+    },
     "filter-issue-by-name": "根据名称过滤",
     "table": {
       "open": "开启中",
@@ -2210,6 +2218,10 @@
       "bb-feature-secure-token": {
         "title": "登录频率",
         "desc": "登录频率指定用户必须再次登录的间隔。"
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "工单高级搜索",
+        "desc": "通过高级搜索来访问无限制的历史工单。"
       }
     },
     "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
