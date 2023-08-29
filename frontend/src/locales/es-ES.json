@@ -756,7 +756,15 @@
     },
     "view-commit": "Ver commit",
     "search-issue-name": "Buscar nombre de la incidencia",
-    "advanced-search": "Búsqueda Avanzada",
+    "advanced-search": {
+      "self": "Búsqueda Avanzada",
+      "scope": {
+        "project": {
+          "title": "Proyecto",
+          "description": "Incluir solo ediciones de este proyecto"
+        }
+      }
+    },
     "filter-issue-by-name": "Filtrar problema por nombre",
     "table": {
       "open": "Abierto",
@@ -2212,6 +2220,10 @@
       "bb-feature-secure-token": {
         "title": "Frecuencia de inicio de sesión",
         "desc": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente."
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "Búsqueda avanzada de problemas",
+        "desc": "Acceda a un historial de problemas ilimitado con búsqueda avanzada de problemas."
       }
     }
   },

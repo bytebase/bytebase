@@ -5554,7 +5554,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
 | query | [string](#string) |  | Query is the query statement. |
-| filter | [string](#string) |  | Filter is used to filter issues returned in the list, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Supported field in filter: - principal, example: - principal = &#34;users/{email}&#34; - creator, example: - creator = &#34;users/{email}&#34; - assignee, example: - assignee = &#34;users/{email}&#34; - subscriber, example: - subscriber = &#34;users/{email}&#34; - status, example: - status = &#34;OPEN&#34; - status = &#34;DONE&#34; | &#34;CANCELED&#34; |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Supported field in filter: - principal, example: - principal = &#34;users/{email}&#34; - creator, example: - creator = &#34;users/{email}&#34; - assignee, example: - assignee = &#34;users/{email}&#34; - subscriber, example: - subscriber = &#34;users/{email}&#34; - status, example: - status = &#34;OPEN&#34; - status = &#34;DONE&#34; | &#34;CANCELED&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; |
 
 
 

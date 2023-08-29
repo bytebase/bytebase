@@ -16,6 +16,7 @@ categoryList:
       - custom-approval
       - database-group
       - batch-change
+      - issue-advanced-search
   - type: sql-editor
     featureList:
       - auto-complete
@@ -94,6 +95,9 @@ planList:
       - type: rollout-policy
         content: rollout-policy-basic
         tooltip: rollout-policy-basic-tooltip
+      - type: issue-advanced-search
+        content: issue-advanced-search-basic
+        tooltip: issue-advanced-search-basic-tooltip
       # SQL Editor
       - type: auto-complete
       - type: schema-editor
@@ -169,6 +173,8 @@ planList:
       - type: rollout-policy
         content: rollout-policy-advanced
         tooltip: rollout-policy-advanced-tooltip
+      - type: issue-advanced-search
+        content: issue-advanced-search-advanced
       # SQL Editor
       - type: auto-complete
       - type: schema-editor
@@ -246,6 +252,8 @@ planList:
         content: rollout-policy-advanced
         tooltip: rollout-policy-advanced-tooltip
       - type: custom-approval
+      - type: issue-advanced-search
+        content: issue-advanced-search-advanced
       # SQL Editor
       - type: auto-complete
       - type: schema-editor

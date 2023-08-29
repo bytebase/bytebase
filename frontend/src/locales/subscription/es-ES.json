@@ -92,7 +92,11 @@
         "sync-schema-advanced": "Avanzado",
         "sync-schema-advanced-tooltip": "Sincronizar desde una versión de esquema arbitraria",
         "terraform-provider": "Integración de Terraform",
-        "custom-approval": "Aprobación personalizada"
+        "custom-approval": "Aprobación personalizada",
+        "issue-advanced-search": "Emitir búsqueda avanzada",
+        "issue-advanced-search-basic": "límite de 30 días",
+        "issue-advanced-search-basic-tooltip": "Los problemas de más de 30 días están ocultos",
+        "issue-advanced-search-advanced": "Ilimitado"
       }
     },
     "sql-editor": {
