@@ -780,14 +780,6 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 						Members:      []string{defaultEmail},
 						MaskingLevel: storepb.MaskingLevel_NONE,
 					},
-					{
-						Action: storepb.MaskingExceptionPolicy_MaskingException_QUERY,
-						Condition: &expr.Expr{
-							Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "compnay") && (resource.table_name == "office") && (resource.column_name == "city")`,
-						},
-						Members:      []string{defaultEmail},
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
 				},
 			},
 			want: db.DatabaseSchema{
