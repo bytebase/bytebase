@@ -118,6 +118,7 @@ import {
   LogEntity,
   LogEntity_Action,
   logEntity_ActionToJSON,
+  LogEntity_Level,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
 
@@ -287,6 +288,18 @@ function escapeCSVString(s: string) {
   return s;
 }
 
+function formatLevel(level: LogEntity_Level) {
+  switch (level) {
+    case LogEntity_Level.LEVEL_INFO:
+      return "INFO";
+    case LogEntity_Level.LEVEL_WARNING:
+      return "WARNING";
+    case LogEntity_Level.LEVEL_ERROR:
+      return "ERROR";
+  }
+  return "UNKNOWN_LEVEL";
+}
+
 const formatExport = (format: ExportFormat): BinaryLike => {
   switch (format) {
     case "CSV":
@@ -296,7 +309,7 @@ const formatExport = (format: ExportFormat): BinaryLike => {
             list.push(
               [
                 dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
-                logEntity_LevelToJSON(auditLog.level),
+                formatLevel(auditLog.level),
                 logEntity_ActionToJSON(auditLog.action),
                 auditLog.creator,
                 auditLog.resource,
@@ -314,7 +327,7 @@ const formatExport = (format: ExportFormat): BinaryLike => {
         auditLogList.value.map((auditLog) => {
           return {
             time: dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
-            level: logEntity_LevelToJSON(auditLog.level),
+            level: formatLevel(auditLog.level),
             action: logEntity_ActionToJSON(auditLog.action),
             actor: auditLog.creator,
             resource: auditLog.resource,
