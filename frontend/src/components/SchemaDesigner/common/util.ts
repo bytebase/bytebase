@@ -482,8 +482,11 @@ export const generateForkedBranchName = (branch: SchemaDesign): string => {
   const foundIndex = schemaDesignStore.schemaDesignList.findIndex((item) => {
     return item.title === branchName;
   });
+  // If found, add a random string to the end of the branch name.
   if (foundIndex > -1) {
-    branchName = `${currentUser.value.title}/${parentBranchName}-draft`;
+    branchName = `${
+      currentUser.value.title
+    }/${parentBranchName}-draft-${randomString(3).toLowerCase()}`;
   }
   return branchName;
 };
