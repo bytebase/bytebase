@@ -258,6 +258,7 @@ const handleConfirm = async () => {
       type: SchemaDesign_Type.MAIN_BRANCH,
       baselineDatabase: baselineDatabase,
       baselineSheetName: baselineSheet.name,
+      baselineChangeHistoryId: state.baselineSchema.changeHistory?.uid,
     })
   );
   pushNotification({

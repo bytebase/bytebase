@@ -91,6 +91,9 @@ message SchemaDesign {
   // For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
   string baseline_sheet_name = 9 [(google.api.field_behavior) = IMMUTABLE];
 
+  // The baseline change history id.
+  optional string baseline_change_history_id = 10 [(google.api.field_behavior) = IMMUTABLE];
+
   enum Type {
     TYPE_UNSPECIFIED = 0;
     // Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts.
@@ -99,24 +102,24 @@ message SchemaDesign {
     PERSONAL_DRAFT = 2;
   }
   // The type of the schema design.
-  Type type = 10;
+  Type type = 11;
 
   // The etag of the schema design.
-  string etag = 11;
+  string etag = 12;
 
   // The creator of the schema design.
   // Format: users/{email}
-  string creator = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The updater of the schema design.
   // Format: users/{email}
-  string updater = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string updater = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the schema design was created.
-  google.protobuf.Timestamp create_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the schema design was last updated.
-  google.protobuf.Timestamp update_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message GetSchemaDesignRequest {
