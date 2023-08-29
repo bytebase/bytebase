@@ -13,6 +13,29 @@
       <div
         class="space-y-3 w-[calc(100vw-24rem)] min-w-[64rem] max-w-[calc(100vw-8rem)] h-full overflow-x-auto"
       >
+        <div class="w-full flex flex-row justify-end items-center gap-2">
+          <NButton @click="() => handleSaveDraft()">{{
+            $t("schema-designer.save-draft")
+          }}</NButton>
+          <NButton type="primary" @click="handleMergeBranch">
+            {{ $t("common.merge") }}
+          </NButton>
+        </div>
+        <div class="pt-4 pb-6 w-full flex flex-row justify-center items-center">
+          <NInput
+            class="!w-40 text-center"
+            readonly
+            :value="sourceBranch.title"
+          />
+          <div class="mx-16">
+            <MoveLeft :size="32" stroke-width="1" />
+          </div>
+          <NInput
+            class="!w-40 text-center"
+            readonly
+            :value="targetBranch.title"
+          />
+        </div>
         <div class="w-full grid grid-cols-2">
           <div class="col-span-1">
             <span>{{ $t("schema-designer.diff-editor.latest-schema") }}</span>
@@ -25,30 +48,23 @@
           <DiffEditor
             v-if="state.initialized"
             class="h-full"
-            :original="baselineSchemaDesign.schema"
+            :original="sourceBranch.schema"
             :value="state.editingSchema"
             @change="state.editingSchema = $event"
           />
         </div>
       </div>
-
-      <template #footer>
-        <div class="flex items-center justify-end gap-x-2">
-          <NButton @click="$emit('dismiss')">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" @click="handleResolveSchemaDesignDraft">
-            {{ $t("schema-designer.diff-editor.resolve-and-merge-again") }}
-          </NButton>
-        </div>
-      </template>
     </NDrawerContent>
   </NDrawer>
 </template>
 
 <script lang="ts" setup>
-import { NDrawer, NDrawerContent } from "naive-ui";
+import { MoveLeft } from "lucide-vue-next";
+import { NButton, NDrawer, NDrawerContent, NInput } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
-import { useSheetV1Store } from "@/store";
+import { pushNotification, useSheetV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
@@ -64,8 +80,8 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  // Should be a schema design name of personal draft.
-  schemaDesignName: string;
+  sourceBranchName: string;
+  targetBranchName: string;
 }>();
 
 const emit = defineEmits(["dismiss", "try-merge"]);
@@ -74,43 +90,35 @@ const state = reactive<LocalState>({
   editingSchema: "",
   initialized: false,
 });
+const { t } = useI18n();
 const sheetStore = useSheetV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 
-const schemaDesign = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(props.schemaDesignName || "");
+const sourceBranch = computed(() => {
+  return schemaDesignStore.getSchemaDesignByName(props.sourceBranchName || "");
 });
 
-const baselineSchemaDesign = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(
-    schemaDesign.value.baselineSheetName || ""
-  );
+const targetBranch = computed(() => {
+  return schemaDesignStore.getSchemaDesignByName(props.targetBranchName || "");
 });
-
-const prepareLastestBaselineSchemaDesign = async () => {
-  await schemaDesignStore.fetchSchemaDesignByName(
-    schemaDesign.value.baselineSheetName
-  );
-};
 
 onMounted(async () => {
-  await prepareLastestBaselineSchemaDesign();
-  state.editingSchema = schemaDesign.value.schema;
+  state.editingSchema = targetBranch.value.schema;
   state.initialized = true;
 });
 
-const handleResolveSchemaDesignDraft = async () => {
+const handleSaveDraft = async (ignoreNotify?: boolean) => {
   const updateMask = ["schema", "baseline_sheet_name"];
   const [projectName] = getProjectAndSchemaDesignSheetId(
-    baselineSchemaDesign.value.name
+    targetBranch.value.name
   );
   // Create a baseline sheet for the schema design.
   const baselineSheet = await sheetStore.createSheet(
     `projects/${projectName}`,
     {
-      name: `baseline schema of ${baselineSchemaDesign.value.title}`,
-      database: schemaDesign.value.baselineDatabase,
-      content: new TextEncoder().encode(baselineSchemaDesign.value.schema),
+      name: `baseline schema of ${sourceBranch.value.title}`,
+      database: targetBranch.value.baselineDatabase,
+      content: new TextEncoder().encode(sourceBranch.value.schema),
       visibility: Sheet_Visibility.VISIBILITY_PROJECT,
       source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
       type: Sheet_Type.TYPE_SQL,
@@ -120,13 +128,26 @@ const handleResolveSchemaDesignDraft = async () => {
   // Update the schema design draft first.
   await schemaDesignStore.updateSchemaDesign(
     SchemaDesign.fromPartial({
-      name: schemaDesign.value.name,
-      engine: schemaDesign.value.engine,
+      name: targetBranch.value.name,
+      engine: targetBranch.value.engine,
       schema: state.editingSchema,
       baselineSheetName: baselineSheet.name,
     }),
     updateMask
   );
+
+  if (!ignoreNotify) {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("schema-designer.message.updated-succeed"),
+    });
+    emit("dismiss");
+  }
+};
+
+const handleMergeBranch = async () => {
+  await handleSaveDraft(true);
 
   // Try to merge the schema design draft again.
   emit("try-merge");
