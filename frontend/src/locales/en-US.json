@@ -259,7 +259,8 @@
     "state": "State",
     "condition": "Condition",
     "search-user": "Search user",
-    "branches": "Branches"
+    "branches": "Branches",
+    "merge": "Merge"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2817,15 +2818,18 @@
     "baseline-version": "Baseline version",
     "parent-branch": "Parent branch",
     "save-draft": "Save draft",
-    "merge-to-main": "Merge to main",
+    "merge-branch": "Merge branch",
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",
       "latest-schema": "Latest schema",
       "editing-schema": "Editing schema",
       "auto-merge-failed": "Auto merge failed",
-      "need-to-resolve-conflicts": "Schema design has been updated by others. You need to resolve the conflicts before you can merge.",
-      "resolve-and-merge-again": "Resolve and merge again"
+      "need-to-resolve-conflicts": "Branch has been updated by others. You need to resolve the conflicts before you can merge.",
+      "resolve-and-merge-again": "Resolve and merge again",
+      "discard-changes": "Discard changes",
+      "action-confirm": "Action confirm",
+      "discard-changes-confirm": "Are you sure you want to discard all modifications?"
     },
     "tables": "Tables",
     "search-tables": "Search tables",
@@ -2833,8 +2837,8 @@
     "apply-to-database": "Apply change to database",
     "select-database-placeholder": "Select a database (MySQL only)",
     "message": {
-      "created-succeed": "Schema design created successfully",
-      "updated-succeed": "Schema design updated successfully",
+      "created-succeed": "Branch created successfully",
+      "updated-succeed": "Branch updated successfully",
       "merge-to-main-successfully": "Merge to main successfully",
       "updated-time-by-user": "Updated {time} by {user}"
     }

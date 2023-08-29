@@ -1,4 +1,6 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
+import { useCurrentUserV1 } from "@/store";
+import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import {
   Column,
   ForeignKey,
@@ -16,6 +18,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { randomString } from "@/utils";
 
 export const mergeSchemaEditToMetadata = (
@@ -469,4 +472,18 @@ export const validateDatabaseMetadata = (
   }
 
   return uniq(messages);
+};
+
+export const generateForkedBranchName = (branch: SchemaDesign): string => {
+  const currentUser = useCurrentUserV1();
+  const schemaDesignStore = useSchemaDesignStore();
+  const parentBranchName = branch.title;
+  let branchName = `${currentUser.value.title}/${parentBranchName}`;
+  const foundIndex = schemaDesignStore.schemaDesignList.findIndex((item) => {
+    return item.title === branchName;
+  });
+  if (foundIndex > -1) {
+    branchName = `${currentUser.value.title}/${parentBranchName}-draft`;
+  }
+  return branchName;
 };

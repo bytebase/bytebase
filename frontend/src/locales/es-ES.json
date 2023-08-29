@@ -259,7 +259,8 @@
     "state": "Estado",
     "condition": "Condición",
     "search-user": "Buscar usuario",
-    "branches": "Ramas"
+    "branches": "Ramas",
+    "merge": "Combinar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2815,7 +2816,7 @@
     "baseline-version": "Versión de referencia",
     "parent-branch": "Rama principal",
     "save-draft": "Guardar borrador",
-    "merge-to-main": "Fusionar a principal",
+    "merge-branch": "Fusionar rama",
     "diff-editor": {
       "self": "Editor de diferencias",
       "resolve": "Resolver",
@@ -2823,7 +2824,10 @@
       "editing-schema": "Editando esquema",
       "auto-merge-failed": "Falló la fusión automática",
       "need-to-resolve-conflicts": "El diseño del esquema ha sido actualizado por otros. Debe resolver los conflictos antes de poder fusionar.",
-      "resolve-and-merge-again": "Resolver y fusionar nuevamente"
+      "resolve-and-merge-again": "Resolver y fusionar nuevamente",
+      "discard-changes": "Descartar cambios",
+      "action-confirm": "Acción confirmada",
+      "discard-changes-confirm": "¿Estás seguro de que quieres descartar todas las modificaciones?"
     },
     "tables": "Tablas",
     "search-tables": "Buscar tablas",
