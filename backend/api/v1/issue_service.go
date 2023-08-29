@@ -281,7 +281,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	plan, err := s.store.GetPlan(ctx, planID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
 	}
@@ -824,7 +824,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			patch.Payload = &payloadStr
 
 			if issue.PlanUID != nil {
-				plan, err := s.store.GetPlan(ctx, *issue.PlanUID)
+				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
 				}
