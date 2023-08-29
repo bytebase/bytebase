@@ -93,6 +93,138 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	return issueV1, nil
 }
 
+func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesRequest) (*v1pb.ListIssuesResponse, error) {
+	if request.PageSize < 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
+	}
+
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	var projectUID *int
+	if projectID != "-" {
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
+		}
+		projectUID = &project.UID
+	}
+
+	limit := int(request.PageSize)
+	offset := 0
+	if request.PageToken != "" {
+		var pageToken storepb.PageToken
+		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+		offset = int(pageToken.Offset)
+	}
+	if limit == 0 {
+		limit = 10
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	limitPlusOne := limit + 1
+
+	issueFind := &store.FindIssueMessage{
+		ProjectUID: projectUID,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
+	}
+
+	filters, err := parseFilter(request.Filter)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	for _, spec := range filters {
+		switch spec.key {
+		case "principal":
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return nil, err
+			}
+			issueFind.PrincipalID = &user.ID
+		case "creator":
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return nil, err
+			}
+			issueFind.AssigneeID = &user.ID
+		case "assignee":
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return nil, err
+			}
+			issueFind.AssigneeID = &user.ID
+		case "subscriber":
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return nil, err
+			}
+			issueFind.SubscriberID = &user.ID
+		case "status":
+			for _, raw := range strings.Split(spec.value, " | ") {
+				newStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[raw]))
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue status, err: %v", err)
+				}
+				issueFind.StatusList = append(issueFind.StatusList, newStatus)
+			}
+		case "create_time_before":
+			t, err := time.Parse(time.RFC3339, spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_before %s, err: %v", spec.value, err)
+			}
+			ts := t.Unix()
+			issueFind.CreatedTsBefore = &ts
+		case "create_time_after":
+			t, err := time.Parse(time.RFC3339, spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.value, err)
+			}
+			ts := t.Unix()
+			issueFind.CreatedTsAfter = &ts
+		}
+	}
+
+	issues, err := s.store.ListIssueV2(ctx, issueFind)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
+	}
+
+	if len(issues) == limitPlusOne {
+		nextPageToken, err := getPageToken(limit, offset+limit)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+		}
+		converted, err := convertToIssues(ctx, s.store, issues[:limit])
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+		}
+		return &v1pb.ListIssuesResponse{
+			Issues:        converted,
+			NextPageToken: nextPageToken,
+		}, nil
+	}
+
+	// No subsequent pages.
+	converted, err := convertToIssues(ctx, s.store, issues)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+	}
+	return &v1pb.ListIssuesResponse{
+		Issues:        converted,
+		NextPageToken: "",
+	}, nil
+}
+
 func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIssuesRequest) (*v1pb.SearchIssuesResponse, error) {
 	if request.PageSize < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
