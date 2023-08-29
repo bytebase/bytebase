@@ -1,6 +1,7 @@
 <template>
   <BBAvatar
     :username="username"
+    :email="email"
     :size="size"
     :override-class="overrideClass"
     :override-text-size="overrideTextSize"
@@ -39,5 +40,11 @@ const username = computed((): string => {
     return "?";
   }
   return props.user.title;
+});
+const email = computed(() => {
+  if (props.user.name === `users/${UNKNOWN_ID}`) {
+    return undefined;
+  }
+  return props.user.email;
 });
 </script>
