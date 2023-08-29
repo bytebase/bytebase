@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"database/sql"
 	"encoding/base64"
@@ -1592,7 +1593,7 @@ func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, da
 								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking rule")
 							}
 							if boolVar {
-								finalLevel = getTheStrictestMaskingLevel(finalLevel, maskingRule.MaskingLevel)
+								finalLevel = maskingRule.MaskingLevel
 								break
 							}
 						}
@@ -1646,7 +1647,9 @@ func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, da
 
 						// TODO(zp): Expectedly, a column should hit only one exception,
 						// but we can take the strictest level here to make the whole program more robust.
-						finalLevel = getTheKindestMaskingRule(finalLevel, filteredMaskingException.MaskingLevel)
+						if cmp.Less[storepb.MaskingLevel](filteredMaskingException.MaskingLevel, finalLevel) {
+							finalLevel = filteredMaskingException.MaskingLevel
+						}
 					}
 					return finalLevel, nil
 				}
