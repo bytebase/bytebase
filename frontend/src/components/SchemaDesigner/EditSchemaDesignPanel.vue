@@ -27,9 +27,11 @@
                 v-if="!viewMode && !state.isEditing"
                 class="flex flex-row justify-end items-center space-x-2"
               >
-                <NButton v-if="parentBranch" @click="handleMergeSchemaDesign">{{
-                  $t("schema-designer.merge-branch")
-                }}</NButton>
+                <NButton
+                  v-if="parentBranch"
+                  @click="() => handleMergeSchemaDesign()"
+                  >{{ $t("schema-designer.merge-branch") }}</NButton
+                >
                 <NButton type="primary" @click="handleApplySchemaDesignClick">{{
                   $t("schema-designer.apply-to-database")
                 }}</NButton>
@@ -435,11 +437,11 @@ const handleSaveSchemaDesignDraft = async () => {
 
   // If it's a personal draft, we will try to merge it to the parent branch.
   if (isSchemaDesignDraft.value) {
-    await handleMergeSchemaDesign();
+    await handleMergeSchemaDesign(true);
   }
 };
 
-const handleMergeSchemaDesign = async () => {
+const handleMergeSchemaDesign = async (ignoreNotify = false) => {
   // If it's in edit mode, we need to save the draft first.
   if (state.isEditing) {
     await handleSaveSchemaDesignDraft();
@@ -481,11 +483,13 @@ const handleMergeSchemaDesign = async () => {
     return;
   }
 
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("schema-designer.message.merge-to-main-successfully"),
-  });
+  if (!ignoreNotify) {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("schema-designer.message.merge-to-main-successfully"),
+    });
+  }
   // Auto select the parent branch after merged.
   state.schemaDesignName = parentBranchName;
 };
