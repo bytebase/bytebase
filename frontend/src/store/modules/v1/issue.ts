@@ -8,10 +8,12 @@ import {
   Issue as LegacyIssue,
   PresetRoleType,
   ComposedIssue,
+  IssueFilter,
 } from "@/types";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import {
   Issue,
+  issueStatusToJSON,
   ApprovalStep,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
@@ -21,6 +23,7 @@ import { useProjectV1Store } from ".";
 import { useUserStore } from "../user";
 import { useActivityV1Store } from "./activity";
 import { projectNamePrefix, issueNamePrefix } from "./common";
+import { composeIssue } from "./experimental-issue";
 
 const issueName = (legacyIssue: LegacyIssue) => {
   return `projects/${legacyIssue.project.id}/issues/${legacyIssue.id}`;
@@ -31,6 +34,30 @@ const emptyIssue = (legacyIssue: LegacyIssue) => {
     name: issueName(legacyIssue),
     approvalFindingDone: false,
   });
+};
+
+export const buildIssueFilter = (find: IssueFilter): string => {
+  const filter: string[] = [];
+  if (find.principal) {
+    filter.push(`principal = "${find.principal}"`);
+  }
+  if (find.creator) {
+    filter.push(`creator = "${find.creator}"`);
+  }
+  if (find.assignee) {
+    filter.push(`assignee = "${find.assignee}"`);
+  }
+  if (find.subscriber) {
+    filter.push(`subscriber = "${find.subscriber}"`);
+  }
+  if (find.statusList) {
+    filter.push(
+      `status = "${find.statusList
+        .map((s) => issueStatusToJSON(s))
+        .join(" | ")}"`
+    );
+  }
+  return filter.join(" && ");
 };
 
 export const useIssueV1Store = defineStore("issue_v1", () => {
@@ -147,12 +174,39 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     await useActivityV1Store().fetchActivityListByIssueId(issueId);
   };
 
+  const searchIssues = async ({
+    find,
+    pageSize,
+    pageToken,
+  }: {
+    find: IssueFilter;
+    pageSize?: number;
+    pageToken?: string;
+  }) => {
+    const resp = await issueServiceClient.searchIssues({
+      parent: find.project,
+      query: find.query,
+      filter: buildIssueFilter(find),
+      pageSize,
+      pageToken,
+    });
+
+    const composedIssues = await Promise.all(
+      resp.issues.map((issue) => composeIssue(issue))
+    );
+    return {
+      nextPageToken: resp.nextPageToken,
+      issues: composedIssues,
+    };
+  };
+
   return {
     getIssueByIssue,
     fetchIssueByLegacyIssue: fetchIssueByLegacyIssue,
     approveIssue,
     rejectIssue,
     requestIssue,
+    searchIssues,
     regenerateReview,
     regenerateReviewV1,
     createIssueComment,
