@@ -118,6 +118,7 @@ import {
   LogEntity,
   LogEntity_Action,
   logEntity_ActionToJSON,
+  LogEntity_Level,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
 
@@ -275,6 +276,30 @@ const handleExport = (
   callback(content, format);
 };
 
+function escapeCSVString(s: string) {
+  // Escape double quotes
+  s = s.replace(/"/g, '""');
+  // Escape commas
+  s = s.replace(/,/g, "\\,");
+  // Escape new lines
+  s = s.replace(/\n/g, "\\n");
+  // Escape carriage returns
+  s = s.replace(/\r/g, "\\r");
+  return s;
+}
+
+function formatLevel(level: LogEntity_Level) {
+  switch (level) {
+    case LogEntity_Level.LEVEL_INFO:
+      return "INFO";
+    case LogEntity_Level.LEVEL_WARNING:
+      return "WARNING";
+    case LogEntity_Level.LEVEL_ERROR:
+      return "ERROR";
+  }
+  return "UNKNOWN_LEVEL";
+}
+
 const formatExport = (format: ExportFormat): BinaryLike => {
   switch (format) {
     case "CSV":
@@ -283,37 +308,31 @@ const formatExport = (format: ExportFormat): BinaryLike => {
           (list, auditLog) => {
             list.push(
               [
-                auditLog.name,
-                auditLog.creator,
                 dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
-                dayjs(auditLog.updateTime).format("YYYY-MM-DD HH:mm:ss Z"),
+                formatLevel(auditLog.level),
                 logEntity_ActionToJSON(auditLog.action),
-                logEntity_LevelToJSON(auditLog.level),
+                auditLog.creator,
                 auditLog.resource,
                 auditLog.comment,
-                auditLog.payload.replaceAll(",", '","'),
+                escapeCSVString(auditLog.payload),
               ].join(",")
             );
             return list;
           },
-          [
-            "name,creator,createTime,updateTime,action,level,resource,comment,payload",
-          ]
+          ["time,level,action,actor,resource,comment,payload"]
         )
         .join("\n");
     case "JSON":
       return JSON.stringify(
         auditLogList.value.map((auditLog) => {
           return {
-            ...auditLog,
-            createTime: dayjs(auditLog.createTime).format(
-              "YYYY-MM-DD HH:mm:ss Z"
-            ),
-            updateTime: dayjs(auditLog.updateTime).format(
-              "YYYY-MM-DD HH:mm:ss Z"
-            ),
+            time: dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
+            level: formatLevel(auditLog.level),
             action: logEntity_ActionToJSON(auditLog.action),
-            level: logEntity_LevelToJSON(auditLog.level),
+            actor: auditLog.creator,
+            resource: auditLog.resource,
+            comment: auditLog.comment,
+            payload: auditLog.payload,
           };
         }),
         null,
