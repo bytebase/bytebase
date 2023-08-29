@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -101,7 +101,9 @@ const doCreateIssue = async () => {
       rolloutEntity: createdRollout,
     };
 
-    router.push(`/issue/${composedIssue.uid}`);
+    nextTick(() => {
+      router.push(`/issue/${composedIssue.uid}`);
+    });
 
     return composedIssue;
   } catch {
