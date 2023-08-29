@@ -256,7 +256,8 @@
     "schedule": "计划",
     "state": "状态",
     "condition": "条件",
-    "search-user": "搜索用户"
+    "search-user": "搜索用户",
+    "branches": "分支"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2807,6 +2808,7 @@
     "schema-version": "Schema 版本",
     "personal-draft": "个人草稿",
     "baseline-version": "基线版本",
+    "parent-branch": "父分支",
     "save-draft": "保存草稿",
     "merge-to-main": "合并到主版本",
     "diff-editor": {
@@ -2826,7 +2828,8 @@
     "message": {
       "created-succeed": "Schema 设计创建成功",
       "updated-succeed": "Schema 设计更新成功",
-      "merge-to-main-successfully": "成功合并到主版本"
+      "merge-to-main-successfully": "成功合并到主版本",
+      "updated-time-by-user": "由 {user} 于 {time} 更新"
     }
   },
   "cel": {

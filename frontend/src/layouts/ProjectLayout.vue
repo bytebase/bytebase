@@ -120,6 +120,7 @@ const projectTabItemList = computed((): ProjectTabItem[] => {
 
   const list: (ProjectTabItem | null)[] = [
     { name: t("common.overview"), hash: "overview" },
+    { name: t("common.branches"), hash: "branches" },
     { name: t("common.databases"), hash: "databases" },
 
     isTenantProject.value
