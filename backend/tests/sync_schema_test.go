@@ -79,8 +79,6 @@ DROP SCHEMA "schema_a";
 	// Create a project.
 	project, err := ctl.createProject(ctx)
 	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
-	a.NoError(err)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
@@ -130,7 +128,7 @@ DROP SCHEMA "schema_a";
 	a.Equal(1, len(histories))
 	latest := histories[0]
 
-	err = ctl.createDatabase(ctx, projectUID, instance, newDatabaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, project, instance, newDatabaseName, "bytebase", nil)
 	a.NoError(err)
 
 	newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
