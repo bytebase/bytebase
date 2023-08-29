@@ -755,6 +755,8 @@
     },
     "view-commit": "View commit",
     "search-issue-name": "Search issue name",
+    "advanced-search": "Advanced search",
+    "filter-issue-by-name": "Filter issue by name",
     "table": {
       "open": "Open",
       "closed": "Closed",
