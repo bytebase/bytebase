@@ -755,6 +755,8 @@
     },
     "view-commit": "Ver commit",
     "search-issue-name": "Buscar nombre de la incidencia",
+    "advanced-search": "Búsqueda Avanzada",
+    "filter-issue-by-name": "Filtrar problema por nombre",
     "table": {
       "open": "Abierto",
       "closed": "Cerrado",

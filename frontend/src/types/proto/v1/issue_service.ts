@@ -144,7 +144,22 @@ export interface SearchIssuesRequest {
   pageToken: string;
   /** Query is the query statement. */
   query: string;
-  /** Filter is used to filter issues returned in the list. */
+  /**
+   * Filter is used to filter issues returned in the list,
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * Supported field in filter:
+   * - principal, example:
+   *    - principal = "users/{email}"
+   * - creator, example:
+   *    - creator = "users/{email}"
+   * - assignee, example:
+   *    - assignee = "users/{email}"
+   * - subscriber, example:
+   *    - subscriber = "users/{email}"
+   * - status, example:
+   *    - status = "OPEN"
+   *    - status = "DONE" | "CANCELED"
+   */
   filter: string;
 }
 

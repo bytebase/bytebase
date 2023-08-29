@@ -753,6 +753,8 @@
     },
     "view-commit": "查看提交",
     "search-issue-name": "搜索工单名称",
+    "advanced-search": "高级搜素",
+    "filter-issue-by-name": "根据名称过滤",
     "table": {
       "open": "开启中",
       "closed": "已关闭",

@@ -133,12 +133,55 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	}
 	limitPlusOne := limit + 1
 
-	issues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{
+	issueFind := &store.FindIssueMessage{
 		ProjectUID: projectUID,
 		Query:      &request.Query,
 		Limit:      &limitPlusOne,
 		Offset:     &offset,
-	})
+	}
+
+	filters, err := parseFilter(request.Filter)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	for _, spec := range filters {
+		switch spec.key {
+		case "principal":
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return nil, err
+			}
+			issueFind.PrincipalID = &user.ID
+		case "creator":
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return nil, err
+			}
+			issueFind.AssigneeID = &user.ID
+		case "assignee":
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return nil, err
+			}
+			issueFind.AssigneeID = &user.ID
+		case "subscriber":
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return nil, err
+			}
+			issueFind.SubscriberID = &user.ID
+		case "status":
+			for _, raw := range strings.Split(spec.value, " | ") {
+				newStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[raw]))
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue status, err: %v", err)
+				}
+				issueFind.StatusList = append(issueFind.StatusList, newStatus)
+			}
+		}
+	}
+
+	issues, err := s.store.ListIssueV2(ctx, issueFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
 	}
@@ -167,6 +210,24 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		Issues:        converted,
 		NextPageToken: "",
 	}, nil
+}
+
+func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
+	email := strings.TrimPrefix(identifier, "users/")
+	if email == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
+	}
+	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
+		Email:       &email,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, email, err.Error())
+	}
+	if user == nil {
+		return nil, errors.Errorf("cannot found user %s", email)
+	}
+	return user, nil
 }
 
 // CreateIssue creates a issue.
