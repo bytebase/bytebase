@@ -677,7 +677,24 @@ type SearchIssuesRequest struct {
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Query is the query statement.
 	Query string `protobuf:"bytes,4,opt,name=query,proto3" json:"query,omitempty"`
-	// Filter is used to filter issues returned in the list.
+	// Filter is used to filter issues returned in the list,
+	// follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+	// Supported field in filter:
+	// - principal, example:
+	//   - principal = "users/{email}"
+	//
+	// - creator, example:
+	//   - creator = "users/{email}"
+	//
+	// - assignee, example:
+	//   - assignee = "users/{email}"
+	//
+	// - subscriber, example:
+	//   - subscriber = "users/{email}"
+	//
+	// - status, example:
+	//   - status = "OPEN"
+	//   - status = "DONE" | "CANCELED"
 	Filter string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
 }
 
